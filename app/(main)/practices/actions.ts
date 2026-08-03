@@ -114,10 +114,87 @@ export async function unlogPracticeAction(
   return ok(res)
 }
 
-export async function adoptPracticeAction(practiceId: string): Promise<ActionResult> {
+/** What adopting returned: adopted, or AT THE CAP with the currently-held five so the member
+ *  can swap one out (ADR-920 Phase 4: the cap is a swap prompt, never a data-losing wall). */
+export interface AdoptOutcome {
+  adopted: boolean
+  atCap?: boolean
+  held?: { id: string; title: string }[]
+}
+
+/** Adopt with a commitment shape (ADR-920): preset weeks (2/4/8), null = ongoing, plus an
+ *  optional cue. Both are re-validated in adoptPractice (coerceTermWeeks / cleanCue), so a
+ *  hostile payload can only ever produce a preset term and a capped cue. At the 5-active
+ *  cap (self adoptions only; journey rows ride outside it) nothing is written — the caller
+ *  gets the held list back and offers a swap. */
+export async function adoptPracticeAction(
+  practiceId: string,
+  opts?: { termWeeks?: number | null; cue?: string | null },
+): Promise<ActionResult<AdoptOutcome>> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
-  await adoptPractice(profileId, practiceId)
+  const { countActiveSelfAdoptions, getMemberAdoptions } = await import('@/lib/practices')
+  const { withinActiveCap } = await import('@/lib/practices/adoption')
+  const activeSelf = await countActiveSelfAdoptions(profileId)
+  if (!withinActiveCap(activeSelf)) {
+    // Re-adopting something already held is not a cap event (the upsert re-commits in place).
+    const adoptions = await getMemberAdoptions(profileId)
+    const alreadyHeld = adoptions.some((a) => a.source === 'self' && a.practice.id === practiceId)
+    if (!alreadyHeld) {
+      return ok({
+        adopted: false,
+        atCap: true,
+        held: adoptions
+          .filter((a) => a.source === 'self')
+          .map((a) => ({ id: a.practice.id, title: a.practice.title })),
+      })
+    }
+  }
+  await adoptPractice(profileId, practiceId, {
+    termWeeks: opts?.termWeeks ?? null,
+    ...(opts && 'cue' in opts ? { cue: opts.cue } : {}),
+  })
+  revalidatePath('/practices')
+  return ok({ adopted: true })
+}
+
+/** The swap at the cap: retire one held practice (reason 'swapped') and adopt the new one in
+ *  its place. Hardened after review: the DROP TARGET must be the caller's own ACTIVE SELF
+ *  adoption (a journey row's lifecycle belongs to its journey, and an unheld id must not
+ *  count as making room), and a failed adopt ROLLS the drop back so the member never silently
+ *  loses a practice to a half-completed swap. The cap itself is enforced inside adoptPractice
+ *  (the one chokepoint), so this action cannot be used to exceed it. */
+export async function swapPracticeAction(
+  dropPracticeId: string,
+  adoptPracticeId: string,
+  opts?: { termWeeks?: number | null; cue?: string | null },
+): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not signed in')
+  if (!dropPracticeId || !adoptPracticeId || dropPracticeId === adoptPracticeId) {
+    return fail('Pick a practice to make room for.')
+  }
+  const { getMemberAdoptions } = await import('@/lib/practices')
+  const adoptions = await getMemberAdoptions(profileId)
+  const dropRow = adoptions.find((a) => a.practice.id === dropPracticeId)
+  if (!dropRow || dropRow.source !== 'self') {
+    return fail('Pick one of your own practices to set down.')
+  }
+  await dropMemberPractice(profileId, dropPracticeId, 'swapped')
+  await adoptPractice(profileId, adoptPracticeId, {
+    termWeeks: opts?.termWeeks ?? null,
+    ...(opts && 'cue' in opts ? { cue: opts.cue } : {}),
+  })
+  // Verify the adopt actually landed; if not, restore the dropped practice with the shape it
+  // had, so a failed swap leaves the list exactly as it was.
+  const after = await getMemberAdoptions(profileId)
+  if (!after.some((a) => a.practice.id === adoptPracticeId)) {
+    await adoptPractice(profileId, dropPracticeId, {
+      termWeeks: dropRow.termWeeks,
+      ...(dropRow.cue != null ? { cue: dropRow.cue } : {}),
+    })
+    return fail('That swap did not go through. Your list is unchanged.')
+  }
   revalidatePath('/practices')
   return ok()
 }
@@ -126,6 +203,24 @@ export async function dropPracticeAction(practiceId: string): Promise<ActionResu
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
   await dropMemberPractice(profileId, practiceId)
+  revalidatePath('/practices')
+  return ok()
+}
+
+/** "Keep it" (ADR-920): convert a RETIRED journey-sourced practice into the member's own, at
+ *  the journey's completion moment. Default ongoing; a preset term may be chosen. Self-scoped,
+ *  and the lib guard converts ONLY a retired journey row — a live journey row or a self row
+ *  (with its own chosen term) can never be overwritten through this public action. */
+export async function keepPracticeAction(
+  practiceId: string,
+  termWeeks: number | null = null,
+): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not signed in')
+  const { convertJourneyRowToSelf } = await import('@/lib/practices')
+  const converted = await convertJourneyRowToSelf(profileId, practiceId, termWeeks)
+  if (!converted)
+    return fail('Nothing kept. Either it is not a finished journey practice of yours, or your list is full at five. Set one down first.')
   revalidatePath('/practices')
   return ok()
 }
@@ -193,21 +288,20 @@ export async function createPracticeAction(
 export async function createPracticeDraftAction(): Promise<ActionResult<{ id: string }>> {
   const gate = await authorizeCreatePractice()
   if ('error' in gate) return fail(gate.error)
+  // DRAFT-UNTIL-SUBMIT (ADR-920 Phase 5): born a private draft, never 'pending' — the review
+  // queue used to receive a literal "Untitled practice" the moment this button was pressed.
+  // The author submits from the builder's Library section when it is actually ready.
+  // is_public stays FALSE for EVERYONE here (review defect: a Host's blank draft was briefly
+  // born public, listing an "Untitled practice" in the library instantly). A Host+/staff
+  // author's row is 'approved' (live to them, publishable without review) but enters the
+  // public library only when they choose.
   const p = await createPractice({
     title: 'Untitled practice',
     createdBy: gate.profileId,
     isPublic: false,
-    status: gate.autoApprove ? 'approved' : 'pending',
+    status: gate.autoApprove ? 'approved' : 'draft',
   })
   if (!p) return fail('Could not create practice')
-  if (!gate.autoApprove) {
-    // Best-effort — never blocks creation. The pending draft is hidden until published + approved.
-    await notifyStaffOfPendingPractice({
-      practiceId: p.id,
-      title: 'Untitled practice',
-      proposedBy: gate.profileId,
-    })
-  }
   revalidatePath('/practices')
   return ok({ id: p.id })
 }

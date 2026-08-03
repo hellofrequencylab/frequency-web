@@ -17,9 +17,10 @@ import { recordStreakActivity, processGamificationEvent } from '@/lib/achievemen
 import { recordPracticeStreak, recomputePracticeStreakAfterUnlog } from '@/lib/practice-streak'
 import { ROLE_HIERARCHY } from '@/lib/core/roles'
 import { loadRootSpaceId } from '@/lib/spaces/store'
-import { resolveMemberDay } from '@/lib/member-day'
+import { resolveMemberDay, memberDay } from '@/lib/member-day'
 import { attributedLogDay } from '@/lib/practices/log-day'
 import { clampTierToDuration, achievedTier, type PracticeTier } from '@/lib/practices/tiers'
+import { coerceTermWeeks, cleanCue, termWindow, withinActiveCap } from '@/lib/practices/adoption'
 import { BREATH_PATTERNS } from '@/lib/on-air'
 import {
   deriveDepthStreak,
@@ -29,6 +30,7 @@ import {
 } from '@/lib/practices/depth-streak'
 import { sanitizeMovementConfig, type MovementConfig } from '@/lib/movement'
 import { cleanWarmupMessage, WARMUP_SEC_MAX } from '@/lib/on-air'
+import { log } from '@/lib/log'
 
 /** Which timer a practice routes to (WEBSITE-CHANGES-PLAN §4 C.8): 'none' = a one-tap
  *  Log it; 'mindless' = the On Air sit/breathe (useMindless); 'movement' = the Movement
@@ -1004,6 +1006,66 @@ export async function getMemberPractices(profileId: string): Promise<Practice[]>
   return rows.map((r) => r.practice).filter((p): p is Practice => !!p).map(normalizePractice)
 }
 
+/** One active adoption WITH its commitment shape (ADR-920): the practice plus the term the
+ *  member holds it under. The metadata twin of getMemberPractices for surfaces that render
+ *  the term ("Week 2 of 4", the swap flow, the completion sweep). */
+export interface MemberAdoption {
+  practice: Practice
+  source: 'self' | 'journey'
+  journeyPlanId: string | null
+  termWeeks: number | null
+  startsOn: string | null
+  endsOn: string | null
+  cue: string | null
+}
+
+const ADOPTION_COLS = 'source, journey_plan_id, term_weeks, starts_on, ends_on, cue'
+
+/** A member's ACTIVE adoptions with their term shape, newest first. Fail-safe to []. */
+export async function getMemberAdoptions(profileId: string): Promise<MemberAdoption[]> {
+  const { data } = await db()
+    .from('member_practices')
+    .select(`${ADOPTION_COLS}, practice:practices(${PRACTICE_COLS})`)
+    .eq('profile_id', profileId)
+    .eq('active', true)
+    .order('created_at', { ascending: false })
+  type Row = {
+    source: string | null
+    journey_plan_id: string | null
+    term_weeks: number | null
+    starts_on: string | null
+    ends_on: string | null
+    cue: string | null
+    practice: Practice | null
+  }
+  const rows = (data as unknown as Row[] | null) ?? []
+  return rows
+    .filter((r): r is Row & { practice: Practice } => !!r.practice)
+    .map((r) => ({
+      practice: normalizePractice(r.practice),
+      source: r.source === 'journey' ? 'journey' : 'self',
+      journeyPlanId: r.journey_plan_id,
+      termWeeks: r.term_weeks,
+      startsOn: r.starts_on,
+      endsOn: r.ends_on,
+      cue: r.cue,
+    }))
+}
+
+/** The count of ACTIVE SELF-adopted practices — the number the cap (ACTIVE_PRACTICE_CAP)
+ *  measures. Journey-sourced rows are exempt (phase-scoped, they expire on their own).
+ *  Fail-safe to 0 (an unreadable count must never block adopting). */
+export async function countActiveSelfAdoptions(profileId: string): Promise<number> {
+  const { count, error } = await db()
+    .from('member_practices')
+    .select('id', { count: 'exact', head: true })
+    .eq('profile_id', profileId)
+    .eq('active', true)
+    .eq('source', 'self')
+  if (error) return 0
+  return count ?? 0
+}
+
 /** A single practice with its popularity stats + display taxonomy, for the detail
  *  page. Reads the server-only ranking view (admin client bypasses RLS). */
 export async function getRankedPractice(slugOrId: string): Promise<RankedPractice | null> {
@@ -1738,24 +1800,323 @@ export async function setCirclePractice(
   }
 }
 
-/** A member adopts a practice for themselves (re-activates if previously dropped). */
-export async function adoptPractice(profileId: string, practiceId: string): Promise<void> {
-  await db()
+/** How an adoption is shaped at write time (ADR-920). Omitted entirely = the legacy call:
+ *  an ongoing self adoption with no term (journey enrollment and internal callers pass
+ *  explicit shapes as the phases land). */
+export interface AdoptOptions {
+  /** Preset weeks (2/4/8) or null = ongoing. Coerced through coerceTermWeeks. */
+  termWeeks?: number | null
+  /** 'self' (default) or 'journey' (enrollment-written; requires journeyPlanId). */
+  source?: 'self' | 'journey'
+  journeyPlanId?: string | null
+  /** The member's implementation intention ("After my morning coffee"). Cleaned + capped. */
+  cue?: string | null
+  /** Journey rows carry the phase window as an explicit end day (member-local YYYY-MM-DD);
+   *  when set it wins over termWeeks-derived math. */
+  endsOn?: string | null
+}
+
+/** A member adopts a practice for themselves (re-activates if previously dropped, resetting
+ *  the term window to a fresh start today). Term shape per ADR-920: starts_on/ends_on frame
+ *  the commitment in the member's own calendar days, the same day framing logPractice uses. */
+export async function adoptPractice(
+  profileId: string,
+  practiceId: string,
+  opts?: AdoptOptions,
+): Promise<void> {
+  // The existing row, read once: it powers the legacy no-op guard AND the cap check below.
+  const { data: existingRaw } = await db()
+    .from('member_practices')
+    .select('active, source')
+    .eq('profile_id', profileId)
+    .eq('practice_id', practiceId)
+    .maybeSingle()
+  const existing = existingRaw as { active: boolean; source: string | null } | null
+  // A bare legacy call (no opts) over an ALREADY-ACTIVE row is a no-op: the member holds the
+  // practice, possibly under a term they chose — a journey enroll or a repeat call must not
+  // silently reset their commitment to ongoing/today. An explicit opts call is a re-commit
+  // and does the full write.
+  if (!opts && existing?.active) return
+  const source = opts?.source === 'journey' && opts.journeyPlanId ? 'journey' : 'self'
+  // THE CAP LIVES HERE (ADR-920 Phase 4, hardened after review): every door that mints a NEW
+  // active self row — the Adopt button, claim, remix, swap, Keep it — passes through this
+  // function, so the 5-active-self cap is enforced at the one chokepoint instead of at one
+  // action a sibling action could bypass. Re-committing a practice already held (active) is
+  // never a cap event; journey rows are exempt. The count runs immediately before the write —
+  // a narrow read-then-write race remains (no DB constraint can express this cap), accepted
+  // because the failure mode is one practice over a soft focus cap, not data loss.
+  if (source === 'self' && !existing?.active) {
+    const activeSelf = await countActiveSelfAdoptions(profileId)
+    if (!withinActiveCap(activeSelf)) return
+  }
+  // No opts at all = the legacy shape (ongoing, no term): existing callers keep their
+  // behavior until each phase migrates them to explicit terms.
+  const termWeeks = opts && 'termWeeks' in opts ? coerceTermWeeks(opts.termWeeks) : null
+  const today = await resolveMemberDay(profileId)
+  const window = opts?.endsOn !== undefined
+    ? { startsOn: today, endsOn: opts.endsOn }
+    : termWindow(today, termWeeks)
+  const { error: adoptErr } = await db()
     .from('member_practices')
     .upsert(
-      { profile_id: profileId, practice_id: practiceId, active: true },
+      {
+        profile_id: profileId,
+        practice_id: practiceId,
+        active: true,
+        source,
+        journey_plan_id: source === 'journey' ? opts?.journeyPlanId ?? null : null,
+        term_weeks: opts?.endsOn !== undefined ? null : termWeeks,
+        starts_on: window.startsOn,
+        ends_on: window.endsOn,
+        // A re-adopt is a fresh commitment: clear any prior retirement.
+        retired_at: null,
+        retired_reason: null,
+        ...(opts && 'cue' in opts ? { cue: cleanCue(opts.cue) } : {}),
+      } as never,
       { onConflict: 'profile_id,practice_id' },
     )
+  // Visible, never fatal: a silent write failure (e.g. a deploy racing the migration)
+  // would show "Adopted" over a row that never landed.
+  if (adoptErr) log.error('practices.adopt_write_failed', { practiceId, error: adoptErr.message })
   // Activation-funnel step 4 (ADR-075). Best-effort; never blocks the adopt.
   await track('practice.adopted', { practiceId }, profileId)
 }
 
-export async function dropMemberPractice(profileId: string, practiceId: string): Promise<void> {
-  await db()
+/** Journey-driven adoption for one or many members at once (enrollment + Run start). Bulk by
+ *  design — a 30-member Circle on a 20-practice Journey is ~3 queries here, not 1,300 serial
+ *  round-trips — and deliberately WITHOUT track(): auto-enrolling members must not mint
+ *  activation-funnel or referral-payout signals for people who did nothing themselves.
+ *  An existing ACTIVE row is left untouched (a member's own term is never clobbered by a
+ *  journey); missing rows are inserted and retired rows re-activated as journey-sourced,
+ *  ongoing until the phase-scoped window lands (ADR-920 Phase 2). Never throws. */
+export async function adoptPracticesForJourney(
+  profileIds: string[],
+  practiceIds: string[],
+  journeyPlanId: string,
+): Promise<void> {
+  if (!profileIds.length || !practiceIds.length) return
+  try {
+    const client = db()
+    // One profiles read for the cohort: each member's local "today" frames starts_on the same
+    // way logPractice frames logged_for.
+    const { data: tzRows } = await client
+      .from('profiles')
+      .select('id, home_timezone')
+      .in('id', profileIds)
+    const tzById = new Map(
+      ((tzRows ?? []) as { id: string; home_timezone: string | null }[]).map((r) => [r.id, r.home_timezone]),
+    )
+    // Existing rows for every (member, practice) pair, so active ones are left alone.
+    // CHUNKED: PostgREST caps a response at ~1000 rows, and a truncated read here would
+    // un-guard exactly the clobber this guard exists to prevent (a big cohort's upsert
+    // overwriting active self-adoptions' terms). Keep each read's worst-case pair count
+    // well under the cap.
+    const activePairs = new Set<string>()
+    const profilesPerChunk = Math.max(1, Math.floor(500 / Math.max(1, practiceIds.length)))
+    for (let i = 0; i < profileIds.length; i += profilesPerChunk) {
+      const chunk = profileIds.slice(i, i + profilesPerChunk)
+      const { data: existingRows, error: pairErr } = await client
+        .from('member_practices')
+        .select('profile_id, practice_id, active')
+        .in('profile_id', chunk)
+        .in('practice_id', practiceIds)
+      // Fail CLOSED on a pair-read error: skip these members entirely rather than risk the
+      // unguarded upsert (adoption is repairable; a clobbered term is not).
+      if (pairErr) {
+        log.error('practices.journey_adopt_pair_read_failed', { error: pairErr.message })
+        for (const pid of chunk) for (const prid of practiceIds) activePairs.add(`${pid}:${prid}`)
+        continue
+      }
+      for (const r of (existingRows ?? []) as { profile_id: string; practice_id: string; active: boolean }[]) {
+        if (r.active) activePairs.add(`${r.profile_id}:${r.practice_id}`)
+      }
+    }
+    const rows = profileIds.flatMap((pid) => {
+      const today = memberDay(tzById.get(pid))
+      return practiceIds
+        .filter((prid) => !activePairs.has(`${pid}:${prid}`))
+        .map((prid) => ({
+          profile_id: pid,
+          practice_id: prid,
+          active: true,
+          source: 'journey',
+          journey_plan_id: journeyPlanId,
+          term_weeks: null,
+          starts_on: today,
+          ends_on: null,
+          retired_at: null,
+          retired_reason: null,
+        }))
+    })
+    if (rows.length) {
+      const { error: upsertErr } = await client
+        .from('member_practices')
+        .upsert(rows as never[], { onConflict: 'profile_id,practice_id' })
+      // Visible, never fatal: a silent write failure here (e.g. a deploy racing the
+      // migration) would read as "adoption works" while writing nothing.
+      if (upsertErr) log.error('practices.journey_adopt_upsert_failed', { error: upsertErr.message })
+    }
+  } catch {
+    // adoption is repairable (re-enroll / adopt by hand); never blocks the caller
+  }
+}
+
+/** Why a commitment ended (mirrors the DB check). */
+export type RetireReason = 'completed' | 'phase_ended' | 'dropped' | 'swapped'
+
+/** Reconcile a member's journey-sourced rows for ONE plan against the target set (current leg
+ *  union anchors, computed by lib/journeys/leg-targets.ts): retire rows that fell out of the
+ *  leg (reason 'phase_ended' — the week rolled) and adopt any target not yet held. This is how
+ *  a phase rollover makes last week's practices step back (ADR-920 Phase 2 / vision #3): the
+ *  rollover is time passing, so the reconcile runs wherever the leg is read. Self-adopted rows
+ *  are NEVER touched here (a member's own commitment outlives any journey). Idempotent — a
+ *  no-diff call writes nothing. Never throws. */
+export async function syncJourneyAdoptionRows(
+  profileId: string,
+  planId: string,
+  targetIds: string[],
+): Promise<void> {
+  try {
+    const client = db()
+    // ONE read answers both questions: which journey rows of THIS plan are active (the
+    // stale computation), and which targets the member already holds active under ANY
+    // source (a self-held target needs no journey row — treating it as "missing" forever
+    // would re-run the adopt path's queries on every single On Air open, converging never).
+    let q = client
+      .from('member_practices')
+      .select('practice_id, source, journey_plan_id')
+      .eq('profile_id', profileId)
+      .eq('active', true)
+    q = targetIds.length
+      ? q.or(`journey_plan_id.eq.${planId},practice_id.in.(${targetIds.join(',')})`)
+      : q.eq('journey_plan_id', planId)
+    const { data, error: readErr } = await q
+    if (readErr) return
+    type ActiveRow = { practice_id: string; source: string | null; journey_plan_id: string | null }
+    const active = (data ?? []) as ActiveRow[]
+    const heldByThisJourney = new Set(
+      active.filter((r) => r.source === 'journey' && r.journey_plan_id === planId).map((r) => r.practice_id),
+    )
+    const heldAnySource = new Set(active.map((r) => r.practice_id))
+    const target = new Set(targetIds)
+    const stale = [...heldByThisJourney].filter((id) => !target.has(id))
+    const missing = targetIds.filter((id) => !heldAnySource.has(id))
+    if (stale.length) {
+      await client
+        .from('member_practices')
+        .update({ active: false, retired_at: new Date().toISOString(), retired_reason: 'phase_ended' } as never)
+        .eq('profile_id', profileId)
+        .eq('journey_plan_id', planId)
+        .eq('source', 'journey')
+        .eq('active', true)
+        .in('practice_id', stale)
+    }
+    if (missing.length) await adoptPracticesForJourney([profileId], missing, planId)
+  } catch {
+    // reconcile is repairable on the next read; never blocks the caller
+  }
+}
+
+/** Bulk retire (an ended Run's whole cohort at once): every member's active journey-sourced
+ *  rows for the plan. Chunked; never throws. */
+export async function retireJourneyPracticeRowsForMembers(
+  profileIds: string[],
+  planId: string,
+  reason: RetireReason,
+): Promise<void> {
+  if (!profileIds.length) return
+  try {
+    const client = db()
+    for (let i = 0; i < profileIds.length; i += 200) {
+      await client
+        .from('member_practices')
+        .update({ active: false, retired_at: new Date().toISOString(), retired_reason: reason } as never)
+        .eq('journey_plan_id', planId)
+        .eq('source', 'journey')
+        .eq('active', true)
+        .in('profile_id', profileIds.slice(i, i + 200))
+    }
+  } catch {
+    // repairable; never blocks the run end
+  }
+}
+
+/** Retire ALL of a member's journey-sourced rows for a plan (journey finished or left).
+ *  Self-adopted rows are untouched. Never throws. */
+export async function retireJourneyPracticeRows(
+  profileId: string,
+  planId: string,
+  reason: Extract<RetireReason, 'completed' | 'dropped'>,
+): Promise<void> {
+  try {
+    await db()
+      .from('member_practices')
+      .update({ active: false, retired_at: new Date().toISOString(), retired_reason: reason } as never)
+      .eq('profile_id', profileId)
+      .eq('journey_plan_id', planId)
+      .eq('source', 'journey')
+      .eq('active', true)
+  } catch {
+    // repairable; never blocks completion/leave
+  }
+}
+
+/** "Keep it" (ADR-920): convert a RETIRED journey-sourced row into the member's OWN practice —
+ *  the identity conversion at journey completion ("you practiced this daily for four weeks;
+ *  keep it"). The row becomes source='self' with a fresh window under the chosen term (default
+ *  ongoing) and re-activates. TIGHTLY SCOPED on purpose: only a source='journey' AND
+ *  active=false row converts — a LIVE journey row belongs to a still-running journey and a
+ *  self row already carries the member's own chosen term, so neither may be overwritten by
+ *  this action (which any signed-in member can call with any practice id). Returns whether a
+ *  row actually converted. */
+export async function convertJourneyRowToSelf(
+  profileId: string,
+  practiceId: string,
+  termWeeks: number | null = null,
+): Promise<boolean> {
+  // Keeping the Anchor mints a SELF row, so the cap applies here too (review defect: this
+  // was one of the doors that bypassed it). At the cap the conversion refuses; the caller
+  // surfaces the message and the member can swap first.
+  if (!withinActiveCap(await countActiveSelfAdoptions(profileId))) return false
+  const today = await resolveMemberDay(profileId)
+  const window = termWindow(today, coerceTermWeeks(termWeeks))
+  const { data, error } = await db()
     .from('member_practices')
-    .update({ active: false })
+    .update({
+      active: true,
+      source: 'self',
+      journey_plan_id: null,
+      term_weeks: termWeeks == null ? null : coerceTermWeeks(termWeeks),
+      starts_on: window.startsOn,
+      ends_on: termWeeks == null ? null : window.endsOn,
+      retired_at: null,
+      retired_reason: null,
+    } as never)
     .eq('profile_id', profileId)
     .eq('practice_id', practiceId)
+    .eq('source', 'journey')
+    .eq('active', false)
+    .select('id')
+  if (error) {
+    log.error('practices.keep_convert_failed', { practiceId, error: error.message })
+    return false
+  }
+  return ((data ?? []) as { id: string }[]).length > 0
+}
+
+/** Retire a member's adoption: active=false plus WHY and WHEN, so history survives (the old
+ *  bare toggle lost it). `reason` defaults to 'dropped' (the member removed it by hand). */
+export async function dropMemberPractice(
+  profileId: string,
+  practiceId: string,
+  reason: RetireReason = 'dropped',
+): Promise<void> {
+  const { error } = await db()
+    .from('member_practices')
+    .update({ active: false, retired_at: new Date().toISOString(), retired_reason: reason } as never)
+    .eq('profile_id', profileId)
+    .eq('practice_id', practiceId)
+  if (error) log.error('practices.drop_write_failed', { practiceId, error: error.message })
 }
 
 // --- Activity history -----------------------------------------------------

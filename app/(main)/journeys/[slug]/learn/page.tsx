@@ -9,12 +9,13 @@ import { createClient } from '@/lib/supabase/server'
 import { getJourneyPlayerView } from '@/lib/journeys/store'
 import { getMemberRunForPlan, getCohortProgress, getSoloEnrollmentStart, getKickoffEvent, getPhaseEvents, type KickoffEvent } from '@/lib/journeys/runs'
 import { HostSchedule } from '@/components/journey/v2/learn/host-schedule'
-import { getPlanAuthor } from '@/lib/journey-plans'
+import { getPlanAuthor, isPlanAdopted } from '@/lib/journey-plans'
 import { getJourneyLearnExtras, getLinkedEvent, getLoggedTodayPracticeIds, pillarsById } from '@/lib/journeys/learn'
 import { getPartialMapToday, type PartialToday } from '@/lib/practices'
 import { LearnPlayer } from '@/components/journey/v2/learn/learn-player'
 import { PracticeDetail } from '@/components/journey/v2/learn/practice-detail'
 import { AboutThisJourneyHero, MeetingBlock, AuthorBlock } from '@/components/journey/v2/learn/journey-overview'
+import { LeaveJourneyButton } from '@/components/journey/v2/learn/leave-journey-button'
 import { CohortMeter } from '@/components/journey/v2/cohort-meter'
 import { DetailTemplate, PageHero, HERO_ACTION_CLASS } from '@/components/templates'
 import { ShareImageProvider } from '@/components/qr/share-image-context'
@@ -75,9 +76,10 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
 
   // The Events each touchpoint gathers around (the Circle Meetup + the Weekend Gathering, ADR-307),
   // resolved to link targets. Null when unset or gone — the block then shows a plain line.
-  const [meetupEvent, gatheringEvent] = await Promise.all([
+  const [meetupEvent, gatheringEvent, adopted] = await Promise.all([
     getLinkedEvent(extras.meeting.eventId),
     getLinkedEvent(extras.meeting.gathering?.eventId ?? null),
+    isPlanAdopted(profileId, view.plan.id),
   ])
 
   // If the member is in a Circle Run of this Journey, show the shared cohort meter.
@@ -289,6 +291,14 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
         anchorStart={anchorStart}
         dripIntervalDays={dripIntervalDays}
       />
+
+      {/* The quiet exit (adoption-lifecycle Phase 0): only an actually-enrolled member sees it.
+          Sits below the player so it never competes with the course itself. */}
+      {adopted ? (
+        <div className="mt-10 border-t border-border pt-6">
+          <LeaveJourneyButton planId={view.plan.id} journeyTitle={plan.title} />
+        </div>
+      ) : null}
     </DetailTemplate>
     </ShareImageProvider>
   )

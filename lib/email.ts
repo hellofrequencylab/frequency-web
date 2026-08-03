@@ -318,8 +318,10 @@ export async function sendWeeklyDigestEmail(params: {
   upcomingEvents:     { title: string; startsAt: string; location: string | null; url: string }[]
   topStreak:          { type: string; count: number } | null
   rank:               { name: string | null; zaps: number } | null
+  /** Completed-term practices not picked back up (ADR-920 Phase 3): the "Go again" lines. */
+  goAgain?:           { title: string; url: string }[]
 }) {
-  const { to, recipientName, recipientProfileId, dispatches, upcomingEvents, topStreak, rank } = params
+  const { to, recipientName, recipientProfileId, dispatches, upcomingEvents, topStreak, rank, goAgain = [] } = params
 
   // Lifecycle category covers periodic engagement nudges (Day 1/3/7 emails
   // and this weekly digest). One unsubscribe lever for "Frequency telling
@@ -334,8 +336,8 @@ export async function sendWeeklyDigestEmail(params: {
     to,
     subject: `Your week on Frequency`,
     headers: listUnsubscribeHeaders(unsubscribeUrl),
-    html:    digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank, unsubscribeUrl }),
-    text:    digestText({ recipientName, dispatches, upcomingEvents, topStreak, rank, unsubscribeUrl }),
+    html:    digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank, goAgain, unsubscribeUrl }),
+    text:    digestText({ recipientName, dispatches, upcomingEvents, topStreak, rank, goAgain, unsubscribeUrl }),
   })
 }
 
@@ -1358,12 +1360,13 @@ function formatDigestTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
-function digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank, unsubscribeUrl }: {
+function digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank, goAgain, unsubscribeUrl }: {
   recipientName: string
   dispatches:     { title: string; excerpt: string | null; url: string; authorName: string }[]
   upcomingEvents: { title: string; startsAt: string; location: string | null; url: string }[]
   topStreak:      { type: string; count: number } | null
   rank:           { name: string | null; zaps: number } | null
+  goAgain:        { title: string; url: string }[]
   unsubscribeUrl: string
 }): string {
   const dispatchesHtml = dispatches.length ? `
@@ -1405,6 +1408,16 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank
     </div>
   ` : ''
 
+  const goAgainHtml = goAgain.length ? `
+    <h2 style="font-size:14px;font-weight:800;color:#9A5E12;text-transform:uppercase;letter-spacing:0.08em;margin:32px 0 12px;">Go again?</h2>
+    ${goAgain.map((g) => `
+      <p style="margin:0 0 10px;font-size:14px;color:#3D352A;">
+        You finished your run of <strong>${escapeHtml(g.title)}</strong>.
+        <a href="${g.url}" style="font-weight:600;color:#9A5E12;text-decoration:none;">Take it on again →</a>
+      </p>
+    `).join('')}
+  ` : ''
+
   return emailShell(`
     <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
       Your week
@@ -1412,6 +1425,7 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank
     <h1 style="${h1Style}">Hi ${recipientName},</h1>
     <p style="${pStyle}">Here's what's happening in your community this week.</p>
     ${statusHtml}
+    ${goAgainHtml}
     ${dispatchesHtml}
     ${eventsHtml}
     <hr style="${dividerStyle}">
@@ -1425,12 +1439,13 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank
   `)
 }
 
-function digestText({ recipientName, dispatches, upcomingEvents, topStreak, rank, unsubscribeUrl }: {
+function digestText({ recipientName, dispatches, upcomingEvents, topStreak, rank, goAgain, unsubscribeUrl }: {
   recipientName: string
   dispatches:     { title: string; excerpt: string | null; url: string; authorName: string }[]
   upcomingEvents: { title: string; startsAt: string; location: string | null; url: string }[]
   topStreak:      { type: string; count: number } | null
   rank:           { name: string | null; zaps: number } | null
+  goAgain:        { title: string; url: string }[]
   unsubscribeUrl: string
 }): string {
   const lines: string[] = [`Hi ${recipientName}, here's your week on Frequency.\n`]
@@ -1439,6 +1454,14 @@ function digestText({ recipientName, dispatches, upcomingEvents, topStreak, rank
     lines.push('YOUR STANDING')
     if (rank)      lines.push(`  ⚡ ${rank.zaps} Zaps · ${rank.name}`)
     if (topStreak) lines.push(`  🔥 ${topStreak.count}-day ${topStreak.type} streak`)
+    lines.push('')
+  }
+
+  if (goAgain.length) {
+    lines.push('GO AGAIN?')
+    for (const g of goAgain) {
+      lines.push(`  · You finished your run of ${g.title}. Take it on again: ${g.url}`)
+    }
     lines.push('')
   }
 

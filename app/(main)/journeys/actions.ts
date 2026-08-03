@@ -12,6 +12,7 @@ import {
   setPlanOfficial,
   setPlanWindow,
   adoptPlan,
+  leavePlan,
   forkPlan,
   duplicatePlan,
   planAuthorId,
@@ -80,6 +81,27 @@ export async function adoptJourney(planId: string): Promise<ActionResult> {
   if (meta.author_id !== profileId && meta.visibility === 'private') return fail('Not allowed.')
   await adoptPlan(profileId, planId)
   revalidatePath('/journeys', 'layout')
+  return ok()
+}
+
+/** Leave a Journey you are taking: deactivates the plan adoption, removes your unfinished
+ *  enrollment (solo or Run), and retires the journey-sourced practice rows it wrote (your
+ *  SELF-adopted practices are untouched). Self-scoped — the only profile it can touch is the
+ *  caller's own.
+ *  A host of a LIVE Run of this plan cannot leave it out from under their cohort: the run's
+ *  meter and anchor enumerate enrollments, so the host leaves by ending the Run instead. */
+export async function leaveJourneyAction(planId: string): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not allowed.')
+  if (!planId) return fail('Journey not found.')
+  const { getMemberRunForPlan } = await import('@/lib/journeys/runs')
+  const run = await getMemberRunForPlan(profileId, planId)
+  if (run && run.hostId === profileId && run.status === 'active') {
+    return fail('You host this Run. End the Run first, then leave.')
+  }
+  await leavePlan(profileId, planId)
+  revalidatePath('/journeys', 'layout')
+  revalidatePath('/practices')
   return ok()
 }
 

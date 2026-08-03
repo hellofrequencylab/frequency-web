@@ -36,8 +36,10 @@ export const spaceHasContent = cache(async (): Promise<boolean> => {
   try {
     const [events, practices, journeys, circles] = await Promise.all([
       listEventsForSpace(space.id, { limit: 1 }),
-      listPracticesForSpace(space.id, 1),
-      listJourneyPlansForSpace(space.id, 1),
+      // publishedOnly: presence gates PUBLIC chrome ("any published content", per this
+      // function's own contract), so a draft must not count as content.
+      listPracticesForSpace(space.id, 1, { publishedOnly: true }),
+      listJourneyPlansForSpace(space.id, 1, { publishedOnly: true }),
       listCirclesForSpace(space.id, 1),
     ])
     const liveEvents = events.filter((e) => !e.is_cancelled)

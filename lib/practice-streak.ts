@@ -689,9 +689,8 @@ export interface GrantFreezeResult {
  * Idempotency / charge is the store's job (the store_redemptions row debits the Gems);
  * this just moves the reserve. Service-role path.
  *
- * NOTE: the "Freezes are never purchasable" note in lib/streak predates ADR-305, which
- * adds buying one with Gems as an explicit second sink. The cap still holds for both
- * the earned and the bought freeze, so buying can never exceed STREAK_FREEZE_CAP.
+ * The cap holds for both the earned and the bought freeze (ADR-305's 50-Gem Vault SKU),
+ * so buying can never exceed STREAK_FREEZE_CAP. lib/streak's comment now says so too.
  */
 export async function grantStreakFreeze(profileId: string): Promise<GrantFreezeResult> {
   const admin = createAdminClient()

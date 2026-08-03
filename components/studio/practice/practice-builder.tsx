@@ -16,6 +16,7 @@ import { ImageUpload } from '@/components/ui/image-upload'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { isError } from '@/lib/action-result'
 import { updatePracticeAction, setPracticeTagsAction, setPracticeRewardAction, deleteOwnPracticeAction } from '@/app/(main)/practices/actions'
+import { submitPracticeForReviewAction } from '@/app/(main)/practices/create-actions'
 import type { PracticeEdit, WeightClass, FocusDetail, TimerKind, MindlessMode } from '@/lib/practices'
 import { isTierAllowed, clampTierToDuration, TIER_FLOOR_MIN } from '@/lib/practices/tiers'
 import { AUTHORED_WARMUP_PRESETS, BREATH_PATTERNS, WARMUP_MESSAGE_MAX } from '@/lib/on-air'
@@ -116,6 +117,11 @@ export interface PracticeBuilderProps {
    *  Journey builder's Vera composer. Build the whole Practice from a line, or edit it in plain
    *  words. Optional so the builder still composes standalone (e.g. the Studio popup). */
   veraComposer?: ReactNode
+  /** The review status + library flag (ADR-920 Phase 5): drives the builder's Publish section
+   *  (status line + "Submit to the library" for the author's own private draft). Omitted =
+   *  the section is hidden (legacy mounts). */
+  status?: string | null
+  isPublic?: boolean
 }
 
 export function PracticeBuilder(props: PracticeBuilderProps) {
@@ -183,6 +189,9 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
   const [rewardZaps, setRewardZaps] = useState(props.rewardZaps != null ? String(props.rewardZaps) : '')
   const [rewardNote, setRewardNote] = useState(props.rewardNote ?? '')
   const [confirmDelete, setConfirmDelete] = useState(false)
+  // The Publish section's submit state (ADR-920 Phase 5).
+  const [submitting, setSubmitting] = useState(false)
+  const [submittedNow, setSubmittedNow] = useState(false)
   const [deleting, startDelete] = useTransition()
   // Time-vs-points (ADR-442): the current length gates which Effort tiers are earnable.
   const durNum = durationMin.trim() === '' ? null : Number(durationMin)
@@ -878,6 +887,58 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
       </div>
 
       <p className="mt-4 text-xs text-subtle">Changes apply everywhere this practice appears.</p>
+
+      {/* Publish (ADR-920 Phase 5): the status the author could previously never see, and the
+          explicit "Submit to the library" a draft needs to reach review. Before this, a Crew
+          practice entered the review queue half-built, at the moment of creation, and the
+          author was never told it was under review or why it was not visible. */}
+      {props.status != null && (
+        <div className="mt-6 border-t border-border pt-4">
+          <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Library</p>
+          {props.isPublic || props.status === 'approved' ? (
+            <p className="mt-1.5 text-sm text-text">
+              <span className="font-semibold text-success">Live.</span>{' '}
+              {props.isPublic ? 'In the public library for anyone to adopt.' : 'Live to your space.'}
+            </p>
+          ) : props.status === 'pending' ? (
+            <p className="mt-1.5 text-sm text-text">
+              <span className="font-semibold text-warning">In review.</span> A curator will look it
+              over; it goes live when approved. You can keep editing meanwhile.
+            </p>
+          ) : props.status === 'rejected' ? (
+            <p className="mt-1.5 text-sm text-text">
+              <span className="font-semibold text-danger">Not approved.</span> Rework it and submit
+              again when it is ready.
+            </p>
+          ) : (
+            <p className="mt-1.5 text-sm text-muted">
+              <span className="font-semibold text-text">Private draft.</span> Only you can see it.
+              Submit it to the library when the guide and timer are ready.
+            </p>
+          )}
+          {(props.status === 'draft' || props.status === 'rejected') && (
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={() => {
+                setSubmitting(true)
+                void submitPracticeForReviewAction(props.id).then((res) => {
+                  setSubmitting(false)
+                  if (!isError(res)) setSubmittedNow(true)
+                })
+              }}
+              className="mt-2.5 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+            >
+              {submitting ? 'Submitting…' : submittedNow ? 'Submitted' : 'Submit to the library'}
+            </button>
+          )}
+          {submittedNow && (
+            <p className="mt-1.5 text-2xs text-success">
+              Sent for review. A curator will take a look.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Danger zone — delete your own practice (owner-or-admin, re-checked server-side). */}
       <div className="mt-6 border-t border-border pt-4">

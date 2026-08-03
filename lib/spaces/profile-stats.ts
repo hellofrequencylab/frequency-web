@@ -51,8 +51,10 @@ function isStatMetric(metric: string): metric is StatMetric {
 export async function resolveProfileStats(spaceId: string): Promise<ResolvedStat[]> {
   const [events, practices, journeys, circles, members] = await Promise.all([
     listEventsForSpace(spaceId, { limit: 200 }),
-    listPracticesForSpace(spaceId, 200),
-    listJourneyPlansForSpace(spaceId, 200),
+    // publishedOnly: these counts render on the PUBLIC hero, so drafts must not be counted
+    // (a Space with 3 private drafts must not advertise "Practices 3" over an empty block).
+    listPracticesForSpace(spaceId, 200, { publishedOnly: true }),
+    listJourneyPlansForSpace(spaceId, 200, { publishedOnly: true }),
     listCirclesForSpace(spaceId, 200),
     listSpaceMembers(spaceId),
   ])

@@ -88,6 +88,37 @@ progress (12 zaps at 75/25 → 9 primary, 3 secondary). It **never changes the w
 is not an inflation or farming lever. The per-Pillar attribution ledger is **Phase 4**; the columns
 ship Phase 1 so data is correct from day one.
 
+## 4a. Adoption is a commitment with a shape (ADR-920, 2026-08-03)
+
+`member_practices` carries the full lifecycle now, not a permanent boolean:
+
+| Column | Meaning |
+|---|---|
+| `source` | `self` (the member tapped Adopt) vs `journey` (enrollment wrote it) |
+| `journey_plan_id` | Which Journey wrote a `journey` row (phase rollover retires exactly its own leg) |
+| `term_weeks` | The commitment: presets 2 / 4 (default) / 8 ("makes it stick", ~66-day automaticity median); NULL = ongoing |
+| `starts_on` / `ends_on` | The member-local window (same day framing as `practice_logs.logged_for`); `ends_on` inclusive |
+| `retired_at` / `retired_reason` | The exit, with the why: `completed` / `phase_ended` / `dropped` / `swapped` |
+| `cue` | The member's implementation intention ("After my morning coffee"), asked as "When will you do it?" — member copy never says "cue" |
+
+The rules, each enforced in code and covered by tests (`lib/practices/adoption*.test.ts`):
+
+- **The cap is a swap.** 5 active self adoptions (`ACTIVE_PRACTICE_CAP`); adopting a 6th offers
+  a swap (`swapped`), never a wall, never data loss. Journey rows ride outside the cap.
+- **Journeys are phase-scoped.** Enrolling adopts the current leg union the Anchor
+  (`lib/journeys/leg-targets.ts`, one computation for enroll + Run start + the On Air reader).
+  Rollover retires last week's rows (`phase_ended`) via the read-time reconcile
+  (`syncJourneyAdoptionRows`); completion/leave/Run-end retire the rest; the completion
+  celebration offers **Keep it** on the retired Anchor (convert to self, `convertJourneyRowToSelf`,
+  guarded to retired journey rows only).
+- **A term completes loudly.** The hourly `practice-lifecycle` cron retires past-`ends_on` self
+  terms (`completed`) in the member's own calendar and sends the notice with the re-adopt door;
+  the Sunday digest re-offers un-readopted completions ("Go again?") before the Monday
+  fresh-start landmark. Ongoing rows quiet for 14 days get ONE "still keeping this?" note.
+- **Reminders are member-shaped.** At most one a day, at the member's own habitual hour (mode of
+  their log hours), through the `practice` notification category (in-app default-on, push
+  opt-in, email off by design).
+
 ## 5. Search + faceting contract (Phase 1)
 
 - **Hybrid retrieval RPC**: full-text (`search_vector` / GIN) + vector (`embedding` / HNSW) fused

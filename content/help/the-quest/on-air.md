@@ -3,7 +3,7 @@ title: Mindless, the practice timer
 description: One timer, two modes. Be Still for the quiet sit, Get Moving for a walk, run, yoga or workout. Then collect your rewards, streak and next assignment.
 category: the-quest
 order: 4
-updated: 2026-07-09
+updated: 2026-08-03
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -31,6 +31,10 @@ when you have one to do, and on **Free Practice** once you've done it (or if you
 haven't adopted anything yet), so you can keep going as long as you like. You still
 get a say over how you do it:
 
+- **When you are on a Journey, its week drives the list.** Mindless shows the
+  practices of your current Journey week plus the Anchor (the daily through-line),
+  with a chip saying which week it is, **Week 2 of 4**, so the swap is never a
+  mystery. Finish or leave the Journey and your own practices come straight back.
 - **The practice is chosen for you.** If you have a practice due today, Mindless
   opens on it so a tap starts it, banking the right log with the right length. Once
   today's practice is done, it opens on **Free Practice** so you can tune out any

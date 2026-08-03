@@ -19,6 +19,11 @@ export async function submitToLibrary(type: 'practice' | 'journey', id: string):
   if (!me) return fail('Sign in first.')
   const d = db()
   if (type === 'practice') {
+    // The public practice library is the paid surface (ADR-920 review): the same
+    // practice.create gate the other two submit paths enforce, so this older path
+    // cannot route around the Crew wall.
+    const { canCreate } = await import('@/lib/core/load-capabilities')
+    if (!(await canCreate('practice.create'))) return fail('Publishing to the library comes with Crew.')
     const { data: row } = await d.from('practices').select('created_by').eq('id', id).maybeSingle()
     if ((row as { created_by?: string } | null)?.created_by !== me) return fail('You can only submit practices you created.')
     const { error } = await d.from('practices').update({ status: 'pending' }).eq('id', id)

@@ -3,7 +3,7 @@ title: Practices, choose, do, log
 description: Adopt a practice or follow your Circle's, then log it each day to earn Zaps and build your streak.
 category: getting-started
 order: 3
-updated: 2026-07-09
+updated: 2026-08-03
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -48,11 +48,22 @@ a sit and **Get Moving** for a walk, run, yoga, strength, stretch or play. A tim
 practice can come **preset by whoever built it**, its mode, its length, its warm-up,
 even a full workout like Tabata, so it opens ready to go and you just start.
 
-## Adopt or change anytime
+## Adopt for a stretch, or for good
 
-Adopt as many practices as you like from the library, and remove any that no longer
-fit. If you host a Circle, you can change the Circle's practice whenever the focus
-shifts.
+When you adopt a practice, you pick how long you are taking it on: **2 weeks**, **4
+weeks** (what most people pick), **8 weeks** (long enough to make it stick), or
+**ongoing**. You can also note when you plan to do it ("After my morning coffee"),
+which makes it far more likely to happen. Your card shows where you stand, **Week 2
+of 4 · Day 9 of 28**, from day one.
+
+When a commitment completes, you get the note and the choice: go again, keep it going
+for good, or let it rest. Your history stays yours either way.
+
+Your list holds up to **five** practices you adopted yourself, on purpose: the ones
+you keep are the ones that happen. Taking on a sixth offers a **swap**, pick one to
+set down and the new one takes its place. Practices a **Journey** gives you do not
+count against the five; they come and go with the Journey. If you host a Circle, you
+can change the Circle's practice whenever the focus shifts.
 
 ## Make it your own
 
@@ -61,7 +72,9 @@ You can shape practices, not just pick them:
 - **Create one with Vera.** On **Practices**, hit **Create a practice** to open the
   builder. Answer a few quick questions (who it is for, the act itself, what you want
   out of it, how often, and how long) and Vera drafts the whole thing: a name, a hook,
-  the steps, a cadence, and a Pillar. Review it, change anything, and create. Already
+  the steps, a cadence, a Pillar, and **how it is done**, a stillness timer, a moving
+  timer, or a simple log, with a warm-up line, shown before you create it. Review it,
+  change anything, and create; every part of the timer still tunes in the editor. Already
   wrote your practice somewhere else? Paste it and Vera shapes it into the same fields.
   Want to start from scratch instead? Pick "Skip, I'll build it myself" to go straight to the editor.
   Creating a practice is a **Crew** thing, and Crew is **free during the beta**: if you
@@ -99,10 +112,11 @@ make your own. Open one and hit **Claim & make it yours**:
    onto your list, and you earn Zaps for claiming your first one.
 
 From there it is yours: edit it anytime, log it daily, and, if you want, share it back
-to the community library for others to find. On your own practice you’ll see a **Propose
-to Library** button: tap it and your practice goes to the community leaders for a quick
-review. Once they approve it, it appears in the library for everyone (until then it shows
-as “In review”, and it stays private to you).
+to the community library for others to find. A practice you build starts as a **private
+draft**, only you can see it, and the editor's **Library** section always says where it
+stands: private draft, in review, or live. When it is ready, hit **Submit to the
+library** and it goes to the community leaders for a quick review. Once they approve it,
+it appears in the library for everyone; until then it stays private to you.
 
 ## What each practice shows
 

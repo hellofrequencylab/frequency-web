@@ -13,8 +13,10 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { adoptPractice } from '@/lib/practices'
+import { adoptPracticesForJourney, retireJourneyPracticeRows } from '@/lib/practices'
+import { computeLegTargets } from '@/lib/journeys/leg-targets'
 import { loadRootSpaceId } from '@/lib/spaces/store'
+import { log } from '@/lib/log'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -757,22 +759,139 @@ export async function isPlanAdopted(profileId: string, planId: string): Promise<
   return !!(data as { active: boolean } | null)?.active
 }
 
-/** Adopt a community journey: its practices flow into the member's own
- *  member_practices (the free loop, via adoptPractice), and we record the
- *  adoption (incrementing adopt_count on first adoption only). */
-export async function adoptPlan(profileId: string, planId: string): Promise<void> {
-  const client = db()
-  const { data: itemRows } = await client.from('journey_plan_items').select('practice_id').eq('plan_id', planId)
-  // Only practice blocks carry a practice_id (phase/module blocks are null); adopt each DISTINCT one
-  // so joining a Journey flows its practices into the member's list and auto-links them in On Air.
-  const practiceIds = [
+/** The distinct practice ids a plan's block tree carries (phase/module blocks are null). */
+async function listPlanPracticeIds(planId: string): Promise<string[]> {
+  const { data: itemRows } = await db().from('journey_plan_items').select('practice_id').eq('plan_id', planId)
+  return [
     ...new Set(
       ((itemRows as { practice_id: string | null }[] | null) ?? [])
         .map((r) => r.practice_id)
         .filter((id): id is string => !!id),
     ),
   ]
-  for (const pid of practiceIds) await adoptPractice(profileId, pid)
+}
+
+/** A member's existing SOLO enrollment start for a plan, or null (fresh enroll). Local twin of
+ *  lib/journeys/runs.getSoloEnrollmentStart — inlined because runs.ts imports THIS module, so
+ *  importing it back would cycle. */
+async function getSoloAnchorStart(profileId: string, planId: string): Promise<Date | null> {
+  const { data } = await db()
+    .from('journey_enrollments')
+    .select('started_at')
+    .eq('profile_id', profileId)
+    .eq('plan_id', planId)
+    .is('run_id', null)
+    .maybeSingle()
+  const started = (data as { started_at: string | null } | null)?.started_at
+  return started ? new Date(started) : null
+}
+
+/** The ENROLL-TIME target set (ADR-920 Phase 2): the current leg's practices union the
+ *  Anchor(s), never the whole journey. `anchorStart` = the Run's start for cohort enrollment,
+ *  or "now" for a fresh solo enroll (week 1). Falls back to every practice when the plan has
+ *  no phases (a flat legacy plan). */
+async function planEnrollTargetIds(planId: string, anchorStart: Date | null): Promise<string[]> {
+  try {
+    const { data: items } = await db()
+      .from('journey_plan_items')
+      .select('id, parent_id, block_type, sort_order, title, required, est_minutes, practice_id, settings')
+      .eq('plan_id', planId)
+    const blocks = ((items ?? []) as Record<string, unknown>[]).map((r) => ({
+      id: String(r.id),
+      parent_id: (r.parent_id as string) ?? null,
+      block_type: (r.block_type as string) ?? 'practice',
+      sort_order: Number(r.sort_order ?? 0),
+      title: (r.title as string) ?? null,
+      required: (r.required as boolean) ?? true,
+      est_minutes: (r.est_minutes as number) ?? null,
+      practice_id: (r.practice_id as string) || null,
+      settings: (r.settings as { anchor?: boolean } | null) ?? null,
+    }))
+    const { data: planRow } = await db()
+      .from('journey_plans')
+      .select('drip_interval_days')
+      .eq('id', planId)
+      .maybeSingle()
+    const drip = Number((planRow as { drip_interval_days: number | null } | null)?.drip_interval_days ?? 7)
+    const targets = computeLegTargets(blocks, anchorStart, drip)
+    if (targets.weeks > 0) return targets.targetIds
+    return listPlanPracticeIds(planId)
+  } catch {
+    return listPlanPracticeIds(planId)
+  }
+}
+
+/** Adopt a plan's practices + activate journey_plan_adoptions for COHORT Run members, in bulk.
+ *  The lean twin of adoptPlan for host-initiated enrollment (startRun/enrollInRun): the members'
+ *  journey_enrollments rows (run_id set) are written by the Run path, so no solo enrollment here.
+ *  Deliberately NO adopt_count bump, NO validated-creation reward, and NO activation tracking —
+ *  auto-enrolling a Circle must never pay the plan's creator per head or mint activation/referral
+ *  signals for members who did nothing themselves (a host with a big Circle would be a farm).
+ *  Without this, a Run member had no adopted practices and no current-leg row at all (the
+ *  getCurrentLeg reader keys on journey_plan_adoptions), so the flagship cohort path showed
+ *  nothing in On Air. Bulk (3-4 queries for a whole cohort); idempotent; never throws. */
+export async function adoptPlanForRunMembers(
+  profileIds: string[],
+  planId: string,
+  /** The Run's drip anchor (started_at); omitted = now (a Run starting today = week 1). */
+  runStartedAt?: Date | null,
+): Promise<void> {
+  if (!profileIds.length) return
+  try {
+    const client = db()
+    // Phase-scoped (ADR-920 Phase 2): the current leg union the Anchor(s), never the whole
+    // journey. A mid-flight joiner (enrollInRun) gets the week the Run is actually on.
+    const practiceIds = await planEnrollTargetIds(planId, runStartedAt ?? new Date())
+    await adoptPracticesForJourney(profileIds, practiceIds, planId)
+    // journey_plan_adoptions in one upsert: unique (plan_id, profile_id) re-activates cleanly.
+    await client.from('journey_plan_adoptions').upsert(
+      profileIds.map((pid) => ({ plan_id: planId, profile_id: pid, active: true })),
+      { onConflict: 'plan_id,profile_id' },
+    )
+  } catch {
+    // adoption is repairable later (re-enroll / adopt by hand); the Run itself stands
+  }
+}
+
+/** Leave a Journey: deactivate the member's journey_plan_adoptions row (so the current-leg
+ *  reader stops surfacing its practices in On Air) and remove their UNFINISHED enrollments on
+ *  the plan (solo and Run alike — completed enrollments stay, they are history). Does NOT touch
+ *  member_practices: what the member adopted stays theirs to keep or drop by hand (Phase 2 of
+ *  the adoption-lifecycle plan retires journey-sourced rows properly). Idempotent; never throws. */
+export async function leavePlan(profileId: string, planId: string): Promise<void> {
+  const client = db()
+  try {
+    await client
+      .from('journey_plan_adoptions')
+      .update({ active: false })
+      .eq('plan_id', planId)
+      .eq('profile_id', profileId)
+    await client
+      .from('journey_enrollments')
+      .delete()
+      .eq('plan_id', planId)
+      .eq('profile_id', profileId)
+      .is('completed_at', null)
+    // The journey's OWN practice rows retire with it (reason 'dropped'); the member's
+    // self-adopted rows are untouched (ADR-920 Phase 2).
+    await retireJourneyPracticeRows(profileId, planId, 'dropped')
+  } catch {
+    // leaving is best-effort; a partial leave is re-runnable
+  }
+}
+
+/** Adopt a community journey: its practices flow into the member's own
+ *  member_practices (the free loop, via adoptPractice), and we record the
+ *  adoption (incrementing adopt_count on first adoption only). */
+export async function adoptPlan(profileId: string, planId: string): Promise<void> {
+  const client = db()
+  // Phase-scoped, journey-sourced adoption (ADR-920 Phase 2): the current leg union the
+  // Anchor(s), never the whole journey (a fresh solo enroll anchors at now = week 1; a
+  // re-adopt mid-drip gets the week the member is actually on via their enrollment start).
+  // Bulk, labeled source='journey', never clobbering an active self-adoption's term.
+  const soloStart = await getSoloAnchorStart(profileId, planId)
+  const practiceIds = await planEnrollTargetIds(planId, soloStart ?? new Date())
+  await adoptPracticesForJourney([profileId], practiceIds, planId)
 
   // Ensure a SOLO enrollment (journey_enrollments, run_id null) exists for this adoption. journey_plan_adoptions
   // (written below) is kept for the surfaces that still read it (content-signals, coop-pulse, the prompt cron,
@@ -981,8 +1100,28 @@ export async function duplicatePlan(profileId: string, planId: string): Promise<
 
 /** Delete one journey plan (its items + adoptions cascade via FK). The single-plan admin
  *  removal behind deleteJourneyPlanAction; the action layer gates it (curators only). */
+/** Retire EVERY member's active journey-sourced practice rows for a plan (all members at
+ *  once — the pre-delete sweep). The FK on member_practices.journey_plan_id is SET NULL, so
+ *  without this a deleted plan would orphan active journey rows nobody could ever reconcile
+ *  (the retire-by-plan filters key on journey_plan_id). Never throws. */
+async function retireAllJourneyRowsForPlan(planId: string): Promise<void> {
+  try {
+    await db()
+      .from('member_practices')
+      .update({ active: false, retired_at: new Date().toISOString(), retired_reason: 'dropped' })
+      .eq('journey_plan_id', planId)
+      .eq('source', 'journey')
+      .eq('active', true)
+  } catch {
+    // best-effort; the delete still proceeds (rows orphan retired-less, but inactive-by-plan
+    // cleanup is repairable by hand)
+  }
+}
+
 export async function deletePlan(planId: string): Promise<void> {
-  await db().from('journey_plans').delete().eq('id', planId)
+  await retireAllJourneyRowsForPlan(planId)
+  const { error } = await db().from('journey_plans').delete().eq('id', planId)
+  if (error) log.error('journeys.delete_plan_failed', { planId, error: error.message })
 }
 
 // --- Demo cleanup ---------------------------------------------------------
@@ -995,7 +1134,12 @@ export async function deletePlansByAuthors(authorIds: string[]): Promise<void> {
   if (!authorIds.length) return
   const client = db()
   for (let i = 0; i < authorIds.length; i += 200) {
-    await client.from('journey_plans').delete().in('author_id', authorIds.slice(i, i + 200))
+    const batch = authorIds.slice(i, i + 200)
+    // Retire the members' journey rows for these plans first (same reason as deletePlan).
+    const { data: planRows } = await client.from('journey_plans').select('id').in('author_id', batch)
+    for (const p of (planRows ?? []) as { id: string }[]) await retireAllJourneyRowsForPlan(p.id)
+    const { error } = await client.from('journey_plans').delete().in('author_id', batch)
+    if (error) log.error('journeys.delete_plans_by_authors_failed', { error: error.message })
   }
 }
 

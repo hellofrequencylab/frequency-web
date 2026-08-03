@@ -103,6 +103,10 @@
     {
       "path": "/api/cron/billing-renewals",
       "schedule": "10 4 * * *"
+    },
+    {
+      "path": "/api/cron/practice-lifecycle",
+      "schedule": "5 * * * *"
     }
   ]
 }

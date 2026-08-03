@@ -48,9 +48,9 @@ export default async function NewJourneyPage({
     if (!caps.canEditProfile) redirect(`/spaces/${spaceSlug}`)
     paidOwner = asSpacePlan(space.plan) !== 'free'
   } else {
-    // Real Crew (or steward/staff) may build a personal journey; a free member is bounced to the
-    // library, where "New journey" shows the free-beta upgrade popup (ADR-414).
-    if (!(await canCreate('journey.create'))) redirect('/journeys')
+    // Drafting is open to any signed-in member (FIRST ONE FREE, ADR-920/908/838); the free
+    // limit is the journey_publish meter at the publish gate. Signed-out lands on sign-in.
+    if (!(await canCreate('journey.create'))) redirect('/sign-in?next=/journeys/new')
   }
 
   // Lightweight template metadata for the "Start from a template" picker. The full template trees
