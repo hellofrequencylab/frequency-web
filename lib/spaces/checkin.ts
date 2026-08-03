@@ -9,8 +9,8 @@
 //     first, with each checker's display name. Space A can never read Space B's check-ins.
 //   • countCheckins(spaceId, sinceTs?) — the analytics count for the StatCard.
 //
-// Backed by the service-role admin client plus untyped casts (the new space_id/kind columns are not in
-// the generated DB types yet, ADR-246, mirroring lib/spaces/memberships.ts). The server is the
+// Backed by the service-role admin client (the space_id/kind columns are in the generated DB types,
+// so access is typed; mirrors lib/spaces/memberships.ts). The server is the
 // authority for "which Space" and "what may this caller do here" (P5, ADR-328/329): the OWNER reads +
 // the node-create are gated on canEditProfile (a janitor previewing as staff may READ); the actual
 // scan-capture stays on the existing PUBLIC claim path and is NOT forked here. Reads FAIL-SAFE (empty
@@ -67,37 +67,15 @@ export function normalizeSince(raw: unknown): string | null {
   return new Date(ms).toISOString()
 }
 
-// ── IO: the untyped admin-client seams (space_id/kind not in generated types yet, ADR-246) ──────
+// ── IO: the typed admin-client seams ────────────────────────────────────────────────────────────
 
-type NodeRow = { id: string; secret: string | null; space_id: string; kind: string }
-type CaptureRow = { id: string; actor_profile_id: string; captured_at: string }
+type NodeRow = { id: string; secret: string | null; space_id: string | null; kind: string }
 
-type NodeQuery = {
-  select: (cols: string) => NodeQuery
-  eq: (col: string, val: string) => NodeQuery
-  order: (col: string, opts: { ascending: boolean }) => NodeQuery
-  limit: (n: number) => NodeQuery
-  insert: (rows: Record<string, unknown>[]) => NodeQuery
-  maybeSingle: () => Promise<{ data: NodeRow | null; error: unknown }>
+function nodesTable() {
+  return createAdminClient().from('nodes')
 }
-type CaptureQuery = {
-  select: (cols: string) => CaptureQuery
-  eq: (col: string, val: string) => CaptureQuery
-  gte: (col: string, val: string) => CaptureQuery
-  order: (col: string, opts: { ascending: boolean }) => CaptureQuery
-  limit: (n: number) => CaptureQuery
-  then: (
-    resolve: (r: { data: CaptureRow[] | null; error: unknown }) => unknown,
-  ) => Promise<unknown>
-}
-
-function nodesTable(): NodeQuery {
-  const db = createAdminClient() as unknown as { from: (t: string) => NodeQuery }
-  return db.from('nodes')
-}
-function capturesTable(): CaptureQuery {
-  const db = createAdminClient() as unknown as { from: (t: string) => CaptureQuery }
-  return db.from('captures')
+function capturesTable() {
+  return createAdminClient().from('captures')
 }
 
 const NODE_COLS = 'id, secret, space_id, kind'
@@ -158,16 +136,10 @@ function randomSecret(): string {
  *  space-scoped node, so this never reaches past the tenant. */
 async function countCaptures(nodeId: string, since: string | null): Promise<number> {
   try {
-    const db = createAdminClient() as unknown as {
-      from: (t: string) => {
-        select: (c: string, opts: { count: 'exact'; head: true }) => {
-          eq: (col: string, val: string) => {
-            gte: (col: string, val: string) => Promise<{ count: number | null }>
-          } & Promise<{ count: number | null }>
-        }
-      }
-    }
-    const base = db.from('captures').select('id', { count: 'exact', head: true }).eq('node_id', nodeId)
+    const base = createAdminClient()
+      .from('captures')
+      .select('id', { count: 'exact', head: true })
+      .eq('node_id', nodeId)
     const { count } = await (since ? base.gte('captured_at', since) : base)
     return typeof count === 'number' ? count : 0
   } catch {
@@ -183,21 +155,7 @@ async function readCheckers(
   const out = new Map<string, { name: string; handle: string | null; avatarUrl: string | null }>()
   if (ids.length === 0) return out
   try {
-    const db = createAdminClient() as unknown as {
-      from: (t: string) => {
-        select: (c: string) => {
-          in: (
-            col: string,
-            vals: string[],
-          ) => Promise<{
-            data:
-              | { id: string; display_name: string | null; handle: string | null; avatar_url: string | null }[]
-              | null
-          }>
-        }
-      }
-    }
-    const { data } = await db
+    const { data } = await createAdminClient()
       .from('profiles')
       .select('id, display_name, handle, avatar_url')
       .in('id', ids)
@@ -278,7 +236,7 @@ export async function listCheckins(spaceId: string, sinceTs?: string): Promise<C
       .limit(MAX_ROSTER)
     if (since) q = q.gte('captured_at', since)
 
-    const { data, error } = (await q) as { data: CaptureRow[] | null; error: unknown }
+    const { data, error } = await q
     if (error || !data || data.length === 0) return []
 
     const ids = [...new Set(data.map((r) => r.actor_profile_id))]

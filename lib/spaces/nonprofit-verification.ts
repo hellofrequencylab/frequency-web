@@ -93,7 +93,7 @@ export function validateSubmission(raw: {
   return { ok: true, value: { ein, orgLegalName } }
 }
 
-// ── IO: the untyped admin-client seam (table not in generated types yet, ADR-246) ──────────────
+// ── IO: the typed admin-client seam ─────────────────────────────────────────────────────────────
 
 type VerificationRow = {
   id: string
@@ -132,23 +132,8 @@ function mapRow(r: VerificationRow): NonprofitVerification {
   }
 }
 
-type VerificationQuery = {
-  select: (cols: string) => VerificationQuery
-  eq: (col: string, val: string) => VerificationQuery
-  neq: (col: string, val: string) => VerificationQuery
-  order: (col: string, opts: { ascending: boolean }) => VerificationQuery
-  limit: (n: number) => VerificationQuery
-  maybeSingle: () => Promise<{ data: VerificationRow | null; error: unknown }>
-  insert: (rows: Record<string, unknown>[]) => {
-    select: (cols: string) => { maybeSingle: () => Promise<{ data: VerificationRow | null; error: unknown }> }
-  }
-  update: (patch: Record<string, unknown>) => { eq: (col: string, val: string) => Promise<{ error: unknown }> }
-  then: (resolve: (r: { data: VerificationRow[] | null; error: unknown }) => unknown) => Promise<unknown>
-}
-
-function table(): VerificationQuery {
-  const db = createAdminClient() as unknown as { from: (t: string) => VerificationQuery }
-  return db.from('space_nonprofit_verifications')
+function table() {
+  return createAdminClient().from('space_nonprofit_verifications')
 }
 
 // ── READS (service-role, fail-safe; callers gate their own render) ──────────────────────────────
@@ -182,13 +167,10 @@ async function getActiveVerification(spaceId: string): Promise<NonprofitVerifica
  *  caller (staff/janitor) before this is shown. Newest first. */
 export async function listPendingVerifications(): Promise<PendingVerification[]> {
   try {
-    const { data, error } = (await table()
+    const { data, error } = await table()
       .select(COLS)
       .eq('status', 'pending')
-      .order('submitted_at', { ascending: false })) as unknown as {
-      data: VerificationRow[] | null
-      error: unknown
-    }
+      .order('submitted_at', { ascending: false })
     if (error || !data || data.length === 0) return []
     const rows = data.map(mapRow)
 
@@ -279,7 +261,7 @@ export async function submitNonprofitVerification(
 }
 
 /** Set a verification's decision fields (status + reviewer + timestamp, plus an optional note) through
- *  the admin client. Scoped to the one id (untyped, ADR-246). Returns the DB error (or null). */
+ *  the admin client. Scoped to the one id. Returns the DB error (or null). */
 async function writeDecision(
   id: string,
   patch: { status: VerificationStatus; reviewerId: string; note?: string | null },
