@@ -532,7 +532,7 @@ function ProfileCard({
               {profileSectionsResolved.map((s) => (
                 <div key={s.label ?? 'section'} className="pt-1">
                   {s.label ? (
-                    <p className="px-2 pt-1 pb-0.5 text-3xs font-semibold uppercase tracking-wider text-subtle">
+                    <p className="px-2 pt-1 pb-0.5 text-2xs font-semibold uppercase tracking-wider text-muted">
                       {s.label}
                     </p>
                   ) : null}
@@ -640,7 +640,7 @@ function AccountDropdown({
 
           {/* Header */}
           <div className="px-3 py-2.5 border-b border-border">
-            <p className="text-3xs font-semibold uppercase tracking-wider text-subtle mb-0.5">
+            <p className="text-2xs font-semibold uppercase tracking-wider text-muted mb-0.5">
               Account
             </p>
             <p className="text-sm font-semibold text-text truncate">
@@ -663,7 +663,7 @@ function AccountDropdown({
           {accountSections.map((s) => (
             <div key={s.label ?? 'section'} className="border-t border-border py-1">
               {s.label ? (
-                <p className="px-3 pt-1 pb-0.5 text-3xs font-semibold uppercase tracking-wider text-subtle">
+                <p className="px-3 pt-1 pb-0.5 text-2xs font-semibold uppercase tracking-wider text-muted">
                   {s.label}
                 </p>
               ) : null}
@@ -835,7 +835,7 @@ function NavLinkList({
     }`
 
   const sectionLabelClass =
-    'px-3 pt-1 pb-1 text-3xs font-semibold uppercase tracking-wider text-subtle'
+    'px-3 pt-1 pb-1 text-2xs font-semibold uppercase tracking-wider text-muted'
 
   return (
     <>
@@ -1206,7 +1206,7 @@ function MobileLeftDrawer({
         <div className="shrink-0 border-t border-border pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           {/* About / What is Frequency / Terms / Privacy — the site pages that were desktop
               mega-menu only, so nothing is desktop-reachable-only. */}
-          <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 pt-3 text-2xs text-subtle">
+          <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 pt-3 text-2xs text-muted">
             <Link href="/about" onClick={onClose} className="hover:text-text transition-colors">About</Link>
             <Link href="/what-is-frequency" onClick={onClose} className="hover:text-text transition-colors">What is Frequency</Link>
             <Link href="/terms" onClick={onClose} className="hover:text-text transition-colors">Terms</Link>

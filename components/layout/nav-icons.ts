@@ -47,6 +47,7 @@ import {
   Receipt,
   Blocks,
   ClipboardPaste,
+  Vault,
 } from 'lucide-react'
 
 // Maps each NAV_AREAS key (lib/nav-areas.ts — the framework-free source of truth)
@@ -79,7 +80,9 @@ export const AREA_ICONS: Record<string, ElementType> = {
   quest: Compass,
   quests: Compass,
   store: Store,
-  vault: Gem,
+  // The Vault area gets the literal vault-door glyph (DAWN round 2026-08-03); the
+  // Gem glyph stays the CURRENCY mark (and stays in LUCIDE_BY_NAME's vocabulary).
+  vault: Vault,
   messageBoards: MessageSquare,
   website: Globe,
   'hook-network': Network,

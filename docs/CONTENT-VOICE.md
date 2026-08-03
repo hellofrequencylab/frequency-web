@@ -124,7 +124,7 @@ antidote to kitsch.
 **Proper nouns carry the magic. Sentences stay plain.**
 
 The world-building lives in the locked nouns: Zaps, Gems, Quest, Journey, Circle,
-Outpost, Ghost, Luminary, the Vault. The sentences around those nouns sound like
+Outpost, Ghost, Catalyst, the Vault. The sentences around those nouns sound like
 a person texting a friend.
 
 - GOOD: "You earned 40 Zaps this week."
