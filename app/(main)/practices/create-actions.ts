@@ -9,15 +9,20 @@
 // existing createPracticeAction.
 
 import { redirect } from 'next/navigation'
-import { getCallerProfile } from '@/lib/auth'
+import { revalidatePath } from 'next/cache'
+import { getCallerProfile, getMyProfileId } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
 import { canCreate } from '@/lib/core/load-capabilities'
 import { crewCreateUpsell } from '@/lib/core/beta-notices'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
+import type { MovementConfig } from '@/lib/movement'
 import {
   createPractice,
   updatePractice,
+  getPractice,
+  setPracticeStatus,
   notifyStaffOfPendingPractice,
+  MINDLESS_MODES,
   type PracticeEdit,
 } from '@/lib/practices'
 import { pillarIdsBySlug } from '@/lib/journeys/compose'
@@ -75,6 +80,17 @@ export async function createPracticeFromSparkAction(input: {
   pillars?: Array<'mind' | 'body' | 'spirit' | 'expression'>
   cadence?: string | null
   durationMin?: number | null
+  /** The timer half of the draft (ADR-920 Phase 5): how the practice is DONE. Vera proposes
+   *  it in the same forced-tool pass; every field re-validates in updatePractice
+   *  (sanitizeMovementConfig, BREATH_PATTERNS, the warm-up clamps), so a hostile payload can
+   *  only ever produce a valid preset. Omitted = the plain mindless default (pre-ADR-920). */
+  timer?: {
+    timerKind: 'mindless' | 'movement' | 'none'
+    mindlessMode?: string | null
+    breathPattern?: string | null
+    movementMode?: string | null
+    warmupMessage?: string | null
+  } | null
 }): Promise<void> {
   const gate = await authorizeCreatePractice()
   if ('error' in gate) redirect('/practices')
@@ -83,14 +99,17 @@ export async function createPracticeFromSparkAction(input: {
   const title = input.title.trim().slice(0, 80)
   if (!title) redirect('/practices/new')
 
-  // Create the row first (deferred creation): a Crew draft stays out of the public library until a
-  // Host+ approves it on publish; a Host+/staff author is live at birth (the column default).
+  // Create the row first (deferred creation). DRAFT-UNTIL-SUBMIT (ADR-920 Phase 5): a Crew
+  // author's practice is born a private DRAFT, not 'pending' — the review queue used to
+  // receive half-built rows at the moment of creation, before the author had written a guide
+  // or set a timer. Submitting for review is now the author's explicit act (the builder's
+  // publish section → submitPracticeForReviewAction). Host+/staff stay live at birth.
   const practice = await createPractice({
     title,
     description: input.description?.trim() || null,
     createdBy: profileId,
     isPublic: autoApprove,
-    status: autoApprove ? 'approved' : 'pending',
+    status: autoApprove ? 'approved' : 'draft',
   })
   if (!practice) redirect('/practices')
 
@@ -101,6 +120,25 @@ export async function createPracticeFromSparkAction(input: {
   if (input.body?.trim()) patch.body = input.body.trim()
   if (input.cadence?.trim()) patch.cadence = input.cadence.trim()
   if (input.durationMin != null) patch.duration_min = input.durationMin
+  // The timer half (ADR-920 Phase 5): before this, every Vera-drafted practice shipped as a
+  // default silent sit and the author had to find ~350 lines of nested controls unprompted.
+  const t = input.timer
+  if (t) {
+    patch.timer_kind = t.timerKind === 'movement' || t.timerKind === 'none' ? t.timerKind : 'mindless'
+    if (patch.timer_kind === 'mindless') {
+      patch.mindless_mode = (MINDLESS_MODES as readonly string[]).includes(t.mindlessMode ?? '')
+        ? (t.mindlessMode as PracticeEdit['mindless_mode'])
+        : null
+      if (t.breathPattern && patch.mindless_mode === 'breathe') patch.breath_pattern = t.breathPattern
+    }
+    if (patch.timer_kind === 'movement') {
+      // The mode alone; the full work/rest/rounds tuning stays the author's in the builder.
+      patch.movement_config = { mode: (t.movementMode ?? 'walk') as MovementConfig['mode'] }
+    }
+    if (t.warmupMessage?.trim() && patch.timer_kind !== 'none') {
+      patch.warmup_message = t.warmupMessage.trim()
+    }
+  }
   if (input.pillars?.length) {
     const ids = await pillarIdsBySlug()
     const fd: Record<string, { instructions: string; timing: string }> = {}
@@ -112,10 +150,22 @@ export async function createPracticeFromSparkAction(input: {
   }
   if (Object.keys(patch).length) await updatePractice(practice.id, patch)
 
-  if (!autoApprove) {
-    // Best-effort — never blocks creation. The pending draft is hidden until published + approved.
-    await notifyStaffOfPendingPractice({ practiceId: practice.id, title, proposedBy: profileId })
-  }
-
   redirect(`/practices/${practice.id}/edit`)
+}
+
+/** The author's explicit "Submit to the library" (ADR-920 Phase 5): a private draft moves to
+ *  'pending' and the curators are pinged — the step the old born-pending flow skipped, which
+ *  filled the review queue with half-built rows. Author-scoped; Host+/staff never need it
+ *  (they are live at birth). */
+export async function submitPracticeForReviewAction(practiceId: string): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not signed in')
+  const practice = await getPractice(practiceId)
+  if (!practice || practice.created_by !== profileId) return fail('Not yours to submit.')
+  if (practice.status === 'pending') return ok()
+  if (practice.status === 'approved' || practice.is_public) return fail('Already live.')
+  await setPracticeStatus(practiceId, 'pending')
+  await notifyStaffOfPendingPractice({ practiceId, title: practice.title, proposedBy: profileId })
+  revalidatePath(`/practices/${practiceId}/edit`)
+  return ok()
 }

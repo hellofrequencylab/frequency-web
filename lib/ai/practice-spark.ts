@@ -47,6 +47,22 @@ export const CADENCE_LABEL: Record<PracticeCadenceHint, string> = {
   weekly: 'Weekly',
 }
 
+/** The timer half of the draft (ADR-920 Phase 5): how the Practice is DONE. Every field is
+ *  re-validated server-side (sanitizeMovementConfig / the builder's clamps) before storage —
+ *  Vera proposes, the schema disposes. */
+export interface PracticeSparkTimer {
+  /** 'mindless' (Be Still), 'movement' (Get Moving), or 'none' (Just Log a real-world act). */
+  timerKind: 'mindless' | 'movement' | 'none'
+  /** The Be Still flavour, when timerKind is 'mindless'. */
+  mindlessMode: 'meditate' | 'breathe' | 'journal' | 'stillness' | 'ritual' | null
+  /** The breath pattern slug, when mindlessMode is 'breathe'. */
+  breathPattern: 'box' | 'cohere' | 'triangle' | '3x' | '478' | null
+  /** The Get Moving shape, when timerKind is 'movement'. */
+  movementMode: 'walk' | 'run' | 'yoga' | 'strength' | 'stretch' | null
+  /** A short creator warm-up line shown in the pre-roll (<= 140 chars), or null. */
+  warmupMessage: string | null
+}
+
 export interface PracticeSpark {
   /** Short, plain, concrete name. */
   title: string
@@ -62,6 +78,9 @@ export interface PracticeSpark {
   cadence: string
   /** Roughly how many minutes a session takes (null when unsure). */
   durationMin: number | null
+  /** How it's DONE: the timer Vera preset (ADR-920 Phase 5). Never null — a draft that
+   *  cannot decide falls to a plain 'mindless' sit, matching the old DB default. */
+  timer: PracticeSparkTimer
 }
 
 const TOOL_NAME = 'draft_practice'
@@ -79,14 +98,39 @@ const TOOL: Anthropic.Tool = {
       pillar: { type: 'string', enum: COMPOSE_PILLARS, description: 'The Pillar the act fits: mind, body, spirit, or expression. Omit if genuinely unsure.' },
       cadence: { type: 'string', enum: ['Daily', 'A few times a week', 'Weekly'], description: 'How often it is done.' },
       duration_min: { type: 'integer', description: 'Roughly how many minutes one session takes. Keep the entry version under five.' },
+      timer_kind: {
+        type: 'string',
+        enum: ['mindless', 'movement', 'none'],
+        description:
+          'How the practice is DONE: "mindless" = a stillness timer (sitting, breathing, journaling); "movement" = a moving timer (walking, running, yoga, stretching, strength); "none" = a real-world act logged after the fact (texting a friend, making the bed).',
+      },
+      mindless_mode: {
+        type: 'string',
+        enum: ['meditate', 'breathe', 'journal', 'stillness', 'ritual'],
+        description: 'The stillness flavour, ONLY when timer_kind is "mindless".',
+      },
+      breath_pattern: {
+        type: 'string',
+        enum: ['box', 'cohere', 'triangle', '3x', '478'],
+        description: 'The breathing pattern, ONLY when mindless_mode is "breathe". box = 4-4-4-4, cohere = 5.5 in/out, 478 = 4-7-8 wind-down.',
+      },
+      movement_mode: {
+        type: 'string',
+        enum: ['walk', 'run', 'yoga', 'strength', 'stretch'],
+        description: 'The movement shape, ONLY when timer_kind is "movement".',
+      },
+      warmup_message: {
+        type: 'string',
+        description: 'One short settling line shown before the timer starts (<= 140 chars), e.g. "Find a spot where you can be still." Plain, warm, no hype.',
+      },
     },
-    required: ['title', 'summary', 'description', 'body'],
+    required: ['title', 'summary', 'description', 'body', 'timer_kind'],
   },
 }
 
 const SYSTEM = `You are Vera, Frequency's guide: warm, grounded, and practical, a camp counselor you actually respect, not a guru and not a hype machine. A member answered a few questions about a Practice they want to build. A Practice is the smallest real thing a person does (sit, breathe, walk, write a line, text one friend), the atom a Journey is built from.
 
-Draft the WHOLE Practice from their answers: a name, a card hook, a one-line description, a full guide (the steps), the Pillar it fits, a cadence, and roughly how long a session takes.
+Draft the WHOLE Practice from their answers: a name, a card hook, a one-line description, a full guide (the steps), the Pillar it fits, a cadence, roughly how long a session takes, AND how it is done (the timer): a stillness timer for sitting/breathing/journaling, a moving timer for walks/runs/yoga/stretch/strength, or no timer at all for a real-world act someone logs after the fact. Pick the timer that matches the ACT, and add one short settling warm-up line.
 
 Work backward: the outcome first, then the concrete act that gets there, then the smallest doable version of it. Keep the entry version under five minutes.
 
@@ -178,5 +222,31 @@ function coerce(raw: unknown): PracticeSpark | null {
       ? Math.max(1, Math.min(600, Math.floor(r.duration_min)))
       : null
 
-  return { title, summary, description, body, pillar, cadence, durationMin: dm }
+  return { title, summary, description, body, pillar, cadence, durationMin: dm, timer: coerceTimer(r) }
+}
+
+/** Narrow the timer half against the REAL enums (never trust the raw shape). Anything off the
+ *  list falls to the safe default: a plain mindless sit — exactly the old DB default, so a
+ *  degraded draft is never worse than the pre-ADR-920 behavior. */
+function coerceTimer(r: Record<string, unknown>): PracticeSparkTimer {
+  const kindRaw = typeof r.timer_kind === 'string' ? r.timer_kind : 'mindless'
+  const timerKind = (['mindless', 'movement', 'none'] as const).find((k) => k === kindRaw) ?? 'mindless'
+  const modeRaw = typeof r.mindless_mode === 'string' ? r.mindless_mode : ''
+  const mindlessMode =
+    timerKind === 'mindless'
+      ? (['meditate', 'breathe', 'journal', 'stillness', 'ritual'] as const).find((m) => m === modeRaw) ?? null
+      : null
+  const patternRaw = typeof r.breath_pattern === 'string' ? r.breath_pattern : ''
+  const breathPattern =
+    mindlessMode === 'breathe'
+      ? (['box', 'cohere', 'triangle', '3x', '478'] as const).find((p) => p === patternRaw) ?? null
+      : null
+  const moveRaw = typeof r.movement_mode === 'string' ? r.movement_mode : ''
+  const movementMode =
+    timerKind === 'movement'
+      ? (['walk', 'run', 'yoga', 'strength', 'stretch'] as const).find((m) => m === moveRaw) ?? 'walk'
+      : null
+  const warmupMessage =
+    typeof r.warmup_message === 'string' && r.warmup_message.trim() ? r.warmup_message.trim().slice(0, 140) : null
+  return { timerKind, mindlessMode, breathPattern, movementMode, warmupMessage }
 }

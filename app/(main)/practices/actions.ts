@@ -268,21 +268,16 @@ export async function createPracticeAction(
 export async function createPracticeDraftAction(): Promise<ActionResult<{ id: string }>> {
   const gate = await authorizeCreatePractice()
   if ('error' in gate) return fail(gate.error)
+  // DRAFT-UNTIL-SUBMIT (ADR-920 Phase 5): born a private draft, never 'pending' — the review
+  // queue used to receive a literal "Untitled practice" the moment this button was pressed.
+  // The author submits from the builder's Library section when it is actually ready.
   const p = await createPractice({
     title: 'Untitled practice',
     createdBy: gate.profileId,
-    isPublic: false,
-    status: gate.autoApprove ? 'approved' : 'pending',
+    isPublic: gate.autoApprove,
+    status: gate.autoApprove ? 'approved' : 'draft',
   })
   if (!p) return fail('Could not create practice')
-  if (!gate.autoApprove) {
-    // Best-effort — never blocks creation. The pending draft is hidden until published + approved.
-    await notifyStaffOfPendingPractice({
-      practiceId: p.id,
-      title: 'Untitled practice',
-      proposedBy: gate.profileId,
-    })
-  }
   revalidatePath('/practices')
   return ok({ id: p.id })
 }

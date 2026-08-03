@@ -10,6 +10,7 @@ import {
   type PartialToday,
 } from '@/lib/practices'
 import { termProgress } from '@/lib/practices/adoption'
+import { timerPreview } from '@/lib/movement'
 import { memberDay } from '@/lib/member-day'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPillars, pillarsById, type Pillar } from '@/lib/pillars'
@@ -20,8 +21,13 @@ import { SectionHeader } from '@/components/ui/section-header'
 // The Pillar / cadence / reward chips under a "Your practices" card title. Kept to ONE row
 // (nowrap + overflow clipped): the category chip + reward stay fixed, and the length·cadence
 // text truncates to absorb overflow, so the stats never spill to a second line.
-function PracticeMeta({ p }: { p: { category: string | null; cadence: string | null; duration_min: number | null; reward_note: string | null } }) {
-  const lengthCadence = [p.duration_min ? `${p.duration_min} min` : null, p.cadence].filter(Boolean).join(' · ')
+function PracticeMeta({ p }: { p: Practice }) {
+  // The timer preview (PRACTICE-TIMER-REWORK P4, shipped with ADR-920 Phase 5): the same pure
+  // string the detail page + builder render ("Be Still · 10 min" / "Get Moving · Walk · ~20 min"
+  // / "Log it"), so a card says how a practice is DONE before it is opened. The base-table read
+  // behind getMemberAdoptions carries the timer columns, so this is derived, no extra query.
+  const preview = timerPreview({ timerKind: p.timer_kind, movementConfig: p.movement_config, durationMin: p.duration_min })
+  const lengthCadence = [preview, p.cadence].filter(Boolean).join(' · ')
   if (!p.category && !lengthCadence && !p.reward_note) return null
   return (
     <div className="mt-1.5 flex flex-nowrap items-center gap-x-2 overflow-hidden text-xs">
