@@ -16,6 +16,11 @@ on:
         required: false
         default: false
         type: boolean
+      update_baselines:
+        description: 'CAPTURE fresh @visual baselines against base_url and upload them as an artifact (commit them from the artifact; agent sandboxes cannot reach deploy URLs)'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -50,6 +55,33 @@ jobs:
         with:
           name: playwright-report-smoke
           path: playwright-report/
+          retention-days: 7
+
+  update-baselines:
+    if: ${{ inputs.update_baselines }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Capture baselines
+        env:
+          PW_BASE_URL: ${{ inputs.base_url }}
+        run: pnpm test:e2e:update
+      - name: Upload baselines
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-baselines
+          path: test/e2e/__screenshots__/
           retention-days: 7
 
   visual:
