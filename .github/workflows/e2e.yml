@@ -78,6 +78,9 @@ jobs:
           PW_BASE_URL: ${{ inputs.base_url }}
         run: pnpm test:e2e:update
       - name: Upload baselines
+        # always(): a single flaky surface must not discard the other captures — the
+        # job stays red on real failures, but the partial artifact still ships.
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: visual-baselines
