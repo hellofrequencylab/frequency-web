@@ -1734,7 +1734,10 @@ export default function AppShell({
           whole viewport (the Space landing + Spotlight builders), so the site header is dropped. */}
       {!editorTakeover && (
       <header
-        className="sticky top-0 shrink-0 flex items-stretch bg-surface/90 backdrop-blur-sm border-b border-border z-30"
+        // The chrome band (DAWN 2026-08-03, owner-adopted): the top bar is painted with the
+        // tinted frame tokens so the frame reads as frame against the lightened canvas,
+        // instead of a translucent white strip. Skins retune both tokens.
+        className="sticky top-0 shrink-0 flex items-stretch bg-chrome backdrop-blur-sm border-b border-chrome-border z-30"
         style={{ height: 'calc(3.5rem + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}
       >
 

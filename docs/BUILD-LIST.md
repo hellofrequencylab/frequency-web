@@ -56,8 +56,9 @@ Enforced by CI gates so new drift fails a PR. **Sequence: tokens (P1–P3) → h
 SectionHeader (141 uses) and StatCard (102) are landed; PageHeading lands indirectly through the
 template layer (~266 consumers). The gaps: **UnderlineTabs** (15 uses vs 4 byte-identical pill
 manage-consoles per ADR-828 + 3 hand-rolled underline strips — the pill consoles are sanctioned
-but are a 4-way copy-paste; UnderlineTabs' `activeHref` could absorb them if the pill look is not
-load-bearing), **EntityCard** (32 uses vs 44 bespoke `*-card.tsx`), **RowCard** (4 uses vs ~15
+but are a 4-way copy-paste; **owner ruling 2026-08-03: UnderlineTabs everywhere** — the consoles
+adopt it in the fabric-phase sweep via its `activeHref` query-param support, superseding the
+ADR-828 pill convention), **EntityCard** (32 uses vs 44 bespoke `*-card.tsx`), **RowCard** (4 uses vs ~15
 hand-rolled rows — the worst), **PersonCard** (17 uses). **ProgressTrack was missing entirely**
 (~30 ad-hoc `rounded-full` + inline-width bars) — built with the DAWN §5 primitives (Counter,
 StreakMeter, Meter, GateNotice) in the 2026-08-03 design-sync round; adoption sweeps are the
