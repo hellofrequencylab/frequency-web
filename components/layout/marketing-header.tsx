@@ -10,9 +10,11 @@ import { createClient } from '@/lib/supabase/client'
 import type { MenuSettings, ResolvedMenu } from '@/lib/menus/types'
 
 // Public marketing header. No search box (that's for the community app). When
-// `overHero`, it sits transparent over the dark hero and flips to a solid light
-// bar once scrolled (so the nav stays readable over light sections). On content
-// pages (no dark hero) it's solid light from the top.
+// `overHero`, it sits over the hero under a TOP SCRIM (DAWN 2026-08-03: a bright
+// sky was eating the chrome regardless of colour — the scrim + the wordmark's
+// drop shadow carry the contrast) and flips to a solid light bar once scrolled
+// (so the nav stays readable over light sections). On content pages (no dark
+// hero) it's solid light from the top.
 //
 // The nav megas are the DB-backed menus (lib/menus), fetched in the SERVER layout that
 // renders this header and threaded down through to PrimaryNav. They are optional: a
@@ -83,7 +85,7 @@ export function MarketingHeader({
       // iOS PWA status bar / notch (viewport-fit=cover) instead of rendering under it.
       style={{ height: 'calc(4rem + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}
       className={`fixed top-0 inset-x-0 z-50 flex items-center gap-3 px-5 sm:px-8 transition-colors duration-300 ${
-        light ? 'bg-surface/90 backdrop-blur-md border-b border-border' : 'bg-transparent'
+        light ? 'bg-surface/90 backdrop-blur-md border-b border-border' : 'bg-gradient-to-b from-ink/60 via-ink/25 to-transparent'
       }`}
     >
       {/* Skip link — first focusable element, visually hidden until a keyboard user
@@ -103,7 +105,7 @@ export function MarketingHeader({
           alt="Frequency"
           width={963}
           height={170}
-          className={`h-7 w-auto ${light ? 'dark:invert' : 'invert'}`}
+          className={`h-7 w-auto ${light ? 'dark:invert' : 'invert drop-shadow-md'}`}
         />
       </Link>
 

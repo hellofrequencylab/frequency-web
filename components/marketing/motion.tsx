@@ -59,7 +59,10 @@ export function Reveal({
     const io = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting) {
+          // boundingClientRect.top < 0: the element is already ABOVE the viewport (the
+          // visitor skipped past it before the observer attached — fast scroll, anchor
+          // jump). Latching only on isIntersecting left those at opacity 0 forever.
+          if (entry.isIntersecting || entry.boundingClientRect.top < 0) {
             setRevealed(true)
             io.disconnect()
           }
@@ -152,7 +155,8 @@ export function CountUp({
     if (window.matchMedia(REDUCE_QUERY).matches) return // show final value, no anim
     const io = new IntersectionObserver(
       (entries) => {
-        if (!entries[0].isIntersecting || started.current) return
+        const past = entries[0].boundingClientRect.top < 0 // skipped past: run, don't stick at 0
+        if ((!entries[0].isIntersecting && !past) || started.current) return
         started.current = true
         io.disconnect()
         const start = performance.now()

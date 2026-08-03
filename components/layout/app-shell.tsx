@@ -2028,7 +2028,7 @@ export default function AppShell({
                       onClick={toggleRail}
                       title="Show the rail"
                       aria-label="Show the rail"
-                      className="sticky bottom-6 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-muted shadow-sm transition-colors hover:border-border-strong hover:text-text"
+                      className="sticky bottom-6 inline-flex h-7 w-7 items-center justify-center rounded-md text-subtle transition-colors hover:text-muted"
                     >
                       <ChevronsLeft className="h-5 w-5" aria-hidden />
                     </button>
@@ -2038,14 +2038,16 @@ export default function AppShell({
                     {sidebar}
                     {railCollapsible && (
                       // The collapse TOGGLE at the BOTTOM, sticky so it stays visible as the rail
-                      // scrolls. A chevron toggle (not a hamburger), mirroring the collapsed state.
+                      // scrolls. Rail-control law (DAWN 2026-08-03): one affordance at the FOOT,
+                      // a small borderless glyph, subtle -> muted on hover — never a bordered
+                      // button, which competed with real rows.
                       <div className="sticky bottom-4 mt-2 flex justify-end">
                         <button
                           type="button"
                           onClick={toggleRail}
                           title="Hide the rail"
                           aria-label="Hide the rail"
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface/95 text-muted shadow-sm backdrop-blur-sm transition-colors hover:border-border-strong hover:text-text"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-subtle transition-colors hover:text-muted"
                         >
                           <ChevronsRight className="h-5 w-5" aria-hidden />
                         </button>

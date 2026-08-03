@@ -1007,6 +1007,27 @@
   font-size: 10px;
 }
 
+/* Marketing section rhythm (DAWN 2026-08-03 spacing correction). The default padding for
+   marketing <Section> (marketing-ui.tsx) as a CSS variable, so the adjacency rule below can
+   do arithmetic on it: a section FOLLOWED by another section gives up a third of its bottom
+   padding. Two stacked sections previously each paid the full py-* price for the shared gap,
+   so a value tuned for the end of a page read as a hole in the middle. Values mirror the
+   retired literal steps (py-14 / sm:py-20 / lg:py-24). Sections passing an explicit `pad`
+   prop keep literal utilities and are untouched by this rule. */
+.mk-section {
+  --mk-pad: 3.5rem;
+  padding-block: var(--mk-pad);
+}
+@media (min-width: 640px) {
+  .mk-section { --mk-pad: 5rem; }
+}
+@media (min-width: 1024px) {
+  .mk-section { --mk-pad: 6rem; }
+}
+.mk-section:has(+ .mk-section) {
+  padding-bottom: calc(var(--mk-pad) * 0.667);
+}
+
 /* Text-shadow presets (ADR-569 C1) — the two shadow steps the block text-style control offers.
    Token-driven (the shadow rgba matches the soft in-app shadow set), so operator-authored text
    gains a gentle lift or a stronger pop WITHOUT any raw per-block CSS. Applied to a wrapper by the
