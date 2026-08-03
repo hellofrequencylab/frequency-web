@@ -27,7 +27,7 @@ export default async function OnAirPage({
 
   // Member state assembled by the shared loader — same source the global
   // Mindless overlay uses, so the route and the overlay always agree.
-  const { practices, defaultPracticeId, prefs, practicedToday } = await loadOnAirSessionData(
+  const { practices, defaultPracticeId, prefs, practicedToday, journeyLegs } = await loadOnAirSessionData(
     profileId,
     requested,
   )
@@ -66,6 +66,7 @@ export default async function OnAirPage({
       defaultPracticeId={defaultPracticeId}
       prefs={prefs}
       practicedToday={practicedToday}
+      journeyLegs={journeyLegs}
     />
   )
 }

@@ -246,6 +246,7 @@ export function OnAirSession({
   explicitPracticeId,
   prefs,
   practicedToday = 0,
+  journeyLegs = [],
   resumeFromSec,
   secondsTarget,
   autoStart = false,
@@ -267,6 +268,9 @@ export function OnAirSession({
   prefs: OnAirPrefs
   /** Distinct members with a practice log today (presence line, shown at ≥3). */
   practicedToday?: number
+  /** When the list is a Journey's current leg: which week of which Journey(s) is driving it —
+   *  rendered as a quiet chip over the practice read-out so the swap reads as a mode. */
+  journeyLegs?: { planId: string; title: string; week: number; weeks: number }[]
   /** "Finish Practice" resume: seconds already banked on today's partial log. With
    *  `secondsTarget`, the timer runs only the REMAINING time and reports the TOTAL on
    *  completion so the server tops the log up to complete. */
@@ -2031,6 +2035,16 @@ export function OnAirSession({
           practice — never for the Free Practice fallback (which carries a logsAs mapping). */}
       {runPractice && !runPractice.logsAs && (
         <div className="mt-5 lg:mt-6">
+          {/* The journey-week chip: when a Journey's current leg drives this list, say so. The leg
+              replaces the member's own practices by design; the chip makes that a visible mode. */}
+          {journeyLegs.length > 0 && (
+            <p className="mb-1.5 inline-flex max-w-full items-center gap-1.5 rounded-full border border-primary/30 bg-primary-bg/20 px-2.5 py-0.5 text-2xs font-semibold text-primary-strong">
+              <span className="truncate">
+                Week {journeyLegs[0].week} of {journeyLegs[0].weeks} · {journeyLegs[0].title}
+                {journeyLegs.length > 1 ? ` +${journeyLegs.length - 1} more` : ''}
+              </span>
+            </p>
+          )}
           <p className="flex min-w-0 items-center gap-1.5 text-sm text-text">
             <span className="shrink-0 text-subtle">Logs as</span>
             <span className="truncate font-semibold">{runPractice.title}</span>

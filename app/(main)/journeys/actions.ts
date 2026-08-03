@@ -12,6 +12,7 @@ import {
   setPlanOfficial,
   setPlanWindow,
   adoptPlan,
+  leavePlan,
   forkPlan,
   duplicatePlan,
   planAuthorId,
@@ -80,6 +81,19 @@ export async function adoptJourney(planId: string): Promise<ActionResult> {
   if (meta.author_id !== profileId && meta.visibility === 'private') return fail('Not allowed.')
   await adoptPlan(profileId, planId)
   revalidatePath('/journeys', 'layout')
+  return ok()
+}
+
+/** Leave a Journey you are taking: deactivates the plan adoption (its practices stop driving
+ *  On Air's current leg) and removes your unfinished enrollment, solo or Run. Your adopted
+ *  practices stay yours. Self-scoped — the only profile it can touch is the caller's own. */
+export async function leaveJourneyAction(planId: string): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not allowed.')
+  if (!planId) return fail('Journey not found.')
+  await leavePlan(profileId, planId)
+  revalidatePath('/journeys', 'layout')
+  revalidatePath('/practices')
   return ok()
 }
 

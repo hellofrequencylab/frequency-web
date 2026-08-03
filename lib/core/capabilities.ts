@@ -197,18 +197,25 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
       // either way, and publishing still makes them a Host: role is earned, never billing
       // (ADR-207).
       //
-      // JOURNEYS and PRACTICES stay Real-Crew (paid tier) OR a community steward (crew+ on
-      // the trust ladder): authoring reusable library content is the Crew job. We read
-      // `realTier` (the DB tier BEFORE the beta open-access override) so a genuinely free
-      // member still meets the upgrade popup for those during the beta (ADR-414). Staff
-      // create everything.
+      // JOURNEYS joined the FIRST ONE FREE pair (ADR-908 / ADR-838): DRAFTING a Journey is
+      // open to any signed-in member — the free limit is a QUANTITY at publish (the
+      // `journey_publish` meter, free 1, enforced by checkJourneyPublish), never a locked
+      // door. This closes the drift where resolveJourneyAccess.canCreate said "drafting is
+      // free" while this gate still demanded Crew, so a free Member was promised one
+      // published Journey they could not begin to draft.
+      //
+      // PRACTICES stay Real-Crew (paid tier) OR a community steward (crew+ on the trust
+      // ladder): authoring reusable library content is the Crew job, and the
+      // `practice_publish` meter (free 0) mirrors this gate. We read `realTier` (the DB
+      // tier BEFORE the beta open-access override) so a genuinely free member still meets
+      // the upgrade popup during the beta (ADR-414). Staff create everything.
       if (profileId) {
         caps.add('event.create')
         caps.add('circle.create')
+        caps.add('journey.create')
       }
       const realTier = viewer.realTier ?? viewer.tier
       if (isPaid(realTier) || atLeastRole(viewer.role, 'crew') || isStaff) {
-        caps.add('journey.create')
         caps.add('practice.create')
       }
       break

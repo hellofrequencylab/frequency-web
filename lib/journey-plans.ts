@@ -757,21 +757,74 @@ export async function isPlanAdopted(profileId: string, planId: string): Promise<
   return !!(data as { active: boolean } | null)?.active
 }
 
-/** Adopt a community journey: its practices flow into the member's own
- *  member_practices (the free loop, via adoptPractice), and we record the
- *  adoption (incrementing adopt_count on first adoption only). */
-export async function adoptPlan(profileId: string, planId: string): Promise<void> {
-  const client = db()
-  const { data: itemRows } = await client.from('journey_plan_items').select('practice_id').eq('plan_id', planId)
-  // Only practice blocks carry a practice_id (phase/module blocks are null); adopt each DISTINCT one
-  // so joining a Journey flows its practices into the member's list and auto-links them in On Air.
-  const practiceIds = [
+/** The distinct practice ids a plan's block tree carries (phase/module blocks are null). */
+async function listPlanPracticeIds(planId: string): Promise<string[]> {
+  const { data: itemRows } = await db().from('journey_plan_items').select('practice_id').eq('plan_id', planId)
+  return [
     ...new Set(
       ((itemRows as { practice_id: string | null }[] | null) ?? [])
         .map((r) => r.practice_id)
         .filter((id): id is string => !!id),
     ),
   ]
+}
+
+/** Adopt a plan's practices + activate its journey_plan_adoptions row for a COHORT Run member.
+ *  The lean twin of adoptPlan for host-initiated enrollment (startRun/enrollInRun): the member's
+ *  journey_enrollments row (run_id set) is written by the Run path, so no solo enrollment here.
+ *  Deliberately NO adopt_count bump and NO validated-creation reward — auto-enrolling a Circle
+ *  must never pay the plan's creator per head (a host with a big Circle would be a reward farm).
+ *  Without this, a Run member had no adopted practices and no current-leg row at all (the
+ *  getCurrentLegPracticeIds reader keys on journey_plan_adoptions), so the flagship cohort path
+ *  showed nothing in On Air. Best-effort per practice; idempotent throughout. */
+export async function adoptPlanForRunMember(profileId: string, planId: string): Promise<void> {
+  const client = db()
+  const practiceIds = await listPlanPracticeIds(planId)
+  for (const pid of practiceIds) await adoptPractice(profileId, pid)
+  const { data: existingRow } = await client
+    .from('journey_plan_adoptions')
+    .select('id, active')
+    .eq('plan_id', planId)
+    .eq('profile_id', profileId)
+    .maybeSingle()
+  const existing = existingRow as { id: string; active: boolean } | null
+  if (!existing) {
+    await client.from('journey_plan_adoptions').insert({ plan_id: planId, profile_id: profileId, active: true })
+  } else if (!existing.active) {
+    await client.from('journey_plan_adoptions').update({ active: true }).eq('id', existing.id)
+  }
+}
+
+/** Leave a Journey: deactivate the member's journey_plan_adoptions row (so the current-leg
+ *  reader stops surfacing its practices in On Air) and remove their UNFINISHED enrollments on
+ *  the plan (solo and Run alike — completed enrollments stay, they are history). Does NOT touch
+ *  member_practices: what the member adopted stays theirs to keep or drop by hand (Phase 2 of
+ *  the adoption-lifecycle plan retires journey-sourced rows properly). Idempotent; never throws. */
+export async function leavePlan(profileId: string, planId: string): Promise<void> {
+  const client = db()
+  try {
+    await client
+      .from('journey_plan_adoptions')
+      .update({ active: false })
+      .eq('plan_id', planId)
+      .eq('profile_id', profileId)
+    await client
+      .from('journey_enrollments')
+      .delete()
+      .eq('plan_id', planId)
+      .eq('profile_id', profileId)
+      .is('completed_at', null)
+  } catch {
+    // leaving is best-effort; a partial leave is re-runnable
+  }
+}
+
+/** Adopt a community journey: its practices flow into the member's own
+ *  member_practices (the free loop, via adoptPractice), and we record the
+ *  adoption (incrementing adopt_count on first adoption only). */
+export async function adoptPlan(profileId: string, planId: string): Promise<void> {
+  const client = db()
+  const practiceIds = await listPlanPracticeIds(planId)
   for (const pid of practiceIds) await adoptPractice(profileId, pid)
 
   // Ensure a SOLO enrollment (journey_enrollments, run_id null) exists for this adoption. journey_plan_adoptions

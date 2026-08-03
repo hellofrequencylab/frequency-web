@@ -196,6 +196,7 @@ export function MovementSession({
   resumeFromSec = 0,
   secondsTarget,
   practicedToday = 0,
+  journeyLegs = [],
   autoStart = false,
   warmupSec: warmupSecProp,
   warmupMessageOverride,
@@ -224,6 +225,9 @@ export function MovementSession({
   autoStart?: boolean
   /** Distinct members with a practice log today (presence line, shown at >=3). */
   practicedToday?: number
+  /** When the list is a Journey's current leg: which week of which Journey(s) is driving it —
+   *  rendered as a quiet chip over the practice read-out so the swap reads as a mode. */
+  journeyLegs?: { planId: string; title: string; week: number; weeks: number }[]
   /** The member's warm-up length pref (seconds), shared with the sit (item #10). Default 5. */
   warmupSec?: number
   /** A per-step warm-up message override (ADR-592, P5): when set (a Journey-step launch), the
@@ -1439,11 +1443,23 @@ export function MovementSession({
             Still meditation sit) — a Get Moving run must not advertise "Logs as One Small Reach"
             (item #1). Mirrors the Be Still guard in session.tsx. */}
         {practice && !practice.logsAs && (
-          <p className="flex min-w-0 items-center justify-center gap-1.5 text-sm text-text">
-            <span className="shrink-0 text-subtle">Logs as</span>
-            <span className="truncate font-semibold">{practice.title}</span>
-            {practice.loggedToday && <Check className="h-3.5 w-3.5 shrink-0 text-success" />}
-          </p>
+          <div className="flex flex-col items-center gap-1.5">
+            {/* The journey-week chip (mirrors session.tsx): the leg replaces the member's own
+                practices by design; the chip makes that a visible mode. */}
+            {journeyLegs.length > 0 && (
+              <p className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-move/30 bg-move-bg/20 px-2.5 py-0.5 text-2xs font-semibold text-move">
+                <span className="truncate">
+                  Week {journeyLegs[0].week} of {journeyLegs[0].weeks} · {journeyLegs[0].title}
+                  {journeyLegs.length > 1 ? ` +${journeyLegs.length - 1} more` : ''}
+                </span>
+              </p>
+            )}
+            <p className="flex min-w-0 items-center justify-center gap-1.5 text-sm text-text">
+              <span className="shrink-0 text-subtle">Logs as</span>
+              <span className="truncate font-semibold">{practice.title}</span>
+              {practice.loggedToday && <Check className="h-3.5 w-3.5 shrink-0 text-success" />}
+            </p>
+          </div>
         )}
 
         </div>

@@ -250,6 +250,21 @@ export async function tryCompleteJourney(
       'journey_finish_bonus',
     )
 
+    // Stamp the enrollment(s) complete. journey_enrollments.completed_at was read in four places
+    // (progress, drip-sends, meter usage, the prompt cron's listEnrolledMemberIds filter) but
+    // written by NOTHING, so an enrollment stayed "active" forever and the daily next-step nudge
+    // never stopped. Stamp every un-stamped enrollment this member holds on this plan (solo and
+    // Run alike). Best-effort: a stamp failure never blocks the completion.
+    await admin
+      .from('journey_enrollments')
+      .update({ completed_at: new Date().toISOString() })
+      .eq('profile_id', profileId)
+      .eq('plan_id', journeyId)
+      .is('completed_at', null)
+      .then(({ error: stampErr }) => {
+        if (stampErr) console.error('[tryCompleteJourney] completed_at stamp', stampErr.message)
+      })
+
     // The Trophy cosmetic: finishing a Journey mints its Pillar (Mind/Body/Spirit) badge
     // (REWARDS-ECONOMY.md §7), and the Full Spectrum banner once all four are held.
     // Idempotent + best-effort — granted directly here so the Trophy lands with the finish.
