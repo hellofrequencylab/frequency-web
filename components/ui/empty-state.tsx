@@ -13,12 +13,15 @@ import type { LucideIcon } from 'lucide-react'
 
 type Variant = 'first-use' | 'no-results' | 'cleared' | 'error' | 'permission'
 
-const VARIANT: Record<Variant, { Icon: LucideIcon; tone: string; frame: string }> = {
-  'first-use': { Icon: Inbox, tone: 'text-subtle', frame: 'border-dashed border-border' },
-  'no-results': { Icon: SearchX, tone: 'text-subtle', frame: 'border-dashed border-border' },
-  cleared: { Icon: CheckCircle2, tone: 'text-success', frame: 'border-dashed border-success/30' },
-  error: { Icon: AlertTriangle, tone: 'text-danger', frame: 'border-danger/30' },
-  permission: { Icon: Lock, tone: 'text-muted', frame: 'border-border' },
+// `chip` — DAWN's icon-chip anatomy (dawn/components/feedback/EmptyState.jsx): the glyph
+// sits in a soft 56px tinted square, not bare. First-use keeps DAWN's warm amber chip;
+// the other variants keep this file's tone taxonomy, expressed as the chip's tint.
+const VARIANT: Record<Variant, { Icon: LucideIcon; chip: string; frame: string }> = {
+  'first-use': { Icon: Inbox, chip: 'bg-primary-bg text-primary-strong', frame: 'border-dashed border-border' },
+  'no-results': { Icon: SearchX, chip: 'bg-surface-elevated text-muted', frame: 'border-dashed border-border' },
+  cleared: { Icon: CheckCircle2, chip: 'bg-success-bg text-success', frame: 'border-dashed border-success/30' },
+  error: { Icon: AlertTriangle, chip: 'bg-danger-bg text-danger', frame: 'border-danger/30' },
+  permission: { Icon: Lock, chip: 'bg-surface-elevated text-muted', frame: 'border-border' },
 }
 
 export function EmptyState({
@@ -37,9 +40,14 @@ export function EmptyState({
   const v = VARIANT[variant]
   const Glyph = Icon ?? v.Icon
   return (
-    <div className={`rounded-2xl border bg-surface/50 px-6 py-12 text-center ${v.frame}`}>
-      <Glyph className={`mx-auto mb-3 h-8 w-8 ${v.tone}`} aria-hidden />
-      <p className="text-sm font-semibold text-text">{title}</p>
+    <div className={`rounded-card border bg-surface/50 px-6 py-12 text-center ${v.frame}`}>
+      <span
+        className={`mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-card ${v.chip}`}
+        aria-hidden
+      >
+        <Glyph className="h-6 w-6" />
+      </span>
+      <p className="text-lg font-extrabold text-text">{title}</p>
       {description && <p className="mx-auto mt-1 max-w-sm text-sm text-muted">{description}</p>}
       {action && <div className="mt-4 flex justify-center">{action}</div>}
     </div>

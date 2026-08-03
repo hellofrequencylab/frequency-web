@@ -36,7 +36,8 @@ const SIZE: Record<ButtonSize, string> = {
 }
 
 const BASE =
-  'inline-flex items-center justify-center gap-1.5 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+  // DAWN: controls take the ROLE radius (skinnable), not a literal step (dawn/tokens/spacing.css).
+  'inline-flex items-center justify-center gap-1.5 rounded-control font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
 
 /** The exact button token string for a variant × size — so a styled `<Link>` (or
  *  any non-`<button>` element) shares the SAME tokens as `<Button>` without a
