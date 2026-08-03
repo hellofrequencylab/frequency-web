@@ -213,6 +213,20 @@ export async function tryCompleteJourney(
         if (stampErr) console.error('[tryCompleteJourney] completed_at stamp', stampErr.message)
       })
 
+    // Retire the journey-sourced practice rows — on BOTH branches, like the stamp above. A
+    // RE-TAKER (finished solo earlier this season, then finished a Run of the same plan)
+    // lands in the alreadyDone branch with fresh journey rows from the re-enroll; without
+    // the retire here those rows leak active forever, and the reconcile can never repair
+    // them (the stamp resolves every enrollment, so getCurrentLeg drops the plan before its
+    // per-plan sync runs). Their SELF-adopted rows are untouched. Dynamic import
+    // (practices.ts reaches this module dynamically; a static edge here would cycle).
+    try {
+      const { retireJourneyPracticeRows } = await import('@/lib/practices')
+      await retireJourneyPracticeRows(profileId, journeyId, 'completed')
+    } catch {
+      // repairable by leave / plan delete; never blocks the completion
+    }
+
     // ignoreDuplicates → zero rows returned when the completion already existed. The Trophy +
     // lock are in place, but the ORIGINAL call may have crashed after the row landed and before
     // the +75 Zap purse was paid (C5). The purse carries its own reward_grants claim, so
@@ -267,17 +281,6 @@ export async function tryCompleteJourney(
       'Journey finished',
       'journey_finish_bonus',
     )
-
-    // Retire the journey-sourced practice rows (ADR-920 Phase 2): the journey is done, so its
-    // leg steps back from the member's list. Their SELF-adopted rows are untouched, and the
-    // completion surface offers "Keep it" on the Anchor (convertJourneyRowToSelf). Dynamic
-    // import (practices.ts reaches this module dynamically; a static edge here would cycle).
-    try {
-      const { retireJourneyPracticeRows } = await import('@/lib/practices')
-      await retireJourneyPracticeRows(profileId, journeyId, 'completed')
-    } catch {
-      // repairable on the next leg read; never blocks the completion
-    }
 
     // The Trophy cosmetic: finishing a Journey mints its Pillar (Mind/Body/Spirit) badge
     // (REWARDS-ECONOMY.md §7), and the Full Spectrum banner once all four are held.

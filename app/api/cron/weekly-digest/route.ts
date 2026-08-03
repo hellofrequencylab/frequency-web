@@ -49,6 +49,7 @@ async function handler(req: NextRequest) {
         upcomingEvents:     payload.upcomingEvents,
         topStreak:          payload.topStreak,
         rank:               payload.rank,
+        goAgain:            payload.goAgain,
       })
       sent++
     }

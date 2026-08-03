@@ -67,6 +67,7 @@ function sanitizeSettings(settings: NotificationSettings): NotificationSettings 
     freq_mentions: coerce(settings.freq_mentions),
     freq_lifecycle: coerce(settings.freq_lifecycle),
     freq_comments: coerce(settings.freq_comments),
+    freq_practice: coerce(settings.freq_practice),
   }
 }
 

@@ -22,6 +22,10 @@ const TYPE_ICON: Record<string, string> = {
   event_placement_request:  '📍',
   event_placement_approved: '📍',
   event_placement_declined: '📍',
+  practice_reminder:        '🧘',
+  practice_term_complete:   '🏁',
+  journey_next_step:        '🗺️',
+  journey_phase_unlocked:   '🗺️',
 }
 
 function notifHref(n: NotificationItem): string {
@@ -37,6 +41,12 @@ function notifHref(n: NotificationItem): string {
   // Posted-event notes (event_claimed / event_removed) reference the event by id;
   // the events index is the stable landing spot.
   if (n.reference_type === 'event') return '/events'
+  // A practice notice lands on the practice itself: the completion's "Go again" and the
+  // reminder's fastest start both live there (ADR-920 Phase 3).
+  if (n.reference_type === 'practice' && n.reference_id) return `/practices/${n.reference_id}`
+  // Journey notices (next step, phase unlocked) land on the library index; the learn
+  // player needs the slug, which the notice does not carry.
+  if (n.reference_type === 'journey') return '/journeys'
   return '/feed'
 }
 

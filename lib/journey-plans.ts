@@ -1099,8 +1099,28 @@ export async function duplicatePlan(profileId: string, planId: string): Promise<
 
 /** Delete one journey plan (its items + adoptions cascade via FK). The single-plan admin
  *  removal behind deleteJourneyPlanAction; the action layer gates it (curators only). */
+/** Retire EVERY member's active journey-sourced practice rows for a plan (all members at
+ *  once — the pre-delete sweep). The FK on member_practices.journey_plan_id is SET NULL, so
+ *  without this a deleted plan would orphan active journey rows nobody could ever reconcile
+ *  (the retire-by-plan filters key on journey_plan_id). Never throws. */
+async function retireAllJourneyRowsForPlan(planId: string): Promise<void> {
+  try {
+    await db()
+      .from('member_practices')
+      .update({ active: false, retired_at: new Date().toISOString(), retired_reason: 'dropped' })
+      .eq('journey_plan_id', planId)
+      .eq('source', 'journey')
+      .eq('active', true)
+  } catch {
+    // best-effort; the delete still proceeds (rows orphan retired-less, but inactive-by-plan
+    // cleanup is repairable by hand)
+  }
+}
+
 export async function deletePlan(planId: string): Promise<void> {
-  await db().from('journey_plans').delete().eq('id', planId)
+  await retireAllJourneyRowsForPlan(planId)
+  const { error } = await db().from('journey_plans').delete().eq('id', planId)
+  if (error) console.error('[deletePlan]', planId, error.message)
 }
 
 // --- Demo cleanup ---------------------------------------------------------
@@ -1113,7 +1133,12 @@ export async function deletePlansByAuthors(authorIds: string[]): Promise<void> {
   if (!authorIds.length) return
   const client = db()
   for (let i = 0; i < authorIds.length; i += 200) {
-    await client.from('journey_plans').delete().in('author_id', authorIds.slice(i, i + 200))
+    const batch = authorIds.slice(i, i + 200)
+    // Retire the members' journey rows for these plans first (same reason as deletePlan).
+    const { data: planRows } = await client.from('journey_plans').select('id').in('author_id', batch)
+    for (const p of (planRows ?? []) as { id: string }[]) await retireAllJourneyRowsForPlan(p.id)
+    const { error } = await client.from('journey_plans').delete().in('author_id', batch)
+    if (error) console.error('[deletePlansByAuthors]', error.message)
   }
 }
 

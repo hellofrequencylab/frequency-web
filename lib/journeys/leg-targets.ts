@@ -40,11 +40,16 @@ export function computeLegTargets(
   const { phases } = buildJourneyTree(blocks, [])
   if (!phases.length) return { targetIds: [], anchorIds: [], week: null, weeks: 0 }
 
-  // Anchors: any practice block flagged settings.anchor, wherever it sits in the tree.
+  // Anchors: practice blocks flagged settings.anchor — but only those that are part of the
+  // PLAYABLE tree (a phase's lessons). buildJourneyTree drops root-level module blocks
+  // entirely, so an anchor authored there would ride the target set of a journey whose
+  // player never shows it; scope to what the member can actually reach.
+  const playable = new Set<string>()
+  for (const phase of phases) for (const m of phase.modules) for (const l of m.lessons) if (l.practiceId) playable.add(l.practiceId)
   const anchorIds = [
     ...new Set(
       blocks
-        .filter((b) => b.practice_id && b.settings?.anchor === true)
+        .filter((b) => b.practice_id && b.settings?.anchor === true && playable.has(b.practice_id))
         .map((b) => b.practice_id as string),
     ),
   ]

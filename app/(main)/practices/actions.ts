@@ -139,9 +139,10 @@ export async function dropPracticeAction(practiceId: string): Promise<ActionResu
   return ok()
 }
 
-/** "Keep it" (ADR-920): convert a journey-sourced practice into the member's own, at the
- *  journey's completion moment ("you practiced this daily for four weeks; keep it"). Default
- *  ongoing; a preset term may be chosen. Self-scoped. */
+/** "Keep it" (ADR-920): convert a RETIRED journey-sourced practice into the member's own, at
+ *  the journey's completion moment. Default ongoing; a preset term may be chosen. Self-scoped,
+ *  and the lib guard converts ONLY a retired journey row — a live journey row or a self row
+ *  (with its own chosen term) can never be overwritten through this public action. */
 export async function keepPracticeAction(
   practiceId: string,
   termWeeks: number | null = null,
@@ -149,7 +150,8 @@ export async function keepPracticeAction(
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
   const { convertJourneyRowToSelf } = await import('@/lib/practices')
-  await convertJourneyRowToSelf(profileId, practiceId, termWeeks)
+  const converted = await convertJourneyRowToSelf(profileId, practiceId, termWeeks)
+  if (!converted) return fail('Nothing to keep. This practice is not a finished journey practice of yours.')
   revalidatePath('/practices')
   return ok()
 }

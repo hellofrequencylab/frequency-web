@@ -16,7 +16,12 @@ import {
 
 describe('DEFAULT_PREFERENCES', () => {
   const channels: NotificationChannel[] = ['email', 'inapp', 'push']
-  const categories: NotificationCategory[] = ['dispatches', 'events', 'mentions', 'lifecycle', 'comments']
+  // The full category list (drives the grid). `practice` joined in ADR-920 Phase 3.
+  const categories: NotificationCategory[] = ['dispatches', 'events', 'mentions', 'lifecycle', 'comments', 'practice']
+
+  it('the local list mirrors NOTIFICATION_CATEGORIES exactly (grid drift guard)', () => {
+    expect([...NOTIFICATION_CATEGORIES]).toEqual(categories)
+  })
 
   it('has a key for every channel × category combination (incl. the comments topic)', () => {
     for (const channel of channels) {
@@ -27,9 +32,10 @@ describe('DEFAULT_PREFERENCES', () => {
     }
   })
 
-  it('email + inapp are opted-in by default for every category', () => {
+  it('email + inapp are opted-in by default for every category, EXCEPT practice email (a daily reminder email is churn fuel, ADR-920)', () => {
     for (const category of categories) {
-      expect(DEFAULT_PREFERENCES[`email_${category}` as keyof NotificationPreferences]).toBe(true)
+      const expectedEmail = category !== 'practice'
+      expect(DEFAULT_PREFERENCES[`email_${category}` as keyof NotificationPreferences]).toBe(expectedEmail)
       expect(DEFAULT_PREFERENCES[`inapp_${category}` as keyof NotificationPreferences]).toBe(true)
     }
   })
@@ -40,9 +46,9 @@ describe('DEFAULT_PREFERENCES', () => {
     }
   })
 
-  it('has the 15 category×channel grid keys, plus any standalone feature opt-ins', () => {
+  it('has the 18 category×channel grid keys, plus any standalone feature opt-ins', () => {
     const gridKeys = categories.flatMap((c) => [`email_${c}`, `inapp_${c}`, `push_${c}`])
-    expect(gridKeys).toHaveLength(15)
+    expect(gridKeys).toHaveLength(18)
     for (const k of gridKeys) expect(k in DEFAULT_PREFERENCES).toBe(true)
     // Standalone opt-ins that are not part of the channel grid (a specific email feature, off by default),
     // e.g. space_event_reminders (space-follower event reminders, ADR-806).

@@ -34,13 +34,12 @@ alter table public.member_practices
   add column if not exists cue text
     check (cue is null or char_length(cue) <= 140);
 
--- A journey-sourced row must name its journey; a self row must not carry one. Enforced softly
--- (app code writes both together); the check keeps a drifted writer honest.
-alter table public.member_practices
-  drop constraint if exists member_practices_source_journey_check;
-alter table public.member_practices
-  add constraint member_practices_source_journey_check
-  check (source <> 'journey' or journey_plan_id is not null);
+-- NO check tying source='journey' to a non-null journey_plan_id, DELIBERATELY: the FK above is
+-- `on delete set null`, so deleting a journey_plans row nulls journey_plan_id on every
+-- referencing row (active and retired alike) — a check requiring the pair would make every
+-- ever-enrolled plan undeletable (the SET NULL itself would violate it and abort the DELETE).
+-- The pairing is an app-code contract (adoptPracticesForJourney always writes both), and
+-- deletePlan retires a plan's journey rows explicitly before deleting.
 
 -- The completion sweep's hot path: active commitments whose term has ended.
 create index if not exists member_practices_term_end_idx

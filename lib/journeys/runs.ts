@@ -301,12 +301,35 @@ export async function setRunEndState(runId: string, state: RunEndState): Promise
     .update({ status: state, updated_at: new Date().toISOString() })
     .eq('id', runId)
     .in('status', ['scheduled', 'active'])
-    .select('id')
+    .select('id, plan_id')
   if (error) {
     console.error('[journey-runs] end state write failed', { code: error.code, runId, state })
     return false
   }
-  return (data ?? []).length > 0
+  const moved = (data ?? []).length > 0
+  if (moved) {
+    // Retire the members' journey-sourced practice rows (ADR-920): once the Run ends,
+    // getCurrentLeg drops the plan BEFORE its per-plan reconcile runs, so nothing else can
+    // ever retire these — without this every non-finishing member of an ended Run keeps its
+    // practices on their list forever. Members who FINISHED had theirs retired 'completed'
+    // by tryCompleteJourney already (that filter is on active=true, so this is a no-op for
+    // them). Self-adopted rows are untouched. Best-effort.
+    try {
+      const planId = String((data![0] as { plan_id: string }).plan_id)
+      const { data: enrolled } = await db()
+        .from('journey_enrollments')
+        .select('profile_id')
+        .eq('run_id', runId)
+      const memberIds = [...new Set(((enrolled ?? []) as { profile_id: string }[]).map((r) => r.profile_id))]
+      if (memberIds.length) {
+        const { retireJourneyPracticeRowsForMembers } = await import('@/lib/practices')
+        await retireJourneyPracticeRowsForMembers(memberIds, planId, 'phase_ended')
+      }
+    } catch {
+      // repairable via leave / plan delete; the end-state write already landed
+    }
+  }
+  return moved
 }
 
 /** Active Runs for a Circle (most recent first). */

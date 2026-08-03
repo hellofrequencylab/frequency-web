@@ -123,6 +123,7 @@ export function HeroMoment({
 function KeepAnchorBand({ anchor }: { anchor: { practiceId: string; title: string } }) {
   const [pending, start] = useTransition()
   const [kept, setKept] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   if (kept) {
     return (
@@ -134,7 +135,7 @@ function KeepAnchorBand({ anchor }: { anchor: { practiceId: string; title: strin
   return (
     <div className="mt-4 rounded-2xl border border-border bg-surface p-3.5">
       <p className="text-sm text-text">
-        You did <span className="font-semibold">{anchor.title}</span> every week of this Journey.
+        <span className="font-semibold">{anchor.title}</span> carried you through this Journey.
         Keep it as your own?
       </p>
       <button
@@ -142,7 +143,12 @@ function KeepAnchorBand({ anchor }: { anchor: { practiceId: string; title: strin
         disabled={pending}
         onClick={() =>
           start(async () => {
-            await keepPracticeAction(anchor.practiceId, null)
+            setError(null)
+            const res = await keepPracticeAction(anchor.practiceId, null)
+            if ('error' in res) {
+              setError(res.error)
+              return
+            }
             setKept(true)
           })
         }
@@ -150,6 +156,7 @@ function KeepAnchorBand({ anchor }: { anchor: { practiceId: string; title: strin
       >
         {pending ? 'Keeping…' : 'Keep it'}
       </button>
+      {error && <p className="mt-2 text-xs font-medium text-danger">{error}</p>}
     </div>
   )
 }

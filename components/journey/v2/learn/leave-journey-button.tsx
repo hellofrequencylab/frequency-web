@@ -45,7 +45,8 @@ export function LeaveJourneyButton({ planId, journeyTitle }: { planId: string; j
     <div className="space-y-1.5 text-sm">
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-muted">
-          Leave {journeyTitle}? Your practices and lesson progress stay yours.
+          Leave {journeyTitle}? Its practices step back from your list. Anything you adopted
+          yourself, and your lesson progress, stays yours.
         </span>
         <button
           type="button"

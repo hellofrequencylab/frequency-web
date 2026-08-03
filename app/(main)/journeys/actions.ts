@@ -84,9 +84,10 @@ export async function adoptJourney(planId: string): Promise<ActionResult> {
   return ok()
 }
 
-/** Leave a Journey you are taking: deactivates the plan adoption (its practices stop driving
- *  On Air's current leg) and removes your unfinished enrollment, solo or Run. Your adopted
- *  practices stay yours. Self-scoped — the only profile it can touch is the caller's own.
+/** Leave a Journey you are taking: deactivates the plan adoption, removes your unfinished
+ *  enrollment (solo or Run), and retires the journey-sourced practice rows it wrote (your
+ *  SELF-adopted practices are untouched). Self-scoped — the only profile it can touch is the
+ *  caller's own.
  *  A host of a LIVE Run of this plan cannot leave it out from under their cohort: the run's
  *  meter and anchor enumerate enrollments, so the host leaves by ending the Run instead. */
 export async function leaveJourneyAction(planId: string): Promise<ActionResult> {

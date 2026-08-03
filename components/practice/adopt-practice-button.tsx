@@ -5,12 +5,18 @@ import { Plus, Check, X } from 'lucide-react'
 import { adoptPracticeAction, dropPracticeAction } from '@/app/(main)/practices/actions'
 import { TERM_PRESETS } from '@/lib/practices/adoption'
 
-// Toggle a practice in/out of your personal practices — now with the COMMITMENT picker
-// (ADR-920). Tapping Adopt opens a small panel: four term chips (2 / 4 / 8 weeks / Ongoing;
-// 4 is the default focus, 8 carries the "builds it for good" hint) and an optional cue field
-// ("After my morning coffee"). Tapping a chip adopts immediately with that term — the fast
-// yes stays one tap after open. Adopted reads as ORANGE (the primary fill); clicking it
-// removes. `fullWidth` is the card-footer variant.
+// Toggle a practice in/out of your personal practices — with the COMMITMENT picker (ADR-920).
+// Tapping Adopt opens a small panel: four term chips (2 / 4 / 8 weeks / Ongoing; 4 is the
+// default focus, 8 carries the "makes it stick" hint) and an optional "When will you do it?"
+// field. Tapping a chip adopts immediately with that term — the fast yes stays one tap after
+// open. Adopted reads as ORANGE (the primary fill); clicking it removes. `fullWidth` is the
+// card-footer variant.
+//
+// The panel is position:FIXED and anchored to the button's rect at open, because the cards
+// this button lives in (EntityCard) are overflow-hidden — an absolute popover would clip.
+// Fixed positioning escapes every ancestor clip; the position is computed once on open
+// (scroll/resize close the panel rather than tracking it). Focus moves to the default chip
+// on open and back to the button on close; Escape and click-outside close.
 export function AdoptPracticeButton({
   practiceId,
   adopted,
@@ -21,26 +27,49 @@ export function AdoptPracticeButton({
   fullWidth?: boolean
 }) {
   const [pending, start] = useTransition()
-  const [open, setOpen] = useState(false)
+  const [panel, setPanel] = useState<{ top: number; left: number } | null>(null)
   const [cue, setCue] = useState('')
-  const wrapRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const defaultChipRef = useRef<HTMLButtonElement>(null)
 
-  // Click-outside + Escape close the picker (no dependency; the panel is small and local).
+  const PANEL_W = 256
+  const PANEL_H = 230 // approximate; clamped against the viewport below
+
+  const openPanel = () => {
+    const rect = buttonRef.current?.getBoundingClientRect()
+    if (!rect) return
+    // Prefer above the button; fall below when there is no room. Clamp horizontally.
+    const top = rect.top >= PANEL_H + 12 ? rect.top - PANEL_H - 8 : Math.min(rect.bottom + 8, window.innerHeight - PANEL_H - 8)
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - PANEL_W - 8))
+    setPanel({ top: Math.max(8, top), left })
+  }
+
   useEffect(() => {
-    if (!open) return
+    if (!panel) return
+    defaultChipRef.current?.focus()
     const onDown = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
+      const t = e.target as Node
+      if (!panelRef.current?.contains(t) && !buttonRef.current?.contains(t)) setPanel(null)
     }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key === 'Escape') {
+        setPanel(null)
+        buttonRef.current?.focus()
+      }
     }
+    const onScrollOrResize = () => setPanel(null)
     document.addEventListener('mousedown', onDown)
     document.addEventListener('keydown', onKey)
+    window.addEventListener('scroll', onScrollOrResize, true)
+    window.addEventListener('resize', onScrollOrResize)
     return () => {
       document.removeEventListener('mousedown', onDown)
       document.removeEventListener('keydown', onKey)
+      window.removeEventListener('scroll', onScrollOrResize, true)
+      window.removeEventListener('resize', onScrollOrResize)
     }
-  }, [open])
+  }, [panel])
 
   const base = `inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors disabled:opacity-60 ${
     fullWidth ? 'w-full' : ''
@@ -69,36 +98,40 @@ export function AdoptPracticeButton({
   }
 
   const adoptWith = (termWeeks: number | null) => {
-    setOpen(false)
+    setPanel(null)
     start(async () => {
       await adoptPracticeAction(practiceId, { termWeeks, cue: cue.trim() || null })
     })
   }
 
   return (
-    <div ref={wrapRef} className={`relative ${fullWidth ? 'w-full' : 'inline-block'}`}>
+    <>
       <button
+        ref={buttonRef}
         type="button"
         disabled={pending}
-        aria-expanded={open}
+        aria-expanded={!!panel}
         aria-haspopup="dialog"
-        onClick={() => setOpen((v) => !v)}
-        className={`${base} border border-border bg-surface text-text hover:border-primary hover:text-primary-strong`}
+        onClick={() => (panel ? setPanel(null) : openPanel())}
+        className={`${base} border border-border bg-surface text-text hover:border-primary hover:text-primary-strong ${fullWidth ? 'w-full' : ''}`}
       >
         <Plus className="h-4 w-4 shrink-0" /> {pending ? 'Adding…' : 'Adopt'}
       </button>
 
-      {open && (
+      {panel && (
         <div
+          ref={panelRef}
           role="dialog"
           aria-label="How long will you take it on for?"
-          className="absolute bottom-full left-0 z-20 mb-2 w-64 rounded-xl border border-border bg-surface-elevated p-3 shadow-lg"
+          style={{ position: 'fixed', top: panel.top, left: panel.left, width: PANEL_W }}
+          className="z-50 rounded-xl border border-border bg-surface-elevated p-3 shadow-lg"
         >
           <p className="text-xs font-semibold text-text">How long will you take it on for?</p>
           <div className="mt-2 grid grid-cols-2 gap-1.5">
             {TERM_PRESETS.map((p) => (
               <button
                 key={p.label}
+                ref={p.default ? defaultChipRef : undefined}
                 type="button"
                 title={p.hint}
                 onClick={() => adoptWith(p.weeks)}
@@ -115,8 +148,8 @@ export function AdoptPracticeButton({
             ))}
           </div>
           <label className="mt-2.5 block">
-            <span className="text-2xs text-subtle" title="A cue tied to something you already do makes the practice far more likely to happen.">
-              When will you do it? Optional.
+            <span className="text-2xs text-subtle">
+              When will you do it? Optional. Tying it to something you already do makes it far more likely to happen.
             </span>
             <input
               type="text"
@@ -129,6 +162,6 @@ export function AdoptPracticeButton({
           </label>
         </div>
       )}
-    </div>
+    </>
   )
 }

@@ -16,10 +16,10 @@
 // once. We notify only the NEWEST due phase and record the earlier ones as 'skipped' ledger rows,
 // so nobody gets a stack of stale unlock notices and nothing is re-scanned forever.
 //
-// DORMANT UNTIL THE MIGRATION APPLIES: the journey_drip_sends table ships as a DRAFT migration
-// (supabase/migrations/20261229000000_journey_drip_sends.sql, not yet applied). Every ledger read
-// and claim here fails safe, so until the table exists the runner delivers NOTHING and reports
-// zeros — by design, never an error page or a double-send.
+// LIVE: the journey_drip_sends ledger (migration 20261229000000) was applied to production
+// 2026-07-27 (the migration file records it), so the runner delivers for real. Every ledger
+// read and claim still fails safe — on any environment without the table it delivers NOTHING
+// and reports zeros, never an error page or a double-send.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { unlockedPhaseCount } from '@/lib/journeys/schedule'

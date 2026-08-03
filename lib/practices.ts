@@ -1844,7 +1844,7 @@ export async function adoptPractice(
   const window = opts?.endsOn !== undefined
     ? { startsOn: today, endsOn: opts.endsOn }
     : termWindow(today, termWeeks)
-  await db()
+  const { error: adoptErr } = await db()
     .from('member_practices')
     .upsert(
       {
@@ -1863,6 +1863,9 @@ export async function adoptPractice(
       } as never,
       { onConflict: 'profile_id,practice_id' },
     )
+  // Visible, never fatal: a silent write failure (e.g. a deploy racing the migration)
+  // would show "Adopted" over a row that never landed.
+  if (adoptErr) console.error('[adoptPractice]', practiceId, adoptErr.message)
   // Activation-funnel step 4 (ADR-075). Best-effort; never blocks the adopt.
   await track('practice.adopted', { practiceId }, profileId)
 }
@@ -1892,16 +1895,30 @@ export async function adoptPracticesForJourney(
       ((tzRows ?? []) as { id: string; home_timezone: string | null }[]).map((r) => [r.id, r.home_timezone]),
     )
     // Existing rows for every (member, practice) pair, so active ones are left alone.
-    const { data: existingRows } = await client
-      .from('member_practices')
-      .select('profile_id, practice_id, active')
-      .in('profile_id', profileIds)
-      .in('practice_id', practiceIds)
-    const activePairs = new Set(
-      ((existingRows ?? []) as { profile_id: string; practice_id: string; active: boolean }[])
-        .filter((r) => r.active)
-        .map((r) => `${r.profile_id}:${r.practice_id}`),
-    )
+    // CHUNKED: PostgREST caps a response at ~1000 rows, and a truncated read here would
+    // un-guard exactly the clobber this guard exists to prevent (a big cohort's upsert
+    // overwriting active self-adoptions' terms). Keep each read's worst-case pair count
+    // well under the cap.
+    const activePairs = new Set<string>()
+    const profilesPerChunk = Math.max(1, Math.floor(500 / Math.max(1, practiceIds.length)))
+    for (let i = 0; i < profileIds.length; i += profilesPerChunk) {
+      const chunk = profileIds.slice(i, i + profilesPerChunk)
+      const { data: existingRows, error: pairErr } = await client
+        .from('member_practices')
+        .select('profile_id, practice_id, active')
+        .in('profile_id', chunk)
+        .in('practice_id', practiceIds)
+      // Fail CLOSED on a pair-read error: skip these members entirely rather than risk the
+      // unguarded upsert (adoption is repairable; a clobbered term is not).
+      if (pairErr) {
+        console.error('[adoptPracticesForJourney] pair read failed', pairErr.message)
+        for (const pid of chunk) for (const prid of practiceIds) activePairs.add(`${pid}:${prid}`)
+        continue
+      }
+      for (const r of (existingRows ?? []) as { profile_id: string; practice_id: string; active: boolean }[]) {
+        if (r.active) activePairs.add(`${r.profile_id}:${r.practice_id}`)
+      }
+    }
     const rows = profileIds.flatMap((pid) => {
       const today = memberDay(tzById.get(pid))
       return practiceIds
@@ -1920,9 +1937,12 @@ export async function adoptPracticesForJourney(
         }))
     })
     if (rows.length) {
-      await client
+      const { error: upsertErr } = await client
         .from('member_practices')
         .upsert(rows as never[], { onConflict: 'profile_id,practice_id' })
+      // Visible, never fatal: a silent write failure here (e.g. a deploy racing the
+      // migration) would read as "adoption works" while writing nothing.
+      if (upsertErr) console.error('[adoptPracticesForJourney] upsert failed', upsertErr.message)
     }
   } catch {
     // adoption is repairable (re-enroll / adopt by hand); never blocks the caller
@@ -1946,19 +1966,29 @@ export async function syncJourneyAdoptionRows(
 ): Promise<void> {
   try {
     const client = db()
-    const { data } = await client
+    // ONE read answers both questions: which journey rows of THIS plan are active (the
+    // stale computation), and which targets the member already holds active under ANY
+    // source (a self-held target needs no journey row — treating it as "missing" forever
+    // would re-run the adopt path's queries on every single On Air open, converging never).
+    let q = client
       .from('member_practices')
-      .select('practice_id')
+      .select('practice_id, source, journey_plan_id')
       .eq('profile_id', profileId)
-      .eq('journey_plan_id', planId)
-      .eq('source', 'journey')
       .eq('active', true)
-    const held = new Set(
-      ((data ?? []) as { practice_id: string }[]).map((r) => r.practice_id),
+    q = targetIds.length
+      ? q.or(`journey_plan_id.eq.${planId},practice_id.in.(${targetIds.join(',')})`)
+      : q.eq('journey_plan_id', planId)
+    const { data, error: readErr } = await q
+    if (readErr) return
+    type ActiveRow = { practice_id: string; source: string | null; journey_plan_id: string | null }
+    const active = (data ?? []) as ActiveRow[]
+    const heldByThisJourney = new Set(
+      active.filter((r) => r.source === 'journey' && r.journey_plan_id === planId).map((r) => r.practice_id),
     )
+    const heldAnySource = new Set(active.map((r) => r.practice_id))
     const target = new Set(targetIds)
-    const stale = [...held].filter((id) => !target.has(id))
-    const missing = targetIds.filter((id) => !held.has(id))
+    const stale = [...heldByThisJourney].filter((id) => !target.has(id))
+    const missing = targetIds.filter((id) => !heldAnySource.has(id))
     if (stale.length) {
       await client
         .from('member_practices')
@@ -1972,6 +2002,30 @@ export async function syncJourneyAdoptionRows(
     if (missing.length) await adoptPracticesForJourney([profileId], missing, planId)
   } catch {
     // reconcile is repairable on the next read; never blocks the caller
+  }
+}
+
+/** Bulk retire (an ended Run's whole cohort at once): every member's active journey-sourced
+ *  rows for the plan. Chunked; never throws. */
+export async function retireJourneyPracticeRowsForMembers(
+  profileIds: string[],
+  planId: string,
+  reason: RetireReason,
+): Promise<void> {
+  if (!profileIds.length) return
+  try {
+    const client = db()
+    for (let i = 0; i < profileIds.length; i += 200) {
+      await client
+        .from('member_practices')
+        .update({ active: false, retired_at: new Date().toISOString(), retired_reason: reason } as never)
+        .eq('journey_plan_id', planId)
+        .eq('source', 'journey')
+        .eq('active', true)
+        .in('profile_id', profileIds.slice(i, i + 200))
+    }
+  } catch {
+    // repairable; never blocks the run end
   }
 }
 
@@ -1995,18 +2049,22 @@ export async function retireJourneyPracticeRows(
   }
 }
 
-/** "Keep it" (ADR-920): convert a journey-sourced row into the member's OWN practice — the
- *  identity conversion at journey completion ("you practiced this daily for four weeks; keep
- *  it"). The row becomes source='self' with a fresh window under the chosen term (default
- *  ongoing), active again if the completion already retired it. */
+/** "Keep it" (ADR-920): convert a RETIRED journey-sourced row into the member's OWN practice —
+ *  the identity conversion at journey completion ("you practiced this daily for four weeks;
+ *  keep it"). The row becomes source='self' with a fresh window under the chosen term (default
+ *  ongoing) and re-activates. TIGHTLY SCOPED on purpose: only a source='journey' AND
+ *  active=false row converts — a LIVE journey row belongs to a still-running journey and a
+ *  self row already carries the member's own chosen term, so neither may be overwritten by
+ *  this action (which any signed-in member can call with any practice id). Returns whether a
+ *  row actually converted. */
 export async function convertJourneyRowToSelf(
   profileId: string,
   practiceId: string,
   termWeeks: number | null = null,
-): Promise<void> {
+): Promise<boolean> {
   const today = await resolveMemberDay(profileId)
   const window = termWindow(today, coerceTermWeeks(termWeeks))
-  await db()
+  const { data, error } = await db()
     .from('member_practices')
     .update({
       active: true,
@@ -2020,6 +2078,14 @@ export async function convertJourneyRowToSelf(
     } as never)
     .eq('profile_id', profileId)
     .eq('practice_id', practiceId)
+    .eq('source', 'journey')
+    .eq('active', false)
+    .select('id')
+  if (error) {
+    console.error('[convertJourneyRowToSelf]', error.message)
+    return false
+  }
+  return ((data ?? []) as { id: string }[]).length > 0
 }
 
 /** Retire a member's adoption: active=false plus WHY and WHEN, so history survives (the old
@@ -2029,11 +2095,12 @@ export async function dropMemberPractice(
   practiceId: string,
   reason: RetireReason = 'dropped',
 ): Promise<void> {
-  await db()
+  const { error } = await db()
     .from('member_practices')
     .update({ active: false, retired_at: new Date().toISOString(), retired_reason: reason } as never)
     .eq('profile_id', profileId)
     .eq('practice_id', practiceId)
+  if (error) console.error('[dropMemberPractice]', practiceId, error.message)
 }
 
 // --- Activity history -----------------------------------------------------

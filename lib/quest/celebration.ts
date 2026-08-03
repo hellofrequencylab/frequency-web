@@ -129,14 +129,34 @@ export async function readUnseenCompletion(profileId: string): Promise<UnseenCom
       const anchorId = ((anchorItem ?? []) as { practice_id: string | null; settings: { anchor?: boolean } | null }[])
         .find((r) => r.settings?.anchor === true)?.practice_id
       if (anchorId) {
-        const { data: row } = await admin
+        // The offer is valid only for the row THIS journey wrote and THIS completion retired:
+        // source='journey' scoped to this plan, inactive, retired 'completed'. Anything else —
+        // the same practice under a different still-running journey, a live re-enroll, or a
+        // self row with the member's own term — must not be offered (the conversion would
+        // overwrite state that is not this journey's to give). Mirrors the
+        // convertJourneyRowToSelf guard. Untyped cast: term columns are newer than the
+        // generated types (ADR-246).
+        const untyped: import('@supabase/supabase-js').SupabaseClient = admin
+        const { data: row } = await untyped
           .from('member_practices')
-          .select('source, practice:practices(title)')
+          .select('source, journey_plan_id, active, retired_reason, practice:practices(title)')
           .eq('profile_id', profileId)
           .eq('practice_id', anchorId)
           .maybeSingle()
-        const r = row as { source: string | null; practice: { title: string } | null } | null
-        if (r?.source === 'journey' && r.practice?.title) {
+        const r = row as {
+          source: string | null
+          journey_plan_id: string | null
+          active: boolean
+          retired_reason: string | null
+          practice: { title: string } | null
+        } | null
+        if (
+          r?.source === 'journey' &&
+          r.journey_plan_id === latest.journey_id &&
+          r.active === false &&
+          r.retired_reason === 'completed' &&
+          r.practice?.title
+        ) {
           anchor = { practiceId: anchorId, title: r.practice.title }
         }
       }
