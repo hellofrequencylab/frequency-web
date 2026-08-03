@@ -423,15 +423,15 @@ export async function setMembershipTiers(
   })
 
   try {
-    const { data: existing, error: readErr } = (await tiersTable()
+    const { data: existing, error: readErr } = await tiersTable()
       .select('id')
-      .eq('space_id', spaceId)) as unknown as { data: { id: string }[] | null; error: unknown }
+      .eq('space_id', spaceId)
     if (readErr) return fail('Could not save your tiers. Try again.')
 
     const plan = planTierSetOps((existing ?? []).map((r) => r.id), clean)
 
     for (const t of plan.updates) {
-      const upd = await (tiersTable().update(toRow(t)).eq('id', t.id).eq('space_id', spaceId) as unknown as Promise<{ error: unknown }>)
+      const upd = await tiersTable().update(toRow(t)).eq('id', t.id).eq('space_id', spaceId)
       if (upd.error) return fail('Could not save your tiers. Try again.')
     }
     if (plan.inserts.length > 0) {
@@ -441,7 +441,7 @@ export async function setMembershipTiers(
       if (error) return fail('Could not save your tiers. Try again.')
     }
     if (plan.deleteIds.length > 0) {
-      const del = await (tiersTable().delete().eq('space_id', spaceId).in('id', plan.deleteIds) as unknown as Promise<{ error: unknown }>)
+      const del = await tiersTable().delete().eq('space_id', spaceId).in('id', plan.deleteIds)
       if (del.error) return fail('Could not save your tiers. Try again.')
     }
   } catch {
@@ -642,10 +642,10 @@ export async function promoteMembership(membershipId: string): Promise<ActionRes
   }
 
   try {
-    const upd = await (membershipsTable()
+    const upd = await membershipsTable()
       .update({ status: 'active', started_at: new Date().toISOString() })
       .eq('id', membershipId)
-      .eq('status', 'waitlist') as unknown as Promise<{ error: unknown }>)
+      .eq('status', 'waitlist')
     if (upd.error) return fail('Could not promote. Try again.')
   } catch {
     return fail('Could not promote. Try again.')
@@ -701,7 +701,7 @@ export async function cancelMembership(membershipId: string): Promise<ActionResu
       .select(`${MEMBERSHIP_COLS}, stripe_subscription_id`)
       .eq('id', membershipId)
       .maybeSingle()
-    row = data as CancelRow | null
+    row = data
   } catch {
     row = null
   }

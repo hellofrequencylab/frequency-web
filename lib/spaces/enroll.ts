@@ -4,8 +4,8 @@
 //   space_programs:     the ONE program/cohort an owner publishes (name, description, schedule,
 //                       dates, capacity). One row per Space in v1.
 //   space_enrollments:  a member's enrollment in that program.
-// Backed by the service-role admin client plus untyped casts (the tables are not in the generated
-// DB types yet, ADR-246, mirroring lib/spaces/memberships.ts). The server is the authority for "which
+// Backed by the service-role admin client (the tables are in the generated DB types, so access is
+// typed; mirrors lib/spaces/memberships.ts). The server is the authority for "which
 // space" and "what may this caller do here" (P5): every write re-checks authorization; reads
 // fail-safe (empty/null) and writes fail-closed on a permission miss.
 //
@@ -151,9 +151,8 @@ export function normalizeProgram(raw: {
   return program
 }
 
-// ── IO: the untyped admin-client seams (tables not in generated types yet, ADR-246) ────────────
+// ── IO: the typed admin-client seams ────────────────────────────────────────────────────────────
 
-// Loosely-typed rows + builders for the two not-yet-typed tables, mirroring lib/spaces/memberships.ts.
 type ProgramRow = {
   id: string
   space_id: string
@@ -174,34 +173,11 @@ type EnrollmentRow = {
   enrolled_at: string
 }
 
-type ProgramQuery = {
-  select: (cols: string) => ProgramQuery
-  eq: (col: string, val: string) => ProgramQuery
-  order: (col: string, opts: { ascending: boolean }) => ProgramQuery
-  delete: () => ProgramQuery
-  insert: (rows: Record<string, unknown>[]) => ProgramQuery
-  maybeSingle: () => Promise<{ data: ProgramRow | null; error: unknown }>
-  then: (resolve: (r: { data: ProgramRow[] | null; error: unknown }) => unknown) => Promise<unknown>
+function programsTable() {
+  return createAdminClient().from('space_programs')
 }
-type EnrollmentQuery = {
-  select: (cols: string) => EnrollmentQuery
-  eq: (col: string, val: string) => EnrollmentQuery
-  order: (col: string, opts: { ascending: boolean }) => EnrollmentQuery
-  update: (patch: Record<string, unknown>) => EnrollmentQuery
-  insert: (rows: Record<string, unknown>[]) => EnrollmentQuery
-  maybeSingle: () => Promise<{ data: EnrollmentRow | null; error: unknown }>
-  then: (
-    resolve: (r: { data: EnrollmentRow[] | null; error: unknown }) => unknown,
-  ) => Promise<unknown>
-}
-
-function programsTable(): ProgramQuery {
-  const db = createAdminClient() as unknown as { from: (t: string) => ProgramQuery }
-  return db.from('space_programs')
-}
-function enrollmentsTable(): EnrollmentQuery {
-  const db = createAdminClient() as unknown as { from: (t: string) => EnrollmentQuery }
-  return db.from('space_enrollments')
+function enrollmentsTable() {
+  return createAdminClient().from('space_enrollments')
 }
 
 const PROGRAM_COLS =
@@ -281,17 +257,7 @@ async function readMemberNames(ids: string[]): Promise<Map<string, string>> {
   const out = new Map<string, string>()
   if (ids.length === 0) return out
   try {
-    const db = createAdminClient() as unknown as {
-      from: (t: string) => {
-        select: (c: string) => {
-          in: (
-            col: string,
-            vals: string[],
-          ) => Promise<{ data: { id: string; display_name: string | null }[] | null }>
-        }
-      }
-    }
-    const { data } = await db.from('profiles').select('id, display_name').in('id', ids)
+    const { data } = await createAdminClient().from('profiles').select('id, display_name').in('id', ids)
     for (const p of data ?? []) out.set(p.id, p.display_name?.trim() || 'A member')
   } catch {
     // fall through to the empty map (callers default to 'A member')
@@ -343,7 +309,7 @@ export async function setSpaceProgram(
     // new one. v1 is one program per Space, so a clean replace keeps the program row the single
     // source of truth and respects the one-program-per-space unique index.
     const del = await programsTable().delete().eq('space_id', spaceId)
-    if ((del as unknown as { error?: unknown }).error) {
+    if (del.error) {
       return fail('Could not save your program. Try again.')
     }
     const { error } = await programsTable()
