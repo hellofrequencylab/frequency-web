@@ -6,7 +6,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { spaceIdForCircle } from '@/lib/circles/store'
-import { adoptPlanForRunMember, adoptPlanForRunMembers } from '@/lib/journey-plans'
+import { adoptPlanForRunMembers } from '@/lib/journey-plans'
 import { eventStartInputToIso } from '@/lib/events/datetime'
 import { buildJourneyTree, type BlockRow } from './tree'
 import { aggregateCohort, type MemberCompletion, type CohortProgress } from './cohort'
@@ -77,17 +77,20 @@ export async function startRun(input: {
   // the current-leg reader (getCurrentLeg) keys on journey_plan_adoptions, so without this a
   // cohort member saw none of the Run's practices in On Air. ONE bulk call for the whole
   // cohort (never a per-member write storm); best-effort inside, so the Run itself stands.
-  await adoptPlanForRunMembers(rows.map((r) => r.profile_id), input.planId)
+  // Phase-scoped (ADR-920 Phase 2): week 1 union the Anchor(s), anchored at the Run's start.
+  await adoptPlanForRunMembers(rows.map((r) => r.profile_id), input.planId, input.startedAt ?? new Date())
   return runId
 }
 
-/** Enroll one member into a Run (idempotent on the unique index). */
+/** Enroll one member into a Run (idempotent on the unique index). A mid-flight joiner adopts
+ *  the week the Run is actually on (the run's start anchors the leg), plus the Anchor(s). */
 export async function enrollInRun(profileId: string, runId: string, planId: string): Promise<void> {
   await db()
     .from('journey_enrollments')
     .upsert({ profile_id: profileId, plan_id: planId, run_id: runId }, { onConflict: 'profile_id,run_id', ignoreDuplicates: true })
   try {
-    await adoptPlanForRunMember(profileId, planId)
+    const run = await getRun(runId)
+    await adoptPlanForRunMembers([profileId], planId, run ? new Date(run.startedAt) : null)
   } catch {
     // best-effort, same contract as startRun
   }

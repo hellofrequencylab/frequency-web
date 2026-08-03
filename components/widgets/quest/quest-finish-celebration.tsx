@@ -22,6 +22,7 @@ export async function QuestFinishCelebration() {
       rankAdvanced={finish.rankAdvanced}
       seasonComplete={finish.seasonComplete}
       next={finish.next}
+      anchor={finish.anchor}
       trophiesHref="/crew/store"
       onSeen={markJourneyCompletionSeen.bind(null, finish.completionId)}
     />

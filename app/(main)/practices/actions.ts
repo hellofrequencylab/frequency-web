@@ -139,6 +139,21 @@ export async function dropPracticeAction(practiceId: string): Promise<ActionResu
   return ok()
 }
 
+/** "Keep it" (ADR-920): convert a journey-sourced practice into the member's own, at the
+ *  journey's completion moment ("you practiced this daily for four weeks; keep it"). Default
+ *  ongoing; a preset term may be chosen. Self-scoped. */
+export async function keepPracticeAction(
+  practiceId: string,
+  termWeeks: number | null = null,
+): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not signed in')
+  const { convertJourneyRowToSelf } = await import('@/lib/practices')
+  await convertJourneyRowToSelf(profileId, practiceId, termWeeks)
+  revalidatePath('/practices')
+  return ok()
+}
+
 /**
  * Authorize a caller to CREATE a practice and decide its review status (SECURITY-sensitive,
  * ADR-109). Authoring a library practice is a CREW+ act on the community trust ladder — a plain

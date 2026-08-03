@@ -239,7 +239,13 @@ export async function runDueJourneyDripSends(limit = 200): Promise<JourneyDripRu
       // in-app notification (defaults on) plus a push for members who opted in (lifecycle
       // category; sendPushToProfile re-checks preference + consent).
       const phaseTitle = phases[newest]?.title?.trim() || `Phase ${newest + 1}`
-      const body = `${phaseTitle} is now open in ${plan.title}. Pick up where you left off.`
+      // The closure note (ADR-920, owner ruling: a rollover is never silent): from week 2 on,
+      // the unlock notice also closes the week that just finished — its practices step back
+      // from the timer while the Anchor carries on.
+      const prevTitle = newest > 0 ? phases[newest - 1]?.title?.trim() || `Phase ${newest}` : null
+      const body = prevTitle
+        ? `${prevTitle} is complete. ${phaseTitle} is now open in ${plan.title}; this week's practices take its place.`
+        : `${phaseTitle} is now open in ${plan.title}. Pick up where you left off.`
       const { error: notifyErr } = await admin.from('notifications').insert({
         recipient_id: enrollment.profile_id,
         actor_id: null,

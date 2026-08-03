@@ -1,17 +1,21 @@
 // Journeys v2 — the member's CURRENT LEG practice ids, for On Air (ADR-304 follow-up). On Air
 // shows the practices a member should be doing RIGHT NOW: the current drip phase of each Journey
-// they are actively enrolled in (not the whole Journey). Pure reads on the admin handle; it reuses
-// the same tree + drip schedule the learn player uses, so the "leg" matches exactly what is
-// unlocked there. Server-only.
+// they are actively enrolled in (not the whole Journey), plus the ANCHOR practice (ADR-307) —
+// the daily through-line that rides every week. Reads on the admin handle; it reuses the same
+// tree + drip schedule the learn player uses (via computeLegTargets), so the "leg" matches
+// exactly what is unlocked there. It ALSO reconciles the member's journey-sourced
+// member_practices rows against the target set (ADR-920 Phase 2): a phase rollover retires
+// last week's rows (reason 'phase_ended') and adopts this week's — the rollover is time
+// passing, so the reconcile runs where the leg is read. Server-only.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { buildJourneyTree, type BlockRow } from './tree'
-import { unlockedPhaseCount } from './schedule'
+import { computeLegTargets, type BlockRowWithSettings } from './leg-targets'
 import { getMemberRunForPlan, getSoloEnrollmentStart } from './runs'
+import { syncJourneyAdoptionRows } from '@/lib/practices'
 
-const BLOCK_COLS = 'id, parent_id, block_type, sort_order, title, required, est_minutes, practice_id'
+const BLOCK_COLS = 'id, parent_id, block_type, sort_order, title, required, est_minutes, practice_id, settings'
 
-function toBlock(r: Record<string, unknown>): BlockRow {
+function toBlock(r: Record<string, unknown>): BlockRowWithSettings {
   return {
     id: String(r.id),
     parent_id: (r.parent_id as string) ?? null,
@@ -21,6 +25,7 @@ function toBlock(r: Record<string, unknown>): BlockRow {
     required: (r.required as boolean) ?? true,
     est_minutes: (r.est_minutes as number) ?? null,
     practice_id: (r.practice_id as string) || null,
+    settings: (r.settings as { anchor?: boolean } | null) ?? null,
   }
 }
 
@@ -41,13 +46,13 @@ export interface CurrentLegResult {
   legs: CurrentLegContext[]
 }
 
-/** The practice ids in the member's CURRENT leg — the latest unlocked drip phase — across every
- *  Journey they are actively enrolled in, de-duped, plus the per-Journey week context for the
- *  On Air chip. A Journey with no drip (interval 0) or no resolvable anchor has one open leg:
- *  all of its practices. A COMPLETED enrollment (journey_enrollments.completed_at set, stamped
- *  by tryCompleteJourney) releases its leg — finishing a Journey hands On Air back to the
- *  member's own practices instead of pinning the final week forever. Returns empty when
- *  enrolled in nothing. */
+/** The practice ids in the member's CURRENT leg — the latest unlocked drip phase UNION the
+ *  Anchor practice(s) — across every Journey they are actively enrolled in, de-duped, plus the
+ *  per-Journey week context for the On Air chip. A Journey with no drip (interval 0) or no
+ *  resolvable anchor has one open leg: all of its practices. A COMPLETED enrollment
+ *  (journey_enrollments.completed_at, stamped by tryCompleteJourney) or an ENDED Run releases
+ *  its leg — finishing a Journey hands On Air back to the member's own practices instead of
+ *  pinning the final week forever. Returns empty when enrolled in nothing. */
 export async function getCurrentLeg(profileId: string): Promise<CurrentLegResult> {
   const admin = createAdminClient()
   const { data: adoptions } = await admin
@@ -97,8 +102,6 @@ export async function getCurrentLeg(profileId: string): Promise<CurrentLegResult
         admin.from('journey_plans').select('title, drip_interval_days').eq('id', planId).maybeSingle(),
       ])
       const blocks = ((items ?? []) as Record<string, unknown>[]).map(toBlock)
-      const { phases } = buildJourneyTree(blocks, [])
-      if (!phases.length) return
 
       // The drip anchor: the Run's start (cohort) or the member's solo enrollment start.
       const run = await getMemberRunForPlan(profileId, planId)
@@ -107,30 +110,23 @@ export async function getCurrentLeg(profileId: string): Promise<CurrentLegResult
         ? run.dripIntervalDays
         : Number((planRow as { drip_interval_days: number | null } | null)?.drip_interval_days ?? 7)
 
-      // No anchor or no drip → the whole Journey is one open leg (week null: the chip must not
-      // claim "Week 1" over a list carrying every week). Otherwise the current leg is the
-      // latest unlocked phase (1-based count → last index), matching the player's lock schedule.
-      const week = !anchorStart || drip <= 0 ? null : unlockedPhaseCount(new Date(anchorStart), drip, phases.length)
-      const legPhases = week === null ? phases : [phases[week - 1]]
+      const targets = computeLegTargets(blocks, anchorStart ? new Date(anchorStart) : null, drip)
+      if (!targets.weeks) return
 
-      let contributed = false
-      for (const phase of legPhases) {
-        if (!phase) continue
-        for (const m of phase.modules)
-          for (const l of m.lessons)
-            if (l.practiceId) {
-              out.add(l.practiceId)
-              contributed = true
-            }
-      }
-      if (contributed) {
+      for (const id of targets.targetIds) out.add(id)
+      if (targets.targetIds.length) {
         legs.push({
           planId,
           title: String((planRow as { title: string | null } | null)?.title ?? 'Journey'),
-          week,
-          weeks: phases.length,
+          week: targets.week,
+          weeks: targets.weeks,
         })
       }
+
+      // Rollover reconcile (ADR-920 Phase 2): make the member's journey-sourced rows match the
+      // target set. Idempotent + diff-guarded inside; awaited so a serverless response never
+      // drops the write mid-flight.
+      await syncJourneyAdoptionRows(profileId, planId, targets.targetIds)
     }),
   )
   return { practiceIds: [...out], legs }

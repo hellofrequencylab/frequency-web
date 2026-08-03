@@ -268,6 +268,17 @@ export async function tryCompleteJourney(
       'journey_finish_bonus',
     )
 
+    // Retire the journey-sourced practice rows (ADR-920 Phase 2): the journey is done, so its
+    // leg steps back from the member's list. Their SELF-adopted rows are untouched, and the
+    // completion surface offers "Keep it" on the Anchor (convertJourneyRowToSelf). Dynamic
+    // import (practices.ts reaches this module dynamically; a static edge here would cycle).
+    try {
+      const { retireJourneyPracticeRows } = await import('@/lib/practices')
+      await retireJourneyPracticeRows(profileId, journeyId, 'completed')
+    } catch {
+      // repairable on the next leg read; never blocks the completion
+    }
+
     // The Trophy cosmetic: finishing a Journey mints its Pillar (Mind/Body/Spirit) badge
     // (REWARDS-ECONOMY.md §7), and the Full Spectrum banner once all four are held.
     // Idempotent + best-effort — granted directly here so the Trophy lands with the finish.

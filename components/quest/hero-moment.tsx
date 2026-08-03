@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
-import { Trophy, Zap, X, Sparkles, ArrowRight } from 'lucide-react'
+import { Trophy, Zap, X, Sparkles, ArrowRight, Check } from 'lucide-react'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { keepPracticeAction } from '@/app/(main)/practices/actions'
 
 // HeroMoment — the landmark celebration for the real Journey landmarks: a Journey
 // just finished, the rank it pushed you to, and (at the apex) the whole season
@@ -48,9 +49,14 @@ export function HeroMoment({
   rankAdvanced = false,
   seasonComplete = false,
   next = null,
+  anchor = null,
   trophiesHref = '/crew/store',
   onSeen,
 }: {
+  /** The Journey's Anchor practice, when the completion just retired the member's
+   *  journey-sourced row for it: renders the "Keep it" conversion offer (ADR-920) —
+   *  the identity moment where a month of daily practice becomes the member's own. */
+  anchor?: { practiceId: string; title: string } | null
   /** The Journey just finished — names the win concretely. */
   journeyTitle: string
   /** Zaps the finish paid (the +75 finish purse). */
@@ -92,6 +98,7 @@ export function HeroMoment({
       journeyTitle={journeyTitle}
       zaps={zaps}
       next={next}
+      anchor={anchor}
       trophiesHref={trophiesHref}
       onClose={() => setOpen(false)}
     />
@@ -101,9 +108,49 @@ export function HeroMoment({
       zaps={zaps}
       rank={rank}
       rankAdvanced={rankAdvanced}
+      anchor={anchor}
       trophiesHref={trophiesHref}
       onClose={() => setOpen(false)}
     />
+  )
+}
+
+// ── The "Keep it" band (ADR-920) ─────────────────────────────────────────────
+// The conversion moment the whole term model aims at: the member practiced the Anchor
+// daily for the length of the Journey; the completion is where re-commitment converts
+// best. One tap keeps it as their own, ongoing. Declining is silent (the practice was
+// already retired with the Journey; nothing else to do).
+function KeepAnchorBand({ anchor }: { anchor: { practiceId: string; title: string } }) {
+  const [pending, start] = useTransition()
+  const [kept, setKept] = useState(false)
+
+  if (kept) {
+    return (
+      <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-success">
+        <Check className="h-4 w-4" aria-hidden /> {anchor.title} is yours now. It stays on your list.
+      </p>
+    )
+  }
+  return (
+    <div className="mt-4 rounded-2xl border border-border bg-surface p-3.5">
+      <p className="text-sm text-text">
+        You did <span className="font-semibold">{anchor.title}</span> every week of this Journey.
+        Keep it as your own?
+      </p>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() =>
+          start(async () => {
+            await keepPracticeAction(anchor.practiceId, null)
+            setKept(true)
+          })
+        }
+        className="mt-2.5 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60 motion-reduce:transition-none"
+      >
+        {pending ? 'Keeping…' : 'Keep it'}
+      </button>
+    </div>
   )
 }
 
@@ -127,6 +174,7 @@ function FinishMoment({
   zaps,
   rank,
   rankAdvanced,
+  anchor,
   trophiesHref,
   onClose,
 }: {
@@ -134,6 +182,7 @@ function FinishMoment({
   zaps: number
   rank: SeasonRank
   rankAdvanced: boolean
+  anchor: { practiceId: string; title: string } | null
   trophiesHref: string
   onClose: () => void
 }) {
@@ -178,6 +227,8 @@ function FinishMoment({
             )}
           </div>
 
+          {anchor && <KeepAnchorBand anchor={anchor} />}
+
           <div className="mt-4">
             <Link
               href={trophiesHref}
@@ -201,12 +252,14 @@ function SeasonCompleteMoment({
   journeyTitle,
   zaps,
   next,
+  anchor,
   trophiesHref,
   onClose,
 }: {
   journeyTitle: string
   zaps: number
   next: NextSeason | null
+  anchor: { practiceId: string; title: string } | null
   trophiesHref: string
   onClose: () => void
 }) {
@@ -263,6 +316,8 @@ function SeasonCompleteMoment({
             Master reached
           </span>
         </div>
+
+        {anchor && <KeepAnchorBand anchor={anchor} />}
 
         {/* The re-light — what comes next, so the apex opens a door. The Trophy Case keeps
             the win across the reset; the next Quest is the goal to climb again. */}

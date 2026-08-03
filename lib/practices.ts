@@ -1932,6 +1932,96 @@ export async function adoptPracticesForJourney(
 /** Why a commitment ended (mirrors the DB check). */
 export type RetireReason = 'completed' | 'phase_ended' | 'dropped' | 'swapped'
 
+/** Reconcile a member's journey-sourced rows for ONE plan against the target set (current leg
+ *  union anchors, computed by lib/journeys/leg-targets.ts): retire rows that fell out of the
+ *  leg (reason 'phase_ended' — the week rolled) and adopt any target not yet held. This is how
+ *  a phase rollover makes last week's practices step back (ADR-920 Phase 2 / vision #3): the
+ *  rollover is time passing, so the reconcile runs wherever the leg is read. Self-adopted rows
+ *  are NEVER touched here (a member's own commitment outlives any journey). Idempotent — a
+ *  no-diff call writes nothing. Never throws. */
+export async function syncJourneyAdoptionRows(
+  profileId: string,
+  planId: string,
+  targetIds: string[],
+): Promise<void> {
+  try {
+    const client = db()
+    const { data } = await client
+      .from('member_practices')
+      .select('practice_id')
+      .eq('profile_id', profileId)
+      .eq('journey_plan_id', planId)
+      .eq('source', 'journey')
+      .eq('active', true)
+    const held = new Set(
+      ((data ?? []) as { practice_id: string }[]).map((r) => r.practice_id),
+    )
+    const target = new Set(targetIds)
+    const stale = [...held].filter((id) => !target.has(id))
+    const missing = targetIds.filter((id) => !held.has(id))
+    if (stale.length) {
+      await client
+        .from('member_practices')
+        .update({ active: false, retired_at: new Date().toISOString(), retired_reason: 'phase_ended' } as never)
+        .eq('profile_id', profileId)
+        .eq('journey_plan_id', planId)
+        .eq('source', 'journey')
+        .eq('active', true)
+        .in('practice_id', stale)
+    }
+    if (missing.length) await adoptPracticesForJourney([profileId], missing, planId)
+  } catch {
+    // reconcile is repairable on the next read; never blocks the caller
+  }
+}
+
+/** Retire ALL of a member's journey-sourced rows for a plan (journey finished or left).
+ *  Self-adopted rows are untouched. Never throws. */
+export async function retireJourneyPracticeRows(
+  profileId: string,
+  planId: string,
+  reason: Extract<RetireReason, 'completed' | 'dropped'>,
+): Promise<void> {
+  try {
+    await db()
+      .from('member_practices')
+      .update({ active: false, retired_at: new Date().toISOString(), retired_reason: reason } as never)
+      .eq('profile_id', profileId)
+      .eq('journey_plan_id', planId)
+      .eq('source', 'journey')
+      .eq('active', true)
+  } catch {
+    // repairable; never blocks completion/leave
+  }
+}
+
+/** "Keep it" (ADR-920): convert a journey-sourced row into the member's OWN practice — the
+ *  identity conversion at journey completion ("you practiced this daily for four weeks; keep
+ *  it"). The row becomes source='self' with a fresh window under the chosen term (default
+ *  ongoing), active again if the completion already retired it. */
+export async function convertJourneyRowToSelf(
+  profileId: string,
+  practiceId: string,
+  termWeeks: number | null = null,
+): Promise<void> {
+  const today = await resolveMemberDay(profileId)
+  const window = termWindow(today, coerceTermWeeks(termWeeks))
+  await db()
+    .from('member_practices')
+    .update({
+      active: true,
+      source: 'self',
+      journey_plan_id: null,
+      term_weeks: termWeeks == null ? null : coerceTermWeeks(termWeeks),
+      starts_on: window.startsOn,
+      ends_on: termWeeks == null ? null : window.endsOn,
+      retired_at: null,
+      retired_reason: null,
+    } as never)
+    .eq('profile_id', profileId)
+    .eq('practice_id', practiceId)
+}
+
 /** Retire a member's adoption: active=false plus WHY and WHEN, so history survives (the old
  *  bare toggle lost it). `reason` defaults to 'dropped' (the member removed it by hand). */
 export async function dropMemberPractice(

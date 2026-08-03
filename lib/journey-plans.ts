@@ -13,7 +13,8 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { adoptPracticesForJourney } from '@/lib/practices'
+import { adoptPracticesForJourney, retireJourneyPracticeRows } from '@/lib/practices'
+import { computeLegTargets } from '@/lib/journeys/leg-targets'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 
 function db(): SupabaseClient {
@@ -769,6 +770,56 @@ async function listPlanPracticeIds(planId: string): Promise<string[]> {
   ]
 }
 
+/** A member's existing SOLO enrollment start for a plan, or null (fresh enroll). Local twin of
+ *  lib/journeys/runs.getSoloEnrollmentStart — inlined because runs.ts imports THIS module, so
+ *  importing it back would cycle. */
+async function getSoloAnchorStart(profileId: string, planId: string): Promise<Date | null> {
+  const { data } = await db()
+    .from('journey_enrollments')
+    .select('started_at')
+    .eq('profile_id', profileId)
+    .eq('plan_id', planId)
+    .is('run_id', null)
+    .maybeSingle()
+  const started = (data as { started_at: string | null } | null)?.started_at
+  return started ? new Date(started) : null
+}
+
+/** The ENROLL-TIME target set (ADR-920 Phase 2): the current leg's practices union the
+ *  Anchor(s), never the whole journey. `anchorStart` = the Run's start for cohort enrollment,
+ *  or "now" for a fresh solo enroll (week 1). Falls back to every practice when the plan has
+ *  no phases (a flat legacy plan). */
+async function planEnrollTargetIds(planId: string, anchorStart: Date | null): Promise<string[]> {
+  try {
+    const { data: items } = await db()
+      .from('journey_plan_items')
+      .select('id, parent_id, block_type, sort_order, title, required, est_minutes, practice_id, settings')
+      .eq('plan_id', planId)
+    const blocks = ((items ?? []) as Record<string, unknown>[]).map((r) => ({
+      id: String(r.id),
+      parent_id: (r.parent_id as string) ?? null,
+      block_type: (r.block_type as string) ?? 'practice',
+      sort_order: Number(r.sort_order ?? 0),
+      title: (r.title as string) ?? null,
+      required: (r.required as boolean) ?? true,
+      est_minutes: (r.est_minutes as number) ?? null,
+      practice_id: (r.practice_id as string) || null,
+      settings: (r.settings as { anchor?: boolean } | null) ?? null,
+    }))
+    const { data: planRow } = await db()
+      .from('journey_plans')
+      .select('drip_interval_days')
+      .eq('id', planId)
+      .maybeSingle()
+    const drip = Number((planRow as { drip_interval_days: number | null } | null)?.drip_interval_days ?? 7)
+    const targets = computeLegTargets(blocks, anchorStart, drip)
+    if (targets.weeks > 0) return targets.targetIds
+    return listPlanPracticeIds(planId)
+  } catch {
+    return listPlanPracticeIds(planId)
+  }
+}
+
 /** Adopt a plan's practices + activate journey_plan_adoptions for COHORT Run members, in bulk.
  *  The lean twin of adoptPlan for host-initiated enrollment (startRun/enrollInRun): the members'
  *  journey_enrollments rows (run_id set) are written by the Run path, so no solo enrollment here.
@@ -778,11 +829,18 @@ async function listPlanPracticeIds(planId: string): Promise<string[]> {
  *  Without this, a Run member had no adopted practices and no current-leg row at all (the
  *  getCurrentLeg reader keys on journey_plan_adoptions), so the flagship cohort path showed
  *  nothing in On Air. Bulk (3-4 queries for a whole cohort); idempotent; never throws. */
-export async function adoptPlanForRunMembers(profileIds: string[], planId: string): Promise<void> {
+export async function adoptPlanForRunMembers(
+  profileIds: string[],
+  planId: string,
+  /** The Run's drip anchor (started_at); omitted = now (a Run starting today = week 1). */
+  runStartedAt?: Date | null,
+): Promise<void> {
   if (!profileIds.length) return
   try {
     const client = db()
-    const practiceIds = await listPlanPracticeIds(planId)
+    // Phase-scoped (ADR-920 Phase 2): the current leg union the Anchor(s), never the whole
+    // journey. A mid-flight joiner (enrollInRun) gets the week the Run is actually on.
+    const practiceIds = await planEnrollTargetIds(planId, runStartedAt ?? new Date())
     await adoptPracticesForJourney(profileIds, practiceIds, planId)
     // journey_plan_adoptions in one upsert: unique (plan_id, profile_id) re-activates cleanly.
     await client.from('journey_plan_adoptions').upsert(
@@ -792,11 +850,6 @@ export async function adoptPlanForRunMembers(profileIds: string[], planId: strin
   } catch {
     // adoption is repairable later (re-enroll / adopt by hand); the Run itself stands
   }
-}
-
-/** One-member convenience wrapper (enrollInRun). */
-export async function adoptPlanForRunMember(profileId: string, planId: string): Promise<void> {
-  await adoptPlanForRunMembers([profileId], planId)
 }
 
 /** Leave a Journey: deactivate the member's journey_plan_adoptions row (so the current-leg
@@ -818,6 +871,9 @@ export async function leavePlan(profileId: string, planId: string): Promise<void
       .eq('plan_id', planId)
       .eq('profile_id', profileId)
       .is('completed_at', null)
+    // The journey's OWN practice rows retire with it (reason 'dropped'); the member's
+    // self-adopted rows are untouched (ADR-920 Phase 2).
+    await retireJourneyPracticeRows(profileId, planId, 'dropped')
   } catch {
     // leaving is best-effort; a partial leave is re-runnable
   }
@@ -828,10 +884,12 @@ export async function leavePlan(profileId: string, planId: string): Promise<void
  *  adoption (incrementing adopt_count on first adoption only). */
 export async function adoptPlan(profileId: string, planId: string): Promise<void> {
   const client = db()
-  const practiceIds = await listPlanPracticeIds(planId)
-  // Journey-sourced adoption (ADR-920): bulk, labeled source='journey', and never clobbering an
-  // active self-adoption's term. The member's own deliberate enroll still tracks the funnel step
-  // below via the plan adoption (not per practice).
+  // Phase-scoped, journey-sourced adoption (ADR-920 Phase 2): the current leg union the
+  // Anchor(s), never the whole journey (a fresh solo enroll anchors at now = week 1; a
+  // re-adopt mid-drip gets the week the member is actually on via their enrollment start).
+  // Bulk, labeled source='journey', never clobbering an active self-adoption's term.
+  const soloStart = await getSoloAnchorStart(profileId, planId)
+  const practiceIds = await planEnrollTargetIds(planId, soloStart ?? new Date())
   await adoptPracticesForJourney([profileId], practiceIds, planId)
 
   // Ensure a SOLO enrollment (journey_enrollments, run_id null) exists for this adoption. journey_plan_adoptions
