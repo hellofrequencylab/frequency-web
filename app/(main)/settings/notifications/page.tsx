@@ -63,14 +63,13 @@ export default async function NotificationsPage() {
     analytics: analytics,
   }
 
-  // SMS preferences live on the same row but in columns not yet in the generated types.
-  const smsRow = prefsRow as unknown as Partial<SmsPreferences> | null
+  // SMS preferences live on the same notification_preferences row (typed columns).
   const smsPreferences: SmsPreferences = {
-    sms_enabled: smsRow?.sms_enabled ?? SMS_PREF_DEFAULTS.sms_enabled,
-    sms_dispatches: smsRow?.sms_dispatches ?? SMS_PREF_DEFAULTS.sms_dispatches,
-    sms_events: smsRow?.sms_events ?? SMS_PREF_DEFAULTS.sms_events,
-    sms_quiet_start_hour: smsRow?.sms_quiet_start_hour ?? SMS_PREF_DEFAULTS.sms_quiet_start_hour,
-    sms_quiet_end_hour: smsRow?.sms_quiet_end_hour ?? SMS_PREF_DEFAULTS.sms_quiet_end_hour,
+    sms_enabled: prefsRow?.sms_enabled ?? SMS_PREF_DEFAULTS.sms_enabled,
+    sms_dispatches: prefsRow?.sms_dispatches ?? SMS_PREF_DEFAULTS.sms_dispatches,
+    sms_events: prefsRow?.sms_events ?? SMS_PREF_DEFAULTS.sms_events,
+    sms_quiet_start_hour: prefsRow?.sms_quiet_start_hour ?? SMS_PREF_DEFAULTS.sms_quiet_start_hour,
+    sms_quiet_end_hour: prefsRow?.sms_quiet_end_hour ?? SMS_PREF_DEFAULTS.sms_quiet_end_hour,
   }
 
   // The sms_consent ledger may not exist yet (migration 20260626010000 is unapplied in
@@ -82,19 +81,7 @@ export default async function NotificationsPage() {
   // Latest sms_consent row (member reads own via RLS). opted_in => verified + consented.
   const consentRow = smsTableReady
     ? (
-        await (supabase as unknown as {
-          from: (t: string) => {
-            select: (c: string) => {
-              eq: (col: string, v: string) => {
-                order: (col: string, opts: { ascending: boolean }) => {
-                  limit: (n: number) => {
-                    maybeSingle: () => Promise<{ data: { status?: string; phone?: string } | null }>
-                  }
-                }
-              }
-            }
-          }
-        })
+        await supabase
           .from('sms_consent')
           .select('status, phone')
           .eq('profile_id', profile.id)

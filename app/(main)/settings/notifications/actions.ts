@@ -36,31 +36,14 @@ export async function saveNotificationPreferences(
 
   const clean = sanitizeSettings(settings)
 
-  // The Phase 6 columns (*_comments, freq_*) are not in the generated DB types yet
-  // (ADR-246), so route the write through the untyped cast rather than regenerate types.
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  let { error } = await (supabase as any)
+  // The full Phase 6 grid (channel × category, incl. `practice`, plus freq_*) is in the
+  // generated DB types, so the write goes through the typed client.
+  const { error } = await supabase
     .from('notification_preferences')
     .upsert(
-      { profile_id: profile.id, ...clean },
+      { ...clean, profile_id: profile.id },
       { onConflict: 'profile_id' },
     )
-
-  // Deploy-before-migration window (ADR-920 review): PostgREST rejects the WHOLE upsert on an
-  // unknown column, so until the `practice` category migration applies, every settings save
-  // would fail platform-wide. Retry once without the four new keys — the member's other
-  // choices land; the practice toggles start working the moment the column exists.
-  if (error && /practice/.test(error.message ?? '')) {
-    const withoutPractice = { ...clean } as Record<string, unknown>
-    delete withoutPractice.email_practice
-    delete withoutPractice.inapp_practice
-    delete withoutPractice.push_practice
-    delete withoutPractice.freq_practice
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    ;({ error } = await (supabase as any)
-      .from('notification_preferences')
-      .upsert({ profile_id: profile.id, ...withoutPractice }, { onConflict: 'profile_id' }))
-  }
 
   if (error) return fail(error.message)
 

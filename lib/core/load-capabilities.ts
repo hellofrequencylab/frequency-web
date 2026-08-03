@@ -34,8 +34,7 @@ import { readSpotlightEnabled, readSpotlightPublished } from '@/lib/profile/spot
 
 // The STAFF axis (web_role, ADR-208) rides on the caller profile alongside the
 // community role, so the SAME Viewer feeds every scope builder below — DB → auth →
-// capabilities. getCallerProfile() reads web_role through the untyped cast (the
-// generated types are stale until the migration applies).
+// capabilities (getCallerProfile() reads profiles.web_role).
 //
 // SCOPED stewardship (P1.6, ADR-218): the viewer also carries its `stewardships`
 // edges as a `leadsScope` predicate, so the resolver recognizes a scoped leader by

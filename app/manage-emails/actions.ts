@@ -54,12 +54,9 @@ export async function setEmailCategoryPreference(params: {
     ? { ...(existing as unknown as NotificationPreferences), [key]: subscribed }
     : { ...DEFAULT_PREFERENCES, [key]: subscribed }
 
-  // DEFAULT_PREFERENCES carries the Phase 6 *_comments columns, not in the generated DB types yet (ADR-246);
-  // route the write through the untyped cast, same as app/unsubscribe/actions.ts.
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  const { error } = await (admin as any)
+  const { error } = await admin
     .from('notification_preferences')
-    .upsert({ profile_id: profileId, ...next }, { onConflict: 'profile_id' })
+    .upsert({ ...next, profile_id: profileId }, { onConflict: 'profile_id' })
 
   if (error) {
     console.error('[manage-emails] upsert:', error.message)

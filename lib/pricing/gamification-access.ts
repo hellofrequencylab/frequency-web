@@ -72,15 +72,7 @@ export async function resolveViewerGamificationAccess(): Promise<GamificationAcc
     const user = await getCachedUser()
     if (!user) return 'earn_only'
     const admin = createAdminClient()
-    // membership_tier is typed; gamification_access_override is not in the generated types yet
-    // (ADR-246) — selected via the untyped cast and read loosely by the pure resolver.
-    const { data } = await (admin as unknown as {
-      from: (t: string) => {
-        select: (c: string) => {
-          eq: (col: string, v: string) => { maybeSingle: () => Promise<{ data: Record<string, unknown> | null }> }
-        }
-      }
-    })
+    const { data } = await admin
       .from('profiles')
       .select('membership_tier, gamification_access_override')
       .eq('auth_user_id', user.id)
