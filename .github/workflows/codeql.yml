@@ -32,6 +32,12 @@ jobs:
         with:
           languages: javascript-typescript
           queries: security-and-quality
+          # The vendored DAWN design-system reference set is reading material, never
+          # shipped or executed by the app — same jurisdiction call as the eslint
+          # ignore (design_handoff/dawn/ASSETS.md).
+          config: |
+            paths-ignore:
+              - design_handoff
       - name: Analyze
         uses: github/codeql-action/analyze@v4.37.4
         with:
