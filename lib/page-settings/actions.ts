@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { Database, Json } from '@/lib/database.types'
+import type { Json } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { isStaff } from '@/lib/core/roles'
@@ -90,12 +90,11 @@ export async function savePageSeo(
     ...fields,
   }
 
-  // space_id + header_image_url aren't in the generated types yet — cast the payload (ADR-246),
-  // not the client. onConflict is the (space_id, route) composite key.
+  // onConflict is the (space_id, route) composite key.
   const payload = { route, space_id: ctx.spaceId, ...merged, updated_by: ctx.profileId, updated_at: new Date().toISOString() }
   const { error } = await db()
     .from('page_settings')
-    .upsert(payload as unknown as Database['public']['Tables']['page_settings']['Insert'], { onConflict: 'space_id,route' })
+    .upsert(payload, { onConflict: 'space_id,route' })
   if (error) return fail('Could not save SEO for that route.')
 
   revalidatePath(route)
@@ -131,11 +130,10 @@ export async function savePageStatus(
   if (!ctx) return fail('You can only edit your own space.')
   if (!isSafeRoute(route)) return fail('That is not a valid app route.')
   const fields = normalizeStatus(input)
-  // space_id isn't in the generated types yet — cast the payload (ADR-246), not the client.
   const payload = { route, space_id: ctx.spaceId, status: fields.status, visibility_role: fields.visibility_role, updated_by: ctx.profileId, updated_at: new Date().toISOString() }
   const { error } = await db()
     .from('page_settings')
-    .upsert(payload as unknown as Database['public']['Tables']['page_settings']['Insert'], { onConflict: 'space_id,route' })
+    .upsert(payload, { onConflict: 'space_id,route' })
   if (error) return fail('Could not save status for that route.')
 
   revalidatePath(route)
@@ -217,16 +215,13 @@ export async function getPageLayoutForEditor(key: string, spaceId?: string | nul
   if (!ctx || !isLayoutKey(key)) return build({ template: DEFAULT_TEMPLATE, slots: {} })
   // Read THIS space's row at the level's OWN key (a scope key never passes isSafeRoute, so we
   // read directly here inside the gated action rather than via the route-only reader). The read
-  // is scoped to (space_id, route) — space_id isn't in the generated types yet, so reach it with
-  // an untyped client (ADR-246).
-  const q = db().from('page_settings') as unknown as {
-    select: (cols: string) => {
-      eq: (col: string, val: string) => {
-        eq: (col: string, val: string) => { maybeSingle: () => Promise<{ data: { layout: unknown } | null }> }
-      }
-    }
-  }
-  const { data } = await q.select('layout').eq('space_id', ctx.spaceId).eq('route', key).maybeSingle()
+  // is scoped to (space_id, route).
+  const { data } = await db()
+    .from('page_settings')
+    .select('layout')
+    .eq('space_id', ctx.spaceId)
+    .eq('route', key)
+    .maybeSingle()
   // Nothing saved at this level → open the editor on the route's coded default (so it matches what
   // the page renders), else the registry default. A saved config at this level always wins.
   const saved = parseLayout(data?.layout ?? null)
@@ -293,12 +288,12 @@ export async function savePageLayout(
     slotConfigs[s.id] = slot
   }
 
-  // The payload carries space_id (not in the generated types yet — cast it, ADR-246) and the
-  // known-good { template, slots } jsonb tree; onConflict is the (space_id, route) composite key.
+  // The payload carries the known-good { template, slots } jsonb tree (cast to Json — jsonb
+  // payloads have no generated shape); onConflict is the (space_id, route) composite key.
   const payload = { route: key, space_id: ctx.spaceId, layout: { template, slots: slotConfigs } as unknown as Json, updated_by: ctx.profileId, updated_at: new Date().toISOString() }
   const { error } = await db()
     .from('page_settings')
-    .upsert(payload as unknown as Database['public']['Tables']['page_settings']['Insert'], { onConflict: 'space_id,route' })
+    .upsert(payload, { onConflict: 'space_id,route' })
   if (error) return fail('Could not save the layout for that scope.')
 
   // A concrete route refreshes just that page; a scope edit is broad, so purge all cached
