@@ -7,7 +7,7 @@
 > Legend: ✅ done · ⏳ partial / in flight · 📋 specced, not built · 🔴 blocked / gated.
 > Spec detail still lives in the per-topic docs; this is the **order of operations**.
 
-## 🏗️ App Platform + white-label sites — deferred by owner decision — 2026-08-03 ([ADR-920](DECISIONS.md), specs [WHITE-LABEL-SITES.md](WHITE-LABEL-SITES.md) · [LOOM-PLATFORM.md](LOOM-PLATFORM.md) · [SPACES.md](SPACES.md))
+## 🏗️ App Platform + white-label sites — deferred by owner decision — 2026-08-03 ([ADR-921](DECISIONS.md), specs [WHITE-LABEL-SITES.md](WHITE-LABEL-SITES.md) · [LOOM-PLATFORM.md](LOOM-PLATFORM.md) · [SPACES.md](SPACES.md))
 
 The two back phases of the 2026-08-03 master production plan, parked here so the work is on the
 list without being in flight. The active runway (ground truth → tenancy walls → instant shell →

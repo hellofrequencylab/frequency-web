@@ -59,7 +59,7 @@ touch **both**. This is why the engine rework (P6) is fenced off last.
 | **P1** | Affordance rework | Timed → **Start Practice** + timer icon; logged → **check-off**. | none | 🟢 | ✅ |
 | **P2** | Full workout authoring | Preset chips + Work/Rest/Rounds steppers (all modes) in the builder → full `movement_config`, seeded into the launched session. + time-ladder polish + server sanitize. | none | 🟡 | ✅ |
 | **P3** | Creator warm-up + message | Builder warm-up block; render inside the pre-roll (both engines). | uses P0 | 🟡 | ✅ |
-| **P4** | Timer preview on cards | Shape string from `movement_config` + `buildPlan()` on card + detail. | none | 🟢 | 📋 |
+| **P4** | Timer preview on cards | Shape string from `movement_config` + `buildPlan()` on card + detail. | none | 🟢 | ✅ (detail + builder earlier; "Your practices" cards with ADR-920 Phase 5) |
 | **P5** | Journey / Run choreography | Per-step **warm-up message** override at `journey_plan_items.settings` (merge-safe). Timer-shape override deferred. | none | 🟡 | ✅ |
 | **P6** | Sequenced practices | Chain timed practices into one continuous run, auto-advance; each leg logs its own practice. Entry: a Journey module's "Start all as one session". | none (provider-orchestrated) | 🔴 | ✅ |
 | **P7** | Full author controls + instruction blocks | Every practice×timer combo is authorable: Be Still sub-mode (Auto + 6 flavours), length lock, on top of the Get Moving preset + warm-up. `StudioNote` instruction blocks across the builder's timer sections. | none (columns exist) | 🟢 | ✅ |

@@ -7,7 +7,17 @@ import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/comp
 import { isError } from '@/lib/action-result'
 import { sparkPracticeAction, createPracticeFromSparkAction } from '@/app/(main)/practices/create-actions'
 import { createPracticeDraftAction } from '@/app/(main)/practices/actions'
-import type { PracticePace, PracticeCadenceHint } from '@/lib/ai/practice-spark'
+import type { PracticePace, PracticeCadenceHint, PracticeSparkTimer } from '@/lib/ai/practice-spark'
+import { timerPreview } from '@/lib/movement'
+
+// The Be Still sub-mode LABELS (naming canon: member copy never shows raw enum slugs).
+const MINDLESS_LABEL: Record<string, string> = {
+  meditate: 'Meditate',
+  breathe: 'Breathe',
+  journal: 'Journal',
+  stillness: 'Stillness',
+  ritual: 'Ritual',
+}
 
 // The guided Practice builder, Step 1 "Spark" (ADR-358). Two ways in:
 //   • QUESTIONS — a short stepped form (who / the act / outcome / cadence + time), or
@@ -47,6 +57,10 @@ export function PracticeSpark() {
   const [pillars, setPillars] = useState<Array<'mind' | 'body' | 'spirit' | 'expression'>>([])
   const [draftCadence, setDraftCadence] = useState('')
   const [durationMin, setDurationMin] = useState<number | null>(null)
+  // The timer half of Vera's draft (ADR-920 Phase 5): carried through to creation so the
+  // practice ships with its timer preset instead of the silent default sit. Shown read-only
+  // on the review step; the full tuning lives in the builder after create.
+  const [timer, setTimer] = useState<PracticeSparkTimer | null>(null)
 
   const onReview = step === 5
   const total = usingWritten ? 2 : 5
@@ -67,6 +81,7 @@ export function PracticeSpark() {
         setPillars(res.data.pillar ? [res.data.pillar] : [])
         setDraftCadence(res.data.cadence)
         setDurationMin(res.data.durationMin)
+        setTimer(res.data.timer ?? null)
       }
       setStep(5)
     })
@@ -84,6 +99,7 @@ export function PracticeSpark() {
         pillars,
         cadence: draftCadence || null,
         durationMin,
+        timer,
       }),
     )
   }
@@ -244,6 +260,24 @@ export function PracticeSpark() {
                     </div>
                     <p className="mt-1.5 text-2xs text-subtle">Pick one or more Pillars. You can change them, the cadence, and everything else in the next step.</p>
                   </div>
+                  {timer && (
+                    <div className="rounded-xl border border-border bg-canvas px-3.5 py-2.5">
+                      <span className="block text-2xs font-semibold uppercase tracking-wide text-subtle">How it&apos;s done</span>
+                      <p className="mt-0.5 text-sm font-medium text-text">
+                        {timerPreview({
+                          timerKind: timer.timerKind,
+                          movementConfig: timer.movementMode ? { mode: timer.movementMode } : null,
+                          durationMin,
+                        })}
+                        {timer.mindlessMode && timer.timerKind === 'mindless'
+                          ? ` · ${MINDLESS_LABEL[timer.mindlessMode] ?? ''}`
+                          : ''}
+                      </p>
+                      <p className="mt-0.5 text-2xs text-subtle">
+                        Vera set the timer to match the act. Tune every part of it in the next step.
+                      </p>
+                    </div>
+                  )}
                 </>
               )}
             </div>

@@ -24,13 +24,14 @@ describe('resolveCapabilities · global (admin.access rides the STAFF axis, ADR-
 })
 
 describe('resolveCapabilities · global creation gates (ADR-414 · event opened ADR-810)', () => {
-  // The DEEPER creation gates (journey + practice) stay real-Crew (ADR-414): authoring reusable
-  // library content is the Crew job. event.create is open to any signed-in member (ADR-810), and
-  // circle.create joined it under FIRST ONE FREE (ADR-908) — a free Member hosts the one Circle
-  // their membership includes, capped as a QUANTITY at publish by the `circle_host` meter, not by
-  // this door. `OPEN` is the pair that needs only a sign-in.
-  const CREATES = ['journey.create', 'practice.create'] as const
-  const OPEN = ['event.create', 'circle.create'] as const
+  // The DEEPER creation gate (practice) stays real-Crew (ADR-414): authoring reusable library
+  // content is the Crew job, mirrored by the `practice_publish` meter (free 0). event.create is
+  // open to any signed-in member (ADR-810); circle.create AND journey.create joined it under
+  // FIRST ONE FREE (ADR-908/838) — a free Member hosts the one Circle and publishes the one
+  // Journey their membership includes, capped as a QUANTITY at publish (`circle_host` /
+  // `journey_publish` meters), never by this door. `OPEN` is the set needing only a sign-in.
+  const CREATES = ['practice.create'] as const
+  const OPEN = ['event.create', 'circle.create', 'journey.create'] as const
   const hasAllCreates = (caps: ReturnType<typeof resolveCapabilities>) => CREATES.every((c) => caps.has(c))
   const hasNoCreates = (caps: ReturnType<typeof resolveCapabilities>) => CREATES.every((c) => !caps.has(c))
 
@@ -84,7 +85,7 @@ describe('resolveCapabilities · global creation gates (ADR-414 · event opened 
     // circle.create's limit is a quantity enforced at publish (ADR-908), never a locked door.
     expect(gaps['event.create']).toBeUndefined()
     expect(gaps['circle.create']).toBeUndefined()
-    expect(gaps['journey.create']).toBe('needs-paid-tier')
+    expect(gaps['journey.create']).toBeUndefined()
     expect(gaps['practice.create']).toBe('needs-paid-tier')
   })
 })

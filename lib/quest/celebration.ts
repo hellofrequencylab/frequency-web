@@ -46,6 +46,10 @@ export interface UnseenCompletion {
   /** Where the season ends: the next Quest, named/dated when scheduled. Only resolved
    *  for the seasonComplete case (null otherwise — the regular finish doesn't need it). */
   next: NextSeasonPointer | null
+  /** The just-finished Journey's ANCHOR practice, when the member's row for it was
+   *  journey-sourced (retired at completion): the "Keep it" conversion offer (ADR-920).
+   *  Null when the Journey has no anchor or the member already holds it as their own. */
+  anchor: { practiceId: string; title: string } | null
 }
 
 /**
@@ -112,7 +116,55 @@ export async function readUnseenCompletion(profileId: string): Promise<UnseenCom
       next = { name: upcoming?.name ?? null, startsAt: upcoming?.starts_at ?? null }
     }
 
-    return { completionId: latest.id, journeyTitle, rank, rankAdvanced, seasonComplete, next }
+    // The "Keep it" offer (ADR-920): the finished Journey's Anchor practice, when the member's
+    // row for it is journey-sourced (the completion just retired it). A member who already
+    // self-holds the practice gets no offer (it is already theirs). Best-effort to null.
+    let anchor: { practiceId: string; title: string } | null = null
+    try {
+      const { data: anchorItem } = await admin
+        .from('journey_plan_items')
+        .select('practice_id, settings')
+        .eq('plan_id', latest.journey_id)
+        .not('practice_id', 'is', null)
+      const anchorId = ((anchorItem ?? []) as { practice_id: string | null; settings: { anchor?: boolean } | null }[])
+        .find((r) => r.settings?.anchor === true)?.practice_id
+      if (anchorId) {
+        // The offer is valid only for the row THIS journey wrote and THIS completion retired:
+        // source='journey' scoped to this plan, inactive, retired 'completed'. Anything else —
+        // the same practice under a different still-running journey, a live re-enroll, or a
+        // self row with the member's own term — must not be offered (the conversion would
+        // overwrite state that is not this journey's to give). Mirrors the
+        // convertJourneyRowToSelf guard. Untyped cast: term columns are newer than the
+        // generated types (ADR-246).
+        const untyped: import('@supabase/supabase-js').SupabaseClient = admin
+        const { data: row } = await untyped
+          .from('member_practices')
+          .select('source, journey_plan_id, active, retired_reason, practice:practices(title)')
+          .eq('profile_id', profileId)
+          .eq('practice_id', anchorId)
+          .maybeSingle()
+        const r = row as {
+          source: string | null
+          journey_plan_id: string | null
+          active: boolean
+          retired_reason: string | null
+          practice: { title: string } | null
+        } | null
+        if (
+          r?.source === 'journey' &&
+          r.journey_plan_id === latest.journey_id &&
+          r.active === false &&
+          r.retired_reason === 'completed' &&
+          r.practice?.title
+        ) {
+          anchor = { practiceId: anchorId, title: r.practice.title }
+        }
+      }
+    } catch {
+      // the offer is a nicety; the celebration stands without it
+    }
+
+    return { completionId: latest.id, journeyTitle, rank, rankAdvanced, seasonComplete, next, anchor }
   } catch {
     return null
   }

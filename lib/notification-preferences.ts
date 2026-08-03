@@ -24,6 +24,7 @@ export type NotificationCategory =
   | 'mentions'
   | 'lifecycle'
   | 'comments'
+  | 'practice'
 
 export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   'dispatches',
@@ -31,6 +32,7 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   'mentions',
   'lifecycle',
   'comments',
+  'practice',
 ] as const
 
 // The full topic vocabulary the preference model + per-subject/contact surfaces speak
@@ -56,16 +58,19 @@ export type NotificationPreferences = {
   email_mentions:   boolean
   email_lifecycle:  boolean
   email_comments:   boolean
+  email_practice:   boolean
   inapp_dispatches: boolean
   inapp_events:     boolean
   inapp_mentions:   boolean
   inapp_lifecycle:  boolean
   inapp_comments:   boolean
+  inapp_practice:   boolean
   push_dispatches:  boolean
   push_events:      boolean
   push_mentions:    boolean
   push_lifecycle:   boolean
   push_comments:    boolean
+  push_practice:    boolean
   // Opt-IN, default OFF (20261204000000): remind me about upcoming public events
   // from Spaces I follow that I have not RSVP'd to. NOT part of the channel x
   // category grid — a single email-only opt-in, read via wantsSpaceEventReminders().
@@ -78,16 +83,21 @@ export const DEFAULT_PREFERENCES: NotificationPreferences = {
   email_mentions:   true,
   email_lifecycle:  true,
   email_comments:   true,
+  // Practice reminders by email are OFF by default (a daily reminder email is churn fuel; the
+  // weekly digest carries the recap). ADR-920 Phase 3.
+  email_practice:   false,
   inapp_dispatches: true,
   inapp_events:     true,
   inapp_mentions:   true,
   inapp_lifecycle:  true,
   inapp_comments:   true,
+  inapp_practice:   true,
   push_dispatches:  false,
   push_events:      false,
   push_mentions:    false,
   push_lifecycle:   false,
   push_comments:    false,
+  push_practice:    false,
   // Strictly opt-in: OFF until the member turns it on in /settings/notifications.
   space_event_reminders: false,
 }
@@ -103,6 +113,7 @@ export const DEFAULT_FREQUENCIES: CategoryFrequencies = {
   freq_mentions:   'realtime',
   freq_lifecycle:  'realtime',
   freq_comments:   'realtime',
+  freq_practice:   'realtime',
 }
 
 // The combined shape the settings form round-trips (grid + frequency), one upsert.
@@ -146,6 +157,7 @@ export async function getFrequencies(profileId: string): Promise<CategoryFrequen
       freq_mentions:   normalizeFrequency(row.freq_mentions),
       freq_lifecycle:  normalizeFrequency(row.freq_lifecycle),
       freq_comments:   normalizeFrequency(row.freq_comments),
+      freq_practice:   normalizeFrequency((row as Record<string, unknown>).freq_practice),
     }
   } catch {
     return { ...DEFAULT_FREQUENCIES }

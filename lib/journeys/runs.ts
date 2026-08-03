@@ -6,6 +6,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { spaceIdForCircle } from '@/lib/circles/store'
+import { adoptPlanForRunMembers } from '@/lib/journey-plans'
 import { eventStartInputToIso } from '@/lib/events/datetime'
 import { buildJourneyTree, type BlockRow } from './tree'
 import { aggregateCohort, type MemberCompletion, type CohortProgress } from './cohort'
@@ -72,14 +73,27 @@ export async function startRun(input: {
     run_id: runId,
   }))
   if (rows.length) await db().from('journey_enrollments').insert(rows)
+  // Each Run member also needs the plan's practices adopted + a journey_plan_adoptions row —
+  // the current-leg reader (getCurrentLeg) keys on journey_plan_adoptions, so without this a
+  // cohort member saw none of the Run's practices in On Air. ONE bulk call for the whole
+  // cohort (never a per-member write storm); best-effort inside, so the Run itself stands.
+  // Phase-scoped (ADR-920 Phase 2): week 1 union the Anchor(s), anchored at the Run's start.
+  await adoptPlanForRunMembers(rows.map((r) => r.profile_id), input.planId, input.startedAt ?? new Date())
   return runId
 }
 
-/** Enroll one member into a Run (idempotent on the unique index). */
+/** Enroll one member into a Run (idempotent on the unique index). A mid-flight joiner adopts
+ *  the week the Run is actually on (the run's start anchors the leg), plus the Anchor(s). */
 export async function enrollInRun(profileId: string, runId: string, planId: string): Promise<void> {
   await db()
     .from('journey_enrollments')
     .upsert({ profile_id: profileId, plan_id: planId, run_id: runId }, { onConflict: 'profile_id,run_id', ignoreDuplicates: true })
+  try {
+    const run = await getRun(runId)
+    await adoptPlanForRunMembers([profileId], planId, run ? new Date(run.startedAt) : null)
+  } catch {
+    // best-effort, same contract as startRun
+  }
 }
 
 export async function getRun(runId: string): Promise<JourneyRun | null> {
@@ -287,12 +301,35 @@ export async function setRunEndState(runId: string, state: RunEndState): Promise
     .update({ status: state, updated_at: new Date().toISOString() })
     .eq('id', runId)
     .in('status', ['scheduled', 'active'])
-    .select('id')
+    .select('id, plan_id')
   if (error) {
     console.error('[journey-runs] end state write failed', { code: error.code, runId, state })
     return false
   }
-  return (data ?? []).length > 0
+  const moved = (data ?? []).length > 0
+  if (moved) {
+    // Retire the members' journey-sourced practice rows (ADR-920): once the Run ends,
+    // getCurrentLeg drops the plan BEFORE its per-plan reconcile runs, so nothing else can
+    // ever retire these — without this every non-finishing member of an ended Run keeps its
+    // practices on their list forever. Members who FINISHED had theirs retired 'completed'
+    // by tryCompleteJourney already (that filter is on active=true, so this is a no-op for
+    // them). Self-adopted rows are untouched. Best-effort.
+    try {
+      const planId = String((data![0] as { plan_id: string }).plan_id)
+      const { data: enrolled } = await db()
+        .from('journey_enrollments')
+        .select('profile_id')
+        .eq('run_id', runId)
+      const memberIds = [...new Set(((enrolled ?? []) as { profile_id: string }[]).map((r) => r.profile_id))]
+      if (memberIds.length) {
+        const { retireJourneyPracticeRowsForMembers } = await import('@/lib/practices')
+        await retireJourneyPracticeRowsForMembers(memberIds, planId, 'phase_ended')
+      }
+    } catch {
+      // repairable via leave / plan delete; the end-state write already landed
+    }
+  }
+  return moved
 }
 
 /** Active Runs for a Circle (most recent first). */

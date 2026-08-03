@@ -864,9 +864,11 @@ const CIRCLES_CAP = 6
  *  filtered + fail-safe), shaped to the plain block item. No new raw query. FAIL-SAFE to empty groups. */
 export async function getSpacePractices(spaceId: string): Promise<SpacePracticesData> {
   try {
+    // publishedOnly: this feeds PUBLIC profile surfaces (space landing, claim pages), so a Space's
+    // private draft practices (status='draft') and private Journeys must never render here.
     const [practices, journeys] = await Promise.all([
-      listPracticesForSpace(spaceId, PRACTICES_CAP),
-      listJourneyPlansForSpace(spaceId, JOURNEYS_CAP),
+      listPracticesForSpace(spaceId, PRACTICES_CAP, { publishedOnly: true }),
+      listJourneyPlansForSpace(spaceId, JOURNEYS_CAP, { publishedOnly: true }),
     ])
     return {
       practices: practices.map((p) => ({

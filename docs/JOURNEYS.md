@@ -156,13 +156,17 @@ A Netflix-simple **lesson player**:
 - **Right:** the active lesson: title, a ≤6-min video or markdown body or exercise prompt,
   and **one clear next action** ("Mark complete & continue"). Knowledge-check lessons give
   **instant feedback + retries** (the testing effect, §10).
-- **Practice steps → On Air (ADR-304):** a practice step shows a SINGLE action keyed to the
-  practice's `uses_timer`: **"Practice"** (opens the global On Air timer overlay pre-set to this
-  practice, no navigation) for a sit/breathwork, or **"Log it"** (one-tap log) for an action or
-  reflection. Completion is **log-gated**: "Mark complete & continue" stays grey until the practice
-  is logged today; clicking it unlogged reveals a warning + a "Continue without logging" escape
-  hatch. Enrolling a Journey **auto-adopts** its practices (`adoptPlan`), which **auto-links** them
-  in On Air (it reads the member's adopted set).
+- **Practice steps → On Air (ADR-304, amended by ADR-920):** a practice step shows a SINGLE
+  action keyed to the practice's `uses_timer`: **"Practice"** (opens the global On Air timer
+  overlay pre-set to this practice, no navigation) for a sit/breathwork, or **"Log it"** (one-tap
+  log) for an action or reflection. Completion is **log-gated**: "Mark complete & continue" stays
+  grey until the practice is logged today; clicking it unlogged reveals a warning + a "Continue
+  without logging" escape hatch. Enrolling adopts **the current leg union the Anchor** (ADR-920
+  Phase 2 — no longer the whole plan): `journey`-sourced `member_practices` rows scoped by
+  `journey_plan_id`, rolled forward each week by the read-time reconcile (last week retires
+  `phase_ended`, this week adopts; the Anchor persists journey-long), retired at completion/leave/
+  Run-end, with the **Keep it** conversion offered on the Anchor at the finish. On Air shows the
+  leg with the "Week N of M · Journey" chip and releases it once every enrollment resolves.
 - **Resume where you left off** (last lesson + video position).
 - **Celebration moments:** confetti + trophy at each **phase complete** and at **journey
   complete**; a certificate to keep/share.

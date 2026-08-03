@@ -37,6 +37,11 @@ const CATEGORIES: { key: NotificationCategory; label: string; description: strin
     label:       'Onboarding nudges',
     description: 'Day 1 / Day 3 / Day 7 check-ins after you join a circle.',
   },
+  {
+    key:         'practice',
+    label:       'Practice reminders',
+    description: 'A nudge on days a practice is still waiting, at the time you usually practice. One a day at most, plus the note when a commitment completes.',
+  },
 ]
 
 const CHANNELS = [

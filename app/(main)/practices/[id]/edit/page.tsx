@@ -61,6 +61,8 @@ export default async function EditPracticePage({ params }: { params: Promise<{ i
       isAdmin={isAdmin}
       rewardZaps={practice.reward_zaps}
       rewardNote={practice.reward_note}
+      status={practice.status}
+      isPublic={practice.is_public}
       // Vera composer (ADR-358): "Build with Vera" until the practice has a guide, then "Edit with
       // Vera". Empty = no body yet, so a freshly-created draft opens ready to build.
       veraComposer={<PracticeComposer id={practice.id} isEmpty={!practice.body?.trim()} />}

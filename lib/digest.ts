@@ -10,6 +10,7 @@
 // with "nothing happened" emails. The cron just skips those profiles.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 
 export type DigestDispatch = {
@@ -36,6 +37,10 @@ export type DigestPayload = {
   upcomingEvents:   DigestEvent[]
   topStreak:        { type: string; count: number } | null
   rank:             { name: string | null; zaps: number } | null
+  /** Practices whose term completed in the last week and were not picked back up — the
+   *  fresh-start re-offer (ADR-920 Phase 3): the Sunday digest lands right before Monday,
+   *  the strongest re-commitment landmark. One line each, at most two. */
+  goAgain:          { title: string; url: string }[]
 }
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
@@ -159,8 +164,36 @@ export async function assembleDigestForProfile(profileId: string): Promise<Diges
   type StreakRow = { streak_type: string; current_count: number }
   const topStreak = ((streaks ?? []) as StreakRow[])[0] ?? null
 
+  // ── "Go again" — completed-term practices not yet picked back up ───
+  // The fresh-start re-offer (ADR-920 Phase 3): a commitment that ran its course in the
+  // last week and stayed retired gets one quiet line in the Sunday digest (which lands
+  // right before Monday, the strongest re-commitment landmark). Never more than two;
+  // fail-safe to none. Read through an untyped cast (the term columns are newer than the
+  // generated types, ADR-246).
+  let goAgain: { title: string; url: string }[] = []
+  try {
+    const untyped: SupabaseClient = admin
+    const { data: doneRows } = await untyped
+      .from('member_practices')
+      .select('practice_id, retired_at, practice:practices(title, slug)')
+      .eq('profile_id', profileId)
+      .eq('active', false)
+      .eq('retired_reason', 'completed')
+      .gte('retired_at', weekAgo)
+      .limit(2)
+    type DoneRow = { practice_id: string; practice: { title: string; slug: string | null } | null }
+    goAgain = ((doneRows ?? []) as unknown as DoneRow[])
+      .filter((r) => r.practice?.title)
+      .map((r) => ({
+        title: r.practice!.title,
+        url: `${APP_URL}/practices/${r.practice!.slug || r.practice_id}`,
+      }))
+  } catch {
+    goAgain = []
+  }
+
   // ── Skip if nothing to say ─────────────────────────────────────────
-  if (!dispatches.length && !upcomingEvents.length) return null
+  if (!dispatches.length && !upcomingEvents.length && !goAgain.length) return null
 
   type ProfileRow = {
     id: string; display_name: string; auth_user_id: string | null
@@ -183,6 +216,7 @@ export async function assembleDigestForProfile(profileId: string): Promise<Diges
           zaps: p.current_season_zaps ?? 0,
         }
       : null,
+    goAgain,
   }
 }
 

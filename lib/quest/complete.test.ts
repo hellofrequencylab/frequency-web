@@ -74,17 +74,26 @@ function from(table: string) {
       // ignoreDuplicates → a conflict yields no rows (matches the real .select('id') semantics)
       return thenable({ data: inserted, error: null })
     },
-    update: (payload: Row) => ({
-      eq: (c: string, v: unknown) => {
-        filters.push([c, v])
-        return {
-          then: (resolve: (v: unknown) => unknown) => {
-            for (const r of tbl(table)) if (match(r)) Object.assign(r, payload)
-            return Promise.resolve({ data: null, error: null }).then(resolve)
-          },
-        }
-      },
-    }),
+    update: (payload: Row) => {
+      // A chainable filter builder: any run of .eq()/.is() then awaited applies the update to
+      // matching rows (mirrors the real PostgREST builder, incl. the completed_at stamp's
+      // .eq().eq().is(null) chain).
+      const chain: Record<string, unknown> = {
+        eq: (c: string, v: unknown) => {
+          filters.push([c, v])
+          return chain
+        },
+        is: (c: string, v: unknown) => {
+          filters.push([c, v ?? undefined])
+          return chain
+        },
+        then: (resolve: (v: unknown) => unknown) => {
+          for (const r of tbl(table)) if (match(r)) Object.assign(r, payload)
+          return Promise.resolve({ data: null, error: null }).then(resolve)
+        },
+      }
+      return chain
+    },
     delete: () => ({
       eq: (c: string, v: unknown) => {
         filters.push([c, v])

@@ -18,7 +18,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveMemberDay } from '@/lib/member-day'
 import { getMemberPractices, type TimerKind, type MindlessMode, type PartialToday } from '@/lib/practices'
 import type { MovementConfig } from '@/lib/movement'
-import { getCurrentLegPracticeIds } from '@/lib/journeys/current-leg'
+import { getCurrentLeg, type CurrentLegContext } from '@/lib/journeys/current-leg'
 import { DEFAULT_PREFS, coerceBellVolume, coerceAmbientVolume, type OnAirPrefs } from '@/lib/on-air'
 import type { OnAirPractice } from '@/components/on-air/session'
 
@@ -45,6 +45,9 @@ export interface OnAirSessionData {
   prefs: OnAirPrefs
   /** Distinct members with a practice log today (presence line, shown at >=3). */
   practicedToday: number
+  /** When the list is a Journey's current leg: which week of which Journey(s), for the
+   *  "Week N · <Journey>" chip on the setup screen. Empty when the list is the member's own. */
+  journeyLegs: CurrentLegContext[]
 }
 
 type PracticeRow = {
@@ -79,7 +82,7 @@ export async function loadOnAirSessionData(
   // matching and the timer opened fresh instead of resuming. resolveMemberDay fixes the boundary.
   const today = await resolveMemberDay(profileId)
   const [
-    legIds,
+    leg,
     mine,
     { data: prof },
     { data: todayLogs },
@@ -87,7 +90,7 @@ export async function loadOnAirSessionData(
     { data: sitRow },
     { data: moveRow },
   ] = await Promise.all([
-      getCurrentLegPracticeIds(profileId),
+      getCurrentLeg(profileId),
       getMemberPractices(profileId),
       admin.from('profiles').select('meta').eq('id', profileId).maybeSingle(),
       // Today's logs carry the completion columns (seconds_done/target, completed) so a
@@ -135,8 +138,8 @@ export async function loadOnAirSessionData(
   // The base list: when enrolled, ONLY the current leg's practices (the things due now); otherwise
   // the member's adopted practices. Free sit rides on top of either.
   let base: PracticeRow[]
-  if (legIds.length) {
-    const { data: legRows } = await admin.from('practices').select(PRACTICE_TIMER_COLS).in('id', legIds)
+  if (leg.practiceIds.length) {
+    const { data: legRows } = await admin.from('practices').select(PRACTICE_TIMER_COLS).in('id', leg.practiceIds)
     base = (legRows ?? []) as unknown as PracticeRow[]
   } else {
     base = mine.map((p) => ({
@@ -288,5 +291,14 @@ export async function loadOnAirSessionData(
       ? requestedPracticeId
       : dueTodayId ?? (sit ? FREE_SIT_ID : practices.find((p) => isReal(p))?.id ?? null)
 
-  return { practices, defaultPracticeId, prefs, practicedToday }
+  return {
+    practices,
+    defaultPracticeId,
+    prefs,
+    practicedToday,
+    // Only when the leg actually drove the list (an enrolled member): the setup chip says which
+    // Journey week the timer is showing, so the leg-replaces-your-list behavior reads as a
+    // deliberate mode, never a mystery.
+    journeyLegs: leg.practiceIds.length ? leg.legs : [],
+  }
 }

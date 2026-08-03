@@ -16,10 +16,10 @@
 // once. We notify only the NEWEST due phase and record the earlier ones as 'skipped' ledger rows,
 // so nobody gets a stack of stale unlock notices and nothing is re-scanned forever.
 //
-// DORMANT UNTIL THE MIGRATION APPLIES: the journey_drip_sends table ships as a DRAFT migration
-// (supabase/migrations/20261229000000_journey_drip_sends.sql, not yet applied). Every ledger read
-// and claim here fails safe, so until the table exists the runner delivers NOTHING and reports
-// zeros — by design, never an error page or a double-send.
+// LIVE: the journey_drip_sends ledger (migration 20261229000000) was applied to production
+// 2026-07-27 (the migration file records it), so the runner delivers for real. Every ledger
+// read and claim still fails safe — on any environment without the table it delivers NOTHING
+// and reports zeros, never an error page or a double-send.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { unlockedPhaseCount } from '@/lib/journeys/schedule'
@@ -239,7 +239,13 @@ export async function runDueJourneyDripSends(limit = 200): Promise<JourneyDripRu
       // in-app notification (defaults on) plus a push for members who opted in (lifecycle
       // category; sendPushToProfile re-checks preference + consent).
       const phaseTitle = phases[newest]?.title?.trim() || `Phase ${newest + 1}`
-      const body = `${phaseTitle} is now open in ${plan.title}. Pick up where you left off.`
+      // The closure note (ADR-920, owner ruling: a rollover is never silent): from week 2 on,
+      // the unlock notice also closes the week that just finished — its practices step back
+      // from the timer while the Anchor carries on.
+      const prevTitle = newest > 0 ? phases[newest - 1]?.title?.trim() || `Phase ${newest}` : null
+      const body = prevTitle
+        ? `${prevTitle} is complete. ${phaseTitle} is now open in ${plan.title}; this week's practices take its place.`
+        : `${phaseTitle} is now open in ${plan.title}. Pick up where you left off.`
       const { error: notifyErr } = await admin.from('notifications').insert({
         recipient_id: enrollment.profile_id,
         actor_id: null,

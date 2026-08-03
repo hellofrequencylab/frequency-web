@@ -411,6 +411,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             // Walk default. A generic toggle into Get Moving opens neutral.
             defaultMode={state.movementMode ?? resolveDefaultMode(state.data)}
             practicedToday={state.data.practicedToday}
+            journeyLegs={state.data.journeyLegs ?? []}
             resumeFromSec={state.resume?.resumeFromSec}
             secondsTarget={state.resume?.secondsTarget}
             // A practice-select launch skips setup and begins the countdown immediately.
@@ -441,6 +442,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             explicitPracticeId={state.practiceId}
             prefs={state.data.prefs}
             practicedToday={state.data.practicedToday}
+            journeyLegs={state.data.journeyLegs ?? []}
             resumeFromSec={state.resume?.resumeFromSec}
             secondsTarget={state.resume?.secondsTarget}
             // A practice-select launch skips setup and begins the countdown immediately.

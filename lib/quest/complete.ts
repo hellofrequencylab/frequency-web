@@ -195,6 +195,38 @@ export async function tryCompleteJourney(
       console.error('[tryCompleteJourney] insert', insertErr.message)
       return { completed: false }
     }
+    // Stamp the enrollment(s) complete — on BOTH branches, before the alreadyDone return.
+    // journey_enrollments.completed_at was read in four places (progress, drip-sends, meter
+    // usage, the prompt cron) but written by nothing, so enrollments lived forever and the
+    // daily next-step nudge never stopped. Stamping here also covers the re-take: a member who
+    // finished solo and later joins a Run of the same plan in the same season lands in the
+    // alreadyDone branch, and their FRESH run enrollment still needs the stamp or On Air pins
+    // the final week forever (getCurrentLeg releases only when every enrollment is stamped).
+    // Best-effort: a stamp failure never blocks the completion.
+    await admin
+      .from('journey_enrollments')
+      .update({ completed_at: new Date().toISOString() })
+      .eq('profile_id', profileId)
+      .eq('plan_id', journeyId)
+      .is('completed_at', null)
+      .then(({ error: stampErr }) => {
+        if (stampErr) console.error('[tryCompleteJourney] completed_at stamp', stampErr.message)
+      })
+
+    // Retire the journey-sourced practice rows — on BOTH branches, like the stamp above. A
+    // RE-TAKER (finished solo earlier this season, then finished a Run of the same plan)
+    // lands in the alreadyDone branch with fresh journey rows from the re-enroll; without
+    // the retire here those rows leak active forever, and the reconcile can never repair
+    // them (the stamp resolves every enrollment, so getCurrentLeg drops the plan before its
+    // per-plan sync runs). Their SELF-adopted rows are untouched. Dynamic import
+    // (practices.ts reaches this module dynamically; a static edge here would cycle).
+    try {
+      const { retireJourneyPracticeRows } = await import('@/lib/practices')
+      await retireJourneyPracticeRows(profileId, journeyId, 'completed')
+    } catch {
+      // repairable by leave / plan delete; never blocks the completion
+    }
+
     // ignoreDuplicates → zero rows returned when the completion already existed. The Trophy +
     // lock are in place, but the ORIGINAL call may have crashed after the row landed and before
     // the +75 Zap purse was paid (C5). The purse carries its own reward_grants claim, so
