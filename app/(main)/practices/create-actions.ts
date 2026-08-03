@@ -160,6 +160,10 @@ export async function createPracticeFromSparkAction(input: {
 export async function submitPracticeForReviewAction(practiceId: string): Promise<ActionResult> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
+  // The public library is the paid surface (same gate as submitSpacePracticeToLibraryAction —
+  // review defect: without this, a free Space manager could route around the Crew wall by
+  // drafting through their Space and submitting here).
+  if (!(await canCreate('practice.create'))) return fail(crewCreateUpsell('a practice'))
   const practice = await getPractice(practiceId)
   if (!practice || practice.created_by !== profileId) return fail('Not yours to submit.')
   if (practice.status === 'pending') return ok()

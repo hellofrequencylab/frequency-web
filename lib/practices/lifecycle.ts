@@ -20,6 +20,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { memberDay } from '@/lib/member-day'
+import { recordEngagementEvent } from '@/lib/engagement/events'
 import { sendPushToProfile } from '@/lib/push'
 import { getPreferences } from '@/lib/notification-preferences'
 
@@ -107,6 +108,20 @@ export interface LifecycleSweepResult {
  *  signal the list is carrying dead weight against the few-held-practices aim. */
 export const STALE_AFTER_DAYS = 14
 
+/** The UTC hour the once-daily staleness pass runs in (a quiet hour; the prompt's exact
+ *  arrival time carries no meaning, so once a day anywhere is right and hourly was a tax). */
+export const STALE_SWEEP_UTC_HOUR = 4
+
+/** Chunk size for `.in()` id lists: keeps every request's URL and response comfortably under
+ *  PostgREST's limits (a 2000-uuid GET was the review's confirmed silent-failure mode). */
+const ID_CHUNK = 150
+
+function chunks<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = []
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
+  return out
+}
+
 /** One sweep pass. `now` injectable for tests. Never throws. */
 export async function runPracticeLifecycleSweep(now: Date = new Date()): Promise<LifecycleSweepResult> {
   const result: LifecycleSweepResult = { completionsRetired: 0, completionNotices: 0, remindersSent: 0, stalePrompts: 0, errors: 0 }
@@ -136,20 +151,35 @@ export async function runPracticeLifecycleSweep(now: Date = new Date()): Promise
     const due = ((dueRows ?? []) as unknown as DueRow[])
     if (due.length) {
       const profileIds = [...new Set(due.map((r) => r.profile_id))]
-      const { data: tzRows } = await admin.from('profiles').select('id, home_timezone').in('id', profileIds)
-      const tzById = new Map(
-        ((tzRows ?? []) as { id: string; home_timezone: string | null }[]).map((r) => [r.id, r.home_timezone]),
-      )
+      // Chunked: an unbounded .in() over hundreds of uuids fails at the URL layer and would
+      // silently drop every tz to UTC, firing completions at the wrong midnight.
+      const tzById = new Map<string, string | null>()
+      for (const chunk of chunks(profileIds, ID_CHUNK)) {
+        const { data: tzRows, error: tzErr } = await admin.from('profiles').select('id, home_timezone').in('id', chunk)
+        if (tzErr) {
+          result.errors++
+          continue
+        }
+        for (const r of (tzRows ?? []) as { id: string; home_timezone: string | null }[]) tzById.set(r.id, r.home_timezone)
+      }
       for (const row of due) {
+        // A member whose tz read failed is skipped (never completed on the wrong midnight);
+        // the next hourly pass retries.
+        if (!tzById.has(row.profile_id)) continue
         const today = memberDay(tzById.get(row.profile_id), now)
         if (!termIsComplete(row.ends_on, today)) continue
         try {
+          // The guards pin the UPDATE to the exact candidate row version: a member who
+          // re-adopted between the SELECT and this write (fresh ends_on, or a journey row)
+          // must not have their brand-new commitment retired as 'completed'.
           const { error: retireErr } = await admin
             .from('member_practices')
             .update({ active: false, retired_at: now.toISOString(), retired_reason: 'completed' } as never)
             .eq('profile_id', row.profile_id)
             .eq('practice_id', row.practice_id)
             .eq('active', true)
+            .eq('source', 'self')
+            .eq('ends_on', row.ends_on)
           if (retireErr) {
             result.errors++
             continue
@@ -190,39 +220,36 @@ export async function runPracticeLifecycleSweep(now: Date = new Date()): Promise
 
   // ── 2. Daily reminders at the habitual hour ─────────────────────────────────────
   try {
-    // Members with at least one ACTIVE practice, batched; the per-member gates below do
-    // the narrowing (pref on, unlogged today, right hour, not already nudged today).
+    // Members with at least one ACTIVE practice. Ordered so the SWEEP_CAP slice is stable —
+    // an unordered read past the cap would exclude the same heap-order tail forever.
     const { data: activeRows } = await admin
       .from('member_practices')
       .select('profile_id')
       .eq('active', true)
+      .order('profile_id')
       .limit(10000)
-    const memberIds = [...new Set(((activeRows ?? []) as { profile_id: string }[]).map((r) => r.profile_id))].slice(
-      0,
-      SWEEP_CAP,
-    )
+    const memberIds = [...new Set(((activeRows ?? []) as { profile_id: string }[]).map((r) => r.profile_id))]
+      .sort()
+      .slice(0, SWEEP_CAP)
     if (memberIds.length) {
-      const [{ data: tzRows }, { data: recentNudges }] = await Promise.all([
-        admin.from('profiles').select('id, home_timezone').in('id', memberIds),
-        // One send a day: anything of this type in the last 20h counts as today's.
-        admin
-          .from('notifications')
-          .select('recipient_id')
-          .eq('type', 'practice_reminder')
-          .gte('created_at', new Date(now.getTime() - 20 * 3600_000).toISOString()),
-      ])
-      const tzById = new Map(
-        ((tzRows ?? []) as { id: string; home_timezone: string | null }[]).map((r) => [r.id, r.home_timezone]),
-      )
-      const nudgedToday = new Set(
-        ((recentNudges ?? []) as { recipient_id: string }[]).map((r) => r.recipient_id),
-      )
+      const tzById = new Map<string, string | null>()
+      for (const chunk of chunks(memberIds, ID_CHUNK)) {
+        const { data: tzRows, error: tzErr } = await admin.from('profiles').select('id, home_timezone').in('id', chunk)
+        if (tzErr) {
+          result.errors++
+          continue
+        }
+        for (const r of (tzRows ?? []) as { id: string; home_timezone: string | null }[]) tzById.set(r.id, r.home_timezone)
+      }
       for (const profileId of memberIds) {
         try {
-          if (nudgedToday.has(profileId)) continue
+          // A member whose tz read failed is skipped (a UTC fallback would nudge at the
+          // wrong hour); the next hourly pass retries.
+          if (!tzById.has(profileId)) continue
           const tz = tzById.get(profileId) ?? null
           const today = memberDay(tz, now)
-          // The habitual hour, from the member's own recent log instants.
+          // ONE query per member before the hour gate (the review's N+1 finding: this loop
+          // used to run 5-7 per member before gating; now ~96% of members cost exactly one).
           const { data: logRows } = await admin
             .from('practice_logs')
             .select('created_at')
@@ -234,6 +261,17 @@ export async function runPracticeLifecycleSweep(now: Date = new Date()): Promise
             tz,
           )
           if (localHour(now.toISOString(), tz) !== hour) continue
+          // ONE-A-DAY, both channels: the exactly-once claim is an engagement_events
+          // idempotency key on the member's LOCAL day — not a notifications read, which
+          // covered only the in-app channel (a push-only member could double up on DST
+          // fall-back) and silently truncated at PostgREST's row cap.
+          const claim = await recordEngagementEvent({
+            idempotencyKey: `practice_reminder:${profileId}:${today}`,
+            source: 'system',
+            eventType: 'practice_reminder',
+            actorProfileId: profileId,
+          })
+          if (!claim.recorded) continue
           // Anything still unlogged today?
           const { data: todayLogs } = await admin
             .from('practice_logs')
@@ -286,59 +324,81 @@ export async function runPracticeLifecycleSweep(now: Date = new Date()): Promise
   // ── 3. The staleness prompt (ADR-920 Phase 4) ───────────────────────────────────
   // An ONGOING self adoption that has gone STALE_AFTER_DAYS with no log gets ONE quiet
   // "still keeping this?" in-app note — the aim is few, held practices, so dead weight
-  // earns a prompt, never an auto-drop. One per (member, practice), ever: the existing
-  // notification is the dedupe. Termed rows are excluded (their end is the sweep above);
-  // journey rows are excluded (their lifecycle is the journey's).
-  try {
-    const cutoff = new Date(now.getTime() - STALE_AFTER_DAYS * 86_400_000).toISOString().slice(0, 10)
-    const { data: staleCandidates } = await admin
-      .from('member_practices')
-      .select('profile_id, practice_id, practice:practices(title)')
-      .eq('active', true)
-      .eq('source', 'self')
-      .is('ends_on', null)
-      .lte('starts_on', cutoff)
-      .limit(SWEEP_CAP)
-    type StaleRow = { profile_id: string; practice_id: string; practice: { title: string } | null }
-    const candidates = (staleCandidates ?? []) as unknown as StaleRow[]
-    for (const row of candidates) {
-      try {
-        // Any log inside the window clears it.
-        const { data: recent } = await admin
-          .from('practice_logs')
-          .select('id')
-          .eq('profile_id', row.profile_id)
-          .eq('practice_id', row.practice_id)
-          .gte('logged_for', cutoff)
-          .limit(1)
-        if ((recent ?? []).length) continue
-        // One prompt per (member, practice), ever.
-        const { data: prior } = await admin
-          .from('notifications')
-          .select('id')
-          .eq('recipient_id', row.profile_id)
-          .eq('type', 'practice_stale_check')
-          .eq('reference_id', row.practice_id)
-          .limit(1)
-        if ((prior ?? []).length) continue
-        const prefs = await getPreferences(row.profile_id)
-        if (!prefs.inapp_practice) continue
-        const title = row.practice?.title ?? 'One of your practices'
-        await admin.from('notifications').insert({
-          recipient_id: row.profile_id,
-          actor_id: null,
-          type: 'practice_stale_check',
-          reference_type: 'practice',
-          reference_id: row.practice_id,
-          body: `${title} has been quiet for two weeks. Keep it, or set it down to make room.`,
-        })
-        result.stalePrompts++
-      } catch {
-        result.errors++
+  // earns a prompt, never an auto-drop. ONCE DAILY (a fixed UTC hour): the prompt's exact
+  // arrival time carries no meaning, and running the candidate scan hourly was a permanent
+  // query tax. Deduped exactly-once per (member, practice) via an engagement claim, which
+  // also drops examined rows out of the re-scan cost. Legacy rows (NULL starts_on, from
+  // before the term migration) qualify by created_at — they are exactly the dead weight
+  // this exists for. Termed rows are excluded (their end is the sweep above); journey rows
+  // are excluded (their lifecycle is the journey's).
+  if (now.getUTCHours() === STALE_SWEEP_UTC_HOUR) {
+    try {
+      const cutoff = new Date(now.getTime() - STALE_AFTER_DAYS * 86_400_000).toISOString().slice(0, 10)
+      const cutoffTs = new Date(now.getTime() - STALE_AFTER_DAYS * 86_400_000).toISOString()
+      const { data: staleCandidates } = await admin
+        .from('member_practices')
+        .select('profile_id, practice_id, starts_on, created_at, practice:practices(title)')
+        .eq('active', true)
+        .eq('source', 'self')
+        .is('ends_on', null)
+        .or(`starts_on.lte.${cutoff},starts_on.is.null`)
+        .order('created_at')
+        .limit(SWEEP_CAP)
+      type StaleRow = {
+        profile_id: string
+        practice_id: string
+        starts_on: string | null
+        created_at: string
+        practice: { title: string } | null
       }
+      const candidates = ((staleCandidates ?? []) as unknown as StaleRow[]).filter(
+        // NULL starts_on qualifies by row age, so a legacy row adopted yesterday is not "stale".
+        (r) => r.starts_on != null || r.created_at <= cutoffTs,
+      )
+      // Bulk recent-log read (chunked by member): any log in the window clears a candidate.
+      const candidateMembers = [...new Set(candidates.map((r) => r.profile_id))]
+      const recentPairs = new Set<string>()
+      for (const chunk of chunks(candidateMembers, ID_CHUNK)) {
+        const { data: recentRows } = await admin
+          .from('practice_logs')
+          .select('profile_id, practice_id')
+          .in('profile_id', chunk)
+          .gte('logged_for', cutoff)
+        for (const r of (recentRows ?? []) as { profile_id: string; practice_id: string | null }[]) {
+          if (r.practice_id) recentPairs.add(`${r.profile_id}:${r.practice_id}`)
+        }
+      }
+      for (const row of candidates) {
+        try {
+          if (recentPairs.has(`${row.profile_id}:${row.practice_id}`)) continue
+          // Exactly once per (member, practice), ever — the claim also removes the row from
+          // every future scan's per-row cost.
+          const claim = await recordEngagementEvent({
+            idempotencyKey: `practice_stale_check:${row.profile_id}:${row.practice_id}`,
+            source: 'system',
+            eventType: 'practice_stale_check',
+            actorProfileId: row.profile_id,
+          })
+          if (!claim.recorded) continue
+          const prefs = await getPreferences(row.profile_id)
+          if (!prefs.inapp_practice) continue
+          const title = row.practice?.title ?? 'One of your practices'
+          await admin.from('notifications').insert({
+            recipient_id: row.profile_id,
+            actor_id: null,
+            type: 'practice_stale_check',
+            reference_type: 'practice',
+            reference_id: row.practice_id,
+            body: `${title} has been quiet for two weeks. Keep it, or set it down to make room.`,
+          })
+          result.stalePrompts++
+        } catch {
+          result.errors++
+        }
+      }
+    } catch {
+      result.errors++
     }
-  } catch {
-    result.errors++
   }
 
   return result

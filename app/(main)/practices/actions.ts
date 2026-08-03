@@ -159,8 +159,11 @@ export async function adoptPracticeAction(
 }
 
 /** The swap at the cap: retire one held practice (reason 'swapped') and adopt the new one in
- *  its place, atomically enough for the UI (retire first; the adopt then passes the cap).
- *  Self-scoped. */
+ *  its place. Hardened after review: the DROP TARGET must be the caller's own ACTIVE SELF
+ *  adoption (a journey row's lifecycle belongs to its journey, and an unheld id must not
+ *  count as making room), and a failed adopt ROLLS the drop back so the member never silently
+ *  loses a practice to a half-completed swap. The cap itself is enforced inside adoptPractice
+ *  (the one chokepoint), so this action cannot be used to exceed it. */
 export async function swapPracticeAction(
   dropPracticeId: string,
   adoptPracticeId: string,
@@ -171,11 +174,27 @@ export async function swapPracticeAction(
   if (!dropPracticeId || !adoptPracticeId || dropPracticeId === adoptPracticeId) {
     return fail('Pick a practice to make room for.')
   }
+  const { getMemberAdoptions } = await import('@/lib/practices')
+  const adoptions = await getMemberAdoptions(profileId)
+  const dropRow = adoptions.find((a) => a.practice.id === dropPracticeId)
+  if (!dropRow || dropRow.source !== 'self') {
+    return fail('Pick one of your own practices to set down.')
+  }
   await dropMemberPractice(profileId, dropPracticeId, 'swapped')
   await adoptPractice(profileId, adoptPracticeId, {
     termWeeks: opts?.termWeeks ?? null,
     ...(opts && 'cue' in opts ? { cue: opts.cue } : {}),
   })
+  // Verify the adopt actually landed; if not, restore the dropped practice with the shape it
+  // had, so a failed swap leaves the list exactly as it was.
+  const after = await getMemberAdoptions(profileId)
+  if (!after.some((a) => a.practice.id === adoptPracticeId)) {
+    await adoptPractice(profileId, dropPracticeId, {
+      termWeeks: dropRow.termWeeks,
+      ...(dropRow.cue != null ? { cue: dropRow.cue } : {}),
+    })
+    return fail('That swap did not go through. Your list is unchanged.')
+  }
   revalidatePath('/practices')
   return ok()
 }
@@ -200,7 +219,8 @@ export async function keepPracticeAction(
   if (!profileId) return fail('Not signed in')
   const { convertJourneyRowToSelf } = await import('@/lib/practices')
   const converted = await convertJourneyRowToSelf(profileId, practiceId, termWeeks)
-  if (!converted) return fail('Nothing to keep. This practice is not a finished journey practice of yours.')
+  if (!converted)
+    return fail('Nothing kept. Either it is not a finished journey practice of yours, or your list is full at five. Set one down first.')
   revalidatePath('/practices')
   return ok()
 }
@@ -271,10 +291,14 @@ export async function createPracticeDraftAction(): Promise<ActionResult<{ id: st
   // DRAFT-UNTIL-SUBMIT (ADR-920 Phase 5): born a private draft, never 'pending' — the review
   // queue used to receive a literal "Untitled practice" the moment this button was pressed.
   // The author submits from the builder's Library section when it is actually ready.
+  // is_public stays FALSE for EVERYONE here (review defect: a Host's blank draft was briefly
+  // born public, listing an "Untitled practice" in the library instantly). A Host+/staff
+  // author's row is 'approved' (live to them, publishable without review) but enters the
+  // public library only when they choose.
   const p = await createPractice({
     title: 'Untitled practice',
     createdBy: gate.profileId,
-    isPublic: gate.autoApprove,
+    isPublic: false,
     status: gate.autoApprove ? 'approved' : 'draft',
   })
   if (!p) return fail('Could not create practice')

@@ -52,10 +52,12 @@ function PracticeMeta({ p }: { p: Practice }) {
  *  (the adoption day reads Day 1 of 28 immediately). */
 function CommitmentLine({ a, today }: { a: MemberAdoption; today: string }) {
   if (a.source === 'journey') {
+    // Plain "Part of a Journey": an Anchor rides every week and a no-drip Journey has all
+    // weeks open, so "this week" would over-claim (copy canon: the skeptic test).
     return (
       <p className="mt-1 flex items-center gap-1 text-2xs font-medium text-primary-strong">
         <MapIcon className="h-3 w-3" aria-hidden />
-        Part of a Journey this week
+        Part of a Journey
       </p>
     )
   }

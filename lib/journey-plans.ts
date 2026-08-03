@@ -16,6 +16,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { adoptPracticesForJourney, retireJourneyPracticeRows } from '@/lib/practices'
 import { computeLegTargets } from '@/lib/journeys/leg-targets'
 import { loadRootSpaceId } from '@/lib/spaces/store'
+import { log } from '@/lib/log'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -1120,7 +1121,7 @@ async function retireAllJourneyRowsForPlan(planId: string): Promise<void> {
 export async function deletePlan(planId: string): Promise<void> {
   await retireAllJourneyRowsForPlan(planId)
   const { error } = await db().from('journey_plans').delete().eq('id', planId)
-  if (error) console.error('[deletePlan]', planId, error.message)
+  if (error) log.error('journeys.delete_plan_failed', { planId, error: error.message })
 }
 
 // --- Demo cleanup ---------------------------------------------------------
@@ -1138,7 +1139,7 @@ export async function deletePlansByAuthors(authorIds: string[]): Promise<void> {
     const { data: planRows } = await client.from('journey_plans').select('id').in('author_id', batch)
     for (const p of (planRows ?? []) as { id: string }[]) await retireAllJourneyRowsForPlan(p.id)
     const { error } = await client.from('journey_plans').delete().in('author_id', batch)
-    if (error) console.error('[deletePlansByAuthors]', error.message)
+    if (error) log.error('journeys.delete_plans_by_authors_failed', { error: error.message })
   }
 }
 

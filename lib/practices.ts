@@ -20,7 +20,7 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 import { resolveMemberDay, memberDay } from '@/lib/member-day'
 import { attributedLogDay } from '@/lib/practices/log-day'
 import { clampTierToDuration, achievedTier, type PracticeTier } from '@/lib/practices/tiers'
-import { coerceTermWeeks, cleanCue, termWindow } from '@/lib/practices/adoption'
+import { coerceTermWeeks, cleanCue, termWindow, withinActiveCap } from '@/lib/practices/adoption'
 import { BREATH_PATTERNS } from '@/lib/on-air'
 import {
   deriveDepthStreak,
@@ -30,6 +30,7 @@ import {
 } from '@/lib/practices/depth-streak'
 import { sanitizeMovementConfig, type MovementConfig } from '@/lib/movement'
 import { cleanWarmupMessage, WARMUP_SEC_MAX } from '@/lib/on-air'
+import { log } from '@/lib/log'
 
 /** Which timer a practice routes to (WEBSITE-CHANGES-PLAN §4 C.8): 'none' = a one-tap
  *  Log it; 'mindless' = the On Air sit/breathe (useMindless); 'movement' = the Movement
@@ -1823,20 +1824,31 @@ export async function adoptPractice(
   practiceId: string,
   opts?: AdoptOptions,
 ): Promise<void> {
+  // The existing row, read once: it powers the legacy no-op guard AND the cap check below.
+  const { data: existingRaw } = await db()
+    .from('member_practices')
+    .select('active, source')
+    .eq('profile_id', profileId)
+    .eq('practice_id', practiceId)
+    .maybeSingle()
+  const existing = existingRaw as { active: boolean; source: string | null } | null
   // A bare legacy call (no opts) over an ALREADY-ACTIVE row is a no-op: the member holds the
   // practice, possibly under a term they chose — a journey enroll or a repeat call must not
   // silently reset their commitment to ongoing/today. An explicit opts call is a re-commit
   // and does the full write.
-  if (!opts) {
-    const { data: existing } = await db()
-      .from('member_practices')
-      .select('active')
-      .eq('profile_id', profileId)
-      .eq('practice_id', practiceId)
-      .maybeSingle()
-    if ((existing as { active: boolean } | null)?.active) return
-  }
+  if (!opts && existing?.active) return
   const source = opts?.source === 'journey' && opts.journeyPlanId ? 'journey' : 'self'
+  // THE CAP LIVES HERE (ADR-920 Phase 4, hardened after review): every door that mints a NEW
+  // active self row — the Adopt button, claim, remix, swap, Keep it — passes through this
+  // function, so the 5-active-self cap is enforced at the one chokepoint instead of at one
+  // action a sibling action could bypass. Re-committing a practice already held (active) is
+  // never a cap event; journey rows are exempt. The count runs immediately before the write —
+  // a narrow read-then-write race remains (no DB constraint can express this cap), accepted
+  // because the failure mode is one practice over a soft focus cap, not data loss.
+  if (source === 'self' && !existing?.active) {
+    const activeSelf = await countActiveSelfAdoptions(profileId)
+    if (!withinActiveCap(activeSelf)) return
+  }
   // No opts at all = the legacy shape (ongoing, no term): existing callers keep their
   // behavior until each phase migrates them to explicit terms.
   const termWeeks = opts && 'termWeeks' in opts ? coerceTermWeeks(opts.termWeeks) : null
@@ -1865,7 +1877,7 @@ export async function adoptPractice(
     )
   // Visible, never fatal: a silent write failure (e.g. a deploy racing the migration)
   // would show "Adopted" over a row that never landed.
-  if (adoptErr) console.error('[adoptPractice]', practiceId, adoptErr.message)
+  if (adoptErr) log.error('practices.adopt_write_failed', { practiceId, error: adoptErr.message })
   // Activation-funnel step 4 (ADR-075). Best-effort; never blocks the adopt.
   await track('practice.adopted', { practiceId }, profileId)
 }
@@ -1911,7 +1923,7 @@ export async function adoptPracticesForJourney(
       // Fail CLOSED on a pair-read error: skip these members entirely rather than risk the
       // unguarded upsert (adoption is repairable; a clobbered term is not).
       if (pairErr) {
-        console.error('[adoptPracticesForJourney] pair read failed', pairErr.message)
+        log.error('practices.journey_adopt_pair_read_failed', { error: pairErr.message })
         for (const pid of chunk) for (const prid of practiceIds) activePairs.add(`${pid}:${prid}`)
         continue
       }
@@ -1942,7 +1954,7 @@ export async function adoptPracticesForJourney(
         .upsert(rows as never[], { onConflict: 'profile_id,practice_id' })
       // Visible, never fatal: a silent write failure here (e.g. a deploy racing the
       // migration) would read as "adoption works" while writing nothing.
-      if (upsertErr) console.error('[adoptPracticesForJourney] upsert failed', upsertErr.message)
+      if (upsertErr) log.error('practices.journey_adopt_upsert_failed', { error: upsertErr.message })
     }
   } catch {
     // adoption is repairable (re-enroll / adopt by hand); never blocks the caller
@@ -2062,6 +2074,10 @@ export async function convertJourneyRowToSelf(
   practiceId: string,
   termWeeks: number | null = null,
 ): Promise<boolean> {
+  // Keeping the Anchor mints a SELF row, so the cap applies here too (review defect: this
+  // was one of the doors that bypassed it). At the cap the conversion refuses; the caller
+  // surfaces the message and the member can swap first.
+  if (!withinActiveCap(await countActiveSelfAdoptions(profileId))) return false
   const today = await resolveMemberDay(profileId)
   const window = termWindow(today, coerceTermWeeks(termWeeks))
   const { data, error } = await db()
@@ -2082,7 +2098,7 @@ export async function convertJourneyRowToSelf(
     .eq('active', false)
     .select('id')
   if (error) {
-    console.error('[convertJourneyRowToSelf]', error.message)
+    log.error('practices.keep_convert_failed', { practiceId, error: error.message })
     return false
   }
   return ((data ?? []) as { id: string }[]).length > 0
@@ -2100,7 +2116,7 @@ export async function dropMemberPractice(
     .update({ active: false, retired_at: new Date().toISOString(), retired_reason: reason } as never)
     .eq('profile_id', profileId)
     .eq('practice_id', practiceId)
-  if (error) console.error('[dropMemberPractice]', practiceId, error.message)
+  if (error) log.error('practices.drop_write_failed', { practiceId, error: error.message })
 }
 
 // --- Activity history -----------------------------------------------------

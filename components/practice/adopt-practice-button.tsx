@@ -33,6 +33,7 @@ export function AdoptPracticeButton({
   // The cap's swap prompt (ADR-920 Phase 4): set when adopting bounced at 5 active — the
   // member picks one to make room, or backs out. Carries the term they chose.
   const [swap, setSwap] = useState<{ held: { id: string; title: string }[]; termWeeks: number | null } | null>(null)
+  const [swapError, setSwapError] = useState<string | null>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const defaultChipRef = useRef<HTMLButtonElement>(null)
@@ -116,11 +117,17 @@ export function AdoptPracticeButton({
 
   const swapWith = (dropId: string) => {
     const chosen = swap
+    setSwapError(null)
     start(async () => {
-      await swapPracticeAction(dropId, practiceId, {
+      const res = await swapPracticeAction(dropId, practiceId, {
         termWeeks: chosen?.termWeeks ?? null,
         cue: cue.trim() || null,
       })
+      if (isError(res)) {
+        // The server rolled a half-swap back; say so and keep the panel so the member can retry.
+        setSwapError(res.error)
+        return
+      }
       setPanel(null)
       setSwap(null)
     })
@@ -169,10 +176,12 @@ export function AdoptPracticeButton({
               </button>
             ))}
           </div>
+          {swapError && <p className="mt-2 text-2xs font-medium text-danger">{swapError}</p>}
           <button
             type="button"
             onClick={() => {
               setSwap(null)
+              setSwapError(null)
               setPanel(null)
             }}
             className="mt-2 text-2xs text-muted transition-colors hover:text-text"

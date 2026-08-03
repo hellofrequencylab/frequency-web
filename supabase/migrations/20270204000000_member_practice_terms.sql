@@ -34,6 +34,12 @@ alter table public.member_practices
   add column if not exists cue text
     check (cue is null or char_length(cue) <= 140);
 
+-- Belt-and-braces: an EARLIER pre-merge revision of this file created this constraint; any
+-- database that ran that revision (a branch DB, a local stack, a preview) must shed it, or
+-- deleting an ever-enrolled plan aborts on the FK's SET NULL. No-op everywhere else.
+alter table public.member_practices
+  drop constraint if exists member_practices_source_journey_check;
+
 -- NO check tying source='journey' to a non-null journey_plan_id, DELIBERATELY: the FK above is
 -- `on delete set null`, so deleting a journey_plans row nulls journey_plan_id on every
 -- referencing row (active and retired alike) — a check requiring the pair would make every

@@ -10,6 +10,15 @@ import { createPracticeDraftAction } from '@/app/(main)/practices/actions'
 import type { PracticePace, PracticeCadenceHint, PracticeSparkTimer } from '@/lib/ai/practice-spark'
 import { timerPreview } from '@/lib/movement'
 
+// The Be Still sub-mode LABELS (naming canon: member copy never shows raw enum slugs).
+const MINDLESS_LABEL: Record<string, string> = {
+  meditate: 'Meditate',
+  breathe: 'Breathe',
+  journal: 'Journal',
+  stillness: 'Stillness',
+  ritual: 'Ritual',
+}
+
 // The guided Practice builder, Step 1 "Spark" (ADR-358). Two ways in:
 //   • QUESTIONS — a short stepped form (who / the act / outcome / cadence + time), or
 //   • WRITTEN   — paste a Practice you already wrote and let Vera shape it into the fields.
@@ -260,7 +269,9 @@ export function PracticeSpark() {
                           movementConfig: timer.movementMode ? { mode: timer.movementMode } : null,
                           durationMin,
                         })}
-                        {timer.mindlessMode && timer.timerKind === 'mindless' ? ` · ${timer.mindlessMode}` : ''}
+                        {timer.mindlessMode && timer.timerKind === 'mindless'
+                          ? ` · ${MINDLESS_LABEL[timer.mindlessMode] ?? ''}`
+                          : ''}
                       </p>
                       <p className="mt-0.5 text-2xs text-subtle">
                         Vera set the timer to match the act. Tune every part of it in the next step.
