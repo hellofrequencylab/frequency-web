@@ -93,6 +93,11 @@ const nextConfig: NextConfig = {
   // through and the action's own size check is the real gate.
   experimental: {
     serverActions: { bodySizeLimit: '10mb' },
+    // Client router cache TTLs (docs: 05-config/01-next-config-js/staleTimes.md).
+    // Default is { dynamic: 0 } — every back/forward or repeat visit refetches the
+    // full RSC payload, re-running the (main) layout's fetch wave. 30s lets the
+    // router reuse a just-visited dynamic segment; static keeps the 5-min default.
+    staleTimes: { dynamic: 30, static: 300 },
   },
   // Keep the wasm rasterizer (styled QR PNG export, lib/qr/raster.ts) external so the
   // bundler doesn't try to bundle its .wasm — it's loaded from node_modules at runtime.

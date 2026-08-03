@@ -19,6 +19,9 @@ import { FocusTemplate } from '@/components/templates'
 
 export const dynamic = 'force-dynamic'
 
+// Personal member surface: titled for the tab, kept out of the index.
+export const metadata = { title: 'Your codes', robots: { index: false } }
+
 // A member's personal codes hub. Everyone gets three editable codes (connect /
 // referral / gift), provisioned on first visit, tied into The Quest (referral +
 // gift award zaps) and built for personal outreach. All encode /q/<slug>, so scans

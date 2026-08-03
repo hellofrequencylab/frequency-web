@@ -23,6 +23,9 @@ import { IntroduceForm } from './introduce-form'
 import { IntroductionsInbox } from './introductions-inbox'
 import { PageModules } from '@/components/widgets/page-modules'
 
+// Personal member surface: titled for the tab, kept out of the index.
+export const metadata = { title: 'Friends', robots: { index: false } }
+
 const GRID = 'grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3'
 
 function PendingCard({ profile, action }: { profile: FriendEntry['other']; action: React.ReactNode }) {
