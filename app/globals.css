@@ -152,6 +152,12 @@
   --motion-base: 260ms;
   --motion-slow: 700ms;
 
+  /* Motion easings (DAWN 2026-08-03). ease-pop overshoots (the cue-pop arrival
+     beat); ease-out is the reveal/lift curve. Named so effects (.lift-*, .sheen)
+     consume the token instead of re-typing the bezier. */
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
   /* Density — a single lever that mirrors the global "breathe" root font-size set on
      html below (the rem-based type + spacing scale derives from it). A skin can nudge
      --density-root to make its whole surface tighter or airier. Kept minimal on
@@ -1007,26 +1013,70 @@
   font-size: 10px;
 }
 
-/* Marketing section rhythm (DAWN 2026-08-03 spacing correction). The default padding for
-   marketing <Section> (marketing-ui.tsx) as a CSS variable, so the adjacency rule below can
-   do arithmetic on it: a section FOLLOWED by another section gives up a third of its bottom
-   padding. Two stacked sections previously each paid the full py-* price for the shared gap,
-   so a value tuned for the end of a page read as a hole in the middle. Values mirror the
-   retired literal steps (py-14 / sm:py-20 / lg:py-24). Sections passing an explicit `pad`
-   prop keep literal utilities and are untouched by this rule. */
-.mk-section {
-  --mk-pad: 3.5rem;
-  padding-block: var(--mk-pad);
+/* ── Marketing vertical rhythm — the four-role system (DAWN 2026-08-03, final round).
+   Replaces the approximated `.mk-section`. A public page is a sequence of BEATS, and the
+   spacing is what tells a reader which beat matters. Uniform padding on every section is
+   the failure mode: the page reads flat, and two same-tone sections stacked make one dead
+   170px void with nothing in it.
+
+   So there are four roles, and a section takes exactly one:
+
+     .mk-band   a tone change — the ink beat, a full-bleed photograph, the close.
+                Loose, because punctuation needs room around it.
+     .mk-beat   a standard content section. The workhorse.
+     .mk-cont   CONTINUES the section above it at the same tone: no top padding,
+                so the two read as one argument instead of two blocks.
+     .mk-tight  a statement or a banner — short, so it does not need the full beat.
+
+   The marketing <Section> (marketing-ui.tsx) derives its role automatically (ink → band,
+   default → beat, `role` prop overrides); an explicit `pad` prop still opts out entirely.
+   Each pairs the vertical rhythm with the standard 1.5rem gutter. Add .mk-arc when a
+   cream section rises out of ink on the arc — the shoulder eats the first 3.2rem. */
+:root {
+  /* Half-gaps: two stacked bands each contribute their own padding, so a token that looks
+     right in isolation reads as a hole in a pair. The pair is corrected below (a section
+     followed by another gives up a third of its bottom), and these values are tuned for
+     the corrected total. */
+  --space-section:        clamp(4.25rem, 8vw, 5.5rem); /* default content section */
+  --space-section-tight:  clamp(3rem, 5.5vw, 3.75rem); /* statements, banners     */
+  --space-section-loose:  clamp(5rem, 9.5vw, 7rem);    /* hero beats, dark band   */
 }
-@media (min-width: 640px) {
-  .mk-section { --mk-pad: 5rem; }
+.mk-band, .mk-beat, .mk-cont, .mk-tight { padding-inline: 1.5rem; }
+.mk-band  { padding-block: var(--space-section-loose); }
+.mk-beat  { padding-block: var(--space-section); }
+.mk-cont  { padding-block: 0 var(--space-section); }
+.mk-tight { padding-block: var(--space-section-tight); }
+/* Two beats of a NEARLY identical tone stacked — cream on cream, say. A full beat
+   on both sides makes one dead 170px hole; zero makes the tone shift look like a
+   bug. Half above, full below. */
+.mk-cont-soft { padding-block: calc(var(--space-section) / 2) var(--space-section); }
+/* And the same correction, automatically. Tag a section .mk-cream or .mk-ink and
+   two of the SAME tone in a row halve the gap between them, while a tone CHANGE
+   keeps the full beat — which is what makes a tone change read as a change. */
+.mk-cream + .mk-cream, .mk-ink + .mk-ink { padding-top: calc(var(--space-section) / 2); }
+/* And the double-count correction. Two stacked sections EACH pay for the gap between
+   them, so a padding that reads right at the end of a page reads as a hole in the
+   middle of one. A section that is followed by another gives up a third of its
+   bottom; the last section on the page keeps all of it, because below it is the end
+   of the document rather than a neighbour. */
+:is(.mk-band, .mk-beat, .mk-cont, .mk-cont-soft, .mk-tight):has(+ :is(.mk-band, .mk-beat, .mk-cont, .mk-cont-soft, .mk-tight)) {
+  padding-bottom: calc(var(--space-section) * 0.62);
 }
-@media (min-width: 1024px) {
-  .mk-section { --mk-pad: 6rem; }
-}
-.mk-section:has(+ .mk-section) {
-  padding-bottom: calc(var(--mk-pad) * 0.667);
-}
+.mk-arc   { padding-top: calc(var(--space-section) + 1.5rem); }
+/* The hero already carries its own bottom room; a beat straight after it must not
+   add a second gap. */
+.mk-hero:not(.mk-hero-dock) + .mk-beat, .mk-hero:not(.mk-hero-dock) + .mk-band { padding-top: 0; }
+/* A hero with a fact dock overhangs its own bottom edge by 2rem, so whatever comes
+   next has to clear the dock before its own rhythm starts. The HERO carries the tag
+   (PageHero adds .mk-hero-dock when it is given facts), so no page has to remember
+   this and no future dock can collide. The adjacency rule beats .mk-cont's zero.
+   Clearance is HALF a beat plus the overhang: the hero's own bottom room is already
+   generous, and a full beat on top of it opened a 246px hole under every dock. */
+.mk-dock-clear,
+.mk-hero-dock + section,
+.mk-hero-dock + .mk-beat,
+.mk-hero-dock + .mk-band,
+.mk-hero-dock + .mk-cont { padding-top: calc(var(--space-section) / 2 + 3rem); }
 
 /* Text-shadow presets (ADR-569 C1) — the two shadow steps the block text-style control offers.
    Token-driven (the shadow rgba matches the soft in-app shadow set), so operator-authored text
@@ -1708,4 +1758,122 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 400;
   letter-spacing: 0.012em;
   line-height: 1.0;
+}
+
+/* ══ The unified light-and-lift layer (DAWN 2026-08-03) ══════════════════════════
+   The settled system for texture, light and lift on the marketing surfaces; new
+   work uses THESE. Four families, and a law for each:
+
+     LIFT   .lift-1 / .lift-2 / .lift-3     how far off the page a thing sits
+     LIGHT  .sheen · .spot                  where the amber lands
+     TEXTURE .dot-grid                      one per band, never two
+     SHAPE  .arc-top · .rule-amber · .glass  the silhouette and the chrome
+
+   Two shadows per elevation, always: a 1px contact shadow so the object rests on
+   something, and one wide soft shadow for depth. A single big blur is what makes
+   a card look pasted on. (`.card-lift` is superseded by `.lift-2` — same values.)
+   All decorative layers: absolutely positioned, pointer-events none, no a11y
+   dependence. */
+
+.lift-1, .lift-2, .lift-3 {
+  transition: box-shadow var(--motion-base) var(--ease-out), transform var(--motion-base) var(--ease-out);
+}
+/* lift-1 — rests on the page. Rows, chips, inline panels. No hover travel. */
+.lift-1 {
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 7%, transparent),
+              0 6px 16px -8px color-mix(in srgb, var(--color-ink) 14%, transparent);
+}
+/* lift-2 — the card. THE default for anything clickable on a marketing page. */
+.lift-2 {
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 8%, transparent),
+              0 18px 40px -12px color-mix(in srgb, var(--color-ink) 22%, transparent);
+}
+.lift-2:hover {
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 10%, transparent),
+              0 26px 60px -14px color-mix(in srgb, var(--color-ink) 30%, transparent);
+  transform: translateY(-2px);
+}
+/* lift-3 — floats. Reserve for ONE object per page: the hero object, the sticky
+   action card, an open sheet. Three floating things read as none. */
+.lift-3 {
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-ink) 10%, transparent),
+              0 40px 80px -24px color-mix(in srgb, var(--color-ink) 34%, transparent);
+}
+
+/* ── sheen — a slow diagonal light sweep across a dark object on hover, the way a
+   hand passing over cedar catches the LED. The hover companion to lift; it moves
+   light, not the object. Needs position:relative + overflow:hidden on the host. */
+.sheen { position: relative; overflow: hidden; }
+.sheen::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%; pointer-events: none;
+  background: linear-gradient(105deg, transparent, color-mix(in srgb, var(--color-on-ink) 16%, transparent), transparent);
+  transform: skewX(-14deg); opacity: 0; transition: none;
+}
+.sheen:hover::after { animation: sheen-pass 820ms var(--ease-out) both; }
+@keyframes sheen-pass {
+  from { left: -60%; opacity: 0; }
+  35%  { opacity: 1; }
+  to   { left: 120%; opacity: 0; }
+}
+
+/* ── spot — a wide overhead spotlight, cooler and higher than amber-glow. For a
+   dark band that needs a centre of gravity without an amber wash. */
+.spot::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 70% 44% at 50% 0%,
+    color-mix(in srgb, var(--color-on-ink) 13%, transparent) 0%, transparent 72%);
+}
+
+/* ── dot-grid — a sparse dot lattice. The cream-surface texture, where grain would
+   read as noise and scanlines cannot go: schematics, plans, operator pages. */
+.dot-grid::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
+  background-image: radial-gradient(color-mix(in srgb, var(--color-ink) 16%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 76% 70% at 50% 50%, #000 30%, transparent 78%);
+}
+
+/* ── arc-top — the soft shoulder. A band whose top edge is a wide arc instead of a
+   ruled line, so a cream section can rise out of ink without a seam. ONE per page. */
+.arc-top { border-radius: 50% 50% 0 0 / 3.2rem 3.2rem 0 0; }
+
+/* ── rule-amber — a hairline divider that warms at the centre. Between beats of the
+   same tone, where the light-strip would be too loud. */
+.rule-amber {
+  height: 1px; border: 0; margin: 0;
+  background: linear-gradient(90deg, transparent,
+    color-mix(in srgb, var(--color-border-strong) 90%, transparent) 18%,
+    color-mix(in srgb, var(--color-primary) 55%, transparent) 50%,
+    color-mix(in srgb, var(--color-border-strong) 90%, transparent) 82%, transparent);
+}
+
+/* ── glass — frosted chrome over moving content: a sticky header, a floating dock.
+   Only ever over an image or a scrolling surface; over flat colour it is just a
+   tint with a cost. */
+.glass {
+  background: color-mix(in srgb, var(--color-surface) 72%, transparent);
+  backdrop-filter: saturate(1.4) blur(14px);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+}
+.glass-ink {
+  background: color-mix(in srgb, var(--color-ink) 58%, transparent);
+  backdrop-filter: saturate(1.3) blur(16px);
+  -webkit-backdrop-filter: saturate(1.3) blur(16px);
+  border: 1px solid color-mix(in srgb, var(--color-on-ink) 14%, transparent);
+  color: var(--color-on-ink);
+}
+
+/* ── stagger — children reveal one after another. Put .reveal on the children and
+   .stagger on the parent; the delay is positional, so no per-element inline style. */
+.stagger > *:nth-child(1) { transition-delay: 0ms; }
+.stagger > *:nth-child(2) { transition-delay: 70ms; }
+.stagger > *:nth-child(3) { transition-delay: 140ms; }
+.stagger > *:nth-child(4) { transition-delay: 210ms; }
+.stagger > *:nth-child(5) { transition-delay: 280ms; }
+.stagger > *:nth-child(6) { transition-delay: 350ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lift-1, .lift-2, .lift-3, .lift-2:hover { transition: none; transform: none; }
+  .sheen:hover::after { animation: none; }
 }

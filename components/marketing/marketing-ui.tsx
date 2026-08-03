@@ -150,6 +150,7 @@ export function Section({
   pad,
   vis = '',
   width = 'prose',
+  role,
 }: {
   children: React.ReactNode
   tone?: 'surface' | 'canvas' | 'ink'
@@ -159,6 +160,11 @@ export function Section({
   /** `'prose'` (default) is the reading measure. `'wide'` is for a section whose content is a
    *  comparison table or a multi-column grid that a 3xl measure squeezes into a sideways scroll. */
   width?: 'prose' | 'wide'
+  /** Explicit vertical-rhythm role (DAWN four-role system, globals.css). Usually derived:
+   *  `band` (loose — a tone change) for tone 'ink', `beat` (the workhorse) otherwise.
+   *  `cont` continues the section above at the same tone (no top padding); `tight` is a
+   *  short statement/banner beat. An explicit `pad` still opts out entirely. */
+  role?: 'band' | 'beat' | 'cont' | 'tight'
 }) {
   const bg =
     tone === 'canvas'
@@ -166,13 +172,15 @@ export function Section({
       : tone === 'ink'
         ? 'bg-slat text-on-ink'
         : 'bg-surface'
-  // Default padding rides `.mk-section` (globals.css) instead of literal py-*: a section
-  // FOLLOWED by another gives up a third of its bottom padding, so two stacked sections
-  // stop double-paying for the gap between them (DAWN 2026-08-03 spacing correction —
-  // a value that read right at the end of a page read as a hole in the middle). An
-  // explicit `pad` opts out and pays exactly what it asks for, as before.
+  // Default padding rides the DAWN four-role rhythm (`.mk-band/.mk-beat/.mk-cont/.mk-tight`,
+  // globals.css) instead of literal py-*: a tone change (ink) takes the loose band beat, a
+  // standard section the workhorse beat, and a section FOLLOWED by another gives up a third
+  // of its bottom padding so two stacked sections stop double-paying for the shared gap
+  // (DAWN 2026-08-03 final round — a value that read right at the end of a page read as a
+  // hole in the middle). An explicit `pad` opts out and pays exactly what it asks for.
+  const roleClass = `mk-${role ?? (tone === 'ink' ? 'band' : 'beat')}`
   return (
-    <section className={`px-6 ${pad ?? 'mk-section'} ${bg} ${vis} ${className}`}>
+    <section className={`px-6 ${pad ?? roleClass} ${bg} ${vis} ${className}`}>
       <div className={`${width === 'wide' ? 'max-w-5xl' : 'max-w-3xl'} mx-auto`}>{children}</div>
     </section>
   )
