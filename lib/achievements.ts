@@ -360,20 +360,10 @@ async function getUserStats(admin: AdminClient, profileId: string): Promise<User
   }
 
   // Real connections (ADR-154 / ADR-777): captured event guests who at least RSVP'd
-  // (going/maybe). A bare capture (declined / no stated intent) never counts. event_guests
-  // is not in the generated types yet (ADR-246), so count it untyped, FAIL-SAFE to 0.
+  // (going/maybe). A bare capture (declined / no stated intent) never counts. FAIL-SAFE to 0.
   let connectionCount = 0
   try {
-    const eg = admin as unknown as {
-      from: (t: string) => {
-        select: (c: string, o: { count: 'exact'; head: true }) => {
-          eq: (col: string, val: string) => {
-            in: (col: string, vals: string[]) => Promise<{ count: number | null }>
-          }
-        }
-      }
-    }
-    const { count } = await eg
+    const { count } = await admin
       .from('event_guests')
       .select('id', { count: 'exact', head: true })
       .eq('inviter_profile_id', profileId)

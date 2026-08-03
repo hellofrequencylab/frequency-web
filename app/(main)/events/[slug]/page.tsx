@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
@@ -658,8 +657,8 @@ export default async function EventDetailPage({
   // pricing modes (fixed/free/pwyc/sliding_scale/donation) + inventory. The whole
   // block hides for free events with no priced tiers.
   //
-  // `event_ticket_types` isn't in the generated types yet — untyped cast (repo
-  // convention, same as price_cents above).
+  // `event_ticket_types` is read through the typed client; the cast below narrows the
+  // DB's plain-string pricing_mode to the view's union.
   type TierRow = {
     id: string
     name: string
@@ -674,7 +673,7 @@ export default async function EventDetailPage({
     space_members_only: boolean
     space_tier_id: string | null
   }
-  const { data: rawTiers } = await (admin)
+  const { data: rawTiers } = await admin
     .from('event_ticket_types')
     .select(
       'id, name, description, pricing_mode, price_cents, min_cents, suggested_cents, quantity, sold, member_only, space_members_only, space_tier_id, active, sort_order, created_at',
@@ -909,13 +908,11 @@ export default async function EventDetailPage({
     image_url: string | null
     created_at: string
     // 'rsvp' = a system "<Name> RSVP'd" entry; anything else = a guest comment.
-    // Newer than the generated types → read via the untyped client below.
     kind: string | null
     author: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
   }
   // Host Event Dispatches (ADR-255) — page updates the host posted. They render in
-  // the same activity stream with an event badge. event_dispatches isn't in the
-  // generated types yet → untyped cast (repo convention).
+  // the same activity stream with an event badge.
   type RawDispatch = {
     id: string
     title: string | null
@@ -924,33 +921,17 @@ export default async function EventDetailPage({
     author: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
   }
   type RawMedia = { id: string; image_url: string; caption: string | null; profile_id: string }
-  // event_dispatches isn't in lib/database.types.ts yet, so the typed client can't
-  // resolve the table name (narrows to `never`). Widen this ONE read to an untyped
-  // client — the genuinely-untyped case the ADR-246 rule allows (same convention as
-  // the lib/events/* data layer, which writes these rows).
-  // eslint-disable-next-line no-restricted-syntax -- event_dispatches not in generated types yet (ADR-246 exception)
-  const adminUntyped = admin as unknown as SupabaseClient
 
-  // event_posts.kind ships in migration 20261125000000. Until it's applied the column
-  // doesn't exist, so PostgREST would reject a select naming it and blank the whole feed.
-  // Read defensively: try WITH kind, and on that error fall back to the pre-kind shape
-  // (every row is then a comment — correct, since the RSVP writer no-ops pre-migration).
+  // event_posts (incl. `kind`) is in the generated types now — typed read; the cast
+  // only reshapes the joined author embed onto RawActivityPost.
   const loadActivityPosts = async (): Promise<{ data: RawActivityPost[] }> => {
-    const rel = 'author:profiles!profile_id ( id, display_name, handle, avatar_url )'
-    const withKind = await adminUntyped
+    const res = await admin
       .from('event_posts')
-      .select(`id, body, image_url, created_at, kind, ${rel}`)
+      .select('id, body, image_url, created_at, kind, author:profiles!profile_id ( id, display_name, handle, avatar_url )')
       .eq('event_id', event.id)
       .order('created_at', { ascending: false })
       .limit(100)
-    if (!withKind.error) return { data: (withKind.data ?? []) as unknown as RawActivityPost[] }
-    const noKind = await adminUntyped
-      .from('event_posts')
-      .select(`id, body, image_url, created_at, ${rel}`)
-      .eq('event_id', event.id)
-      .order('created_at', { ascending: false })
-      .limit(100)
-    return { data: (noKind.data ?? []) as unknown as RawActivityPost[] }
+    return { data: (res.data ?? []) as unknown as RawActivityPost[] }
   }
 
   // Practice check-in availability + whether the viewer already checked in.
@@ -982,10 +963,8 @@ export default async function EventDetailPage({
       // COLLABORATORS (ADR-834): Spaces co-hosting via an ACCEPTED share (EC3) — public credit under
       // the Host box + the "with …" mention on the hosted-by line. Accepted-only by contract.
       listCollaboratorSpacesForEvent(event.id),
-      // Untyped read (event_posts.kind is newer than the generated types, migration
-      // 20261125000000) + migration-safe fallback. Map below casts to RawActivityPost.
       loadActivityPosts(),
-      adminUntyped
+      admin
         .from('event_dispatches')
         .select('id, title, body, created_at, author:profiles!author_id ( id, display_name, handle, avatar_url )')
         .eq('event_id', event.id)

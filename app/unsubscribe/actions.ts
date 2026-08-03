@@ -59,12 +59,9 @@ export async function processUnsubscribe(params: {
     ? { ...(existing as unknown as NotificationPreferences), [key]: false }
     : { ...DEFAULT_PREFERENCES, [key]: false }
 
-  // DEFAULT_PREFERENCES now carries the Phase 6 *_comments columns, which aren't in the
-  // generated DB types yet (ADR-246); route the write through the untyped cast.
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  const { error } = await (admin as any)
+  const { error } = await admin
     .from('notification_preferences')
-    .upsert({ profile_id: profileId, ...next }, { onConflict: 'profile_id' })
+    .upsert({ ...next, profile_id: profileId }, { onConflict: 'profile_id' })
 
   if (error) {
     console.error('[unsubscribe] upsert:', error.message)

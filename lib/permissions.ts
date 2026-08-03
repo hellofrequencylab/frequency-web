@@ -22,12 +22,10 @@ const VALID = new Set<NavAccess>(['visitor', 'member', 'crew', 'host', 'guide', 
 /** All persisted overrides, keyed by area_key. Falls back to {} on any error. */
 export async function getAreaPermissions(): Promise<Record<string, NavAccess>> {
   try {
-    // `area_permissions` isn't in the generated types yet — cast through the
-    // base client to query it untyped.
     const db = createAdminClient()
     const { data } = await db.from('area_permissions').select('area_key, min_role')
     const out: Record<string, NavAccess> = {}
-    for (const row of (data ?? []) as { area_key: string; min_role: string }[]) {
+    for (const row of data ?? []) {
       // Only honour overrides for known areas with valid levels.
       if (row.area_key in NAV_AREA_DEFAULTS && VALID.has(row.min_role as NavAccess)) {
         out[row.area_key] = row.min_role as NavAccess

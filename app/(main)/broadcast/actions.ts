@@ -72,9 +72,8 @@ export async function createAndPublishDispatch(fd: FormData) {
     if (!led) throw new Error('You can only broadcast to a circle, hub, or region you lead.')
   }
 
-  // audience_id is nullable for global in the DB (dispatch_global_tier migration)
-  // but not yet in the generated types — cast to the untyped client (repo convention).
-  const { data: dispatch, error } = await (admin)
+  // audience_id is nullable for global in the DB (dispatch_global_tier migration).
+  const { data: dispatch, error } = await admin
     .from('dispatches')
     .insert({
       title,

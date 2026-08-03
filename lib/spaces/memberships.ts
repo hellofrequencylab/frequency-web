@@ -2,8 +2,8 @@
 // server actions behind the membership surfaces, the Business analog of lib/spaces/booking.ts:
 //   space_membership_tiers: the tiers an owner publishes (name, price shown, interval, benefits).
 //   space_memberships:      a member's membership in one of those tiers.
-// Backed by the service-role admin client plus untyped casts (the tables are not in the generated
-// DB types yet, ADR-246, mirroring lib/spaces/booking.ts). The server is the authority for "which
+// Backed by the service-role admin client (the tables are in the generated DB types, so access is
+// typed; mirrors lib/spaces/booking.ts). The server is the authority for "which
 // space" and "what may this caller do here" (P5): every write re-checks authorization; reads
 // fail-safe (empty/null) and writes fail-closed on a permission miss.
 //
@@ -214,9 +214,8 @@ export function normalizeTierSet(raw: unknown): MembershipTier[] {
     .map((t, i) => ({ ...t, sort: i }))
 }
 
-// ── IO: the untyped admin-client seams (tables not in generated types yet, ADR-246) ────────────
+// ── IO: the typed admin-client seams ────────────────────────────────────────────────────────────
 
-// Loosely-typed rows + builders for the two not-yet-typed tables, mirroring lib/spaces/booking.ts.
 type TierRow = {
   id: string
   space_id: string
@@ -239,36 +238,11 @@ type MembershipRow = {
   started_at: string
 }
 
-type TierQuery = {
-  select: (cols: string) => TierQuery
-  eq: (col: string, val: string) => TierQuery
-  in: (col: string, vals: string[]) => TierQuery
-  order: (col: string, opts: { ascending: boolean }) => TierQuery
-  delete: () => TierQuery
-  update: (patch: Record<string, unknown>) => TierQuery
-  insert: (rows: Record<string, unknown>[]) => Promise<{ error: unknown }>
-  then: (resolve: (r: { data: TierRow[] | null; error: unknown }) => unknown) => Promise<unknown>
+function tiersTable() {
+  return createAdminClient().from('space_membership_tiers')
 }
-type MembershipQuery = {
-  select: (cols: string) => MembershipQuery
-  eq: (col: string, val: string) => MembershipQuery
-  in: (col: string, vals: string[]) => MembershipQuery
-  order: (col: string, opts: { ascending: boolean }) => MembershipQuery
-  update: (patch: Record<string, unknown>) => MembershipQuery
-  insert: (rows: Record<string, unknown>[]) => MembershipQuery
-  maybeSingle: () => Promise<{ data: MembershipRow | null; error: unknown }>
-  then: (
-    resolve: (r: { data: MembershipRow[] | null; error: unknown }) => unknown,
-  ) => Promise<unknown>
-}
-
-function tiersTable(): TierQuery {
-  const db = createAdminClient() as unknown as { from: (t: string) => TierQuery }
-  return db.from('space_membership_tiers')
-}
-function membershipsTable(): MembershipQuery {
-  const db = createAdminClient() as unknown as { from: (t: string) => MembershipQuery }
-  return db.from('space_memberships')
+function membershipsTable() {
+  return createAdminClient().from('space_memberships')
 }
 
 const TIER_COLS =
@@ -362,17 +336,7 @@ async function readMemberNames(ids: string[]): Promise<Map<string, string>> {
   const out = new Map<string, string>()
   if (ids.length === 0) return out
   try {
-    const db = createAdminClient() as unknown as {
-      from: (t: string) => {
-        select: (c: string) => {
-          in: (
-            col: string,
-            vals: string[],
-          ) => Promise<{ data: { id: string; display_name: string | null }[] | null }>
-        }
-      }
-    }
-    const { data } = await db.from('profiles').select('id, display_name').in('id', ids)
+    const { data } = await createAdminClient().from('profiles').select('id, display_name').in('id', ids)
     for (const p of data ?? []) out.set(p.id, p.display_name?.trim() || 'A member')
   } catch {
     // fall through to the empty map (callers default to 'A member')
@@ -459,15 +423,15 @@ export async function setMembershipTiers(
   })
 
   try {
-    const { data: existing, error: readErr } = (await tiersTable()
+    const { data: existing, error: readErr } = await tiersTable()
       .select('id')
-      .eq('space_id', spaceId)) as unknown as { data: { id: string }[] | null; error: unknown }
+      .eq('space_id', spaceId)
     if (readErr) return fail('Could not save your tiers. Try again.')
 
     const plan = planTierSetOps((existing ?? []).map((r) => r.id), clean)
 
     for (const t of plan.updates) {
-      const upd = await (tiersTable().update(toRow(t)).eq('id', t.id).eq('space_id', spaceId) as unknown as Promise<{ error: unknown }>)
+      const upd = await tiersTable().update(toRow(t)).eq('id', t.id).eq('space_id', spaceId)
       if (upd.error) return fail('Could not save your tiers. Try again.')
     }
     if (plan.inserts.length > 0) {
@@ -477,7 +441,7 @@ export async function setMembershipTiers(
       if (error) return fail('Could not save your tiers. Try again.')
     }
     if (plan.deleteIds.length > 0) {
-      const del = await (tiersTable().delete().eq('space_id', spaceId).in('id', plan.deleteIds) as unknown as Promise<{ error: unknown }>)
+      const del = await tiersTable().delete().eq('space_id', spaceId).in('id', plan.deleteIds)
       if (del.error) return fail('Could not save your tiers. Try again.')
     }
   } catch {
@@ -678,10 +642,10 @@ export async function promoteMembership(membershipId: string): Promise<ActionRes
   }
 
   try {
-    const upd = await (membershipsTable()
+    const upd = await membershipsTable()
       .update({ status: 'active', started_at: new Date().toISOString() })
       .eq('id', membershipId)
-      .eq('status', 'waitlist') as unknown as Promise<{ error: unknown }>)
+      .eq('status', 'waitlist')
     if (upd.error) return fail('Could not promote. Try again.')
   } catch {
     return fail('Could not promote. Try again.')
@@ -737,7 +701,7 @@ export async function cancelMembership(membershipId: string): Promise<ActionResu
       .select(`${MEMBERSHIP_COLS}, stripe_subscription_id`)
       .eq('id', membershipId)
       .maybeSingle()
-    row = data as CancelRow | null
+    row = data
   } catch {
     row = null
   }

@@ -25,8 +25,7 @@ interface MemberSignal {
   newestJoinAt: string | null
 }
 
-/** A raw `space_members` projection — only the three columns the fold needs. The table is not in the
- *  generated DB types yet (ADR-246), so it rides the untyped admin accessor like membership.ts. */
+/** A raw `space_members` projection — only the three columns the fold needs. */
 type MemberSignalRow = { space_id: string; status: string; created_at: string }
 
 /**
@@ -37,14 +36,10 @@ type MemberSignalRow = { space_id: string; status: string; created_at: string }
 async function gatherMemberSignals(): Promise<Map<string, MemberSignal>> {
   const out = new Map<string, MemberSignal>()
   try {
-    // Untyped admin accessor: space_members is not in the generated types (ADR-246), same as
-    // lib/spaces/membership.ts. We pull only space_id/status/created_at — never the full row.
-    const db = createAdminClient() as unknown as {
-      from: (table: string) => {
-        select: (cols: string) => Promise<{ data: MemberSignalRow[] | null; error: unknown }>
-      }
-    }
-    const { data, error } = await db.from('space_members').select('space_id, status, created_at')
+    // We pull only space_id/status/created_at — never the full row.
+    const { data, error } = await createAdminClient()
+      .from('space_members')
+      .select('space_id, status, created_at')
     if (error || !data) return out
     for (const row of data) {
       if (!row?.space_id) continue

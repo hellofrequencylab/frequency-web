@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 
 // Connection metrics reads (ADR-186, P6). your_impact is keyed to auth.uid() so it
-// runs on the authed client; circle_momentum returns aggregate counts. Neither is in
-// the generated types yet → untyped cast (repo convention).
+// runs on the authed client; circle_momentum returns aggregate counts. Both RPCs are
+// in the generated types; rows are normalized defensively below.
 
 export interface YourImpact {
   /** People you captured who became members. */

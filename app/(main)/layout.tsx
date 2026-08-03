@@ -394,21 +394,9 @@ export default async function MainLayout({
     previewVisitor,
   })
 
-  // Page status & visibility (ADR-269): an operator can mark a route DRAFT or set the
-  // lowest community role that may reach it (the on-page Page panel → page_settings).
-  // Enforce it here — the one place with the route (the x-pathname header proxy.ts sets)
-  // AND the viewer's resolved role. LOCKOUT-PROOF + FAIL-SAFE: staff (view-as-aware) always
-  // pass so an operator can preview drafts and is never locked out; any error is ignored
-  // (no gate); and we never redirect /feed itself, so a mis-set home can't loop.
-  if (reqPath && reqPath !== '/feed' && isSafeRoute(reqPath) && !isStaff(pageWebRole)) {
-    const ps = await loadPageSettings(reqPath)
-    if (ps) {
-      const draftHidden = ps.status === 'draft'
-      const roleHidden =
-        !!ps.visibility_role && !atLeastRole(effectiveRole, ps.visibility_role as CommunityRole)
-      if (draftHidden || roleHidden) redirect('/feed')
-    }
-  }
+  // Page status & visibility (ADR-269) moved into the parallel theme wave below —
+  // the read overlaps resolveTheme/cookies instead of serializing ahead of them,
+  // and the redirect decision still lands before anything renders.
 
   // Matrix-driven nav visibility (owner directive): resolve each nav item's access for
   // this viewer — respecting "view as" (effectiveRole) and suppressing personas/staff
@@ -515,27 +503,42 @@ export default async function MainLayout({
   }
   if (marketAreaHidden) redirect('/feed')
 
-  // Resolve the member's theme for the in-app shell: the personal `fxtheme` cookie (skin /
-  // generation / occasion) over the Space default over the system default. The per-request
-  // cookie + DB-theme reads live HERE, not in the root layout, so the public marketing/discover
-  // pages stay static/prerendered (app/layout.tsx). Fail-safe throughout.
-  const theme = await resolveTheme({ spaceSkin: activeSkin, spaceGeneration: activeGeneration })
-  // An EXPLICIT member occasion pin (set from Settings -> Appearance, incl. "Off" = 'none') WINS
-  // over the DB auto-schedule, per the documented precedence (docs/THEME.md §6: a member/code pin
-  // first, only then the calendar). Without this, pinning "Off" couldn't suppress an operator-
-  // scheduled occasion. resolveTheme already folds the pin into theme.occasion; this only
-  // distinguishes "pinned none" from "no pin" by re-reading the cookie. Fail-safe: any miss = no pin.
-  let occasionPinned = false
-  try {
-    const jar = await cookies()
-    occasionPinned = parseThemeCookie(jar.get(THEME_COOKIE)?.value).occ !== undefined
-  } catch {
-    /* no pin → fall through to the auto-schedule below */
+  // The former serial tail (page-settings gate → theme → occasion pin → auto-occasion),
+  // now ONE parallel wave — none of the four reads depends on another. resolveTheme keeps
+  // the documented precedence (docs/THEME.md §6): the member's `fxtheme` cookie over the
+  // Space default over the system default; the pin re-read only distinguishes "pinned
+  // none" from "no pin". The auto-occasion read runs unconditionally here (instead of
+  // conditionally after the theme resolves) so it overlaps too; its value is used only
+  // when there is no pin and no explicit occasion. All fail-safe. The per-request
+  // cookie + DB-theme reads live HERE, not in the root layout, so public marketing/
+  // discover pages stay static (app/layout.tsx).
+  const [theme, occasionPinned, autoOccasion, pageGate] = await Promise.all([
+    resolveTheme({ spaceSkin: activeSkin, spaceGeneration: activeGeneration }),
+    (async () => {
+      try {
+        const jar = await cookies()
+        return parseThemeCookie(jar.get(THEME_COOKIE)?.value).occ !== undefined
+      } catch {
+        return false /* no pin → auto-schedule below */
+      }
+    })(),
+    resolveActiveOccasionSlug(new Date()).catch(() => 'none' as const),
+    // Page status & visibility (ADR-269): DRAFT / min-role gating from page_settings.
+    // LOCKOUT-PROOF + FAIL-SAFE exactly as before: staff always pass, errors mean no
+    // gate, and /feed itself is never gated so a mis-set home can't loop.
+    reqPath && reqPath !== '/feed' && isSafeRoute(reqPath) && !isStaff(pageWebRole)
+      ? loadPageSettings(reqPath).catch(() => null)
+      : Promise.resolve(null),
+  ])
+  if (pageGate) {
+    const draftHidden = pageGate.status === 'draft'
+    const roleHidden =
+      !!pageGate.visibility_role &&
+      !atLeastRole(effectiveRole, pageGate.visibility_role as CommunityRole)
+    if (draftHidden || roleHidden) redirect('/feed')
   }
   const occasion =
-    occasionPinned || theme.occasion !== 'none'
-      ? theme.occasion
-      : await resolveActiveOccasionSlug(new Date())
+    occasionPinned || theme.occasion !== 'none' ? theme.occasion : autoOccasion
   // The STRUCTURE axis (docs/THEME.md): the coarse layout variant the resolved generation maps to
   // (simple / standard / dense). The shell sets it as [data-structure] alongside [data-generation],
   // so the calm/kids ends get a roomier composition and the bold preset a denser one. This is the

@@ -18,8 +18,7 @@ export default async function MarketingLayout({ children }: { children: React.Re
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
 
-  // Staff access is the web_role axis now (ADR-208). web_role isn't in the stale
-  // generated types yet, so read it through the untyped cast (repo convention).
+  // Staff access is the web_role axis now (ADR-208).
   const admin = createAdminClient()
   const { data: profile } = await admin
     .from('profiles')
@@ -27,7 +26,7 @@ export default async function MarketingLayout({ children }: { children: React.Re
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  if (!isStaff(asWebRole((profile as { web_role?: string } | null)?.web_role))) {
+  if (!isStaff(asWebRole(profile?.web_role))) {
     const staff = await getStaffMember().catch(() => null)
     if (!staff || !staffCan(staff.role, 'marketing', 'read')) notFound()
   }

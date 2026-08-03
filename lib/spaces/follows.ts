@@ -3,8 +3,8 @@
 //   networked Space. The relationship persists here (so a reload remembers it), feeds the
 //   "Following" filter on the /spaces directory, and later the feed.
 //
-// Backed by the service-role admin client plus untyped casts (the table is not in the generated DB
-// types yet, ADR-246, mirroring lib/spaces/membership.ts). The server is the authority: the writes
+// Backed by the service-role admin client (the table is in the generated DB types, so access is
+// fully typed; mirrors lib/spaces/membership.ts). The server is the authority: the writes
 // (followSpace / unfollowSpace) re-check auth via getMyProfileId, and the reads fail-safe (false / 0
 // / []) so a missing table or any error degrades quietly rather than throwing.
 //
@@ -23,28 +23,11 @@ import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
-// ── The untyped query builder (the table isn't in the generated types yet, ADR-246) ──────────────
+// ── The typed query builder ───────────────────────────────────────────────────────────────────────
 
-// `space_follows` is not in the generated DB types, so `createAdminClient().from('space_follows')`
-// would fail the typed-table overload — reach the table through an untyped `from` accessor (ADR-246,
-// the same shape lib/spaces/membership.ts uses for space_members) and type the builder loosely here.
-type FollowRow = { space_id: string }
-
-type FollowsQuery = {
-  select: (cols: string, opts?: { count?: 'exact'; head?: boolean }) => FollowsQuery
-  eq: (col: string, val: string) => FollowsQuery
-  upsert: (rows: Record<string, unknown>, opts: { onConflict: string }) => FollowsQuery
-  delete: () => FollowsQuery
-  maybeSingle: () => Promise<{ data: { id: string } | null; error: unknown }>
-  then: (
-    resolve: (r: { data: FollowRow[] | null; error: unknown; count: number | null }) => unknown,
-  ) => Promise<unknown>
-}
-
-/** The untyped admin-client `space_follows` builder (the table isn't in the generated types yet). */
-function followsTable(): FollowsQuery {
-  const db = createAdminClient() as unknown as { from: (table: string) => FollowsQuery }
-  return db.from('space_follows')
+/** The typed admin-client `space_follows` builder. */
+function followsTable() {
+  return createAdminClient().from('space_follows')
 }
 
 // ── Writes (server actions; authenticated member) ─────────────────────────────────────────────────
@@ -130,9 +113,7 @@ export async function isFollowing(spaceId: string, profileId: string | null): Pr
  *  read; FAIL-SAFE (empty array on any error). Bounded is not applied here — a fan-out caller should cap. */
 export async function listSpaceFollowerIds(spaceId: string): Promise<string[]> {
   try {
-    const result = (await followsTable()
-      .select('follower_profile_id')
-      .eq('space_id', spaceId)) as { data: Array<{ follower_profile_id?: string }> | null; error: unknown }
+    const result = await followsTable().select('follower_profile_id').eq('space_id', spaceId)
     if (result.error || !result.data) return []
     return result.data
       .map((r) => r.follower_profile_id)
@@ -148,9 +129,7 @@ export async function listFollowedSpaceIds(profileId: string | null): Promise<Se
   const ids = new Set<string>()
   if (!profileId) return ids
   try {
-    const result = (await followsTable()
-      .select('space_id')
-      .eq('follower_profile_id', profileId)) as { data: FollowRow[] | null; error: unknown }
+    const result = await followsTable().select('space_id').eq('follower_profile_id', profileId)
     if (result.error || !result.data) return ids
     for (const row of result.data) ids.add(row.space_id)
     return ids

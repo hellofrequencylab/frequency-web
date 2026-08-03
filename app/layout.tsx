@@ -17,6 +17,7 @@ import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, FOUNDING_PLACE } f
 import { JsonLd } from "@/components/json-ld";
 import { organizationSchema, websiteSchema } from "@/lib/jsonld";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
+import { WebVitals } from "@/components/analytics/web-vitals";
 
 // Nunito: closest Google Font to the Frequency brand logo's rounded, bold letterforms.
 // Weights: 400 body, 600 semibold, 700 bold, 800 extrabold, 900 black (headings/branding).
@@ -169,6 +170,9 @@ export default function RootLayout({
         <GoogleAnalytics />
       </head>
       <body className="min-h-full flex flex-col">
+        {/* Anonymous Core Web Vitals capture (no cookies, no profile link — keeps the
+            root layout static). Member-tied trackers stay in the (main) layout. */}
+        <WebVitals />
         {children}
         {/* The anonymous live-chat widget (ADR-816) no longer mounts here: corner arbitration
             (docs/CHAT-SHELL-PLAN.md §2) gives each surface ONE bottom-right owner. The widget

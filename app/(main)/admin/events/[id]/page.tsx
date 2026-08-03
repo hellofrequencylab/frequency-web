@@ -14,7 +14,6 @@ import { loadSpaceAccessContext } from '@/lib/events/ticket-space-access'
 export const dynamic = 'force-dynamic'
 
 async function loadEvent(id: string) {
-  // price_cents isn't in the generated types yet — untyped cast (repo convention).
   const admin = createAdminClient()
   const { data } = await admin
     .from('events')
@@ -28,8 +27,9 @@ async function loadEvent(id: string) {
   return data ?? null
 }
 
-// Ticket tiers for the editor (EVENTS-SYSTEM §2.2). `event_ticket_types` isn't in
-// the generated types yet — untyped cast (repo convention). `sold` is read-only here.
+// Ticket tiers for the editor (EVENTS-SYSTEM §2.2). Typed read; the cast below only
+// narrows the DB's plain-string columns (pricing_mode) to the editor's union shape.
+// `sold` is read-only here.
 async function loadTiers(eventId: string) {
   const admin = createAdminClient()
   const { data } = await admin

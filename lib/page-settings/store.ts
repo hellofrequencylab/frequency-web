@@ -16,9 +16,8 @@ import { defaultLayoutFor } from './default-layouts'
 // for space A can never be served from space B's cache slot (the §4.1 invisible-leak guard),
 // and every query is filtered by space_id so cross-tenant rows never resolve.
 //
-// `space_id` is not in the generated DB types yet — the column is added by the Phase 0.5a
-// migration. Per the codebase pattern (ADR-246) the new column is reached with untyped casts
-// (the `.eq('space_id', …)` filter + the payload cast in actions.ts), not a client cast.
+// `page_settings` (including `space_id` + `header_image_focal`) is in the generated DB types,
+// so every read here goes through the typed client.
 
 export interface PageSettingsRow {
   route: string
@@ -28,8 +27,7 @@ export interface PageSettingsRow {
   og_image_url: string | null
   /** Wide page header / banner image. */
   header_image_url: string | null
-  /** Focal point for the header image as a CSS object-position string ("x% y%"). NULL = centered.
-   *  Not in the generated DB types yet (added by 20261116000000) — reached via the untyped read. */
+  /** Focal point for the header image as a CSS object-position string ("x% y%"). NULL = centered. */
   header_image_focal: string | null
   status: string
   visibility_role: string | null
@@ -49,17 +47,14 @@ const loadPageSettingsCached = cache(
     try {
       const { createAdminClient } = await import('@/lib/supabase/admin')
       const db = createAdminClient()
-      // space_id isn't in the generated types yet — reach it with an untyped client (ADR-246).
-      const q = db.from('page_settings') as unknown as {
-        select: (cols: string) => {
-          eq: (col: string, val: string) => {
-            eq: (col: string, val: string) => { maybeSingle: () => Promise<{ data: unknown; error: unknown }> }
-          }
-        }
-      }
-      const { data, error } = await q.select(SELECT).eq('space_id', spaceId).eq('route', route).maybeSingle()
+      const { data, error } = await db
+        .from('page_settings')
+        .select(SELECT)
+        .eq('space_id', spaceId)
+        .eq('route', route)
+        .maybeSingle()
       if (error) return null
-      return (data as PageSettingsRow | null) ?? null
+      return data ?? null
     } catch {
       return null
     }
@@ -99,15 +94,11 @@ const loadLayoutForRouteCached = cache(
       const chain = layoutScopeChain(route)
       const { createAdminClient } = await import('@/lib/supabase/admin')
       const db = createAdminClient()
-      // space_id isn't in the generated types yet — reach it with an untyped client (ADR-246).
-      const q = db.from('page_settings') as unknown as {
-        select: (cols: string) => {
-          eq: (col: string, val: string) => {
-            in: (col: string, vals: readonly string[]) => Promise<{ data: { route: string; layout: unknown }[] | null; error: unknown }>
-          }
-        }
-      }
-      const { data, error } = await q.select('route, layout').eq('space_id', spaceId).in('route', chain)
+      const { data, error } = await db
+        .from('page_settings')
+        .select('route, layout')
+        .eq('space_id', spaceId)
+        .in('route', chain)
       if (error || !data) return empty
       const byKey: Record<string, LayoutConfig> = {}
       for (const row of data) byKey[row.route] = parseLayout(row.layout)

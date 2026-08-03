@@ -1,7 +1,7 @@
 // Deliverability: the central email suppression list + event log (COMMS-CRM §2).
 // The send path checks isSuppressed() before every send; the Resend webhook calls
-// recordEmailEvent()/suppress(). Server-only. Tables land in 20240220000000;
-// untyped client view until types are regenerated.
+// recordEmailEvent()/suppress(). Server-only. Both tables are in the generated DB
+// types, so access goes through the typed client.
 //
 // PER-SPACE SCOPE (ENTITY-SPACES-BUILD Phase 3): email_suppressions gained a nullable
 // space_id (20260714000000_space_email.sql). A row with space_id NULL is a GLOBAL
@@ -14,10 +14,10 @@
 //   • suppress(email, reason)        -> records a GLOBAL suppression (UNCHANGED).
 //   • suppress(email, reason, spaceId) -> records a suppression scoped to that Space.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Json } from '@/lib/database.types'
 
-function db(): SupabaseClient {
+function db() {
   return createAdminClient()
 }
 
@@ -40,7 +40,7 @@ export async function isSuppressed(email: string, spaceId?: string): Promise<boo
       .from('email_suppressions')
       .select('space_id')
       .eq('email', addr)
-    const rows = (data as unknown as { space_id: string | null }[] | null) ?? []
+    const rows = data ?? []
     if (!spaceId) {
       // Global-only: a row whose space_id is NULL.
       return rows.some((r) => r.space_id === null)
@@ -68,13 +68,13 @@ export async function suppress(email: string, reason: string, spaceId?: string):
       .from('email_suppressions')
       .select('space_id')
       .eq('email', addr)
-    const rows = (existing.data as unknown as { space_id: string | null }[] | null) ?? []
+    const rows = existing.data ?? []
     const wanted = spaceId ?? null
     if (rows.some((r) => r.space_id === wanted)) return
 
-    const row: Record<string, unknown> = { email: addr, reason }
-    if (spaceId) row.space_id = spaceId
-    await db().from('email_suppressions').insert(row)
+    await db()
+      .from('email_suppressions')
+      .insert({ email: addr, reason, ...(spaceId ? { space_id: spaceId } : {}) })
   } catch {
     // A unique-index race (the row was inserted concurrently) is the only expected failure here,
     // and the row we wanted now exists, so swallowing it keeps suppress() idempotent.
@@ -87,8 +87,7 @@ export async function suppress(email: string, reason: string, spaceId?: string):
  * `campaignId` (optional) is the Email Studio campaign this event belongs to, extracted by the
  * webhook from the Resend payload (the X-Campaign-Id header / campaign_id tag we stamp at send).
  * When present it is written to email_events.campaign_id so getCampaignMetrics can attribute the
- * event EXACTLY. The column is not in the generated types yet, so the row is inserted through an
- * untyped handle (ADR-246). Additive: an event without a campaign id records exactly as before.
+ * event EXACTLY. Additive: an event without a campaign id records exactly as before.
  */
 export async function recordEmailEvent(input: {
   email: string
@@ -97,19 +96,14 @@ export async function recordEmailEvent(input: {
   payload?: Record<string, unknown>
   campaignId?: string | null
 }): Promise<void> {
-  const row: Record<string, unknown> = {
-    email: norm(input.email),
-    event_type: input.eventType,
-    provider_id: input.providerId ?? null,
-    payload: input.payload ?? {},
-  }
-  if (input.campaignId) row.campaign_id = input.campaignId
-
-  await (
-    db() as unknown as {
-      from: (t: string) => { insert: (r: Record<string, unknown>) => Promise<{ error: unknown }> }
-    }
-  )
+  await db()
     .from('email_events')
-    .insert(row)
+    .insert({
+      email: norm(input.email),
+      event_type: input.eventType,
+      provider_id: input.providerId ?? null,
+      // jsonb payload — narrowed to Json (webhook payloads have no generated shape).
+      payload: (input.payload ?? {}) as Json,
+      ...(input.campaignId ? { campaign_id: input.campaignId } : {}),
+    })
 }

@@ -10,7 +10,6 @@
 // with "nothing happened" emails. The cron just skips those profiles.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 
 export type DigestDispatch = {
@@ -168,12 +167,10 @@ export async function assembleDigestForProfile(profileId: string): Promise<Diges
   // The fresh-start re-offer (ADR-920 Phase 3): a commitment that ran its course in the
   // last week and stayed retired gets one quiet line in the Sunday digest (which lands
   // right before Monday, the strongest re-commitment landmark). Never more than two;
-  // fail-safe to none. Read through an untyped cast (the term columns are newer than the
-  // generated types, ADR-246).
+  // fail-safe to none.
   let goAgain: { title: string; url: string }[] = []
   try {
-    const untyped: SupabaseClient = admin
-    const { data: doneRows } = await untyped
+    const { data: doneRows } = await admin
       .from('member_practices')
       .select('practice_id, retired_at, practice:practices(title, slug)')
       .eq('profile_id', profileId)

@@ -49,21 +49,14 @@ export const getCrewContext = cache(async (): Promise<CrewContext | null> => {
   if (!user) return null
 
   const admin = createAdminClient()
-  // membership_tier + gamification_access_override feed the third-flag resolver; the override column
-  // isn't in the generated types yet (ADR-246), so select past the typed row with the untyped cast.
-  const { data: profile } = await (admin as unknown as {
-    from: (t: string) => {
-      select: (c: string) => {
-        eq: (col: string, v: string) => { maybeSingle: () => Promise<{ data: Record<string, unknown> | null }> }
-      }
-    }
-  })
+  // membership_tier + gamification_access_override feed the third-flag resolver.
+  const { data: profile } = await admin
     .from('profiles')
     .select('id, display_name, is_crew_lead, membership_tier, gamification_access_override')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!profile?.id) return null
-  const profileId = profile.id as string
+  const profileId = profile.id
   const tier = ((profile.membership_tier as EntitlementTier | null) ?? 'free') as EntitlementTier
 
   const [isCrew, finishedCount, season, membershipRow, flags, gamificationFull] = await Promise.all([
@@ -88,9 +81,9 @@ export const getCrewContext = cache(async (): Promise<CrewContext | null> => {
 
   return {
     profileId,
-    displayName: profile.display_name as string,
+    displayName: profile.display_name,
     isCrew,
-    isCrewLead: (profile.is_crew_lead as boolean | null) ?? false,
+    isCrewLead: profile.is_crew_lead ?? false,
     season,
     finishedCount,
     rank: rankForCompletion(finishedCount),

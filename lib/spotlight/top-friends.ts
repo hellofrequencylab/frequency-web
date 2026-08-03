@@ -21,37 +21,20 @@ export type { TopFriend } from './top-friends.types'
 // The server actions (app/(main)/settings/profile/spotlight-actions.ts) own auth +
 // the friendship check + the writes; this module owns the shape + the read.
 
-// ── The untyped admin-client seam (spotlight_top_friends not in the generated DB types
-// yet, ADR-246). Mirrors lib/spaces/segments.ts. The `profiles` / `friendships` reads
-// below stay on the TYPED client — only the new table goes through this seam. The
-// integrator step regenerates lib/database.types.ts and drops this cast. ──────────────
-type TopFriendRow = { friend_profile_id: string; position: number }
-type TopFriendQuery = {
-  select: (cols: string) => TopFriendQuery
-  eq: (col: string, val: string) => TopFriendQuery
-  order: (col: string, opts: { ascending: boolean }) => TopFriendQuery
-  limit: (n: number) => TopFriendQuery
-  insert: (rows: Record<string, unknown>[]) => Promise<{ error: { message: string } | null }>
-  delete: () => TopFriendQuery
-  then: (resolve: (r: { data: TopFriendRow[] | null; error: { message: string } | null }) => unknown) => Promise<unknown>
-}
-/** The untyped `spotlight_top_friends` query builder (table not in the generated types yet). */
-function topFriendsTable(): TopFriendQuery {
-  const db = createAdminClient() as unknown as { from: (t: string) => TopFriendQuery }
-  return db.from('spotlight_top_friends')
+// ── The typed admin-client seam (spotlight_top_friends is in the generated DB types).
+// The `profiles` / `friendships` reads below use the same typed client. ────────────────
+function topFriendsTable() {
+  return createAdminClient().from('spotlight_top_friends')
 }
 
 /** Read an owner's featured friend ids in saved (position-ascending) order. */
 async function readOwnerFriendIds(ownerProfileId: string): Promise<string[]> {
-  const data = await new Promise<TopFriendRow[]>((resolve) => {
-    topFriendsTable()
-      .select('friend_profile_id, position')
-      .eq('owner_profile_id', ownerProfileId)
-      .order('position', { ascending: true })
-      .limit(MAX_TOP_FRIENDS)
-      .then((r) => resolve(r.data ?? []))
-  })
-  return data.map((r) => r.friend_profile_id)
+  const { data } = await topFriendsTable()
+    .select('friend_profile_id, position')
+    .eq('owner_profile_id', ownerProfileId)
+    .order('position', { ascending: true })
+    .limit(MAX_TOP_FRIENDS)
+  return (data ?? []).map((r) => r.friend_profile_id)
 }
 
 /**
@@ -64,12 +47,7 @@ export async function rewriteTopFriends(
   ownerProfileId: string,
   rows: { owner_profile_id: string; friend_profile_id: string; position: number }[],
 ): Promise<{ error?: string }> {
-  const delErr = await new Promise<{ message: string } | null>((resolve) => {
-    topFriendsTable()
-      .delete()
-      .eq('owner_profile_id', ownerProfileId)
-      .then((r) => resolve(r.error))
-  })
+  const { error: delErr } = await topFriendsTable().delete().eq('owner_profile_id', ownerProfileId)
   if (delErr) return { error: delErr.message }
   if (rows.length > 0) {
     const { error } = await topFriendsTable().insert(rows)
@@ -83,13 +61,10 @@ export async function deleteOneTopFriend(
   ownerProfileId: string,
   friendProfileId: string,
 ): Promise<{ error?: string }> {
-  const err = await new Promise<{ message: string } | null>((resolve) => {
-    topFriendsTable()
-      .delete()
-      .eq('owner_profile_id', ownerProfileId)
-      .eq('friend_profile_id', friendProfileId)
-      .then((r) => resolve(r.error))
-  })
+  const { error: err } = await topFriendsTable()
+    .delete()
+    .eq('owner_profile_id', ownerProfileId)
+    .eq('friend_profile_id', friendProfileId)
   return err ? { error: err.message } : {}
 }
 

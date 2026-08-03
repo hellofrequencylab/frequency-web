@@ -49,22 +49,21 @@ async function geocodeEventLocation(
   location: string | null,
 ): Promise<void> {
   try {
-    // Read the row's current geo columns + attendance mode (newer than the generated
-    // types → untyped cast, repo convention).
-    const { data: row } = await (admin)
+    // Read the row's current geo columns + attendance mode (typed read).
+    const { data: row } = await admin
       .from('events')
       .select('venue_name, street, city, region, country, postal_code, attendance_mode, online_url')
       .eq('id', eventId)
       .maybeSingle()
-    const r = (row ?? {}) as {
-      venue_name?: string | null
-      street?: string | null
-      city?: string | null
-      region?: string | null
-      country?: string | null
-      postal_code?: string | null
-      attendance_mode?: string | null
-      online_url?: string | null
+    const r = row ?? {
+      venue_name: null,
+      street: null,
+      city: null,
+      region: null,
+      country: null,
+      postal_code: null,
+      attendance_mode: null as string | null,
+      online_url: null,
     }
 
     const existing: EventAddress = {
@@ -172,15 +171,13 @@ export async function updateEvent(id: string, fd: FormData) {
   const endsAt   = fd.get('ends_at') as string
 
   // Ticket price in dollars → cents (ADR-177). Blank/0 = free (no ticket, RSVP only).
-  // `price_cents` isn't in the generated types yet, so the update object is cast.
   const priceRaw = (fd.get('price') as string)?.trim()
   const priceNum = priceRaw ? Number(priceRaw) : 0
   const priceCents = Number.isFinite(priceNum) && priceNum > 0 ? Math.round(priceNum * 100) : null
 
   const location = (fd.get('location') as string)?.trim() || null
 
-  // price_cents isn't in the generated types yet — untyped cast (repo convention).
-  const { error } = await (admin).from('events').update({
+  const { error } = await admin.from('events').update({
     title:       (fd.get('title') as string).trim(),
     description: (fd.get('description') as string)?.trim() || null,
     location,

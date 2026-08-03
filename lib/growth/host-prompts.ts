@@ -18,17 +18,15 @@
 //
 // FAIL-SAFE THROUGHOUT: any read error resolves to "show nothing" (a naggy repeat on
 // a DB hiccup is worse than a missed nudge), and every seen-state write is
-// best-effort so it never blocks the feed. Because the seen-state table ships
-// unapplied (migration 20261124000000), the store is reached with untyped casts
-// (ADR-246) and a missing table simply reads as "already seen".
+// best-effort so it never blocks the feed. The seen-state table (beta_host_prompts)
+// is in the generated DB types, so access goes through the typed client.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { betaHostPromptsFlag } from '@/lib/platform-flags'
 import { rankIndex, type SeasonRank } from '@/lib/season-ranks'
 import { nearbyPracticeSignal } from '@/lib/growth/nearby-practice'
 
-function db(): SupabaseClient {
+function db() {
   return createAdminClient()
 }
 
@@ -125,7 +123,7 @@ export async function recordHostPromptSeen(profileId: string, kind: HostPromptKi
       .eq('profile_id', profileId)
       .eq('kind', kind)
       .maybeSingle()
-    const seen = (((data as { seen_count?: number | null } | null)?.seen_count) ?? 0) + 1
+    const seen = (data?.seen_count ?? 0) + 1
     await client
       .from('beta_host_prompts')
       .upsert(

@@ -3,8 +3,8 @@
 // Organization analog of lib/spaces/memberships.ts:
 //   space_donation_asks: the single donation ask an owner publishes per Space (a fund label, a short
 //                        description, and a set of suggested amounts the Donate card renders).
-// Backed by the service-role admin client plus untyped casts (the table is not in the generated DB
-// types yet, ADR-246, mirroring lib/spaces/memberships.ts). The server is the authority for "which
+// Backed by the service-role admin client (the table is in the generated DB types, so access is
+// typed; mirrors lib/spaces/memberships.ts). The server is the authority for "which
 // space" and "what may this caller do here" (P5): every write re-checks authorization SERVER-SIDE;
 // reads fail-safe (null) and writes fail-closed on a permission miss.
 //
@@ -108,9 +108,8 @@ export function normalizeAsk(raw: {
   return ask
 }
 
-// ── IO: the untyped admin-client seam (table not in generated types yet, ADR-246) ──────────────
+// ── IO: the typed admin-client seam ─────────────────────────────────────────────────────────────
 
-// Loosely-typed row + builder for the not-yet-typed table, mirroring lib/spaces/memberships.ts.
 type AskRow = {
   id: string
   space_id: string
@@ -120,17 +119,8 @@ type AskRow = {
   is_active: boolean
 }
 
-type AskQuery = {
-  select: (cols: string) => AskQuery
-  eq: (col: string, val: string) => AskQuery
-  delete: () => AskQuery
-  insert: (rows: Record<string, unknown>[]) => Promise<{ error: unknown }>
-  maybeSingle: () => Promise<{ data: AskRow | null; error: unknown }>
-}
-
-function asksTable(): AskQuery {
-  const db = createAdminClient() as unknown as { from: (t: string) => AskQuery }
-  return db.from('space_donation_asks')
+function asksTable() {
+  return createAdminClient().from('space_donation_asks')
 }
 
 const ASK_COLS = 'id, space_id, fund_label, description, suggested_amounts_cents, is_active'
@@ -199,7 +189,7 @@ export async function setDonationAsk(
     // Clear the existing ask, then insert the new one. At most one row per Space, so a clean replace
     // keeps the ask the single source of truth (the member surface re-reads it).
     const del = await asksTable().delete().eq('space_id', spaceId)
-    if ((del as unknown as { error?: unknown }).error) {
+    if (del.error) {
       return fail('Could not save your donation ask. Try again.')
     }
     if (clean) {

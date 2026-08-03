@@ -7,8 +7,8 @@
 // membership does NOT count: a viewer can't manage, so the launcher wouldn't link
 // them anywhere they could edit.
 //
-// Backed by the service-role admin client plus untyped casts (neither `space_members`
-// nor the `spaces` brand columns are in the generated DB types yet, ADR-246 — the same
+// Backed by the service-role admin client (`space_members` and the `spaces` brand
+// columns are in the generated DB types, so access is typed — the same
 // shape lib/spaces/membership.ts / discovery.ts use). The server is the authority and
 // this is read-only; it re-resolves the viewer's own id at the call boundary, never
 // trusts a client-passed id, and is FAIL-SAFE: any error (or a pre-migration table)
@@ -46,8 +46,7 @@ export interface ManagedSpace {
   settingsHref: string
 }
 
-// The columns the launcher projects. `brand_name` rides the untyped select below (it isn't fully in
-// the generated types yet, ADR-246), so the brand can lead the row when set.
+// The columns the launcher projects. `brand_name` leads the row when set.
 const SPACE_COLS = 'id, slug, name, type, status, brand_name'
 
 type ManagedSpaceRow = {
@@ -59,39 +58,12 @@ type ManagedSpaceRow = {
   brand_name: string | null
 }
 
-// The untyped `spaces` query-builder surface this reader uses (brand columns aren't fully in the
-// generated types yet) — the same loose shape lib/spaces/discovery.ts types for the table.
-type SpacesQuery = {
-  select: (cols: string) => SpacesQuery
-  eq: (col: string, val: string) => SpacesQuery
-  in: (col: string, vals: string[]) => SpacesQuery
-  order: (col: string, opts: { ascending: boolean }) => SpacesQuery
-  then: (
-    resolve: (r: { data: ManagedSpaceRow[] | null; error: unknown }) => unknown,
-  ) => Promise<unknown>
+function spacesTable() {
+  return createAdminClient().from('spaces')
 }
 
-/** The untyped admin-client `spaces` builder (brand columns aren't fully in the generated types). */
-function spacesTable(): SpacesQuery {
-  const db = createAdminClient() as unknown as { from: (table: string) => SpacesQuery }
-  return db.from('spaces')
-}
-
-// `space_members` isn't in the generated DB types yet (ADR-246) — reach it through an untyped `from`
-// accessor and type the builder loosely, the same shape lib/spaces/membership.ts uses.
-type MembershipRow = { space_id: string; role: string; status: string }
-
-type MembersQuery = {
-  select: (cols: string) => MembersQuery
-  eq: (col: string, val: string) => MembersQuery
-  then: (
-    resolve: (r: { data: MembershipRow[] | null; error: unknown }) => unknown,
-  ) => Promise<unknown>
-}
-
-function membersTable(): MembersQuery {
-  const db = createAdminClient() as unknown as { from: (table: string) => MembersQuery }
-  return db.from('space_members')
+function membersTable() {
+  return createAdminClient().from('space_members')
 }
 
 /** The Space ids the viewer can MANAGE through an ACTIVE editor+ membership (editor / moderator /
@@ -99,9 +71,7 @@ function membersTable(): MembersQuery {
  *  error or a missing table. */
 async function manageableMemberSpaceIds(profileId: string): Promise<string[]> {
   try {
-    const result = (await membersTable()
-      .select('space_id, role, status')
-      .eq('profile_id', profileId)) as { data: MembershipRow[] | null; error: unknown }
+    const result = await membersTable().select('space_id, role, status').eq('profile_id', profileId)
     if (result.error || !result.data) return []
     const ids = new Set<string>()
     for (const row of result.data) {
@@ -136,23 +106,14 @@ export const listManagedSpaces = cache(async (): Promise<ManagedSpace[]> => {
     // Two narrow reads, unioned in app code: the Spaces this viewer OWNS, and the Spaces their
     // active editor+ memberships point at. Both are keyed strictly to the viewer, so neither can
     // reach past the caller's entitlement.
-    const ownedPromise = (spacesTable()
+    const ownedPromise = spacesTable()
       .select(SPACE_COLS)
       .eq('owner_profile_id', profileId)
-      .order('name', { ascending: true })) as unknown as Promise<{
-      data: ManagedSpaceRow[] | null
-      error: unknown
-    }>
-    const memberPromise: Promise<{ data: ManagedSpaceRow[] | null; error: unknown }> =
+      .order('name', { ascending: true })
+    const memberPromise =
       memberIds.length > 0
-        ? (spacesTable()
-            .select(SPACE_COLS)
-            .in('id', memberIds)
-            .order('name', { ascending: true }) as unknown as Promise<{
-            data: ManagedSpaceRow[] | null
-            error: unknown
-          }>)
-        : Promise.resolve({ data: [], error: null })
+        ? spacesTable().select(SPACE_COLS).in('id', memberIds).order('name', { ascending: true })
+        : Promise.resolve({ data: [] as ManagedSpaceRow[], error: null })
 
     const [owned, member] = await Promise.all([ownedPromise, memberPromise])
 

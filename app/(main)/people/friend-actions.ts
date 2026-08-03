@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import type { Database } from '@/lib/database.types'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -56,8 +55,7 @@ export async function sendFriendRequest(
   // Stamp how this connection was made (ADR-372 provenance). Default: a plain opt-in connect.
   const prov = resolveConnectProvenance(context)
 
-  // Insert as pending; ON CONFLICT do nothing so re-sending is a no-op. The provenance columns are
-  // not in the generated types until regen, so cast the row past the stale Insert type (ADR-246).
+  // Insert as pending; ON CONFLICT do nothing so re-sending is a no-op.
   const { error } = await admin
     .from('friendships')
     .insert({
@@ -67,7 +65,7 @@ export async function sendFriendRequest(
       edge_type: prov.edge_type,
       event_id: prov.event_id,
       circle_id: prov.circle_id,
-    } as unknown as Database['public']['Tables']['friendships']['Insert'])
+    })
 
   if (error && !error.message.toLowerCase().includes('duplicate')) {
     return fail(error.message)

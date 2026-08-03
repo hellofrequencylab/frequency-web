@@ -9,7 +9,7 @@
 // handle (repo convention, cf. store.ts). FAIL-SAFE by contract: any error returns
 // null so the /q/<slug> scan + redirect can never break.
 
-import type { Database } from '@/lib/database.types'
+import type { Database, Json } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { parseVcard } from '@/lib/vcard'
 import { addNote, touchLastContacted } from './store'
@@ -127,15 +127,14 @@ export async function captureQrContact(
         // The linked member's avatar renders via linked_profile_id; never copy the
         // public profile photo into the private bucket.
         avatar_path: null,
-        details: { metContext: met },
-        // last_contacted_at lands via the P1 migration; not in the generated types
-        // yet, so the whole payload rides an untyped cast (repo convention).
+        // jsonb payload — narrowed to Json (the payload shape has no generated type).
+        details: { metContext: met } as unknown as Json,
         last_contacted_at: nowIso,
-      } as unknown as NetworkContactInsert)
+      })
       .select('id')
       .maybeSingle()
     if (error || !created) return null
-    const id = String((created as { id: string }).id)
+    const id = created.id
 
     // The "Met via QR ..." line, through the existing note path (kind = connection).
     await addNote(scannerId, id, metNote(at), 'connection', scannerId)

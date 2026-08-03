@@ -114,15 +114,13 @@ export async function runDecay({ dryRun }: { dryRun: boolean }): Promise<DecayRe
     }
   }
 
-  // Clean up demo hubs whose circles have all decayed away (orphaned hub —
-  // hubs.is_demo isn't in the generated types yet, so go through an untyped cast).
+  // Clean up demo hubs whose circles have all decayed away (orphaned hub).
   if (!dryRun) {
-    const du = d
-    const { data: hubCircles } = await du.from('circles').select('hub_id').not('hub_id', 'is', null)
-    const liveHubIds = new Set((hubCircles ?? []).map((c: { hub_id: string }) => c.hub_id))
-    const { data: demoHubs } = await du.from('hubs').select('id').eq('is_demo', true)
-    const orphanHubs = ((demoHubs ?? []) as { id: string }[]).map((h) => h.id).filter((id) => !liveHubIds.has(id))
-    if (orphanHubs.length) await du.from('hubs').delete().in('id', orphanHubs)
+    const { data: hubCircles } = await d.from('circles').select('hub_id').not('hub_id', 'is', null)
+    const liveHubIds = new Set((hubCircles ?? []).map((c) => c.hub_id))
+    const { data: demoHubs } = await d.from('hubs').select('id').eq('is_demo', true)
+    const orphanHubs = (demoHubs ?? []).map((h) => h.id).filter((id) => !liveHubIds.has(id))
+    if (orphanHubs.length) await d.from('hubs').delete().in('id', orphanHubs)
   }
 
   // ── (B) Neighbour decay on real circles carrying demo members ───────────

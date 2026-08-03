@@ -9,12 +9,11 @@
 //   • context  — proximity (lib/distance.ts, viewer home → host-circle location)
 //                × time-decay (sooner = better, never past).
 //
-// Server-only (admin client). event_embeddings / profiles.embedding aren't in the
-// generated DB types → untyped cast (repo convention, see lib/ai/room-search.ts).
+// Server-only (admin client). event_embeddings / profiles.embedding are in the
+// generated DB types, so access goes through the typed client.
 // Pure, bounded work over a capped candidate set; degrades gracefully — a missing
 // signal contributes 0, never an error, so the caller can always rank what it has.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { distanceKm } from '@/lib/distance'
 import { seriesKey } from '@/lib/events/series'
@@ -43,7 +42,7 @@ export interface ScoredEvent {
   context: number
 }
 
-function db(): SupabaseClient {
+function db() {
   return createAdminClient()
 }
 

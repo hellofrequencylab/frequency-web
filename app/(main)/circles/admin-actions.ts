@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { getMyProfileId } from '@/lib/auth'
 import { isLoomPublicImageUrl } from '@/lib/loom/urls'
@@ -19,7 +18,7 @@ import { isValidTimeZone } from '@/lib/time/zone'
 import { getCircleEarnedZaps } from '@/lib/circles/earned'
 import { setCircleChannel } from '@/lib/channels/programs'
 import { writeCircleCoverFocus, writeCircleHeroHeight } from '@/lib/circles/hero'
-import type { Database } from '@/lib/database.types'
+import type { Database, Json } from '@/lib/database.types'
 
 /** A small {id, title, href} entry for one of the circle's adopted Quest items. */
 export interface CircleQuestItem {
@@ -37,13 +36,6 @@ export interface CircleQuestAdoptions {
   challenges: CircleChallenge[]
 }
 
-// The journey/practice link tables aren't in the generated Database types (fresh
-// migrations), so we read them through an untyped admin handle — the repo convention
-// from lib/practices.ts / lib/journey-plans.ts. The capability gate in the caller is
-// the authority either way.
-function untyped(): SupabaseClient {
-  return createAdminClient()
-}
 
 /** Load what this circle has adopted, honestly sourced from the real schema:
  *  - PRACTICES: every distinct practice the host has ever set as the circle's
@@ -54,7 +46,7 @@ function untyped(): SupabaseClient {
  *    (circle_challenge_adoptions), each with the circle's collective progress.
  *  Caller gates on circle.editSettings. */
 async function getCircleQuestAdoptions(circleId: string): Promise<CircleQuestAdoptions> {
-  const db = untyped()
+  const db = createAdminClient()
 
   // Practices this circle has adopted (current + past), newest first; the active one
   // is surfaced first. circle_practices may carry the same practice more than once
@@ -133,7 +125,7 @@ export interface ChannelOptionGroup {
  *  paused target either way. Channels without a pillar land in a trailing
  *  group so nothing curated silently disappears. */
 async function listChannelOptionGroups(currentChannelId: string | null): Promise<ChannelOptionGroup[]> {
-  const db = untyped()
+  const db = createAdminClient()
   const [pillarsRes, channelsRes] = await Promise.all([
     db.from('pillars').select('id, name, display_order').eq('is_active', true).order('display_order'),
     db
@@ -245,14 +237,7 @@ export async function adoptCircleChallenge(
   const { getMyProfileId } = await import('@/lib/auth')
   const myProfileId = await getMyProfileId().catch(() => null)
 
-  const { error } = await (untyped() as unknown as {
-    from: (t: string) => {
-      upsert: (
-        v: Record<string, unknown>,
-        o: { onConflict: string; ignoreDuplicates: boolean },
-      ) => Promise<{ error: { message: string } | null }>
-    }
-  })
+  const { error } = await createAdminClient()
     .from('circle_challenge_adoptions')
     .upsert(
       { circle_id: circleId, challenge_id: challengeId, adopted_by: myProfileId ?? null },
@@ -274,7 +259,7 @@ export async function dropCircleChallenge(
   const caps = await getCircleCapabilities(circleId)
   if (!caps.has('circle.editSettings')) return { error: 'Unauthorized' }
 
-  const { error } = await untyped()
+  const { error } = await createAdminClient()
     .from('circle_challenge_adoptions')
     .delete()
     .eq('circle_id', circleId)
@@ -404,18 +389,15 @@ export async function removeCircleCover(id: string, slug: string) {
   revalidatePath('/circles')
 }
 
-/** Read circles.theme on its OWN select, swallowing any error into `{}`. This is deliberate, not
- *  sloppiness: `theme` ships in migration 20270120000000_circles_theme.sql, which the owner applies
- *  by hand — until then the column does not exist and PostgREST answers this select with a 42703
- *  error instead of a row. Folding that error into an empty bag keeps every read total (the
- *  lib/circles/hero helpers all resolve `{}` to today's defaults), so nothing can 500 or blank a
- *  module on an environment where the migration has not landed yet. It also keeps `theme` OUT of
- *  getCircleAdminData's main select, which would otherwise fail wholesale and hide the entire
- *  settings module. */
+/** Read circles.theme on its OWN select, swallowing any error into `{}`. Deliberate: folding an
+ *  error into an empty bag keeps every read total (the lib/circles/hero helpers all resolve `{}`
+ *  to today's defaults), so a transient failure can never 500 or blank the settings module — it
+ *  just renders the default hero. It also keeps `theme` OUT of getCircleAdminData's main select,
+ *  which would otherwise fail wholesale and hide the entire module. */
 async function readCircleTheme(id: string): Promise<unknown> {
-  const { data, error } = await untyped().from('circles').select('theme').eq('id', id).maybeSingle()
+  const { data, error } = await createAdminClient().from('circles').select('theme').eq('id', id).maybeSingle()
   if (error) return {}
-  return (data as { theme?: unknown } | null)?.theme ?? {}
+  return data?.theme ?? {}
 }
 
 /**
@@ -438,12 +420,11 @@ export async function updateCircleCoverFocus(
   if (!caps.has('circle.editSettings')) return { error: 'Unauthorized' }
 
   const next = writeCircleCoverFocus(await readCircleTheme(id), focus)
-  // ADR-246 untyped cast: `theme` post-dates lib/database.types.ts. If the column's migration has
-  // not been applied yet the update comes back as a PostgREST error VALUE (never a throw), which
-  // surfaces as this action's inline `{ error }` — a sentence in the rail, not a 500.
-  const { error } = await (createAdminClient() as unknown as UntypedUpdate)
+  // A DB failure comes back as a PostgREST error VALUE (never a throw), which surfaces as this
+  // action's inline `{ error }` — a sentence in the rail, not a 500.
+  const { error } = await createAdminClient()
     .from('circles')
-    .update({ theme: next })
+    .update({ theme: next as Json })
     .eq('id', id)
   if (error) return { error: error.message }
 
@@ -467,24 +448,14 @@ export async function updateCircleHeroHeight(
   if (!caps.has('circle.editSettings')) return { error: 'Unauthorized' }
 
   const next = writeCircleHeroHeight(await readCircleTheme(id), height)
-  const { error } = await (createAdminClient() as unknown as UntypedUpdate)
+  const { error } = await createAdminClient()
     .from('circles')
-    .update({ theme: next })
+    .update({ theme: next as Json })
     .eq('id', id)
   if (error) return { error: error.message }
 
   revalidatePath(`/circles/${slug}`)
   revalidatePath('/circles')
-}
-
-// The admin client's generated types don't cover every write surface used below; cast to an
-// untyped update surface for those, with the capability gate above as the real authority.
-type UntypedUpdate = {
-  from: (t: string) => {
-    update: (v: Record<string, unknown>) => {
-      eq: (c: string, val: string) => Promise<{ error: { message: string } | null }>
-    }
-  }
 }
 
 /** Rename a circle's permalink. Slugifies the input, rejects empty, and ensures the
@@ -513,7 +484,7 @@ export async function updateCirclePermalink(
     if (clash) return { error: 'That permalink is already taken.' }
   }
 
-  const { error } = await (admin as unknown as UntypedUpdate)
+  const { error } = await admin
     .from('circles')
     .update({ slug: next })
     .eq('id', id)
@@ -698,7 +669,7 @@ export async function updateCirclePlaceTime(id: string, slug: string, fd: FormDa
   const zoneRaw = ((fd.get('timezone') as string) ?? '').trim()
   const timezone = isValidTimeZone(zoneRaw) ? zoneRaw : undefined
 
-  const update: Record<string, unknown> = { type }
+  const update: Database['public']['Tables']['circles']['Update'] = { type }
   if (timezone !== undefined) update.timezone = timezone
 
   if (type === 'online') {
@@ -721,7 +692,7 @@ export async function updateCirclePlaceTime(id: string, slug: string, fd: FormDa
     update.longitude = valid ? lngNum : null
   }
 
-  const { error } = await (admin as unknown as UntypedUpdate).from('circles').update(update).eq('id', id)
+  const { error } = await admin.from('circles').update(update).eq('id', id)
   if (error) throw new Error(error.message)
 
   revalidatePath(`/circles/${slug}`)

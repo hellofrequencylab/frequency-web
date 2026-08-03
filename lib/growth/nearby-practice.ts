@@ -11,14 +11,12 @@
 // CHEAP BY DESIGN: at most four bounded reads — my cell, my practices, my neighbours
 // (one indexed bounding-box query over profiles.home_geocell_*, exact-matched to my
 // city bucket in memory), and the neighbours' logs for MY practices. Fail-safe: any
-// error resolves to null (no signal), so the feed never breaks. The geocell columns
-// are not in the generated types yet, so this reaches them with untyped casts (ADR-246).
+// error resolves to null (no signal), so the feed never breaks.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { cityKey, CITY_GRID_DECIMALS } from '@/lib/keystone/density-rollup'
 
-function db(): SupabaseClient {
+function db() {
   return createAdminClient()
 }
 

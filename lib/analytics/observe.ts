@@ -27,7 +27,7 @@ let sessionId: string | null = null
 
 /** Ephemeral per-tab visit id (sessionStorage). Random, not PII — just sessionizes a
  *  visit so a sequence of interactions can be stitched without a durable identifier. */
-function getSessionId(): string {
+export function getSessionId(): string {
   if (sessionId) return sessionId
   if (typeof window === 'undefined') return 'ssr'
   try {

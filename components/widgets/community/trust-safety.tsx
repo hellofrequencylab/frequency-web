@@ -30,7 +30,6 @@ async function load(): Promise<TrustData> {
       admin.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       admin.from('admin_audit_log').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo),
       ticketStatusCounts(),
-      // profile_personas isn't in the generated types yet (repo convention: untyped cast).
       // A `claimed` persona is pending the staff verify queue (lib/personas.ts).
       admin
         .from('profile_personas')
