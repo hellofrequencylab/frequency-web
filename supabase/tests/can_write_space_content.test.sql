@@ -14,19 +14,19 @@ begin;
 select plan(3);
 
 select matches(
-  pg_get_functiondef('public.can_write_space_content(uuid)'::regprocedure),
+  pg_get_functiondef('private.can_write_space_content(uuid)'::regprocedure),
   'get_my_profile_id\(\)',
   'owner + member arms resolve caller identity via get_my_profile_id()'
 );
 
 select matches(
-  pg_get_functiondef('public.can_write_space_content(uuid)'::regprocedure),
+  pg_get_functiondef('private.can_write_space_content(uuid)'::regprocedure),
   'get_my_web_role\(\)',
   'root + null-space arms are gated to platform staff via get_my_web_role()'
 );
 
 select doesnt_match(
-  pg_get_functiondef('public.can_write_space_content(uuid)'::regprocedure),
+  pg_get_functiondef('private.can_write_space_content(uuid)'::regprocedure),
   '(?i)auth\.uid',
   'helper no longer compares a profile id to auth.uid() directly (the latent bug)'
 );

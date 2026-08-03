@@ -62,6 +62,8 @@ jobs:
         run: pnpm check:vocab
       - name: RLS coverage (static shift-left of the DB advisors)
         run: pnpm check:rls
+      - name: Admin-client ratchet (ADR-923 — no new RLS-bypass adopters)
+        run: pnpm check:admin-client
       - name: Migration filename contract (unique versions — a collision silently skips a migration)
         run: pnpm check:migrations
       - name: ADR ledger contract (unique numbers — a duplicate makes every citation ambiguous)

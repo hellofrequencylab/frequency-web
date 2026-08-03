@@ -14,7 +14,12 @@ list without being in flight. The active runway (ground truth → tenancy walls 
 design-system completion → DAWN 2 redesign → uniform fabric) proceeds now; these resume when the
 owner calls them. **Shared prerequisite for both: the tenancy-walls phase** (RLS policy quads on
 the `space_*`/CRM tables, `app_instances` applied with its Phase-2 restrictive policies, pgTAP
-cross-tenant proof) — neither phase starts until that is verified in prod.
+cross-tenant proof) — neither phase starts until that is verified in prod. **Update 2026-08-03
+([ADR-923](DECISIONS.md)): the walls are UP** — 26 tables policied and applied to prod (17 full
+quads + 9 scoped read arms + the `app_instances` Phase-2 set, with its draft-leak arm corrected),
+pgTAP four-seat cross-tenant matrix in `supabase/tests/space_tenancy_walls.test.sql`, and the
+`check:admin-client` ratchet freezing the 736 service-role importers so RLS-bypass usage only
+shrinks. Remaining before the phases resume: run the pgTAP suite green in `db-tests` CI.
 
 ### App Platform (packaged tenant apps) — 🔴 deferred
 
