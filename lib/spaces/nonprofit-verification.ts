@@ -6,8 +6,8 @@
 // path (setSpacePlan, lib/pricing/space-plan.ts) — this module never writes spaces.plan/entitlements
 // directly, so there is one plan-set path, not two.
 //
-// Backed by the service-role admin client plus untyped casts (space_nonprofit_verifications is not in the
-// generated DB types yet, ADR-246, mirroring lib/spaces/tickets.ts). The server is the authority for
+// Backed by the service-role admin client (space_nonprofit_verifications is in the generated DB
+// types, so access is typed; mirrors lib/spaces/tickets.ts). The server is the authority for
 // "which space" and "what may this caller do" (P5, ADR-331/334/338): the member submit self-gates on
 // canManage; reads fail-safe (null/empty); the admin approve/reject are gated by their route action
 // wrappers (staff/janitor) and take the reviewer id from there.

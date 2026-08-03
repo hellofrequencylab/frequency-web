@@ -4,7 +4,6 @@ import {
   Rocket, Telescope, Bot, Link2,
   ClipboardList, Send, type LucideIcon,
 } from 'lucide-react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { AdminSection } from '@/components/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -12,13 +11,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // Marketing, each a live stat (where cheap) plus a link straight to the surface that edits it. Self-
 // fetching RSC; the page owns the gate and every linked area keeps its own. Fail-safe: any read error
 // degrades to honest zeros. The grids are container queries so they size to the slot they land in.
-
-// Untyped admin handle for the funnels/applications tables (not in the generated types until regen,
-// the repo-wide service-role convention, ADR-246). The SupabaseClient return annotation widens off the
-// typed-table union without a client cast.
-function funnelsDb(): SupabaseClient {
-  return createAdminClient()
-}
 
 interface ManageCard {
   label: string
@@ -57,10 +49,9 @@ async function load(): Promise<ManageCounts> {
       admin.from('nurture_sequences').select('id', { count: 'exact', head: true }),
       admin.from('qr_codes').select('id', { count: 'exact', head: true }),
       admin.from('automation_rules').select('id', { count: 'exact', head: true }),
-      // Funnels-as-object (Growth OS Engine 2) + open applications (Engine 3, GE3-4): not in the
-      // generated DB types until regen, so read through the untyped admin handle (ADR-246).
-      funnelsDb().from('funnels').select('id', { count: 'exact', head: true }),
-      funnelsDb().from('applications').select('id', { count: 'exact', head: true }).in('status', ['pending', 'in_review']),
+      // Funnels-as-object (Growth OS Engine 2) + open applications (Engine 3, GE3-4).
+      admin.from('funnels').select('id', { count: 'exact', head: true }),
+      admin.from('applications').select('id', { count: 'exact', head: true }).in('status', ['pending', 'in_review']),
     ])
     return {
       contacts: contactsC.count ?? 0,
