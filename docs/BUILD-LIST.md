@@ -52,6 +52,18 @@ pages still plain), the copy cascade (`page_content` is header-only), and per-Sp
 Enforced by CI gates so new drift fails a PR. **Sequence: tokens (P1–P3) → headers (P4–P5) → copy (P6)
 → operator theming + safety net (P7–P8).** Lift: S ≈ 1 day · M ≈ 2–4 days · L ≈ 1–2 weeks.
 
+**Kit adoption map — 2026-08-03 (audited for the DAWN round, feeds P3/P4 + the fabric phase):**
+SectionHeader (141 uses) and StatCard (102) are landed; PageHeading lands indirectly through the
+template layer (~266 consumers). The gaps: **UnderlineTabs** (15 uses vs 4 byte-identical pill
+manage-consoles per ADR-828 + 3 hand-rolled underline strips — the pill consoles are sanctioned
+but are a 4-way copy-paste; UnderlineTabs' `activeHref` could absorb them if the pill look is not
+load-bearing), **EntityCard** (32 uses vs 44 bespoke `*-card.tsx`), **RowCard** (4 uses vs ~15
+hand-rolled rows — the worst), **PersonCard** (17 uses). **ProgressTrack was missing entirely**
+(~30 ad-hoc `rounded-full` + inline-width bars) — built with the DAWN §5 primitives (Counter,
+StreakMeter, Meter, GateNotice) in the 2026-08-03 design-sync round; adoption sweeps are the
+fabric phase. UnderlineTabs also lives under `components/admin/`, hurting discoverability — move
+to `components/ui/` during the sweep.
+
 | # | Scope | Lift | Status |
 |---|---|---|---|
 | P0 | **Headers + enforcement.** One `PageHero` for browse/commerce; `check:tokens` + `check:headers` hard gates; the protocol doc. | — | ✅ ADR-781 (PR #1805) |
