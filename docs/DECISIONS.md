@@ -16785,3 +16785,19 @@ The durable rule: **an offer with no price must have no place to put one.** Ever
 **Consequences.** ⚠️ Until Phase 2 lands, `adoptPlan` still writes whole-journey ongoing adoptions (now explicitly `source`-less legacy rows); Phase 2 makes enrollment phase-scoped and anchor-persistent. ⚠️ The completion sweep, reminder rail, Today surface, and swap flow are Phases 3 and 4 of the build plan; the schema and pure core land first so every later phase writes correct data from day one. ⚠️ `coerceTermWeeks` falls to the DEFAULT (4) on any off-preset value, never to ongoing — a malformed request must not mint a permanent row.
 
 The durable rule: **a lifecycle without an exit is a leak.** Any row a flow can create, some flow must be able to retire, with the why recorded.
+
+---
+
+## ADR-921 — App Platform and white-label sites are committed to the build list, not to the runway (2026-08-03)
+
+**Status.** Accepted. Owner decision: *"I'm going to wait on full white label and app production for now. Let's commit those parts of the plan to the build list."*
+
+**Context.** The 2026-08-03 master production plan sequenced eight phases: ground truth, tenancy walls, instant shell, design-system completion, the DAWN 2 redesign, uniform page fabric, the App Platform (packaged per-tenant apps on `app_instances`), and white-label sites (the ADR-509 architecture: subdomains on a dedicated apex, then custom domains via the Vercel Domains API). The two back phases are the largest, carry the only external lead times (apex domain purchase, DNS, Stripe connector authorization), and both stand on the tenancy-walls phase being verified in prod. A Design System round is arriving from Claude Design imminently, which makes the design-side runway (snapshot harness, token adoption, DAWN 2 rounds) the highest-leverage place to spend the coming weeks.
+
+**Decision.** The App Platform (A1–A5) and white-label sites (W1–W6) move to `BUILD-LIST.md` as specced, deferred workstreams with their prerequisites and owner decisions (D1 page-store convergence, D2 sites apex, D8 go-to-market) recorded inline. They are not scheduled. The active runway proceeds now: Phase 0 ground truth started with this ADR's PR (new `check:adr` + `check:docs-links` CI gates, dead-component and dead-dependency removal, noindex on utility surfaces, metadata on the bare crawlable pages). Nothing in the active runway may take a dependency on the deferred phases.
+
+**Alternatives considered.** *Keep P5/P6 on the schedule with soft dates* (rejected — a date nobody intends to hit is drift by another name; the build list is the honest home for specced-not-scheduled work). *Drop the phases entirely and re-plan later* (rejected — the specs, prerequisites, and decision register are the expensive part; parking them preserves that work verbatim).
+
+**Consequences.** Tenancy-walls work (RLS policy quads, `app_instances` Phase-2 policies, pgTAP cross-tenant matrix) stays on the active runway on its own security merits — deferring the platforms that need it does not defer the walls themselves. ⚠️ `/sites/[slug]` remains a coming-soon stub and `space_whitelabel`/`custom_domain` remain unenforced until W-phases resume; pricing copy must not promise either. ⚠️ The two new CI gates are deliberately narrow: `check:adr` grandfathers the seven historical duplicate numbers at their current counts (renumbering them would break existing citations), and `check:docs-links` checks markdown links only, never backticked code paths in prose (an ADR describing a file that later moved is history, not rot).
+
+The durable rule: **deferred work lives on the list with its prerequisites attached, or it is not deferred, it is lost.**

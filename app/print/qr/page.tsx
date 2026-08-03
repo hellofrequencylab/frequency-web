@@ -8,6 +8,9 @@ import { PrintToolbar } from './print-toolbar'
 
 export const dynamic = 'force-dynamic'
 
+// Staff print surface: never indexable.
+export const metadata = { robots: { index: false } }
+
 // Per-code print sheet (host+). A standalone route OUTSIDE the (main) shell so it
 // prints with no nav chrome. Pick a code (?code=<id>) or check-in node (?node=<id>)
 // and a layout (?layout=tent|stickers|poster); we render the styled QR server-side

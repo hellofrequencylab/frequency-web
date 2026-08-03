@@ -4,6 +4,9 @@ import { FocusTemplate } from '@/components/templates'
 
 export const dynamic = 'force-static'
 
+// Utility dead-end: never worth indexing under the generic site title.
+export const metadata = { robots: { index: false } }
+
 // Calm dead-end for a scanned code that's missing, retired, expired, or
 // misconfigured. The /q resolver redirects here rather than 404ing.
 export default function CodeUnavailablePage() {

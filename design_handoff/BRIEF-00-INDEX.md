@@ -18,6 +18,7 @@
 | 4 | Marketing & funnels | Every named marketing angle, all funnels end-to-end, the public site, SEO/AEO plan, the verbatim stats bank | https://raw.githubusercontent.com/hellofrequencylab/frequency-web/main/design_handoff/BRIEF-04-MARKETING-AND-FUNNELS.md |
 | 5 | Design direction | The "warm editorial community" direction: principles, the physical-space reference, composition system, iconography, the Midnight skin, do/don't lists | https://raw.githubusercontent.com/hellofrequencylab/frequency-web/main/design_handoff/BRIEF-05-DESIGN-DIRECTION.md |
 | 6 | Styles handoff (working reference) | Every current token value for DAWN + the Midnight skin (colors, shadows, radius, motion, type, effects), the drift since the last sync, open questions for Daniel | https://raw.githubusercontent.com/hellofrequencylab/frequency-web/main/design_handoff/HANDOFF-TO-DAWN-2026-08-03.md |
+| 7 | Full system overview | Every feature on the site: the 32 member-facing domains, operator consoles, the 62 admin studios, the 15 platform engines, tenancy/white-label state, what's dormant, and where truth lives — feature awareness for design rounds and the orientation handoff for Claude Code sessions | https://raw.githubusercontent.com/hellofrequencylab/frequency-web/main/design_handoff/BRIEF-06-SYSTEM-OVERVIEW.md |
 
 ## Companion specs (separate deliverable: the teaser-infographic set)
 

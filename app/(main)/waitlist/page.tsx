@@ -12,6 +12,13 @@ import { WaitlistJoin } from './waitlist-join'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = {
+  title: 'Waitlist',
+  description:
+    'Frequency opens city by city so nobody lands in an empty room. Leave your spot and we will tell you the moment your area is live.',
+  alternates: { canonical: '/waitlist' },
+}
+
 export default async function WaitlistPage() {
   const me = await getCallerProfile()
   const existing = me ? await getMyWaitlistEntry(me.id, 'seeker') : null

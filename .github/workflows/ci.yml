@@ -64,6 +64,10 @@ jobs:
         run: pnpm check:rls
       - name: Migration filename contract (unique versions — a collision silently skips a migration)
         run: pnpm check:migrations
+      - name: ADR ledger contract (unique numbers — a duplicate makes every citation ambiguous)
+        run: pnpm check:adr
+      - name: Docs link contract (every relative .md link in docs resolves)
+        run: pnpm check:docs-links
       # NOTE: check:cron-freshness is intentionally NOT wired here — it is a runtime/ops
       # SLO check (inspects live cron heartbeat state, env-dependent, advisory exit 0), not
       # a deterministic code gate. It runs in the scheduled /maintenance sweep instead.
