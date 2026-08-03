@@ -12,6 +12,31 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Adopt a practice for a stretch, not forever**: adopting now asks how long you will take it
+  on — 2 weeks, 4 weeks, 8 weeks (long enough to make it stick), or ongoing — and you can say
+  when you plan to do it ("After my morning coffee"). Your card shows where you stand ("Week 2
+  of 4 · Day 9 of 28") from day one. When a commitment completes you get the note, a nudge to
+  go again, and your history stays yours either way.
+- **Your practice list stays short on purpose**: you hold up to five practices you adopted
+  yourself. Taking on a sixth offers a swap: pick one to set down, the new one takes its
+  place. Practices a Journey gives you ride outside the five and come and go with the Journey.
+- **Journeys hand you this week, not the whole month**: enrolling gives you the current week's
+  practices plus the Anchor, the one daily through-line that stays with you the whole Journey.
+  When a new week opens, last week's practices step back and this week's arrive; the timer
+  shows which week is driving your list. Finishing a Journey frees your list again, and asks
+  if you want to keep the Anchor as your own.
+- **Practice reminders that fit your day**: one nudge a day at most, at the time you usually
+  practice, only on days something is still waiting. On for the app, opt-in for push, and
+  never by email. Turn it off any time in Settings, Notifications.
+- **Leave a Journey**: a quiet exit at the foot of the player. Your own practices and your
+  lesson progress stay yours.
+- **Vera sets up the timer with you**: building a practice with Vera now sets how it is done —
+  a stillness timer, a moving timer, or a simple log — with a warm-up line, shown before you
+  create it. Every part still tunes in the builder.
+- **Your drafts are yours until you submit**: a new practice starts as a private draft. The
+  builder shows exactly where it stands (private draft, in review, live) and submitting it to
+  the library is your call, when it is ready.
+
 - **Hand a Circle to someone else**: a Circle can now move between the spaces you run, come back to
   you as your own, or go to another person. Handing it to a person is an offer rather than a move:
   they see it on the Circle and choose to accept or pass, and nothing changes until they do. A

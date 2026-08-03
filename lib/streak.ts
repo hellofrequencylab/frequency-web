@@ -30,7 +30,9 @@ export const STREAK_FREEZE_CAP = 2
 
 /** Second earn path (Rewards Economy v2): every 5 Full Day bonuses earned converts
  *  to +1 freeze when below the cap — otherwise the credit banks until a slot opens.
- *  Freezes are never purchasable. */
+ *  A freeze is ALSO purchasable for 50 Gems (Rewards Economy v3, ADR-305: the
+ *  `streak-freeze` Vault SKU, grantStreakFreeze in lib/practice-streak.ts) — an earlier
+ *  version of this comment said never; v3 superseded it. */
 export const FULL_DAYS_PER_FREEZE = 5
 
 export interface StreakProgress {
