@@ -19,6 +19,10 @@ const eslintConfig = defineConfig([
     // its own toolchain; Frequency's lint must never reach into it. Designed to
     // be lifted out into its own repo later (see resonance/docs/ISOLATION.md).
     "resonance/**",
+    // The vendored DAWN design-system reference set (inline-style JSX, its own
+    // oxlint adherence config). Reading material, never shippable code — the
+    // repo's lint has no jurisdiction (design_handoff/dawn/ASSETS.md).
+    "design_handoff/**",
   ]),
   // ADR-246: ban the untyped admin-client cast. Use the typed `createAdminClient()`
   // and cast the specific payload/value if a column/table needs it. Genuinely-untyped
