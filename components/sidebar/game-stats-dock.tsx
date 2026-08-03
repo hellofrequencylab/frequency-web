@@ -1,12 +1,11 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
-  Zap, Gem, Flame, ChevronUp, Target, Sparkles, CheckCircle2, ArrowRight, Lock,
+  Zap, Gem, Flame, X, Target, Sparkles, CheckCircle2, ArrowRight, Lock,
 } from 'lucide-react'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
-import { useDockRevealed, useHoverScrollReveal } from './dock-reveal'
 
 // ── Data shape (assembled server-side in right-sidebar.tsx) ───────────────────
 
@@ -28,62 +27,83 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
+// ── The Vault dock (three-docks law, DAWN 2026-08-03) ─────────────────────────
+// Bottom right is the member's score: Zaps, Gems, the streak and the season. The
+// dock is a collapsed floating chip (Zaps · streak) that expands upward into the
+// full progress panel — the SAME GameStatsPanel as before, relocated from the
+// right rail's foot. The streak chip that used to sit in the top bar lives here
+// now (the top bar is the system, and the system does not keep score). Rendered
+// from the right rail's slot, so its visibility follows the page-chrome map
+// (rail 'none' surfaces get no Vault dock) with no path-sniffing.
 export function GameStatsDockClient({ data }: { data: DockData }) {
-  // The compact bar shows the summary; the rest of the fields render in the shared
-  // GameStatsPanel inside the expandable region below.
-  const { zaps, gems, streak, rank } = data
-  // Mirrors the left profile dock. The bar is sticky-pinned to the bottom of the
-  // shared scroll viewport, so at REST it sits at the same height as the left
-  // profile dock (not buried at the end of a tall rail). The panel rises on
-  // reaching the feed end (shared reveal), on a hover-scroll over the bar, or on tap.
-  const [manualOpen, setManualOpen] = useState(false)
+  const { zaps, streak } = data
+  const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
-  const revealed = useDockRevealed()
-  const hoverOpen = useHoverScrollReveal(rootRef)
-  const open = manualOpen || revealed || hoverOpen
+
+  // Esc or an outside click dismisses, like the other dock popovers.
+  useEffect(() => {
+    if (!open) return
+    function onDoc(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDoc)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
 
   return (
-    <div ref={rootRef} className="sticky bottom-0 z-10 rounded-t-2xl border-x border-t border-border/70 bg-[var(--color-canvas)]/95 px-1.5 pt-1 backdrop-blur-sm">
-      {/* Compact bar — the admin canvas corner-tab skin, mirroring the left profile card. */}
+    <div ref={rootRef} className="fixed bottom-4 right-4 z-30 flex flex-col items-end print:hidden">
+      {/* Expanded panel — grows from the chip toward the interior, scrolls inside. */}
+      {open && (
+        <div
+          role="dialog"
+          aria-label="The Vault"
+          className="mb-2.5 flex max-h-[72vh] w-80 flex-col overflow-hidden rounded-card border border-border bg-surface lift-2"
+        >
+          {/* Head — the chrome band: the dock's frame, not its content. */}
+          <div className="flex items-center gap-2 border-b border-chrome-border bg-chrome px-4 py-2.5">
+            <Gem className="h-4 w-4 shrink-0 text-primary-strong" />
+            <p className="flex-1 text-2xs font-semibold uppercase tracking-widest text-muted">The Vault</p>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Close the Vault"
+              className="flex h-6 w-6 items-center justify-center rounded-md text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="overflow-y-auto px-4 py-3.5">
+            <GameStatsPanel data={data} showSummary />
+          </div>
+        </div>
+      )}
+
+      {/* Collapsed chip — Zaps and the streak at a glance, one tap to open. */}
       <button
         type="button"
-        onClick={() => setManualOpen((v) => !v)}
+        onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="group flex w-full items-center gap-2.5 px-3 py-3.5 text-left hover:bg-surface-elevated transition-colors"
+        aria-label="The Vault. Your Zaps, Gems and streak"
+        title="The Vault"
+        className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-elevated py-1.5 pl-1.5 pr-3 lift-2"
       >
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-bg">
-          <Zap className="w-5 h-5 text-primary fill-current" />
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary">
+          <Zap className="h-3.5 w-3.5 fill-current text-on-primary" />
         </span>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <p className="text-sm font-semibold text-text leading-tight">Your stats</p>
-            {rank && (
-              <span className="rank-badge text-3xs leading-tight" style={seasonRankStyle(rank)}>
-                {RANK_LABELS[rank] ?? rank}
-              </span>
-            )}
-          </div>
-          <p className="mt-1 flex items-center gap-2.5 text-xs text-subtle tabular-nums">
-            <span className="inline-flex items-center gap-0.5"><Zap className="w-3 h-3 text-primary" />{zaps.toLocaleString()}</span>
-            <span className="inline-flex items-center gap-0.5"><Gem className="w-3 h-3 text-signal" />{gems.toLocaleString()}</span>
-            <span className="inline-flex items-center gap-0.5"><Flame className="w-3 h-3 text-primary" />{streak}d</span>
-          </p>
-        </div>
-        <ChevronUp className={`w-4 h-4 text-muted shrink-0 transition-transform duration-300 ${open ? '' : 'rotate-180'}`} />
+        <span className="text-sm font-semibold tabular-nums text-text">{zaps.toLocaleString()}</span>
+        <span aria-hidden className="h-4 w-px bg-border" />
+        <span className="inline-flex items-center gap-1 text-sm tabular-nums text-muted">
+          <Flame className="h-3.5 w-3.5 text-primary-strong" />
+          {streak}
+        </span>
       </button>
-
-      {/* Expandable panel — grows upward, capped at ~1/3 screen, scrolls inside. */}
-      <div
-        className={`grid transition-[grid-template-rows] duration-500 ease-out motion-reduce:transition-none ${
-          open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-        }`}
-      >
-        <div className="overflow-hidden">
-          <div className="max-h-[50vh] overflow-y-auto px-3 pb-4 pt-1">
-            <GameStatsPanel data={data} />
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

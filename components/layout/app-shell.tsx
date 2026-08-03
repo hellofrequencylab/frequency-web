@@ -62,7 +62,6 @@ import { SiteAlertBar } from '@/components/layout/site-alert-bar'
 import { AREA_ICONS, railIconFor } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
 import { DemoToggle } from '@/components/layout/demo-toggle'
-import { DockRevealProvider } from '@/components/sidebar/dock-reveal'
 import { railFor, leftRailFor, mergeChrome, railStartsCollapsed, isFullViewportEditor, isFullWidthEditor, type ChromeOverrides } from '@/lib/layout/page-chrome'
 import type { AppOverrides } from '@/lib/apps/overrides'
 import { isJanitor, type WebRole } from '@/lib/core/roles'
@@ -376,9 +375,13 @@ function useTheme() {
   return { theme, setTheme }
 }
 
-// ── Profile card (sidebar bottom) ─────────────────────────────────────────────
+// ── Profile card (the rail's foot — the account dock) ─────────────────────────
 // Public-facing identity: avatar · name · role badge → profile + member settings
 // This is the engagement anchor. Badges, rank, etc. will live here as we grow.
+// Three-docks law (DAWN 2026-08-03): the rail's foot is YOU and what you run —
+// profile, standing, journal, prefs, then the things you operate. System acts
+// (appearance, sign out) live in the top-right account menu instead, and score
+// lives in the Vault dock, bottom right — nothing is offered twice.
 
 function ProfileCard({
   profile,
@@ -540,15 +543,11 @@ function ProfileCard({
                 </div>
               ))}
             </div>
-            <form action="/auth/signout" method="POST">
-              <button
-                type="submit"
-                className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm font-medium text-danger hover:bg-danger-bg transition-colors"
-              >
-                <LogOut className="w-4 h-4 shrink-0" />
-                Sign out
-              </button>
-            </form>
+            {/* No Sign out here (three-docks law): signing out is a SYSTEM act and
+                lives in the account menu, top right — nothing is offered twice. */}
+            <p className="px-2 pt-1.5 pb-1 text-2xs leading-relaxed text-subtle">
+              Appearance and sign out live in the account menu, top right.
+            </p>
           </div>
         </div>
       </div>
@@ -636,7 +635,10 @@ function AccountDropdown({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-60 rounded-xl border border-border bg-surface shadow-xl shadow-black/5 py-1 z-50 max-h-[80vh] overflow-y-auto">
+        // The SYSTEM dock's popover (three-docks law): opens from the top-right corner
+        // toward the interior. rounded-card + shadow-menu (downward-only depth, so it
+        // reads as sliding out from under the chrome band, not floating over it).
+        <div className="absolute right-0 top-full mt-2 w-60 rounded-card border border-border bg-surface shadow-menu py-1 z-50 max-h-[80vh] overflow-y-auto">
 
           {/* Header */}
           <div className="px-3 py-2.5 border-b border-border">
@@ -1771,9 +1773,13 @@ export default function AppShell({
           </div>
         )}
 
-        {/* Right cluster: search · [messages · notifications] · account.
+        {/* Right cluster: search · [mindless · friends · notifications] · account.
             Three groups, each set off by a hairline so the icons read as one
-            tidy block of community actions and the account stays distinct.
+            tidy block of community actions and the account stays distinct. The
+            top right is the SYSTEM dock (three-docks law, DAWN 2026-08-03):
+            the settings that outlive a page. Score (the streak) lives in the
+            Vault dock, bottom right; you-and-what-you-run lives at the rail's
+            foot — nothing is offered twice.
             pr keeps the avatar off the screen edge below lg (the lg block is
             flush-right by design for the rail alignment). */}
         <div className="flex flex-1 min-w-0 items-center justify-end gap-1 pl-2.5 pr-2 md:gap-2 md:pl-4 lg:pr-0">
@@ -1849,26 +1855,13 @@ export default function AppShell({
             )}
             {/* Messages moved out of the header into the persistent chat dock (the
                 right-edge launcher). The dock now owns DMs, rooms, and the unread badge. */}
-            {/* Notifications — sits before the streak (swapped per request); shown on
-                all sizes, tooltip on hover. */}
+            {/* Notifications — shown on all sizes, tooltip on hover. */}
             <HoverTip label="Notifications">
               <NotificationBell initialUnread={unreadCount} />
             </HoverTip>
-            {/* Streak — the SAME practice streak the activity panel and Your stats show
-                (profiles.current_streak). The old meta.daily_checkin_streak froze when the
-                auto-popups flag turned the check-in off, so the header read a dead counter. */}
-            {Number((profile as { current_streak?: number | null }).current_streak ?? 0) >= 1 && (
-              <HoverTip label="Daily Streak" className="hidden sm:inline-flex">
-                <Link
-                  href="/crew"
-                  aria-label="Daily Streak. Open your Quest dashboard"
-                  className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-1 text-xs font-bold text-primary-strong transition-colors hover:bg-primary-bg/70"
-                >
-                  <Flame className="w-3.5 h-3.5" />
-                  {Number((profile as { current_streak?: number | null }).current_streak ?? 0)}
-                </Link>
-              </HoverTip>
-            )}
+            {/* The streak chip is NOT here (three-docks law, DAWN 2026-08-03): it lives in
+                the Vault dock, bottom right (components/sidebar/game-stats-dock.tsx). The
+                top bar is the system, and the system does not keep score. */}
 
             {/* Account — its own divider, pushed to the far right of the block on lg+. */}
             <div className="flex items-center gap-1.5 ml-2 pl-2.5 border-l border-border md:gap-2 md:pl-2.5 lg:ml-auto">
@@ -1900,9 +1893,9 @@ export default function AppShell({
           container, §6a) — see app/(main)/admin/layout.tsx. The shell renders no admin sub-header. */}
 
       {/* ── Body ──────────────────────────────────────────── */}
-      {/* DockRevealProvider runs the single shared scroll listener that rises
-          both bottom docks together (left profile, right stats). */}
-      <DockRevealProvider>
+      {/* The scroll-end dock reveal is retired: the stats dock is now the floating
+          Vault dock (bottom right, click-to-open) and the left profile card opens
+          only on its chevron — nothing rises on scroll. */}
       {/* Both rails now live IN normal flow inside the one shared page scroll, so the
           LEFT nav scrolls up with the content exactly like the right rail (its profile
           card sits at the bottom of the column and rides up with the page). */}
@@ -1947,11 +1940,10 @@ export default function AppShell({
                 <nav className="flex-1 py-3 space-y-1">
                   <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} operatesSpaces={operatesSpaces} sections={navSections} menuDriven={menuDriven} />
                 </nav>
-                {/* Mirrors the right rail's stats dock: sticky to the column bottom, rises
-                    on scroll, no longer fixed to the viewport. */}
-                {/* Bottom-left profile card — the admin canvas corner-tab skin (rounded top,
-                    hairline, canvas-tinted blur), sticky to the column bottom like the right
-                    stats dock. Mirrors components/admin/admin-profile-card.tsx's wrapper. */}
+                {/* Bottom-left profile card — the account dock at the rail's FOOT (three-docks
+                    law): the admin canvas corner-tab skin (rounded top, hairline, canvas-tinted
+                    blur), sticky to the column bottom. Mirrors components/admin/
+                    admin-profile-card.tsx's wrapper. */}
                 <div className="sticky bottom-0 z-10 rounded-t-2xl border-x border-t border-border/70 bg-[var(--color-canvas)]/95 px-1.5 pt-1 backdrop-blur-sm">
                   {!hideAppNav && role === 'member' && <UpgradeCrew />}
                   <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} operatorContext={operatorContext} availableContexts={availableContexts} menu={profileMenu} viewerRole={menuViewerRole} staffRole={staffRole} canReceivePayouts={canReceivePayouts} />
@@ -2089,7 +2081,6 @@ export default function AppShell({
         </div>
 
       </div>
-      </DockRevealProvider>
 
       {/* ── Live search overlay (⌘K or the header search) ─────────────────── */}
       {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} viewer={{ role: gateRole, staffRole, operatesSpaces }} />}

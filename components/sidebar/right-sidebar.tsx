@@ -56,7 +56,8 @@ interface RightSidebarProps {
 // ── The right rail (ADR-161) ──────────────────────────────────────────────────
 // Two tiers of PANELS (no longer "widgets"):
 //   • STANDING panels — site-wide standards shown on every page: the demo notice +
-//     the player's progress cockpit (GameStatsDock, pinned to the bottom).
+//     the player's progress cockpit (GameStatsDock — now the floating Vault dock,
+//     fixed bottom right per the three-docks law).
 //   • PAGE panels — stats specific to the page being viewed, resolved from the route
 //     via lib/layout/rail-panels.ts. Each is its own async server component behind a
 //     <Suspense> so a slow one never blocks the rest (PAGE-FRAMEWORK §5).
@@ -268,9 +269,13 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
           </Suspense>
         )}
       </div>
-      {/* Standing panel — the player's progress cockpit, pinned to the bottom.
-          Hidden on Quest surfaces (the page owns standing there). Its own Suspense
-          so its multi-hop stats load never blocks the rest of the rail (PAGE-FRAMEWORK §5). */}
+      {/* The Vault dock — the player's progress cockpit as a floating chip cluster,
+          fixed bottom right (three-docks law, DAWN 2026-08-03). Mounted from this rail
+          slot so its visibility follows the same page-chrome map as the rail itself
+          (rail 'none' surfaces get no Vault dock) — the shell never path-sniffs.
+          Hidden on Quest surfaces (the page owns standing there; nothing is offered
+          twice). Its own Suspense so its multi-hop stats load never blocks the rail
+          (PAGE-FRAMEWORK §5). */}
       {!onQuest && (
         <Suspense fallback={<PanelSkeleton />}>
           <GameStatsDock profileId={profileId} />
