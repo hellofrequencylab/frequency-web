@@ -89,3 +89,14 @@ A holding folder for never-to-apply migrations is **not needed today**: the audi
 - Live-schema verifications: read-only `information_schema` SELECTs (columns for the two pending migrations; tables for the gamification name-mismatch).
 - Marker inventory: `not_applied_files.txt` in this directory (31 files).
 - Comparison script: `ledger.py` in this directory.
+
+---
+
+## Postscript — resolved same day
+
+Applied 2026-08-03 (owner authorization "make sure all migrations are applied as we go"):
+both pending migrations (`20270204000000_member_practice_terms`,
+`20270205000000_practice_reminder_prefs`) executed against prod and recorded in the
+ledger under their exact repo versions. Verified: 8/8 + 4/4 columns present, 2/2 ledger
+rows. Repo ⇄ ledger drift for set (a) is now zero. The cosmetic repairs (4 duplicate
+real-clock ledger rows, 1 wrong name field on `20240118000000`) remain open.

@@ -7792,25 +7792,56 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          cue: string | null
+          ends_on: string | null
           id: string
+          journey_plan_id: string | null
           practice_id: string
           profile_id: string
+          retired_at: string | null
+          retired_reason: string | null
+          source: string
+          starts_on: string | null
+          term_weeks: number | null
         }
         Insert: {
           active?: boolean
           created_at?: string
+          cue?: string | null
+          ends_on?: string | null
           id?: string
+          journey_plan_id?: string | null
           practice_id: string
           profile_id: string
+          retired_at?: string | null
+          retired_reason?: string | null
+          source?: string
+          starts_on?: string | null
+          term_weeks?: number | null
         }
         Update: {
           active?: boolean
           created_at?: string
+          cue?: string | null
+          ends_on?: string | null
           id?: string
+          journey_plan_id?: string | null
           practice_id?: string
           profile_id?: string
+          retired_at?: string | null
+          retired_reason?: string | null
+          source?: string
+          starts_on?: string | null
+          term_weeks?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "member_practices_journey_plan_id_fkey"
+            columns: ["journey_plan_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plans"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "member_practices_practice_id_fkey"
             columns: ["practice_id"]
@@ -8744,22 +8775,26 @@ export type Database = {
           email_events: boolean
           email_lifecycle: boolean
           email_mentions: boolean
+          email_practice: boolean
           freq_comments: string
           freq_dispatches: string
           freq_events: string
           freq_lifecycle: string
           freq_mentions: string
+          freq_practice: string
           inapp_comments: boolean
           inapp_dispatches: boolean
           inapp_events: boolean
           inapp_lifecycle: boolean
           inapp_mentions: boolean
+          inapp_practice: boolean
           profile_id: string
           push_comments: boolean
           push_dispatches: boolean
           push_events: boolean
           push_lifecycle: boolean
           push_mentions: boolean
+          push_practice: boolean
           sms_dispatches: boolean
           sms_enabled: boolean
           sms_events: boolean
@@ -8775,22 +8810,26 @@ export type Database = {
           email_events?: boolean
           email_lifecycle?: boolean
           email_mentions?: boolean
+          email_practice?: boolean
           freq_comments?: string
           freq_dispatches?: string
           freq_events?: string
           freq_lifecycle?: string
           freq_mentions?: string
+          freq_practice?: string
           inapp_comments?: boolean
           inapp_dispatches?: boolean
           inapp_events?: boolean
           inapp_lifecycle?: boolean
           inapp_mentions?: boolean
+          inapp_practice?: boolean
           profile_id: string
           push_comments?: boolean
           push_dispatches?: boolean
           push_events?: boolean
           push_lifecycle?: boolean
           push_mentions?: boolean
+          push_practice?: boolean
           sms_dispatches?: boolean
           sms_enabled?: boolean
           sms_events?: boolean
@@ -8806,22 +8845,26 @@ export type Database = {
           email_events?: boolean
           email_lifecycle?: boolean
           email_mentions?: boolean
+          email_practice?: boolean
           freq_comments?: string
           freq_dispatches?: string
           freq_events?: string
           freq_lifecycle?: string
           freq_mentions?: string
+          freq_practice?: string
           inapp_comments?: boolean
           inapp_dispatches?: boolean
           inapp_events?: boolean
           inapp_lifecycle?: boolean
           inapp_mentions?: boolean
+          inapp_practice?: boolean
           profile_id?: string
           push_comments?: boolean
           push_dispatches?: boolean
           push_events?: boolean
           push_lifecycle?: boolean
           push_mentions?: boolean
+          push_practice?: boolean
           sms_dispatches?: boolean
           sms_enabled?: boolean
           sms_events?: boolean
