@@ -11,6 +11,8 @@ import { awardZapsForAction } from '@/lib/zaps'
 import { assignTraining } from '@/lib/onboarding/training'
 import { stampCircleSpaceId } from './store'
 import { getTemplateById } from './templates-data'
+import { memberWithinLeadershipAllowance, CIRCLE_HOST_CAP_MESSAGE } from '@/lib/pricing/member-leadership'
+import type { EntitlementTier } from '@/lib/core/entitlement'
 
 type Admin = ReturnType<typeof createAdminClient>
 
@@ -104,8 +106,32 @@ export async function remixTemplate(input: { templateId: string; profileId: stri
   return { circleId, slug }
 }
 
+/**
+ * How many LIVE Circles this member already hosts, excluding the one being published. Fail-safe to 0
+ * so a failed count never blocks a publish. Drafts and archived Circles do not count: you may draft
+ * as many as you like (mirroring Journeys), and the allowance is about what you are actually running.
+ */
+async function countLiveHostedCircles(admin: Admin, profileId: string, excludeId: string): Promise<number> {
+  try {
+    const { count } = await admin
+      .from('circles')
+      .select('id', { count: 'exact', head: true })
+      .eq('host_id', profileId)
+      .in('status', ['forming', 'active'])
+      .neq('id', excludeId)
+    return count ?? 0
+  } catch {
+    return 0
+  }
+}
+
 /** Publish a draft as a live, original Circle. Idempotent (a non-draft returns
- *  its slug unchanged). Host-only. Best-effort on rewards + announcement. */
+ *  its slug unchanged). Host-only. Best-effort on rewards + announcement.
+ *
+ *  FIRST ONE FREE (ADR-908): a free Member hosts the one Circle their membership includes; Crew hosts
+ *  unlimited. Enforced HERE, at publish, not at remix, so drafting stays free and a member is never
+ *  stopped before they have made the thing. 🔴 Inert until the gates go live. Publishing still makes
+ *  the adopter a Host either way: `community_role` is earned, never billing (ADR-207). */
 export async function publishCircle(input: { circleId: string; profileId: string }): Promise<{ slug: string }> {
   const admin = createAdminClient()
   const { data: circle } = await admin
@@ -117,6 +143,17 @@ export async function publishCircle(input: { circleId: string; profileId: string
   const c = circle as { id: string; slug: string; host_id: string | null; status: string; name: string; about: string | null }
   if (c.host_id !== input.profileId) throw new Error('Only the Host can publish this Circle.')
   if (c.status !== 'draft') return { slug: c.slug }
+
+  const { data: p } = await admin
+    .from('profiles')
+    .select('membership_tier')
+    .eq('id', input.profileId)
+    .maybeSingle()
+  const tier = ((p as { membership_tier: string | null } | null)?.membership_tier ?? 'free') as EntitlementTier
+  const hosted = await countLiveHostedCircles(admin, input.profileId, input.circleId)
+  if (!(await memberWithinLeadershipAllowance('circle_host', tier, hosted))) {
+    throw new Error(CIRCLE_HOST_CAP_MESSAGE)
+  }
 
   const { error } = await admin.from('circles').update({ status: 'active' } as never).eq('id', input.circleId)
   if (error) throw new Error(error.message)

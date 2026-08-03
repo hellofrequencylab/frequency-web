@@ -211,6 +211,23 @@ describe('the copy rules', () => {
     expect(events.have).toContain('2 events')
   })
 
+  it('steps OVER a flat rung to the next one that is really more room', () => {
+    // space_team runs free 1 -> business 1 -> collective 3. Business repeats what a free Space already
+    // has, so walking one rung and giving up told a member at their seat limit nothing at all, even
+    // though Collective genuinely offers three. A rung with nothing to say is not the top of the ladder.
+    const seats = buildMeterUpsell({ featureKey: 'space_team', currentTier: 'free', usage: 1, rates })
+    expect(seats, 'a flat middle rung must not silence the whole ladder').not.toBeNull()
+    expect(seats!.nextLabel).toBe('Collective')
+    expect(seats!.change).toContain('3')
+  })
+
+  it('still says nothing when every remaining rung repeats what they have', () => {
+    // The honest silence this function is built around has to survive the skip: stepping over flat
+    // rungs must find a BETTER one, never merely a later one.
+    const top = buildMeterUpsell({ featureKey: 'space_team', currentTier: 'collective', usage: 3, rates })
+    expect(top).toBeNull()
+  })
+
   it('states a metered flow with its period, not as a standing count', () => {
     const email = buildMeterUpsell({ featureKey: 'space_email', currentTier: 'free', usage: 280, rates })!
     expect(email.have).toContain('this month')

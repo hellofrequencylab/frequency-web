@@ -242,6 +242,17 @@ export function yearlySaving(): number {
   return monthlySaving() * 12
 }
 
-/** The one honest caveat shown under the table (skeptic test). */
+/** The one honest caveat shown under the table (skeptic test).
+ *
+ *  🔴 "never per seat" USED TO BE THE CLAIM HERE, AND IT WAS NOT TRUE. Frequency sells operator seats:
+ *  `operator_seat` is a real per-seat catalog item (ADR-799 / ADR-811), and the Collective rung of the
+ *  team meter says "3 seats included, add more per seat" in the same product. Telling a visitor on
+ *  /pricing that we never charge per seat, next to a ladder that does, is exactly the surprise invoice
+ *  brand promise #2 exists to prevent, and it is the first thing a skeptic would catch us on.
+ *
+ *  The true and still-strong claim: the PLAN price does not multiply by headcount. Every tier is one
+ *  flat price with seats included, and seats are a small flat add-on above what a tier includes, not a
+ *  multiplier on the whole bill. That is the real difference from the tools in this table, so it is
+ *  what we say. */
 export const COMPARISON_DISCLAIMER =
-  'Prices are typical entry-tier list prices and change often. Most of these tools also charge per seat and add their own transaction fees on top. Frequency is one honest price, never per seat, and we take nothing on the bookings you bring in yourself. We earn only on the business the network sends you.'
+  'Prices are typical entry-tier list prices and change often. Most of these tools multiply their whole price by your headcount and add their own transaction fees on top. Frequency is one flat price per tier with seats included, extra operator seats are a small flat add-on, and we take nothing on the bookings you bring in yourself. We earn only on the business the network sends you.'

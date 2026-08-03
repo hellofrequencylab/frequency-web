@@ -173,11 +173,21 @@ export function buildMeterUpsell(input: MeterUpsellInput): MeterUpsellCopy | nul
 
   const currentIdx = currentMeterStepIndex(ladder, input.currentTier)
   const current = ladder.steps[currentIdx]
-  const next = ladder.steps[currentIdx + 1]
-  // No higher rung, or a rung that is not actually more room: say nothing rather than upsell a member
-  // who is already at the top of the ladder.
-  if (!current || !next || current.allowance == null) return null
-  if (next.allowance != null && next.allowance <= current.allowance) return null
+  if (!current || current.allowance == null) return null
+
+  // Find the next rung that is genuinely MORE ROOM, skipping any that merely repeat what the member
+  // already has. This used to read `steps[currentIdx + 1]` and give up when that one rung was not an
+  // increase, which quietly turned a FLAT rung into a dead end for the whole ladder: `space_team` runs
+  // free 1 -> business 1 -> collective 3, so a free Space at its seat limit was told nothing at all,
+  // even though Collective really does offer three. A rung that repeats the current allowance is not
+  // the top of the ladder, it is a rung with nothing to say, so step over it and ask the next one.
+  //
+  // Unlimited (null) always qualifies as more. Stopping only at the real top keeps the honest silence
+  // this function is built around: we say nothing when there is nothing better, never when there is.
+  const next = ladder.steps
+    .slice(currentIdx + 1)
+    .find((step) => step.allowance == null || step.allowance > current.allowance!)
+  if (!next) return null
 
   const currentBps = meterRateBps(ladder.axis, current.tier, input.rates)
   const nextBps = meterRateBps(ladder.axis, next.tier, input.rates)

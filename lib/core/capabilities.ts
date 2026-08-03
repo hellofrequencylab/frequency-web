@@ -186,15 +186,28 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
 
       // CREATION gates. EVENTS are open to any signed-in member (ADR-810): creating an
       // event is the freemium taste, and the paid funnel lives downstream (co-hosting
-      // with another space needs a Business space; see ADR-799 §B). The DEEPER creation
-      // gates — circle / journey / practice — stay Real-Crew (paid tier) OR a community
-      // steward (crew+ on the trust ladder). We read `realTier` (the DB tier BEFORE the
-      // beta open-access override) so a genuinely free member still meets the upgrade
-      // popup for those during the beta (ADR-414). Staff create everything.
-      if (profileId) caps.add('event.create')
+      // with another space needs a Business space; see ADR-799 §B).
+      //
+      // CIRCLES joined them under FIRST ONE FREE (ADR-908): a free Member hosts the one
+      // Circle their membership includes, and Crew hosts unlimited. The cap is a QUANTITY,
+      // not a door, so it is enforced where the Circle actually goes live
+      // (lib/circles/remix.ts publishCircle, via the `circle_host` meter) rather than here.
+      // Gating the door instead would put a paywall in front of the Latent Leader, who is
+      // the person the whole growth model runs on (CONTENT-VOICE §2b). Drafting stays free
+      // either way, and publishing still makes them a Host: role is earned, never billing
+      // (ADR-207).
+      //
+      // JOURNEYS and PRACTICES stay Real-Crew (paid tier) OR a community steward (crew+ on
+      // the trust ladder): authoring reusable library content is the Crew job. We read
+      // `realTier` (the DB tier BEFORE the beta open-access override) so a genuinely free
+      // member still meets the upgrade popup for those during the beta (ADR-414). Staff
+      // create everything.
+      if (profileId) {
+        caps.add('event.create')
+        caps.add('circle.create')
+      }
       const realTier = viewer.realTier ?? viewer.tier
       if (isPaid(realTier) || atLeastRole(viewer.role, 'crew') || isStaff) {
-        caps.add('circle.create')
         caps.add('journey.create')
         caps.add('practice.create')
       }

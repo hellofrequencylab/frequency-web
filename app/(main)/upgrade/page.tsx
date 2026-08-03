@@ -14,7 +14,7 @@ import { FeatureMeterRange } from '@/components/pricing/feature-meter-range'
 import { SectionHeader } from '@/components/ui/section-header'
 import { confirmSupporterContribution } from './actions'
 import { UpgradeToggle } from './upgrade-toggle'
-import { CheckoutButton } from './checkout-button'
+import { PwywPicker } from './pwyw-picker'
 
 // MEMBER UPGRADE SURFACE (Pricing P3, ADR-362/363). Renders CREW, the one sellable member tier
 // (ADR-878: the ladder is Member free and Crew), and gates the live checkout CTA behind
@@ -28,6 +28,10 @@ import { CheckoutButton } from './checkout-button'
 // "a $9 tier, and also a donation". The picker is the offer. Paying at or above the suggested amount is
 // what earns the Supporter badge (earnsSupporterMark), so the badge is a consequence of the one choice
 // rather than a second purchase.
+//
+// The picker is `PwywPicker`: presets + an open field + an annual toggle, over the ONE checkout seam
+// (startMembershipCheckout, amount required). It also carries the soft-ceiling confirm ADR-908 asks
+// for. There is no no-amount CTA on this page, because there is no amount to fall back to.
 //
 // OFF preserves today's behavior: while billing is not live the page shows the free-beta toggle, never
 // a broken button. No em dashes (CONTENT-VOICE §10).
@@ -161,6 +165,9 @@ export default async function UpgradePage({
           </div>
           <p className="text-2xl font-bold text-white mb-1">Join the Crew</p>
           <p className="text-primary-bg/80 text-sm">The personal tier: your badge, the whole game, and backing the community</p>
+          {/* PWYW (ADR-908): Crew has no single price to headline, so the hero states the FLOOR and
+              the picker below carries the choice. Never render a struck-through anchor here: there is
+              no list price to discount against when the member sets the amount. */}
           <div className="mt-4 flex items-baseline justify-center gap-1">
             {/* 🔴 NO SINGLE PRICE. Crew is pay-what-you-want, so the header states the FLOOR and the
                 picker below carries the actual choice. It rendered a fixed "$9 / month" until now,
@@ -214,10 +221,11 @@ export default async function UpgradePage({
               Manage your membership <ArrowRight className="h-4 w-4" />
             </Link>
           ) : (
-            <CheckoutButton
+            <PwywPicker
               minCents={pwyw.minCents}
               suggestedCents={pwyw.suggestedCents}
               presetCents={pwyw.presetCents}
+              maxCents={pwyw.maxCents}
             />
           )}
         </div>
