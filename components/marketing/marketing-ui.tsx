@@ -166,8 +166,13 @@ export function Section({
       : tone === 'ink'
         ? 'bg-slat text-on-ink'
         : 'bg-surface'
+  // Default padding rides `.mk-section` (globals.css) instead of literal py-*: a section
+  // FOLLOWED by another gives up a third of its bottom padding, so two stacked sections
+  // stop double-paying for the gap between them (DAWN 2026-08-03 spacing correction —
+  // a value that read right at the end of a page read as a hole in the middle). An
+  // explicit `pad` opts out and pays exactly what it asks for, as before.
   return (
-    <section className={`px-6 ${pad ?? 'py-14 sm:py-20 lg:py-24'} ${bg} ${vis} ${className}`}>
+    <section className={`px-6 ${pad ?? 'mk-section'} ${bg} ${vis} ${className}`}>
       <div className={`${width === 'wide' ? 'max-w-5xl' : 'max-w-3xl'} mx-auto`}>{children}</div>
     </section>
   )

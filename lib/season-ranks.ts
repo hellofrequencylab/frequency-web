@@ -7,8 +7,9 @@
 // this season. 0→ghost, 1→initiate, 2→adept, 3+→master.
 //
 // Colors come from the Dawn rank spectrum (defined in app/globals.css :root).
-// Per the implementation spec Section 6, season ladders apex on `gold` (the
-// brand light = highest-energy state). The volunteer ladder (in
+// Spectrum mapping locked by the DAWN round of 2026-08-03: stone / clay / gold /
+// jade — earth to gold to jade, with `gold` (the brand light) at Adept and the
+// ladder apexing on `jade`. The volunteer ladder (in
 // components/layout/app-shell.tsx) apexes on `plum` instead, so the human
 // ladder stays visually distinct from the play ladders.
 
@@ -22,9 +23,9 @@ export type RankKey =
 
 export const SEASON_RANKS = [
   { rank: 'ghost',    label: 'Ghost',    minJourneys: 0, order: 1, rankKey: 'stone' as RankKey, color: 'bg-rank-stone', text: 'text-rank-stone' },
-  { rank: 'initiate', label: 'Initiate', minJourneys: 1, order: 2, rankKey: 'jade'  as RankKey, color: 'bg-rank-jade',  text: 'text-rank-jade'  },
-  { rank: 'adept',    label: 'Adept',    minJourneys: 2, order: 3, rankKey: 'teal'  as RankKey, color: 'bg-rank-teal',  text: 'text-rank-teal'  },
-  { rank: 'master',   label: 'Master',   minJourneys: 3, order: 4, rankKey: 'gold'  as RankKey, color: 'bg-rank-gold',  text: 'text-rank-gold'  },
+  { rank: 'initiate', label: 'Initiate', minJourneys: 1, order: 2, rankKey: 'clay'  as RankKey, color: 'bg-rank-clay',  text: 'text-rank-clay'  },
+  { rank: 'adept',    label: 'Adept',    minJourneys: 2, order: 3, rankKey: 'gold'  as RankKey, color: 'bg-rank-gold',  text: 'text-rank-gold'  },
+  { rank: 'master',   label: 'Master',   minJourneys: 3, order: 4, rankKey: 'jade'  as RankKey, color: 'bg-rank-jade',  text: 'text-rank-jade'  },
 ] as const
 
 export type SeasonRank = typeof SEASON_RANKS[number]['rank']
@@ -38,9 +39,9 @@ export const RANK_LABELS: Record<SeasonRank, string> = {
 
 export const RANK_TO_KEY: Record<SeasonRank, RankKey> = {
   ghost:    'stone',
-  initiate: 'jade',
-  adept:    'teal',
-  master:   'gold',
+  initiate: 'clay',
+  adept:    'gold',
+  master:   'jade',
 }
 
 // Ascending rank order — MUST match the season_rank_enum declaration order in the

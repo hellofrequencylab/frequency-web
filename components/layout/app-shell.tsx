@@ -532,7 +532,7 @@ function ProfileCard({
               {profileSectionsResolved.map((s) => (
                 <div key={s.label ?? 'section'} className="pt-1">
                   {s.label ? (
-                    <p className="px-2 pt-1 pb-0.5 text-3xs font-semibold uppercase tracking-wider text-subtle">
+                    <p className="px-2 pt-1 pb-0.5 text-2xs font-semibold uppercase tracking-wider text-muted">
                       {s.label}
                     </p>
                   ) : null}
@@ -640,7 +640,7 @@ function AccountDropdown({
 
           {/* Header */}
           <div className="px-3 py-2.5 border-b border-border">
-            <p className="text-3xs font-semibold uppercase tracking-wider text-subtle mb-0.5">
+            <p className="text-2xs font-semibold uppercase tracking-wider text-muted mb-0.5">
               Account
             </p>
             <p className="text-sm font-semibold text-text truncate">
@@ -663,7 +663,7 @@ function AccountDropdown({
           {accountSections.map((s) => (
             <div key={s.label ?? 'section'} className="border-t border-border py-1">
               {s.label ? (
-                <p className="px-3 pt-1 pb-0.5 text-3xs font-semibold uppercase tracking-wider text-subtle">
+                <p className="px-3 pt-1 pb-0.5 text-2xs font-semibold uppercase tracking-wider text-muted">
                   {s.label}
                 </p>
               ) : null}
@@ -835,7 +835,7 @@ function NavLinkList({
     }`
 
   const sectionLabelClass =
-    'px-3 pt-1 pb-1 text-3xs font-semibold uppercase tracking-wider text-subtle'
+    'px-3 pt-1 pb-1 text-2xs font-semibold uppercase tracking-wider text-muted'
 
   return (
     <>
@@ -1206,7 +1206,7 @@ function MobileLeftDrawer({
         <div className="shrink-0 border-t border-border pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           {/* About / What is Frequency / Terms / Privacy — the site pages that were desktop
               mega-menu only, so nothing is desktop-reachable-only. */}
-          <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 pt-3 text-2xs text-subtle">
+          <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 pt-3 text-2xs text-muted">
             <Link href="/about" onClick={onClose} className="hover:text-text transition-colors">About</Link>
             <Link href="/what-is-frequency" onClick={onClose} className="hover:text-text transition-colors">What is Frequency</Link>
             <Link href="/terms" onClick={onClose} className="hover:text-text transition-colors">Terms</Link>
@@ -1734,7 +1734,10 @@ export default function AppShell({
           whole viewport (the Space landing + Spotlight builders), so the site header is dropped. */}
       {!editorTakeover && (
       <header
-        className="sticky top-0 shrink-0 flex items-stretch bg-surface/90 backdrop-blur-sm border-b border-border z-30"
+        // The chrome band (DAWN 2026-08-03, owner-adopted): the top bar is painted with the
+        // tinted frame tokens so the frame reads as frame against the lightened canvas,
+        // instead of a translucent white strip. Skins retune both tokens.
+        className="sticky top-0 shrink-0 flex items-stretch bg-chrome backdrop-blur-sm border-b border-chrome-border z-30"
         style={{ height: 'calc(3.5rem + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}
       >
 
@@ -2028,7 +2031,7 @@ export default function AppShell({
                       onClick={toggleRail}
                       title="Show the rail"
                       aria-label="Show the rail"
-                      className="sticky bottom-6 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-muted shadow-sm transition-colors hover:border-border-strong hover:text-text"
+                      className="sticky bottom-6 inline-flex h-7 w-7 items-center justify-center rounded-md text-subtle transition-colors hover:text-muted"
                     >
                       <ChevronsLeft className="h-5 w-5" aria-hidden />
                     </button>
@@ -2038,14 +2041,16 @@ export default function AppShell({
                     {sidebar}
                     {railCollapsible && (
                       // The collapse TOGGLE at the BOTTOM, sticky so it stays visible as the rail
-                      // scrolls. A chevron toggle (not a hamburger), mirroring the collapsed state.
+                      // scrolls. Rail-control law (DAWN 2026-08-03): one affordance at the FOOT,
+                      // a small borderless glyph, subtle -> muted on hover — never a bordered
+                      // button, which competed with real rows.
                       <div className="sticky bottom-4 mt-2 flex justify-end">
                         <button
                           type="button"
                           onClick={toggleRail}
                           title="Hide the rail"
                           aria-label="Hide the rail"
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface/95 text-muted shadow-sm backdrop-blur-sm transition-colors hover:border-border-strong hover:text-text"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-subtle transition-colors hover:text-muted"
                         >
                           <ChevronsRight className="h-5 w-5" aria-hidden />
                         </button>
