@@ -62,7 +62,7 @@ export default async function MyJourneysPage({ searchParams }: { searchParams: P
   const shown = filter === 'live' ? published : filter === 'draft' ? drafts : all
   const totalAdopters = published.reduce((n, p) => n + (p.adopt_count ?? 0), 0)
   const countFor = (k: FilterKey) => (k === 'live' ? published.length : k === 'draft' ? drafts.length : all.length)
-  // Real Crew (or steward/staff) may build a journey; others get the free-beta popup.
+  // Any signed-in member may build (FIRST ONE FREE, ADR-920); signed-out gets a sign-in door.
   const canBuildJourney = await canCreate('journey.create')
   // The permission note reads the REAL (post-beta) tier so it states what changes at launch, not the
   // beta-granted tier. Personal journeys are owned by the member, so paid = the member's real tier.

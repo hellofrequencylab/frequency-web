@@ -6,7 +6,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { spaceIdForCircle } from '@/lib/circles/store'
-import { adoptPlanForRunMember } from '@/lib/journey-plans'
+import { adoptPlanForRunMember, adoptPlanForRunMembers } from '@/lib/journey-plans'
 import { eventStartInputToIso } from '@/lib/events/datetime'
 import { buildJourneyTree, type BlockRow } from './tree'
 import { aggregateCohort, type MemberCompletion, type CohortProgress } from './cohort'
@@ -74,16 +74,10 @@ export async function startRun(input: {
   }))
   if (rows.length) await db().from('journey_enrollments').insert(rows)
   // Each Run member also needs the plan's practices adopted + a journey_plan_adoptions row —
-  // the current-leg reader (getCurrentLegPracticeIds) keys on journey_plan_adoptions, so without
-  // this a cohort member saw none of the Run's practices in On Air. Best-effort per member: a
-  // single adoption failure must never abort the Run start.
-  for (const r of rows) {
-    try {
-      await adoptPlanForRunMember(r.profile_id, input.planId)
-    } catch {
-      // adoption is repairable later (re-enroll / adopt by hand); the Run itself stands
-    }
-  }
+  // the current-leg reader (getCurrentLeg) keys on journey_plan_adoptions, so without this a
+  // cohort member saw none of the Run's practices in On Air. ONE bulk call for the whole
+  // cohort (never a per-member write storm); best-effort inside, so the Run itself stands.
+  await adoptPlanForRunMembers(rows.map((r) => r.profile_id), input.planId)
   return runId
 }
 

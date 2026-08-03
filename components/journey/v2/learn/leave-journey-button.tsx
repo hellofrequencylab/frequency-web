@@ -12,13 +12,19 @@ import { leaveJourneyAction } from '@/app/(main)/journeys/actions'
 // practices stay theirs. Copy is plain and does not narrate feelings (CONTENT-VOICE §10).
 export function LeaveJourneyButton({ planId, journeyTitle }: { planId: string; journeyTitle: string }) {
   const [armed, setArmed] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const router = useRouter()
 
   const leave = () => {
+    setError(null)
     startTransition(async () => {
       const res = await leaveJourneyAction(planId)
-      if (!isError(res)) router.push('/journeys')
+      if (isError(res)) {
+        setError(res.error)
+        return
+      }
+      router.push('/journeys')
     })
   }
 
@@ -36,26 +42,29 @@ export function LeaveJourneyButton({ planId, journeyTitle }: { planId: string; j
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3 text-sm">
-      <span className="text-muted">
-        Leave {journeyTitle}? Your practices stay yours. Your lesson progress is kept if you come back.
-      </span>
-      <button
-        type="button"
-        onClick={leave}
-        disabled={pending}
-        className="font-semibold text-danger transition-opacity hover:opacity-80 disabled:opacity-50"
-      >
-        {pending ? 'Leaving…' : 'Yes, leave'}
-      </button>
-      <button
-        type="button"
-        onClick={() => setArmed(false)}
-        disabled={pending}
-        className="text-muted transition-colors hover:text-text"
-      >
-        Keep going
-      </button>
+    <div className="space-y-1.5 text-sm">
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-muted">
+          Leave {journeyTitle}? Your practices and lesson progress stay yours.
+        </span>
+        <button
+          type="button"
+          onClick={leave}
+          disabled={pending}
+          className="font-semibold text-danger transition-opacity hover:opacity-80 disabled:opacity-50"
+        >
+          {pending ? 'Leaving…' : 'Yes, leave'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setArmed(false)}
+          disabled={pending}
+          className="text-muted transition-colors hover:text-text"
+        >
+          Keep going
+        </button>
+      </div>
+      {error && <p className="text-xs font-medium text-danger">{error}</p>}
     </div>
   )
 }

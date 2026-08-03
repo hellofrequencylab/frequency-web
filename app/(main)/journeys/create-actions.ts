@@ -12,7 +12,6 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 import { createPlan } from '@/lib/journey-plans'
-import { crewCreateUpsell } from '@/lib/core/beta-notices'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { getTemplate, templateToBlocks, MASTER_FRAMEWORK, masterFrameworkToBlocks } from '@/lib/journeys/templates'
@@ -25,8 +24,9 @@ import { extractOverviewText } from '@/lib/journeys/extract-text'
 
 /**
  * Resolve WHO is creating a Journey and WHICH owner it is stamped to, applying the right gate:
- *  - No `spaceSlug` (the personal `/journeys/new` flow): the author is the caller, gated on the
- *    personal `journey.create` capability (real Crew / staff), and the Journey is personal (root).
+ *  - No `spaceSlug` (the personal `/journeys/new` flow): the author is the caller. Drafting is
+ *    open to any signed-in member (FIRST ONE FREE, ADR-920/908/838) — the free limit is the
+ *    journey_publish meter at the publish gate, never this door.
  *  - A `spaceSlug` (the SAME flow reached from a Space's manager): the author is the caller, gated on
  *    MANAGING that Space (owner / admin / editor — canEditProfile), NOT the member tier, and the
  *    Journey is stamped to that Space. So a free member who runs a Space can build for their members.
@@ -44,7 +44,9 @@ async function resolveCreateContext(
     if (!caps.canEditProfile) return { error: 'You do not manage this space.' }
     return { authorId: caller.id, spaceId: space.id }
   }
-  if (!(await canCreate('journey.create'))) return { error: crewCreateUpsell('a Journey') }
+  // Defense in depth only: journey.create is granted to every signed-in member, and the
+  // signed-out case already returned above.
+  if (!(await canCreate('journey.create'))) return { error: 'Sign in to build a Journey.' }
   return { authorId: caller.id, spaceId: null }
 }
 

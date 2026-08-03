@@ -50,6 +50,17 @@
   has no explicit `reward_zaps`. A property of the PRACTICE, distinct from the member's depth
   tier above. The two never mix. The explicit per-log VALUE is **`reward_zaps`** when set; the
   Quest library values it by CADENCE (Daily 10 / 3x-week 15 / Weekly 25, ADR-303).
+- **Adopting for a term (ADR-920, Aug 2026): plain words, no new proper noun.** A member
+  **adopts** a practice (the verb stays Adopt) **for a set stretch or ongoing**: member copy
+  says "**a 2-week / 4-week / 8-week commitment**" (lowercase, descriptive) or "**ongoing**".
+  Progress copy is "**Week N of M**" / "**Day N of M**". The end of a term is
+  "**Practice complete**" (plain, never "graduated"/"expired"); the re-offer verb is
+  "**Go again**" and the convert-to-ongoing verb is "**Keep it**". The optional
+  when-will-you-do-it line is a "**cue**" internally (`member_practices.cue`); member copy
+  asks the question ("When will you do it?") and never says the word cue. Schema:
+  `term_weeks` / `starts_on` / `ends_on` / `retired_at` / `retired_reason` / `source` on
+  `member_practices`. **Never** "subscription," "enrollment" (that is Journeys), or "streak"
+  for the term itself.
 - **Amplitude** = lifetime XP: cumulative Zaps ever earned, hosting-class acts at 2×.
   Never resets, never spent, never gates play. Levels derive from
   `50 · L · (L+1)`; displayed beside the season rank ("Beacon · 14,200").

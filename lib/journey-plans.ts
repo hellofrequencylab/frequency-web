@@ -13,7 +13,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { adoptPractice } from '@/lib/practices'
+import { adoptPracticesForJourney } from '@/lib/practices'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 
 function db(): SupabaseClient {
@@ -769,30 +769,34 @@ async function listPlanPracticeIds(planId: string): Promise<string[]> {
   ]
 }
 
-/** Adopt a plan's practices + activate its journey_plan_adoptions row for a COHORT Run member.
- *  The lean twin of adoptPlan for host-initiated enrollment (startRun/enrollInRun): the member's
- *  journey_enrollments row (run_id set) is written by the Run path, so no solo enrollment here.
- *  Deliberately NO adopt_count bump and NO validated-creation reward — auto-enrolling a Circle
- *  must never pay the plan's creator per head (a host with a big Circle would be a reward farm).
+/** Adopt a plan's practices + activate journey_plan_adoptions for COHORT Run members, in bulk.
+ *  The lean twin of adoptPlan for host-initiated enrollment (startRun/enrollInRun): the members'
+ *  journey_enrollments rows (run_id set) are written by the Run path, so no solo enrollment here.
+ *  Deliberately NO adopt_count bump, NO validated-creation reward, and NO activation tracking —
+ *  auto-enrolling a Circle must never pay the plan's creator per head or mint activation/referral
+ *  signals for members who did nothing themselves (a host with a big Circle would be a farm).
  *  Without this, a Run member had no adopted practices and no current-leg row at all (the
- *  getCurrentLegPracticeIds reader keys on journey_plan_adoptions), so the flagship cohort path
- *  showed nothing in On Air. Best-effort per practice; idempotent throughout. */
-export async function adoptPlanForRunMember(profileId: string, planId: string): Promise<void> {
-  const client = db()
-  const practiceIds = await listPlanPracticeIds(planId)
-  for (const pid of practiceIds) await adoptPractice(profileId, pid)
-  const { data: existingRow } = await client
-    .from('journey_plan_adoptions')
-    .select('id, active')
-    .eq('plan_id', planId)
-    .eq('profile_id', profileId)
-    .maybeSingle()
-  const existing = existingRow as { id: string; active: boolean } | null
-  if (!existing) {
-    await client.from('journey_plan_adoptions').insert({ plan_id: planId, profile_id: profileId, active: true })
-  } else if (!existing.active) {
-    await client.from('journey_plan_adoptions').update({ active: true }).eq('id', existing.id)
+ *  getCurrentLeg reader keys on journey_plan_adoptions), so the flagship cohort path showed
+ *  nothing in On Air. Bulk (3-4 queries for a whole cohort); idempotent; never throws. */
+export async function adoptPlanForRunMembers(profileIds: string[], planId: string): Promise<void> {
+  if (!profileIds.length) return
+  try {
+    const client = db()
+    const practiceIds = await listPlanPracticeIds(planId)
+    await adoptPracticesForJourney(profileIds, practiceIds, planId)
+    // journey_plan_adoptions in one upsert: unique (plan_id, profile_id) re-activates cleanly.
+    await client.from('journey_plan_adoptions').upsert(
+      profileIds.map((pid) => ({ plan_id: planId, profile_id: pid, active: true })),
+      { onConflict: 'plan_id,profile_id' },
+    )
+  } catch {
+    // adoption is repairable later (re-enroll / adopt by hand); the Run itself stands
   }
+}
+
+/** One-member convenience wrapper (enrollInRun). */
+export async function adoptPlanForRunMember(profileId: string, planId: string): Promise<void> {
+  await adoptPlanForRunMembers([profileId], planId)
 }
 
 /** Leave a Journey: deactivate the member's journey_plan_adoptions row (so the current-leg
@@ -825,7 +829,10 @@ export async function leavePlan(profileId: string, planId: string): Promise<void
 export async function adoptPlan(profileId: string, planId: string): Promise<void> {
   const client = db()
   const practiceIds = await listPlanPracticeIds(planId)
-  for (const pid of practiceIds) await adoptPractice(profileId, pid)
+  // Journey-sourced adoption (ADR-920): bulk, labeled source='journey', and never clobbering an
+  // active self-adoption's term. The member's own deliberate enroll still tracks the funnel step
+  // below via the plan adoption (not per practice).
+  await adoptPracticesForJourney([profileId], practiceIds, planId)
 
   // Ensure a SOLO enrollment (journey_enrollments, run_id null) exists for this adoption. journey_plan_adoptions
   // (written below) is kept for the surfaces that still read it (content-signals, coop-pulse, the prompt cron,

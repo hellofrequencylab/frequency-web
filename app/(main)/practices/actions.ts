@@ -114,10 +114,19 @@ export async function unlogPracticeAction(
   return ok(res)
 }
 
-export async function adoptPracticeAction(practiceId: string): Promise<ActionResult> {
+/** Adopt with a commitment shape (ADR-920): preset weeks (2/4/8), null = ongoing, plus an
+ *  optional cue. Both are re-validated in adoptPractice (coerceTermWeeks / cleanCue), so a
+ *  hostile payload can only ever produce a preset term and a capped cue. */
+export async function adoptPracticeAction(
+  practiceId: string,
+  opts?: { termWeeks?: number | null; cue?: string | null },
+): Promise<ActionResult> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
-  await adoptPractice(profileId, practiceId)
+  await adoptPractice(profileId, practiceId, {
+    termWeeks: opts?.termWeeks ?? null,
+    ...(opts && 'cue' in opts ? { cue: opts.cue } : {}),
+  })
   revalidatePath('/practices')
   return ok()
 }

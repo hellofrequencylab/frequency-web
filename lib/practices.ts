@@ -17,9 +17,10 @@ import { recordStreakActivity, processGamificationEvent } from '@/lib/achievemen
 import { recordPracticeStreak, recomputePracticeStreakAfterUnlog } from '@/lib/practice-streak'
 import { ROLE_HIERARCHY } from '@/lib/core/roles'
 import { loadRootSpaceId } from '@/lib/spaces/store'
-import { resolveMemberDay } from '@/lib/member-day'
+import { resolveMemberDay, memberDay } from '@/lib/member-day'
 import { attributedLogDay } from '@/lib/practices/log-day'
 import { clampTierToDuration, achievedTier, type PracticeTier } from '@/lib/practices/tiers'
+import { coerceTermWeeks, cleanCue, termWindow } from '@/lib/practices/adoption'
 import { BREATH_PATTERNS } from '@/lib/on-air'
 import {
   deriveDepthStreak,
@@ -1004,6 +1005,66 @@ export async function getMemberPractices(profileId: string): Promise<Practice[]>
   return rows.map((r) => r.practice).filter((p): p is Practice => !!p).map(normalizePractice)
 }
 
+/** One active adoption WITH its commitment shape (ADR-920): the practice plus the term the
+ *  member holds it under. The metadata twin of getMemberPractices for surfaces that render
+ *  the term ("Week 2 of 4", the swap flow, the completion sweep). */
+export interface MemberAdoption {
+  practice: Practice
+  source: 'self' | 'journey'
+  journeyPlanId: string | null
+  termWeeks: number | null
+  startsOn: string | null
+  endsOn: string | null
+  cue: string | null
+}
+
+const ADOPTION_COLS = 'source, journey_plan_id, term_weeks, starts_on, ends_on, cue'
+
+/** A member's ACTIVE adoptions with their term shape, newest first. Fail-safe to []. */
+export async function getMemberAdoptions(profileId: string): Promise<MemberAdoption[]> {
+  const { data } = await db()
+    .from('member_practices')
+    .select(`${ADOPTION_COLS}, practice:practices(${PRACTICE_COLS})`)
+    .eq('profile_id', profileId)
+    .eq('active', true)
+    .order('created_at', { ascending: false })
+  type Row = {
+    source: string | null
+    journey_plan_id: string | null
+    term_weeks: number | null
+    starts_on: string | null
+    ends_on: string | null
+    cue: string | null
+    practice: Practice | null
+  }
+  const rows = (data as unknown as Row[] | null) ?? []
+  return rows
+    .filter((r): r is Row & { practice: Practice } => !!r.practice)
+    .map((r) => ({
+      practice: normalizePractice(r.practice),
+      source: r.source === 'journey' ? 'journey' : 'self',
+      journeyPlanId: r.journey_plan_id,
+      termWeeks: r.term_weeks,
+      startsOn: r.starts_on,
+      endsOn: r.ends_on,
+      cue: r.cue,
+    }))
+}
+
+/** The count of ACTIVE SELF-adopted practices — the number the cap (ACTIVE_PRACTICE_CAP)
+ *  measures. Journey-sourced rows are exempt (phase-scoped, they expire on their own).
+ *  Fail-safe to 0 (an unreadable count must never block adopting). */
+export async function countActiveSelfAdoptions(profileId: string): Promise<number> {
+  const { count, error } = await db()
+    .from('member_practices')
+    .select('id', { count: 'exact', head: true })
+    .eq('profile_id', profileId)
+    .eq('active', true)
+    .eq('source', 'self')
+  if (error) return 0
+  return count ?? 0
+}
+
 /** A single practice with its popularity stats + display taxonomy, for the detail
  *  page. Reads the server-only ranking view (admin client bypasses RLS). */
 export async function getRankedPractice(slugOrId: string): Promise<RankedPractice | null> {
@@ -1738,22 +1799,149 @@ export async function setCirclePractice(
   }
 }
 
-/** A member adopts a practice for themselves (re-activates if previously dropped). */
-export async function adoptPractice(profileId: string, practiceId: string): Promise<void> {
+/** How an adoption is shaped at write time (ADR-920). Omitted entirely = the legacy call:
+ *  an ongoing self adoption with no term (journey enrollment and internal callers pass
+ *  explicit shapes as the phases land). */
+export interface AdoptOptions {
+  /** Preset weeks (2/4/8) or null = ongoing. Coerced through coerceTermWeeks. */
+  termWeeks?: number | null
+  /** 'self' (default) or 'journey' (enrollment-written; requires journeyPlanId). */
+  source?: 'self' | 'journey'
+  journeyPlanId?: string | null
+  /** The member's implementation intention ("After my morning coffee"). Cleaned + capped. */
+  cue?: string | null
+  /** Journey rows carry the phase window as an explicit end day (member-local YYYY-MM-DD);
+   *  when set it wins over termWeeks-derived math. */
+  endsOn?: string | null
+}
+
+/** A member adopts a practice for themselves (re-activates if previously dropped, resetting
+ *  the term window to a fresh start today). Term shape per ADR-920: starts_on/ends_on frame
+ *  the commitment in the member's own calendar days, the same day framing logPractice uses. */
+export async function adoptPractice(
+  profileId: string,
+  practiceId: string,
+  opts?: AdoptOptions,
+): Promise<void> {
+  // A bare legacy call (no opts) over an ALREADY-ACTIVE row is a no-op: the member holds the
+  // practice, possibly under a term they chose — a journey enroll or a repeat call must not
+  // silently reset their commitment to ongoing/today. An explicit opts call is a re-commit
+  // and does the full write.
+  if (!opts) {
+    const { data: existing } = await db()
+      .from('member_practices')
+      .select('active')
+      .eq('profile_id', profileId)
+      .eq('practice_id', practiceId)
+      .maybeSingle()
+    if ((existing as { active: boolean } | null)?.active) return
+  }
+  const source = opts?.source === 'journey' && opts.journeyPlanId ? 'journey' : 'self'
+  // No opts at all = the legacy shape (ongoing, no term): existing callers keep their
+  // behavior until each phase migrates them to explicit terms.
+  const termWeeks = opts && 'termWeeks' in opts ? coerceTermWeeks(opts.termWeeks) : null
+  const today = await resolveMemberDay(profileId)
+  const window = opts?.endsOn !== undefined
+    ? { startsOn: today, endsOn: opts.endsOn }
+    : termWindow(today, termWeeks)
   await db()
     .from('member_practices')
     .upsert(
-      { profile_id: profileId, practice_id: practiceId, active: true },
+      {
+        profile_id: profileId,
+        practice_id: practiceId,
+        active: true,
+        source,
+        journey_plan_id: source === 'journey' ? opts?.journeyPlanId ?? null : null,
+        term_weeks: opts?.endsOn !== undefined ? null : termWeeks,
+        starts_on: window.startsOn,
+        ends_on: window.endsOn,
+        // A re-adopt is a fresh commitment: clear any prior retirement.
+        retired_at: null,
+        retired_reason: null,
+        ...(opts && 'cue' in opts ? { cue: cleanCue(opts.cue) } : {}),
+      } as never,
       { onConflict: 'profile_id,practice_id' },
     )
   // Activation-funnel step 4 (ADR-075). Best-effort; never blocks the adopt.
   await track('practice.adopted', { practiceId }, profileId)
 }
 
-export async function dropMemberPractice(profileId: string, practiceId: string): Promise<void> {
+/** Journey-driven adoption for one or many members at once (enrollment + Run start). Bulk by
+ *  design — a 30-member Circle on a 20-practice Journey is ~3 queries here, not 1,300 serial
+ *  round-trips — and deliberately WITHOUT track(): auto-enrolling members must not mint
+ *  activation-funnel or referral-payout signals for people who did nothing themselves.
+ *  An existing ACTIVE row is left untouched (a member's own term is never clobbered by a
+ *  journey); missing rows are inserted and retired rows re-activated as journey-sourced,
+ *  ongoing until the phase-scoped window lands (ADR-920 Phase 2). Never throws. */
+export async function adoptPracticesForJourney(
+  profileIds: string[],
+  practiceIds: string[],
+  journeyPlanId: string,
+): Promise<void> {
+  if (!profileIds.length || !practiceIds.length) return
+  try {
+    const client = db()
+    // One profiles read for the cohort: each member's local "today" frames starts_on the same
+    // way logPractice frames logged_for.
+    const { data: tzRows } = await client
+      .from('profiles')
+      .select('id, home_timezone')
+      .in('id', profileIds)
+    const tzById = new Map(
+      ((tzRows ?? []) as { id: string; home_timezone: string | null }[]).map((r) => [r.id, r.home_timezone]),
+    )
+    // Existing rows for every (member, practice) pair, so active ones are left alone.
+    const { data: existingRows } = await client
+      .from('member_practices')
+      .select('profile_id, practice_id, active')
+      .in('profile_id', profileIds)
+      .in('practice_id', practiceIds)
+    const activePairs = new Set(
+      ((existingRows ?? []) as { profile_id: string; practice_id: string; active: boolean }[])
+        .filter((r) => r.active)
+        .map((r) => `${r.profile_id}:${r.practice_id}`),
+    )
+    const rows = profileIds.flatMap((pid) => {
+      const today = memberDay(tzById.get(pid))
+      return practiceIds
+        .filter((prid) => !activePairs.has(`${pid}:${prid}`))
+        .map((prid) => ({
+          profile_id: pid,
+          practice_id: prid,
+          active: true,
+          source: 'journey',
+          journey_plan_id: journeyPlanId,
+          term_weeks: null,
+          starts_on: today,
+          ends_on: null,
+          retired_at: null,
+          retired_reason: null,
+        }))
+    })
+    if (rows.length) {
+      await client
+        .from('member_practices')
+        .upsert(rows as never[], { onConflict: 'profile_id,practice_id' })
+    }
+  } catch {
+    // adoption is repairable (re-enroll / adopt by hand); never blocks the caller
+  }
+}
+
+/** Why a commitment ended (mirrors the DB check). */
+export type RetireReason = 'completed' | 'phase_ended' | 'dropped' | 'swapped'
+
+/** Retire a member's adoption: active=false plus WHY and WHEN, so history survives (the old
+ *  bare toggle lost it). `reason` defaults to 'dropped' (the member removed it by hand). */
+export async function dropMemberPractice(
+  profileId: string,
+  practiceId: string,
+  reason: RetireReason = 'dropped',
+): Promise<void> {
   await db()
     .from('member_practices')
-    .update({ active: false })
+    .update({ active: false, retired_at: new Date().toISOString(), retired_reason: reason } as never)
     .eq('profile_id', profileId)
     .eq('practice_id', practiceId)
 }

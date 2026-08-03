@@ -47,7 +47,7 @@ export default async function JourneysPage() {
   const bannerImage = operatorHero ?? heroImage ?? '/images/site/nature-viewing-sunset.jpg'
   // The focal point applies only to the operator's own header image (the fallbacks crop centered).
   const bannerFocus = operatorHero ? await getPageHeaderFocus('/journeys') : null
-  // Real Crew (or steward/staff) may build a journey; others get the free-beta popup.
+  // Any signed-in member may build (FIRST ONE FREE, ADR-920); signed-out gets a sign-in door.
   const canBuildJourney = await canCreate('journey.create')
   // The operator-tunable header element (ADR-793): layout/height/scrim resolve to today's
   // overlay/large/scrim-on look unless a master value is set in /admin/elements.

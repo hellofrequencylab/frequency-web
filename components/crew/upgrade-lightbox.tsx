@@ -23,11 +23,11 @@ export const UPGRADE_COPY: Record<string, { title: string; blurb: string }> = {
     blurb:
       'Crew members start the circles. Gather the people you want to see more of and give them a place to land. A circle is how a handful of regulars becomes a community.',
   },
-  'create-journey': {
-    title: 'Build journeys with Crew',
-    blurb:
-      'Crew members design the journeys. Lay out a path others can walk, day by day, and turn what you know into something people finish together.',
-  },
+  // 🔴 `create-journey` was here and is deliberately gone (ADR-920). Drafting a Journey joined
+  // FIRST ONE FREE (ADR-908/838): any signed-in member builds; the free limit is the
+  // journey_publish meter (1) at the publish gate. An upsell on the create door would be a lie.
+  // Do not re-add it — if a surface needs to talk about publishing MORE Journeys, that is the
+  // meter's upsell at the cap, not a lightbox on the door.
   // 🔴 `sell-tickets` was here and is deliberately gone (ADR-914). It read "Crew is what lets you
   // charge for a seat", which is no longer true: selling is free on every tier and the ladder is the
   // RATE, not the permission. It was also dead, like `create-event` before it, with no call site

@@ -4,8 +4,8 @@ import { NewJourneyButton } from '@/components/studio/journey/new-journey-button
 import { canCreate } from '@/lib/core/load-capabilities'
 
 // Journeys layout module (ADR-270/294): the two ways in — build your own, or follow the
-// season's official Quest. Reads the viewer's create gate so a free member gets the
-// free-beta upgrade popup instead of the builder link (ADR-414).
+// season's official Quest. canCreate now only distinguishes signed-in (the builder) from
+// signed-out (a sign-in door): drafting is FIRST ONE FREE (ADR-920/908).
 export async function JourneysStart() {
   const canBuildJourney = await canCreate('journey.create')
   return (

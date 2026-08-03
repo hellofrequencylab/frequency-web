@@ -29,7 +29,9 @@ function toBlock(r: Record<string, unknown>): BlockRow {
 export interface CurrentLegContext {
   planId: string
   title: string
-  week: number
+  /** 1-based current week, or null for a no-drip Journey where EVERY week is open at once
+   *  (the chip must not claim "Week 1" over a list carrying all the weeks). */
+  week: number | null
   weeks: number
 }
 
@@ -56,19 +58,31 @@ export async function getCurrentLeg(profileId: string): Promise<CurrentLegResult
   let planIds = [...new Set(((adoptions ?? []) as { plan_id: string }[]).map((a) => a.plan_id))]
   if (!planIds.length) return { practiceIds: [], legs: [] }
 
-  // Release completed Journeys: a plan where EVERY enrollment this member holds is stamped
-  // completed no longer contributes a leg. (An un-stamped or missing enrollment keeps the leg —
-  // fail toward showing the member their journey work, never toward hiding it.)
+  // Release finished Journeys: a plan no longer contributes a leg once every enrollment the
+  // member holds on it is RESOLVED — stamped completed, or belonging to a Run that is no
+  // longer active (a host cancelling a Run must not pin every member's On Air list until each
+  // finds "Leave this Journey"). An un-stamped solo/live-run enrollment keeps the leg — fail
+  // toward showing the member their journey work, never toward hiding it.
   const { data: enrollRows } = await admin
     .from('journey_enrollments')
-    .select('plan_id, completed_at')
+    .select('plan_id, run_id, completed_at')
     .eq('profile_id', profileId)
     .in('plan_id', planIds)
-  const enrollments = (enrollRows ?? []) as { plan_id: string; completed_at: string | null }[]
+  const enrollments = (enrollRows ?? []) as { plan_id: string; run_id: string | null; completed_at: string | null }[]
+  const runIds = [...new Set(enrollments.map((e) => e.run_id).filter((r): r is string => !!r))]
+  const endedRuns = new Set<string>()
+  if (runIds.length) {
+    const { data: runRows } = await admin.from('journey_runs').select('id, status').in('id', runIds)
+    for (const r of (runRows ?? []) as { id: string; status: string | null }[]) {
+      if (r.status && r.status !== 'active') endedRuns.add(r.id)
+    }
+  }
+  const resolved = (e: { run_id: string | null; completed_at: string | null }) =>
+    e.completed_at != null || (e.run_id != null && endedRuns.has(e.run_id))
   const donePlanIds = new Set(
     planIds.filter((pid) => {
       const mine = enrollments.filter((e) => e.plan_id === pid)
-      return mine.length > 0 && mine.every((e) => e.completed_at != null)
+      return mine.length > 0 && mine.every(resolved)
     }),
   )
   planIds = planIds.filter((pid) => !donePlanIds.has(pid))
@@ -93,10 +107,11 @@ export async function getCurrentLeg(profileId: string): Promise<CurrentLegResult
         ? run.dripIntervalDays
         : Number((planRow as { drip_interval_days: number | null } | null)?.drip_interval_days ?? 7)
 
-      // No anchor or no drip → the whole Journey is one open leg. Otherwise the current leg is the
+      // No anchor or no drip → the whole Journey is one open leg (week null: the chip must not
+      // claim "Week 1" over a list carrying every week). Otherwise the current leg is the
       // latest unlocked phase (1-based count → last index), matching the player's lock schedule.
-      const week = !anchorStart || drip <= 0 ? 0 : unlockedPhaseCount(new Date(anchorStart), drip, phases.length)
-      const legPhases = week === 0 ? phases : [phases[week - 1]]
+      const week = !anchorStart || drip <= 0 ? null : unlockedPhaseCount(new Date(anchorStart), drip, phases.length)
+      const legPhases = week === null ? phases : [phases[week - 1]]
 
       let contributed = false
       for (const phase of legPhases) {
@@ -112,8 +127,7 @@ export async function getCurrentLeg(profileId: string): Promise<CurrentLegResult
         legs.push({
           planId,
           title: String((planRow as { title: string | null } | null)?.title ?? 'Journey'),
-          // Open-leg journeys (no drip) read as week 1 of their span for the chip.
-          week: week === 0 ? 1 : week,
+          week,
           weeks: phases.length,
         })
       }

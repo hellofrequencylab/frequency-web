@@ -269,8 +269,9 @@ export function OnAirSession({
   /** Distinct members with a practice log today (presence line, shown at ≥3). */
   practicedToday?: number
   /** When the list is a Journey's current leg: which week of which Journey(s) is driving it —
-   *  rendered as a quiet chip over the practice read-out so the swap reads as a mode. */
-  journeyLegs?: { planId: string; title: string; week: number; weeks: number }[]
+   *  rendered as a quiet chip over the practice read-out so the swap reads as a mode.
+   *  week null = a no-drip Journey with every week open at once. */
+  journeyLegs?: { planId: string; title: string; week: number | null; weeks: number }[]
   /** "Finish Practice" resume: seconds already banked on today's partial log. With
    *  `secondsTarget`, the timer runs only the REMAINING time and reports the TOTAL on
    *  completion so the server tops the log up to complete. */
@@ -2040,7 +2041,9 @@ export function OnAirSession({
           {journeyLegs.length > 0 && (
             <p className="mb-1.5 inline-flex max-w-full items-center gap-1.5 rounded-full border border-primary/30 bg-primary-bg/20 px-2.5 py-0.5 text-2xs font-semibold text-primary-strong">
               <span className="truncate">
-                Week {journeyLegs[0].week} of {journeyLegs[0].weeks} · {journeyLegs[0].title}
+                {journeyLegs[0].week != null
+                  ? `Week ${journeyLegs[0].week} of ${journeyLegs[0].weeks} · ${journeyLegs[0].title}`
+                  : `${journeyLegs[0].title} · all weeks open`}
                 {journeyLegs.length > 1 ? ` +${journeyLegs.length - 1} more` : ''}
               </span>
             </p>

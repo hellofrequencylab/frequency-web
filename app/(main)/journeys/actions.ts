@@ -86,11 +86,18 @@ export async function adoptJourney(planId: string): Promise<ActionResult> {
 
 /** Leave a Journey you are taking: deactivates the plan adoption (its practices stop driving
  *  On Air's current leg) and removes your unfinished enrollment, solo or Run. Your adopted
- *  practices stay yours. Self-scoped — the only profile it can touch is the caller's own. */
+ *  practices stay yours. Self-scoped — the only profile it can touch is the caller's own.
+ *  A host of a LIVE Run of this plan cannot leave it out from under their cohort: the run's
+ *  meter and anchor enumerate enrollments, so the host leaves by ending the Run instead. */
 export async function leaveJourneyAction(planId: string): Promise<ActionResult> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not allowed.')
   if (!planId) return fail('Journey not found.')
+  const { getMemberRunForPlan } = await import('@/lib/journeys/runs')
+  const run = await getMemberRunForPlan(profileId, planId)
+  if (run && run.hostId === profileId && run.status === 'active') {
+    return fail('You host this Run. End the Run first, then leave.')
+  }
   await leavePlan(profileId, planId)
   revalidatePath('/journeys', 'layout')
   revalidatePath('/practices')
