@@ -47,8 +47,6 @@ export const getCachedUser = cache(async (): Promise<User | null> => {
  * as a member faithfully loses the staff surfaces too. `realWebRole` is the true
  * DB value (use it to gate staff-only affordances irrespective of preview).
  *
- * NOTE: `web_role` is read through the untyped cast — the generated
- * lib/database.types.ts is stale until migration 20260613000050 applies.
  */
 const resolveCaller = cache(
   async (): Promise<{
@@ -65,10 +63,11 @@ const resolveCaller = cache(
     if (!user) return null
 
     // Own-row read: RLS lets a signed-in user read their own profile, so the
-    // session client suffices (no service-role bypass). web_role + community_level
-    // are selected via the untyped cast (columns not yet in the generated types).
+    // session client suffices (no service-role bypass). The `as` narrowings below
+    // tighten DB strings to their unions; asWebRole/asCommunityLevel stay as
+    // runtime validation regardless of what the types promise.
     const supabase = await createClient()
-    const { data } = await (supabase)
+    const { data } = await supabase
       .from('profiles')
       .select('id, community_role, community_level, web_role, membership_tier')
       .eq('auth_user_id', user.id)
@@ -88,7 +87,7 @@ const resolveCaller = cache(
     const realLevel = asCommunityLevel(data.community_level, realRole)
     const previewLevel = communityRoleToLevel(effectiveRole)
     return {
-      id: data.id as string,
+      id: data.id,
       community_role: effectiveRole,
       realRole,
       communityLevel: previewing
@@ -110,7 +109,7 @@ const resolveCaller = cache(
   },
 )
 
-/** Narrow the untyped `profiles.community_level` read to a CommunityLevel, never
+/** Narrow the `profiles.community_level` string to a CommunityLevel, never
  *  below the floor the legacy `community_role` contributes (additive — ADR-218/221). */
 function asCommunityLevel(
   raw: unknown,

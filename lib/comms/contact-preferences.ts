@@ -9,10 +9,9 @@
 // The Space send path consults `isContactTopicMuted` in REAL TIME at send time (a
 // fresh read, like suppression). Writes go through the service-role admin client from
 // the token-verified preference-center action — a contact has no login, so RLS grants
-// no authenticated self-write (see the migration). `contact_channel_preferences` isn't
-// in the generated DB types yet (ADR-246), so this reaches it via the untyped cast.
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// no authenticated self-write (see the migration). `contact_channel_preferences` is in
+// the generated DB types, so access goes through the typed client (the topic/channel/state
+// columns are plain strings in the DB and narrowed to the app unions on read).
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { NotificationTopic, NotificationChannel } from '@/lib/notification-preferences'
@@ -48,7 +47,7 @@ export async function isContactTopicMuted(key: ContactPreferenceKey): Promise<bo
   if (!email || !key.spaceId) return false
   const channel = key.channel ?? 'email'
   try {
-    const admin = createAdminClient() as any
+    const admin = createAdminClient()
     const { data } = await admin
       .from('contact_channel_preferences')
       .select('state')
@@ -81,14 +80,14 @@ export async function getContactPreferences(
   const addr = normalizeEmail(email)
   if (!addr || !spaceId) return []
   try {
-    const admin = createAdminClient() as any
+    const admin = createAdminClient()
     const { data } = await admin
       .from('contact_channel_preferences')
       .select('topic, channel, state')
       .eq('email', addr)
       .eq('space_id', spaceId)
     if (!Array.isArray(data)) return []
-    return data.map((r: any) => ({
+    return data.map((r) => ({
       topic: r.topic as NotificationTopic,
       channel: r.channel as NotificationChannel,
       state: r.state as ContactPreferenceState,
@@ -118,7 +117,7 @@ export async function setContactChannelPreference(input: SetContactPreferenceInp
   if (!email || !input.spaceId) return false
   const channel = input.channel ?? 'email'
   try {
-    const admin = createAdminClient() as any
+    const admin = createAdminClient()
     const { error } = await admin.from('contact_channel_preferences').upsert(
       {
         email,

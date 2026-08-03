@@ -1,0 +1,83 @@
+# Manual E2E runs against a live URL (Vercel preview or production).
+# Deliberately NOT part of ci.yml — these need a running deployment, which
+# CI does not have. Trigger from the Actions tab with the URL to test.
+name: e2e
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Base URL to test (e.g. a Vercel preview URL). Required.'
+        required: true
+        default: ''
+        type: string
+      run_visual:
+        description: 'Also run the @visual snapshot suite (needs committed baselines)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Smoke suite
+        env:
+          PW_BASE_URL: ${{ inputs.base_url }}
+        run: pnpm test:e2e
+      - name: Upload report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-smoke
+          path: playwright-report/
+          retention-days: 7
+
+  visual:
+    if: ${{ inputs.run_visual }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Visual suite
+        env:
+          PW_BASE_URL: ${{ inputs.base_url }}
+        run: pnpm test:e2e:visual
+      - name: Upload report + diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-visual
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

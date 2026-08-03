@@ -2,14 +2,12 @@ import type { Data } from '@/lib/page-editor/types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 
-// `pages` is untyped in the generated DB types -> cast (same as lib/studio/*).
-//
-// SPACE-SCOPED (Phase 0.5e, ENTITY-SPACES-BUILD §0.5.13): the Puck `pages` table gains a
+// SPACE-SCOPED (Phase 0.5e, ENTITY-SPACES-BUILD §0.5.13): the Puck `pages` table has a
 // nullable `space_id`. Every read/write carries a spaceId, DEFAULTING to the ROOT space via
 // loadRootSpaceId (the canary: single-tenant callers keep reading/writing the root's rows,
-// exactly as today). The new column is reached with an untyped cast (the codebase pattern for
-// not-yet-typed columns, ADR-246) until lib/database.types.ts is regenerated, and the reads are
-// fail-safe so they degrade to the coded design before the migration is applied.
+// exactly as today). `pages` (including `space_id`) is in the generated DB types, so reads go
+// through the typed client; only the jsonb documents are narrowed to the editor's Data shape.
+// The reads stay fail-safe so they degrade to the coded design on any error.
 //
 // NOTE: the Puck editor is still GATED to the `isEditableSlug` allowlist below. This seam only
 // makes the storage space-aware so per-Space micro-site pages are possible later. Full un-gating
@@ -66,23 +64,39 @@ export async function resolveSpaceId(spaceId?: string | null): Promise<string | 
   return spaceId ?? (await loadRootSpaceId())
 }
 
-// `pages.space_id` isn't in the generated types yet, so reach the .eq('space_id', …) filter with
-// an untyped client (ADR-246), like lib/page-settings/store.ts. Casting the builder, not the row.
-function pagesQuery() {
-  return createAdminClient().from('pages') as unknown as {
-    select: (cols: string) => {
-      eq: (col: string, val: string) => {
-        eq: (col: string, val: string) => { maybeSingle: () => Promise<{ data: unknown }> }
-      } & Promise<{ data: unknown }>
-    }
+// Typed row → the editor's PageRow: the jsonb documents are stored as Json and narrowed to the
+// Puck Data shape here (the one remaining cast — jsonb payloads have no generated shape).
+type DbPageRow = {
+  slug: string
+  title: string
+  data: unknown
+  published_data: unknown
+  status: string
+  updated_at: string | null
+  published_at: string | null
+}
+
+function toPageRow(row: DbPageRow): PageRow {
+  return {
+    slug: row.slug,
+    title: row.title,
+    data: (row.data as Data | null) ?? null,
+    published_data: (row.published_data as Data | null) ?? null,
+    status: row.status,
+    updated_at: row.updated_at,
+    published_at: row.published_at,
   }
+}
+
+function pagesQuery() {
+  return createAdminClient().from('pages')
 }
 
 export async function getPage(slug: string, spaceId?: string | null): Promise<PageRow | null> {
   const sid = await resolveSpaceId(spaceId)
   if (!sid) return null
   const { data } = await pagesQuery().select(SELECT).eq('space_id', sid).eq('slug', slug).maybeSingle()
-  return (data as PageRow | null) ?? null
+  return data ? toPageRow(data) : null
 }
 
 // The live document the public site renders, or null (→ legacy fallback).
@@ -97,6 +111,6 @@ export async function listPages(spaceId?: string | null): Promise<Record<string,
   const map: Record<string, PageRow> = {}
   if (!sid) return map
   const { data } = await pagesQuery().select(SELECT).eq('space_id', sid)
-  for (const r of (data as PageRow[]) ?? []) map[r.slug] = r
+  for (const r of data ?? []) map[r.slug] = toPageRow(r)
   return map
 }

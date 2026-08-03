@@ -25,9 +25,9 @@ export interface OrbitMember {
 
 /** The caller's connections, weighted by real co-presence — highest resonance first. */
 export async function getMyOrbit(limit = 100): Promise<OrbitMember[]> {
-  // my_orbit/near_misses aren't in the generated types yet → untyped cast (repo
-  // convention), but still the AUTHED client so auth.uid() resolves to the caller.
-  const supabase = (await createClient())
+  // The AUTHED client so auth.uid() resolves to the caller. The rows are normalized
+  // defensively (the generated RPC row types claim non-null, but SQL can return nulls).
+  const supabase = await createClient()
   const { data, error } = await supabase.rpc('my_orbit', { _limit: limit })
   if (error || !Array.isArray(data)) return []
   return (data as Record<string, unknown>[]).map((r) => ({
@@ -59,7 +59,7 @@ export interface NearMiss {
 /** People the caller keeps crossing paths with but hasn't connected to — the
  *  serendipity to close (respects discoverability tiers). */
 export async function getNearMisses(limit = 20): Promise<NearMiss[]> {
-  const supabase = (await createClient())
+  const supabase = await createClient()
   const { data, error } = await supabase.rpc('near_misses', { _limit: limit })
   if (error || !Array.isArray(data)) return []
   return (data as Record<string, unknown>[]).map((r) => ({

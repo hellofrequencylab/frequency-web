@@ -17,7 +17,6 @@ export default async function BetaLayout({ children }: { children: React.ReactNo
   } = await supabase.auth.getUser()
   if (!user) notFound()
 
-  // web_role isn't in the stale generated types yet, so read it through the untyped cast.
   const admin = createAdminClient()
   const { data: profile } = await admin
     .from('profiles')
@@ -25,7 +24,7 @@ export default async function BetaLayout({ children }: { children: React.ReactNo
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  if (!isStaff(asWebRole((profile as { web_role?: string } | null)?.web_role))) {
+  if (!isStaff(asWebRole(profile?.web_role))) {
     const staff = await getStaffMember().catch(() => null)
     if (!staff || !staffCan(staff.role, 'marketing', 'read')) notFound()
   }

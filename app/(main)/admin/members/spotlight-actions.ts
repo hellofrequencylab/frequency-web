@@ -4,30 +4,29 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { logAdminAction } from '@/lib/admin/audit'
-import { isJanitor, type WebRole } from '@/lib/core/roles'
+import { isJanitor, asWebRole } from '@/lib/core/roles'
 import { parseInput, z, uuid } from '@/lib/validation'
 import { withSpotlightEnabled } from '@/lib/profile/spotlight-flags'
 
 // Janitor-only: turn a member's Spotlight (their opt-in public mini-site) ON or OFF.
 // This is the per-user switch — the whole feature is dark by default, and a janitor
 // flips it for individual members to set up. Crown-jewel gate: the STAFF axis
-// (web_role janitor, ADR-208), read via the untyped cast. Mirrors the guard in
-// economy-actions.ts so the authz-contract check (scripts/check-authz-guards.mjs)
-// recognizes it.
+// (web_role janitor, ADR-208). Mirrors the guard in economy-actions.ts so the
+// authz-contract check (scripts/check-authz-guards.mjs) recognizes it.
 async function requireJanitor(): Promise<{ id: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not signed in')
   const admin = createAdminClient()
-  const { data: profile } = await (admin)
+  const { data: profile } = await admin
     .from('profiles')
     .select('id, web_role')
     .eq('auth_user_id', user.id)
     .maybeSingle()
-  if (!profile || !isJanitor(profile.web_role as WebRole | null)) {
+  if (!profile || !isJanitor(asWebRole(profile.web_role))) {
     throw new Error('Janitor only')
   }
-  return { id: profile.id as string }
+  return { id: profile.id }
 }
 
 const input = z.object({ profileId: uuid, enabled: z.boolean() })

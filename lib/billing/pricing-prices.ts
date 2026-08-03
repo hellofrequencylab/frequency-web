@@ -1,8 +1,8 @@
 // PRICING STRIPE PRICE MAP — the IO layer over `pricing_stripe_prices` (Pricing P2, ADR-363).
 // Reads the resolved Stripe Product/Price ids by key (written by syncPricingProductsToStripe) and
 // upserts them. Server-only (service-role). FAIL-SAFE: a missing row / DB error reads as "not synced"
-// (null) so a checkout cleanly no-ops rather than charging at the wrong price. The table is not in
-// lib/database.types.ts yet (ADR-246) — reached with untyped casts, like lib/pricing/settings.ts.
+// (null) so a checkout cleanly no-ops rather than charging at the wrong price. The table is in
+// lib/database.types.ts, so access goes through the typed client.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -19,22 +19,16 @@ export interface StripePriceRow {
 export async function loadStripePriceMap(): Promise<Record<string, StripePriceRow>> {
   try {
     const db = createAdminClient()
-    const { data, error } = await (db as unknown as {
-      from: (t: string) => {
-        select: (c: string) => Promise<{ data: Record<string, unknown>[] | null; error: unknown }>
-      }
-    })
+    const { data, error } = await db
       .from('pricing_stripe_prices')
       .select('key, stripe_product_id, stripe_price_id, archived')
     if (error || !data) return {}
     const out: Record<string, StripePriceRow> = {}
     for (const r of data) {
-      const key = typeof r.key === 'string' ? r.key : null
-      if (!key) continue
-      out[key] = {
-        key,
-        stripe_product_id: typeof r.stripe_product_id === 'string' ? r.stripe_product_id : null,
-        stripe_price_id: typeof r.stripe_price_id === 'string' ? r.stripe_price_id : null,
+      out[r.key] = {
+        key: r.key,
+        stripe_product_id: r.stripe_product_id,
+        stripe_price_id: r.stripe_price_id,
         archived: r.archived === true,
       }
     }
@@ -63,11 +57,7 @@ export async function upsertStripePrice(row: {
   changedBy?: string | null
 }): Promise<void> {
   const db = createAdminClient()
-  const { error } = await (db as unknown as {
-    from: (t: string) => {
-      upsert: (v: Record<string, unknown>) => Promise<{ error: { message?: string } | null }>
-    }
-  })
+  const { error } = await db
     .from('pricing_stripe_prices')
     .upsert({
       key: row.key,
