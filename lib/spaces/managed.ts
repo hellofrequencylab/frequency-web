@@ -71,9 +71,7 @@ function membersTable() {
  *  error or a missing table. */
 async function manageableMemberSpaceIds(profileId: string): Promise<string[]> {
   try {
-    const result = (await membersTable()
-      .select('space_id, role, status')
-      .eq('profile_id', profileId)) as { data: MembershipRow[] | null; error: unknown }
+    const result = await membersTable().select('space_id, role, status').eq('profile_id', profileId)
     if (result.error || !result.data) return []
     const ids = new Set<string>()
     for (const row of result.data) {
@@ -108,23 +106,14 @@ export const listManagedSpaces = cache(async (): Promise<ManagedSpace[]> => {
     // Two narrow reads, unioned in app code: the Spaces this viewer OWNS, and the Spaces their
     // active editor+ memberships point at. Both are keyed strictly to the viewer, so neither can
     // reach past the caller's entitlement.
-    const ownedPromise = (spacesTable()
+    const ownedPromise = spacesTable()
       .select(SPACE_COLS)
       .eq('owner_profile_id', profileId)
-      .order('name', { ascending: true })) as unknown as Promise<{
-      data: ManagedSpaceRow[] | null
-      error: unknown
-    }>
-    const memberPromise: Promise<{ data: ManagedSpaceRow[] | null; error: unknown }> =
+      .order('name', { ascending: true })
+    const memberPromise =
       memberIds.length > 0
-        ? (spacesTable()
-            .select(SPACE_COLS)
-            .in('id', memberIds)
-            .order('name', { ascending: true }) as unknown as Promise<{
-            data: ManagedSpaceRow[] | null
-            error: unknown
-          }>)
-        : Promise.resolve({ data: [], error: null })
+        ? spacesTable().select(SPACE_COLS).in('id', memberIds).order('name', { ascending: true })
+        : Promise.resolve({ data: [] as ManagedSpaceRow[], error: null })
 
     const [owned, member] = await Promise.all([ownedPromise, memberPromise])
 
