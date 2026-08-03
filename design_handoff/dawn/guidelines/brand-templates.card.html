@@ -1,0 +1,59 @@
+<!-- @dsCard group="Brand & voice" viewport="1180x551" name="One shell, five templates" subtitle="Building an in-app page is two decisions: pick the template by what the content is, then register its chrome. The same header, content, rail grammar repeats inside a Detail page at smaller scale." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body{margin:0;padding:24px;background:var(--color-canvas);font-family:var(--font-sans);color:var(--color-text)}
+  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  .tpl{border:1px solid var(--color-border);border-radius:var(--radius-card);overflow:hidden;background:var(--color-surface)}
+  .frame{height:132px;padding:9px;display:flex;flex-direction:column;gap:6px;background:var(--color-canvas)}
+  .hd{height:16px;border-radius:4px;background:color-mix(in srgb,var(--color-primary) 30%,var(--color-surface))}
+  .body{flex:1;display:flex;gap:6px;min-height:0}
+  .col{flex:1;display:flex;flex-direction:column;gap:5px}
+  .blk{border-radius:5px;background:var(--color-surface);border:1px solid var(--color-border)}
+  .rail{width:26px;display:flex;flex-direction:column;gap:5px}
+  .line{height:5px;border-radius:3px;background:var(--color-border)}
+  .tabs{display:flex;gap:5px}
+  .tab{flex:1;height:4px;border-radius:2px;background:var(--color-border)}
+  .tab.on{background:var(--color-primary)}
+  .meta{display:grid;grid-template-columns:1fr 1fr;gap:5px;flex:1}
+  .nm{font-size:.95rem;font-weight:800;padding:10px 12px 2px}
+  .ds{font-size:var(--text-meta);color:var(--color-text-muted);padding:0 12px 12px;line-height:1.5}
+  .note{margin:20px 0 0;font-size:.94rem;color:var(--color-text-muted);line-height:1.65;max-width:56rem}
+  .kit{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+  .k{font-size:var(--text-meta);font-weight:700;padding:3px 10px;border-radius:var(--radius-pill);background:var(--color-primary-bg);color:var(--color-primary-strong)}
+</style>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="tpl">
+      <div class="frame"><div class="hd"></div><div class="body"><div class="col"><div class="blk" style="height:26px"></div><div class="blk" style="flex:1"></div><div class="blk" style="height:22px"></div></div><div class="rail"><div class="blk" style="height:34px"></div><div class="blk" style="flex:1"></div></div></div></div>
+      <div class="nm">Stream</div><div class="ds">A flow you scroll. The feed, a channel, a Circle wall.</div>
+    </div>
+    <div class="tpl">
+      <div class="frame"><div class="hd"></div><div class="body"><div class="col"><div class="meta"><div class="blk"></div><div class="blk"></div><div class="blk"></div><div class="blk"></div></div></div></div></div>
+      <div class="nm">Index</div><div class="ds">A collection to browse. Events, Circles, the Market.</div>
+    </div>
+    <div class="tpl">
+      <div class="frame"><div class="hd" style="height:26px"></div><div class="tabs"><div class="tab on"></div><div class="tab"></div><div class="tab"></div></div><div class="body"><div class="col"><div class="blk" style="flex:1"></div></div><div class="rail"><div class="blk" style="flex:1"></div></div></div></div>
+      <div class="nm">Detail</div><div class="ds">One entity: a context band plus underline tabs.</div>
+    </div>
+    <div class="tpl">
+      <div class="frame"><div class="hd"></div><div class="body"><div class="col"><div class="meta" style="grid-template-columns:1fr 1fr 1fr"><div class="blk"></div><div class="blk"></div><div class="blk"></div></div><div class="blk" style="flex:1"></div></div></div></div>
+      <div class="nm">Dashboard</div><div class="ds">Metric-led. Operator only, never the member register.</div>
+    </div>
+    <div class="tpl">
+      <div class="frame" style="align-items:center;justify-content:center"><div class="blk" style="width:70%;height:74px"></div><div class="line" style="width:40%"></div></div>
+      <div class="nm">Focus</div><div class="ds">Centered and rail-less. Compose, edit, the induction.</div>
+    </div>
+  </div>
+  <div class="kit">
+    <span class="k">PageHeading</span><span class="k">EntityCard</span><span class="k">PersonCard</span><span class="k">RowCard</span>
+    <span class="k">StatCard</span><span class="k">SectionHeader</span><span class="k">UnderlineTabs</span><span class="k">EmptyState</span><span class="k">form primitives</span>
+  </div>
+  <p class="note">Compose from the kit, never re-declare it. UnderlineTabs is the one tab vocabulary in the system, so pill tabs do not exist. Members get Stream, Index, Detail and Focus; Dashboard is the operator workshop, and no member page shows an analytics delta. Slow sections stream in behind skeletons matched to their final dimensions, so the shell never jumps.</p>
+</body>
+</html>

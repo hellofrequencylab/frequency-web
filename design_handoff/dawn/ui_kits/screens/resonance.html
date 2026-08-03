@@ -1,0 +1,172 @@
+<!-- @dsCard group="Screens · Operator" viewport="1440x900" name="Resonance matching" subtitle="Opt-in and off by default, a plain why on every match, double opt-in before anyone is introduced, and no swiping anywhere." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Resonance matching</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="screen.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  a { color: var(--color-primary-strong); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--color-primary); }html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="../app/topbar.jsx"></script>
+<script type="text/babel" src="../app/nav-rail.jsx"></script>
+<script type="text/babel" src="frame.jsx"></script>
+<script type="text/babel" src="../app/docks.jsx"></script>
+<script type="text/babel" data-presets="react">
+const K = window.DAWNFrequencyDesignSystem_c868e3;
+// Stand-ins used only until the compiled bundle carries the newest kit pieces.
+const __Meter = ({ label, used = 0, cap, hint }) => React.createElement('div', null,
+  React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-meta)' } },
+    React.createElement('span', { style: { fontWeight: 600 } }, label),
+    React.createElement('span', { style: { fontFamily: 'var(--font-mono)', color: 'var(--color-text-muted)' } }, cap == null ? used : used + ' / ' + cap)),
+  React.createElement('div', { style: { height: 7, marginTop: 5, borderRadius: 99, background: 'var(--color-surface-elevated)', border: '1px solid var(--color-border)', overflow: 'hidden' } },
+    React.createElement('div', { style: { width: (cap ? Math.min(100, (used / cap) * 100) : 100) + '%', height: '100%', background: 'var(--color-signal)' } })),
+  hint ? React.createElement('p', { style: { margin: '5px 0 0', fontSize: 'var(--text-meta)', color: 'var(--color-text-subtle)' } }, hint) : null);
+const __GateNotice = ({ title, children, action, inline }) => inline
+  ? React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5, padding: '2px 9px', borderRadius: 99, background: 'var(--color-primary-bg)', color: 'var(--color-primary-strong)', fontSize: 'var(--text-2xs)', fontWeight: 700 } }, title || 'Not on yet')
+  : React.createElement('div', { style: { background: 'var(--color-primary-bg)', borderRadius: 'var(--radius-card)', padding: '0.95rem 1.1rem' } },
+      React.createElement('div', { style: { fontWeight: 700, fontSize: '0.98rem' } }, title || 'Not on yet'),
+      children ? React.createElement('p', { style: { margin: '3px 0 0', fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--color-text-muted)' } }, children) : null,
+      action ? React.createElement('div', { style: { marginTop: 11 } }, action) : null);
+K.GateNotice = K.GateNotice || __GateNotice;
+K.Counter = K.Counter || (({ value, caption }) => React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5 } }, React.createElement('span', { style: { fontFamily: 'var(--font-mono)', fontWeight: 500 } }, value), caption ? React.createElement('span', { style: { fontSize: 'var(--text-2xs)', color: 'var(--color-text-muted)' } }, caption) : null));
+
+const { PageHeading, UnderlineTabs, SectionHeader, RowCard, PersonCard, Button, IconButton, Badge, Card, Switch, GateNotice, ProgressTrack, Avatar, Counter } = K;
+
+const MATCHES = [
+  { n: 'Ana Ruiz', h: 'ana', score: 0.82, why: ['Both in Thursday Sound Bath', 'Both running The 28 Day Reset', 'Spirit and Mind, same balance'], asked: false, mutual: false },
+  { n: 'Jonah Peck', h: 'jonah', score: 0.74, why: ['Two Circles in common', 'Walks at the same hour you do'], asked: true, mutual: false },
+  { n: 'Mira Vance', h: 'mira', score: 0.91, why: ['She asked to meet you too', 'Co-hosts the Circle you joined', 'Four practices in common'], asked: true, mutual: true },
+];
+
+function Why({ items }) {
+  return (
+    <ul style={{ margin: '8px 0 0', paddingLeft: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 5 }}>
+      {items.map((w) => (
+        <li key={w} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>
+          <window.Ico n="check" style={{ width: 13, height: 13, color: 'var(--color-signal)', flexShrink: 0 }} /> {w}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function Page() {
+  const [tab, setTab] = React.useState('people');
+  const [on, setOn] = React.useState(true);
+  return (
+    <window.Screen active="people" rail={
+      <window.Rail>
+        <div>
+          <SectionHeader title="Your settings" />
+          <Card tone="feature" padding="1rem">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>Suggest people to me</div>
+                  <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>Off unless you turn it on</div>
+                </div>
+                <Switch checked={on} onChange={setOn} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>Only people I could actually meet</div>
+                  <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>Within about 15 miles</div>
+                </div>
+                <Switch checked />
+              </div>
+            </div>
+            <p style={{ margin: '14px 0 0', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)', lineHeight: 1.55 }}>
+              Nobody sees that you asked until they ask too. There is no swiping here, and there never will be.
+            </p>
+          </Card>
+        </div>
+        <div>
+          <SectionHeader title="What it reads" />
+          <Card tone="soft" padding="1rem">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <ProgressTrack label="Shared Circles" hint="3" value={3} total={5} size="sm" />
+              <ProgressTrack label="Shared Journeys" hint="1" value={1} total={3} size="sm" accent="signal" />
+              <ProgressTrack label="Shared practices" hint="4" value={4} total={8} size="sm" accent="move" />
+            </div>
+            <p style={{ margin: '12px 0 0', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)', lineHeight: 1.55 }}>
+              What you both do, weighted by what you both want. Never your messages, and never your Journal.
+            </p>
+          </Card>
+        </div>
+        <GateNotice kind="dormant" title="Nightly, not live">
+          Matches are computed overnight and held for a fortnight, so the list is steady. It is not watching you in real time.
+        </GateNotice>
+      </window.Rail>
+    }>
+      <PageHeading eyebrow="Members · Resonance" title="Three people worth a coffee"
+        subtitle={<>Ranked by <a href="#why"><strong>what you already have in common</strong></a>, with the reason written out. <strong>You</strong> decide who hears about it.</>}
+        actions={<Button size="sm" variant="ghost" iconLeft={<window.Ico n="settings" style={{ width: 15, height: 15 }} />}>Settings</Button>} />
+
+      <div style={{ marginTop: 20 }}>
+        <UnderlineTabs value={tab} onChange={setTab}
+          tabs={[{ id: 'people', label: 'Suggested', count: 3 }, { id: 'mutual', label: 'Mutual', count: 1 }, { id: 'nearby', label: 'Nearby' }, { id: 'requests', label: 'Requests', count: 2 }]} />
+      </div>
+
+      <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {MATCHES.map((m) => (
+          <div key={m.h} style={{ background: 'var(--color-surface)', border: `1px solid ${m.mutual ? 'color-mix(in srgb, var(--color-signal) 40%, transparent)' : 'var(--color-border)'}`,
+            borderRadius: 'var(--radius-card)', padding: '1.1rem 1.2rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+              <Avatar name={m.n} size={52} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '1.08rem', fontWeight: 'var(--weight-heading)', letterSpacing: 'var(--tracking-tight)' }}>{m.n}</span>
+                  <span style={{ fontSize: 'var(--text-meta)', color: 'var(--color-text-subtle)' }}>@{m.h}</span>
+                  {m.mutual ? <Badge tone="signal" solid>You both asked</Badge> : m.asked ? <Badge>You asked</Badge> : null}
+                </div>
+                <Why items={m.why} />
+              </div>
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <Counter kind="members" value={Math.round(m.score * 100)} caption="in common" size="sm" tone="signal" icon="git-compare" />
+                <div style={{ marginTop: 12, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                  {m.mutual ? (
+                    <Button size="sm" iconLeft={<window.Ico n="message-square" style={{ width: 15, height: 15 }} />}>Say hello</Button>
+                  ) : m.asked ? (
+                    <Button size="sm" variant="ghost" disabled>Waiting on them</Button>
+                  ) : (<>
+                    <Button size="sm" variant="ghost">Not now</Button>
+                    <Button size="sm">Ask to meet</Button>
+                  </>)}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 26 }}>
+        <SectionHeader title="Meeting somebody new" />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+          {[['Somewhere public, first time', 'coffee'], ['Tell one person where you are going', 'users'], ['Leave whenever you want to', 'door-open']].map(([t, ic]) => (
+            <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.8rem 0.9rem',
+              background: 'var(--color-surface-elevated)', borderRadius: 'var(--radius-card)' }}>
+              <window.Ico n={ic} style={{ width: 16, height: 16, color: 'var(--color-signal-strong)', flexShrink: 0 }} />
+              <span style={{ fontSize: '0.92rem' }}>{t}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </window.Screen>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page />);
+</script>
+</body>
+</html>

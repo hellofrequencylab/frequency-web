@@ -1,0 +1,97 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   The shell every guideline card sits in. One width, one head, one set of
+   specimen shapes — so the Design System tab reads as one document instead of
+   forty differently-built pages. Cards import this AFTER styles.css.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* The ground is on BOTH elements: body alone leaves white under a card shorter
+   than its preview frame. */
+html, body { margin: 0; min-height: 100vh; }
+html { background: var(--color-canvas); }
+body {
+  background: var(--color-canvas);
+  box-sizing: border-box;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  padding: 2.25rem 2.5rem 2.5rem;
+}
+.card { max-width: 68rem; margin: 0 auto; }
+
+/* ── The head. Eyebrow, title, one-line law, warm rule. Every card opens the
+   same way, so the eye lands in the same place on each. */
+.card-head { margin: 0 0 1.9rem; }
+.card-head .eyebrow { display: block; color: var(--color-primary-strong); }
+.card-head h1 {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  line-height: 1;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+}
+.card-head p { margin: 0.6rem 0 0; max-width: 46rem; font-size: 1.02rem; line-height: 1.65; color: var(--color-text-muted); text-wrap: pretty; }
+.card-head hr { margin: 1.4rem 0 0; }
+
+/* ── Sections within a card. */
+.card h2 {
+  margin: 2.1rem 0 0.9rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--color-text-subtle);
+}
+.card h2:first-of-type { margin-top: 0; }
+
+/* ── Grids. Nothing in a card hand-rolls a grid. */
+.g { display: grid; gap: 0.85rem; }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.g5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.g6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+
+/* ── Swatch. A generous chip over a plain label: token name in mono, hex under
+   it, and an optional use note. The chip is the specimen; the frame is quiet. */
+.sw { border-radius: var(--radius-card); overflow: hidden; border: 1px solid var(--color-border); background: var(--color-surface); box-shadow: var(--shadow-2xs); }
+.sw .chip { height: 84px; }
+.sw .lab { padding: 0.6rem 0.75rem 0.7rem; }
+.sw .tok { font-family: var(--font-mono); font-size: var(--text-2xs); font-weight: 500; color: var(--color-text); word-break: break-all; }
+.sw .hex { margin-top: 3px; font-family: var(--font-mono); font-size: var(--text-3xs); color: var(--color-text-subtle); text-transform: uppercase; }
+.sw .use { margin-top: 5px; font-size: var(--text-2xs); line-height: 1.5; color: var(--color-text-muted); }
+
+/* ── Panel. A neutral specimen box for anything that is not a colour. */
+.panel { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); padding: 1.1rem 1.2rem; }
+.panel.ink { background: var(--color-ink); border-color: var(--color-ink-border); color: var(--color-on-ink); }
+.panel .tok { font-family: var(--font-mono); font-size: var(--text-2xs); color: var(--color-primary-strong); }
+.panel.ink .tok { color: var(--color-primary); }
+.panel .use { margin: 0.45rem 0 0; font-size: var(--text-2xs); line-height: 1.55; color: var(--color-text-muted); }
+.panel.ink .use { color: var(--color-on-ink-muted); }
+
+/* ── Spec row. Token, value, and what it is for — the table shape, without a
+   table's borders. */
+.spec { display: grid; grid-template-columns: 13rem 8rem 1fr; gap: 0.9rem; align-items: baseline; padding: 0.6rem 0; border-top: 1px solid var(--color-border); }
+.spec:first-of-type { border-top: none; }
+.spec code { font-family: var(--font-mono); font-size: var(--text-2xs); color: var(--color-text); }
+.spec .val { font-family: var(--font-mono); font-size: var(--text-2xs); color: var(--color-primary-strong); }
+.spec .why { font-size: 0.86rem; line-height: 1.55; color: var(--color-text-muted); }
+
+/* ── Do / don't pair. Two columns, labelled in words rather than glyphs, with the
+   avoid side desaturated so the eye lands on the right one first. */
+.dd { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.4rem; }
+.dd > div > .lbl { display: block; margin: 0 0 0.7rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; }
+.dd .avoid .lbl { color: var(--color-danger); }
+.dd .prefer .lbl { color: var(--color-success); }
+.dd .avoid { opacity: 0.82; }
+@media (max-width: 860px) { .dd { grid-template-columns: 1fr; } }
+
+/* ── Laws. The do-and-don't pairs that close most cards. */
+.laws { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.7rem 1.4rem; margin-top: 1.6rem; padding-top: 1.3rem; border-top: 1px solid var(--color-border); }
+.laws p { margin: 0; font-size: 0.88rem; line-height: 1.6; color: var(--color-text-muted); }
+.laws b { color: var(--color-text); font-weight: 700; }
+
+@media (max-width: 860px) {
+  .g3, .g4, .g5, .g6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .laws { grid-template-columns: 1fr; }
+  .spec { grid-template-columns: 1fr; gap: 0.2rem; }
+}

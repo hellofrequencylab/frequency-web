@@ -1,0 +1,97 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   DAWN — Skins. Midnight is the one alternate look.
+
+   How skins compose: a skin is a token override set applied via
+   `data-skin="<id>"` on the shell root, ORTHOGONAL to light/dark mode
+   (`.dark` on <html>). Four render states exist: DAWN light, DAWN dark,
+   Midnight light, Midnight dark. Any token a skin does not override inherits
+   the DAWN value, so Midnight currently inherits signal, broadcast, move, the
+   semantic states, the rank spectrum and the brand-mark set unchanged.
+
+   Selector detail: mode lives on <html>, the skin on a descendant shell root,
+   so the dark variant is the descendant selector `.dark [data-skin]`, never
+   `[data-skin].dark`.
+
+   The intent: a cooler, deeper cinematic take. Cool slate and indigo-leaning
+   surfaces in place of warm cream and espresso, with the warm amber accent
+   kept so it still reads as Frequency. The feel retunes too: radii go
+   sharper, more architectural. Body contrast holds above 4.5:1 in both modes.
+   ───────────────────────────────────────────────────────────────────────── */
+
+[data-skin="midnight"] {
+  color-scheme: light;
+
+  /* Surfaces — cool, pale slate instead of warm cream. */
+  --color-canvas:            #EEF1F6;
+  --color-marketing-canvas:  #E3E8F1;
+  --color-surface:           #FFFFFF;
+  --color-surface-elevated:  #F4F6FB;
+  --color-surface-post:      #F0F2F6;
+  --color-chrome:            #E8ECF3;
+  --color-chrome-border:     #D2D8E4;
+
+  /* Borders — cool grey-blue hairlines. */
+  --color-border:            #D5DBE6;
+  --color-border-strong:     #BCC5D6;
+
+  /* Text — deep slate ink (~12:1 on canvas), cool muted and subtle steps. */
+  --color-text:              #1C2535;
+  --color-text-muted:        #4B566B;
+  --color-text-subtle:       #6E7A91;
+
+  /* Primary — the warm amber kept, nudged deeper to sit on cool surfaces. */
+  --color-primary:           #D9852A;
+  --color-primary-hover:     #C2741F;
+  --color-primary-strong:    #8C5410;
+  --color-primary-bg:        #F6E7CF;
+  --color-text-on-primary:   #FFFFFF;
+
+  --color-focus-ring:        #D9852A;
+
+  /* Feel — sharper, more architectural than DAWN's soft radii. */
+  --radius-control: 0.375rem;
+  --radius-card:    0.625rem;
+  --radius-pill:    9999px;
+}
+
+/* Midnight dark. Production's selector is `.dark [data-skin="midnight"]` (mode
+   lives on <html>, the skin on a descendant shell root). The equivalent
+   attribute form is listed first so tooling reads this as a skin token scope;
+   both select the same thing. */
+[data-skin="midnight"][data-mode="dark"],
+.dark [data-skin="midnight"] {
+  color-scheme: dark;
+
+  /* Surfaces — deep cool slate and indigo, a true cinematic midnight rather
+     than DAWN's warm espresso. */
+  --color-canvas:           #0C1018;
+  --color-marketing-canvas: #080B12;
+  --color-surface:          #161C28;
+  --color-surface-elevated: #1F2736;
+  --color-surface-post:     #1F2736;
+  --color-chrome:           #111721;
+  --color-chrome-border:    #232D3D;
+
+  /* Borders — cool slate. */
+  --color-border:           #2A3445;
+  --color-border-strong:    #3A4659;
+
+  /* Text — cool off-white ink (~14:1 on canvas). */
+  --color-text:             #E7ECF4;
+  --color-text-muted:       #9AA6BC;
+  --color-text-subtle:      #6B7689;
+
+  /* Primary — amber brightened in the dark, as DAWN does. */
+  --color-primary:          #F0AD4E;
+  --color-primary-hover:    #F6C16F;
+  --color-primary-strong:   #F0AD4E;
+  --color-primary-bg:       #2A2113;
+  --color-text-on-primary:  #1A1206;
+
+  --color-focus-ring:       #F0AD4E;
+
+  /* Feel — sharper radii, matching light-mode Midnight. */
+  --radius-control: 0.375rem;
+  --radius-card:    0.625rem;
+  --radius-pill:    9999px;
+}

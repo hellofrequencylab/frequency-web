@@ -1,0 +1,65 @@
+<!-- @dsCard group="Foundations · Color" viewport="1180x551" name="Midnight skin · four render states" subtitle="A skin is a token override on data-skin, orthogonal to light/dark mode. DAWN light, DAWN dark, Midnight light, Midnight dark. Midnight keeps the amber and sharpens the radii." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+  body{margin:0;padding:20px;background:var(--color-canvas);font-family:var(--font-sans);color:var(--color-text)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .state{border-radius:var(--radius-card);overflow:hidden;border:1px solid var(--color-border)}
+  .pane{background:var(--color-canvas);color:var(--color-text);padding:14px}
+  .lab{display:flex;align-items:center;justify-content:space-between;font-size:var(--text-2xs);font-family:var(--font-mono);color:var(--color-text-subtle);margin-bottom:10px}
+  .card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-card);padding:12px;box-shadow:var(--shadow-sm)}
+  .ct{font-weight:800;font-size:var(--text-card-title);line-height:1.25}
+  .cs{font-size:var(--text-meta);color:var(--color-text-muted);margin:2px 0 10px}
+  .acts{display:flex;gap:8px;align-items:center}
+  .btn{background:var(--color-primary);color:var(--color-text-on-primary);border:none;border-radius:var(--radius-control);padding:7px 14px;font-family:inherit;font-weight:800;font-size:var(--text-body-sm)}
+  .btn.ghost{background:transparent;color:var(--color-text-muted);border:1px solid var(--color-border-strong)}
+  .swrow{display:flex;gap:6px;margin-top:12px}
+  .sw{flex:1;height:22px;border-radius:var(--radius-control);border:1px solid var(--color-border)}
+  .note{margin:16px 0 0;font-size:var(--text-body-sm);color:var(--color-text-muted);line-height:1.6;max-width:52rem}
+  code{font-family:var(--font-mono);font-size:.92em;background:var(--color-surface-elevated);padding:1px 5px;border-radius:4px}
+</style>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="state"><div class="pane">
+      <div class="lab"><span>DAWN · light</span><span>default</span></div>
+      <div class="card">
+        <div class="ct">Thursday sit</div><div class="cs">6:30pm · Moonlight Beach</div>
+        <div class="acts"><button class="btn">RSVP</button><button class="btn ghost">Details</button></div>
+        <div class="swrow"><div class="sw" style="background:var(--color-primary)"></div><div class="sw" style="background:var(--color-signal)"></div><div class="sw" style="background:var(--color-move)"></div><div class="sw" style="background:var(--color-surface-post)"></div></div>
+      </div>
+    </div></div>
+    <div class="state dark"><div class="pane">
+      <div class="lab"><span>DAWN · dark</span><span>.dark</span></div>
+      <div class="card">
+        <div class="ct">Thursday sit</div><div class="cs">6:30pm · Moonlight Beach</div>
+        <div class="acts"><button class="btn">RSVP</button><button class="btn ghost">Details</button></div>
+        <div class="swrow"><div class="sw" style="background:var(--color-primary)"></div><div class="sw" style="background:var(--color-signal)"></div><div class="sw" style="background:var(--color-move)"></div><div class="sw" style="background:var(--color-surface-post)"></div></div>
+      </div>
+    </div></div>
+    <div class="state"><div class="pane" data-skin="midnight">
+      <div class="lab"><span>Midnight · light</span><span>data-skin</span></div>
+      <div class="card">
+        <div class="ct">Thursday sit</div><div class="cs">6:30pm · Moonlight Beach</div>
+        <div class="acts"><button class="btn">RSVP</button><button class="btn ghost">Details</button></div>
+        <div class="swrow"><div class="sw" style="background:var(--color-primary)"></div><div class="sw" style="background:var(--color-signal)"></div><div class="sw" style="background:var(--color-move)"></div><div class="sw" style="background:var(--color-surface-post)"></div></div>
+      </div>
+    </div></div>
+    <div class="state dark"><div class="pane" data-skin="midnight">
+      <div class="lab"><span>Midnight · dark</span><span>.dark + data-skin</span></div>
+      <div class="card">
+        <div class="ct">Thursday sit</div><div class="cs">6:30pm · Moonlight Beach</div>
+        <div class="acts"><button class="btn">RSVP</button><button class="btn ghost">Details</button></div>
+        <div class="swrow"><div class="sw" style="background:var(--color-primary)"></div><div class="sw" style="background:var(--color-signal)"></div><div class="sw" style="background:var(--color-move)"></div><div class="sw" style="background:var(--color-surface-post)"></div></div>
+      </div>
+    </div></div>
+  </div>
+  <p class="note">Mode lives on <code>&lt;html&gt;</code>, the skin on a descendant shell root, so the dark variant is <code>.dark [data-skin="midnight"]</code>. Midnight overrides surfaces, borders, text and primary, and sharpens <code>--radius-control</code> and <code>--radius-card</code>. Everything it leaves alone (Signal, Broadcast, Move, semantic states, ranks, the brand mark) inherits DAWN unchanged, which is why the swatch row stays constant across all four states.</p>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

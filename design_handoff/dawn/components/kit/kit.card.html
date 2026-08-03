@@ -1,0 +1,94 @@
+<!-- @dsCard group="Components" viewport="1180x934" name="The kit" subtitle="Compose pages from these, never re-declare them: PageHeading, UnderlineTabs, SectionHeader, EntityCard, RowCard, PersonCard, StatCard, ProgressTrack." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body{margin:0;padding:22px 24px;background:var(--color-canvas);font-family:var(--font-sans);color:var(--color-text)}
+  .lab{font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--color-text-subtle);margin:0 0 8px}
+  .block+.block{margin-top:22px;padding-top:20px;border-top:1px solid var(--color-border)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .three{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+</style>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const K = window.DAWNFrequencyDesignSystem_c868e3;
+const { PageHeading, UnderlineTabs, SectionHeader, EntityCard, RowCard, PersonCard, StatCard, ProgressTrack, Button, Avatar, RankBadge } = K;
+
+function Demo() {
+  const [tab, setTab] = React.useState('stream');
+  return (
+    <div>
+      <div className="block">
+        <p className="lab">PageHeading · the one header grammar</p>
+        <PageHeading eyebrow="Circle · Leucadia" title="Thursday Sound Bath"
+          subtitle="Eleven of us on the studio floor while the bowls do their thing. We stay an hour after, just talking."
+          actions={<><Button size="sm" variant="ghost">Share</Button><Button size="sm">Join</Button></>} />
+      </div>
+      <div className="block">
+        <p className="lab">UnderlineTabs · the ONE tab vocabulary</p>
+        <UnderlineTabs value={tab} onChange={setTab}
+          tabs={[{ id: 'stream', label: 'Stream' }, { id: 'members', label: 'Members', count: 34 }, { id: 'events', label: 'Events', count: 3 }, { id: 'about', label: 'About' }]} />
+      </div>
+      <div className="block">
+        <p className="lab">SectionHeader + RowCard · group, don't box</p>
+        <SectionHeader title="Upcoming events" count={3} action="See all" />
+        <RowCard date={{ mon: 'Aug', day: 6 }} accent="signal" title="Breathe Connect Expand" meta="Encinitas Viewpoint Park" trailing="6:30p" onClick={() => {}} />
+        <RowCard date={{ mon: 'Aug', day: 8 }} accent="signal" title="Sunrise cold plunge" meta="The Lab" trailing="6:30a" onClick={() => {}} />
+        <RowCard icon="utensils" title="Neighborhood supper" meta="Leucadia · six seats" trailing="Fri" divider={false} onClick={() => {}} />
+      </div>
+      <div className="block">
+        <p className="lab">EntityCard · a card means a distinct object</p>
+        <div className="two">
+          <EntityCard cover="../../assets/images/gathering-1.jpg" icon="users" eyebrow="Circle · 14 members"
+            title="Sunrise Cold Plunge" meta="Saturdays, 6:30am" footer={<Button size="sm">Join</Button>}>
+            Three minutes in the water, coffee after. No pace pressure.
+          </EntityCard>
+          <EntityCard icon="route" accent="signal" eyebrow="Journey · Body" title="The 28 Day Reset"
+            meta="4 weeks · 12 Practices" footer={<ProgressTrack steps={4} value={2} accent="signal" size="sm" style={{ flex: 1 }} />}>
+            One anchor practice a day, done with your Circle. Kickoff meetup, then weekly check-ins.
+          </EntityCard>
+        </div>
+      </div>
+      <div className="block">
+        <p className="lab">PersonCard · role chips only where they carry signal</p>
+        <div className="two">
+          <PersonCard avatar={<Avatar name="Sana Idris" size={40} />} name="Sana Idris" handle="sana" role="Guide"
+            line="Leads Thursday Sound Bath" rank={<RankBadge rank="adept" />}
+            action={<Button size="sm" variant="ghost">Message</Button>} />
+          <PersonCard avatar={<Avatar name="Leo Park" size={40} online />} name="Leo Park" handle="leopark"
+            line="Movement · 2 miles away" rank={<RankBadge rank="initiate" />}
+            action={<Button size="sm" variant="ghost">Add</Button>} />
+        </div>
+      </div>
+      <div className="block">
+        <p className="lab">StatCard · operator register only</p>
+        <div className="three">
+          <StatCard label="Weekly active members" value="212" delta="+8%" direction="up" spark={[8,12,9,15,14,18,22]} />
+          <StatCard label="Return rate" value="64" unit="%" delta="+3%" direction="up" hint="Came back the next week" />
+          <StatCard label="Reply time" value="4" unit="min" delta="-38%" direction="down" hint="Median, first response" />
+        </div>
+      </div>
+      <div className="block">
+        <p className="lab">ProgressTrack · labelled honestly</p>
+        <div className="two">
+          <ProgressTrack label="Climbing to Adept" hint="1 Journey to go" value={2} total={3} />
+          <ProgressTrack label="Week 2 of 4" hint="Anchor practice, 9 days" steps={4} value={2} accent="signal" />
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

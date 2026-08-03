@@ -1,0 +1,162 @@
+<!-- @dsCard group="Brand & voice" viewport="1180x1240" name="Imagery · the library" subtitle="The catalogued photography, sorted by the job each frame does. Toggle the hero treatment, captions and density to see how a frame behaves before you place it." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DAWN · imagery</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="card.css">
+<style>
+  /* ── The control bar. Three tweaks, because these are the three questions asked
+     of a frame before it is placed: does the treatment hold, does the caption
+     survive, and does it still read small. */
+  .bar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin: 0 0 1.6rem;
+    padding: 0.7rem 0.9rem; border-radius: var(--radius-card); background: var(--color-surface); border: 1px solid var(--color-border); box-shadow: var(--shadow-2xs); }
+  .bar b { font-size: var(--text-3xs); font-weight: 700; text-transform: uppercase; letter-spacing: var(--tracking-eyebrow); color: var(--color-text-subtle); }
+  .bar label { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.84rem; font-weight: 600; cursor: pointer; }
+  .bar input { accent-color: var(--color-primary); width: 15px; height: 15px; cursor: pointer; }
+  .bar .sp { flex: 1 }
+  .bar select { font-family: inherit; font-size: 0.84rem; font-weight: 600; padding: 0.25rem 0.5rem; border-radius: var(--radius-control);
+    border: 1px solid var(--color-border-strong); background: var(--color-canvas); color: var(--color-text); }
+
+  .lib { display: grid; gap: 12px; }
+  .lib.w2 { grid-template-columns: repeat(2, 1fr) }
+  .lib.w3 { grid-template-columns: repeat(3, 1fr) }
+  .lib.w4 { grid-template-columns: repeat(4, 1fr) }
+  body[data-density="tight"] .lib.w2 { grid-template-columns: repeat(3, 1fr) }
+  body[data-density="tight"] .lib.w3 { grid-template-columns: repeat(4, 1fr) }
+  body[data-density="tight"] .lib.w4 { grid-template-columns: repeat(6, 1fr) }
+
+  .sh { position: relative; border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-md); margin: 0 }
+  .sh img { display: block; width: 100%; height: 100% }
+  .sh.wide img { aspect-ratio: 3/2; object-fit: cover }
+  .sh.tall img { aspect-ratio: 9/16; object-fit: cover }
+  .sh.sq img { aspect-ratio: 4/3; object-fit: cover }
+
+  /* The hero treatment, as one stack: edge-weighted warm ink, a screen-blended
+     horizon light, then the vignette. Off by default so the frame is judged first. */
+  .sh::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity var(--motion-base) var(--ease-out);
+    background:
+      radial-gradient(ellipse 60% 44% at 50% 60%, color-mix(in srgb, var(--color-primary) 20%, transparent) 0%, transparent 70%),
+      linear-gradient(180deg, color-mix(in srgb, var(--color-ink) 88%, transparent) 0%, color-mix(in srgb, var(--color-ink) 56%, transparent) 30%,
+        color-mix(in srgb, var(--color-ink) 52%, transparent) 52%, color-mix(in srgb, var(--color-ink) 84%, transparent) 100%); }
+  body[data-treat="on"] .sh::before { opacity: 1 }
+  body[data-treat="on"] .sh { box-shadow: var(--shadow-pop) }
+
+  .sh figcaption { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 1.7rem 0.85rem 0.7rem;
+    transition: opacity var(--motion-base) var(--ease-out);
+    background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--color-ink) 84%, transparent)); }
+  body[data-caps="off"] .sh figcaption { opacity: 0 }
+  .sh b { display: block; font-size: 0.82rem; font-weight: 700; color: var(--color-on-ink); letter-spacing: var(--tracking-tight) }
+  .sh span { display: block; margin-top: 1px; font-size: var(--text-3xs); color: var(--color-on-ink-muted) }
+  .sh code { position: absolute; top: 8px; left: 8px; z-index: 2; padding: 0.1rem 0.4rem; border-radius: var(--radius-sm);
+    font-family: var(--font-mono); font-size: var(--text-3xs); background: color-mix(in srgb, var(--color-ink) 62%, transparent); color: var(--color-on-ink-muted);
+    opacity: 0; transition: opacity var(--motion-fast) ease }
+  body[data-names="on"] .sh code { opacity: 1 }
+  @media (max-width: 900px) { .lib.w2, .lib.w3, .lib.w4 { grid-template-columns: 1fr 1fr } }
+</style>
+</head>
+<body data-treat="off" data-caps="on" data-density="comfort" data-names="off">
+<div class="card">
+  <div class="card-head">
+    <span class="eyebrow">Brand &amp; voice</span>
+    <h1>Imagery · the library</h1>
+    <p>Every photograph is a real Frequency gathering, shot at golden hour in North County. That is the whole rule, and it is why the site can carry type over pictures without either fighting the other: the light is already warm, so the amber has somewhere to sit. Frames are catalogued here by the job they do — a wide hero and a portrait crop are not interchangeable, and each ships at the size its slot needs.</p>
+    <hr class="rule-amber">
+  </div>
+
+  <div class="bar">
+    <b>Try it</b>
+    <label><input type="checkbox" id="t-treat"> Hero treatment</label>
+    <label><input type="checkbox" id="t-caps" checked> Captions</label>
+    <label><input type="checkbox" id="t-names"> File names</label>
+    <span class="sp"></span>
+    <label for="t-density"><b>Density</b></label>
+    <select id="t-density">
+      <option value="comfort">As placed</option>
+      <option value="tight">Small — does it still read</option>
+    </select>
+  </div>
+
+  <h2>Wide · heroes and full-bleed beats</h2>
+  <p class="use" style="margin:-0.4rem 0 0.9rem">Landscape, room-scale, with air above the crowd for the headline to land in. 1600 × 1066 source; the <code>-card</code> crop is 1000 × 750 for a figure slot.</p>
+  <div class="lib w2">
+    <figure class="sh wide"><img src="../assets/images/lawn-practice.jpg" alt="Thirty people on mats across a lawn at golden hour"><code>lawn-practice</code><figcaption><b>The lawn practice</b><span>For hosts · the room being used</span></figcaption></figure>
+    <figure class="sh wide"><img src="../assets/images/closing-circle.jpg" alt="A wide circle of people with arms around each other above the beach"><code>closing-circle</code><figcaption><b>The closing circle</b><span>Why we exist · the argument in one frame</span></figcaption></figure>
+    <figure class="sh wide"><img src="../assets/images/beach-sunset-dance.jpg" alt="A crowd dancing on the sand into the sun"><code>beach-sunset-dance</code><figcaption><b>Sunset dance</b><span>The Quest · a reward being collected</span></figcaption></figure>
+    <figure class="sh wide"><img src="../assets/images/circle-morning.jpg" alt="People sitting in a circle on a bluff at first light"><code>circle-morning</code><figcaption><b>The 6:30am</b><span>Circles · the standing invitation</span></figcaption></figure>
+  </div>
+
+  <h2>Mid-page beats</h2>
+  <p class="use" style="margin:-0.4rem 0 0.9rem">One sentence over a photograph, seamed top and bottom. The alternative to a slat band when the picture is the argument — never both on the same page.</p>
+  <div class="lib w3">
+    <figure class="sh sq"><img src="../assets/images/beach-dance-card.jpg" alt="People dancing on the sand, one lifted mid-air"><code>beach-dance</code><figcaption><b>Nobody is performing</b><span>The candid frame</span></figcaption></figure>
+    <figure class="sh sq"><img src="../assets/images/service-day-card.jpg" alt="Adults sitting on rugs packing bags in a garden"><code>service-day</code><figcaption><b>The service day</b><span>The part nobody photographs</span></figcaption></figure>
+    <figure class="sh sq"><img src="../assets/images/parachute-card.jpg" alt="Adults holding a parachute on a lawn"><code>parachute</code><figcaption><b>The ridiculous one</b><span>Play, without irony</span></figcaption></figure>
+    <figure class="sh sq"><img src="../assets/images/beach-crowd-card.jpg" alt="A close crowd with arms raised on the beach"><code>beach-crowd</code><figcaption><b>Mid-crowd</b><span>Close range, faces, no horizon</span></figcaption></figure>
+    <figure class="sh sq"><img src="../assets/images/beach-arms-up-card.jpg" alt="A circle of people dancing with arms raised"><code>beach-arms-up</code><figcaption><b>Arms up</b><span>The high beat</span></figcaption></figure>
+    <figure class="sh sq"><img src="../assets/images/huddle-card.jpg" alt="A tight group hug above the ocean"><code>huddle</code><figcaption><b>The huddle</b><span>Belonging, close range</span></figcaption></figure>
+  </div>
+
+  <h2>Portrait · tall crops</h2>
+  <p class="use" style="margin:-0.4rem 0 0.9rem">For a rail module, a story crop, or an aside beside a hero. 900 × 1600 source. Vertical frames carry one or two people; a room-scale shot cropped tall loses the room and the point.</p>
+  <div class="lib w4">
+    <figure class="sh tall"><img src="../assets/images/huddle-tall.jpg" alt="A tight group hug on a bluff above the ocean"><code>huddle-tall</code><figcaption><b>The huddle</b><span>Story crop</span></figcaption></figure>
+    <figure class="sh tall"><img src="../assets/images/dance-portrait-tall.jpg" alt="A woman dancing on the beach, hair in motion"><code>dance-portrait-tall</code><figcaption><b>Mid-motion</b><span>Feed post</span></figcaption></figure>
+    <figure class="sh tall"><img src="../assets/images/dance-crowd-portrait-tall.jpg" alt="Dancers on the sand at golden hour"><code>dance-crowd-portrait-tall</code><figcaption><b>The last song</b><span>Rail module</span></figcaption></figure>
+    <figure class="sh tall"><img src="../assets/images/lab-thermal.jpg" alt="Thermal room in cedar"><code>lab-thermal</code><figcaption><b>The thermal room</b><span>The one interior that crops tall</span></figcaption></figure>
+  </div>
+
+  <h2>The Lab · interiors</h2>
+  <p class="use" style="margin:-0.4rem 0 0.9rem">The physical-space reference: black wood slats, amber strip lighting, heat and cold. The only frames where the room is the subject and nobody is in it.</p>
+  <div class="lib w4">
+    <figure class="sh sq"><img src="../assets/images/lab-pool.jpg" alt="Cold plunge pool"><code>lab-pool</code><figcaption><b>The plunge</b><span>Heat then cold</span></figcaption></figure>
+    <figure class="sh sq"><img src="../assets/images/lab-lounge.jpg" alt="Lounge with slat walls"><code>lab-lounge</code><figcaption><b>The lounge</b><span>Where the slat motif comes from</span></figcaption></figure>
+    <figure class="sh sq"><img src="../assets/images/lab-storefront.jpg" alt="The Lab from the street"><code>lab-storefront</code><figcaption><b>The storefront</b><span>One building in Vista</span></figcaption></figure>
+    <figure class="sh sq"><img src="../assets/images/lab-concept.jpg" alt="Concept render of the Lab"><code>lab-concept</code><figcaption><b>The concept</b><span>Marked as a render, never as a room</span></figcaption></figure>
+  </div>
+
+  <h2>Choosing a frame</h2>
+  <div class="dd">
+    <div class="prefer">
+      <span class="lbl">Prefer</span>
+      <ul class="use" style="margin:0;padding-left:1.1rem;line-height:1.75">
+        <li>Backs of heads, mid-laugh, mid-motion. Nobody looking at the lens.</li>
+        <li>Enough of the room to tell you where you are.</li>
+        <li>Golden hour, or amber light indoors.</li>
+        <li>Air above the crowd, if type is going on it.</li>
+      </ul>
+    </div>
+    <div class="avoid">
+      <span class="lbl">Avoid</span>
+      <ul class="use" style="margin:0;padding-left:1.1rem;line-height:1.75">
+        <li>Anything posed at the camera, or shot in flat midday light.</li>
+        <li>Illustration and 3D render — this brand has no drawn imagery.</li>
+        <li>Stock: strangers in an office, a laughing salad, a lens flare on white.</li>
+        <li>A face cropped by a headline. Move the type, not the crop.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="laws">
+    <p><b>Real members, real rooms.</b> If it did not happen at a Frequency gathering, it does not go on the site.</p>
+    <p><b>Golden hour is the palette.</b> The warm light is why amber type sits on these frames at all — cool photography breaks the whole system.</p>
+    <p><b>The job decides the crop.</b> Wide for heroes, <code>-card</code> for figure slots, <code>-tall</code> for rails. Never re-crop a room-scale shot into a portrait.</p>
+    <p><b>Name by subject, suffix by role.</b> <code>closing-circle.jpg</code>, <code>closing-circle-card.jpg</code>. A page never guesses which file it wants.</p>
+    <p><b>Never a photograph behind a photograph.</b> One picture per band, and a band with a picture does not also get the slat ground.</p>
+    <p><b>Caption in a gradient, not a shadow.</b> A warm ink gradient holds at any brightness; a text-shadow only survives on a light frame.</p>
+  </div>
+</div>
+<script>
+  const b = document.body;
+  const bind = (id, attr, on, off) => {
+    const el = document.getElementById(id);
+    el.addEventListener('change', () => b.setAttribute(attr, el.checked ? on : off));
+  };
+  bind('t-treat', 'data-treat', 'on', 'off');
+  bind('t-caps', 'data-caps', 'on', 'off');
+  bind('t-names', 'data-names', 'on', 'off');
+  document.getElementById('t-density').addEventListener('change', (e) => b.setAttribute('data-density', e.target.value));
+</script>
+</body>
+</html>

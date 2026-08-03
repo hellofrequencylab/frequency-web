@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Marketing page" description="A public Frequency page: photographic hero with a fact dock, the four-role section rhythm, photo beats, an FAQ and the beta close." -->
+<helmet>
+<script src="./ds-base.js"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="./reveal.js"></script>
+<style>
+  html, body { margin: 0; min-height: 100vh; background: var(--color-canvas); }
+  body { font-family: var(--font-sans); color: var(--color-text); }
+  a { color: var(--color-primary-strong); }
+  a:hover { color: var(--color-primary); }
+  .mk-3up { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  @media (max-width: 900px) {
+    .mk-3up, .mk-trio, .mk-hero-grid { grid-template-columns: 1fr !important; }
+    .mk-nav span { display: none !important; }
+  }
+</style>
+</helmet>
+<x-import component-from-global-scope="MarketingHeader" from="./site.jsx" hint-size="100%,68px"></x-import>
+
+<!-- The one photographic opening. A hero with facts overhangs its own bottom edge, so
+     it tags itself .mk-hero-dock and the section below clears the dock automatically. -->
+<x-import component-from-global-scope="PageHero" from="./site.jsx" hint-size="100%,86vh"
+  image="../../assets/images/closing-circle.jpg"
+  alt="A wide circle of people with their arms around each other above the beach"
+  eyebrow="Why we exist"
+  title="A hundred contacts"
+  script="and nobody to call"
+  lead="We built the most connected generation in history and it is the loneliest one on record. Not because people stopped wanting each other — because the places we used to meet in closed."
+  primary="Join the Beta"
+  secondary="Read the oath"
+  facts="{{ facts }}"></x-import>
+
+<!-- Section rhythm is a ROLE, not a padding value. Each section takes exactly one of
+     .mk-band (a tone change), .mk-beat (content after a tone change), .mk-cont (a
+     continuation in the same tone) or .mk-tight (a one-line interruption). -->
+<section class="mk-beat mk-cream" style="background:var(--color-surface)">
+  <div style="max-width:var(--width-wide);margin:0 auto">
+    <p class="eyebrow" style="margin:0;color:var(--color-primary-strong)">What we are building</p>
+    <h2 class="font-display" style="margin:0.7rem 0 0;font-size:var(--text-display-h2);text-transform:uppercase;letter-spacing:0.005em">Three things</h2>
+    <p style="margin:0.1rem 0 0;font-family:var(--font-editorial);font-style:italic;font-size:clamp(1.4rem,3vw,2.2rem);line-height:1.08;color:var(--color-primary-strong)">and none of them is a feed</p>
+    <div class="mk-3up" style="margin-top:var(--space-10)">
+      <article class="lift-2" style="padding:1.7rem 1.5rem;background:var(--color-canvas);border:1px solid var(--color-border);border-radius:var(--radius-2xl)">
+        <span class="font-display" style="font-size:2.2rem;line-height:1;color:var(--color-primary-strong)">01</span>
+        <h3 style="margin:0.6rem 0 0;font-size:1.2rem;letter-spacing:var(--tracking-tight)">Circles</h3>
+        <p style="margin:0.4rem 0 0;font-size:0.98rem;line-height:1.7;color:var(--color-text-muted)">A handful of people who agreed on a day and keep it. Small is the feature.</p>
+      </article>
+      <article class="lift-2" style="padding:1.7rem 1.5rem;background:var(--color-canvas);border:1px solid var(--color-border);border-radius:var(--radius-2xl)">
+        <span class="font-display" style="font-size:2.2rem;line-height:1;color:var(--color-primary-strong)">02</span>
+        <h3 style="margin:0.6rem 0 0;font-size:1.2rem;letter-spacing:var(--tracking-tight)">The Quest</h3>
+        <p style="margin:0.4rem 0 0;font-size:0.98rem;line-height:1.7;color:var(--color-text-muted)">A season of small practices. Ranks expire, so nobody is permanently above anybody.</p>
+      </article>
+      <article class="lift-2" style="padding:1.7rem 1.5rem;background:var(--color-canvas);border:1px solid var(--color-border);border-radius:var(--radius-2xl)">
+        <span class="font-display" style="font-size:2.2rem;line-height:1;color:var(--color-primary-strong)">03</span>
+        <h3 style="margin:0.6rem 0 0;font-size:1.2rem;letter-spacing:var(--tracking-tight)">The Lab</h3>
+        <p style="margin:0.4rem 0 0;font-size:0.98rem;line-height:1.7;color:var(--color-text-muted)">One building, opening 2028. The physical proof that the app is about rooms.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- A full-bleed photograph carrying one sentence: the rhythm alternative to the slat
+     band, for when the picture is the argument. -->
+<x-import component-from-global-scope="PhotoBeat" from="./site.jsx" hint-size="100%,58vh"
+  image="../../assets/images/parachute.jpg"
+  alt="Adults holding the edges of a parachute on a lawn above the sea"
+  eyebrow="What it looks like when it works"
+  line="Grown adults, a parachute"
+  script="on a Tuesday morning"
+  note="Nothing about this is efficient. Nobody is networking. It is thirty people who agreed on a time and kept it, which turns out to be the whole recipe."></x-import>
+
+<section class="mk-beat mk-cream" style="background:var(--color-marketing-canvas)">
+  <div style="max-width:var(--width-wide);margin:0 auto">
+    <p class="eyebrow" style="margin:0;color:var(--color-primary-strong)">Already happening</p>
+    <h2 class="font-display" style="margin:0.7rem 0 0;font-size:var(--text-display-h2);text-transform:uppercase;letter-spacing:0.005em">In borrowed rooms</h2>
+    <x-import component-from-global-scope="PhotoTrio" from="./site.jsx" items="{{ trio }}" hint-size="100%,380px"></x-import>
+  </div>
+</section>
+
+<x-import component-from-global-scope="FaqList" from="./site.jsx" items="{{ faq }}" hint-size="100%,420px"></x-import>
+<x-import component-from-global-scope="BetaCTA" from="./site.jsx" hint-size="100%,320px"></x-import>
+<x-import component-from-global-scope="MarketingFooter" from="./site.jsx" hint-size="100%,280px"></x-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900},&quot;showFacts&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Hero&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      facts: this.props.showFacts === false ? null : [
+        ['1 in 4', 'Adults with no close friend'],
+        ['61%', 'Under 30 feeling alone'],
+        ['1', 'County we are starting in'],
+      ],
+      trio: [
+        ['../../assets/images/circle-morning-card.jpg', 'The Circles', 'Twenty-odd groups meeting weekly, most founded by somebody who had never hosted anything before.'],
+        ['../../assets/images/lawn-practice-card.jpg', 'The practice', 'Thirty mats on a public lawn at sunrise. No studio, no membership, no barrier but the hour.'],
+        ['../../assets/images/service-day-card.jpg', 'The service days', 'The part nobody photographs: sitting on rugs packing bags for people who will never know your name.'],
+      ],
+      faq: [
+        { q: 'Is it free?', a: 'A Member is free forever and it is not a trial: host a Circle, publish a Journey, run two events, sell a ticket. Crew is what you pay for doing all of that repeatedly.' },
+        { q: 'Where is this?', a: 'One county, on purpose. A community product that launches everywhere at once launches nowhere.' },
+        { q: 'What is the Lab?', a: 'A building we intend to open in 2028 — sauna, plunge, a floor. Until then the community meets in rooms we borrow.' },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

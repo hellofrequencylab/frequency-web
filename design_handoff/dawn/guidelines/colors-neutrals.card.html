@@ -1,0 +1,47 @@
+<!-- @dsCard group="Foundations · Color" viewport="1180x620" name="Neutrals · surfaces, chrome, borders & text" subtitle="Warm cream canvas, white content, chrome a step down, soft warm charcoal ink. No cold grey anywhere." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DAWN · Neutrals · surfaces & text</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="card.css">
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-head">
+    <span class="eyebrow">Foundations · Color</span>
+    <h1>Neutrals · surfaces & text</h1>    <p>Every neutral is warm. The in-app canvas is a light cream, content cards are white, and the app frame sits a step <em>down</em> from the canvas so the frame reads as frame and the white content is what pops. The marketing canvas is warmer sand. Text ink is a soft warm charcoal, about 10:1 on canvas — printed, not harsh.</p>
+    <hr class="rule-amber">
+  </div>
+  <h2>Surfaces</h2>
+  <div class="g g5">
+    <div class="sw"><div class="chip" style="background:var(--color-canvas)"></div><div class="lab"><div class="tok">--color-canvas</div><div class="hex">#FAF8F4</div><div class="use">The in-app page.</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-marketing-canvas)"></div><div class="lab"><div class="tok">--color-marketing-canvas</div><div class="hex">#F5EEE2</div><div class="use">The public site.</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-surface)"></div><div class="lab"><div class="tok">--color-surface</div><div class="hex">#FFFFFF</div><div class="use">Content cards, composer, sheets.</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-surface-elevated)"></div><div class="lab"><div class="tok">--color-surface-elevated</div><div class="hex">#F5F2EC</div><div class="use">Hover fills, inset wells.</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-surface-post)"></div><div class="lab"><div class="tok">--color-surface-post</div><div class="hex">#F7F5F0</div><div class="use">A post, one step warmer than the composer.</div></div></div>
+  </div>
+  <h2>Chrome &amp; borders</h2>
+  <div class="g g4">
+    <div class="sw"><div class="chip" style="background:var(--color-chrome)"></div><div class="lab"><div class="tok">--color-chrome</div><div class="hex">#F2EFE8</div><div class="use">Top bar, rails, menus.</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-chrome-border)"></div><div class="lab"><div class="tok">--color-chrome-border</div><div class="hex">#E5E0D6</div><div class="use">The frame’s own hairline.</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-border)"></div><div class="lab"><div class="tok">--color-border</div><div class="hex">#EAE6DE</div><div class="use">Default hairline.</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-border-strong)"></div><div class="lab"><div class="tok">--color-border-strong</div><div class="hex">#D9D3C8</div><div class="use">Dividers that need to be seen.</div></div></div>
+  </div>
+  <h2>Text</h2>
+  <div class="g g3">
+    <div class="panel"><div style="font-size:1.4rem;font-weight:700;color:var(--color-text)">The plain sentence</div><div class="tok" style="margin-top:8px">--color-text · #3D352A</div><p class="use">Body and headings. ~10:1 on canvas.</p></div>
+    <div class="panel"><div style="font-size:1.4rem;font-weight:700;color:var(--color-text-muted)">The plain sentence</div><div class="tok" style="margin-top:8px">--color-text-muted · #6B6253</div><p class="use">Descriptions, meta, secondary copy.</p></div>
+    <div class="panel"><div style="font-size:1.4rem;font-weight:700;color:var(--color-text-subtle)">The plain sentence</div><div class="tok" style="margin-top:8px">--color-text-subtle · #8F8675</div><p class="use">Footnotes and legal. Never body copy.</p></div>
+  </div>
+  <div class="laws">
+    <p><b>No cold grey.</b> Every neutral carries a warm cast. A #F5F5F5 anywhere reads instantly as a foreign component.</p>
+    <p><b>Chrome sits below canvas.</b> The frame is darker than the page it holds, so white content cards read as objects on it.</p>
+    <p><b>Hairlines, not rules.</b> One pixel of warm border. Depth comes from the shadow tokens, not from heavier lines.</p>
+    <p><b>Subtle is not body.</b> <code>text-subtle</code> is for a legal line. Content never goes below <code>text-muted</code>.</p>
+  </div>
+</div>
+</body>
+</html>

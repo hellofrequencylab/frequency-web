@@ -1,0 +1,46 @@
+<!-- @dsCard group="Foundations · Type" viewport="1180x620" name="Type scale · roles, not pixels" subtitle="Every size is a role with a job. Never set a heading size ad hoc; never take content below the meta floor." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DAWN · Type scale · roles not pixels</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="card.css">
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-head">
+    <span class="eyebrow">Foundations · Type</span>
+    <h1>Type scale · roles not pixels</h1>    <p>There are no arbitrary sizes. Each token names the job it does, so "make this bigger" becomes "this is a section heading, not a card title" — a content decision instead of a number.</p>
+    <hr class="rule-amber">
+  </div>
+  <h2>Display · Anton</h2>
+  <div>
+    <div class="spec"><code>--text-display-hero</code><span class="val">clamp 3–5rem</span><span class="why">The PhotoHero H1. One per page.</span></div>
+    <div class="spec"><code>--text-display-h1</code><span class="val">clamp 2.75–4.5rem</span><span class="why">A page that opens on type instead of a photograph.</span></div>
+    <div class="spec"><code>--text-display-h2</code><span class="val">clamp 2.25–3rem</span><span class="why">Section headings. The workhorse.</span></div>
+    <div class="spec"><code>--text-display-h3</code><span class="val">clamp 1.75–2.25rem</span><span class="why">A beat inside a section.</span></div>
+    <div class="spec"><code>--text-display-card</code><span class="val">1.5rem</span><span class="why">A card title in the display voice.</span></div>
+    <div class="spec"><code>--text-stat</code><span class="val">clamp 3.5–4.5rem</span><span class="why">The big numeral in a proof block.</span></div>
+  </div>
+  <h2>Sans · Nunito</h2>
+  <div>
+    <div class="spec"><code>--text-page-title</code><span class="val">1.5rem</span><span class="why">The in-app template header.</span></div>
+    <div class="spec"><code>--text-lead</code><span class="val">1.25rem</span><span class="why">Intro paragraph or kicker.</span></div>
+    <div class="spec"><code>--text-card-title</code><span class="val">1.0625rem</span><span class="why">A sans card title.</span></div>
+    <div class="spec"><code>--text-body</code><span class="val">1rem</span><span class="why">Default body copy.</span></div>
+    <div class="spec"><code>--text-body-sm</code><span class="val">0.875rem</span><span class="why">In-app body and descriptions.</span></div>
+    <div class="spec"><code>--text-meta</code><span class="val">0.75rem</span><span class="why">Counts, timestamps, labels. The content FLOOR.</span></div>
+    <div class="spec"><code>--text-2xs</code><span class="val">0.6875rem</span><span class="why">Chrome only: a rank chip, a tab count.</span></div>
+    <div class="spec"><code>--text-3xs</code><span class="val">0.625rem</span><span class="why">Chrome only: the smallest legal line. Exists so nobody writes 10px ad hoc.</span></div>
+  </div>
+  <div class="laws">
+    <p><b>Roles, not pixels.</b> If no token fits, the content is probably mislabelled — not the scale short a size.</p>
+    <p><b>Two sub-xs steps exist so they are never invented.</b> They are chrome, never content.</p>
+    <p><b>One display face per block.</b> A heading is Anton or Nunito, not both.</p>
+    <p><b>clamp does the responsive work.</b> Do not add breakpoint overrides on type.</p>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!-- @dsCard group="Screens · Member" viewport="1440x900" name="Journey lesson" subtitle="Focus template: the e-learning reader. Lesson prose at reading measure, a checkpoint, an audio practice, and the honest next step." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Journey lesson</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="screen.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  a { color: var(--color-primary-strong); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--color-primary); }html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="../app/topbar.jsx"></script>
+<script type="text/babel" src="../app/nav-rail.jsx"></script>
+<script type="text/babel" src="frame.jsx"></script>
+<script type="text/babel" src="../app/docks.jsx"></script>
+<script type="text/babel" data-presets="react">
+const K = window.DAWNFrequencyDesignSystem_c868e3;
+
+const { PageHeading, SectionHeader, ProgressTrack, Button, Avatar, Badge, Card, Checkbox, Textarea, RowCard } = K;
+
+function LessonRail() {
+  const items = [
+    { t: 'Same time, same chair', done: true },
+    { t: 'The Thursday problem', current: true },
+    { t: 'Tell one person', done: false },
+  ];
+  return (
+    <window.Rail>
+      <div>
+        <SectionHeader title="Week 2" />
+        <ProgressTrack label="Two of three done" hint="Week 2 of 4" value={2} total={3} size="sm" />
+        <div style={{ marginTop: 14 }}>
+          {items.map((i, n) => (
+            <div key={i.t} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.55rem 0', borderBottom: n < items.length - 1 ? '1px solid var(--color-border)' : 'none' }}>
+              <span style={{ width: 20, height: 20, flexShrink: 0, borderRadius: '50%', display: 'grid', placeItems: 'center',
+                background: i.done ? 'var(--color-success)' : i.current ? 'var(--color-primary)' : 'transparent',
+                border: i.done || i.current ? 'none' : '1.5px solid var(--color-border-strong)', color: 'var(--color-surface)' }}>
+                {i.done ? <window.Ico n="check" style={{ width: 12, height: 12 }} /> : i.current ? <window.Ico n="play" style={{ width: 10, height: 10 }} /> : null}
+              </span>
+              <span style={{ flex: 1, fontSize: '0.9rem', fontWeight: i.current ? 700 : 500,
+                color: i.done ? 'var(--color-text-muted)' : 'var(--color-text)' }}>{i.t}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <SectionHeader title="Your Circle is here too" />
+        <RowCard avatar={<Avatar name="Leo Park" size={32} online />} title="Leo Park" meta="Read it Tuesday" divider={false} />
+        <RowCard avatar={<Avatar name="Sana Idris" size={32} />} title="Sana Idris" meta="Left a note below" divider={false} />
+      </div>
+      <Card tone="soft" padding="0.95rem">
+        <p style={{ margin: 0, fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
+          Reading counts as showing up. Log it and the week moves.
+        </p>
+      </Card>
+    </window.Rail>
+  );
+}
+
+function Page() {
+  const [checked, setChecked] = React.useState(false);
+  const [note, setNote] = React.useState('');
+  return (
+    <window.Screen active="journeys" rail={<LessonRail />}>
+      <a href="journey.html" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-meta)', fontWeight: 700, marginBottom: 14 }}>
+        <window.Ico n="arrow-left" style={{ width: 14, height: 14 }} /> The 28 Day Reset
+      </a>
+      <PageHeading eyebrow="Week 2 · Reading · 8 min" title="The Thursday problem"
+        subtitle={<>Most things that fail do not fail on day one. They fail on the <strong>first ordinary Thursday</strong>, when nothing is exciting and nobody is watching.</>} />
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginTop: 16, padding: '0.8rem 1rem',
+        background: 'var(--color-surface-elevated)', borderRadius: 'var(--radius-card)' }}>
+        <span style={{ fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>
+          <b style={{ color: 'var(--color-text)' }}>Week 2 focus.</b> Make it boring. Same time, same chair, no ceremony.
+        </span>
+        <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>
+          <window.Ico n="users" style={{ width: 14, height: 14 }} /> 9 of 11 in your Run are here too
+        </span>
+      </div>
+
+      <div style={{ maxWidth: 'var(--width-read)', marginTop: 26, fontSize: '1.08rem', lineHeight: 1.75, color: 'var(--color-text)' }}>
+        <p style={{ margin: '0 0 1.2rem' }}>
+          Day one is easy. You decided something, and deciding feels good. Day two runs on the same fuel. Somewhere around the fourth or fifth day the decision stops being interesting, and that is the day that actually decides whether this becomes a thing you do.
+        </p>
+        <p style={{ margin: '0 0 1.2rem' }}>
+          The research is unromantic about it. A habit takes a median of 66 days to stop needing a decision, and the people who get there are not the disciplined ones. They are the ones who made the thing small enough to survive a bad Thursday, and who had somebody who noticed.
+        </p>
+        <blockquote style={{ margin: '1.6rem 0', padding: '0 0 0 1.15rem', borderLeft: '2px solid var(--color-primary)', fontFamily: 'var(--font-editorial)', fontSize: '1.3rem', lineHeight: 1.5, fontStyle: 'italic', color: 'var(--color-text)' }}>
+          Never miss twice. One miss is nothing. Two is a pattern, and we catch you at one.
+        </blockquote>
+        <p style={{ margin: '0 0 1.2rem' }}>
+          That is the whole rule. It is also why this Journey has a streak freeze you can earn and buy, and why nobody here gets a notification designed to make them feel bad. A miss is information, not a moral event.
+        </p>
+        <h2 style={{ margin: '2rem 0 0.7rem', fontSize: '1.3rem', fontWeight: 'var(--weight-heading)', letterSpacing: 'var(--tracking-tight)' }}>What to do about it</h2>
+        <p style={{ margin: '0 0 1.2rem' }}>
+          Pick the version of your practice that takes five minutes, and put it somewhere physical: the same chair, right after the coffee, before the phone. Then tell one person in your Circle which chair it is. That is the part that works.
+        </p>
+      </div>
+
+      <div style={{ maxWidth: 'var(--width-read)', marginTop: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--color-move-bg)', borderRadius: 'var(--radius-card)', padding: '1rem 1.15rem' }}>
+          <button style={{ width: 46, height: 46, flexShrink: 0, borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center', background: 'var(--color-move)', color: 'var(--color-text-on-move)' }}>
+            <window.Ico n="play" style={{ width: 19, height: 19 }} />
+          </button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p className="eyebrow" style={{ margin: 0, color: 'var(--color-move-strong)' }}>Read to you · 8 min</p>
+            <div style={{ fontSize: '0.98rem', fontWeight: 600, letterSpacing: 'var(--tracking-tight)', margin: '2px 0 8px' }}>Listen instead, on the walk</div>
+            <ProgressTrack value={0} total={100} accent="move" size="sm" />
+          </div>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: 'var(--width-read)', marginTop: 22, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', padding: '1.15rem 1.25rem' }}>
+        <p className="eyebrow" style={{ margin: 0, color: 'var(--color-primary-strong)' }}>Checkpoint</p>
+        <h3 style={{ margin: '4px 0 12px', fontSize: '1.1rem', fontWeight: 'var(--weight-heading)', letterSpacing: 'var(--tracking-tight)' }}>Name your chair</h3>
+        <Textarea rows={3} defaultValue={note} onChange={(e) => setNote(e.target.value)}
+          placeholder="Where does the five minute version happen? Be specific. A room, a chair, a time." />
+        <div style={{ marginTop: 12 }}>
+          <Checkbox checked={checked} onChange={() => setChecked((c) => !c)} label="Tell my Circle where it is" />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--color-border)' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 'var(--text-meta)', fontWeight: 700, color: 'var(--color-signal-strong)' }}>
+            <window.Ico n="gem" style={{ width: 14, height: 14 }} /> Online, so this one pays Gems
+          </span>
+          <span style={{ flex: 1 }} />
+          <Button size="sm" variant="ghost">Save for later</Button>
+          <Button size="sm" disabled={!note.trim()}>Mark complete</Button>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: 'var(--width-read)', marginTop: 26, display: 'flex', alignItems: 'center', gap: 14 }}>
+        <Button variant="ghost" size="sm" iconLeft={<window.Ico n="arrow-left" style={{ width: 16, height: 16 }} />}>Same time, same chair</Button>
+        <span style={{ flex: 1 }} />
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 'var(--text-meta)', color: 'var(--color-text-subtle)' }}>Up next, 5 min</div>
+          <div style={{ fontSize: '0.98rem', fontWeight: 600 }}>Tell one person</div>
+        </div>
+        <Button size="sm" iconRight={<window.Ico n="arrow-right" style={{ width: 16, height: 16 }} />}>Go</Button>
+      </div>
+    </window.Screen>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page />);
+</script>
+</body>
+</html>

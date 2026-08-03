@@ -1,0 +1,145 @@
+<!-- @dsCard group="Screens · Marketing" viewport="1280x820" name="Marketing — Why we exist" subtitle="The manifesto page. Grain on cream, rule-amber between beats, portrait row with lift-1, the arc-top close, beta oath" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Why we exist</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="reveal.js"></script>
+<style>
+  html, body { margin: 0; }
+  body { background: var(--color-marketing-canvas); font-family: var(--font-sans); color: var(--color-text); }
+  a { color: var(--color-primary-strong); }
+  a:hover { color: var(--color-primary); }
+  @media (max-width: 900px) { .ab-2up, .ab-3up { grid-template-columns: 1fr !important; } }
+</style>
+<style>html{background:var(--color-marketing-canvas);min-height:100vh}body{background:var(--color-marketing-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="icon.jsx"></script>
+<script type="text/babel" src="header.jsx"></script>
+<script type="text/babel" src="footer.jsx"></script>
+<script type="text/babel" src="sections.jsx"></script>
+<script type="text/babel" data-presets="react">
+const NSA = window.DAWNFrequencyDesignSystem_c868e3;
+const I = ({ n, s = 18 }) => <window.MkIco n={n} style={{ width: s, height: s }} />;
+
+const VOWS = [
+  ['No infinite feed', 'The home screen ends. When you reach the bottom it says so and suggests you close the app.'],
+  ['No engagement metrics', 'We do not measure time in app, and no team here is paid on it. We count people who showed up.'],
+  ['No selling you', 'Your data is not a product. Export everything, delete everything, without asking.'],
+  ['No dark patterns', 'Cancelling takes one screen. The quieter option is always the default.'],
+];
+
+function Page() {
+  const { Button } = NSA;
+  const { MkEdHead: H } = window;
+  return (
+    <>
+      <window.PageHero
+        image="../../assets/images/closing-circle.jpg"
+        alt="A wide circle of people with their arms around each other above the beach"
+        eyebrow="Why we exist"
+        title="A hundred contacts"
+        script="and nobody to call"
+        lead="We built the most connected generation in history and it is the loneliest one on record. Not because people stopped wanting each other — because the places we used to meet in closed."
+        primary="Join the Beta"
+        secondary="Read the oath"
+        facts={[['1 in 4', 'Adults with no close friend'], ['61%', 'Under 30 feeling alone'], ['1', 'County we are starting in']]} />
+
+      {/* Three beats of argument, separated by the warm hairline rather than cards.
+          Prose deserves a rule, not a box. */}
+      <section className="mk-cont mk-cream" style={{ background: 'var(--color-marketing-canvas)' }}>
+        <div style={{ maxWidth: 'var(--width-read)', margin: '0 auto' }}>
+          {[
+            ['The third place closed', 'The diner, the union hall, the church basement, the bowling league. They were not special. They were just open, cheap, and predictable — and that turns out to be the entire recipe.'],
+            ['Software ate the invitation', 'An event with four hundred "interested" and eleven attendees is not a community. Reach is not the same as arrival, and every product built for the first number quietly gave up on the second.'],
+            ['So we count arrivals', 'Frequency has one number that matters: did you show up. Everything in the product is downstream of making that easier — a fixed day, a small group, a room with the lights on.'],
+          ].map(([t, d], i) => (
+            <div key={t} className="reveal">
+              {i ? <hr className="rule-amber" style={{ margin: '2.4rem 0' }} /> : null}
+              <h2 className="font-display" style={{ margin: 0, fontSize: 'clamp(1.8rem, 3.4vw, 2.6rem)', lineHeight: 1.05 }}>{t}</h2>
+              <p style={{ margin: '0.8rem 0 0', fontSize: '1.12rem', lineHeight: 1.75, color: 'var(--color-text-muted)' }}>{d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <window.PhotoBeat
+        image="../../assets/images/parachute.jpg"
+        alt="Adults holding the edges of a parachute on a lawn above the sea"
+        eyebrow="What it looks like when it works"
+        line="Grown adults, a parachute"
+        script="on a Tuesday morning"
+        note="Nothing about this is efficient. Nobody is networking. It is thirty people who agreed on a time and kept it, which turns out to be the whole recipe." />
+
+      {/* The vows, on ink. Each one is a thing we will not build, which is a stronger
+          claim than a feature list and cheaper to keep. */}
+      <section className="bg-slat spot mk-band mk-ink" style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', zIndex: 3, maxWidth: 'var(--width-wide)', margin: '0 auto' }}>
+          <H tone="ink" eyebrow="Four things we will not build" title="The refusals" script="are the product" />
+          <div className="ab-2up stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginTop: 'var(--space-10)' }}>
+            {VOWS.map(([t, d]) => (
+              <article key={t} className="reveal sheen edge-light" style={{ borderRadius: 'var(--radius-2xl)', padding: '1.5rem 1.4rem',
+                background: 'color-mix(in srgb, var(--color-on-ink) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--color-on-ink) 12%, transparent)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ width: 30, height: 30, display: 'grid', placeItems: 'center', borderRadius: '50%',
+                    background: 'color-mix(in srgb, var(--color-primary) 20%, transparent)', color: 'var(--color-primary)' }}><I n="x" s={15} /></span>
+                  <h3 style={{ margin: 0, fontSize: '1.08rem', color: 'var(--color-on-ink)' }}>{t}</h3>
+                </div>
+                <p style={{ margin: '0.6rem 0 0', fontSize: '0.95rem', lineHeight: 1.65, color: 'var(--color-on-ink-muted)' }}>{d}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Cream rises back out of the ink on the arc — the same shoulder the operator
+          page uses, so the two read as one site. */}
+      <section className="arc-top dot-grid mk-beat mk-arc mk-cream" style={{ position: 'relative', marginTop: -1, background: 'var(--color-surface)' }}>
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 'var(--width-wide)', margin: '0 auto' }}>
+          <H eyebrow="North County San Diego" title="Starting in one place" script="on purpose" blurb="A community product that launches everywhere launches nowhere. We are taking root in one county, in rooms we can walk into, and we will not pretend the map is full." />
+          <window.PhotoTrio items={[
+            ['../../assets/images/circle-morning-card.jpg', 'The Circles', 'Twenty-odd groups meeting weekly, most founded by somebody who had never hosted anything before.'],
+            ['../../assets/images/lawn-practice-card.jpg', 'The practice', 'Thirty mats on a public lawn at sunrise. No studio, no membership, no barrier but the hour.'],
+            ['../../assets/images/service-day-card.jpg', 'The service days', 'The part nobody photographs: sitting on rugs packing bags for people who will never know your name.'],
+          ]} />
+        </div>
+      </section>
+
+      {/* The season, told as three plain asks. A manifesto that never says what it
+          wants from you is just a mood. */}
+      <section className="grain mk-cont-soft mk-cream" style={{ position: 'relative', background: 'var(--color-marketing-canvas)' }}>
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 'var(--width-wide)', margin: '0 auto' }}>
+          <H eyebrow="What a season asks" title="Three things" script="and none of them is your attention" />
+          <div className="ab-3up stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18, marginTop: 'var(--space-10)' }}>
+            {[['Pick a day', 'One hour a week you will defend. Not a goal, a slot on the calendar.'],
+              ['Turn up twice', 'The second time is the whole thing. Anyone can go once.'],
+              ['Bring one person', 'Not to grow us. Because a room you brought somebody to is a room you belong in.']].map(([t, d], i) => (
+              <article key={t} className="reveal lift-2" style={{ background: 'var(--color-surface)', borderRadius: 'var(--radius-2xl)', padding: '1.7rem 1.5rem', border: '1px solid var(--color-border)' }}>
+                <span className="font-display" style={{ fontSize: '2.2rem', lineHeight: 1, color: 'var(--color-primary-strong)' }}>{'0' + (i + 1)}</span>
+                <h3 style={{ margin: '0.6rem 0 0', fontSize: '1.2rem', letterSpacing: 'var(--tracking-tight)' }}>{t}</h3>
+                <p style={{ margin: '0.4rem 0 0', fontSize: '0.98rem', lineHeight: 1.7, color: 'var(--color-text-muted)' }}>{d}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <window.BetaCTA />
+    </>
+  );
+}
+
+function Mount() { return (<><window.MarketingHeader onNav={() => {}} /><Page /><window.MarketingFooter onNav={() => {}} /></>); }
+ReactDOM.createRoot(document.getElementById('root')).render(<Mount />);
+</script>
+</body>
+</html>

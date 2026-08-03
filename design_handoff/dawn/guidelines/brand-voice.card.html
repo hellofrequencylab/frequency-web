@@ -1,0 +1,69 @@
+<!-- @dsCard group="Brand & voice" viewport="1180x682" name="Voice · the law" subtitle="A camp counselor you actually respect. Proper nouns carry the magic, sentences stay plain. Every word in a design passes the skeptic test." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body{margin:0;padding:26px;background:var(--color-canvas);font-family:var(--font-sans);color:var(--color-text)}
+  h2{font-size:var(--text-meta);text-transform:uppercase;letter-spacing:.16em;color:var(--color-text-subtle);margin:0 0 12px;font-weight:800}
+  .pairs{display:grid;gap:12px}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .cell{border-radius:var(--radius-card);padding:12px 14px;font-size:.95rem;line-height:1.5}
+  .yes{background:var(--color-signal-bg);color:var(--color-text)}
+  .no{background:var(--color-danger-bg);color:var(--color-text)}
+  .tag{display:block;font-size:var(--text-3xs);font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px}
+  .yes .tag{color:var(--color-signal-strong)}
+  .no .tag{color:var(--color-danger)}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:26px}
+  ul{margin:0;padding-left:1.1rem;font-size:.92rem;line-height:1.7;color:var(--color-text-muted)}
+  li b{color:var(--color-text)}
+  .banned{display:flex;flex-wrap:wrap;gap:6px}
+  .b{font-size:var(--text-meta);padding:3px 9px;border-radius:var(--radius-pill);background:var(--color-surface-elevated);border:1px solid var(--color-border);color:var(--color-text-muted);text-decoration:line-through}
+  .rule{margin-top:24px;padding:14px 16px;border-radius:var(--radius-card);background:var(--color-ink);color:var(--color-on-ink);font-size:1.05rem;line-height:1.55}
+  .rule b{color:var(--color-primary)}
+</style>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+  <h2>The two cardinal rules, in practice</h2>
+  <div class="pairs">
+    <div class="pair">
+      <div class="cell yes"><span class="tag">Write this</span>You earned 40 Zaps this week.</div>
+      <div class="cell no"><span class="tag">Never this</span>Feel the current of your Circle's energy.</div>
+    </div>
+    <div class="pair">
+      <div class="cell yes"><span class="tag">Write this</span>Day 3. You showed up again. That's the whole thing.</div>
+      <div class="cell no"><span class="tag">Never this</span>Feel the stillness wash over you as you drop into presence.</div>
+    </div>
+    <div class="pair">
+      <div class="cell yes"><span class="tag">Write this</span>Your Circle meets tonight at 7. Bring nothing.</div>
+      <div class="cell no"><span class="tag">Never this</span>Don't lose your streak! Your Circle misses you!!</div>
+    </div>
+  </div>
+  <div class="cols">
+    <div>
+      <h2>Mechanics</h2>
+      <ul>
+        <li><b>Sentence case</b> for every headline and button.</li>
+        <li><b>No em dashes.</b> Periods, commas, parentheses, or rewrite.</li>
+        <li>Contractions always. One exclamation point per screen, usually zero.</li>
+        <li>Emoji: rare, single, game UI and social only. Never on a practice page.</li>
+        <li><b>Never narrate the reader's feelings.</b> The number one cause of cringe.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Banned on any surface</h2>
+      <div class="banned">
+        <span class="b">tap into</span><span class="b">drop into</span><span class="b">hold space</span>
+        <span class="b">lean into</span><span class="b">activate your</span><span class="b">somatic</span>
+        <span class="b">energetic</span><span class="b">sacred</span><span class="b">nervous system regulation</span>
+        <span class="b">unlock</span><span class="b">level up your life</span><span class="b">transform</span>
+        <span class="b">tribe</span><span class="b">optimize</span><span class="b">limited time</span>
+      </div>
+      <p style="font-size:.9rem;color:var(--color-text-muted);line-height:1.6;margin:12px 0 0">Jargon is permitted deep inside a practice page or an article. Never on a card, headline, notification, caption, or meta description.</p>
+    </div>
+  </div>
+  <p class="rule"><b>The skeptic test.</b> Read it aloud to someone who would say "that's not really my thing." If it does not still sound like it could be for them, rewrite it.</p>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!-- @dsCard group="Foundations · Color" viewport="1180x520" name="Ink · the dark band" subtitle="Deep warm near-black from Frequency's wood-slat interiors. The cinematic beat — one or two per page, never more." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DAWN · Ink · the dark band</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="card.css">
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-head">
+    <span class="eyebrow">Foundations · Color</span>
+    <h1>Ink · the dark band</h1>    <p>Ink is the load-bearing half of the site’s contrast. It comes from the reference spaces: black wood slats lit by amber. Near-neutral warm, <em>not</em> brown. A page gets one or two ink bands — a third makes the light sections read as gaps rather than air.</p>
+    <hr class="rule-amber">
+  </div>
+  <h2>The band</h2>
+  <div class="g g4">
+    <div class="sw"><div class="chip" style="background:var(--color-ink)"></div><div class="lab"><div class="tok">--color-ink</div><div class="hex">#141210</div><div class="use">The band itself.</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-ink-elevated)"></div><div class="lab"><div class="tok">--color-ink-elevated</div><div class="hex">#211D17</div><div class="use">A raised panel on the band.</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-ink-border)"></div><div class="lab"><div class="tok">--color-ink-border</div><div class="hex">#393227</div><div class="use">Hairlines inside the band.</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-on-ink)"></div><div class="lab"><div class="tok">--color-on-ink</div><div class="hex">#F3EEE3</div><div class="use">Type on ink. Warm cream, never pure white.</div></div></div>
+  </div>
+  <h2>Type on the band</h2>
+  <div class="panel ink bg-slat scanlines" style="position:relative;padding:1.5rem 1.6rem">
+    <div style="position:relative;z-index:3">
+      <div style="font-family:var(--font-display);font-size:2rem;text-transform:uppercase;color:var(--color-on-ink);line-height:1">Friendship is a schedule</div>
+      <p style="margin:0.5rem 0 0;font-size:0.95rem;color:var(--color-on-ink-muted)">on-ink-muted · #B5A893 — the reading step on a dark band.</p>
+      <p style="margin:0.2rem 0 0;font-size:0.8rem;color:var(--color-on-ink-subtle)">on-ink-subtle · #857A66 — the footnote step.</p>
+    </div>
+    <div class="light-strip" style="position:absolute;left:0;right:0;bottom:0"></div>
+  </div>
+  <div class="laws">
+    <p><b>Warm, not brown.</b> Ink is near-neutral. If it reads as chocolate, it is wrong.</p>
+    <p><b>Never pure white on it.</b> <code>on-ink</code> is a warm cream. #FFFFFF on ink glares.</p>
+    <p><b>One or two bands per page.</b> The dark beat works because it is rare.</p>
+    <p><b>Seam every transition.</b> Where ink meets cream, the <code>.light-strip</code> carries the joint.</p>
+  </div>
+</div>
+</body>
+</html>

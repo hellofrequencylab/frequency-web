@@ -1,0 +1,47 @@
+<!-- @dsCard group="Foundations · Space & feel" viewport="1180x432" name="Motion inventory" subtitle="Every animation in the system, live. cue-pop is the base beat; the rest are signatures. All of it stops under prefers-reduced-motion." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+  body{margin:0;padding:22px;background:var(--color-surface);font-family:var(--font-sans);color:var(--color-text)}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .cell{border:1px solid var(--color-border);border-radius:var(--radius-card);padding:14px;background:var(--color-surface-elevated);text-align:center}
+  .stage{height:74px;display:grid;place-items:center;position:relative;overflow:hidden}
+  .nm{font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--color-text-muted)}
+  .use{font-size:var(--text-2xs);color:var(--color-text-subtle);margin-top:2px}
+  .pop{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-control);box-shadow:var(--shadow-md);padding:8px 12px;font-size:var(--text-body-sm);font-weight:700}
+  .halo{width:52px;height:52px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--color-primary) 62%,transparent),transparent 70%)}
+  .beta{background:var(--color-primary-bg);color:var(--color-primary-strong);border-radius:var(--radius-pill);padding:4px 12px;font-weight:800;font-size:var(--text-meta);text-transform:uppercase;letter-spacing:.08em}
+  .cue{color:var(--color-text-subtle)}
+  .strip{width:100%;height:2px}
+  .note{margin:16px 0 0;font-size:var(--text-body-sm);color:var(--color-text-muted);line-height:1.6;max-width:52rem}
+  .replay{margin-top:14px;background:var(--color-primary);color:var(--color-text-on-primary);border:none;border-radius:var(--radius-control);padding:7px 14px;font-family:inherit;font-weight:800;font-size:var(--text-body-sm);cursor:pointer}
+</style>
+<style>html{background:var(--color-surface);min-height:100vh}body{background:var(--color-surface);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+  <div class="grid" id="g">
+    <div class="cell"><div class="stage"><span class="pop animate-cue-pop">Nice. Day 3.</span></div><div class="nm">cue-pop · 260ms</div><div class="use">the base beat: coachmarks, toasts</div></div>
+    <div class="cell"><div class="stage"><span class="halo animate-glow"></span></div><div class="nm">freq-glow · 6s</div><div class="use">Signature amber bloom, breath cadence</div></div>
+    <div class="cell"><div class="stage"><span class="beta animate-wiggle">Beta</span></div><div class="nm">wiggle · 4.5s</div><div class="use">still, then a quick shake</div></div>
+    <div class="cell"><div class="stage"><i data-lucide="chevron-down" class="cue animate-cue" style="width:26px;height:26px"></i></div><div class="nm">cue-bounce · 2.4s</div><div class="use">hero scroll cue</div></div>
+    <div class="cell"><div class="stage"><span class="pop reveal is-revealed">Section beat</span></div><div class="nm">reveal · 700ms</div><div class="use">marketing scroll reveal, staggered</div></div>
+    <div class="cell"><div class="stage"><span class="light-strip strip"></span></div><div class="nm">light-strip</div><div class="use">the seam at every dark to light edge</div></div>
+    <div class="cell"><div class="stage" style="background:var(--color-ink)"><span class="animate-warmup" style="position:absolute;inset:0;background:var(--color-primary)"></span><span style="color:var(--color-on-ink);font-weight:800">3</span></div><div class="nm">warmup-flash · 0.7s</div><div class="use">Mindless count-in wash</div></div>
+    <div class="cell"><div class="stage"><span class="pop press" style="cursor:pointer">Press me</span></div><div class="nm">.press · 130ms</div><div class="use">the only hover transform allowed</div></div>
+  </div>
+  <button class="replay" id="r">Replay the one-shots</button>
+  <p class="note">Calm motion is a principle, not a preference: nothing longer than 700ms, nothing that moves without a reason, and no ad-hoc hover lifts. Reduced motion kills every animation on this card, including the looping ones.</p>
+  <script>
+    lucide.createIcons();
+    document.getElementById('r').addEventListener('click', function () {
+      document.querySelectorAll('.animate-cue-pop, .animate-warmup, .reveal').forEach(function (el) {
+        const c = el.className; el.className = ''; void el.offsetWidth; el.className = c;
+      });
+    });
+  </script>
+</body>
+</html>

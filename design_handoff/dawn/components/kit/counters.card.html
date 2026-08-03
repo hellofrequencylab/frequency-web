@@ -1,0 +1,111 @@
+<!-- @dsCard group="Components" viewport="1180x836" name="Counters & streaks" subtitle="Every number a member sees. Mono, tabular, small on purpose: three shapes, four sizes, and a streak that never shames anyone." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body{margin:0;padding:22px 24px;background:var(--color-canvas);font-family:var(--font-sans);color:var(--color-text)}
+  .lab{font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--color-text-subtle);margin:0 0 10px}
+  .block+.block{margin-top:22px;padding-top:20px;border-top:1px solid var(--color-border)}
+  .row{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-card);padding:0.9rem 1rem}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .note{font-size:var(--text-meta);color:var(--color-text-muted);line-height:1.6;margin:10px 0 0;max-width:52rem}
+</style>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const K = window.DAWNFrequencyDesignSystem_c868e3;
+const { Counter, CounterRow, StreakMeter, RankBadge, StatCard } = K;
+
+function Demo() {
+  React.useEffect(() => { const id = setTimeout(() => window.lucide && window.lucide.createIcons(), 40); return () => clearTimeout(id); });
+  return (
+    <div>
+      <div className="block">
+        <p className="lab">shape="inline" · a run of numbers, sizes xs to lg</p>
+        <div className="row">
+          <Counter kind="zaps" value="2,095" size="xs" />
+          <Counter kind="zaps" value="2,095" size="sm" />
+          <Counter kind="zaps" value="2,095" size="md" />
+          <Counter kind="zaps" value="2,095" size="lg" />
+        </div>
+        <p className="note">Chrome uses xs and sm. md is a card, lg is a season recap. A streak has never needed a 2rem numeral.</p>
+      </div>
+
+      <div className="block">
+        <p className="lab">shape="chip" · standalone in chrome, tone comes from the kind</p>
+        <div className="row">
+          <Counter kind="streak" value="50" shape="chip" size="xs" />
+          <Counter kind="zaps" value="2,095" shape="chip" size="sm" />
+          <Counter kind="gems" value="169" shape="chip" size="sm" />
+          <Counter kind="airtime" value="41h" shape="chip" size="sm" />
+          <Counter kind="trophies" value="3" shape="chip" size="sm" />
+          <Counter kind="gems" value="0" shape="chip" size="sm" muted caption="none yet" />
+        </div>
+        <p className="note">Zaps and streaks are amber, Gems and trophies teal, Airtime and movement the Move blue. A zero is muted, never red.</p>
+      </div>
+
+      <div className="block">
+        <p className="lab">shape="tile" · the stat triad. Max four, and on a member page those four are the game counts</p>
+        <div className="two">
+          <div className="card">
+            <CounterRow size="md" items={[
+              { kind: 'zaps', value: '2,095', caption: 'Zaps' },
+              { kind: 'gems', value: '169', caption: 'Gems' },
+              { kind: 'streak', value: '50', caption: 'Streak' },
+            ]} />
+          </div>
+          <div className="card">
+            <CounterRow size="md" items={[
+              { kind: 'practices', value: '8', caption: 'Logged' },
+              { kind: 'checkins', value: '4', caption: 'Check-ins' },
+              { kind: 'invites', value: '2', caption: 'Invited' },
+            ]} />
+          </div>
+        </div>
+      </div>
+
+      <div className="block">
+        <p className="lab">StreakMeter · the same streak in four honest states</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="card"><StreakMeter days={50} freezes={2} hint="Never miss twice" best={64}
+            week={['logged','logged','frozen','logged','logged','logged','today']} /></div>
+          <div className="card"><StreakMeter days={3} hint="Day 3. You showed up again." week={['missed','missed','missed','missed','logged','logged','today']} /></div>
+          <div className="card"><StreakMeter days={0} hint="A miss is information, not a verdict." week={['logged','logged','missed','missed','missed','missed','today']} /></div>
+          <div className="card"><StreakMeter size="lg" days={128} freezes={4} best={128} hint="Season best, and it is still going."
+            week={['logged','logged','logged','logged','logged','frozen','today']} /></div>
+        </div>
+        <p className="note">A missed day is a hollow dot. Never red, never an alarm glyph, never a countdown to losing something. Freezes read teal because they are a kindness, not a warning.</p>
+      </div>
+
+      <div className="block">
+        <p className="lab">The line that separates the two registers</p>
+        <div className="two">
+          <div className="card">
+            <p className="lab" style={{ margin: '0 0 8px' }}>member · Counter</p>
+            <CounterRow size="md" items={[
+              { kind: 'zaps', value: '2,095', caption: 'Zaps' },
+              { kind: 'gems', value: '169', caption: 'Gems' },
+            ]} />
+            <div style={{ marginTop: 10 }}><RankBadge rank="adept" showStep /></div>
+          </div>
+          <StatCard label="Weekly active members" value="212" delta="+8%" direction="up" spark={[8,12,9,15,14,18,22]} hint="Operator register only" />
+        </div>
+        <p className="note">Counters are facts a member collects. StatCards are an operator's instrument: they carry deltas, trends and sparklines, and they never appear on a primary member page.</p>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!-- @dsCard group="Teasers" viewport="1180x996" name="Teaser · No Lead Left Behind (light)" subtitle="Light-canvas version. Warm cream, Anton headers. Feed (1080×1800) + phone story (1080×1920)." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency, No Lead Left Behind (light)</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="infographics-light.css">
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <p class="eyebrow">Feature teaser · 04 · light</p>
+    <h1>No Lead Left Behind, light</h1>
+    <p>Light-canvas version, for placements on the warm cream surface. Anton headers, same accent and payoff.</p>
+  </div>
+  <div class="row">
+    <div class="fmt"><div class="fmtlabel">Feed / web · 1080 × 1800</div><div class="scale-feed"><div class="card feed" id="feed"></div></div></div>
+    <div class="fmt"><div class="fmtlabel">Phone story · 1080 × 1920</div><div class="scale-story"><div class="card story" id="story"></div></div></div>
+  </div>
+</div>
+<script>
+window.DATA = {
+  accent:'var(--flow-amber)', ramp:['#3a2b2f','#4a2f2a','#5a3a24'],
+  eyebrow:'No lead left behind',
+  headline:`The room's full. <span class="g">None of them walk out strangers.</span>`,
+  intro:`One QR on the table turns a roomful of hellos into a list you can actually work.`,
+  steps:[
+    {n:'n1', g:'qr', lbl:'Your QR on the table', sub:'every scan logged',
+     desc:'Drop a QR by the coffee. Every scan is logged. No clipboard, no paper cards.'},
+    {n:'n2', g:'phonecheck', lbl:'They scan and RSVP', sub:'one tap, no clipboard',
+     desc:'Guests RSVP in one tap, from their own phone.'},
+    {n:'n3', g:'checklist', lbl:'A few questions', sub:'your Questionnaire',
+     desc:'A short Questionnaire captures who they are and what they came for.'},
+    {lit:true, g:'rows', lbl:'Roster you can export', sub:'a list you can work',
+     desc:'Answers land in a Roster you can filter and export. A list, not a shoebox of cards.'},
+  ],
+  stat:`<b>80%</b> of event leads are never followed up. Yours are already on the list.`,
+  cta:'List your event and capture every lead, free',
+};
+</script>
+<script src="infographics.js"></script>
+</body>
+</html>

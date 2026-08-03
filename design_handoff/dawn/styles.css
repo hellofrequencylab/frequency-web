@@ -1,0 +1,20 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DAWN — Frequency's design system.
+   "Community Collective." Warm editorial community.
+
+   This is the single global-CSS entry point. Consumers link THIS file. It is a
+   list of @import lines only — every token, font, and brand motif lives in a
+   file reached from here. Raw hex appears only in tokens/colors.css; everything
+   else uses the semantic custom properties.
+
+   @import order matters: fonts first (CSS requires @import before rules and the
+   font @import pulls a remote sheet), then colors, then the rest.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@import url("tokens/fonts.css");
+@import url("tokens/colors.css");
+@import url("tokens/skins.css");
+@import url("tokens/typography.css");
+@import url("tokens/spacing.css");
+@import url("tokens/effects.css");
+@import url("tokens/utilities.css");

@@ -1,0 +1,46 @@
+<!-- @dsCard group="Teasers" viewport="1180x996" name="Teaser · Be the First Responder (light)" subtitle="Light-canvas version. Warm cream, Anton headers. Feed (1080×1800) + phone story (1080×1920)." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency, Be the First Responder (light)</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="infographics-light.css">
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <p class="eyebrow">Feature teaser · 05 · light</p>
+    <h1>Be the First Responder, light</h1>
+    <p>Light-canvas version, for placements on the warm cream surface. Anton headers, same accent and payoff.</p>
+  </div>
+  <div class="row">
+    <div class="fmt"><div class="fmtlabel">Feed / web · 1080 × 1800</div><div class="scale-feed"><div class="card feed" id="feed"></div></div></div>
+    <div class="fmt"><div class="fmtlabel">Phone story · 1080 × 1920</div><div class="scale-story"><div class="card story" id="story"></div></div></div>
+  </div>
+</div>
+<script>
+window.DATA = {
+  accent:'var(--flow-coral)', ramp:['#3a2b2f','#4a2f2a','#5a3a24'],
+  eyebrow:'Be the first responder',
+  headline:`78% of buyers pick <span class="g">whoever replies first.</span>`,
+  intro:`List a Service on the Market and an enquiry opens a real conversation the instant it is sent.`,
+  steps:[
+    {n:'n1', g:'tag', lbl:'They browse the Market', sub:'your Service, contact-only',
+     desc:'Your Service sits in the Market, contact-only, with no checkout in the way.'},
+    {n:'n2', g:'plane', lbl:'Send an enquiry', sub:'one button',
+     desc:'A buyer sends an enquiry with one button, seeded with their message.'},
+    {lit:true, g:'ping', lbl:'A DM opens instantly', sub:'you are pinged at once',
+     desc:'A direct message opens the instant they send, in-app and by email. No form into the void.'},
+    {n:'n3', g:'bubbles', lbl:'You reply and arrange', sub:'while it still matters',
+     desc:'Reply while it still matters and arrange the booking right inside the DM.'},
+  ],
+  stat:`Reply within 5 minutes and you are <b>21x</b> more likely to qualify. The average is <b>42 hours</b>.`,
+  cta:'List your Service on the Market, free',
+};
+</script>
+<script src="infographics.js"></script>
+</body>
+</html>

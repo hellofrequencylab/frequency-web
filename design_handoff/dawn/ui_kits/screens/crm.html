@@ -1,0 +1,150 @@
+<!-- @dsCard group="Screens · Operator" viewport="1600x950" name="Resonance CRM" subtitle="Operator register: StatCards with deltas and sparklines, a contact table with Trust Score, Vera next-best-action, and the fee-buydown nudge. Money stays dark." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Resonance CRM</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="screen.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  a { color: var(--color-primary-strong); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--color-primary); }html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="../app/topbar.jsx"></script>
+<script type="text/babel" src="../app/nav-rail.jsx"></script>
+<script type="text/babel" src="frame.jsx"></script>
+<script type="text/babel" src="../app/docks.jsx"></script>
+<script type="text/babel" data-presets="react">
+const K = window.DAWNFrequencyDesignSystem_c868e3;
+
+const { PageHeading, UnderlineTabs, SectionHeader, StatCard, RowCard, Button, Avatar, Badge, Card, Input, ProgressTrack, IconButton } = K;
+
+const PEOPLE = [
+  { n: 'Mira Vance', h: 'mira', stage: 'Booked', trust: 92, last: 'Checked in Thursday', next: 'Confirm Saturday', tone: 'success' },
+  { n: 'Leo Park', h: 'leopark', stage: 'Warm', trust: 74, last: 'Opened the dispatch twice', next: 'Invite to the Run', tone: 'primary' },
+  { n: 'Theo Brandt', h: 'theo', stage: 'New', trust: 41, last: 'Scanned the QR at the shop', next: 'Say hello, no pitch', tone: 'broadcast' },
+  { n: 'Ana Ruiz', h: 'ana', stage: 'Quiet', trust: 58, last: 'Nothing for 22 days', next: 'One plain check in', tone: 'warning' },
+  { n: 'Sana Idris', h: 'sana', stage: 'Regular', trust: 96, last: 'Hosts Thursdays', next: 'Ask her to co-host', tone: 'success' },
+];
+
+function Trust({ v }) {
+  const tone = v >= 85 ? 'success' : v >= 60 ? 'primary' : 'text-subtle';
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+      <span style={{ width: 34, height: 5, borderRadius: 'var(--radius-pill)', background: 'var(--color-surface-elevated)', overflow: 'hidden', display: 'inline-block' }}>
+        <span style={{ display: 'block', width: v + '%', height: '100%', background: `var(--color-${tone === 'text-subtle' ? 'border-strong' : tone})` }} />
+      </span>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-2xs)', color: 'var(--color-text-muted)' }}>{v}</span>
+    </span>
+  );
+}
+
+function Page() {
+  const [tab, setTab] = React.useState('people');
+  return (
+    <window.Screen active="admin-crm" wide collapseLeft
+      dock={<window.PageDock page="Resonance CRM" stats={[{ value: '1,204', label: 'Contacts', sub: '+38 this week' }, { value: '86', label: 'Needs a reply', sub: 'oldest 3 days' }, { value: '41%', label: 'Reply rate', sub: 'last 30 days' }, { value: '12', label: 'Dormant', sub: 'no visit in 60 days' }]}
+      settings={[{ label: 'Auto-tag new contacts', hint: 'By the door they came in through', on: true }, { label: 'Vera drafts replies', hint: 'Proposals only, never sent', on: true }, { label: 'Show dormant in the list', on: false }]}
+      note="Sending is live. SMS stays dark until the carrier clears." />}
+      rail={
+      <window.Rail>
+        <div>
+          <SectionHeader title="Vera says" />
+          <div style={{ background: 'var(--color-broadcast-bg)', borderRadius: 'var(--radius-card)', padding: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <Avatar name="Vera" size={26} />
+              <span style={{ fontSize: 'var(--text-meta)', fontWeight: 700, color: 'var(--color-broadcast-strong)' }}>Next best action</span>
+            </div>
+            <p style={{ margin: '0 0 12px', fontSize: '0.93rem', lineHeight: 1.6 }}>
+              Four people scanned at the shop and nobody has said hello. That is the whole gap this week.
+            </p>
+            <Button size="sm" variant="ghost" style={{ width: '100%' }}>Open the four</Button>
+          </div>
+        </div>
+        <div>
+          <SectionHeader title="This month on Business" />
+          <Card tone="feature" padding="1rem">
+            <ProgressTrack label="Fee buydown" hint="3% vs 5%" value={68} total={100} />
+            <p style={{ margin: '12px 0 0', fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
+              At this volume the flat rate is the cheaper of the two. Break even sits near 2,500 a month in sales.
+            </p>
+          </Card>
+        </div>
+        <div>
+          <SectionHeader title="Segments" count={6} action="New" />
+          <RowCard icon="users" title="Regulars" meta="41 people" trailing="+3" onClick={() => {}} />
+          <RowCard icon="footprints" title="Came once" meta="88 people" trailing="+12" onClick={() => {}} />
+          <RowCard icon="moon" title="Quiet 30 days" meta="26 people" trailing="-4" divider={false} onClick={() => {}} />
+        </div>
+      </window.Rail>
+    }>
+      <PageHeading eyebrow="Studio · Resonance CRM" title="The people, not the pipeline"
+        subtitle={<>Every row is somebody who <strong>showed up somewhere</strong>. <a href="#trust">Trust Score</a> is derived, never entered.</>}
+        actions={<><Button size="sm" variant="ghost" iconLeft={<window.Ico n="download" style={{ width: 16, height: 16 }} />}>Export</Button><Button size="sm" iconLeft={<window.Ico n="send" style={{ width: 16, height: 16 }} />}>New dispatch</Button></>} />
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginTop: 22 }}>
+        <StatCard label="Weekly active" value="212" delta="+8%" direction="up" spark={[8,12,9,15,14,18,22]} />
+        <StatCard label="Return rate" value="64" unit="%" delta="+3%" direction="up" hint="Came back the next week" />
+        <StatCard label="Reply time" value="4" unit="min" delta="-38%" direction="down" hint="Median first response" />
+        <StatCard label="Captured this week" value="37" delta="+11" direction="up" hint="QR, RSVP and check-in" />
+      </div>
+
+      <div style={{ marginTop: 26 }}>
+        <UnderlineTabs value={tab} onChange={setTab}
+          tabs={[{ id: 'people', label: 'People', count: 214 }, { id: 'matches', label: 'Matches', count: 9 }, { id: 'dispatches', label: 'Dispatches' }, { id: 'tasks', label: 'Tasks', count: 4 }]} />
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 16 }}>
+        <div style={{ flex: 1, maxWidth: 300 }}><Input placeholder="Search people" icon={<window.Ico n="search" style={{ width: 15, height: 15 }} />} /></div>
+        {['All', 'Regulars', 'Came once', 'Quiet'].map((f, i) => (
+          <span key={f} style={{ padding: '0.35rem 0.8rem', borderRadius: 'var(--radius-pill)', fontSize: 'var(--text-meta)', fontWeight: 600, cursor: 'pointer',
+            background: i === 0 ? 'var(--color-primary-bg)' : 'var(--color-surface)',
+            color: i === 0 ? 'var(--color-primary-strong)' : 'var(--color-text-muted)',
+            border: `1px solid ${i === 0 ? 'transparent' : 'var(--color-border)'}` }}>{f}</span>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 18, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.7fr 0.8fr 1.4fr 1.3fr 40px', gap: 12, padding: '0.7rem 1rem',
+          background: 'var(--color-surface-elevated)', borderBottom: '1px solid var(--color-border)' }}>
+          {['Person', 'Stage', 'Trust', 'Last signal', 'Next step', ''].map((h) => (
+            <span key={h} className="eyebrow" style={{ fontSize: 'var(--text-3xs)', color: 'var(--color-text-muted)' }}>{h}</span>
+          ))}
+        </div>
+        {PEOPLE.map((p, i) => (
+          <div key={p.h} style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.7fr 0.8fr 1.4fr 1.3fr 40px', gap: 12, padding: '0.7rem 1rem',
+            alignItems: 'center', borderBottom: i < PEOPLE.length - 1 ? '1px solid var(--color-border)' : 'none' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+              <Avatar name={p.n} size={30} />
+              <span style={{ minWidth: 0 }}>
+                <span style={{ display: 'block', fontSize: '0.93rem', fontWeight: 600, letterSpacing: 'var(--tracking-tight)' }}>{p.n}</span>
+                <span style={{ display: 'block', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>@{p.h}</span>
+              </span>
+            </span>
+            <span><Badge tone={p.tone === 'warning' ? 'warning' : p.tone === 'success' ? 'signal' : p.tone}>{p.stage}</Badge></span>
+            <Trust v={p.trust} />
+            <span style={{ fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>{p.last}</span>
+            <span style={{ fontSize: 'var(--text-meta)', color: 'var(--color-text)' }}>{p.next}</span>
+            <IconButton label="Message" size={32}><window.Ico n="message-square" style={{ width: 15, height: 15 }} /></IconButton>
+          </div>
+        ))}
+      </div>
+      <p style={{ margin: '14px 0 0', fontSize: 'var(--text-meta)', color: 'var(--color-text-subtle)' }}>
+        Showing 5 of 214. Enquiries open a DM instantly, seeded with the message. Nothing here ends at a checkout.
+      </p>
+    </window.Screen>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page />);
+</script>
+</body>
+</html>

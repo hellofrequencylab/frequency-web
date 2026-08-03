@@ -1,0 +1,71 @@
+<!-- @dsCard group="Screens · Marketing" viewport="1280x820" name="Marketing site — splash" subtitle="Full editorial landing page: hero, pillars, story beats, dark statement, proof, FAQ, beta CTA" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Community Collective</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="reveal.js"></script>
+<style>
+  html, body { margin: 0; }
+  body { background: var(--color-canvas); font-family: var(--font-sans); color: var(--color-text); }
+  .mk-nav span:not(:last-child) { display: inline-flex; }
+  @media (max-width: 760px) {
+    .mk-nav span { display: none !important; }
+    .mk-3up, .mk-zig, .mk-foot { grid-template-columns: 1fr !important; }
+    .mk-zig > div:first-child { order: 1 !important; }
+  }
+</style>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="icon.jsx"></script>
+<script type="text/babel" src="header.jsx"></script>
+<script type="text/babel" src="hero.jsx"></script>
+<script type="text/babel" src="sections.jsx"></script>
+<script type="text/babel" src="footer.jsx"></script>
+<script type="text/babel" src="beta.jsx"></script>
+<script type="text/babel" data-presets="react">
+function App() {
+  const [page, setPage] = React.useState('home');
+  const nav = (p) => { setPage(p === 'lab' || p === 'beta' ? p : 'home'); window.scrollTo(0, 0); };
+
+
+  if (page === 'beta') return <window.BetaOath onNav={nav} />;
+
+  return (
+    <div>
+      <window.MarketingHeader onNav={nav} />
+      <window.PhotoHero onNav={nav} />
+      <window.PillarGrid />
+      <window.ZigZag
+        img="../../assets/images/lab-thermal.jpg" alt="Thermal room at the Lab"
+        eyebrow="The Lab"
+        title={<>Community needs <span className="text-primary">a body</span></>}
+        body={<><p style={{margin:'0 0 1rem'}}>Heat then cold. Steam, cedar, low amber light. A settled nervous system you can only get in a room with other people.</p><p style={{margin:0}}>The first Lab has a sauna, a cold plunge, movement studios, and rooms built for gathering.</p></>}
+        cta="See the space" />
+      <window.MkStatement>The thing that <span style={{color:'var(--color-primary)'}}>replaces the feed</span>.</window.MkStatement>
+      <window.ZigZag reverse tone="canvas"
+        img="../../assets/images/community-1.jpg" alt="Outdoor gathering at golden hour"
+        eyebrow="The Community"
+        title={<>Missed when <span className="text-primary">you're gone</span></>}
+        body={<p style={{margin:0}}>Find your people by what you love. Join a Circle, a small standing local group that meets weekly, and become someone your neighbors count on.</p>}
+        cta="Find your people" />
+      <window.StatStrip />
+      <window.FaqList />
+      <window.BetaCTA onNav={nav} />
+      <window.MarketingFooter />
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

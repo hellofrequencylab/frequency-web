@@ -1,0 +1,340 @@
+<!-- @dsCard group="Screens · Member" viewport="1440x900" name="Message board" subtitle="A room, not a feed: who is here, a composer that starts closed, one pinned plan, then threads. Named reactions with counts, a reply spine, and the gated Hosts room shown as a GateNotice." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Message board</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="screen.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  a { color: var(--color-primary-strong); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--color-primary); }
+  html { background: var(--color-canvas); min-height: 100vh; }
+  body { background: var(--color-canvas); min-height: 100vh; box-sizing: border-box; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="../app/topbar.jsx"></script>
+<script type="text/babel" src="../app/nav-rail.jsx"></script>
+<script type="text/babel" src="frame.jsx"></script>
+<script type="text/babel" src="../app/docks.jsx"></script>
+<script type="text/babel" data-presets="react">
+const K = window.DAWNFrequencyDesignSystem_c868e3;
+const { PageHeading, UnderlineTabs, SectionHeader, RowCard, Button, Avatar, Badge, Card, Input, Textarea,
+        IconButton, Select, CounterRow, GateNotice, EmptyState } = K;
+const Ic = ({ n, s = 16, c }) => <window.Ico n={n} style={{ width: s, height: s, color: c }} />;
+
+// A board is a ROOM, not a feed. That single decision drives the whole layout:
+// you arrive knowing who is in here, what the room is for, and what plan is live —
+// then the threads. A feed would open on the newest post and tell you none of that.
+const ROOMS = [
+  { t: 'Introductions', n: 4, live: 2, here: 9 },
+  { t: 'Rides and carpools', n: 0, here: 3 },
+  { t: 'Gear talk', n: 2, here: 1 },
+  { t: 'What is everyone reading', n: 0 },
+];
+
+const HERE = ['Ada Reyes', 'Leo Park', 'Mira Vance', 'Sana Idris', 'Theo Brandt', 'Sam Ott', 'Nina Alvarez', 'Ben Roy', 'Ivy Chen'];
+
+// Reactions are NAMED and counted, drawn from the same Lucide set as the rest of the
+// product. Emoji would be a second icon language, and the one that ages fastest.
+const REACTS = [
+  { k: 'flame', n: 'Yes', c: 12, mine: true },
+  { k: 'heart', n: 'Love', c: 6 },
+  { k: 'hand', n: 'Me too', c: 4 },
+  { k: 'laugh', n: 'Ha', c: 3 },
+];
+
+const THREADS = [
+  { t: 'Anyone driving down from Carlsbad Thursday?', who: 'Leo Park', role: null, replies: 7, unread: true, last: '20m', tag: 'Rides',
+    plan: 'Thu · 6:20pm · Carlsbad Village',
+    body: 'I can take three people. Leaving Carlsbad Village around 6:20 and heading back after we clean up. Reply here rather than the DMs so nobody doubles up.',
+    thread: [
+      ['Sana Idris', 'Guide', '18m', 'Two seats claimed. Theo, you said you were coming — want the third?'],
+      ['Theo Brandt', null, '11m', 'Yes please. I will bring the oranges this time, since apparently that is my whole personality now.'],
+    ] },
+  { t: 'First time at a sound bath, what do I bring?', who: 'Theo Brandt', role: null, replies: 12, unread: true, last: '1h', tag: 'Introductions',
+    body: 'Never been to one. Do I need a mat, or is that provided? Also is it weird to come alone.',
+    thread: [
+      ['Mira Vance', 'Host', '52m', 'Mats are there. Come alone — most people do the first time, and you will leave with three phone numbers.'],
+    ] },
+  { t: 'The oranges thing — who started it', who: 'Mira Vance', role: 'Host', replies: 23, last: '3h', tag: 'Off topic',
+    body: 'Somebody brought a bag of oranges to the plunge in March and now there is a crate every week. I need to know who to thank.',
+    thread: [['Ada Reyes', null, '2h', 'It was Theo. He has never confirmed it and never denied it.']] },
+  { t: 'Cold plunge etiquette for newcomers', who: 'Sana Idris', role: 'Guide', replies: 9, last: 'Yesterday', tag: 'Gear talk',
+    body: 'Short version: shower first, two minutes is plenty, do not hold your breath, and let somebody know you are getting in.',
+    thread: [] },
+];
+
+// ── The composer. Starts CLOSED, as one line. A board that opens with a big empty
+// box asks everyone to perform; a prompt asks them to say something.
+function Composer() {
+  const [open, setOpen] = React.useState(false);
+  const [kind, setKind] = React.useState('A question');
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)}
+        style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '0.8rem 0.95rem', cursor: 'pointer',
+          textAlign: 'left', fontFamily: 'inherit', borderRadius: 'var(--radius-card)', background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-2xs)' }}>
+        <Avatar name="Daniel Tyack" size={32} />
+        <span style={{ flex: 1, minWidth: 0, fontSize: '0.95rem', color: 'var(--color-text-subtle)' }}>
+          Say something to the room. If it is a plan, put a time in it.
+        </span>
+        <span style={{ flexShrink: 0, color: 'var(--color-text-subtle)' }}><Ic n="pen-line" s={16} /></span>
+      </button>
+    );
+  }
+  return (
+    <div className="lift-1" style={{ padding: '0.95rem 1rem 0.9rem', borderRadius: 'var(--radius-card)', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+        <Avatar name="Daniel Tyack" size={30} />
+        <span style={{ flex: 1, minWidth: 0, fontSize: '0.9rem', fontWeight: 700 }}>New thread in Introductions</span>
+        <div style={{ width: '9.5rem' }}><Select value={kind} onChange={(e) => setKind(e.target.value)} options={['A question', 'A plan', 'Off topic']} /></div>
+      </div>
+      <Input placeholder="One line, so people know what they are opening" />
+      <div style={{ height: 8 }} />
+      <Textarea rows={3} placeholder={kind === 'A plan' ? 'Where, when, and how many people can come.' : 'The rest of it.'} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {['image', 'paperclip', 'calendar-plus', 'map-pin'].map((i) => (
+            <IconButton key={i} label={i} size={30}><Ic n={i} s={15} /></IconButton>
+          ))}
+        </div>
+        <span style={{ flex: 1, fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>
+          {kind === 'A plan' ? 'A plan with a time gets pinned to the top of the room.' : 'Thirty-four people will see this.'}
+        </span>
+        <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+        <Button size="sm" iconRight={<Ic n="send" s={15} />}>Post</Button>
+      </div>
+    </div>
+  );
+}
+
+// ── The reaction bar. Counts, one pressed state, and a name on hover — a row of
+// bare glyphs is a guessing game.
+function Reacts() {
+  const [mine, setMine] = React.useState(() => REACTS.map((r) => !!r.mine));
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+      {REACTS.map((r, i) => {
+        const on = mine[i];
+        return (
+          <button key={r.k} title={r.n} onClick={() => setMine((p) => p.map((v, j) => (j === i ? !v : v)))}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0.25rem 0.55rem', cursor: 'pointer', fontFamily: 'inherit',
+              borderRadius: 'var(--radius-pill)', background: on ? 'var(--color-primary-bg)' : 'transparent',
+              border: '1px solid ' + (on ? 'color-mix(in srgb, var(--color-primary) 40%, transparent)' : 'var(--color-border)'),
+              color: on ? 'var(--color-primary-strong)' : 'var(--color-text-muted)',
+              transition: 'background var(--motion-fast) ease, border-color var(--motion-fast) ease' }}>
+            <Ic n={r.k} s={13} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 'var(--text-2xs)' }}>{r.c + (on && !r.mine ? 1 : 0)}</span>
+          </button>
+        );
+      })}
+      <span style={{ marginLeft: 4, fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>Ada, Leo and 10 others</span>
+    </div>
+  );
+}
+
+// ── One thread row. Closed it is a ROW (group, don't box — hairlines and weight do
+// the work). Open it grows a spine, the replies, the reactions and a composer.
+function Thread({ th, on, onOpen }) {
+  const [hover, setHover] = React.useState(false);
+  return (
+    <article onClick={() => onOpen(th)} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ padding: on ? '1rem 0.95rem 1.1rem' : '0.8rem 0.95rem', margin: '0 -0.95rem', cursor: 'pointer',
+        borderRadius: on ? 'var(--radius-card)' : 'var(--radius-control)',
+        background: on ? 'var(--color-surface)' : hover ? 'var(--color-surface-elevated)' : 'transparent',
+        border: '1px solid ' + (on ? 'var(--color-border)' : 'transparent'),
+        boxShadow: on ? 'var(--shadow-sm)' : 'none',
+        transition: 'background var(--motion-fast) ease' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <Avatar name={th.who} size={34} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {th.unread && !on ? <span style={{ width: 7, height: 7, flexShrink: 0, borderRadius: '50%', background: 'var(--color-primary)' }} /> : null}
+            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: th.unread ? 700 : 600, letterSpacing: 'var(--tracking-tight)', textWrap: 'pretty' }}>{th.t}</h3>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 4, fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>
+            <span style={{ fontWeight: 600 }}>{th.who}</span>
+            {th.role ? <Badge tone="signal">{th.role}</Badge> : null}
+            <span aria-hidden="true">·</span>
+            <span>{th.tag}</span>
+            {th.plan ? (<>
+              <span aria-hidden="true">·</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--color-primary-strong)', fontWeight: 700 }}>
+                <Ic n="clock" s={12} />{th.plan}
+              </span>
+            </>) : null}
+          </div>
+        </div>
+        <div style={{ flexShrink: 0, textAlign: 'right' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-mono)', fontSize: 'var(--text-2xs)', color: 'var(--color-text-muted)' }}>
+            <Ic n="message-circle" s={13} />{th.replies}
+          </div>
+          <div style={{ marginTop: 2, fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>{th.last}</div>
+        </div>
+      </div>
+
+      {on ? (
+        <div style={{ marginTop: 12 }}>
+          <p style={{ margin: 0, paddingLeft: 46, fontSize: '0.98rem', lineHeight: 1.7, textWrap: 'pretty' }}>{th.body}</p>
+          <div style={{ paddingLeft: 46, marginTop: 12 }}><Reacts /></div>
+          <hr className="rule-amber" style={{ margin: '1rem 0 0.9rem' }} />
+          {th.thread.length ? (
+            <div style={{ paddingLeft: 46, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {th.thread.map(([who, role, when, body]) => (
+                <div key={who} style={{ display: 'flex', gap: 10, paddingLeft: 12, borderLeft: '2px solid var(--color-border)' }}>
+                  <Avatar name={who} size={26} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>{who}</span>
+                      {role ? <Badge tone="signal">{role}</Badge> : null}
+                      <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>{when}</span>
+                    </div>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.94rem', lineHeight: 1.65, color: 'var(--color-text-muted)', textWrap: 'pretty' }}>{body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p style={{ margin: '0 0 0 46px', fontSize: 'var(--text-meta)', color: 'var(--color-text-subtle)' }}>
+              No replies yet. Being first is the useful thing to be.
+            </p>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14, paddingLeft: 46 }}>
+            <Avatar name="Daniel Tyack" size={28} />
+            <div style={{ flex: 1, minWidth: 0 }}><Input placeholder="Reply to the room" /></div>
+            <IconButton label="Send" size={32} tone="primary" active><Ic n="send" s={15} /></IconButton>
+          </div>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function Page() {
+  const [tab, setTab] = React.useState('threads');
+  const [open, setOpen] = React.useState(THREADS[0]);
+  const [room, setRoom] = React.useState('Introductions');
+  const [sort, setSort] = React.useState('Newest reply');
+  const list = tab === 'unread' ? THREADS.filter((t) => t.unread) : tab === 'mine' ? [] : THREADS;
+  return (
+    <window.Screen active="messageBoards" rail={
+      <window.Rail>
+        <div>
+          <SectionHeader title="Rooms" count={5} action="New" />
+          {ROOMS.map((r, i) => {
+            const on = room === r.t;
+            return (
+              <RowCard key={r.t} icon="hash" title={r.t} accent={on ? 'primary' : undefined}
+                meta={r.live ? r.live + ' typing' : r.here ? r.here + ' here now' : undefined}
+                trailing={r.n ? <Badge tone="primary" solid>{r.n}</Badge> : undefined}
+                divider={i < ROOMS.length - 1} onClick={() => setRoom(r.t)} />
+            );
+          })}
+          {/* The locked room is a GATE, not a row with a padlock. Saying why beats
+              showing a symbol somebody has to interpret. */}
+          <div style={{ marginTop: 10 }}>
+            <GateNotice kind="role" title="Hosts only" body="This room opens when you host your first Circle." action="How hosting works" />
+          </div>
+        </div>
+
+        <div>
+          <SectionHeader title="Here now" count={9} />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {HERE.map((n) => <Avatar key={n} name={n} size={30} online />)}
+          </div>
+          <p style={{ margin: '0.7rem 0 0', fontSize: 'var(--text-2xs)', lineHeight: 1.55, color: 'var(--color-text-subtle)' }}>
+            Presence is per-room and never stored. Nobody can see when you were last online.
+          </p>
+        </div>
+
+        <div>
+          <SectionHeader title="Room rules" />
+          <Card tone="soft" padding="0.95rem">
+            <ol style={{ margin: 0, paddingLeft: '1.1rem', fontSize: 'var(--text-meta)', lineHeight: 1.75, color: 'var(--color-text-muted)' }}>
+              <li>Real names, real faces.</li>
+              <li>No selling. That is what the <a href="#market">Market</a> is for.</li>
+              <li>If it is a plan, put a time and a place in it.</li>
+            </ol>
+          </Card>
+        </div>
+      </window.Rail>
+    }>
+      <PageHeading eyebrow={'Message boards · ' + room} title={room}
+        subtitle={<><a href="#members"><strong>Thirty-four people</strong></a>, one room, mostly plans. Say hello and put a <strong>Thursday</strong> in it.</>}
+        actions={<Button size="sm" iconLeft={<Ic n="bell" s={15} />} variant="secondary">Following</Button>} />
+
+      {/* The room in three counts, so you can tell a live room from a dead one at a
+          glance. Every number is a thing that happened, never a time-on-page. */}
+      <div style={{ marginTop: 18 }}>
+        <CounterRow size="sm" shape="tile" items={[
+          { kind: 'members', value: 34, caption: 'In the room' },
+          { kind: 'posts', value: 12, caption: 'Threads this week' },
+          { kind: 'checkins', value: 5, caption: 'Plans with a time' },
+        ]} />
+      </div>
+
+      <hr className="rule-amber" style={{ margin: '1.4rem 0' }} />
+      <Composer />
+
+      {/* One pinned plan. This IS a distinct object — a thing with a time, that
+          expires — so it earns a card while the threads below stay rows. */}
+      <div className="lift-1" style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 18, padding: '0.9rem 1rem',
+        borderRadius: 'var(--radius-card)', background: 'var(--color-primary-bg)',
+        border: '1px solid color-mix(in srgb, var(--color-primary) 32%, transparent)' }}>
+        <span style={{ width: 38, height: 38, flexShrink: 0, display: 'grid', placeItems: 'center', borderRadius: 'var(--radius-control)',
+          background: 'var(--color-primary)', color: 'var(--color-text-on-primary)' }}><Ic n="pin" s={17} /></span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p className="eyebrow" style={{ margin: 0, fontSize: 'var(--text-3xs)', color: 'var(--color-primary-strong)' }}>Pinned · expires Thursday</p>
+          <p style={{ margin: '2px 0 0', fontSize: '0.96rem', fontWeight: 700, letterSpacing: 'var(--tracking-tight)' }}>
+            Sound bath, Thursday 7pm at The Lab — <a href="#event">nine seats left</a>
+          </p>
+        </div>
+        <Button size="sm">I am in</Button>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, marginTop: 20 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <UnderlineTabs value={tab} onChange={setTab}
+            tabs={[{ id: 'threads', label: 'Threads', count: 34 }, { id: 'unread', label: 'Unread', count: 2 }, { id: 'mine', label: 'Yours' }]} />
+        </div>
+        <div style={{ width: '11rem', flexShrink: 0, paddingBottom: 6 }}>
+          <Select value={sort} onChange={(e) => setSort(e.target.value)} options={['Newest reply', 'Newest thread', 'Most replies', 'Plans first']} />
+        </div>
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        {list.length ? list.map((th, i) => (
+          <React.Fragment key={th.t}>
+            {i ? <hr style={{ margin: 0, height: 1, border: 0, background: 'var(--color-border)' }} /> : null}
+            <Thread th={th} on={open && open.t === th.t} onOpen={setOpen} />
+          </React.Fragment>
+        )) : (
+          <EmptyState icon="message-circle" title="You have not started anything here"
+            body="A room fills up when somebody asks a plain question. Yours does not have to be interesting."
+            action="Start a thread" />
+        )}
+      </div>
+
+      {list.length ? (
+        <p style={{ margin: '1.6rem 0 0', textAlign: 'center', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>
+          That is the whole room. Older threads are archived after ninety quiet days.
+        </p>
+      ) : null}
+    </window.Screen>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page />);
+</script>
+</body>
+</html>

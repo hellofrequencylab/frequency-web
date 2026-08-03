@@ -1,0 +1,450 @@
+<!-- @dsCard group="Patterns · Chrome" viewport="1180x1440" name="Creation wizard · modal or in-page" subtitle="One flow, two mounts: a modal over any page, or the same steps inline on a full page. Starts on describe-or-upload with a directions box and basic settings, then source, shape, schedule, review." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DAWN · creation wizard</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  html, body { margin: 0; min-height: 100%; height: 100%; background: var(--color-canvas); }
+  body { font-family: var(--font-sans); color: var(--color-text); box-sizing: border-box; }
+  /* The demo shell fills the frame, so the canvas runs edge to edge and the header band
+     is a real full-width band rather than a strip inside a padded page. */
+  #root { min-height: 100%; display: flex; flex-direction: column; background: var(--color-canvas); }
+  a { color: var(--color-primary-strong); }
+  a:hover { color: var(--color-primary); }
+  .wz-2up { display: grid; grid-template-columns: minmax(0, 1fr) 17rem; gap: 22px; }
+  .wz-3up { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  @media (max-width: 900px) { .wz-2up, .wz-3up { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="../app/icon.jsx"></script>
+<script type="text/babel" data-presets="react">
+const NS = window.DAWNFrequencyDesignSystem_c868e3;
+const I = ({ n, s = 18, c }) => <window.Ico n={n} style={{ width: s, height: s, color: c }} />;
+
+// ── The wizard ───────────────────────────────────────────────────────────────
+// One flow, two mounts. The steps, the state and the footer are identical whether
+// this is a modal over a page or a full page of its own; only the shell differs.
+// That is the whole point — a host who starts a Journey from the console and one
+// who starts it from a link should never learn two different flows.
+//
+// Step 1 is a fork, not a form: DESCRIBE it or UPLOAD an outline. Either way you
+// land in the same directions box, because the box is what the rest of the wizard
+// reads. Basic settings sit beside it so the obvious decisions are made once and
+// never asked again.
+
+const STEPS = [
+  { id: 'about', n: 'About', hint: 'What is this, in your words' },
+  { id: 'source', n: 'Material', hint: 'What we build it from' },
+  { id: 'shape', n: 'Shape', hint: 'How it is broken up' },
+  { id: 'schedule', n: 'Schedule', hint: 'When it runs' },
+  { id: 'review', n: 'Review', hint: 'Check, then publish' },
+];
+
+const KINDS = [
+  ['route', 'Journey', 'A multi-week path with lessons and practice logging.'],
+  ['users', 'Circle', 'A small standing group that meets on a rhythm.'],
+  ['calendar-days', 'Event', 'One date, or a recurring series.'],
+];
+
+// ── Small parts, shared by every step ────────────────────────────────────────
+function Field({ label, hint, children, htmlFor }) {
+  return (
+    <label htmlFor={htmlFor} style={{ display: 'block', marginBottom: '1.1rem' }}>
+      <span style={{ display: 'block', fontSize: '0.86rem', fontWeight: 700, letterSpacing: 'var(--tracking-tight)' }}>{label}</span>
+      {hint ? <span style={{ display: 'block', margin: '2px 0 7px', fontSize: 'var(--text-2xs)', lineHeight: 1.5, color: 'var(--color-text-subtle)' }}>{hint}</span> : <span style={{ display: 'block', height: 7 }} />}
+      {children}
+    </label>
+  );
+}
+
+// The fork at the top of step one. Two doors, never a dropdown: the choice changes
+// what the next step asks for, so it has to read as a decision.
+function Door({ icon, title, body, note, active, onClick }) {
+  return (
+    <button onClick={onClick} type="button"
+      style={{ display: 'block', width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
+        padding: '1.1rem 1.2rem', borderRadius: 'var(--radius-card)',
+        background: active ? 'var(--color-primary-bg)' : 'var(--color-surface)',
+        border: '1px solid ' + (active ? 'color-mix(in srgb, var(--color-primary) 45%, transparent)' : 'var(--color-border)'),
+        boxShadow: active ? 'var(--shadow-sm)' : 'var(--shadow-2xs)',
+        transition: 'background var(--motion-fast) ease, border-color var(--motion-fast) ease' }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ width: 32, height: 32, flexShrink: 0, display: 'grid', placeItems: 'center', borderRadius: 'var(--radius-control)',
+          background: active ? 'var(--color-primary)' : 'var(--color-surface-elevated)',
+          color: active ? 'var(--color-text-on-primary)' : 'var(--color-text-muted)' }}><I n={icon} s={16} /></span>
+        <span style={{ flex: 1, minWidth: 0, fontSize: '1rem', fontWeight: 700, letterSpacing: 'var(--tracking-tight)' }}>{title}</span>
+        {active ? <I n="check" s={16} c="var(--color-primary-strong)" /> : null}
+      </span>
+      <span style={{ display: 'block', margin: '0.55rem 0 0', fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--color-text-muted)' }}>{body}</span>
+      {note ? <span style={{ display: 'block', marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>{note}</span> : null}
+    </button>
+  );
+}
+
+// ── Step 1 · About ───────────────────────────────────────────────────────────
+function StepAbout({ v, set }) {
+  const { Input, Select, Switch, Textarea } = NS;
+  return (
+    <div>
+      <div className="wz-2up" style={{ marginBottom: '1.4rem' }}>
+        <Door icon="pen-line" title="Describe it" active={v.mode === 'describe'} onClick={() => set({ mode: 'describe' })}
+          body="Say what it is in a sentence or two and we build a first draft you can edit. Nothing is published from this." />
+        <Door icon="upload" title="Upload an outline" active={v.mode === 'upload'} onClick={() => set({ mode: 'upload' })}
+          body="Bring what you already wrote. We read the headings and turn them into steps." note="PDF · DOCX · MD · TXT · up to 25 MB" />
+      </div>
+
+      {/* The directions box. It is the same field on both doors, because everything
+          downstream reads from it — an upload without directions still needs to know
+          what you are trying to make. */}
+      <Field label="Directions" hint="Plain words. What is it, who is it for, and what should somebody be able to do by the end.">
+        <Textarea rows={5} value={v.directions} onChange={(e) => set({ directions: e.target.value })}
+          placeholder="A four-week reset for people who have never meditated. Ten minutes a day, one Circle meeting a week, and by the end they can sit for twenty minutes without a timer." />
+      </Field>
+
+      {v.mode === 'upload' ? (
+        <div style={{ marginBottom: '1.4rem' }}>
+          <Field label="Outline" hint="Drop the file, or choose it. Headings become steps; we never publish what we read.">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '1.4rem 1.3rem', borderRadius: 'var(--radius-card)',
+              background: 'var(--color-canvas)', border: '1.5px dashed var(--color-border-strong)' }}>
+              <span style={{ width: 40, height: 40, flexShrink: 0, display: 'grid', placeItems: 'center', borderRadius: 'var(--radius-control)',
+                background: 'var(--color-primary-bg)', color: 'var(--color-primary-strong)' }}><I n="file-up" s={19} /></span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>Drop your outline here</div>
+                <div style={{ marginTop: 2, fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>PDF, DOCX, Markdown or plain text · up to 25 MB</div>
+              </div>
+              <NS.Button size="sm" variant="secondary">Choose a file</NS.Button>
+            </div>
+          </Field>
+        </div>
+      ) : null}
+
+      <hr className="rule-amber" style={{ margin: '1.6rem 0' }} />
+      <p className="eyebrow" style={{ margin: '0 0 1rem', color: 'var(--color-text-subtle)' }}>Basic settings</p>
+      <div className="wz-3up">
+        <Field label="What are you making">
+          <Select value={v.kind} onChange={(e) => set({ kind: e.target.value })} options={KINDS.map((k) => k[1])} />
+        </Field>
+        <Field label="Working title" hint="You can change this later.">
+          <Input value={v.title} onChange={(e) => set({ title: e.target.value })} placeholder="The 28 Day Reset" />
+        </Field>
+        <Field label="Who can see it">
+          <Select value={v.visibility} onChange={(e) => set({ visibility: e.target.value })}
+            options={['Just me, for now', 'My Circle', 'My Space', 'Anyone with the link', 'Public']} />
+        </Field>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {[['draft', 'Keep it a draft until I say so', 'Nothing is visible to anybody, including your Circle, until you publish.'],
+          ['log', 'Ask people to log each step', 'A one-tap log. Off means nobody is tracked.']].map(([k, t, h]) => (
+          <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0.5rem 0', cursor: 'pointer' }}>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600 }}>{t}</span>
+              <span style={{ display: 'block', marginTop: 1, fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>{h}</span>
+            </span>
+            <Switch checked={!!v[k]} onChange={(on) => set({ [k]: on })} />
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Step 2 · Material ────────────────────────────────────────────────────────
+function StepSource({ v, set }) {
+  const { Button, Badge } = NS;
+  const parsed = [['Week 1 · Sitting still', 4], ['Week 2 · Breath', 5], ['Week 3 · The body', 4], ['Week 4 · Alone and together', 6]];
+  return (
+    <div>
+      <p style={{ margin: '0 0 1.3rem', fontSize: '0.98rem', lineHeight: 1.7, color: 'var(--color-text-muted)' }}>
+        {v.mode === 'upload'
+          ? 'This is what we read out of your outline. Rename anything, drop what you do not want, and add what is missing — nothing is final until you publish.'
+          : 'A first pass from your directions. It is a starting point, not a suggestion you have to accept: rename, reorder, or throw the whole thing out.'}
+      </p>
+      {v.mode === 'upload' ? (
+        <div className="lift-1" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1.2rem', padding: '0.9rem 1rem',
+          borderRadius: 'var(--radius-card)', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+          <span style={{ width: 34, height: 34, display: 'grid', placeItems: 'center', borderRadius: 'var(--radius-control)', background: 'var(--color-success-bg)', color: 'var(--color-success)' }}><I n="file-check-2" s={17} /></span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '0.92rem', fontWeight: 700 }}>reset-outline.docx</div>
+            <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>19 headings found · 42 KB</div>
+          </div>
+          <Button size="sm" variant="ghost">Replace</Button>
+        </div>
+      ) : null}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {parsed.map(([t, n], i) => (
+          <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0.7rem 0', borderTop: i ? '1px solid var(--color-border)' : 'none' }}>
+            <I n="grip-vertical" s={15} c="var(--color-text-subtle)" />
+            <span style={{ flex: 1, minWidth: 0, fontSize: '0.95rem', fontWeight: 600 }}>{t}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>{n} steps</span>
+            <I n="pencil" s={14} c="var(--color-text-subtle)" />
+            <I n="trash-2" s={14} c="var(--color-text-subtle)" />
+          </div>
+        ))}
+      </div>
+      <Button size="sm" variant="ghost" iconLeft={<I n="plus" s={15} />} style={{ marginTop: '0.9rem' }}>Add a phase</Button>
+    </div>
+  );
+}
+
+// ── Step 3 · Shape ───────────────────────────────────────────────────────────
+function StepShape({ v, set }) {
+  const { Select, Switch } = NS;
+  return (
+    <div>
+      <div className="wz-3up">
+        <Field label="How long" hint="Total length, in days.">
+          <Select value={v.days} onChange={(e) => set({ days: e.target.value })} options={['7 days', '14 days', '21 days', '28 days', '90 days']} />
+        </Field>
+        <Field label="How often" hint="What a participant is asked to do.">
+          <Select value={v.cadence} onChange={(e) => set({ cadence: e.target.value })} options={['Daily', 'Every weekday', 'Three times a week', 'Weekly']} />
+        </Field>
+        <Field label="How they start" hint="Cohorts create a shared rhythm; rolling starts remove the wait.">
+          <Select value={v.entry} onChange={(e) => set({ entry: e.target.value })} options={['Anyone can start any day', 'Cohort starts only']} />
+        </Field>
+      </div>
+      <hr className="rule-amber" style={{ margin: '0.6rem 0 1.4rem' }} />
+      <p className="eyebrow" style={{ margin: '0 0 1rem', color: 'var(--color-text-subtle)' }}>What each step can hold</p>
+      <div className="wz-3up">
+        {[['type', 'Writing', 'Prose, at reading measure.'], ['image', 'Images', 'One per step, full width.'], ['video', 'Video', 'Embedded, no autoplay.'],
+          ['headphones', 'Audio practice', 'With a ring timer.'], ['check-check', 'A checkpoint', 'One question, no grade.'], ['flame', 'A challenge', 'Done together, in a room.']].map(([i, t, d]) => (
+          <div key={t} className="lift-1" style={{ display: 'flex', gap: 10, padding: '0.85rem 0.9rem', borderRadius: 'var(--radius-card)', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <span style={{ width: 30, height: 30, flexShrink: 0, display: 'grid', placeItems: 'center', borderRadius: 'var(--radius-control)', background: 'var(--color-primary-bg)', color: 'var(--color-primary-strong)' }}><I n={i} s={15} /></span>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700 }}>{t}</span>
+              <span style={{ display: 'block', marginTop: 1, fontSize: 'var(--text-2xs)', lineHeight: 1.45, color: 'var(--color-text-subtle)' }}>{d}</span>
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Step 4 · Schedule ────────────────────────────────────────────────────────
+function StepSchedule({ v, set }) {
+  const { Input, Select, Switch } = NS;
+  return (
+    <div>
+      <div className="wz-3up">
+        <Field label="Starts">
+          <Input type="date" value={v.start} onChange={(e) => set({ start: e.target.value })} />
+        </Field>
+        <Field label="Meeting day" hint="The slot people will defend.">
+          <Select value={v.day} onChange={(e) => set({ day: e.target.value })} options={['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']} />
+        </Field>
+        <Field label="Time">
+          <Input type="time" value={v.time} onChange={(e) => set({ time: e.target.value })} />
+        </Field>
+      </div>
+      <Field label="Where" hint="A room, a park, or a link. The Lab exists for what needs plumbing.">
+        <Input value={v.place} onChange={(e) => set({ place: e.target.value })} placeholder="The Lab · Vista" />
+      </Field>
+      <hr className="rule-amber" style={{ margin: '0.6rem 0 1.2rem' }} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {[['remind', 'Remind people the day before', 'One notification, in the evening. Never more than one.'],
+          ['digest', 'Send me a weekly digest', 'Who turned up, who is drifting. Captured, booked, back again.'],
+          ['waitlist', 'Keep a waitlist when it is full', 'Eight seats is the cap. The ninth person is offered the next run.']].map(([k, t, h]) => (
+          <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0.5rem 0', cursor: 'pointer' }}>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600 }}>{t}</span>
+              <span style={{ display: 'block', marginTop: 1, fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>{h}</span>
+            </span>
+            <Switch checked={!!v[k]} onChange={(on) => set({ [k]: on })} />
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Step 5 · Review ──────────────────────────────────────────────────────────
+function StepReview({ v }) {
+  const rows = [
+    ['What', v.kind], ['Title', v.title || 'Untitled'], ['Built from', v.mode === 'upload' ? 'reset-outline.docx + your directions' : 'Your directions'],
+    ['Shape', `${v.days} · ${v.cadence} · ${v.entry.toLowerCase()}`],
+    ['Runs', `${v.day}s at ${v.time || '6:30'} · ${v.place || 'no place yet'}`],
+    ['Visible to', v.visibility], ['Publishes', v.draft ? 'Not yet — saved as a draft' : 'As soon as you finish'],
+  ];
+  return (
+    <div>
+      <div className="lift-1" style={{ borderRadius: 'var(--radius-card)', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '0.4rem 1.1rem' }}>
+        {rows.map(([k, val], i) => (
+          <div key={k} style={{ display: 'grid', gridTemplateColumns: '9rem 1fr', gap: 14, padding: '0.7rem 0', borderTop: i ? '1px solid var(--color-border)' : 'none' }}>
+            <span className="eyebrow" style={{ fontSize: 'var(--text-3xs)', color: 'var(--color-text-subtle)' }}>{k}</span>
+            <span style={{ fontSize: '0.93rem', color: 'var(--color-text)' }}>{val}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 10, marginTop: '1.2rem', padding: '0.9rem 1rem', borderRadius: 'var(--radius-card)',
+        background: 'var(--color-primary-bg)', border: '1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)' }}>
+        <I n="info" s={16} c="var(--color-primary-strong)" />
+        <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--color-text)' }}>
+          Publishing puts this in front of people. Editing it afterwards never moves anybody already inside it.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── The flow ─────────────────────────────────────────────────────────────────
+// The steps, the rail and the footer, with no opinion about the shell around them.
+function Flow({ compact = false, onClose }) {
+  const { Button } = NS;
+  const [i, setI] = React.useState(0);
+  const [v, setV] = React.useState({
+    mode: 'describe', directions: '', kind: 'Journey', title: '', visibility: 'Just me, for now',
+    draft: true, log: true, days: '28 days', cadence: 'Daily', entry: 'Anyone can start any day',
+    start: '2026-09-07', day: 'Tuesday', time: '06:30', place: '', remind: true, digest: true, waitlist: false,
+  });
+  const set = (patch) => setV((p) => ({ ...p, ...patch }));
+  const step = STEPS[i];
+  const last = i === STEPS.length - 1;
+  // The only hard requirement: say what it is. Everything else has a sane default,
+  // because a wizard that blocks on page one is a form with extra steps.
+  const blocked = i === 0 && v.directions.trim().length < 12;
+
+  const Body = [StepAbout, StepSource, StepShape, StepSchedule, StepReview][i];
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
+      {/* The rail. Numbered, walkable backwards, never forwards past a block. */}
+      <ol style={{ display: 'flex', gap: compact ? 4 : 10, margin: 0, padding: compact ? '0 0 1.1rem' : '0 0 1.4rem', listStyle: 'none', flexWrap: 'wrap' }}>
+        {STEPS.map((s, n) => {
+          const done = n < i, here = n === i;
+          return (
+            <li key={s.id} style={{ flex: compact ? '0 0 auto' : 1, minWidth: 0 }}>
+              <button type="button" onClick={() => n <= i && setI(n)} disabled={n > i}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: compact ? '0.35rem 0.55rem' : '0.5rem 0.7rem',
+                  cursor: n <= i ? 'pointer' : 'default', fontFamily: 'inherit', textAlign: 'left',
+                  borderRadius: 'var(--radius-control)', border: 'none',
+                  background: here ? 'var(--color-primary-bg)' : 'transparent',
+                  color: here ? 'var(--color-primary-strong)' : done ? 'var(--color-text-muted)' : 'var(--color-text-subtle)' }}>
+                <span style={{ width: 20, height: 20, flexShrink: 0, display: 'grid', placeItems: 'center', borderRadius: '50%',
+                  fontFamily: 'var(--font-mono)', fontSize: 'var(--text-3xs)', fontWeight: 600,
+                  background: here ? 'var(--color-primary)' : done ? 'var(--color-success-bg)' : 'var(--color-surface-elevated)',
+                  color: here ? 'var(--color-text-on-primary)' : done ? 'var(--color-success)' : 'var(--color-text-subtle)' }}>
+                  {done ? <I n="check" s={11} /> : n + 1}
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{s.n}</span>
+                  {compact ? null : <span style={{ display: 'block', marginTop: 1, fontSize: 'var(--text-3xs)', color: 'var(--color-text-subtle)' }}>{s.hint}</span>}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingRight: 4 }}>
+        <h3 className="font-display" style={{ margin: '0 0 0.2rem', fontSize: compact ? '1.5rem' : '1.9rem', textTransform: 'uppercase', letterSpacing: '0.005em' }}>{step.n}</h3>
+        <p style={{ margin: '0 0 1.4rem', fontSize: '0.95rem', color: 'var(--color-text-muted)' }}>{step.hint}</p>
+        <Body v={v} set={set} />
+      </div>
+
+      {/* The footer is the same in both mounts, so the exit is always in one place. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: '1.3rem', paddingTop: '1.1rem', borderTop: '1px solid var(--color-border)' }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>
+          Step {i + 1} of {STEPS.length}
+        </span>
+        <span style={{ flex: 1 }} />
+        {i > 0 ? <Button size="md" variant="ghost" onClick={() => setI(i - 1)}>Back</Button> : (onClose ? <Button size="md" variant="ghost" onClick={onClose}>Cancel</Button> : null)}
+        <Button size="md" variant="secondary">Save a draft</Button>
+        <Button size="md" disabled={blocked} onClick={() => (last ? onClose && onClose() : setI(i + 1))}
+          iconRight={<I n={last ? 'check' : 'arrow-right'} s={16} />}>
+          {last ? 'Publish' : 'Continue'}
+        </Button>
+      </div>
+      {blocked ? (
+        <p style={{ margin: '0.6rem 0 0', textAlign: 'right', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)' }}>
+          Write a line or two of directions to continue.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+// ── Mount A · the modal ──────────────────────────────────────────────────────
+// Over whatever page you were on. Scrim, one lift-3 sheet, Esc to leave.
+function WizardModal({ open, onClose }) {
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => e.key === 'Escape' && onClose();
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 80, display: 'grid', placeItems: 'center', padding: '2rem 1.5rem' }}>
+      <button aria-label="Close" onClick={onClose}
+        style={{ position: 'absolute', inset: 0, border: 'none', cursor: 'pointer',
+          background: 'color-mix(in srgb, var(--color-ink) 62%, transparent)', backdropFilter: 'blur(3px)' }} />
+      <div className="lift-3 animate-cue-pop" role="dialog" aria-modal="true" aria-label="Create"
+        style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '52rem', maxHeight: '86vh', display: 'flex', flexDirection: 'column',
+          borderRadius: 'var(--radius-card)', background: 'var(--color-surface)', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
+        <header style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '1rem 1.3rem', background: 'var(--color-canvas)', borderBottom: '1px solid var(--color-border)' }}>
+          <span style={{ width: 30, height: 30, flexShrink: 0, display: 'grid', placeItems: 'center', borderRadius: 'var(--radius-control)', background: 'var(--color-primary-bg)', color: 'var(--color-primary-strong)' }}><I n="wand-sparkles" s={16} /></span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p className="eyebrow" style={{ margin: 0, fontSize: 'var(--text-3xs)', color: 'var(--color-text-subtle)' }}>Create</p>
+            <div style={{ fontSize: '0.95rem', fontWeight: 700, letterSpacing: 'var(--tracking-tight)' }}>Start something new</div>
+          </div>
+          <button onClick={onClose} aria-label="Close" style={{ width: 26, height: 26, display: 'grid', placeItems: 'center', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-text-subtle)' }}>
+            <I n="x" s={15} />
+          </button>
+        </header>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', padding: '1.2rem 1.3rem 1.3rem' }}>
+          <Flow compact onClose={onClose} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Mount B · in page ────────────────────────────────────────────────────────
+// The same flow with room to breathe, for a host who arrived by link.
+function WizardPage() {
+  return (
+    <div style={{ maxWidth: '58rem', margin: '0 auto', padding: '2.5rem 1.5rem 3rem' }}>
+      <p className="eyebrow" style={{ margin: 0, color: 'var(--color-primary-strong)' }}>Create</p>
+      <h2 className="font-display" style={{ margin: '0.6rem 0 0.4rem', fontSize: '2.4rem', textTransform: 'uppercase', letterSpacing: '0.005em' }}>Start something new</h2>
+      <p style={{ margin: '0 0 1.8rem', maxWidth: '34rem', fontSize: '1.02rem', lineHeight: 1.7, color: 'var(--color-text-muted)' }}>
+        Tell us what it is, or bring an outline you already wrote. Everything after that is editable, and nothing goes in front of anybody until you say so.
+      </p>
+      <div className="lift-1" style={{ display: 'flex', borderRadius: 'var(--radius-card)', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '1.4rem 1.5rem' }}>
+        <Flow />
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { CreationWizardModal: WizardModal, CreationWizardPage: WizardPage, CreationFlow: Flow });
+
+// ── The card: both mounts, side by side ──────────────────────────────────────
+function Demo() {
+  const [open, setOpen] = React.useState(false);
+  const { Button } = NS;
+  return (
+    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--color-canvas)' }}>
+      {/* The header band spans the frame, so it reads as page chrome rather than a
+          strip floating inside a padded page. */}
+      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 14, padding: '1rem 2.5rem', background: 'var(--color-chrome)', borderBottom: '1px solid var(--color-chrome-border)' }}>
+        <span className="eyebrow" style={{ flex: 1, color: 'var(--color-text-subtle)' }}>One flow · two mounts</span>
+        <Button size="sm" variant="secondary" iconLeft={<I n="square-dashed-top-solid" s={15} />} onClick={() => setOpen(true)}>Open as a modal</Button>
+      </div>
+      <WizardPage />
+      <WizardModal open={open} onClose={() => setOpen(false)} />
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

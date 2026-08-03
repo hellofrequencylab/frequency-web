@@ -1,0 +1,55 @@
+<!-- @dsCard group="Brand & voice" viewport="1180x600" name="The dark beat · slat + light-strip" subtitle="A wood-slat ink band seamed top and bottom with a glowing amber light-strip. One or two per page, never more." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DAWN · The dark beat</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="card.css">
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-head">
+    <span class="eyebrow">Brand & voice</span>
+    <h1>The dark beat</h1>
+    <p>The reference is a physical room: black wood slats lit by a warm strip. On a page it is the rhythm device — a full-bleed ink band that breaks a run of cream and gives a statement somewhere to land. It works because it is rare. Three bands and the light sections start reading as gaps.</p>
+    <hr class="rule-amber">
+  </div>
+  <h2>The band</h2>
+  <div class="bg-slat scanlines" style="position:relative;padding:3rem 2rem;border-radius:var(--radius-card);overflow:hidden">
+    <div class="light-strip" style="position:absolute;left:0;right:0;top:0"></div>
+    <div style="position:relative;z-index:3;text-align:center">
+      <p class="eyebrow" style="margin:0;color:var(--color-primary)">The statement beat</p>
+      <div class="font-display" style="margin:0.8rem 0 0;font-size:2.6rem;line-height:1.02;text-transform:uppercase;letter-spacing:-0.03em;color:var(--color-on-ink)">Friendship is a schedule</div>
+      <div style="font-family:var(--font-editorial);font-style:italic;font-size:1.7rem;line-height:1.1;color:var(--color-primary)">before it is a feeling</div>
+    </div>
+    <div class="light-strip" style="position:absolute;left:0;right:0;bottom:0"></div>
+  </div>
+  <h2>What it is made of</h2>
+  <div class="g g4">
+    <div class="panel"><div class="tok">.bg-slat</div><p class="use">The ink ground with its vertical slat rhythm. Never a flat black fill.</p></div>
+    <div class="panel"><div class="tok">.light-strip</div><p class="use">The amber seam. At the top edge, the bottom edge, or both.</p></div>
+    <div class="panel"><div class="tok">.scanlines</div><p class="use">The close-range texture. Ink only, and never stacked with grain.</p></div>
+    <div class="panel"><div class="tok">.edge-light</div><p class="use">A warm rim on panels raised off the band.</p></div>
+  </div>
+  <h2>The two ways out of a band</h2>
+  <div class="g g2">
+    <div class="panel" style="padding:0;overflow:hidden">
+      <div class="bg-slat" style="height:60px;position:relative"><div class="light-strip" style="position:absolute;left:0;right:0;bottom:0"></div></div>
+      <div style="padding:0.9rem 1.1rem 1.1rem"><div class="tok">Seam</div><p class="use">A hard edge carried by the light-strip. The default.</p></div>
+    </div>
+    <div class="panel" style="padding:0;overflow:hidden">
+      <div class="bg-slat" style="height:66px"></div>
+      <div style="margin-top:-16px;background:var(--color-surface);border-radius:50% 50% 0 0 / 2rem 2rem 0 0;padding:0.9rem 1.1rem 1.1rem"><div class="tok">.arc-top</div><p class="use">A soft shoulder. One per page, for the section that matters most.</p></div>
+    </div>
+  </div>
+  <div class="laws">
+    <p><b>One or two per page.</b> The beat is punctuation. Punctuation stops working when it repeats.</p>
+    <p><b>Always seamed.</b> Ink meeting cream with no light-strip and no arc looks like a rendering bug.</p>
+    <p><b>Cream type, never white.</b> <code>on-ink</code> is a warm cream — pure white glares on this ground.</p>
+    <p><b>Amber only.</b> The band is where amber is loudest. No second accent joins it there.</p>
+  </div>
+</div>
+</body>
+</html>

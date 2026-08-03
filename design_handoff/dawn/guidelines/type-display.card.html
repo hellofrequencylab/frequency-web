@@ -1,0 +1,45 @@
+<!-- @dsCard group="Foundations · Type" viewport="1180x520" name="Display · Anton" subtitle="Heavy condensed editorial face. Marketing headlines and big numerals, always uppercase, always tight." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DAWN · Display · Anton</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="card.css">
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-head">
+    <span class="eyebrow">Foundations · Type</span>
+    <h1>Display · Anton</h1>    <p>Anton is the poster voice: condensed, heavy, unapologetic. It carries marketing headlines and any numeral meant to be read across a room. It is <em>always</em> uppercase and always tracked in — set it in sentence case and it looks like a mistake.</p>
+    <hr class="rule-amber">
+  </div>
+  <h2>The scale</h2>
+  <div class="panel">
+    <div class="font-display" style="font-size:var(--text-display-hero);line-height:0.95;text-transform:uppercase;letter-spacing:-0.03em">You have the room</div>
+    <div class="tok" style="margin-top:6px">--text-display-hero · clamp(3rem, 6vw, 5rem) · one per page</div>
+    <hr class="rule-amber" style="margin:1rem 0">
+    <div class="font-display" style="font-size:var(--text-display-h2);line-height:0.98;text-transform:uppercase;letter-spacing:-0.03em">Why they hold</div>
+    <div class="tok" style="margin-top:6px">--text-display-h2 · clamp(2.25rem, 4vw, 3rem) · section headings</div>
+    <hr class="rule-amber" style="margin:1rem 0">
+    <div style="display:flex;align-items:baseline;gap:1.2rem">
+      <span class="font-display" style="font-size:var(--text-stat);line-height:0.9;color:var(--color-primary-strong)">412</span>
+      <span class="tok">--text-stat · clamp(3.5rem, 6vw, 4.5rem) · the big numeral</span>
+    </div>
+  </div>
+  <h2>Paired with the italic kicker</h2>
+  <div class="panel">
+    <div class="font-display" style="font-size:2.4rem;line-height:1;text-transform:uppercase;letter-spacing:-0.03em">A hundred contacts</div>
+    <div style="font-family:var(--font-editorial);font-style:italic;font-size:1.7rem;line-height:1.1;color:var(--color-primary)">and nobody to call</div>
+    <p class="use">The house move: a condensed uppercase line, then an amber italic deck. Never two display lines stacked.</p>
+  </div>
+  <div class="laws">
+    <p><b>Always uppercase.</b> Anton has no lowercase voice in this system.</p>
+    <p><b>Never body copy.</b> Nothing under about 1.5rem, and never a paragraph.</p>
+    <p><b>One hero per page.</b> <code>display-hero</code> appears once. Everything below steps down.</p>
+    <p><b>Tighten as it grows.</b> Bigger sizes take <code>--tracking-tight-display</code>; loose tracking makes it look inflated.</p>
+  </div>
+</div>
+</body>
+</html>

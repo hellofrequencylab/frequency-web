@@ -1,0 +1,206 @@
+<!-- @dsCard group="Screens · Member" viewport="1440x900" name="Community · the feed" subtitle="The member shell as the product builds it: global top bar, left area rail, the stream (beta banner, greeting, streak, composer, posts, quiet activity lines) and the status rail." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Feed</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--color-canvas); font-family: var(--font-sans); color: var(--color-text); overflow: hidden; }
+  #root, .shell { height: 100vh; }
+  .shell { display: flex; flex-direction: column; }
+  .scroll::-webkit-scrollbar { width: 10px; }
+  .scroll::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 99px; border: 3px solid var(--color-canvas); }
+  /* Rails scroll without a visible track: a scrollbar between a rail and the
+     stream reads as a seam and chops the layout up. */
+  .rail-scroll { overflow-y: auto; scrollbar-width: none; scrollbar-gutter: stable; }
+  .rail-scroll::-webkit-scrollbar { width: 0; height: 0; }
+  /* Both rails are tracks of one grid, attached to the inner column, and their
+     widths are variables: folding a rail is one number and only its own edge
+     moves. A folded rail is a visible strip — it never disappears. */
+  .app-grid {
+    display: grid;
+    grid-template-columns: var(--nav-w, 12rem) minmax(0, 1fr) var(--rail-w, 19rem);
+    column-gap: var(--rail-gap, var(--space-10));
+    align-items: start;
+    transition: grid-template-columns var(--motion-base) var(--ease-out), column-gap var(--motion-base) var(--ease-out);
+  }
+  .app-nav, .app-rail { min-width: 0; }
+  .app-nav > *, .app-rail > * { width: 100%; }
+  .app-main-col { width: 100%; max-width: 720px; margin: 0 auto; }
+  @media (prefers-reduced-motion: reduce) { .app-grid { transition: none; } }
+  /* The top bar sheds in order: nav labels first, then the search hint, then the
+     search field, then the Mindless label. The member cluster (Mindless door,
+     notifications, streak, avatar) is the last thing to go, and never clips. */
+  @media (max-width: 1320px) { .app-topbar { gap: 12px !important; } .tb-kbd { display: none !important; } }
+  @media (max-width: 1180px) { .tb-nav { display: none !important; } }
+  @media (max-width: 1080px) { .tb-mindless-label { display: none !important; } }
+  @media (max-width: 820px) { .tb-search { display: none !important; } }
+</style>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="icon.jsx"></script>
+<script type="text/babel" src="topbar.jsx"></script>
+<script type="text/babel" src="nav-rail.jsx"></script>
+<script type="text/babel" src="feed.jsx"></script>
+<script type="text/babel" src="right-rail.jsx"></script>
+<script type="text/babel" src="docks.jsx"></script>
+<script type="text/babel" data-presets="react">
+const NS = window.DAWNFrequencyDesignSystem_c868e3;
+// Stand-ins used only until the compiled bundle carries the newest kit pieces.
+const __num = (v) => React.createElement('span', { style: { fontFamily: 'var(--font-mono)', fontWeight: 500, fontVariantNumeric: 'tabular-nums' } }, v);
+const __Counter = ({ value, caption }) => React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5 } }, __num(value),
+  caption ? React.createElement('span', { style: { fontSize: 'var(--text-2xs)', color: 'var(--color-text-muted)' } }, caption) : null);
+const __CounterRow = ({ items = [] }) => React.createElement('div', { style: { display: 'flex', gap: 14 } }, items.map((it, i) => React.createElement(__Counter, { key: i, ...it })));
+const __StreakMeter = ({ days = 0, hint }) => React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 8 } },
+  __num(days), React.createElement('span', { style: { fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' } }, hint || 'days'));
+const StreakMeter = NS.StreakMeter || __StreakMeter;
+
+const SEED = [
+  { id: 5, kind: 'event', mon: 'Aug', day: '6', name: 'Breathe Connect Expand', meta: 'Thu, Aug 6 · Encinitas Viewpoint Park' },
+  { id: 4, author: 'Daniel Tyack', handle: 'danieltyack', role: 'janitor', announcement: true, pinned: true, time: 'Jul 15',
+    body: 'Welcome to the beta. It is a beta, so you will find things that are not working, and that is the point. When something breaks, hit Report a bug and send me a message. There are all kinds of ways to interact, connect and grow.',
+    hearts: 1, plus: 1, replies: 0, myHeart: false, myPlus: false },
+  { id: 3, author: 'Aiden Tyack', handle: 'aiden', role: 'host', time: 'Jun 27', online: true,
+    body: 'First cold plunge at the Lab this morning. Three minutes felt impossible and then it did not. Walked out lighter than I have felt in months.',
+    image: '../../assets/images/lab-pool.jpg', hearts: 24, plus: 8, replies: 6, myHeart: true, myPlus: false },
+  { id: 2, kind: 'activity', who: 'danieltyack', zaps: 2095, text: 'finished the 28 day reset. Ready to pick a new Journey, or loop it with the Circle?' },
+  { id: 1, author: 'Sana Idris', handle: 'sana', role: 'guide', scope: 'Thursday Sound Bath', time: 'Jun 24',
+    body: 'Eleven of us last night, lying on the floor of the studio while the bowls did their thing. Someone cried. Someone laughed. We stayed an hour after just talking.',
+    hearts: 31, plus: 11, replies: 9, myHeart: false, myPlus: true },
+];
+
+function BetaBanner() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--color-primary-bg)',
+      border: '1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)', borderRadius: 'var(--radius-card)',
+      padding: '0.85rem 1rem', margin: '1.25rem 0 0' }}>
+      <window.Ico n="calendar-clock" style={{ width: 20, height: 20, flexShrink: 0, color: 'var(--color-primary-strong)' }} />
+      <p style={{ margin: 0, flex: 1, fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--color-text)' }}>
+        <b>Summer of Frequency</b> runs through September 1. Free the whole way, your opening beta price stays locked.
+      </p>
+      <span className="animate-wiggle" style={{ flexShrink: 0, fontSize: 'var(--text-meta)', fontWeight: 700, padding: '0.3rem 0.7rem',
+        borderRadius: 'var(--radius-pill)', background: 'var(--color-surface)', color: 'var(--color-primary-strong)' }}>29 days left</span>
+    </div>
+  );
+}
+
+function Greeting() {
+  const h = new Date().getHours();
+  const greet = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+  const date = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginTop: 26 }}>
+      <div style={{ flex: 1 }}>
+        <p className="eyebrow" style={{ margin: 0, color: 'var(--color-primary-strong)' }}>{date}</p>
+        <h1 style={{ margin: '0.4rem 0 0', fontSize: '1.9rem' }}>{greet}, Daniel</h1>
+        <p style={{ margin: '0.25rem 0 0', fontSize: '0.95rem', color: 'var(--color-text-muted)' }}>What your people are up to today.</p>
+      </div>
+      <NS.Button icon="plus">Create</NS.Button>
+    </div>
+  );
+}
+
+function StreakBar() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--color-surface-elevated)',
+      border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', padding: '0.65rem 0.9rem' }}>
+      <StreakMeter days={50} freezes={2} hint="Never miss twice"
+        week={['logged','logged','frozen','logged','logged','logged','today']} style={{ flex: 1 }} />
+      <window.Ico n="chevron-down" style={{ width: 17, height: 17, color: 'var(--color-text-subtle)', flexShrink: 0 }} />
+    </div>
+  );
+}
+
+function App() {
+  const [active, setActive] = React.useState('feed');
+  // The same ladder the screen mocks use: the room decides, the member can override,
+  // and neither rail ever leaves the layout.
+  const [w, setW] = React.useState(() => window.innerWidth);
+  React.useEffect(() => {
+    const on = () => setW(window.innerWidth);
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  const [railOpen, setRailOpen] = React.useState(null);
+  const navIcons = w < 1180;
+  const railShown = railOpen === null ? w >= 1400 : railOpen && w >= 1100;
+  const vars = {
+    '--nav-w': navIcons ? '3.25rem' : '12rem',
+    '--rail-w': railShown ? '19rem' : '2.375rem',
+    '--rail-gap': w < 1100 ? 'var(--space-6)' : w < 1300 ? 'var(--space-7)' : 'var(--space-10)',
+  };
+  const [posts, setPosts] = React.useState(SEED);
+
+
+  const react = (id, kind) => setPosts((ps) => ps.map((p) => {
+    if (p.id !== id) return p;
+    if (kind === 'heart') return { ...p, myHeart: !p.myHeart, hearts: p.hearts + (p.myHeart ? -1 : 1) };
+    return { ...p, myPlus: !p.myPlus, plus: p.plus + (p.myPlus ? -1 : 1) };
+  }));
+
+  const post = (text) => setPosts((ps) => [{ id: Date.now(), author: 'Daniel Tyack', handle: 'danieltyack', role: 'janitor',
+    time: 'just now', body: text, hearts: 0, plus: 0, replies: 0, myHeart: false, myPlus: false }, ...ps]);
+
+  return (
+    <div className="shell">
+      <window.TopBar />
+      <main className="scroll app-main" style={{ flex: 1, minHeight: 0, minWidth: 0, overflowY: 'auto', overflowX: 'hidden', padding: '0 1.5rem' }}>
+        <div className="app-grid" style={vars}>
+          <window.NavRail active={active} onNav={setActive} collapsed={navIcons} />
+          <div className="app-main-col" style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            <BetaBanner />
+            <Greeting />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: '3rem' }}>
+              <StreakBar />
+              <window.FeedComposer onPost={post} />
+              {posts.map((p) => (
+                p.kind === 'event' ? <window.FeedEventTeaser key={p.id} {...p} />
+                : p.kind === 'activity' ? <window.FeedActivityLine key={p.id} {...p} />
+                : <window.FeedPostCard key={p.id} post={p} onReact={react} />
+              ))}
+            </div>
+          </div>
+          <div className="app-rail">
+            {railShown
+              ? <window.RightRail onCollapse={() => setRailOpen(false)} />
+              : (
+                <aside style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+                  padding: '1.5rem 0', minHeight: '13rem', position: 'sticky', top: 0 }}>
+                  {['compass', 'calendar-days', 'users'].map((h) => (
+                    <span key={h} onClick={() => setRailOpen(true)} title="Show the rail"
+                      style={{ width: 30, height: 30, display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--color-text-subtle)' }}>
+                      <window.Ico n={h} style={{ width: 15, height: 15 }} />
+                    </span>
+                  ))}
+                  {/* The reopen control at the foot, like every other rail control. */}
+                  <button onClick={() => setRailOpen(true)} title="Show the rail" aria-label="Show the rail"
+                    onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-text-muted)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-subtle)'; }}
+                    style={{ marginTop: 'auto', width: 26, height: 26, display: 'grid', placeItems: 'center', cursor: 'pointer',
+                      border: 'none', background: 'transparent', borderRadius: 'var(--radius-control)',
+                      color: 'var(--color-text-subtle)', transition: 'color var(--motion-fast) ease' }}>
+                    <window.Ico n="panel-right-open" style={{ width: 14, height: 14 }} />
+                  </button>
+                </aside>
+              )}
+          </div>
+        </div>
+      </main>
+      <window.VaultDock />
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

@@ -1,0 +1,272 @@
+<!-- @dsCard group="Screens · Operator" viewport="1440x900" name="Journey edit · rails collapsed" subtitle="The editing register with both rails folded by default: a wide canvas, the block tree, an inspector, and a per-rail user control. Either rail reopens from its own tab." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Journey edit · rails collapsed</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="screen.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="../app/topbar.jsx"></script>
+<script type="text/babel" src="../app/nav-rail.jsx"></script>
+<script type="text/babel" src="frame.jsx"></script>
+<script type="text/babel" src="../app/docks.jsx"></script>
+<script type="text/babel" data-presets="react">
+const K = window.DAWNFrequencyDesignSystem_c868e3;
+// Stand-ins used only until the compiled bundle carries the newest kit pieces.
+const __num = (v) => React.createElement('span', { style: { fontFamily: 'var(--font-mono)', fontWeight: 500, fontVariantNumeric: 'tabular-nums' } }, v);
+const __Counter = ({ value, caption }) => React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5 } }, __num(value),
+  caption ? React.createElement('span', { style: { fontSize: 'var(--text-2xs)', color: 'var(--color-text-muted)' } }, caption) : null);
+const __CounterRow = ({ items = [] }) => React.createElement('div', { style: { display: 'flex', gap: 14 } }, items.map((it, i) => React.createElement(__Counter, { key: i, ...it })));
+const __StreakMeter = ({ days = 0, hint }) => React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 8 } },
+  __num(days), React.createElement('span', { style: { fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' } }, hint || 'days'));
+K.Counter = K.Counter || __Counter;
+
+const { PageHeading, UnderlineTabs, SectionHeader, Button, IconButton, Badge, Card, Input, Textarea, Select, Switch, Counter, CounterRow, ProgressTrack, Avatar, GateNotice, RowCard, Meter } = K;
+
+// A Journey is an e-learning module, so the editor is a CANVAS: cover art, a video
+// slot, title and subtitle, the stat strip a member sees, the intro, then the
+// session tree with practices and challenges. Both rails fold by default and their
+// space goes to the canvas.
+
+const TREE = [
+  { id: 'p1', title: 'Week 1 · Put it down', open: true, children: [
+    { id: 'l1', type: 'practice', title: 'The five minute version', pillar: 'Mind', min: 5, anchor: true, media: 'audio' },
+    { id: 'l2', type: 'reading', title: 'Why the phone wins', pillar: 'Mind', min: 6 },
+    { id: 'l3', type: 'video', title: 'Set up your chair', pillar: 'Spirit', min: 4, media: 'video' } ] },
+  { id: 'p2', title: 'Week 2 · Make it boring', open: true, children: [
+    { id: 'l4', type: 'practice', title: 'Same time, same chair', pillar: 'Mind', min: 5 },
+    { id: 'l5', type: 'reading', title: 'The Thursday problem', pillar: 'Mind', min: 8, sel: true },
+    { id: 'l6', type: 'check', title: 'Tell one person', pillar: 'Expression', min: 2, extra: true } ] },
+  { id: 'p3', title: 'Week 3 · Take it outside', children: [
+    { id: 'l7', type: 'practice', title: 'Walk without the podcast', pillar: 'Body', min: 20 },
+    { id: 'l8', type: 'challenge', title: 'Bring it to the Circle', pillar: 'Expression', min: 60, extra: true } ] },
+  { id: 'p4', title: 'Week 4 · Hand it on', children: [
+    { id: 'l9', type: 'reflection', title: 'The Expression Challenge', pillar: 'Expression', min: 45 } ] },
+];
+
+const GLYPH = { practice: 'sparkles', reading: 'book-open', video: 'play', exercise: 'clipboard-list',
+  check: 'circle-check-big', challenge: 'target', reflection: 'notebook-pen', resource: 'paperclip' };
+
+function MediaSlot({ icon, label, hint, h = 150, filled }) {
+  return (
+    <div style={{ height: h, borderRadius: 'var(--radius-card)', display: 'grid', placeItems: 'center', cursor: 'pointer',
+      background: filled ? 'var(--color-surface-elevated)' : 'var(--color-surface)',
+      border: filled ? '1px solid var(--color-border)' : '1px dashed var(--color-border-strong)', color: 'var(--color-text-muted)' }}>
+      <span style={{ textAlign: 'center', padding: '0 1rem' }}>
+        <window.Ico n={icon} style={{ width: 22, height: 22, display: 'block', margin: '0 auto 7px' }} />
+        <span style={{ display: 'block', fontSize: '0.93rem', fontWeight: 600, color: 'var(--color-text)' }}>{label}</span>
+        {hint ? <span style={{ display: 'block', fontSize: 'var(--text-2xs)', marginTop: 3 }}>{hint}</span> : null}
+      </span>
+    </div>
+  );
+}
+
+function Leaf({ n, sel, onSelect }) {
+  const on = sel === n.id;
+  return (
+    <div onClick={() => onSelect(n.id)}
+      style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '0.45rem 0.6rem', marginLeft: 20, cursor: 'pointer',
+        borderRadius: 'var(--radius-control)', background: on ? 'var(--color-primary-bg)' : 'transparent' }}>
+      <window.Ico n="grip-vertical" style={{ width: 12, height: 12, color: 'var(--color-border-strong)', flexShrink: 0 }} />
+      <window.Ico n={GLYPH[n.type] || 'file'} style={{ width: 15, height: 15, flexShrink: 0, color: on ? 'var(--color-primary-strong)' : 'var(--color-text-muted)' }} />
+      <span style={{ flex: 1, minWidth: 0, fontSize: '0.92rem', fontWeight: on ? 700 : 500, letterSpacing: 'var(--tracking-tight)',
+        color: on ? 'var(--color-primary-strong)' : 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.title}</span>
+      {n.anchor ? <Badge tone="primary">Anchor</Badge> : null}
+      {n.extra ? <Badge>Extra credit</Badge> : null}
+      {n.media ? <window.Ico n={n.media === 'video' ? 'play' : 'audio-lines'} style={{ width: 13, height: 13, color: 'var(--color-move-strong)' }} /> : null}
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-3xs)', color: 'var(--color-text-subtle)', flexShrink: 0 }}>{n.min}m</span>
+    </div>
+  );
+}
+
+function Page() {
+  const [tab, setTab] = React.useState('canvas');
+  const [sel, setSel] = React.useState('l5');
+  const [open, setOpen] = React.useState(() => ({ p1: true, p2: true, p3: false, p4: false }));
+  return (
+    <window.Screen active="journeys" canvas collapseLeft collapseRight
+      dock={<window.PageDock page="The 28 Day Reset · editor" stats={[{ value: '28', label: 'Days' }, { value: '4', label: 'Phases' }, { value: '61', label: 'Enrolled' }, { value: 'Draft', label: 'Status', sub: 'never published' }]}
+      settings={[{ label: 'Members can start any day', hint: 'Off means cohort starts only', on: true }, { label: 'Require the daily log', on: false }, { label: 'Show progress to the Circle', on: true }]}
+      note="Editing a live Journey never moves anybody already inside it." />}
+      rail={
+      <window.Rail>
+        <div>
+          <SectionHeader title="This block" />
+          <Card tone="feature" padding="1rem">
+            <p className="eyebrow" style={{ margin: 0, color: 'var(--color-primary-strong)' }}>Reading · week 2</p>
+            <h3 style={{ margin: '4px 0 12px', fontSize: '1rem', fontWeight: 'var(--weight-heading)', letterSpacing: 'var(--tracking-tight)' }}>The Thursday problem</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <Select label="Block type" defaultValue="reading" options={['practice','reading','video','exercise','reflection','check','challenge','resource']} />
+              <Select label="Pillar" defaultValue="Mind" options={['Mind','Body','Spirit','Expression']} />
+              <Input label="Minutes" defaultValue="8" />
+              <Switch checked label="Required to finish the week" />
+              <Switch label="Anchor practice" />
+            </div>
+          </Card>
+        </div>
+        <div>
+          <SectionHeader title="What it pays" />
+          <Card tone="soft" padding="0.95rem">
+            <div style={{ display: 'flex', gap: 14 }}>
+              <Counter kind="gems" value="10" caption="this block" size="sm" />
+              <Counter kind="zaps" value="75" caption="on finish" size="sm" />
+            </div>
+            <p style={{ margin: '10px 0 0', fontSize: 'var(--text-2xs)', color: 'var(--color-text-subtle)', lineHeight: 1.5 }}>
+              Online blocks pay Gems. The Zaps land when the Journey finishes in person.
+            </p>
+          </Card>
+        </div>
+        <div>
+          <SectionHeader title="Publishing" />
+          <Card tone="soft" padding="0.95rem">
+            <Meter label="Published Journeys" used={1} cap={1} size="sm" hint="One free. This one would be your second." />
+          </Card>
+        </div>
+      </window.Rail>
+    }>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+        <a href="journey.html" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-meta)', fontWeight: 700 }}>
+          <window.Ico n="arrow-left" style={{ width: 14, height: 14 }} /> The 28 Day Reset
+        </a>
+        <Badge tone="warning">Draft</Badge>
+        <span style={{ marginLeft: 'auto', fontSize: 'var(--text-meta)', color: 'var(--color-text-subtle)' }}>Saved just now</span>
+        <Button size="sm" variant="ghost" iconLeft={<window.Ico n="eye" style={{ width: 15, height: 15 }} />}>Preview</Button>
+        <Button size="sm">Publish</Button>
+      </div>
+
+      <div style={{ marginBottom: 18 }}>
+        <UnderlineTabs value={tab} onChange={setTab}
+          tabs={[{ id: 'canvas', label: 'Canvas' }, { id: 'sessions', label: 'Sessions', count: 9 }, { id: 'schedule', label: 'Schedule' }, { id: 'run', label: 'Run' }, { id: 'settings', label: 'Settings' }]} />
+      </div>
+
+      {/* Two working columns inside the canvas: the page a member will see, and the
+          session tree. With both rails folded this is the whole window. */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 20, alignItems: 'start' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+            <MediaSlot icon="image" label="Cover image" hint="1600 × 900. Real photography, warm." h={170} />
+            <MediaSlot icon="play" label="Intro video" hint="Optional. 60 to 90 seconds." h={170} />
+          </div>
+
+          <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', padding: '1.15rem 1.25rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <Input label="Title" defaultValue="The 28 Day Reset" />
+              <Input label="Subtitle" defaultValue="Put the phone down for five minutes a day, with ten other people doing the same thing." />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
+                <Select label="Pillar" defaultValue="Mind" options={['Mind','Body','Spirit','Expression']} />
+                <Input label="Weeks" defaultValue="4" />
+                <Input label="Minutes a day" defaultValue="5 to 10" />
+              </div>
+              <Textarea label="Intro" rows={4}
+                defaultValue={"Day one is easy. The fourth or fifth day is the one that decides whether this becomes a thing you do. This Journey is built for that day: five minutes, the same chair, and ten people who will notice."} />
+            </div>
+          </div>
+
+          <div>
+            <SectionHeader title="The stat strip a member sees" action="Edit" />
+            <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', padding: '1rem 1.15rem' }}>
+              <CounterRow size="md" items={[
+                { kind: 'journeys', value: '4', caption: 'Weeks', icon: 'calendar-days' },
+                { kind: 'practices', value: '9', caption: 'Blocks' },
+                { kind: 'zaps', value: '75', caption: 'On finish' },
+                { kind: 'gems', value: '10', caption: 'Per block' },
+              ]} />
+              <p style={{ margin: '12px 0 0', fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>
+                Cohorts finish this one at 91%. Alone, about 12%. That claim needs 20 runs before it shows publicly.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <SectionHeader title="The capstone" />
+            <div style={{ background: 'var(--color-signal-bg)', borderRadius: 'var(--radius-card)', padding: '1rem 1.15rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <window.Ico n="target" style={{ width: 16, height: 16, color: 'var(--color-signal-strong)' }} />
+                <span style={{ fontSize: '0.98rem', fontWeight: 'var(--weight-heading)', letterSpacing: 'var(--tracking-tight)' }}>The Expression Challenge</span>
+                <span style={{ marginLeft: 'auto', display: 'flex', gap: 12 }}>
+                  <Counter kind="zaps" value="50" caption="in person" size="xs" />
+                  <Counter kind="gems" value="30" caption="posted solo" size="xs" />
+                </span>
+              </div>
+              <Textarea rows={2} defaultValue="Teach the five minute version to one person who has never done it." />
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div>
+            <SectionHeader title="Sessions" count={9} action="Add a week" />
+            <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', padding: '0.5rem' }}>
+              {TREE.map((ph) => (
+                <section key={ph.id} style={{ padding: '0.3rem 0' }}>
+                  <div onClick={() => setOpen((o) => ({ ...o, [ph.id]: !o[ph.id] }))}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.45rem 0.55rem', cursor: 'pointer', borderRadius: 'var(--radius-control)' }}>
+                    <window.Ico n={open[ph.id] ? 'chevron-down' : 'chevron-right'} style={{ width: 14, height: 14, color: 'var(--color-text-muted)' }} />
+                    <window.Ico n="layers" style={{ width: 14, height: 14, color: 'var(--color-primary)' }} />
+                    <span style={{ flex: 1, minWidth: 0, fontSize: '0.94rem', fontWeight: 'var(--weight-heading)', letterSpacing: 'var(--tracking-tight)',
+                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ph.title}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-3xs)', color: 'var(--color-text-subtle)' }}>{ph.children.length}</span>
+                    <IconButton label="Add a block" size={26}><window.Ico n="plus" style={{ width: 13, height: 13 }} /></IconButton>
+                  </div>
+                  {open[ph.id] ? ph.children.map((n) => <Leaf key={n.id} n={n} sel={sel} onSelect={setSel} />) : null}
+                </section>
+              ))}
+              <button style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '0.55rem', marginTop: 4,
+                cursor: 'pointer', border: '1px dashed var(--color-border-strong)', borderRadius: 'var(--radius-control)', background: 'transparent',
+                color: 'var(--color-text-muted)', fontFamily: 'inherit', fontSize: '0.9rem', fontWeight: 600 }}>
+                <window.Ico n="plus" style={{ width: 14, height: 14 }} /> Add a week
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <SectionHeader title="Add a block" />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8 }}>
+              {[['Practice','sparkles'],['Reading','book-open'],['Video','play'],['Exercise','clipboard-list'],['Reflection','notebook-pen'],['Challenge','target']].map(([t, ic]) => (
+                <button key={t} className="press" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.55rem 0.7rem', cursor: 'pointer',
+                  background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-control)',
+                  fontFamily: 'inherit', fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text)' }}>
+                  <window.Ico n={ic} style={{ width: 15, height: 15, color: 'var(--color-primary-strong)' }} /> {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <SectionHeader title="Ready to publish" />
+            <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', padding: '1rem 1.15rem' }}>
+              <ProgressTrack label="Seven of nine blocks written" hint="Week 4 needs one more" value={7} total={9} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginTop: 14 }}>
+                {[['Cover image', false], ['Intro written', true], ['Every week has a practice', true], ['Capstone set', true]].map(([t, done]) => (
+                  <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: '0.92rem' }}>
+                    <window.Ico n={done ? 'circle-check-big' : 'circle'} style={{ width: 15, height: 15, color: done ? 'var(--color-success)' : 'var(--color-text-subtle)' }} />
+                    <span style={{ color: done ? 'var(--color-text-muted)' : 'var(--color-text)' }}>{t}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <GateNotice kind="dormant" title="Vera can draft an empty week">
+            She reads your outline and the earlier weeks, then writes one practice per Pillar. Off while the AI switch is off, and everything she writes is a draft you edit.
+          </GateNotice>
+        </div>
+      </div>
+    </window.Screen>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page />);
+</script>
+</body>
+</html>

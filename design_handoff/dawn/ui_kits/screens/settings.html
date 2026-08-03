@@ -1,0 +1,271 @@
+<!-- @dsCard group="Screens · Member" viewport="1440x900" name="Settings" subtitle="The settings suite as one Focus page: a section rail, one decision per row, and every default stated in plain words." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · Settings</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="screen.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  a { color: var(--color-primary-strong); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--color-primary); }html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="../app/topbar.jsx"></script>
+<script type="text/babel" src="../app/nav-rail.jsx"></script>
+<script type="text/babel" src="frame.jsx"></script>
+<script type="text/babel" src="../app/docks.jsx"></script>
+<script type="text/babel" data-presets="react">
+const K = window.DAWNFrequencyDesignSystem_c868e3;
+
+const { SectionHeader, RowCard, Button, IconButton, Badge, Card, Switch, Select, Input, Counter, CounterRow, Meter, GateNotice, Avatar, RankBadge, ProgressTrack } = K;
+const F = window;
+
+const SECTIONS = [
+  ['profile', 'Profile', 'user'],
+  ['appearance', 'Appearance', 'palette'],
+  ['notifications', 'Notifications', 'bell'],
+  ['connections', 'Connections and location', 'map-pin'],
+  ['account', 'Account and privacy', 'shield'],
+  ['plan', 'Plan and billing', 'credit-card'],
+];
+
+// One row per decision: a label, the plain consequence, and the control. No nested
+// panels, no settings that only make sense after you have changed another one.
+function Row({ title, hint, control, danger }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '0.85rem 0', borderBottom: '1px solid var(--color-border)' }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: '0.98rem', fontWeight: 600, letterSpacing: 'var(--tracking-tight)',
+          color: danger ? 'var(--color-danger)' : 'var(--color-text)' }}>{title}</div>
+        {hint ? <div style={{ fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)', marginTop: 2, lineHeight: 1.5, maxWidth: '34rem' }}>{hint}</div> : null}
+      </div>
+      <div style={{ flexShrink: 0 }}>{control}</div>
+    </div>
+  );
+}
+
+// The notification grid: four channels, per category, with the mute the product
+// actually promises. Never a wall of unlabelled checkboxes.
+const CHANNELS = ['In app', 'Email', 'Push', 'SMS'];
+const CATEGORIES = [
+  ['Your Circles', 'A meetup tonight, a new post on a wall you follow', [true, true, true, false]],
+  ['The Quest', 'A Journey drip, a Trophy, the season ending', [true, false, true, false]],
+  ['Messages', 'A DM, a room you are in', [true, true, true, false]],
+  ['Events', 'An RSVP answer, a reminder three days out', [true, true, false, false]],
+  ['From Vera', 'One dispatch a day at most', [true, false, false, false]],
+  ['Frequency news', 'Graduation, new features, the occasional letter', [true, true, false, false]],
+];
+
+function Page() {
+  const [sec, setSec] = React.useState('notifications');
+  const [grid, setGrid] = React.useState(() => CATEGORIES.map((c) => c[2].slice()));
+  const flip = (r, c) => setGrid((g) => g.map((row, i) => (i === r ? row.map((v, j) => (j === c ? !v : v)) : row)));
+  return (
+    <window.Screen active="profile" rail={
+      <window.Rail>
+        <div>
+          <SectionHeader title="You" />
+          <Card tone="feature" padding="1rem">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+              <Avatar name="Daniel Tyack" size={42} online />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '0.98rem', fontWeight: 700, letterSpacing: 'var(--tracking-tight)' }}>Daniel Tyack</div>
+                <div style={{ fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>@danieltyack</div>
+              </div>
+            </div>
+            <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <RankBadge rank="initiate" showStep />
+              <Counter kind="streak" value="50" size="xs" shape="chip" />
+            </div>
+          </Card>
+        </div>
+        <div>
+          <SectionHeader title="Your data" />
+          <Card tone="soft" padding="1rem">
+            <p style={{ margin: '0 0 11px', fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--color-text-muted)' }}>
+              Everything you have written, logged and saved, in one file. Yours whenever you want it.
+            </p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button size="sm" variant="ghost" style={{ flex: 1 }} iconLeft={<F.Ico n="download" style={{ width: 14, height: 14 }} />}>Export</Button>
+              <Button size="sm" variant="ghost" style={{ flex: 1 }}>Delete account</Button>
+            </div>
+          </Card>
+        </div>
+      </window.Rail>
+    }>
+      <F.Breadcrumb trail={['Profile', 'Settings']} />
+      <F.TitleRow title="Settings" status={<Badge>Beta</Badge>}
+        meta={[{ icon: 'shield-check', text: <>Everything here <strong>defaults to the quieter option</strong> — see <a href="#privacy">privacy</a></> }]} />
+
+      {/* The section rail: chips, so the whole surface is one page and one scroll. */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 18, paddingBottom: 16, borderBottom: '1px solid var(--color-border)' }}>
+        {SECTIONS.map(([id, label, ic]) => {
+          const on = sec === id;
+          return (
+            <button key={id} onClick={() => setSec(id)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '0.35rem 0.8rem', cursor: 'pointer', fontFamily: 'inherit',
+                borderRadius: 'var(--radius-pill)', fontSize: 'var(--text-meta)', fontWeight: on ? 700 : 500,
+                background: on ? 'var(--color-primary-bg)' : 'var(--color-surface)',
+                color: on ? 'var(--color-primary-strong)' : 'var(--color-text-muted)',
+                border: `1px solid ${on ? 'color-mix(in srgb, var(--color-primary) 34%, transparent)' : 'var(--color-border)'}` }}>
+              <F.Ico n={ic} style={{ width: 14, height: 14 }} /> {label}
+            </button>
+          );
+        })}
+      </div>
+
+      {sec === 'notifications' ? (
+        <>
+          <F.Beat first icon="bell" title="Notifications">
+            <p style={{ margin: '0 0 14px', fontSize: '0.98rem', color: 'var(--color-text-muted)', lineHeight: 1.6, maxWidth: '38rem' }}>
+              Four channels, one row per kind of thing. Every notification carries a fact or a five minute invitation, and none of them are designed to make you feel bad.
+            </p>
+            <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', overflow: 'hidden' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) repeat(4, 4.4rem)', gap: 8, padding: '0.7rem 1rem',
+                background: 'var(--color-surface-elevated)', borderBottom: '1px solid var(--color-border)' }}>
+                <span className="eyebrow" style={{ fontSize: 'var(--text-3xs)', color: 'var(--color-text-muted)' }}>What happened</span>
+                {CHANNELS.map((c) => (
+                  <span key={c} className="eyebrow" style={{ fontSize: 'var(--text-3xs)', color: 'var(--color-text-muted)', textAlign: 'center' }}>{c}</span>
+                ))}
+              </div>
+              {CATEGORIES.map(([label, hint], r) => (
+                <div key={label} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) repeat(4, 4.4rem)', gap: 8, padding: '0.7rem 1rem',
+                  alignItems: 'center', borderBottom: r < CATEGORIES.length - 1 ? '1px solid var(--color-border)' : 'none' }}>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: 'block', fontSize: '0.95rem', fontWeight: 600, letterSpacing: 'var(--tracking-tight)' }}>{label}</span>
+                    <span style={{ display: 'block', fontSize: 'var(--text-2xs)', color: 'var(--color-text-muted)', lineHeight: 1.45 }}>{hint}</span>
+                  </span>
+                  {CHANNELS.map((c, i) => (
+                    <span key={c} style={{ display: 'grid', placeItems: 'center' }}>
+                      {i === 3 ? (
+                        <span title="SMS is waiting on registration" style={{ color: 'var(--color-text-subtle)' }}>
+                          <F.Ico n="minus" style={{ width: 14, height: 14 }} />
+                        </span>
+                      ) : (
+                        <Switch checked={grid[r][i]} onChange={() => flip(r, i)} />
+                      )}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <GateNotice kind="dormant" title="SMS is built and waiting on registration">
+                The carrier paperwork is in flight. Until it clears, the column stays off for everyone rather than half working.
+              </GateNotice>
+            </div>
+          </F.Beat>
+
+          <F.Beat icon="moon" tone="signal" title="Quiet">
+            <div>
+              <Row title="Doomscroll mode" hint="Strips every prompt, count and suggestion from the app. The feed becomes a list of what your people did, and nothing asks you for anything."
+                control={<Switch />} />
+              <Row title="Weekly digest" hint="One email on Sunday afternoon. It skips itself entirely in a week where nothing happened."
+                control={<Switch checked />} />
+              <Row title="Quiet hours" hint="Nothing buzzes between these times, whatever it is."
+                control={<Select defaultValue="10pm to 7am" options={['Off', '10pm to 7am', '9pm to 8am']} />} />
+            </div>
+          </F.Beat>
+        </>
+      ) : sec === 'appearance' ? (
+        <>
+          <F.Beat first icon="palette" title="Appearance">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+              {[['DAWN', 'Warm cream and amber', true], ['Midnight', 'Cool slate, same amber', false]].map(([t, d, on]) => (
+                <button key={t} className="press" style={{ textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', padding: 0,
+                  borderRadius: 'var(--radius-card)', overflow: 'hidden', background: 'var(--color-surface)',
+                  border: `1px solid ${on ? 'color-mix(in srgb, var(--color-primary) 40%, transparent)' : 'var(--color-border)'}`,
+                  boxShadow: on ? 'var(--shadow-sm)' : 'none' }}>
+                  <span style={{ display: 'flex', height: 62 }} {...(t === 'Midnight' ? { 'data-skin': 'midnight' } : {})}>
+                    <span style={{ flex: 2, background: 'var(--color-canvas)' }} />
+                    <span style={{ flex: 1, background: 'var(--color-surface)' }} />
+                    <span style={{ width: 22, background: 'var(--color-primary)' }} />
+                    <span style={{ width: 22, background: 'var(--color-signal)' }} />
+                  </span>
+                  <span style={{ display: 'block', padding: '0.7rem 0.85rem' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                      <span style={{ fontSize: '0.98rem', fontWeight: 700 }}>{t}</span>
+                      {on ? <Badge tone="primary">On</Badge> : null}
+                    </span>
+                    <span style={{ display: 'block', fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)', marginTop: 2 }}>{d}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div style={{ marginTop: 16 }}>
+              <Row title="Mode" hint="Follow the device, or pick one and keep it." control={<Select defaultValue="Follow my device" options={['Follow my device', 'Light', 'Dark']} />} />
+              <Row title="Bigger text" hint="Scales the whole interface, not just the body copy." control={<Switch />} />
+              <Row title="Reduce motion" hint="Turns off every animation, including the wordmark." control={<Switch />} />
+            </div>
+          </F.Beat>
+        </>
+      ) : sec === 'plan' ? (
+        <>
+          <F.Beat first icon="credit-card" title="Plan and billing">
+            <GateNotice kind="preview" title="Everyone has Crew, free, until September 1"
+              action={<Button size="sm" disabled>Start a subscription</Button>}>
+              Membership is free through the beta, and this is the real screen. Founding pricing is 9 dollars a month, locked for the life of the subscription, and there is no card on file today.
+            </GateNotice>
+            <div style={{ marginTop: 16 }}>
+              <Row title="Crew" hint="Unlocks spending your Vault balance and the public rank endorsement. Everyone plays; only payers cash in." control={<Badge tone="signal">Free in beta</Badge>} />
+              <Row title="Pay what you want" hint="A supporter badge on your Crew membership, at whatever number you pick." control={<Switch />} />
+            </div>
+            <div style={{ marginTop: 18 }}>
+              <SectionHeader title="What you have earned" />
+              <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', padding: '1rem 1.15rem' }}>
+                <CounterRow size="md" items={[
+                  { kind: 'zaps', value: '2,105', caption: 'Zaps' },
+                  { kind: 'gems', value: '169', caption: 'Gems' },
+                  { kind: 'amplitude', value: '4,380', caption: 'Amplitude' },
+                ]} />
+                <p style={{ margin: '12px 0 0', fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>
+                  Zaps roll into Gems at five to one when the season ends. Amplitude never resets.
+                </p>
+              </div>
+            </div>
+          </F.Beat>
+        </>
+      ) : sec === 'connections' ? (
+        <F.Beat first icon="map-pin" title="Connections and location">
+          <Row title="Suggest people to me" hint="Off unless you turn it on. Nobody is told you asked until they ask too." control={<Switch checked />} />
+          <Row title="Only people I could actually meet" hint="Within about 15 miles." control={<Switch checked />} />
+          <Row title="What others see" hint="Your city, never your street. A precise location is only ever used to verify a check-in." control={<Select defaultValue="My city" options={['My city', 'My region', 'Nothing']} />} />
+          <Row title="Friends can see when I am online" hint="Presence, for friends only." control={<Switch checked />} />
+          <div style={{ marginTop: 14 }}>
+            <GateNotice kind="dormant" title="Matches are computed overnight">
+              Nothing here watches you in real time. Edges are recomputed nightly and held for a fortnight, so the suggestions stay steady.
+            </GateNotice>
+          </div>
+        </F.Beat>
+      ) : sec === 'account' ? (
+        <F.Beat first icon="shield" title="Account and privacy">
+          <Row title="Email" hint="Sign in is a magic link, so there is no password to forget." control={<Input defaultValue="daniel@frequencylocal.com" style={{ width: '17rem' }} />} />
+          <Row title="Verified member" hint="Verification unlocks Housing and gives your Trust Score its floor." control={<Badge tone="signal">Verified</Badge>} />
+          <Row title="Blocked people" hint="They cannot see you, message you, or appear anywhere you are." control={<Button size="sm" variant="ghost">Two people</Button>} />
+          <Row title="Demo content" hint="Seeded examples are labelled and greyed while the beta fills up." control={<Switch checked />} />
+          <Row title="Delete my account" hint="Removes everything, including what you wrote. This cannot be undone." control={<Button size="sm" variant="ghost">Delete</Button>} danger />
+        </F.Beat>
+      ) : (
+        <F.Beat first icon="user" title="Profile">
+          <Row title="Display name" control={<Input defaultValue="Daniel Tyack" style={{ width: '17rem' }} />} />
+          <Row title="Handle" hint="frequencylocal.com/danieltyack" control={<Input defaultValue="danieltyack" style={{ width: '17rem' }} />} />
+          <Row title="One line about you" hint="It shows under your name in a Circle. Plain beats clever." control={<Input defaultValue="Janitor. Building the thing." style={{ width: '17rem' }} />} />
+          <Row title="Spotlight page" hint="Your public link page, with your styled QR." control={<Button size="sm" variant="ghost">Edit Spotlight</Button>} />
+        </F.Beat>
+      )}
+    </window.Screen>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page />);
+</script>
+</body>
+</html>

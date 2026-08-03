@@ -1,0 +1,156 @@
+<!-- @dsCard group="Teasers" viewport="1180x779" name="Teaser · Market, Classifieds, Housing (light)" subtitle="Light-canvas version of the Market overview. Warm cream, deepened accents. 1600×1000." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency: the Market, Classifieds and Housing (light)</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="infographics.css">
+<style>
+  .scale-wide{width:800px;height:500px;overflow:hidden;border-radius:18px;box-shadow:var(--shadow-pop-lg);flex:0 0 auto}
+  .scale-wide .over{transform:scale(0.5);transform-origin:top left}
+
+  .over{position:relative;width:1600px;height:1000px;box-sizing:border-box;background:var(--color-marketing-canvas);color:var(--color-text);
+    padding:74px 80px 66px;display:flex;flex-direction:column;overflow:hidden}
+  .over .glowtop{background:radial-gradient(ellipse 70% 100% at 50% 0,rgba(226,145,47,0.14),transparent 70%)}
+  .ohd{position:relative}
+  .ohd .wordmark{position:absolute;top:0;right:0;font-size:26px;font-weight:800;color:var(--color-primary-strong)}
+  .ohd .eyb{font-size:23px;font-weight:700;letter-spacing:0.24em;text-transform:uppercase;color:var(--color-primary-strong);margin:0 0 18px}
+  .ohd h1{font-family:var(--font-display);text-transform:uppercase;font-size:76px;font-weight:400;line-height:0.92;letter-spacing:0.012em;margin:0;color:var(--color-text)}
+  .ohd .subh{font-size:27px;color:var(--color-text-muted);margin:16px 0 0;font-weight:400}
+
+  .lanes{position:relative;flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin:38px 0 0}
+  .lane{position:relative;background:var(--color-surface);border:1px solid var(--color-border);border-radius:26px;padding:40px 38px;
+    display:flex;flex-direction:column;border-top:5px solid var(--la);box-shadow:var(--shadow-md)}
+  .disc{width:112px;height:112px;border-radius:50%;background:color-mix(in srgb,var(--la) 26%,#fff);
+    display:flex;align-items:center;justify-content:center;margin-bottom:26px}
+  .disc svg{width:56px;height:56px;stroke:var(--lad);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .lane h2{font-family:var(--font-display);text-transform:uppercase;font-size:46px;font-weight:400;letter-spacing:0.012em;margin:0;color:var(--color-text)}
+  .lane .types{font-size:27px;font-weight:700;color:var(--lad);margin:10px 0 0}
+  .lane .meta{font-size:24px;line-height:1.45;color:var(--color-text-muted);margin:18px 0 0}
+  .lane .meta b{color:var(--color-text);font-weight:800}
+  .lane .spacer{flex:1}
+  .badge{display:inline-flex;align-items:center;gap:12px;margin-top:28px;padding:15px 22px;border-radius:14px;
+    font-size:24px;font-weight:800;line-height:1}
+  .badge svg{width:24px;height:24px;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .badge.connect{background:var(--color-surface-elevated);border:1px solid var(--color-border-strong);color:var(--color-text)}
+  .badge.connect svg{stroke:var(--color-text-subtle)}
+  .badge.pay{background:var(--flow-gold);color:#1b1610}
+  .badge.pay svg{stroke:#1b1610}
+  .badge .roll{font-size:18px;font-weight:600;opacity:0.7}
+
+  .ofoot{position:relative;margin-top:32px;padding-top:26px;border-top:1px solid var(--color-border);
+    font-size:26px;color:var(--color-text-muted);font-weight:400}
+  .ofoot b{color:var(--color-text);font-weight:800}
+</style>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <p class="eyebrow">Feature teaser · 07 · overview · light</p>
+    <h1>Market, Classifieds, Housing (light)</h1>
+    <p>Light-canvas version of the horizontal overview, for placements on the warm cream surface. Same spectrum and money-model payoff, accents deepened for legibility on white.</p>
+  </div>
+  <div class="row">
+    <div class="fmt">
+      <div class="fmtlabel">Web landscape · 1600 × 1000</div>
+      <div class="scale-wide"><div class="over" id="over"></div></div>
+    </div>
+  </div>
+</div>
+<script>
+const G = {
+  parcel:`<svg viewBox="0 0 48 48"><rect x="8" y="16" width="32" height="24" rx="2"/><path d="M8 24h32M24 16v24"/><path d="M24 16c-4-6-12-4-8 0M24 16c4-6 12-4 8 0"/></svg>`,
+  house:`<svg viewBox="0 0 48 48"><path d="M7 24L24 9l17 15M12 21v19h24V21"/><path d="M20 40V29h8v11"/></svg>`,
+  bag:`<svg viewBox="0 0 48 48"><path d="M11 16h26l-2 24H13z"/><path d="M18 16v-3a6 6 0 0 1 12 0v3"/></svg>`,
+};
+const CHK = `<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>`;
+const MSG = `<svg viewBox="0 0 24 24"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H10l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/></svg>`;
+const TWEAKS = /*EDITMODE-BEGIN*/{
+  "connectBadge": "Free to Post",
+  "marketBadge": "Secure checkout",
+  "showRollingOut": true,
+  "headline": "CLASSIFIDES • HOUSING • ROOMMATES • MARKET"
+}/*EDITMODE-END*/;
+const LANES = [
+  { la:'var(--flow-sage)', lad:'#5f7a48', g:'parcel', name:'Classifieds',
+    types:'Swap, gift, lend, or ask',
+    meta:'<b>Free members and up.</b><br>No fees, just neighbors.',
+    badge:{cls:'connect', icon:MSG, key:'connect'} },
+  { la:'var(--flow-ice)', lad:'#3f6591', g:'house', name:'Housing',
+    types:'Rentals, roommates, sublets',
+    meta:'<b>Members only.</b><br>Resonance roommate matching.',
+    badge:{cls:'connect', icon:MSG, key:'connect'} },
+  { la:'var(--flow-gold)', lad:'#9a6b12', g:'bag', name:'The Market',
+    types:'Products, services, tickets',
+    meta:'<b>Paid members and Spaces.</b><br>From your community\u2019s Spaces.',
+    badge:{cls:'pay', icon:CHK, key:'market'} },
+];
+function render(){
+  document.getElementById('over').innerHTML = `
+  <div class="glowtop"></div>
+  <div class="ohd">
+    <span class="wordmark">Frequency</span>
+    <p class="eyb">Buy, sell, trade</p>
+    <h1>${TWEAKS.headline}</h1>
+    <p class="subh">Three ways to get what you need from your community.</p>
+  </div>
+  <div class="lanes">
+    ${LANES.map(l=>{
+      const txt = l.badge.key==='market' ? TWEAKS.marketBadge : TWEAKS.connectBadge;
+      const roll = (l.badge.key==='market' && TWEAKS.showRollingOut) ? ` <span class="roll">(rolling out)</span>` : '';
+      return `
+      <div class="lane" style="--la:${l.la};--lad:${l.lad}">
+        <div class="disc">${G[l.g]}</div>
+        <h2>${l.name}</h2>
+        <p class="types">${l.types}</p>
+        <p class="meta">${l.meta}</p>
+        <div class="spacer"></div>
+        <span class="badge ${l.badge.cls}"${l.badge.key==='market'?'':' style="position:relative"'}>${l.badge.icon}${txt}${roll}</span>
+      </div>`;}).join('')}
+  </div>
+  <p class="ofoot"><b>Classifieds and Housing connect you, you settle offline.</b> The Market adds secure checkout.</p>`;
+}
+render();
+
+/* ---- Tweaks panel (host protocol) ---- */
+(function(){
+  const panel = document.createElement('div');
+  panel.id = 'tweaks';
+  panel.style.cssText = 'position:fixed;top:16px;right:16px;z-index:9999;width:280px;display:none;'
+    + 'background:var(--color-surface);border:1px solid var(--color-border-strong);border-radius:var(--radius-xl);'
+    + 'box-shadow:var(--shadow-lg);padding:16px 16px 18px;font-family:var(--font-sans);color:var(--color-text)';
+  panel.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <strong style="font-size:14px">Tweaks</strong>
+      <button id="tw-x" style="border:none;background:none;cursor:pointer;color:var(--color-text-subtle);font-size:18px;line-height:1">×</button>
+    </div>
+    <label style="display:block;font-size:12px;font-weight:700;margin:0 0 4px">Connect badge (Classifieds + Housing)</label>
+    <input id="tw-connect" type="text" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--color-border-strong);border-radius:var(--radius-md);font-family:inherit;font-size:13px;margin-bottom:12px">
+    <label style="display:block;font-size:12px;font-weight:700;margin:0 0 4px">Market badge</label>
+    <input id="tw-market" type="text" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--color-border-strong);border-radius:var(--radius-md);font-family:inherit;font-size:13px;margin-bottom:12px">
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-bottom:12px;cursor:pointer">
+      <input id="tw-roll" type="checkbox"> Show “(rolling out)” tag</label>
+    <label style="display:block;font-size:12px;font-weight:700;margin:0 0 4px">Headline</label>
+    <textarea id="tw-headline" rows="2" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--color-border-strong);border-radius:var(--radius-md);font-family:inherit;font-size:13px;resize:vertical"></textarea>`;
+  document.body.appendChild(panel);
+  const $ = id => panel.querySelector(id);
+  function sync(){ $('#tw-connect').value=TWEAKS.connectBadge; $('#tw-market').value=TWEAKS.marketBadge; $('#tw-roll').checked=TWEAKS.showRollingOut; $('#tw-headline').value=TWEAKS.headline; }
+  function set(edits){ Object.assign(TWEAKS, edits); render(); window.parent.postMessage({type:'__edit_mode_set_keys', edits}, '*'); }
+  $('#tw-connect').addEventListener('input', e=>set({connectBadge:e.target.value}));
+  $('#tw-market').addEventListener('input', e=>set({marketBadge:e.target.value}));
+  $('#tw-roll').addEventListener('change', e=>set({showRollingOut:e.target.checked}));
+  $('#tw-headline').addEventListener('input', e=>set({headline:e.target.value}));
+  $('#tw-x').addEventListener('click', ()=>{ panel.style.display='none'; window.parent.postMessage({type:'__edit_mode_dismissed'}, '*'); });
+  window.addEventListener('message', e=>{
+    const t = e.data && e.data.type;
+    if(t==='__activate_edit_mode'){ sync(); panel.style.display='block'; }
+    else if(t==='__deactivate_edit_mode'){ panel.style.display='none'; }
+  });
+  window.parent.postMessage({type:'__edit_mode_available'}, '*');
+})();
+</script>
+</body>
+</html>

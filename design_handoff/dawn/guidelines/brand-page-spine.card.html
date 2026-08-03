@@ -1,0 +1,66 @@
+<!-- @dsCard group="Brand & voice" viewport="1180x629" name="Marketing page spine" subtitle="One cadence for every public page: PhotoHero, lead, alternating beats, proof, the ink statement, the beta close. Adjacent sections never repeat a tone." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body{margin:0;padding:24px;background:var(--color-canvas);font-family:var(--font-sans);color:var(--color-text)}
+  .wrap{display:flex;gap:26px}
+  .spine{width:290px;flex:none;border-radius:var(--radius-card);overflow:hidden;border:1px solid var(--color-border)}
+  .beat{padding:13px 14px;font-size:.9rem;font-weight:700;display:flex;align-items:center;gap:9px}
+  .beat small{display:block;font-weight:600;font-size:var(--text-2xs);opacity:.75;margin-top:1px}
+  .n{width:19px;height:19px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:var(--text-3xs);font-weight:800;font-family:var(--font-mono)}
+  .t-photo{background:var(--color-ink);color:var(--color-on-ink)}
+  .t-photo .n{background:var(--color-primary);color:var(--color-text-on-primary)}
+  .t-canvas{background:var(--color-marketing-canvas);color:var(--color-text)}
+  .t-canvas .n{background:var(--color-surface);color:var(--color-text-muted)}
+  .t-surface{background:var(--color-surface);color:var(--color-text)}
+  .t-surface .n{background:var(--color-surface-elevated);color:var(--color-text-muted)}
+  .t-ink{background:var(--color-ink);color:var(--color-on-ink)}
+  .t-ink .n{background:var(--color-primary);color:var(--color-text-on-primary)}
+  .seam{height:2px}
+  h2{font-size:var(--text-meta);text-transform:uppercase;letter-spacing:.16em;color:var(--color-text-subtle);margin:0 0 10px;font-weight:800}
+  .tones{display:flex;gap:10px;margin-bottom:20px}
+  .tone{flex:1;border-radius:var(--radius-control);padding:12px;border:1px solid var(--color-border);font-size:var(--text-meta);font-weight:700}
+  ul{margin:0;padding-left:1.1rem;font-size:.94rem;line-height:1.75;color:var(--color-text-muted)}
+  li b{color:var(--color-text)}
+</style>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="spine">
+      <div class="beat t-photo"><span class="n">1</span><span>PhotoHero<small>one per page, real photography</small></span></div>
+      <div class="seam light-strip"></div>
+      <div class="beat t-canvas"><span class="n">2</span><span>Lead<small>name the problem, plainly</small></span></div>
+      <div class="beat t-surface"><span class="n">3</span><span>Beat<small>image and text, alternating</small></span></div>
+      <div class="beat t-canvas"><span class="n">4</span><span>Beat<small>the tone flips every time</small></span></div>
+      <div class="beat t-surface"><span class="n">5</span><span>Proof<small>honest counts, real first names</small></span></div>
+      <div class="seam light-strip"></div>
+      <div class="beat t-ink"><span class="n">6</span><span>Ink statement<small>the cinematic beat, max two per page</small></span></div>
+      <div class="seam light-strip"></div>
+      <div class="beat t-canvas"><span class="n">7</span><span>FAQ<small>real questions, liftable answers</small></span></div>
+      <div class="seam light-strip"></div>
+      <div class="beat t-ink"><span class="n">8</span><span>BetaCTA<small>the close, one CTA label</small></span></div>
+    </div>
+    <div>
+      <h2>The three marketing surfaces, in sequence</h2>
+      <div class="tones">
+        <div class="tone" style="background:var(--color-marketing-canvas)">canvas<br><span style="font-weight:600;color:var(--color-text-muted)">warm sand · outdoor, connective</span></div>
+        <div class="tone" style="background:var(--color-surface)">surface<br><span style="font-weight:600;color:var(--color-text-muted)">white · indoor, focus</span></div>
+        <div class="tone" style="background:var(--color-ink);color:var(--color-on-ink);border-color:var(--color-ink-border)">ink<br><span style="font-weight:600;color:var(--color-on-ink-muted)">the cinematic dark beat</span></div>
+      </div>
+      <h2>The rules that keep the cadence</h2>
+      <ul>
+        <li><b>Never two adjacent sections in the same tone.</b> No canvas onto canvas.</li>
+        <li><b>Max two ink bands per page</b>, one mid-page and one at the close.</li>
+        <li><b>No ink band without its light-strip seam</b>, top and bottom.</li>
+        <li>Shared vertical rhythm and container widths. Surprise comes from content and imagery, never from spacing that jumps.</li>
+        <li>If a pattern appears twice it is a component. Pages never hand-roll a hero, a button, or FAQ chrome.</li>
+        <li><b>When a page feels thin, add a beat.</b> Do not pad the copy.</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

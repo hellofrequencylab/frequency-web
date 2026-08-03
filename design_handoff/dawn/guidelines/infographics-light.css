@@ -1,0 +1,91 @@
+/* Light-canvas variant of the Frequency teaser-infographic system.
+   Warm cream surface, Anton headers, per-flow --accent deepened for legibility
+   on white via --accInk. Pairs with infographics.js (flows 2–6). */
+:root{
+  --paper:var(--color-marketing-canvas); --card-bd:var(--color-border);
+  --ink-txt:var(--color-text); --muted:var(--color-text-muted); --arrow:#c9a06a;
+  --accent:var(--color-primary);
+}
+html,body{margin:0}
+body{background:var(--color-canvas);font-family:var(--font-sans);color:var(--color-text);padding:44px 28px 64px}
+.wrap{max-width:900px;margin:0 auto}
+.head .eyebrow{color:var(--color-primary-strong);margin:0 0 10px}
+.head h1{font-family:var(--font-display);text-transform:uppercase;font-size:32px;margin:0}
+.head p{max-width:660px;color:var(--color-text-muted);font-size:15px;line-height:1.6;margin:12px 0 0}
+.row{display:flex;gap:48px;align-items:flex-start;margin-top:40px;flex-wrap:wrap}
+.fmt{display:flex;flex-direction:column;gap:12px}
+.fmtlabel{font-family:var(--font-mono);font-size:11px;color:var(--color-text-subtle);text-transform:uppercase;letter-spacing:0.08em}
+
+/* scaled previews */
+.scale-feed{width:378px;height:630px;overflow:hidden;border-radius:18px;box-shadow:var(--shadow-pop-lg);flex:0 0 auto}
+.scale-story{width:378px;height:672px;overflow:hidden;border-radius:22px;box-shadow:var(--shadow-pop-lg);flex:0 0 auto}
+.scale-feed .card,.scale-story .card{transform:scale(0.35);transform-origin:top left}
+
+/* the artifact, light */
+.card{position:relative;background:var(--paper);color:var(--ink-txt);box-sizing:border-box;overflow:hidden;display:grid;grid-template-rows:auto 1fr auto;
+  --accInk:color-mix(in srgb,var(--accent) 60%,#2a1c08)}
+.card.feed{width:1080px;height:1800px;padding:80px 88px 76px;row-gap:56px}
+.card.story{width:1080px;height:1920px;padding:112px 90px 96px;row-gap:68px}
+.glowtop{position:absolute;left:0;right:0;top:-160px;height:520px;pointer-events:none;
+  background:radial-gradient(ellipse 60% 100% at 50% 0,color-mix(in srgb,var(--accent) 20%,transparent),transparent 70%)}
+.slat{display:none}
+
+.hd{position:relative}
+.wordmark{position:absolute;top:0;right:0;font-size:26px;font-weight:800;color:var(--color-primary-strong)}
+.eyb{font-size:24px;font-weight:700;letter-spacing:0.24em;text-transform:uppercase;color:var(--accInk);margin:0 0 26px}
+.hl{font-family:var(--font-display);text-transform:uppercase;font-size:66px;font-weight:400;line-height:0.92;letter-spacing:0.012em;margin:0;color:var(--ink-txt);max-width:940px}
+.hl .g{color:var(--accInk)}
+.intro{font-size:30px;line-height:1.5;color:var(--muted);margin:30px 0 0;max-width:840px;font-weight:400}
+
+.flow{position:relative;display:flex;flex-direction:column;justify-content:center;min-height:0}
+.spine{position:absolute;left:63px;top:64px;bottom:64px;width:0;border-left:3px dashed var(--arrow)}
+.step{position:relative;display:flex;gap:44px;align-items:flex-start;padding-bottom:48px}
+.story .step{padding-bottom:52px}
+.step:last-child{padding-bottom:0}
+.glyph{position:relative;z-index:2;width:128px;height:128px;border-radius:50%;flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;background:var(--color-surface);border:2px solid var(--card-bd);box-shadow:var(--shadow-sm)}
+.glyph svg{width:60px;height:60px;stroke:var(--accInk);stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.glyph.n1,.glyph.n2,.glyph.n3{background:color-mix(in srgb,var(--accent) 14%,var(--color-surface))}
+.glyph.lit,.glyph.payoff{background:var(--accent);border-color:transparent;
+  box-shadow:0 0 0 12px color-mix(in srgb,var(--accent) 16%,transparent),0 0 44px 6px color-mix(in srgb,var(--accent) 28%,transparent)}
+.glyph.lit svg,.glyph.payoff svg{stroke:#231708}
+.glyph.dim{background:var(--color-surface-elevated);border-style:dashed;border-color:var(--color-border-strong)}
+.glyph.dim svg{stroke:var(--color-text-subtle);stroke-width:1.6}
+.txt{padding-top:8px}
+.step .lbl{font-family:var(--font-display);text-transform:uppercase;font-size:44px;font-weight:400;letter-spacing:0.012em;color:var(--ink-txt);margin:0;line-height:1.02}
+.step.dim .lbl{color:var(--color-text-subtle)}
+.step .sub{font-size:25px;font-weight:700;color:var(--accInk);margin:8px 0 0}
+.step.dim .sub,.payoff-txt .sub{color:var(--color-text-subtle)}
+.payoff-txt .sub{color:var(--accInk)}
+.step .desc{font-size:26px;font-weight:400;line-height:1.5;color:var(--muted);margin:14px 0 0;max-width:640px}
+.daytag{display:inline-block;font-size:19px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--accInk);border:1.5px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:999px;padding:4px 14px;margin-bottom:10px}
+
+/* return loop (flow 6) */
+.loopnote{display:flex;align-items:center;gap:28px;margin-top:20px;padding:26px 32px;border-radius:22px;
+  background:color-mix(in srgb,var(--accent) 12%,var(--color-surface));border:1.5px solid color-mix(in srgb,var(--accent) 34%,transparent)}
+.loopnote .licon{width:72px;height:72px;flex:0 0 auto;display:flex;align-items:center;justify-content:center}
+.loopnote .licon svg{width:56px;height:56px;stroke:var(--accInk);stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.loopnote p{margin:0;font-size:27px;line-height:1.4;color:var(--ink-txt);font-weight:600}
+
+.foot{position:relative}
+.divider{height:1px;background:var(--card-bd);margin-bottom:30px}
+.stat{font-size:29px;line-height:1.45;color:var(--muted);font-weight:400;margin:0}
+.stat b{color:var(--ink-txt);font-weight:800}
+.cta{display:inline-flex;align-items:center;gap:12px;margin-top:30px;font-size:27px;font-weight:800;color:var(--accInk)}
+.cta svg{width:26px;height:26px;stroke:var(--accInk);stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── Per-flow accents ──────────────────────────────────────────────────────
+   Each teaser owns ONE accent so a set of them reads as a family rather than a
+   rainbow. These are teaser-only primitives: they are brighter than the DAWN
+   palette because a teaser competes in a feed, and they live here rather than in
+   any individual teaser so the family stays editable in one place. */
+:root {
+  --flow-gold: #FFD25E; /* The First Win · gold */
+  --flow-teal: #7FD1C4; /* Focus Ritual · teal */
+  --flow-ice: #8AB6E0; /* Never Miss Twice · ice blue */
+  --flow-amber: #E0A24A; /* No Lead Left Behind · amber */
+  --flow-coral: #FF8A6B; /* First Responder · coral */
+  --flow-olive: #C9D16B; /* One-Timer to Regular · olive */
+  --flow-sage: #A8C78F; /* Classifieds lane · sage */
+}

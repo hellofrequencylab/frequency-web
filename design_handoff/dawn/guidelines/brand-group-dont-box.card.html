@@ -1,0 +1,55 @@
+<!-- @dsCard group="Brand & voice" viewport="1180x560" name="Group, don't box" subtitle="A card means a distinct OBJECT. Lists and rail sections group with a title and whitespace — not a box each." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DAWN · Group, don’t box</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="card.css">
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-head">
+    <span class="eyebrow">Brand & voice</span>
+    <h1>Group, don’t box</h1>
+    <p>The single fastest way to make an interface look generic is to put a card around every row. A card means "this is a distinct object you can act on". A list of related things is one group: a small tracked title, hairlines, and air. This is the rule the whole in-app register is built on.</p>
+    <hr class="rule-amber">
+  </div>
+  <h2>The same three items, two ways</h2>
+  <div class="dd">
+    <div class="avoid">
+      <span class="lbl">Avoid · a box each</span>
+      <div style="display:flex;flex-direction:column;gap:0.5rem">
+        <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);padding:0.7rem 0.85rem;font-size:0.9rem">Maya joined River Run</div>
+        <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);padding:0.7rem 0.85rem;font-size:0.9rem">Sound bath · Thu 7pm</div>
+        <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);padding:0.7rem 0.85rem;font-size:0.9rem">Leo earned Adept</div>
+      </div>
+      <p class="use" style="margin-top:0.8rem;font-size:var(--text-2xs);color:var(--color-text-subtle)">Three shadows, three borders, three radii — and nothing about the shapes says these belong together.</p>
+    </div>
+    <div class="prefer">
+      <span class="lbl">Prefer · one group</span>
+      <p class="eyebrow" style="margin:0 0 0.5rem;color:var(--color-text-muted);font-size:var(--text-2xs)">Near you this week</p>
+      <div>
+        <div style="display:flex;justify-content:space-between;gap:1rem;padding:0.55rem 0;font-size:0.9rem;color:var(--color-text-muted)"><span>Maya joined River Run</span><span style="color:var(--color-text-subtle);font-family:var(--font-mono);font-size:var(--text-2xs)">2h</span></div>
+        <div style="display:flex;justify-content:space-between;gap:1rem;padding:0.55rem 0;font-size:0.9rem;color:var(--color-text-muted);border-top:1px solid var(--color-border)"><span>Sound bath</span><span style="color:var(--color-text-subtle);font-family:var(--font-mono);font-size:var(--text-2xs)">Thu 7pm</span></div>
+        <div style="display:flex;justify-content:space-between;gap:1rem;padding:0.55rem 0;font-size:0.9rem;color:var(--color-text-muted);border-top:1px solid var(--color-border)"><span>Leo earned Adept</span><span style="color:var(--color-text-subtle);font-family:var(--font-mono);font-size:var(--text-2xs)">1d</span></div>
+      </div>
+      <p class="use" style="margin-top:0.8rem;font-size:var(--text-2xs);color:var(--color-text-subtle)">One title, one rhythm, one object. It reads faster and it prints like a page.</p>
+    </div>
+  </div>
+  <h2>When a card IS right</h2>
+  <div class="g g3">
+    <div class="panel"><div class="tok">An entity</div><p class="use">A Circle, an event, a listing — something with its own page.</p></div>
+    <div class="panel"><div class="tok">A decision</div><p class="use">A plan to pick, a Space to claim. Something you choose between.</p></div>
+    <div class="panel"><div class="tok">A distinct object on a page</div><p class="use">A stat block, a media frame. Not a row in a list of rows.</p></div>
+  </div>
+  <div class="laws">
+    <p><b>One card per object.</b> If two cards sit in a list and behave identically, they are rows.</p>
+    <p><b>Group with a title.</b> A tracked label plus space does everything a box does, without the noise.</p>
+    <p><b>Hairlines over frames.</b> Separate rows with one warm border, and only between them.</p>
+    <p><b>Air is the cheapest tool.</b> Before adding a container, add spacing and see if the problem is gone.</p>
+  </div>
+</div>
+</body>
+</html>

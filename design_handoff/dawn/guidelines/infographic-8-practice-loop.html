@@ -1,0 +1,174 @@
+<!-- @dsCard group="Teasers" viewport="1180x996" name="Teaser · The Practice Loop (yoga)" subtitle="Circular flow, one system that keeps client connections alive. Light canvas, Anton headers. Square (1080×1080) + phone story (1080×1920)." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency, The Practice Loop</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  :root{ --paper:var(--color-marketing-canvas); --card-bd:#e0d6c4; --disc-bd:#d8ccb8; --ink-txt:var(--color-text); --muted:var(--color-text-muted); --accent:var(--color-primary); --accInk:var(--color-primary-strong); --ring:#c9a06a; }
+  html,body{margin:0}
+  body{background:var(--color-canvas);font-family:var(--font-sans);color:var(--color-text);padding:44px 28px 64px}
+  .wrap{max-width:900px;margin:0 auto}
+  .head .eyebrow{color:var(--color-primary-strong);margin:0 0 10px}
+  .head h1{font-family:var(--font-display);text-transform:uppercase;font-size:32px;margin:0}
+  .head p{max-width:660px;color:var(--color-text-muted);font-size:15px;line-height:1.65;margin:14px 0 0}
+  .row{display:flex;gap:48px;align-items:flex-start;margin-top:40px;flex-wrap:wrap}
+  .fmt{display:flex;flex-direction:column;gap:12px}
+  .fmtlabel{font-family:var(--font-mono);font-size:11px;color:var(--color-text-subtle);text-transform:uppercase;letter-spacing:0.08em}
+  .scale-sq{width:432px;height:432px;overflow:hidden;border-radius:18px;box-shadow:var(--shadow-pop-lg);flex:0 0 auto}
+  .scale-sq .card{transform:scale(0.4);transform-origin:top left}
+  .scale-story{width:378px;height:672px;overflow:hidden;border-radius:22px;box-shadow:var(--shadow-pop-lg);flex:0 0 auto}
+  .scale-story .card{transform:scale(0.35);transform-origin:top left}
+
+  .card{position:relative;background:var(--paper);color:var(--ink-txt);box-sizing:border-box;overflow:hidden;
+    display:grid;grid-template-rows:auto 1fr auto;align-items:center}
+  .card.sq{width:1080px;height:1080px;padding:64px 76px 60px;row-gap:28px}
+  .card.story{width:1080px;height:1920px;padding:120px 90px 104px;row-gap:72px}
+  .glowtop{position:absolute;left:0;right:0;top:-180px;height:560px;pointer-events:none;
+    background:radial-gradient(ellipse 60% 100% at 50% 0,rgba(226,145,47,0.18),transparent 70%)}
+  .slat{display:none}
+
+  .hd{position:relative;text-align:center}
+  .wordmark{position:absolute;top:0;right:0;font-size:24px;font-weight:800;color:var(--accInk)}
+  .eyb{font-size:22px;font-weight:700;letter-spacing:0.24em;text-transform:uppercase;color:var(--accInk);margin:0 0 18px}
+  .hl{font-family:var(--font-display);text-transform:uppercase;font-size:60px;font-weight:400;line-height:0.92;letter-spacing:0.012em;margin:0;color:var(--ink-txt)}
+  .hl .g{color:var(--accInk)}
+  .story .hl{font-size:72px}
+  .intro{font-size:24px;line-height:1.45;color:var(--muted);margin:18px auto 0;max-width:720px;font-weight:400}
+  .story .intro{font-size:29px;max-width:840px}
+
+  /* ---- the ring ---- */
+  .ringwrap{position:relative;display:flex;align-items:center;justify-content:center;min-height:0}
+  .sq .eyb{margin:0 0 14px}
+  .sq .hl{font-size:52px}
+  .sq .intro{font-size:21px;margin-top:14px;max-width:620px}
+  .sq .hub{width:176px;height:176px}
+  .sq .hub .hlabel{font-size:27px}
+  .sq .hub .hsub{font-size:15px;max-width:120px;margin-top:6px}
+  .sq .disc{width:88px;height:88px;margin:0 auto 10px}
+  .sq .disc svg{width:44px;height:44px}
+  .sq .disc .num{width:32px;height:32px;font-size:16px;top:-6px;left:-6px}
+  .sq .node{width:178px}
+  .sq .node .nlbl{font-size:23px}
+  .sq .node .nsub{font-size:17px;margin-top:4px;line-height:1.3}
+  .sq .divider{margin-bottom:20px}
+  .sq .stat{font-size:23px}
+  .sq .cta{margin-top:18px;font-size:23px}
+  .ring{position:relative;width:548px;height:548px}
+  .story .ring{width:880px;height:880px}
+  .ringsvg{position:absolute;inset:0;width:100%;height:100%}
+  .hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:236px;height:236px;border-radius:50%;
+    background:#fff;border:2px solid var(--card-bd);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;box-shadow:0 8px 24px -6px rgba(40,30,16,0.12)}
+  .hub .hlabel{font-family:var(--font-display);text-transform:uppercase;font-size:34px;line-height:0.94;color:var(--accInk)}
+  .hub .hsub{font-size:18px;color:var(--muted);margin-top:8px;max-width:150px;line-height:1.3}
+
+  .node{position:absolute;width:220px;transform:translate(-50%,-50%);text-align:center}
+  .disc{width:118px;height:118px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;
+    background:color-mix(in srgb,var(--accent) 14%,#fff);border:2px solid var(--disc-bd);position:relative}
+  .disc svg{width:54px;height:54px;stroke:var(--accInk);stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .disc .num{position:absolute;top:-8px;left:-8px;width:38px;height:38px;border-radius:50%;background:var(--accent);color:#fff;
+    font-family:var(--font-mono);font-size:19px;font-weight:600;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(40,30,16,0.25)}
+  .node.lit .disc{background:var(--accent);border-color:transparent;box-shadow:0 0 0 10px rgba(226,145,47,0.14),0 0 40px 4px rgba(226,145,47,0.28)}
+  .node.lit .disc svg{stroke:#fff}
+  .node.lit .disc .num{background:#fff;color:var(--accInk)}
+  .node .nlbl{font-size:27px;font-weight:700;color:var(--ink-txt);line-height:1.1}
+  .story .node .nlbl{font-size:29px}
+  .node .nsub{font-size:20px;font-weight:400;color:var(--muted);margin-top:5px;line-height:1.32}
+  .story .node .nsub{font-size:22px}
+
+  .foot{position:relative;text-align:center}
+  .divider{height:1px;background:var(--card-bd);margin-bottom:24px}
+  .stat{font-size:26px;line-height:1.4;color:var(--muted);font-weight:400;margin:0}
+  .stat b{color:var(--ink-txt);font-weight:800}
+  .story .stat{font-size:29px}
+  .cta{display:inline-flex;align-items:center;gap:12px;margin-top:24px;font-size:26px;font-weight:800;color:var(--accInk)}
+  .cta svg{width:24px;height:24px;stroke:var(--accInk);stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+</style>
+<style>html{background:var(--color-canvas);min-height:100vh}body{background:var(--color-canvas);min-height:100vh;box-sizing:border-box}</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <p class="eyebrow">Feature teaser · yoga · circular flow</p>
+    <h1>The Practice Loop</h1>
+    <p>A circular flow (not a chain) for a yoga teacher: one system that turns a first-timer into a regular, then does it again. Light canvas, Anton headers.</p>
+  </div>
+  <div class="row">
+    <div class="fmt"><div class="fmtlabel">Square / feed · 1080 × 1080</div><div class="scale-sq"><div class="card sq" id="sq"></div></div></div>
+    <div class="fmt"><div class="fmtlabel">Phone story · 1080 × 1920</div><div class="scale-story"><div class="card story" id="story"></div></div></div>
+  </div>
+</div>
+<script>
+const G = {
+  capture:`<svg viewBox="0 0 48 48"><path d="M8 8h13v13H8z"/><path d="M27 8h13v13H27z"/><path d="M8 27h13v13H8z"/><path d="M27 27h5v5M40 27v6M27 40h6M40 37v3"/></svg>`,
+  nurture:`<svg viewBox="0 0 48 48"><rect x="7" y="12" width="34" height="24" rx="3"/><path d="M8 15l16 11 16-11"/></svg>`,
+  sell:`<svg viewBox="0 0 48 48"><path d="M13 16h22l-2 22H15z"/><path d="M18 16a6 6 0 0 1 12 0"/></svg>`,
+  checkin:`<svg viewBox="0 0 48 48"><rect x="15" y="6" width="18" height="36" rx="3"/><path d="M19 22l3 3 6-7"/></svg>`,
+  return:`<svg viewBox="0 0 48 48"><path d="M40 24a16 16 0 1 0-4.7 11.3"/><path d="M40 13v9h-9"/><circle cx="24" cy="24" r="4" fill="currentColor" stroke="none"/></svg>`,
+};
+const NODES = [
+  { g:'capture', lbl:'Capture', sub:'Link page, Space, Events or a QR' },
+  { g:'nurture', lbl:'Nurture', sub:'One CRM + email funnels' },
+  { g:'sell',    lbl:'Book & Sell', sub:'RSVPs, packages, subscriptions' },
+  { g:'checkin', lbl:'Check In', sub:'Scan the QR at the session' },
+  { g:'return',  lbl:'They Come Back', sub:'Gamified so it keeps looping', lit:true },
+];
+const ARROW = `<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`;
+
+function build(el, isStory){
+  const N = NODES.length, R = isStory ? 338 : 212, cx = isStory ? 440 : 274, cy = isStory ? 440 : 274;
+  // node centers, starting at top (-90deg), clockwise
+  const pts = NODES.map((_,i)=>{ const a=(-90 + i*360/N)*Math.PI/180; return {x:cx+R*Math.cos(a), y:cy+R*Math.sin(a), a}; });
+  // arc arrows between consecutive nodes along a slightly inner circle
+  const AR = R*0.995;
+  let arcs='';
+  for(let i=0;i<N;i++){
+    const from=pts[i], to=pts[(i+1)%N];
+    const a1=(-90+i*360/N), a2=(-90+(i+1)*360/N);
+    // trim endpoints off the discs
+    const trim=15*Math.PI/180;
+    const s1=(a1*Math.PI/180)+trim, s2=(a2*Math.PI/180)-trim;
+    const x1=cx+AR*Math.cos(s1), y1=cy+AR*Math.sin(s1);
+    const x2=cx+AR*Math.cos(s2), y2=cy+AR*Math.sin(s2);
+    arcs+=`<path d="M${x1} ${y1} A ${AR} ${AR} 0 0 1 ${x2} ${y2}" fill="none" stroke="var(--ring)" stroke-width="3" stroke-dasharray="7 8"/>`;
+    // arrowhead at x2,y2 pointing along tangent
+    const ta=s2+Math.PI/2;
+    const hx=Math.cos(ta), hy=Math.sin(ta);
+    const px=-Math.sin(ta), py=Math.cos(ta);
+    const L=13,W=7;
+    arcs+=`<path d="M${x2} ${y2} L${x2-L*hx+W*px} ${y2-L*hy+W*py} L${x2-L*hx-W*px} ${y2-L*hy-W*py} Z" fill="var(--accent)"/>`;
+  }
+  const nodesHTML = NODES.map((n,i)=>`
+    <div class="node ${n.lit?'lit':''}" style="left:${pts[i].x}px;top:${pts[i].y}px">
+      <div class="disc">${G[n.g]}<span class="num">${i+1}</span></div>
+      <div class="nlbl">${n.lbl}</div>
+      <div class="nsub">${n.sub}</div>
+    </div>`).join('');
+  const size = isStory ? 880 : 548;
+  el.innerHTML = `
+    <div class="glowtop"></div><div class="slat"></div>
+    <div class="hd">
+      <span class="wordmark">Frequency</span>
+      <p class="eyb">The practice loop</p>
+      <h1 class="hl">One system.<br><span class="g">They keep coming back.</span></h1>
+      <p class="intro">Everything a yoga practice needs to run, tied together so a first-timer becomes a regular, again and again.</p>
+    </div>
+    <div class="ringwrap"><div class="ring" style="width:${size}px;height:${size}px">
+      <svg class="ringsvg" viewBox="0 0 ${size} ${size}">${arcs}</svg>
+      <div class="hub"><div class="hlabel">One<br>System</div><div class="hsub">Brand, CRM, checkout, all in one</div></div>
+      ${nodesHTML}
+    </div></div>
+    <div class="foot">
+      <div class="divider"></div>
+      <p class="stat">Capture a lead anywhere. <b>One system</b> keeps the connection alive.</p>
+      <span class="cta">See your practice on Frequency, free ${ARROW}</span>
+    </div>`;
+}
+build(document.getElementById('sq'), false);
+build(document.getElementById('story'), true);
+</script>
+</body>
+</html>
