@@ -6,6 +6,22 @@ import { ClaimButton } from './claim-button'
 
 export const dynamic = 'force-dynamic'
 
+// Scan destination, not a browse page: title carries the node's label for the
+// tab/share sheet; noindex because the URL exists to be scanned, not searched
+// (and may carry a signed secret in the query).
+export async function generateMetadata({ params }: { params: Promise<{ nodeId: string }> }) {
+  const { nodeId } = await params
+  const { data: node } = await createAdminClient()
+    .from('nodes')
+    .select('label, active')
+    .eq('id', nodeId)
+    .maybeSingle()
+  return {
+    title: node?.active && node.label ? node.label : 'Node',
+    robots: { index: false },
+  }
+}
+
 // Landing page for a scanned physical node (the URL a QR/NFC encodes:
 // /n/<nodeId>). Shows the spot + a Claim button that runs the verified pipeline.
 export default async function NodePage({

@@ -274,6 +274,79 @@ export type Database = {
           },
         ]
       }
+      app_instances: {
+        Row: {
+          app_asset_id: string | null
+          config: Json | null
+          created_at: string
+          created_by: string | null
+          id: string
+          manifest_key: string
+          position: number
+          slot: string | null
+          space_id: string
+          status: string
+          style_override: Json | null
+          surface_ref: string | null
+          surface_type: string
+          updated_at: string
+        }
+        Insert: {
+          app_asset_id?: string | null
+          config?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          manifest_key: string
+          position?: number
+          slot?: string | null
+          space_id: string
+          status?: string
+          style_override?: Json | null
+          surface_ref?: string | null
+          surface_type: string
+          updated_at?: string
+        }
+        Update: {
+          app_asset_id?: string | null
+          config?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          manifest_key?: string
+          position?: number
+          slot?: string | null
+          space_id?: string
+          status?: string
+          style_override?: Json | null
+          surface_ref?: string | null
+          surface_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_instances_app_asset_id_fkey"
+            columns: ["app_asset_id"]
+            isOneToOne: false
+            referencedRelation: "library_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "app_instances_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "app_instances_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_overrides: {
         Row: {
           app_id: string
@@ -1457,7 +1530,15 @@ export type Database = {
           thread?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "circle_templates_owner_space_id_fkey"
+            columns: ["owner_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       circle_transfer_offers: {
         Row: {
@@ -1546,6 +1627,7 @@ export type Database = {
           slug: string
           space_id: string | null
           status: Database["public"]["Enums"]["group_status"]
+          theme: Json
           timezone: string | null
           topical_channel_id: string | null
           type: Database["public"]["Enums"]["circle_type"]
@@ -1575,6 +1657,7 @@ export type Database = {
           slug: string
           space_id?: string | null
           status?: Database["public"]["Enums"]["group_status"]
+          theme?: Json
           timezone?: string | null
           topical_channel_id?: string | null
           type?: Database["public"]["Enums"]["circle_type"]
@@ -1604,6 +1687,7 @@ export type Database = {
           slug?: string
           space_id?: string | null
           status?: Database["public"]["Enums"]["group_status"]
+          theme?: Json
           timezone?: string | null
           topical_channel_id?: string | null
           type?: Database["public"]["Enums"]["circle_type"]
@@ -1643,6 +1727,66 @@ export type Database = {
             columns: ["topical_channel_id"]
             isOneToOne: false
             referencedRelation: "topical_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      claim_tokens: {
+        Row: {
+          consumed_at: string | null
+          consumed_by: string | null
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          revoked_at: string | null
+          revoked_reason: string | null
+          sent_at: string | null
+          subject_id: string
+          subject_type: string
+          token_hash: string
+        }
+        Insert: {
+          consumed_at?: string | null
+          consumed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          sent_at?: string | null
+          subject_id: string
+          subject_type: string
+          token_hash: string
+        }
+        Update: {
+          consumed_at?: string | null
+          consumed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          sent_at?: string | null
+          subject_id?: string
+          subject_type?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_tokens_consumed_by_fkey"
+            columns: ["consumed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_tokens_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -4348,6 +4492,81 @@ export type Database = {
           },
         ]
       }
+      event_host_transfers: {
+        Row: {
+          created_at: string
+          event_id: string
+          from_space_id: string | null
+          id: string
+          initiated_by: string
+          requested_by: string
+          responded_at: string | null
+          responded_by: string | null
+          status: string
+          to_space_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          from_space_id?: string | null
+          id?: string
+          initiated_by: string
+          requested_by: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string
+          to_space_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          from_space_id?: string | null
+          id?: string
+          initiated_by?: string
+          requested_by?: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string
+          to_space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_host_transfers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_host_transfers_from_space_id_fkey"
+            columns: ["from_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_host_transfers_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_host_transfers_responded_by_fkey"
+            columns: ["responded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_host_transfers_to_space_id_fkey"
+            columns: ["to_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_media: {
         Row: {
           caption: string | null
@@ -4852,12 +5071,14 @@ export type Database = {
       event_tickets: {
         Row: {
           amount_cents: number
+          attribution_ref: string | null
           buyer_profile_id: string | null
           created_at: string
           currency: string
           entity_id: string
           event_id: string
           id: string
+          order_source: string | null
           platform_fee_cents: number
           qty: number
           refunded_at: string | null
@@ -4865,16 +5086,19 @@ export type Database = {
           stripe_checkout_session_id: string | null
           stripe_payment_intent_id: string | null
           succeeded_at: string | null
+          take_rate_bps: number | null
           ticket_type_id: string | null
         }
         Insert: {
           amount_cents: number
+          attribution_ref?: string | null
           buyer_profile_id?: string | null
           created_at?: string
           currency?: string
           entity_id?: string
           event_id: string
           id?: string
+          order_source?: string | null
           platform_fee_cents?: number
           qty?: number
           refunded_at?: string | null
@@ -4882,16 +5106,19 @@ export type Database = {
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
           succeeded_at?: string | null
+          take_rate_bps?: number | null
           ticket_type_id?: string | null
         }
         Update: {
           amount_cents?: number
+          attribution_ref?: string | null
           buyer_profile_id?: string | null
           created_at?: string
           currency?: string
           entity_id?: string
           event_id?: string
           id?: string
+          order_source?: string | null
           platform_fee_cents?: number
           qty?: number
           refunded_at?: string | null
@@ -4899,6 +5126,7 @@ export type Database = {
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
           succeeded_at?: string | null
+          take_rate_bps?: number | null
           ticket_type_id?: string | null
         }
         Relationships: [
@@ -4962,6 +5190,7 @@ export type Database = {
           is_cancelled: boolean | null
           is_demo: boolean
           join_mode: string
+          journey_id: string | null
           location: string | null
           mux_playback_id: string | null
           mux_stream_id: string | null
@@ -5025,6 +5254,7 @@ export type Database = {
           is_cancelled?: boolean | null
           is_demo?: boolean
           join_mode?: string
+          journey_id?: string | null
           location?: string | null
           mux_playback_id?: string | null
           mux_stream_id?: string | null
@@ -5088,6 +5318,7 @@ export type Database = {
           is_cancelled?: boolean | null
           is_demo?: boolean
           join_mode?: string
+          journey_id?: string | null
           location?: string | null
           mux_playback_id?: string | null
           mux_stream_id?: string | null
@@ -5149,6 +5380,13 @@ export type Database = {
             columns: ["host_space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plans"
             referencedColumns: ["id"]
           },
           {
@@ -5683,18 +5921,27 @@ export type Database = {
       }
       housing_listings: {
         Row: {
+          accessibility: Json
+          address_line: string | null
+          address_precision: string
           amenities: string[]
           available_from: string | null
           bathrooms: number | null
+          bathrooms_shared: boolean | null
           bedrooms: number | null
           cannabis_ok: boolean | null
           deposit_cents: number | null
           details: Json
           furnished: boolean | null
           household_size: number | null
+          laundry: string | null
           lease_months: number | null
           listing_id: string
           listing_type: string
+          max_occupants: number | null
+          min_stay_months: number | null
+          move_in_costs_cents: number | null
+          parking: string | null
           pets_ok: boolean | null
           preferences: Json
           property_type: string | null
@@ -5705,18 +5952,27 @@ export type Database = {
           utilities_included: boolean | null
         }
         Insert: {
+          accessibility?: Json
+          address_line?: string | null
+          address_precision?: string
           amenities?: string[]
           available_from?: string | null
           bathrooms?: number | null
+          bathrooms_shared?: boolean | null
           bedrooms?: number | null
           cannabis_ok?: boolean | null
           deposit_cents?: number | null
           details?: Json
           furnished?: boolean | null
           household_size?: number | null
+          laundry?: string | null
           lease_months?: number | null
           listing_id: string
           listing_type: string
+          max_occupants?: number | null
+          min_stay_months?: number | null
+          move_in_costs_cents?: number | null
+          parking?: string | null
           pets_ok?: boolean | null
           preferences?: Json
           property_type?: string | null
@@ -5727,18 +5983,27 @@ export type Database = {
           utilities_included?: boolean | null
         }
         Update: {
+          accessibility?: Json
+          address_line?: string | null
+          address_precision?: string
           amenities?: string[]
           available_from?: string | null
           bathrooms?: number | null
+          bathrooms_shared?: boolean | null
           bedrooms?: number | null
           cannabis_ok?: boolean | null
           deposit_cents?: number | null
           details?: Json
           furnished?: boolean | null
           household_size?: number | null
+          laundry?: string | null
           lease_months?: number | null
           listing_id?: string
           listing_type?: string
+          max_occupants?: number | null
+          min_stay_months?: number | null
+          move_in_costs_cents?: number | null
+          parking?: string | null
           pets_ok?: boolean | null
           preferences?: Json
           property_type?: string | null
@@ -7527,25 +7792,56 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          cue: string | null
+          ends_on: string | null
           id: string
+          journey_plan_id: string | null
           practice_id: string
           profile_id: string
+          retired_at: string | null
+          retired_reason: string | null
+          source: string
+          starts_on: string | null
+          term_weeks: number | null
         }
         Insert: {
           active?: boolean
           created_at?: string
+          cue?: string | null
+          ends_on?: string | null
           id?: string
+          journey_plan_id?: string | null
           practice_id: string
           profile_id: string
+          retired_at?: string | null
+          retired_reason?: string | null
+          source?: string
+          starts_on?: string | null
+          term_weeks?: number | null
         }
         Update: {
           active?: boolean
           created_at?: string
+          cue?: string | null
+          ends_on?: string | null
           id?: string
+          journey_plan_id?: string | null
           practice_id?: string
           profile_id?: string
+          retired_at?: string | null
+          retired_reason?: string | null
+          source?: string
+          starts_on?: string | null
+          term_weeks?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "member_practices_journey_plan_id_fkey"
+            columns: ["journey_plan_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plans"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "member_practices_practice_id_fkey"
             columns: ["practice_id"]
@@ -7664,6 +7960,7 @@ export type Database = {
       memberships: {
         Row: {
           circle_id: string
+          granted_by_tier_id: string | null
           id: string
           joined_at: string | null
           lifecycle_day1_sent: boolean
@@ -7675,6 +7972,7 @@ export type Database = {
         }
         Insert: {
           circle_id: string
+          granted_by_tier_id?: string | null
           id?: string
           joined_at?: string | null
           lifecycle_day1_sent?: boolean
@@ -7686,6 +7984,7 @@ export type Database = {
         }
         Update: {
           circle_id?: string
+          granted_by_tier_id?: string | null
           id?: string
           joined_at?: string | null
           lifecycle_day1_sent?: boolean
@@ -7701,6 +8000,13 @@ export type Database = {
             columns: ["circle_id"]
             isOneToOne: false
             referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memberships_granted_by_tier_id_fkey"
+            columns: ["granted_by_tier_id"]
+            isOneToOne: false
+            referencedRelation: "space_membership_tiers"
             referencedColumns: ["id"]
           },
           {
@@ -8463,95 +8769,107 @@ export type Database = {
       }
       notification_preferences: {
         Row: {
-          sms_dispatches: boolean
-          sms_enabled: boolean
-          sms_events: boolean
-          sms_quiet_end_hour: number
-          sms_quiet_start_hour: number
           created_at: string
           email_comments: boolean
           email_dispatches: boolean
           email_events: boolean
           email_lifecycle: boolean
           email_mentions: boolean
+          email_practice: boolean
           freq_comments: string
           freq_dispatches: string
           freq_events: string
           freq_lifecycle: string
           freq_mentions: string
+          freq_practice: string
           inapp_comments: boolean
           inapp_dispatches: boolean
           inapp_events: boolean
           inapp_lifecycle: boolean
           inapp_mentions: boolean
+          inapp_practice: boolean
           profile_id: string
           push_comments: boolean
           push_dispatches: boolean
           push_events: boolean
           push_lifecycle: boolean
           push_mentions: boolean
+          push_practice: boolean
+          sms_dispatches: boolean
+          sms_enabled: boolean
+          sms_events: boolean
+          sms_quiet_end_hour: number
+          sms_quiet_start_hour: number
           space_event_reminders: boolean
           updated_at: string
         }
         Insert: {
-          sms_dispatches?: boolean
-          sms_enabled?: boolean
-          sms_events?: boolean
-          sms_quiet_end_hour?: number
-          sms_quiet_start_hour?: number
           created_at?: string
           email_comments?: boolean
           email_dispatches?: boolean
           email_events?: boolean
           email_lifecycle?: boolean
           email_mentions?: boolean
+          email_practice?: boolean
           freq_comments?: string
           freq_dispatches?: string
           freq_events?: string
           freq_lifecycle?: string
           freq_mentions?: string
+          freq_practice?: string
           inapp_comments?: boolean
           inapp_dispatches?: boolean
           inapp_events?: boolean
           inapp_lifecycle?: boolean
           inapp_mentions?: boolean
+          inapp_practice?: boolean
           profile_id: string
           push_comments?: boolean
           push_dispatches?: boolean
           push_events?: boolean
           push_lifecycle?: boolean
           push_mentions?: boolean
-          space_event_reminders?: boolean
-          updated_at?: string
-        }
-        Update: {
+          push_practice?: boolean
           sms_dispatches?: boolean
           sms_enabled?: boolean
           sms_events?: boolean
           sms_quiet_end_hour?: number
           sms_quiet_start_hour?: number
+          space_event_reminders?: boolean
+          updated_at?: string
+        }
+        Update: {
           created_at?: string
           email_comments?: boolean
           email_dispatches?: boolean
           email_events?: boolean
           email_lifecycle?: boolean
           email_mentions?: boolean
+          email_practice?: boolean
           freq_comments?: string
           freq_dispatches?: string
           freq_events?: string
           freq_lifecycle?: string
           freq_mentions?: string
+          freq_practice?: string
           inapp_comments?: boolean
           inapp_dispatches?: boolean
           inapp_events?: boolean
           inapp_lifecycle?: boolean
           inapp_mentions?: boolean
+          inapp_practice?: boolean
           profile_id?: string
           push_comments?: boolean
           push_dispatches?: boolean
           push_events?: boolean
           push_lifecycle?: boolean
           push_mentions?: boolean
+          push_practice?: boolean
+          sms_dispatches?: boolean
+          sms_enabled?: boolean
+          sms_events?: boolean
+          sms_quiet_end_hour?: number
+          sms_quiet_start_hour?: number
           space_event_reminders?: boolean
           updated_at?: string
         }
@@ -11843,6 +12161,53 @@ export type Database = {
           },
         ]
       }
+      sms_consent: {
+        Row: {
+          consent_text: string | null
+          created_at: string
+          id: string
+          ip_address: unknown
+          note: string | null
+          phone: string
+          profile_id: string
+          source: string
+          status: string
+          user_agent: string | null
+        }
+        Insert: {
+          consent_text?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          note?: string | null
+          phone: string
+          profile_id: string
+          source?: string
+          status: string
+          user_agent?: string | null
+        }
+        Update: {
+          consent_text?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          note?: string | null
+          phone?: string
+          profile_id?: string
+          source?: string
+          status?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_consent_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_automation_rules: {
         Row: {
           action_config: Json
@@ -12036,6 +12401,71 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "space_availability_schedules_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_billing_agreements: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          id: string
+          interval: string
+          label: string | null
+          method: string
+          note: string | null
+          overdue_notice_sent_at: string | null
+          paid_through: string
+          plan: string
+          reminder_30_sent_at: string | null
+          reminder_7_sent_at: string | null
+          space_id: string
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          id?: string
+          interval?: string
+          label?: string | null
+          method?: string
+          note?: string | null
+          overdue_notice_sent_at?: string | null
+          paid_through: string
+          plan: string
+          reminder_30_sent_at?: string | null
+          reminder_7_sent_at?: string | null
+          space_id: string
+          started_at: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          id?: string
+          interval?: string
+          label?: string | null
+          method?: string
+          note?: string | null
+          overdue_notice_sent_at?: string | null
+          paid_through?: string
+          plan?: string
+          reminder_30_sent_at?: string | null
+          reminder_7_sent_at?: string | null
+          space_id?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_billing_agreements_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
@@ -12812,6 +13242,7 @@ export type Database = {
         Row: {
           benefits: Json
           capacity: number | null
+          circle_id: string | null
           created_at: string
           description: string | null
           id: string
@@ -12827,6 +13258,7 @@ export type Database = {
         Insert: {
           benefits?: Json
           capacity?: number | null
+          circle_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -12842,6 +13274,7 @@ export type Database = {
         Update: {
           benefits?: Json
           capacity?: number | null
+          circle_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -12855,6 +13288,13 @@ export type Database = {
           waitlist?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "space_membership_tiers_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "space_membership_tiers_space_id_fkey"
             columns: ["space_id"]
@@ -14342,6 +14782,7 @@ export type Database = {
           pillar_id: string | null
           slug: string
           template_id: string | null
+          theme: Json
         }
         Insert: {
           category: string
@@ -14356,6 +14797,7 @@ export type Database = {
           pillar_id?: string | null
           slug: string
           template_id?: string | null
+          theme?: Json
         }
         Update: {
           category?: string
@@ -14370,6 +14812,7 @@ export type Database = {
           pillar_id?: string | null
           slug?: string
           template_id?: string | null
+          theme?: Json
         }
         Relationships: [
           {
@@ -14377,6 +14820,20 @@ export type Database = {
             columns: ["pillar_id"]
             isOneToOne: false
             referencedRelation: "pillars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topical_channels_owner_space_id_fkey"
+            columns: ["owner_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topical_channels_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "circle_templates"
             referencedColumns: ["id"]
           },
         ]
@@ -15320,6 +15777,10 @@ export type Database = {
         Args: { _order: string }
         Returns: undefined
       }
+      delete_topical_channel: {
+        Args: { p_channel_id: string }
+        Returns: undefined
+      }
       density_by_city: {
         Args: never
         Returns: {
@@ -15559,21 +16020,29 @@ export type Database = {
       housing_match_candidates: {
         Args: { _limit?: number }
         Returns: {
+          budget_fit: number
           city: string
+          geo_fit: number
+          lifestyle_fit: number
           listing_id: string
           owner_id: string
           rent_cents: number
           resonance: number
           score: number
+          timing_fit: number
         }[]
       }
       housing_roommate_matches: {
         Args: { _limit?: number }
         Returns: {
+          budget_fit: number
           city: string
+          geo_fit: number
+          lifestyle_fit: number
           profile_id: string
           resonance: number
           score: number
+          timing_fit: number
         }[]
       }
       housing_safe_date: { Args: { t: string }; Returns: string }
@@ -16043,32 +16512,19 @@ export type Database = {
         Args: { p_profile: string }
         Returns: undefined
       }
-      record_qr_scan:
-        | {
-            Args: {
-              p_city?: string
-              p_code_id: string
-              p_country?: string
-              p_lat?: number
-              p_lng?: number
-              p_medium?: string
-              p_profile?: string
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              p_city?: string
-              p_code_id: string
-              p_country?: string
-              p_lat?: number
-              p_lng?: number
-              p_medium?: string
-              p_profile?: string
-              p_variant?: string
-            }
-            Returns: undefined
-          }
+      record_qr_scan: {
+        Args: {
+          p_city?: string
+          p_code_id: string
+          p_country?: string
+          p_lat?: number
+          p_lng?: number
+          p_medium?: string
+          p_profile?: string
+          p_variant?: string
+        }
+        Returns: undefined
+      }
       record_streak_tick: {
         Args: { _profile: string; _streak_type: string; _window_days: number }
         Returns: Json
@@ -17061,3 +17517,4 @@ export const Constants = {
     },
   },
 } as const
+
