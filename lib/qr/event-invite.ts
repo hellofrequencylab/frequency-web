@@ -5,8 +5,8 @@
 // (from the code's owner_profile_id + event_id), verified on the form load and again on
 // submit. Stateless (no DB row), with a short expiry so a shared /rsvp link goes stale.
 //
-// Mirrors the HMAC token modules already in the repo (lib/beta-tokens.ts,
-// lib/crm/optin/tokens.ts, lib/unsubscribe-tokens.ts). A distinct namespace
+// Mirrors the HMAC token modules already in the repo (lib/crm/optin/tokens.ts,
+// lib/unsubscribe-tokens.ts). A distinct namespace
 // (`event-invite:`) means an event-invite token can never verify as any other token.
 // Crypto-only by design, so it stays a pure, unit-testable seam.
 

@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { getChannelsWithTopics, getPublicCounts, getPublicEvents } from '@/lib/discover'
-import { ChannelCard } from '@/components/discover/cards'
-import { InlineBetaCapture } from '@/components/discover/inline-beta-capture'
+import { ChannelCard, SignInCta } from '@/components/discover/cards'
 import { CommunityProof } from '@/components/discover/community-proof'
 import {
   ZigZag,
@@ -14,7 +13,7 @@ import {
 import { CircleConstellation, OrganicBlob } from '@/components/marketing/vector-art'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, topicListSchema } from '@/lib/jsonld'
-import { SITE_NAME } from '@/lib/site'
+import { SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'Channels',
@@ -134,10 +133,11 @@ export default async function DiscoverTopicsPage() {
               circles={counts.circles}
               events={events.length}
             />
-            <InlineBetaCapture
-              source="discover_topics"
-              heading="Found the one you'd show up for?"
-              body="Join the beta to step into a Circle practicing it near you, RSVP to its standing time, and meet the regulars. No spam, just an invite when a spot opens."
+            <SignInCta
+              title="Found the one you'd show up for?"
+              body="Step into a Circle practicing it near you, RSVP to its standing time, and meet the regulars."
+              action={BETA_CTA_LABEL}
+              href={BETA_CTA_HREF}
             />
           </div>
         </div>

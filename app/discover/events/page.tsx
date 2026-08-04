@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { getPublicEvents, getPublicCounts } from '@/lib/discover'
-import { EventRow } from '@/components/discover/cards'
-import { InlineBetaCapture } from '@/components/discover/inline-beta-capture'
+import { EventRow, SignInCta } from '@/components/discover/cards'
 import { CommunityProof } from '@/components/discover/community-proof'
 import {
   ZigZag,
@@ -135,10 +134,11 @@ export default async function DiscoverEventsPage() {
                   circles={counts.circles}
                   events={events.length}
                 />
-                <InlineBetaCapture
-                  source="discover_events"
-                  heading="Want to be at one of these?"
-                  body="Join the beta to RSVP, see the exact venue, and let a few neighbors start to know your face. No spam, just an invite when a spot opens near you."
+                <SignInCta
+                  title="Want to be at one of these?"
+                  body="RSVP, see the exact venue, and let a few neighbors start to know your face."
+                  action={BETA_CTA_LABEL}
+                  href={BETA_CTA_HREF}
                 />
               </div>
             </div>

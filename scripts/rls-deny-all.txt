@@ -15,7 +15,6 @@ agent_actions
 ai_help_queries
 ai_usage
 automation_rules
-beta_admission_waves
 beta_audit_log
 beta_host_prompts
 beta_phases

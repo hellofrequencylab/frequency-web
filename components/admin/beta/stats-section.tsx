@@ -1,7 +1,6 @@
 import { Suspense } from 'react'
 import {
   Users,
-  CheckCircle2,
   UserPlus,
   Activity,
   Send,
@@ -25,7 +24,7 @@ import {
 import { ProgressTrack } from '@/components/ui/progress-track'
 
 // STATS — the Beta metrics board (Wave 2). It composes analytics we already ship
-// (waitlist reads, the engagement ledger, email events, the Growth-OS funnel)
+// (join counts, the engagement ledger, email events, the Growth-OS funnel)
 // into one read; it does not build a new metrics engine. Server Component: each
 // slow read streams behind its own <Suspense> so the tab paints immediately
 // (PAGE-FRAMEWORK §5). Every scope caveat and un-instrumented metric is labelled
@@ -52,30 +51,29 @@ export function BetaStatsSection() {
 }
 
 // ---------------------------------------------------------------------------
-// Block 1 — waitlist funnel, member activation, weekly signups, north star.
+// Block 1 — joins, member activation, weekly signups, north star.
 // ---------------------------------------------------------------------------
 
 async function FunnelBlock({ windowDays }: { windowDays: number }) {
   const stats = await getBetaStats(windowDays)
-  const { waitlist, funnel, activation, activationConversion, weeklySignups, northStar } = stats
+  const { joins, funnel, activation, activationConversion, weeklySignups, northStar } = stats
 
   const activationEnd = activation[activation.length - 1]
   const activationTop = activation[0]
 
   return (
     <div className="space-y-8">
-      <AdminSection title="The Beta at a glance" description={`Live waitlist reads. Last ${windowDays} days.`}>
-        <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
-          <StatCard label="Waitlisted" value={waitlist.total.toLocaleString()} icon={Users} />
+      <AdminSection title="The Beta at a glance" description={`Live member reads. Last ${windowDays} days.`}>
+        <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-3">
+          <StatCard label="Members" value={joins.total.toLocaleString()} icon={Users} detail="all time" />
           <StatCard
-            label="Confirmed"
-            value={waitlist.confirmed.toLocaleString()}
-            icon={CheckCircle2}
-            detail={`${waitlist.pending.toLocaleString()} pending`}
+            label="Joined"
+            value={joins.inWindow.toLocaleString()}
+            icon={UserPlus}
+            detail={`last ${windowDays} days`}
           />
-          <StatCard label="Admitted" value={waitlist.invited.toLocaleString()} icon={UserPlus} />
           <StatCard
-            label="New signups per week"
+            label="New members per week"
             value={weeklySignups[weeklySignups.length - 1]?.toLocaleString() ?? '0'}
             icon={Activity}
             sparkline={weeklySignups}
@@ -86,7 +84,7 @@ async function FunnelBlock({ windowDays }: { windowDays: number }) {
 
       <AdminSection
         title="Launch funnel"
-        description="Waitlisted through founding. Beta-scoped stages are real; the later stages are labelled."
+        description="Joined through founding. The early stages are real; the later stages are labelled."
       >
         <Tile>
           <FunnelList steps={funnel} />

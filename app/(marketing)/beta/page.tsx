@@ -1,20 +1,19 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Users, CalendarHeart, Sparkles, ShieldCheck } from 'lucide-react'
-import { PhotoHero, Section, Statement } from '@/components/marketing/marketing-ui'
-import { BetaForm } from '@/components/marketing/beta-form'
-import { FOUNDING_PLACE } from '@/lib/site'
+import { PhotoHero, Section, Statement, Button } from '@/components/marketing/marketing-ui'
+import { FOUNDING_PLACE, BETA_CTA_HREF, BETA_CTA_LABEL, BETA_CTA_SECONDARY_LABEL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 
 export const metadata: Metadata = {
   title: 'Join the Beta',
   description:
-    "Request your spot in the Frequency community Beta. We're opening it to a small group at a time, free during the beta, no card, and membership is pay what you want when it launches.",
+    'The Frequency community Beta is open. Start a Circle or join as a member, free during the beta, no card, and membership is pay what you want when it launches.',
   alternates: { canonical: '/beta' },
   openGraph: {
     title: 'Join the Frequency Beta',
-    description: 'Be one of the first. Request your spot in the community Beta.',
+    description: 'Be one of the first. The community Beta is open.',
     url: '/beta',
   },
 }
@@ -43,7 +42,7 @@ export default function BetaPage() {
         focal="object-center"
         eyebrow="The community beta"
         title="Be one of the first."
-        subtitle={`We're opening Frequency to a small group at a time, starting in ${FOUNDING_PLACE}. Add your name and we'll reach out when a spot opens for you.`}
+        subtitle={`Frequency is open in ${FOUNDING_PLACE} and wherever someone starts the first Circle. Walk in today, no invite needed.`}
         footer={
           <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-on-ink/60">
             <span className="font-semibold text-on-ink/80">Free during the beta.</span>
@@ -53,7 +52,7 @@ export default function BetaPage() {
         }
       />
 
-      {/* ── Form + what you get ──────────────────────────────────────────── */}
+      {/* ── The ask + what you get ───────────────────────────────────────── */}
       <Section tone="surface" pad="py-20 sm:py-24">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-start">
           {/* Why you're here */}
@@ -79,20 +78,35 @@ export default function BetaPage() {
             </ul>
           </div>
 
-          {/* The form */}
+          {/* The ask. This was a waitlist form until the beta opened; there is no
+              queue to join now, so it goes straight to the induction. */}
           <div className="lg:pt-1">
-            <BetaForm />
+            <div className="rounded-2xl border border-border bg-surface p-7 sm:p-8 lift-1 text-center">
+              <h3 className="font-display uppercase text-text text-3xl mb-2">The door is open</h3>
+              <p className="text-base text-muted leading-relaxed mb-6">
+                No invite, no waiting list. Start a Circle where you live, or join one that is
+                already meeting.
+              </p>
+              <Button href={BETA_CTA_HREF} className="w-full">
+                {BETA_CTA_LABEL}
+              </Button>
+              <p className="mt-3 text-sm text-muted">
+                <Link href={BETA_CTA_HREF} className="font-semibold text-primary-strong hover:underline">
+                  {BETA_CTA_SECONDARY_LABEL}
+                </Link>
+              </p>
+            </div>
             <p className="mt-4 text-center text-xs text-subtle leading-relaxed">
-              No spam, ever. Just one note when a spot opens for you.
+              Free for the whole beta. No card, and you can leave anytime.
             </p>
           </div>
         </div>
       </Section>
 
-      {/* ── Honest scarcity beat ─────────────────────────────────────────── */}
+      {/* ── The beat that carries the promise ────────────────────────────── */}
       <Statement tone="ink">
-        We open a few spots at a time, so you&apos;re actually{' '}
-        <span className="text-primary">welcomed in</span>.
+        Circles stay small on purpose, so you&apos;re actually{' '}
+        <span className="text-primary">missed when you don&apos;t show</span>.
       </Statement>
 
       {/* ── How it works after you sign up ───────────────────────────────── */}
@@ -107,9 +121,9 @@ export default function BetaPage() {
         </div>
         <ol className="grid sm:grid-cols-3 gap-5">
           {[
-            { n: '01', t: 'Add your name', b: 'Tell us where you are. It takes ten seconds and costs nothing.' },
-            { n: '02', t: 'We reach out', b: 'When a spot opens near you, we send a personal invite, not a mass blast.' },
-            { n: '03', t: 'Show up', b: "Find your Circle, meet your people, and start being missed when you're gone." },
+            { n: '01', t: 'Tell us where you are', b: 'It takes ten seconds and costs nothing. We use it to point you at the right room.' },
+            { n: '02', t: 'Pick your Circle', b: 'Join one that is already meeting near you, or start the first one where you live.' },
+            { n: '03', t: 'Show up', b: "Meet your people at a standing time, and start being missed when you're gone." },
           ].map((s) => (
             <li key={s.n} className="rounded-2xl border border-border bg-surface p-7 lift-1">
               <span className="font-display text-3xl text-border-strong" aria-hidden>

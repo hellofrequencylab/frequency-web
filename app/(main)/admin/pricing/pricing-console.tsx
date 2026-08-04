@@ -536,15 +536,8 @@ function BetaControlsSection({
   return (
     <AdminSection
       title="Beta controls"
-      description="The beta switches. The invite gate and host prompts change behavior; the countdown date is display only and grants no access. All off or unset by default."
+      description="The beta switches. Host prompts change behavior; the countdown date is display only and grants no access. All off or unset by default."
     >
-      <FormSection
-        title="Invite gate"
-        description="When on, only an admitted beta contact or an existing member can create a new account. Existing members are never blocked. Off means signup is open exactly as today."
-      >
-        <BetaFlagRow flagKey="beta_invite_only" initial={beta.inviteOnly} label="Invite only" />
-      </FormSection>
-
       <FormSection
         title="Host prompts"
         description="When on, the feed shows the graduation nudges that invite a ready member to start a Circle. Off keeps the feed quiet."

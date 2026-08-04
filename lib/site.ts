@@ -116,9 +116,9 @@ export const MARKETING_NAV: NavLink[] = marketingFooterLinks().map((node) => ({
 // SEQUENCE directly (/onboarding/beta). Signed-out visitors get the sequence's
 // cinematic welcome with sign-in embedded (app/onboarding/beta/welcome.tsx), not a
 // cold sign-in form; after auth the route renders the full induction. The /beta
-// marketing + waitlist page (BetaForm → requestBetaAccess) is kept intact for the
-// future gated weekly-cohort phase, when AI-driven admission re-introduces the lead
-// capture. NOTE: changing BETA_CTA_LABEL re-labels every shared CTA site-wide (nav,
+// marketing page is kept as the campaign landing page; it used to carry a waitlist
+// form (BetaForm → requestBetaAccess) and now sends people to the same induction as
+// everything else. NOTE: changing BETA_CTA_LABEL re-labels every shared CTA site-wide (nav,
 // hero, mid-page, close); page templates that bake the literal into a published DB
 // doc need a re-publish to pick it up (see docs/DOCS-PROTOCOL.md + page-editor).
 export const BETA_CTA_LABEL = "Start a Circle";

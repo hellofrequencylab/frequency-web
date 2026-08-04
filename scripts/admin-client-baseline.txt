@@ -47,7 +47,6 @@ app/(main)/admin/library/vera-actions.ts
 app/(main)/admin/listing-seeder/actions.ts
 app/(main)/admin/marketing/agent/actions.ts
 app/(main)/admin/marketing/automations/actions.ts
-app/(main)/admin/marketing/beta/actions.ts
 app/(main)/admin/marketing/contacts/actions.ts
 app/(main)/admin/marketing/contacts/page.tsx
 app/(main)/admin/marketing/funnels/actions.ts
@@ -225,8 +224,6 @@ app/(main)/timezone-actions.ts
 app/(main)/upgrade/actions.ts
 app/(main)/waitlist/actions.ts
 app/(marketing)/about/page.tsx
-app/(marketing)/beta/actions.ts
-app/(marketing)/beta/confirm/page.tsx
 app/(marketing)/pricing/page.tsx
 app/(marketing)/rsvp/[token]/page.tsx
 app/(marketing)/spaces/page.tsx
@@ -249,7 +246,6 @@ app/api/vitals/route.ts
 app/api/wallet/google/route.ts
 app/api/webhooks/stripe/route.ts
 app/api/zap-prompt/route.ts
-app/auth/callback/route.ts
 app/events/[slug]/event.ics/route.ts
 app/events/calendar.ics/route.ts
 app/events/calendar/[token]/route.ts
@@ -386,10 +382,9 @@ lib/attribution/backfill.ts
 lib/attribution/rollup.ts
 lib/automations.ts
 lib/awards/cosmetics.ts
-lib/beta/admission.ts
 lib/beta/db.ts
-lib/beta/invite-gate.ts
 lib/beta/referral-contest.ts
+lib/beta/stats.ts
 lib/billing/bundle-checkout.ts
 lib/billing/checkout.ts
 lib/billing/connect.ts
@@ -729,7 +724,6 @@ lib/stewardships.ts
 lib/storage/profile-images.ts
 lib/studio/agent.ts
 lib/studio/analytics.ts
-lib/studio/beta.ts
 lib/studio/campaigns.ts
 lib/studio/contacts.ts
 lib/studio/recommendations.ts

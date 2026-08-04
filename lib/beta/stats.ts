@@ -2,8 +2,11 @@
 // new metrics engine: it reuses the analytics we already ship and stitches them
 // into one read for the Stats tab.
 //
-//   • Waitlist funnel   — lib/studio/beta (summarizeBeta) for the beta-scoped
-//                         prefix, extended toward the full launch funnel.
+//   • Joins             — profiles.created_at, the real count of people who made
+//                         an account. This replaced a waitlist-funnel prefix
+//                         (waitlisted → confirmed → admitted) that went away with
+//                         the waitlist itself; joins are the honest first stage of
+//                         an open beta, and unlike the waitlist they are real.
 //   • Activation        — lib/analytics/dashboard (getEngagementDashboard /
 //                         computeFunnel), the member activation ledger. GLOBAL,
 //                         not beta-scoped — labelled as such at the edge.
@@ -15,7 +18,7 @@
 // and the UI renders a labelled placeholder. We never fabricate a number.
 // Server-only.
 
-import { listBetaSignups, summarizeBeta } from '@/lib/studio/beta'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getEngagementDashboard, type FunnelStep } from '@/lib/analytics/dashboard'
 import { getEmailStats } from '@/lib/studio/analytics'
 import { listFunnels, getFunnelRollup, type Funnel, type FunnelRollupStage } from '@/lib/funnels/store'
@@ -44,24 +47,47 @@ export interface NorthStarMetric {
 
 export interface BetaStatsModel {
   windowDays: number
-  waitlist: { total: number; pending: number; confirmed: number; invited: number }
-  /** The launch funnel: waitlisted → confirmed → admitted → activated → hosting → founding. */
+  /** Real account counts: everyone who has joined, and how many did so in the window. */
+  joins: { total: number; inWindow: number }
+  /** The launch funnel: joined → activated → hosting → founding. */
   funnel: BetaFunnelStep[]
   /** The member activation funnel (all members, GLOBAL) — real, from the event ledger. */
   activation: FunnelStep[]
   /** Conversion from the first to the last activation step, 0..1 (null if no top-of-funnel). */
   activationConversion: number | null
-  /** New beta signups per trailing week, oldest → current (12 weeks). */
+  /** New members per trailing week, oldest → current (12 weeks). */
   weeklySignups: number[]
   northStar: NorthStarMetric[]
 }
 
 const ACTIVATION_WEEKS = 12
 
+/** Every join timestamp, for the total + the weekly sparkline. `profiles` is the
+ *  account record, so one row here is one person who got in. FAIL-SAFE to []. */
+async function listJoinDates(): Promise<Date[]> {
+  try {
+    const { data } = await createAdminClient()
+      .from('profiles')
+      .select('created_at')
+      .order('created_at', { ascending: false })
+      .limit(10000)
+    return (data ?? [])
+      .map((r) => (r.created_at ? new Date(r.created_at as string) : null))
+      .filter((d): d is Date => d !== null && !Number.isNaN(d.getTime()))
+  } catch (err) {
+    console.error('[beta] listJoinDates failed:', err)
+    return []
+  }
+}
+
 /** One composed read for the Stats tab's funnel + activation + north-star blocks. */
 export async function getBetaStats(windowDays = 30): Promise<BetaStatsModel> {
-  const [signups, eng] = await Promise.all([listBetaSignups(), getEngagementDashboard(windowDays)])
-  const s = summarizeBeta(signups)
+  const [joinDates, eng] = await Promise.all([listJoinDates(), getEngagementDashboard(windowDays)])
+  const windowStart = Date.now() - windowDays * 24 * 60 * 60 * 1000
+  const joins = {
+    total: joinDates.length,
+    inWindow: joinDates.filter((d) => d.getTime() >= windowStart).length,
+  }
 
   // GLOBAL activation signal: distinct members who reached the North-Star moment
   // (a verified practice) in the window. Not beta-scoped — we label it at the UI.
@@ -70,14 +96,15 @@ export async function getBetaStats(windowDays = 30): Promise<BetaStatsModel> {
   const activationEnd = eng.activationFunnel[eng.activationFunnel.length - 1]?.actors ?? 0
   const activationConversion = activationTop > 0 ? activationEnd / activationTop : null
 
-  // Beta-scoped drop-off only spans the stages we actually measure per-Beta.
-  const dropFrom = (prev: number, next: number): number | null =>
-    prev > 0 ? Math.round((1 - next / prev) * 100) : null
-
   const funnel: BetaFunnelStep[] = [
-    { key: 'waitlisted', label: 'Waitlisted', value: s.total, dropPct: null, scope: 'beta' },
-    { key: 'confirmed', label: 'Confirmed', value: s.confirmed, dropPct: dropFrom(s.total, s.confirmed), scope: 'beta' },
-    { key: 'admitted', label: 'Admitted', value: s.invited, dropPct: dropFrom(s.confirmed, s.invited), scope: 'beta' },
+    {
+      key: 'joined',
+      label: 'Joined',
+      value: joins.total,
+      dropPct: null,
+      scope: 'beta',
+      note: `Accounts created, all time. ${joins.inWindow.toLocaleString()} in the last ${windowDays} days.`,
+    },
     {
       key: 'activated',
       label: 'Activated',
@@ -106,10 +133,7 @@ export async function getBetaStats(windowDays = 30): Promise<BetaStatsModel> {
     },
   ]
 
-  const requestedDates = signups
-    .map((x) => (x.requestedAt ? new Date(x.requestedAt) : null))
-    .filter((d): d is Date => d !== null && !Number.isNaN(d.getTime()))
-  const weeklySignups = weeklyBuckets(requestedDates, ACTIVATION_WEEKS)
+  const weeklySignups = weeklyBuckets(joinDates, ACTIVATION_WEEKS)
 
   const northStar: NorthStarMetric[] = [
     {
@@ -144,7 +168,7 @@ export async function getBetaStats(windowDays = 30): Promise<BetaStatsModel> {
 
   return {
     windowDays,
-    waitlist: { total: s.total, pending: s.pending, confirmed: s.confirmed, invited: s.invited },
+    joins,
     funnel,
     activation: eng.activationFunnel,
     activationConversion,

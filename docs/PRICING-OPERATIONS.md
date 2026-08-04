@@ -165,7 +165,8 @@ locked display value, and the money flip is still the master switch.
   member's network-sourced Market sale (default 8%); their own audience is 0% regardless, and a
   Business Space buys the network rate down to 5%. A free Member has no rate because a free Member
   cannot sell.
-- **Beta controls** (`Beta controls` section). The **invite gate** (`beta_invite_only`) and **host
-  prompts** (`beta_host_prompts`) switches, both audited, plus the **countdown date** (`beta_ends_at`).
-  The countdown date is **display only**: it drives the "Summer of Frequency" banner and grants no
-  access on its own.
+- **Beta controls** (`Beta controls` section). The **host prompts** (`beta_host_prompts`) switch,
+  audited, plus the **countdown date** (`beta_ends_at`). The countdown date is **display only**: it
+  drives the "Summer of Frequency" banner and grants no access on its own. An **invite gate**
+  (`beta_invite_only`) sat here too and could close signup to admitted waitlist contacts only; it was
+  removed with the waitlist (ADR-933), so there is no longer a switch that can close signup.

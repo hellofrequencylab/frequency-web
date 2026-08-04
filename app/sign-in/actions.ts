@@ -3,7 +3,6 @@
 import { redirect } from 'next/navigation'
 import { headers, cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
-import { shouldBlockNewSignup } from '@/lib/beta/invite-gate'
 
 // Shared passwordless sign-in actions, used by /sign-in and by the beta induction's
 // cinematic welcome (app/onboarding/beta/welcome.tsx).
@@ -39,25 +38,16 @@ export async function signInWithMagicLink(formData: FormData) {
   await stashNext(safeNext(formData.get('next')))
   const supabase = await createClient()
 
-  // INVITE GATE (platform_flags.beta_invite_only, default OFF → this is a no-op today). When ON, a NEW,
-  // non-admitted email must not provision an account: passing shouldCreateUser=false makes GoTrue skip
-  // creating the auth user (and thus the profile trigger) — while an EXISTING member still receives a
-  // login link (shouldCreateUser only affects unknown emails). shouldBlockNewSignup fails OPEN, so a DB
-  // hiccup leaves signup fully open. See lib/beta/invite-gate.ts.
-  const blockNewSignup = await shouldBlockNewSignup(email)
-
+  // Signup is OPEN: an unknown email provisions an account here. This used to run a per-email invite
+  // gate (platform_flags.beta_invite_only) that passed shouldCreateUser=false for anyone not admitted
+  // off the beta waitlist, and bounced them to /beta. The waitlist is gone, so the gate has nothing
+  // left to check and every email takes the same path.
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: await getCallbackUrl(), shouldCreateUser: !blockNewSignup },
+    options: { emailRedirectTo: await getCallbackUrl() },
   })
 
   if (error) {
-    // With shouldCreateUser=false, an unknown email errors ("Signups not allowed for otp"). That means a
-    // non-admitted new email tried to join while invite-only is ON → send them to the waitlist, no
-    // account created. (An existing member never reaches here: their OTP send succeeds.)
-    if (blockNewSignup) {
-      redirect('/beta')
-    }
     redirect(`/sign-in?error=${encodeURIComponent(error.message)}`)
   }
 

@@ -67,7 +67,7 @@ const GROWTH: Bullet[] = [
 const CAMPAIGNS: Bullet[] = [
   {
     term: 'Invite-gate and waitlist',
-    body: 'The front door is an invite-gate with a waitlist behind it. Newcomers raise their hand, we admit in waves, and every wave passes through the approval queue before it sends.',
+    body: 'The front door is open. Anyone can create an account and start a Circle, and every campaign we send about it passes through the approval queue first.',
   },
   {
     term: 'Founding Members and Founding Businesses',

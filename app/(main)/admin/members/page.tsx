@@ -5,14 +5,13 @@ import { AdminTemplate, AdminSection } from '@/components/templates'
 import { Users, ArrowUpRight } from 'lucide-react'
 import { MemberAdmin } from './member-admin'
 import { UnderlineTabs } from '@/components/admin/underline-tabs'
-import { SubscribersTable, BetaTable } from './lists-tables'
+import { SubscribersTable } from './lists-tables'
 import { listSubscribers } from '@/lib/studio/contacts'
-import { listBetaSignups, summarizeBeta } from '@/lib/studio/beta'
 import { readSpotlightEnabled } from '@/lib/profile/spotlight-flags'
 
 export const dynamic = 'force-dynamic'
 
-type TabKey = 'members' | 'subscribers' | 'beta'
+type TabKey = 'members' | 'subscribers'
 
 export default async function AdminMembersPage({
   searchParams,
@@ -25,14 +24,13 @@ export default async function AdminMembersPage({
   await requireAdmin('janitor', { staff: 'members' })
 
   const { view } = await searchParams
-  const tab: TabKey = view === 'subscribers' || view === 'beta' ? view : 'members'
+  const tab: TabKey = view === 'subscribers' ? view : 'members'
 
   // Query-state (?view=) tabs on ONE route — drive the active tab explicitly by href
   // since pathname matching can't tell `?view=` variants apart.
   const tabHref: Record<TabKey, string> = {
     members: '/admin/members',
     subscribers: '/admin/members?view=subscribers',
-    beta: '/admin/members?view=beta',
   }
 
   return (
@@ -40,7 +38,7 @@ export default async function AdminMembersPage({
       title="People & lists"
       eyebrow="Platform"
       icon={Users}
-      description="Members, email subscribers, and the beta waitlist."
+      description="Members and email subscribers."
       width="wide"
     >
       <AdminSection>
@@ -49,13 +47,11 @@ export default async function AdminMembersPage({
           tabs={[
             { href: tabHref.members, label: 'Members' },
             { href: tabHref.subscribers, label: 'Subscribers' },
-            { href: tabHref.beta, label: 'Beta invites' },
           ]}
         />
         <div className="mt-6">
           {tab === 'members' && <MembersTab />}
           {tab === 'subscribers' && <SubscribersTab />}
-          {tab === 'beta' && <BetaTab />}
         </div>
       </AdminSection>
     </AdminTemplate>
@@ -130,21 +126,6 @@ async function SubscribersTab() {
         Manage campaigns in <StudioLink href="/admin/marketing/contacts">Marketing</StudioLink>.
       </p>
       <SubscribersTable rows={subs} />
-    </>
-  )
-}
-
-// ── Beta invites ─────────────────────────────────────────────────────────────
-async function BetaTab() {
-  const signups = await listBetaSignups()
-  const stats = summarizeBeta(signups)
-  return (
-    <>
-      <p className="mb-4 text-sm text-muted">
-        {stats.confirmed} confirmed and ready to admit · {stats.pending} pending · {stats.invited} invited.
-        Admit signups in <StudioLink href="/admin/marketing/beta">Marketing</StudioLink>.
-      </p>
-      <BetaTable rows={signups} />
     </>
   )
 }

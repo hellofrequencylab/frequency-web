@@ -31,7 +31,6 @@ each notice actually depends on.
 | `BETA_GRANTED_TIER` | `lib/core/beta.ts` | The tier granted during beta (`crew`). Leave; it stops applying once the flag is off. |
 | `billingLive()` | `lib/pricing/settings` (DB `platform_settings`) | Gates the `/upgrade` + `/settings/billing` beta banners and founder-reservation actions. Turn on when billing goes live. |
 | `betaEndsAt()` | `lib/platform-flags.ts` (DB) | The countdown clock (`beta-countdown-banner`). Auto-hides after the date. |
-| `beta_invite_only` | `lib/platform-flags.ts` (DB) | Signup gate. |
 | `BETA_INDUCTION_ACTIVE`, `BETA_MEMBERS_GET_CREW` | `lib/onboarding/beta-script.ts` | The beta induction flow. Flip; the module is retired at GA. |
 | `ALERT_KEY` | `components/layout/site-alert-bar.tsx:17` | Bump after editing the alert copy so it re-shows. |
 
