@@ -48,9 +48,20 @@ describe('parseAutodocResponse', () => {
 
 describe('autodocMaxTokens', () => {
   it('scales with the article count so long lists are not truncated', () => {
-    expect(autodocMaxTokens(2)).toBe(800)
+    expect(autodocMaxTokens(2)).toBe(1200) // floor
     expect(autodocMaxTokens(46)).toBeGreaterThan(5000)
-    expect(autodocMaxTokens(500)).toBe(8000)
+    expect(autodocMaxTokens(500)).toBe(8000) // ceiling, so cost stays bounded
+  })
+
+  it('leaves real headroom per article, not just room for the data', () => {
+    // Raised from 120/article after a live 14-article run came back with 9 of 14 "cut short".
+    // One verdict is ~30 tokens of keys plus a 200-char note (~50), so ~80 is the floor for the
+    // DATA alone; the margin above it is what absorbs a sentence of preamble or fuller notes on
+    // a wide diff. Truncation is reported rather than hidden, but a checklist that says "not
+    // reviewed" nine times is one nobody reads.
+    for (const n of [10, 14, 20]) {
+      expect(autodocMaxTokens(n) / n).toBeGreaterThan(200)
+    }
   })
 })
 

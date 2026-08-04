@@ -126,7 +126,18 @@ function salvageObjects(text: string): unknown[] {
  *  articles — and a truncated array used to parse to nothing, sending the whole
  *  comment to fallback. Scale with the list, with a ceiling so cost stays bounded. */
 export function autodocMaxTokens(articleCount: number): number {
-  return Math.min(8000, Math.max(800, 200 + articleCount * 120))
+  // 240/article, floor 1200, and the reason is measured rather than guessed: a 14-article run
+  // on 2026-08-04 came back with 9 of 14 "cut short" under the old 120/article budget, which
+  // gave that run 1,880 tokens. One verdict object is ~30 tokens of keys plus a note capped at
+  // 200 characters (~50 tokens), so ~80 is the floor for the DATA alone -- and a reply that
+  // opens with a sentence of preamble, or writes fuller notes on a diff that touches a lot,
+  // spends the rest of that margin before it reaches the array.
+  //
+  // Truncation here is not silent (withUnreviewed lists what went unchecked, which is the right
+  // behaviour and is how this was caught) but a checklist that says "not reviewed" nine times is
+  // a checklist nobody reads. Doubling the per-article allowance costs output tokens only on
+  // large runs and buys the difference between an advisory and a shrug.
+  return Math.min(8000, Math.max(1200, 300 + articleCount * 240))
 }
 
 /** Parse the model's JSON array, keeping only items that match a known article.
