@@ -29,30 +29,68 @@ import { cn } from '@/lib/utils'
 // Coarse-only, so the desktop density the marketplace exemplar was designed around is
 // byte-identical. `[@media(pointer:coarse)]` rather than a breakpoint: a 1024px tablet is
 // still a thumb, and a 390px window on a laptop is still a mouse.
-const iconControl =
-  'tap-target inline-flex h-8 w-8 items-center justify-center rounded-control text-subtle press transition-[color,background-color,box-shadow,transform] motion-reduce:transition-none hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50'
+// TWO VARIANTS, because the product shipped two and only one of them was in the kit.
+// A census of hand-rolled `h-8 w-8 items-center justify-center rounded-*` controls found
+// 26 across 16 files, and they were not noise -- they clustered on one shape the kit did
+// not offer: a BORDERED square (`border border-border text-muted`, hover moves the border
+// colour rather than washing the background), with four tones. Twelve sites, written out
+// longhand twelve times, none of them carrying tap-target, `.press`, or a focus ring.
+//
+//   plain     the row-action density (no chrome at rest, warm wash on hover). The kit
+//             default and the marketplace exemplar.
+//   bordered  a standing control that must read as pressable before you touch it --
+//             form-row steppers, tier editors, seat controls.
+//
+// Tone is a four-way axis, not the old `danger` boolean: the bordered sites in the wild
+// already used warning and success hovers, so a boolean could not have absorbed them.
+const iconControlBase =
+  'tap-target inline-flex h-8 w-8 items-center justify-center rounded-control press transition-[color,background-color,border-color,box-shadow,transform] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50'
 
-function tone(danger?: boolean) {
-  return danger ? 'hover:text-danger' : 'hover:text-muted'
+export type IconButtonTone = 'default' | 'danger' | 'warning' | 'success'
+export type IconButtonVariant = 'plain' | 'bordered'
+
+// Quiet at rest, one step louder on hover -- so a cluster of these never shouts. `plain`
+// rests one step quieter than `bordered` because it has no border to carry the affordance.
+const PLAIN_TONE: Record<IconButtonTone, string> = {
+  default: 'hover:text-muted',
+  danger: 'hover:text-danger',
+  warning: 'hover:text-warning',
+  success: 'hover:text-success',
+}
+
+const BORDERED_TONE: Record<IconButtonTone, string> = {
+  default: 'hover:border-border-strong hover:text-text',
+  danger: 'hover:border-danger/40 hover:text-danger',
+  warning: 'hover:border-warning/40 hover:text-warning',
+  success: 'hover:border-success/40 hover:text-success',
+}
+
+function iconControl(variant: IconButtonVariant = 'plain', tone: IconButtonTone = 'default') {
+  return variant === 'bordered'
+    ? cn(iconControlBase, 'border border-border text-muted', BORDERED_TONE[tone])
+    : cn(iconControlBase, 'text-subtle hover:bg-surface-elevated', PLAIN_TONE[tone])
 }
 
 /** An icon-only <button> for a row action. `label` names it for a11y + the tooltip. */
 export function IconButton({
   label,
-  danger,
+  variant,
+  tone,
   className,
   children,
   ...props
-}: { label: string; danger?: boolean; children: ReactNode } & Omit<
-  ButtonHTMLAttributes<HTMLButtonElement>,
-  'aria-label'
->) {
+}: {
+  label: string
+  variant?: IconButtonVariant
+  tone?: IconButtonTone
+  children: ReactNode
+} & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label'>) {
   return (
     <button
       type="button"
       aria-label={label}
       title={label}
-      className={cn(iconControl, tone(danger), className)}
+      className={cn(iconControl(variant, tone), className)}
       {...props}
     >
       {children}
@@ -63,21 +101,25 @@ export function IconButton({
 /** An icon-only navigation control (same density as IconButton, rendered as a Link). */
 export function IconLink({
   label,
-  danger,
+  variant,
+  tone,
   href,
   className,
   children,
   ...props
-}: { label: string; danger?: boolean; href: string; children: ReactNode } & Omit<
-  AnchorHTMLAttributes<HTMLAnchorElement>,
-  'aria-label' | 'href'
->) {
+}: {
+  label: string
+  variant?: IconButtonVariant
+  tone?: IconButtonTone
+  href: string
+  children: ReactNode
+} & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'aria-label' | 'href'>) {
   return (
     <Link
       href={href}
       aria-label={label}
       title={label}
-      className={cn(iconControl, tone(danger), className)}
+      className={cn(iconControl(variant, tone), className)}
       {...props}
     >
       {children}

@@ -20,6 +20,7 @@ import {
 } from '@/lib/spaces/roster-actions'
 import type { SpaceRole, SpaceMemberStatus } from '@/lib/spaces/membership'
 import { cn } from '@/lib/utils'
+import { IconButton } from '@/components/ui/icon-button'
 
 // ROSTER MANAGER (client) — the People module's roster table (Entity Management Overhaul EM2-2). The
 // owner / admin manages who is on a Space here: per-member ROLE assignment along the per-Space ladder
@@ -347,44 +348,44 @@ export function RosterManager({
                     </select>
 
                     {suspended ? (
-                      <button
-                        type="button"
+                      <IconButton
+                        variant="bordered"
+                        tone="success"
+                        label={`Reactivate ${row.displayName}`}
                         onClick={() =>
                           onRowAction(row.profileId, reactivateMember, 'Member reactivated.')
                         }
                         disabled={anyPending}
-                        aria-label={`Reactivate ${row.displayName}`}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-success/40 hover:text-success disabled:opacity-40"
                       >
                         <UserCheck className="h-4 w-4" aria-hidden />
-                      </button>
+                      </IconButton>
                     ) : (
-                      <button
-                        type="button"
+                      <IconButton
+                        variant="bordered"
+                        tone="warning"
+                        label={`Suspend ${row.displayName}`}
                         onClick={() =>
                           onRowAction(row.profileId, suspendMember, 'Member suspended.')
                         }
                         disabled={anyPending}
-                        aria-label={`Suspend ${row.displayName}`}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-warning/40 hover:text-warning disabled:opacity-40"
                       >
                         <UserMinus className="h-4 w-4" aria-hidden />
-                      </button>
+                      </IconButton>
                     )}
 
-                    <button
-                      type="button"
+                    <IconButton
+                      variant="bordered"
+                      tone="danger"
+                      label={`Remove ${row.displayName}`}
                       onClick={() => onRowAction(row.profileId, removeMember, 'Member removed.')}
                       disabled={anyPending}
-                      aria-label={`Remove ${row.displayName}`}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-danger/40 hover:text-danger disabled:opacity-40"
                     >
                       {rowBusy ? (
                         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                       ) : (
                         <Trash2 className="h-4 w-4" aria-hidden />
                       )}
-                    </button>
+                    </IconButton>
                   </div>
                 )}
               </li>

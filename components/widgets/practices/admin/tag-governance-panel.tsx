@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowRight, Check } from 'lucide-react'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { DangerModal } from '@/components/admin/danger-modal'
+import { IconButton } from '@/components/ui/icon-button'
 import { isError } from '@/lib/action-result'
 import { promoteTagAction, mergeTagsAction } from '@/app/(main)/admin/content/actions'
 
@@ -80,16 +81,19 @@ function MergeControl({
           </option>
         ))}
       </select>
-      <button
-        type="button"
+      {/* `title` is passed explicitly and deliberately: it names the CHOSEN target
+          ("into Breathwork"), which the accessible name cannot, because the select
+          sits right beside it and a screen reader would read the target twice. The
+          kit spreads props after its own title, so this override lands. */}
+      <IconButton
+        variant="bordered"
+        label={`Merge ${tag.label} into the chosen tag`}
+        title={`Merge ${tag.label} into ${intoLabel}`}
         disabled={disabled || !intoId}
         onClick={() => setOpen(true)}
-        title={`Merge ${tag.label} into ${intoLabel}`}
-        aria-label={`Merge ${tag.label} into the chosen tag`}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-40"
       >
         <ArrowRight className="h-4 w-4" aria-hidden />
-      </button>
+      </IconButton>
       <DangerModal
         open={open}
         onClose={() => setOpen(false)}

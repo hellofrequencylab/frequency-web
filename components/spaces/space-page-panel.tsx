@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { Button, buttonClasses } from '@/components/ui/button'
 import { SectionHeader } from '@/components/ui/section-header'
+import { IconButton } from '@/components/ui/icon-button'
 import { cn } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
 import type { ProfilePage } from '@/lib/spaces/profile-pages'
@@ -251,7 +252,7 @@ function PageRow({
             aria-label={`Rename ${page.label}`}
             className="min-w-0 flex-1 rounded-lg border border-border bg-canvas px-2 py-1 text-sm font-medium text-text"
           />
-          <IconButton label="Save name" disabled={pending} onClick={saveRename}>
+          <IconButton variant="bordered" label="Save name" disabled={pending} onClick={saveRename}>
             <Check className="h-4 w-4" aria-hidden />
           </IconButton>
         </form>
@@ -275,12 +276,13 @@ function PageRow({
 
       {!readOnly && !editing && (
         <div className="flex shrink-0 items-center gap-1">
-          <IconButton label={`Rename ${page.label}`} disabled={pending} onClick={() => setEditing(true)}>
+          <IconButton variant="bordered" label={`Rename ${page.label}`} disabled={pending} onClick={() => setEditing(true)}>
             <Pencil className="h-4 w-4" aria-hidden />
           </IconButton>
           {!page.system && (
             <>
               <IconButton
+                variant="bordered"
                 label={`Move ${page.label} up`}
                 disabled={pending || isFirstCustom}
                 onClick={() => onMove(-1)}
@@ -288,6 +290,7 @@ function PageRow({
                 <ArrowUp className="h-4 w-4" aria-hidden />
               </IconButton>
               <IconButton
+                variant="bordered"
                 label={`Move ${page.label} down`}
                 disabled={pending || isLastCustom}
                 onClick={() => onMove(1)}
@@ -295,6 +298,8 @@ function PageRow({
                 <ArrowDown className="h-4 w-4" aria-hidden />
               </IconButton>
               <IconButton
+                variant="bordered"
+                tone="danger"
                 label={`Delete ${page.label}`}
                 disabled={pending}
                 onClick={() => {
@@ -396,28 +401,3 @@ function AddPagesUpsell({ slug }: { slug: string }) {
   )
 }
 
-/** A compact square icon button for the row controls (reorder / show-hide / rename / delete). */
-function IconButton({
-  label,
-  disabled,
-  onClick,
-  children,
-}: {
-  label: string
-  disabled: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      title={label}
-      aria-label={label}
-      disabled={disabled}
-      onClick={onClick}
-      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-border-strong hover:text-text disabled:cursor-default disabled:opacity-40 motion-reduce:transition-none"
-    >
-      {children}
-    </button>
-  )
-}
