@@ -95,7 +95,7 @@ export function EventPeopleModule() {
                   {analytics.checkedIn > 0 && <span className="text-subtle"> · {analytics.checkedIn} checked in</span>}
                 </span>
               </div>
-              <ProgressTrack value={fillPct} label="Seats filled" size="lg" animate />
+              <ProgressTrack value={fillPct ?? 0} label="Seats filled" size="lg" animate />
             </>
           ) : (
             <p className="text-xs text-subtle">

@@ -285,7 +285,7 @@ function AddonEnableToggle({ addon, initial }: { addon: AddonKey; initial: boole
   }
   return (
     <div className="flex items-center gap-2">
-      <span className={`text-2xs font-semibold uppercase tracking-wide ${on ? 'text-success' : 'text-subtle'}`}>
+      <span className={`text-2xs font-semibold uppercase tracking-wide ${on ? 'text-success' : 'text-muted'}`}>
         {on ? 'Offered' : 'Hidden'}
       </span>
       <Toggle

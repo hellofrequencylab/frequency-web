@@ -65,6 +65,74 @@ adding a profile id here would immediately require the gate. Paths are templated
 `props.mid` (the per-page-load metric id) dedupes retried beacons, the 90-day purge bounds the table,
 and Sentry's incidental vitals (tracing default) are NOT the dashboard source of truth — this is.
 
+## The journey registry — five funnels over the markers that already exist (Lift 1a)
+
+`lib/analytics/journeys.ts` names the five journeys that decide the product's fate and, for
+each step, **which existing marker proves it**. No new tracking: the semantic ledger is live,
+and the registry only makes it queryable as a funnel. `/admin/insights?tab=experience` reads it.
+
+| Key | Funnel | Steps (marker → marker) |
+|---|---|---|
+| `land_to_beta` | Land to beta | `web_vital` · `web_vital` (path `/beta%`) · `waitlist.joined`/`application.submitted` · 🔴 `account.created` · `onboarding.induction_completed` |
+| `join_to_circle` | Join to first Circle | `onboarding.induction_completed` · `onboarding.vera_opened` · `nav.page_view` (path `/circles%`) · `circle.joined`/`circle.started`/`circle.claimed` |
+| `circle_to_rsvp` | First Circle to first RSVP | `circle.joined`/`circle.started`/`circle.claimed` · `nav.page_view` (path `/events%`) · 🔴 `event.rsvp` |
+| `practice_to_return` | First practice to the return | `practice.adopted`/`practice.claimed` · `practice.verified` · `practice.verified` within 7 days |
+| `claim_to_published` | Operator: claim to published | `circle.claimed`/`event.claimed` · `nav.page_view` (path `%/manage%`) · `event.posted`/`entry_point.created` |
+
+**Coverage is a first-class value, not an assumption.** Each step carries `observed` (rows
+exist in prod), `emitted` (an emitter exists, no rows yet), or `unimplemented` (🔴 nothing
+emits it). Two steps are 🔴 today and the readout says so rather than printing a zero:
+
+| Gap | Why it matters | Fix |
+|---|---|---|
+| 🔴 `account.created` | Registered in the taxonomy, never emitted. Sign-up leaves no ledger row, so waitlist → induction is a black box. | One `track('account.created', …)` on the profile-creation path. |
+| 🔴 `event.rsvp` | Registered in the taxonomy, never emitted: an RSVP writes an `event_rsvps` row and stops. J3 cannot close. | One `track('event.rsvp', { eventId }, profileId)` beside the `event_rsvps` insert. |
+
+**The identity seam.** `engagement_events` is keyed by profile; the anonymous vitals stream is
+keyed only by an ephemeral per-tab session id, and the two can never be joined (joining them
+would drag the vitals stream inside the `analytics` consent scope, ADR-922). `land_to_beta`
+crosses that seam, so the funnel **restarts the walk there** and reports `linked=false`; the
+readout draws a break instead of a fabricated conversion rate.
+
+**Reads:** `journey_funnel(_journey_key, _steps jsonb, _days)` — a SEQUENTIAL funnel (a subject
+counts at step N only if it counted at step N-1 and its step-N event came after). The step spec
+is passed in from the registry, so **SQL holds no second copy** of the journey definitions.
+
+## Vitals budgets + the readout (Lift 7)
+
+`lib/analytics/vitals-budgets.ts` holds per-template-class p75 budgets, keyed to the templated
+path names the vitals stream already records (`templatePath`, ADR-922) so nothing new is stored:
+
+| Class | LCP p75 | INP p75 | CLS p75 | Surfaces |
+|---|---|---|---|---|
+| `marketing` | ≤ 2.0s | ≤ 200ms | ≤ 0.1 | the (marketing) group, `/`, `/help`, legal, and the public entity profiles (`/spaces/<slug>`, `/events/:id`, `/people/<handle>`) |
+| `app` | ≤ 2.5s | ≤ 200ms | ≤ 0.1 | the signed-in shell (`/feed`, `/circles`, `/practices`, `/settings/*`, …) — also the default for anything unclassified |
+| `operator` | ≤ 2.5s | ≤ 300ms | ≤ 0.1 | `/admin/*`, `/studio`, and anything containing `/manage` or `/edit` |
+
+Lift 7a names marketing's three, the app shell's LCP+INP, and the operator INP. The rest are
+inherited rather than left blank so the table can be scored: CLS 0.1 is universal, and only INP
+is relaxed for operators. Status per docs/PRESENTATION.md — ✅ under budget, ⚠️ within 10% of it,
+🔴 over, ⏳ fewer than `MIN_SAMPLES` (5) loads, which is left unscored rather than guessed at.
+
+**Read:** `vitals_p75(_days, _path_template, _viewport)` — p75 per (templated path, metric) over
+`interaction_events kind='web_vital'`, plus the same statistic over the **preceding window of
+equal length**, which is the 28-day trend the readout prints beside each number.
+
+Both RPCs are `SECURITY DEFINER`, granted to `service_role` ONLY (so neither is reachable on
+`/rest/v1/rpc` at all), with an in-body staff check as defense in depth — the posture of
+`public.delete_topical_channel`. Neither returns a profile id, a session id, or any row-level
+detail. Migration: `supabase/migrations/20270207000000_insights_journey_and_vitals_rpcs.sql`.
+
+### `viewport_class` on the vitals beacon (Lift 7d)
+
+A phone and a desktop are two different products at the same URL, and a blended p75 hides
+whichever one is losing. Each vital now carries a `viewportClass` of `mobile` / `tablet` /
+`desktop`, derived from viewport WIDTH at first metric (Tailwind's md/lg breakpoints) and
+stored as `props.vp`. **Account-free by construction** — a bucket of three is a property of the
+page view, never of a person, which is exactly what keeps this stream outside the `analytics`
+consent scope (the ADR-922 invariant). `vitals_p75` takes it as an optional filter and is
+correct both before and after the collector starts writing it.
+
 ## Event taxonomy (canonical)
 
 Every key action in the member journey emits a named event. Initial set:
@@ -97,6 +165,10 @@ aggregates / `SECURITY DEFINER` RPCs, not raw scans). Panels:
 - **Community health** — circles forming/active, events, posts, invites.
 - **Acquisition** — GA4 headline numbers (traffic, top sources) via the GA Data API widget, or a link out.
 - **Realtime** — active members now.
+- **Experience** ✅ — `/admin/insights?tab=experience`: the five journey funnels and the page-speed
+  budget table (above). Two panels, each behind its own `<Suspense>`; the tab component lives at
+  `app/(main)/admin/insights/experience-tab.tsx`, the reads at `lib/analytics/insights-read.ts`.
+  No new menu row: `/admin/insights` is already a rail-bank destination, and this is a tab on it.
 
 There is likely an existing admin/WAM surface to extend rather than build fresh — confirm at
 build time.

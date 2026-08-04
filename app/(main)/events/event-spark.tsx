@@ -377,7 +377,7 @@ export function EventSpark({
                     {detailSummary(draft)}
                   </p>
                 )}
-                <p className="text-2xs text-subtle">You&apos;ll fine-tune everything (and the links) in the editor next.</p>
+                <p className="text-2xs text-muted">You&apos;ll fine-tune everything (and the links) in the editor next.</p>
               </div>
             </div>
           )}

@@ -138,7 +138,7 @@ export async function GrowthFunnel() {
                         )}
                       </span>
                     </div>
-                    <ProgressTrack value={width} label={`${s.label} share`} className="mt-1" />
+                    <ProgressTrack value={width} label={`${s.step} share`} className="mt-1" />
                   </div>
                 )
               })}

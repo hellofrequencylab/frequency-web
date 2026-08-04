@@ -9,21 +9,28 @@ import { OutcomesTab } from '@/components/admin/insights/outcomes-tab'
 import { IntelTab } from '@/components/admin/insights/intel-tab'
 import { ExpansionTab } from '@/components/admin/insights/expansion-tab'
 import { FinancialsTab } from '@/components/admin/insights/financials-tab'
+import { ExperienceTab } from './experience-tab'
 
 // The consolidated INSIGHTS suite (ADR-263): one tabbed surface that absorbed the six
 // scattered analytics pages — the Read, Engagement, Outcomes, Marketing intel, Expansion,
 // and Finances — so all the platform's analytics live in one place instead of six routes.
 // Tabs are query-param views (the UnderlineTabs pattern, like /admin/members), so only the
 // active tab's data loads and the URL stays shareable. Read is the default (so /admin/insights
-// keeps its old meaning). Finances is janitor-only; the other five admit insights staff too.
+// keeps its old meaning). Finances is janitor-only; the other tabs admit insights staff too.
+//
+// EXPERIENCE (UX-MATURITY-PLAN Lift 1a + 7b) joins the suite rather than opening a seventh
+// route: the plan is explicit that the journey funnels and the vitals budgets share ONE
+// insights surface. Its tab component is colocated here (./experience-tab) because it is the
+// only consumer of the two RPCs behind it.
 export const dynamic = 'force-dynamic'
 
-const TAB_KEYS = ['read', 'engagement', 'outcomes', 'intel', 'expansion', 'financials'] as const
+const TAB_KEYS = ['read', 'engagement', 'experience', 'outcomes', 'intel', 'expansion', 'financials'] as const
 type TabKey = (typeof TAB_KEYS)[number]
 
 const TAB_LABEL: Record<TabKey, string> = {
   read: 'Read',
   engagement: 'Engagement',
+  experience: 'Experience',
   outcomes: 'Outcomes',
   intel: 'Marketing intel',
   expansion: 'Expansion',
@@ -53,7 +60,7 @@ export default async function InsightsPage({
       title="Insights"
       eyebrow="Insights"
       icon={LineChart}
-      description="The platform's analytics in one place: the engagement read, the activation funnel, program outcomes, marketing intel, expansion signal, and finances."
+      description="The platform's analytics in one place: the engagement read, the activation funnel, the five funnels and page speed, program outcomes, marketing intel, expansion signal, and finances."
       width="wide"
     >
       <AdminSection>
@@ -66,6 +73,7 @@ export default async function InsightsPage({
       <div className="mt-2">
         {tab === 'read' && <ReadTab />}
         {tab === 'engagement' && <EngagementTab />}
+        {tab === 'experience' && <ExperienceTab />}
         {tab === 'outcomes' && <OutcomesTab />}
         {tab === 'intel' && <IntelTab />}
         {tab === 'expansion' && <ExpansionTab />}

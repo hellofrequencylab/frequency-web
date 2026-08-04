@@ -585,7 +585,7 @@ function EpisodePanel({
                     )}
                   </div>
 
-                  <p className={`pl-6 text-3xs ${status.live ? 'text-success' : 'text-subtle'}`}>{status.note}</p>
+                  <p className={`pl-6 text-3xs ${status.live ? 'text-success' : 'text-muted'}`}>{status.note}</p>
                 </li>
               )
             })}

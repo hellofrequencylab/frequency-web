@@ -108,7 +108,7 @@ function FunnelView({ steps }: { steps: FunnelStep[] }) {
                 <span className="font-semibold tabular-nums text-text">{s.actors.toLocaleString()}</span>
               </span>
             </div>
-            <ProgressTrack value={width} label={`${s.label} share of actors`} className="mt-1" />
+            <ProgressTrack value={width} label={`${s.step} share of actors`} className="mt-1" />
           </div>
         )
       })}
