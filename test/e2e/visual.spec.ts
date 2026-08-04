@@ -29,7 +29,12 @@ test.describe('visual', { tag: '@visual' }, () => {
 
   for (const path of SURFACES) {
     test(`${path} matches baseline`, async ({ page }) => {
-      await page.goto(path, { waitUntil: 'networkidle' });
+      // 'load' first, then a CAPPED networkidle: surfaces with streaming sections and
+      // analytics beacons (/discover) never reach true networkidle, which timed out the
+      // whole test. Ten quiet seconds is plenty for layout to settle; past that we
+      // screenshot anyway rather than fail the capture.
+      await page.goto(path, { waitUntil: 'load' });
+      await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
       // Web fonts swap late and shift text metrics; wait them out.
       await page.evaluate(() => document.fonts.ready);
       await expect(page).toHaveScreenshot(`${slug(path)}.png`, {

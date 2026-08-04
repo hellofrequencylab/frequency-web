@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import {
   PhotoHero,
@@ -19,7 +20,7 @@ import {
 import { JsonLd } from '@/components/json-ld'
 import { Illustration } from '@/components/marketing/illustrations'
 import { breadcrumbSchema, faqSchema, productSchema } from '@/lib/jsonld'
-import { PricingBillingToggle } from '@/components/marketing/pricing-billing-toggle'
+import { Reveal } from '@/components/marketing/motion'
 import { PricingComparison } from '@/components/marketing/pricing-comparison'
 import { getPricingValues } from '@/lib/pricing/settings'
 import { catalogConfigByKey, loadCatalogConfig } from '@/lib/pricing/catalog-config'
@@ -54,8 +55,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // between tiers moves it in the grid. There is no dollar figure, and no percentage, in this file.
 //
 // SPEED: the page is ISR (revalidate below). The two config reads are request-cached and happen once per
-// revalidation, not per visitor. The monthly/yearly toggle is the only client island; both intervals are
-// rendered and CSS flips which one shows.
+// revalidation, not per visitor. Every price renders statically (monthly headline, yearly beside it); the
+// retired monthly/yearly toggle took the last page-specific client island with it (DAWN 2 screen pass,
+// matching the reference's single-figure cards), leaving only the shared scroll-reveal island.
 export const revalidate = 3600
 
 /** Resolve the whole pricing model from the operator-editable config. One place, so the metadata, the
@@ -253,6 +255,18 @@ export default async function PricingPage() {
   const members = memberOfferings(input)
   const spaces = spaceOfferings(input)
 
+  // The named offerings the DAWN 2 card rows place (row one: the free trio; row two: the paid Space
+  // plans, with Independent on its quiet strip). Looked up by stable id, so a ladder reorder in the
+  // model cannot shuffle the reference layout; every one is still the model's own object.
+  const member = members[0]!
+  const crew = members[1]!
+  const spacesById = new Map(spaces.map((o) => [o.id, o]))
+  const spaceFree = spacesById.get('free')!
+  const business = spacesById.get('business')!
+  const collective = spacesById.get('collective')!
+  const nonprofit = spacesById.get('nonprofit')!
+  const independent = spacesById.get('independent')
+
   // 🔴 THE PRICE SCHEMA IS EMITTED ON BOTH BRANCHES, and hoisting it here is the whole point.
   //
   // One Product/Offer per PAID offering. A free tier is not an Offer (a zero-price Product reads as
@@ -312,14 +326,6 @@ export default async function PricingPage() {
         ]}
       />
 
-      {/* The CSS that drives the monthly/yearly toggle island: hide the interval the wrapper is not on.
-          The wrapper carries data-interval; each price span carries data-interval-show. No client JS in
-          the page itself; the toggle (a client island) only flips the wrapper attribute. */}
-      <style>{`
-        [data-interval='month'] [data-interval-show='year'] { display: none; }
-        [data-interval='year'] [data-interval-show='month'] { display: none; }
-      `}</style>
-
       <PhotoHero
         image="/images/site/lab-lounge.jpg"
         alt="The connection bar inside The Lab, warm and low-lit"
@@ -346,49 +352,48 @@ export default async function PricingPage() {
         <p className="text-center text-lg leading-relaxed text-muted sm:text-xl">{MISSION_FRAMING}</p>
       </Section>
 
-      {/* THE PLANS. Two ladders, seven plans, every one of them sellable: the personal membership
-          (Member, Crew) and the Space plans (Free through Independent). One billing toggle governs both,
-          so a reader compares monthly against monthly. */}
-      <Section tone="surface" pad="pt-6 pb-16 sm:pb-20" width="wide">
+      {/* THE PLANS (DAWN 2 structure, design_handoff/dawn/ui_kits/marketing/pricing.html). Two bands
+          instead of two side-by-side ladders. Row one, cream: everything a person starts free, Member ·
+          Crew · Space, with Crew the wide, floating middle card. Row two, ink: the paid Space plans,
+          Business · Collective · Non Profit, Collective floating. Independent stays on the page as the
+          quiet full-width strip under the ink row. Every figure still reads off the offering model
+          (operator config), never this file; only the STRUCTURE changed. */}
+      <Section tone="canvas" width="wide">
         <SectionHeading
+          align="center"
           eyebrow="The plans"
           title="Pick the plan that fits."
           kicker="Two ladders. One for you as a member, one for the Space you run. Every rung on both sells, so the only thing that moves down the ladder is the rate. You can be on both, and you can start on the free rung of either."
         />
+        <div className="stagger grid items-center gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
+          <PlanCard offering={member} />
+          <PlanCard offering={crew} featured />
+          <PlanCard offering={spaceFree} />
+        </div>
+      </Section>
 
-        <PricingBillingToggle yearlyNote={annualDiscountNote(input.values)}>
-          <div className="mb-12">
-            <BlockHeading
-              title="For you"
-              kicker="Being a member is free, forever. Both rungs sell; Crew takes the rate down and lifts the caps."
-            />
-            <div className="grid gap-5 sm:grid-cols-2">
-              {members.map((o) => (
-                <OfferingCard key={o.id} offering={o} />
-              ))}
-            </div>
+      <Section tone="ink" width="wide" className="spot relative overflow-hidden">
+        <div className="relative z-10">
+          <SectionHeading
+            tone="ink"
+            align="center"
+            title="For your Space"
+            kicker="A Space is free for anyone to start, and a free Space sells. The paid plans buy the rate down and lift the caps."
+          />
+          <div className="stagger grid items-center gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
+            <PlanCard offering={business} tone="ink" />
+            <PlanCard offering={collective} tone="ink" featured />
+            <PlanCard offering={nonprofit} tone="ink" />
           </div>
-
-          <div>
-            <BlockHeading
-              title="For your Space"
-              kicker="A Space is free for anyone to start, and a free Space sells. The paid plans buy the rate down and lift the caps."
-            />
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {spaces.map((o) => (
-                <OfferingCard key={o.id} offering={o} />
-              ))}
-            </div>
-          </div>
-        </PricingBillingToggle>
-
-        <p className="mx-auto mt-10 max-w-2xl text-center text-base leading-relaxed text-muted">
-          Never a wall in front of the transaction. {PLAN_STORY.meters} You keep 100% of your own
-          bookings on every rung: the take-rate applies only to a sale the network introduced, and it
-          drops as your plan rises. Once someone is yours, a follower, one of your members, a contact, or
-          a past buyer, we take nothing on them again. We charge once for the introduction. After that
-          they are your people, free.
-        </p>
+          {independent && <IndependentStrip offering={independent} />}
+          <p className="mx-auto mt-10 max-w-2xl text-center text-base leading-relaxed text-on-ink-muted">
+            {annualDiscountNote(input.values)} Never a wall in front of the transaction.{' '}
+            {PLAN_STORY.meters} You keep 100% of your own bookings on every rung: the take-rate applies
+            only to a sale the network introduced, and it drops as your plan rises. Once someone is
+            yours, a follower, one of your members, a contact, or a past buyer, we take nothing on them
+            again. We charge once for the introduction. After that they are your people, free.
+          </p>
+        </div>
       </Section>
 
       {/* Seats + the AI add-on: the two things you can add to a plan, priced from the same config, and
@@ -516,39 +521,66 @@ export default async function PricingPage() {
   )
 }
 
-// ── The plan cards ───────────────────────────────────────────────────────────
-// One card per offering. Every string comes off the Offering (which is built from the pricing config),
-// so a card holds no pricing logic of its own. Semantic DAWN tokens only.
+// ── The plan cards (DAWN 2) ──────────────────────────────────────────────────
+// One card per offering, in a light (cream band) and an ink (bg-slat band) dress. Every string comes
+// off the Offering (which is built from the pricing config), so a card holds no pricing logic of its
+// own. Semantic DAWN tokens only.
+//
+// KIT NOTE: these are page-local rather than marketing-ui pieces because the kit `Card` and `Button`
+// carry no ink tone yet. If a second surface needs an on-ink card or CTA, promote these to the kit.
 
-function OfferingCard({ offering }: { offering: Offering }) {
+/** One plan card. `featured` is the row's floating middle card (lift-2, primary border, the badge,
+ *  wider via the grid's 1.2fr middle column and taller via the negative block margin, exactly the
+ *  reference's silhouette). Non-featured cards rest on the page (lift-1) and center vertically. */
+function PlanCard({
+  offering,
+  tone = 'light',
+  featured = false,
+}: {
+  offering: Offering
+  tone?: 'light' | 'ink'
+  featured?: boolean
+}) {
+  const ink = tone === 'ink'
+  const shell = featured
+    ? `lift-2 border-2 border-primary p-7 sm:p-8 lg:-my-4 ${
+        ink ? 'bg-on-ink/5' : 'bg-surface ring-4 ring-primary-bg'
+      }`
+    : `lift-1 border p-6 ${ink ? 'border-on-ink/10 bg-on-ink/5' : 'border-border bg-surface'}`
   return (
-    <Card tone={offering.featured ? 'highlight' : 'feature'} className="flex flex-col">
-      <div className="mb-1 flex flex-wrap items-center gap-2">
-        <h4 className="font-display uppercase text-text text-2xl">{offering.label}</h4>
-        {offering.featured && (
-          <span className="rounded-md bg-primary px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-on-primary">
-            Most chosen
-          </span>
-        )}
-      </div>
-      <p className="mb-4 text-sm font-semibold text-muted">{offering.tagline}</p>
-
-      <PriceBlock offering={offering} />
-
-      <p className="mt-3 text-sm text-muted">{offering.billing}</p>
-      {offering.trial && <p className="mt-1 text-sm font-semibold text-text">{offering.trial}</p>}
-      <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">{offering.forWho}</p>
-
-      <RateLine takeRate={offering.takeRate} />
-
-      <Button
-        href={offering.cta.href}
-        variant={offering.featured ? 'primary' : 'secondary'}
-        className="mt-5 w-full"
+    <Reveal as="article" className={`relative flex flex-col rounded-2xl ${shell}`}>
+      {featured && (
+        <span className="absolute -top-3 left-6 rounded-md bg-primary px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-on-primary">
+          Most chosen
+        </span>
+      )}
+      <h3
+        className={`font-display uppercase ${featured ? 'text-3xl' : 'text-2xl'} ${
+          ink ? 'text-on-ink' : 'text-text'
+        }`}
       >
-        {offering.cta.label}
-      </Button>
-    </Card>
+        {offering.label}
+      </h3>
+      <p className={`mt-1 text-sm font-semibold ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
+        {offering.tagline}
+      </p>
+
+      <PlanPrice offering={offering} ink={ink} featured={featured} />
+
+      <p className={`mt-3 text-sm ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{offering.billing}</p>
+      {offering.trial && (
+        <p className={`mt-1 text-sm font-semibold ${ink ? 'text-on-ink' : 'text-text'}`}>
+          {offering.trial}
+        </p>
+      )}
+      <p className={`mt-3 flex-1 text-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
+        {offering.forWho}
+      </p>
+
+      <RateLine takeRate={offering.takeRate} ink={ink} />
+
+      <PlanCta offering={offering} ink={ink} featured={featured} />
+    </Reveal>
   )
 }
 
@@ -559,39 +591,143 @@ function OfferingCard({ offering }: { offering: Offering }) {
  *  The split is the same one the metadata and the FAQ already do (`takeRate.split(', ')`) — the string
  *  is built as "<your own>, <the network's>" — and it falls back to the whole line if a rate ever
  *  arrives without the comma, so a config change can soften the design but never lose the sentence. */
-function RateLine({ takeRate }: { takeRate: string }) {
+function RateLine({ takeRate, ink = false }: { takeRate: string; ink?: boolean }) {
   const [own, ...rest] = takeRate.split(', ')
   const network = rest.join(', ')
   return (
-    <p className="mt-4 border-t border-border pt-3 text-sm leading-relaxed">
-      <span className="font-semibold text-text">{own}</span>
-      {network && <span className="text-subtle">, {network}</span>}
+    <p
+      className={`mt-4 border-t pt-3 text-sm leading-relaxed ${
+        ink ? 'border-on-ink/10' : 'border-border'
+      }`}
+    >
+      <span className={`font-semibold ${ink ? 'text-on-ink' : 'text-text'}`}>{own}</span>
+      {network && <span className={ink ? 'text-on-ink-subtle' : 'text-subtle'}>, {network}</span>}
     </p>
   )
 }
 
-/** The headline price. Renders BOTH intervals (the toggle CSS shows one), with the crossed-out list
- *  anchor where the config carries one, and the beta lock line only beside a real anchor. */
-function PriceBlock({ offering }: { offering: Offering }) {
-  const intervals: { key: 'month' | 'year'; label: string | null }[] = [
-    { key: 'month', label: offering.monthly },
-    { key: 'year', label: offering.yearly ?? offering.monthly },
-  ]
+/** The headline price, single figure (the reference's card grammar): the struck LIST anchor with its
+ *  "Beta price" tag where the config carries one, the monthly headline, the yearly beside it, and the
+ *  honest beta lock line only under a real anchor. Every figure reads off the offering. */
+function PlanPrice({
+  offering,
+  ink = false,
+  featured = false,
+}: {
+  offering: Offering
+  ink?: boolean
+  featured?: boolean
+}) {
+  // A long price label (pay-what-you-want Crew reads "from $4.99/mo") steps down a size so the display
+  // face never wraps mid-figure; the reference sizes by string length the same way.
+  const long = offering.monthly.length > 8
+  const size = featured
+    ? long
+      ? 'text-3xl sm:text-4xl'
+      : 'text-5xl sm:text-6xl'
+    : long
+      ? 'text-3xl'
+      : 'text-4xl'
   return (
-    <div>
-      {intervals.map(({ key, label }) => (
-        <span key={key} data-interval-show={key} className="flex items-baseline gap-2">
-          {key === 'month' && offering.listAnchor && (
-            <span className="text-base text-subtle line-through">{offering.listAnchor}</span>
-          )}
-          {/* The price outranks the plan name (text-2xl) instead of tying with it. */}
-          <span className="font-display text-text text-4xl leading-none">{label}</span>
+    <div className="mt-4">
+      {offering.listAnchor && (
+        <span className="flex items-baseline gap-2">
+          <span className={`text-sm line-through ${ink ? 'text-on-ink-subtle' : 'text-subtle'}`}>
+            {offering.listAnchor}/mo
+          </span>
+          <span
+            className={`text-3xs font-black uppercase tracking-wider ${
+              ink ? 'text-primary' : 'text-primary-strong'
+            }`}
+          >
+            Beta price
+          </span>
         </span>
-      ))}
+      )}
+      <span
+        className={`mt-1 block font-display leading-none ${size} ${ink ? 'text-on-ink' : 'text-text'}`}
+      >
+        {offering.monthly}
+      </span>
+      {offering.yearly && (
+        <span className={`mt-1.5 block text-sm ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
+          or {offering.yearly}
+        </span>
+      )}
       {offering.betaNote && (
-        <span className="mt-2 block text-xs font-semibold text-primary-strong">{offering.betaNote}</span>
+        <span
+          className={`mt-2 block text-xs font-semibold ${
+            ink ? 'text-primary' : 'text-primary-strong'
+          }`}
+        >
+          {offering.betaNote}
+        </span>
       )}
     </div>
+  )
+}
+
+/** The card CTA. The kit `Button` covers the primary (featured) and light-secondary cases; an on-ink
+ *  secondary does not exist in the kit yet, so that one case carries the same shape page-locally
+ *  (see the KIT NOTE above). */
+function PlanCta({
+  offering,
+  ink,
+  featured,
+}: {
+  offering: Offering
+  ink: boolean
+  featured: boolean
+}) {
+  if (featured || !ink) {
+    return (
+      <Button
+        href={offering.cta.href}
+        variant={featured ? 'primary' : 'secondary'}
+        className="mt-5 w-full"
+      >
+        {offering.cta.label}
+      </Button>
+    )
+  }
+  return (
+    <Link
+      href={offering.cta.href}
+      className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-on-ink/20 bg-on-ink/10 px-8 py-3.5 text-base font-bold text-on-ink transition-colors hover:bg-on-ink/15"
+    >
+      {offering.cta.label}
+    </Link>
+  )
+}
+
+/** Independent, the off-network white-label build, as the quiet full-width strip under the ink row
+ *  (the reference keeps the six-card grid and hands Independent one line; the strip keeps its real
+ *  operator-set price and copy on the page instead). */
+function IndependentStrip({ offering }: { offering: Offering }) {
+  return (
+    <Reveal
+      as="article"
+      className="lift-1 mt-8 flex flex-col gap-5 rounded-2xl border border-on-ink/10 bg-on-ink/5 p-6 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h3 className="font-display uppercase text-2xl text-on-ink">{offering.label}</h3>
+          <span className="font-display text-xl text-primary">{offering.monthly}</span>
+          {offering.yearly && <span className="text-sm text-on-ink-muted">or {offering.yearly}</span>}
+        </div>
+        <p className="mt-1 text-sm font-semibold text-on-ink-muted">{offering.tagline}</p>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-on-ink-muted">{offering.forWho}</p>
+        <p className="mt-2 text-sm text-on-ink-subtle">{offering.takeRate}</p>
+      </div>
+      <div className="shrink-0">
+        <Link
+          href={offering.cta.href}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-on-ink/20 bg-on-ink/10 px-8 py-3.5 text-base font-bold text-on-ink transition-colors hover:bg-on-ink/15"
+        >
+          {offering.cta.label}
+        </Link>
+      </div>
+    </Reveal>
   )
 }
 
