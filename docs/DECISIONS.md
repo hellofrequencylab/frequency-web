@@ -17249,3 +17249,51 @@ The durable rule: **a threshold nobody has measured against is a guess wearing a
 **Postscript, same day: the job split shipped broken, and nothing local caught it.** The lift copied the `Install Chromium` step's `name` and `if` but clipped its `run` line. A step with neither `run` nor `uses` invalidates the **whole file**, and GitHub says so almost silently: the run is named after the *file path* (`.github/workflows/e2e.yml`, not `e2e`), fails instantly, and the e2e gate simply disappears from the PR's check list. `yaml.safe_load` accepted it, both jobs enumerated correctly, every `if:` resolved — the local checks I ran were all real and all blind to it.
 
 That is the session's own failure mode landing on the session: a gate that vanishes while the tick stays green. So the fix is not only the missing line. `scripts/check-workflows.mjs` (`pnpm check:workflows`, wired into `ci.yml`) now asserts two things a YAML parser structurally cannot see — **every step has `run` or `uses`**, and **no duplicate keys** (parsers silently keep the last; GitHub rejects the file). It was verified by reintroducing the exact defect and confirming a non-zero exit, not by trusting that it worked.
+
+## ADR-937 — The commerce rail row is **Market**; the naming canon wins over ADR-868 (2026-08-04)
+
+**Status.** Accepted. Owner ruling. Supersedes the LABEL in [ADR-868](DECISIONS.md); everything else in that ADR stands. Raised by DAWN's 2026-08-03 handoff §3b as a conflict it could not settle on its own.
+
+**Context.** ADR-596 retired the word "Marketplace". ADR-868 revived it for the commerce umbrella row, as a founder decision, scoped explicitly to the umbrella ("the surfaces keep their names"). The naming canon (`docs/NAMING.md`, brief 02) never followed: it reserves **Market** for the umbrella and **Classifieds** for the peer board. So the rail said one thing, the canon said another, and both were current. DAWN's own rail recreation read "Market", which is how the split surfaced.
+
+**Decision.** The canon wins. The row's label becomes **Market**.
+
+**Only the label moved.** The area key stays `market`, the href stays `/marketplace`, and the last-surface redirect (`commerce_last` cookie) is untouched — so no link, bookmark or analytics path changes. `lib/verticals/registry.test.ts` asserts the new label while deliberately continuing to assert the old key and href, so a regression that reverts the word cannot hide behind an unchanged route.
+
+**Consequences.** ⚠️ Operator-facing surfaces under `/admin/marketplace` still carry "Marketplace" in their eyebrows and back-links. Those were **not** in this ruling's scope (§3b was about the member rail row) and are left deliberately rather than swept, so the decision stays reviewable. If the canon should govern operator chrome too, that is a second, larger call. ⚠️ ADR-868's own text still reads as current on the label; the code comment at `lib/verticals/market.ts` now names this ADR as the superseding one, which is the pointer a reader arriving from the code will actually follow.
+
+## ADR-938 — The mobile round: a stuck row took the timer down, and the shell's clip hid a class of overflow (2026-08-04)
+
+**Status.** Accepted. Owner report: mobile scrolled sideways, spacing was off, and the timer would not load. Three separate causes; the timer one had a live production victim.
+
+### The timer: an orphaned row hijacked the door
+
+`practice_timer_sessions` held exactly one row — the owner's — with `started_at == paused_at`, written 18:57 and never touched again. That is the signature of a warm-up that armed and never handed over: Start writes the row paused, the phone backgrounds, the tab is discarded, and the row is orphaned. `lib/on-air/live-session.ts` exists *because* that is routine on mobile.
+
+`MindlessProvider` reads this row on **every authed mount** and force-opens the overlay in the row's mode. So one orphan turned every page load into a dead 00:00 "Resume" in the Get Moving engine, with no way back to Be Still (the mode toggle only exists on the setup screen). It could not self-heal: the abandonment auto-finalize deliberately skips paused records, and `close()` never clears the row.
+
+The reason it was possible is one sentence in `getActiveTimerSession`: *"the server row IS live by definition (the staleness guard is a localStorage concern)."* The localStorage cache has a 6h window; the server row — the one that survives across devices and reloads — had none.
+
+**Decision.** Two windows, because the two shapes rot at different rates. An **armed** row (`started_at == paused_at`) is orphaned after **5 minutes**, since a real warm-up hands over in seconds. Any other row gets the same **6h** the cache gets, so cross-device resume still works across a normal day. A stale row is deleted on read, so it self-heals for a member who would never file a report. Three tests cover it, including that a *fresh* armed row still resumes.
+
+### Two more ways the timer could present as "wouldn't load"
+
+`loadOnAirSession` was awaited with no `try/catch` — `isError` catches a *returned* failure, but a **rejected** action (dropped mobile connection, a stale action id after a deploy) reached no `setState`, leaving `phase: 'loading'` forever. That shell had **no close button** and locks body scroll, and its only exit was `Escape` — which does not exist on a phone. Both are fixed: the load is wrapped, and the loading shell gets `onClose`. The cross-device probe also gets the `.catch(() => {})` every peer in `lib/on-air/active-session.ts` already had.
+
+And the setup screen's close X was `-top-1` against the padding box, so the container's `env(safe-area-inset-top)` padding did not protect it: under `viewportFit: "cover"` the only close affordance sat behind the status bar.
+
+### Sideways scroll: the shell's clip is why this was invisible
+
+`components/layout/app-shell.tsx` carries `overflow-x-clip`, so inside the shell horizontal scroll is *structurally impossible* — which means the reported scroll was necessarily on a route that bypasses it. Those are the `publicChrome()` branch of `(main)/layout.tsx` (a signed-out visitor on a Space profile or event page), `/discover`, `/help`, and the marketing tree.
+
+Fixed at source: the three `/discover` card titles were flex children with no `min-w-0` (a flex child cannot shrink below its min-content width, and the names are member-supplied, so the input is unbounded); the help renderer had `overflow-x-auto` on `<pre>` but no `break-words` on paragraphs, inline code, or links — where a bare URL *is* the link text; and `/print/qr` had an uncapped 460px box.
+
+**`.halo` is the one I shipped.** It was added yesterday with `inset: -45%` and a host contract of only `position: relative`, while its own sibling `.sheen` ships `overflow: hidden` for exactly this reason. It has zero call sites, so it was not the cause — it was a loaded gun aimed at the first full-width marketing band anyone applied it to. Guarded now.
+
+### Safe areas: BRIEF-07's "fully handled ✅" is false
+
+Five edge-pinned elements had no inset: the app nav drawer's **head** (its foot was handled — the wordmark row rendered under the notch in the iOS PWA), the Space publish bar and its minimised pill (controls on the home indicator), the teaser-gate CTA at a flat `bottom-6` (behind the tab bar on every app route it mounts on), and — systemically — the shared `Dialog` primitive, whose `sheet` mode was `p-0` edge-to-edge. That last one is why `report-dialog`, `invite-launcher` and `capture-launcher` each re-solved safe areas by hand and each landed somewhere different; it belongs in the primitive.
+
+**Consequences.** ⚠️ Nothing in the visual harness measures the routes where overflow is still *possible* — a full-page mobile screenshot is `scrollWidth` wide, so the 390px baselines are a real measurement, but the registry only covers `EDITABLE_PAGES` + `/discover`. Space profiles, event pages and `/help` are unmeasured. ⚠️ **Do not fix overflow by putting `overflow-x: hidden` on `html`/`body`** — ADR-925's rule holds: the shell already clips, so "no horizontal scroll" proves nothing; a root band-aid would extend that blindness to the only surfaces where the bug is still visible enough to be reported.
+
+The durable rule: **a guard that makes a bug invisible is not a fix, it is a delay** — the shell's clip bought three years of overflow debt that only shows up where the clip is absent.

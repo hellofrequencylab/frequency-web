@@ -280,7 +280,18 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
     const requestedQueue = state.queue
     const requestedQueueIndex = state.queueIndex
     void (async () => {
-      const result = await loadOnAirSession(requestedPracticeId)
+      // try/catch, not just isError: isError handles a RETURNED failure, but a REJECTED
+      // server action (network drop mid-request, a 500, or a stale action id after a deploy
+      // hits a tab that has been open for days) skipped every setState below. The overlay
+      // then sat at phase 'loading' forever -- and that shell has no close button and locks
+      // body scroll, so on a phone, where there is no Escape key, it was unexitable.
+      let result: Awaited<ReturnType<typeof loadOnAirSession>>
+      try {
+        result = await loadOnAirSession(requestedPracticeId)
+      } catch {
+        if (live) setState({ phase: 'error' })
+        return
+      }
       if (!live) return
       if (isError(result)) {
         setState({ phase: 'error' })
@@ -323,11 +334,16 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
     }
     // No local record: ask the server whether a run is active on another device.
     let live = true
-    void getActiveTimerSession().then((res) => {
-      if (!live || isError(res) || !res.data) return
-      setServerResume(res.data)
-      openInternal(undefined, res.data.kind === 'movement' ? 'move' : 'still')
-    })
+    void getActiveTimerSession()
+      .then((res) => {
+        if (!live || isError(res) || !res.data) return
+        setServerResume(res.data)
+        openInternal(undefined, res.data.kind === 'movement' ? 'move' : 'still')
+      })
+      // Swallow, matching every peer in lib/on-air/active-session.ts. This is an OPTIONAL
+      // cross-device convenience: if it rejects, the member simply opens the timer normally.
+      // Unhandled, it was only ever noise in Sentry with no matching UI state.
+      .catch(() => {})
     return () => {
       live = false
     }
@@ -360,8 +376,11 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
   return (
     <MindlessContext.Provider value={api}>
       {children}
+      {/* onClose is not optional here: this shell locks body scroll, and Escape is the only
+          other exit, which does not exist on a phone. A slow or failed load must never be a
+          dead end. */}
       {state.phase === 'loading' && (
-        <MindlessShell>
+        <MindlessShell onClose={close}>
           <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
             <LotusIcon className="h-8 w-8 animate-pulse text-primary" />
             <p className="text-sm font-medium text-muted">Settling in...</p>

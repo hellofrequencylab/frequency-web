@@ -21,8 +21,12 @@ export function HelpMarkdown({ children }: { children: string }) {
           h3: ({ children }: Kids) => (
             <h3 className="text-lg font-semibold text-text mt-6 mb-2">{children}</h3>
           ),
+          // break-words on the three inline elements that can carry an unbreakable string:
+          // a bare URL, a long env-var name, a hyphen-free compound. <pre> below already had
+          // overflow-x-auto, so this was considered once and stopped one element short. /help
+          // renders outside the app shell, the only place with overflow-x-clip.
           p: ({ children }: Kids) => (
-            <p className="text-text/80 leading-relaxed mb-4">{children}</p>
+            <p className="break-words text-text/80 leading-relaxed mb-4">{children}</p>
           ),
           ul: ({ children }: Kids) => (
             <ul className="list-disc pl-6 mb-4 space-y-1.5 text-text/80">{children}</ul>
@@ -34,7 +38,7 @@ export function HelpMarkdown({ children }: { children: string }) {
           a: ({ href, children }: Kids & { href?: string }) => {
             const target = href ?? '#'
             return target.startsWith('/') ? (
-              <Link href={target} className="text-primary-strong underline underline-offset-2">
+              <Link href={target} className="break-words text-primary-strong underline underline-offset-2">
                 {children}
               </Link>
             ) : (
@@ -42,7 +46,7 @@ export function HelpMarkdown({ children }: { children: string }) {
                 href={target}
                 target="_blank"
                 rel="noreferrer"
-                className="text-primary-strong underline underline-offset-2"
+                className="break-words text-primary-strong underline underline-offset-2"
               >
                 {children}
               </a>
@@ -54,7 +58,7 @@ export function HelpMarkdown({ children }: { children: string }) {
             </blockquote>
           ),
           code: ({ children }: Kids) => (
-            <code className="rounded bg-surface px-1.5 py-0.5 text-sm text-text">{children}</code>
+            <code className="break-words rounded bg-surface px-1.5 py-0.5 text-sm text-text">{children}</code>
           ),
           pre: ({ children }: Kids) => (
             <pre className="rounded-lg bg-surface border border-border p-4 overflow-x-auto text-sm mb-4">

@@ -20,10 +20,13 @@ describe('vertical registry (ADR-250 step 3/4)', () => {
     expect(keys).toContain('market')
     expect(keys.indexOf('market')).toBe(keys.indexOf('events') + 1)
     // And it carries through with its declared shape: since ADR-868 the id-`market` row IS
-    // the "Marketplace" umbrella (menu row + /marketplace landing redirect only — the
-    // surfaces keep their own names, Classifieds included).
+    // the commerce umbrella (menu row + /marketplace landing redirect only — the surfaces
+    // keep their own names, Classifieds included). ADR-868 labelled it "Marketplace";
+    // ADR-937 supersedes that label with the naming canon's **Market**. The KEY and HREF
+    // deliberately still read `market` / `/marketplace` — only the human label moved, so a
+    // regression that reverts the label cannot hide behind an unchanged route.
     const market = NAV_AREAS.find((a) => a.key === 'market')
-    expect(market?.label).toBe('Marketplace')
+    expect(market?.label).toBe('Market')
     expect(market?.href).toBe('/marketplace')
     expect(market?.section).toBe('Community')
     expect(verticalNavAreas().some((a) => a.key === 'market')).toBe(true)

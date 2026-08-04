@@ -157,9 +157,17 @@ export function Dialog({
         // (z-[150]/[160]) and the impersonation banner (z-[200]) still sit above it, as intended.
         'fixed inset-0 z-[80] flex justify-center overflow-y-auto bg-black/60 backdrop-blur-sm',
         // `sheet` goes edge-to-edge on mobile (panel fills the viewport), then a centered card at sm+.
+        //
+        // SAFE AREAS BELONG HERE, not in each caller. This primitive padded by a flat 16px (and
+        // `sheet` by nothing at all), so on a notched phone a sheet's controls sat on the home
+        // indicator and a centred dialog's did too -- which is why report-dialog, invite-launcher
+        // and capture-launcher each re-solved it by hand and each landed somewhere different.
         align === 'sheet'
-          ? 'items-stretch p-0 sm:items-center sm:p-8'
-          : cn('p-4 sm:p-8', align === 'center' ? 'items-center' : 'items-start'),
+          ? 'items-stretch p-0 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:items-center sm:p-8'
+          : cn(
+              'p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:p-8',
+              align === 'center' ? 'items-center' : 'items-start',
+            ),
       )}
       // Close on a true backdrop CLICK (press AND release both on the backdrop), not on mousedown. On touch,
       // mousedown-to-close dismissed the dialog on the first tap/scroll that began near the panel edge; and a

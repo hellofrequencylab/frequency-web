@@ -20,7 +20,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import type { LiveSessionRecord, LiveTimerKind } from '@/lib/on-air/live-session'
+import { LIVE_SESSION_MAX_AGE_MS, type LiveSessionRecord, type LiveTimerKind } from '@/lib/on-air/live-session'
 
 // The untyped active-timer query builder (practice_timer_sessions is not in the
 // generated types yet, ADR-246 — regenerate lib/database.types.ts after this
@@ -137,6 +137,11 @@ export async function cancelTimerSession(): Promise<ActionResult<true>> {
 
 /** Read the caller's active timer session as a LiveSessionRecord (or null), so the
  *  engine can resume it as RUNNING. Self-scoped: returns only the caller's own row. */
+/** How long an ARMED-but-never-begun row (started_at == paused_at) may live before it is
+ *  treated as orphaned. A real warm-up hands over in seconds; this is generous enough to
+ *  survive a slow network and short enough that a dead row never outlives one page visit. */
+const ARMED_PREROLL_MAX_AGE_MS = 5 * 60 * 1000
+
 export async function getActiveTimerSession(): Promise<ActionResult<LiveSessionRecord | null>> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
@@ -150,15 +155,50 @@ export async function getActiveTimerSession(): Promise<ActionResult<LiveSessionR
     const kind: LiveTimerKind = data.mode === 'movement' ? 'movement' : 'mindless'
     const startedMs = Date.parse(data.started_at)
     if (!Number.isFinite(startedMs)) return ok(null)
+    const pausedMs = data.paused_at ? Date.parse(data.paused_at) : null
+
+    // ── STALENESS. This used to read: "the server row IS live by definition (the staleness
+    // guard is a localStorage concern)". That assumption is what broke the timer.
+    //
+    // A row is written the instant Start is tapped, ARMED and paused, before the warm-up
+    // hands over to the live run. If the surface goes away in that window -- which is the
+    // documented mobile behaviour lib/on-air/live-session.ts exists for, a phone
+    // backgrounding and the tab being discarded -- the row is orphaned with
+    // `started_at == paused_at` and is never written again.
+    //
+    // MindlessProvider reads this on EVERY authed mount and force-opens the overlay in the
+    // row's mode. So one orphan turns every page load into a dead 00:00 "Resume" screen, in
+    // the wrong engine, with no toggle back (the mode switch only exists on setup). It cannot
+    // self-heal: the abandonment auto-finalize deliberately skips paused records, and close()
+    // does not clear the row. Observed in production 2026-08-04.
+    //
+    // Two windows, because the two shapes rot at different speeds:
+    const age = Date.now() - Math.max(startedMs, pausedMs ?? 0)
+    const armedNeverBegun = pausedMs !== null && pausedMs === startedMs
+    //   · an ARMED pre-roll lasts seconds. Minutes old means the hand-over never happened.
+    //   · a genuine paused/running sit gets the same 6h the localStorage cache gets, so the
+    //     cross-device resume this table exists for still works across a normal day.
+    const stale = armedNeverBegun ? age > ARMED_PREROLL_MAX_AGE_MS : age > LIVE_SESSION_MAX_AGE_MS
+    if (stale) {
+      // Clear it so the next read is clean, and so a member who never opens a support
+      // channel is not stuck behind a row only an operator could see. Best-effort: a failed
+      // delete still returns null, which is the behaviour that matters.
+      try {
+        await timerTable().delete().eq('profile_id', profileId)
+      } catch {
+        /* the null return below is the fix; the delete is housekeeping */
+      }
+      return ok(null)
+    }
+
     const record: LiveSessionRecord = {
       kind,
       startedAt: startedMs,
-      pausedAt: data.paused_at ? Date.parse(data.paused_at) : null,
+      pausedAt: pausedMs,
       practiceId: data.practice_id ?? '',
       resumeFromSec: Math.max(0, Math.round(data.setup?.resumeFromSec ?? 0)),
       secondsTarget: data.seconds_target ?? null,
-      // Freshly stamped on read: the server row IS live by definition (the staleness
-      // guard is a localStorage concern; completeSession/cancel clear this row).
+      // Stamped on read: the row passed the staleness gate above, so it is live as of now.
       savedAt: Date.now(),
       setup: data.setup?.payload ?? {},
     }

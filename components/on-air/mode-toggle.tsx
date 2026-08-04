@@ -93,7 +93,12 @@ export function MindlessMasthead({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute -right-2 -top-1 rounded-full p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+          // top must clear the notch ITSELF. The container's pt handles the safe area, but an
+          // absolutely-positioned child anchors to the PADDING BOX, i.e. above that padding --
+          // so at -top-1 the only close affordance on the setup screen sat behind the status
+          // bar in the iOS PWA (app/layout.tsx sets viewportFit: "cover"). max() keeps the
+          // unnotched placement identical.
+          className="absolute -right-2 top-[max(1.25rem,env(safe-area-inset-top))] rounded-full p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
         >
           <X className="h-4 w-4" />
         </button>
