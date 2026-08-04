@@ -6,8 +6,8 @@ import Image from 'next/image'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 import { PrimaryNav } from '@/components/layout/primary-nav'
 import { MarketingMobileMenu } from '@/components/layout/marketing-mobile-menu'
-import { createClient } from '@/lib/supabase/client'
 import type { MenuSettings, ResolvedMenu } from '@/lib/menus/types'
+// NOTE: @/lib/supabase/client is deliberately NOT imported here. See the effect below.
 
 // Public marketing header. No search box (that's for the community app). When
 // `overHero`, it sits over the hero under a TOP SCRIM (DAWN 2026-08-03: a bright
@@ -63,11 +63,23 @@ export function MarketingHeader({
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  // Imported LAZILY, and the reason is worth the paragraph. This effect exists to decide
+  // ONE link target: whether the wordmark points at /feed or at the marketing home. The
+  // static import that used to sit at the top of this file pulled @supabase/supabase-js
+  // -- GoTrue, Postgrest, Realtime and Storage, 222KB raw / ~57KB gzip -- into the initial
+  // bundle of every public marketing page, to answer a question that changes a href.
+  //
+  // A dynamic import keeps the behaviour byte-identical (same client, same getSession,
+  // same failure handling) and moves the cost off the critical path: the chunk is fetched
+  // after paint, and only when `detectClientAuth` is on. Deliberately NOT the cheaper
+  // trick of sniffing document.cookie for the `sb-*-auth-token` key -- that hardcodes a
+  // Supabase storage-key format into our header, and it would break silently and
+  // invisibly (a wrong link, no error) the day that format changes.
   useEffect(() => {
     if (!detectClientAuth) return
     let active = true
-    createClient()
-      .auth.getSession()
+    import('@/lib/supabase/client')
+      .then(({ createClient }) => createClient().auth.getSession())
       .then(({ data }) => {
         if (active) setAuthed(!!data.session)
       })

@@ -5,12 +5,28 @@
 // Protocol, ADR-093) — the counterpart to the client's gtag mirror in trackClient —
 // so events that never touch the browser (QR scans, referral attribution) still land.
 
-// MACHINE-ENFORCED. This module reaches the database, and it was the payload at the end
-// of a five-hop import chain that started at a 'use client' component in the root layout
-// -- putting @supabase/supabase-js and a crypto polyfill in every page's browser bundle.
-// The chain is broken (sanitizeProps moved to ./sanitize); this makes it stay broken by
-// turning the next accidental client import into a BUILD ERROR rather than a slow page.
-import 'server-only'
+// NOT `import 'server-only'` YET, and that is a finding rather than an omission.
+//
+// Adding it here is the right end state: this module reaches the database, and it was the
+// payload at the end of the five-hop chain from <WebVitals /> in the root layout. That
+// chain is broken now (sanitizeProps moved to ./sanitize).
+//
+// But turning the guard on fails the build, because it catches a SECOND, pre-existing
+// leak on a completely different path:
+//
+//   lib/analytics/track.ts        [Client Component Browser]
+//     <- lib/practices.ts
+//     <- lib/journey-plans.ts
+//     <- components/journey/v2/journey-settings.tsx   ('use client')
+//
+// journey-settings needs exactly one thing from journey-plans -- `normalizeJourneyMeeting`,
+// a pure function -- and journey-plans imports `adoptPracticesForJourney` from practices,
+// which imports track(). So the same shape as the analytics leak: a client component
+// dragging a database module in for the sake of one pure helper.
+//
+// Fixing that means extracting the meeting-normalisation helpers out of journey-plans, and
+// it deserves its own change with its own verification rather than being smuggled in here.
+// The guard goes on in that change, where it can be proven rather than asserted.
 
 import { recordEngagementEvent } from '@/lib/engagement/events'
 // sanitizeProps lives in ./sanitize (dependency-free) rather than here, so client code

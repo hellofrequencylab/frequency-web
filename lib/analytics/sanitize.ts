@@ -29,6 +29,10 @@
  * before it sends, and the /api/observe sink sanitises again on what arrives, because
  * the client half is attacker-controlled.
  */
+/** Keys that address an object's own machinery rather than its data. The prop bag is built
+ *  from attacker-influenced key names, so these are dropped before any write. */
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
+
 export function sanitizeProps(
   input: unknown,
   maxKeys = 20,
@@ -39,6 +43,12 @@ export function sanitizeProps(
   let n = 0
   for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
     if (n >= maxKeys) break
+    // Skip machinery keys. Assigning a STRING to `__proto__` does not actually replace the
+    // prototype, so this was never a live pollution hole -- but the write silently did
+    // nothing and the key vanished from the output, which quietly corrupts an analytics
+    // row. Dropping it explicitly makes the behaviour intentional instead of incidental,
+    // and closes the shape before some future caller passes an object through.
+    if (UNSAFE_KEYS.has(k)) continue
     if (typeof v === 'number' || typeof v === 'boolean') {
       out[k] = v
       n++
