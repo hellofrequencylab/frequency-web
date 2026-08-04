@@ -25,6 +25,29 @@ describe('buildAutodocMessages', () => {
 })
 
 describe('parseAutodocResponse', () => {
+  it('recovers a row the model labelled with the article TITLE, not the filename', () => {
+    // The exact live failure on PR #2025: content/help/spaces/space-crm.md has
+    // `title: Your Space Contacts`, and the model answered `your-space-contacts`. No path or
+    // tail rule can bridge that — the two strings share nothing — so every row dropped and the
+    // advisory claimed a total outage while the model had actually done the review.
+    const withTitleSlug = [
+      { category: 'spaces', slug: 'space-crm', title: 'Your Space Contacts', body: 'CRM.' },
+    ]
+    const text = '```json\n[{"slug":"your-space-contacts","needsUpdate":false,"note":""}]\n```'
+    const items = parseAutodocResponse(text, withTitleSlug)
+    expect(items).toHaveLength(1)
+    expect(items[0]).toMatchObject({ category: 'spaces', slug: 'space-crm', needsUpdate: false })
+  })
+
+  it('refuses a title match when two articles slugify to the same title', () => {
+    // A guess that attaches the wrong verdict to the wrong article is worse than "unreviewed".
+    const collide = [
+      { category: 'a', slug: 'one', title: 'Same Name', body: '' },
+      { category: 'b', slug: 'two', title: 'same name', body: '' },
+    ]
+    expect(parseAutodocResponse('[{"slug":"same-name","needsUpdate":true}]', collide)).toHaveLength(0)
+  })
+
   it('parses a JSON array and keeps only known articles', () => {
     const text = `here you go [{"category":"getting-started","slug":"join-a-circle","needsUpdate":true,"note":"cap changed"},{"category":"x","slug":"y","needsUpdate":true,"note":"nope"}]`
     const items = parseAutodocResponse(text, articles)

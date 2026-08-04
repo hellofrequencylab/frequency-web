@@ -145,6 +145,27 @@ export function autodocMaxTokens(articleCount: number): number {
 export function parseAutodocResponse(text: string, articles: AutodocArticle[]): AutodocItem[] {
   const known = new Set(articles.map((a) => `${a.category}/${a.slug}`))
 
+  // TITLE-DERIVED SLUGS. A model handed an article whose front-matter title is "Your Space
+  // Contacts" and whose file is spaces/space-crm.md will sometimes answer `your-space-contacts`,
+  // because that is what the article calls itself. That is a correct review wearing the wrong
+  // label, and none of the path/tail rules below can recover it — the two strings share nothing.
+  // Observed live on PR #2025: both requested articles came back title-slugged, every row
+  // dropped, and the advisory reported a total outage while the model had in fact done the work.
+  //
+  // Built only from titles that slugify UNIQUELY; a collision would make this a guess, and a
+  // wrong verdict attached to the wrong article is worse than an unreviewed one.
+  const titleSlug = (s: string) =>
+    s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  const byTitle = new Map<string, string>()
+  const titleCounts = new Map<string, number>()
+  for (const a of articles) {
+    const t = titleSlug(a.title)
+    if (!t) continue
+    titleCounts.set(t, (titleCounts.get(t) ?? 0) + 1)
+    byTitle.set(t, `${a.category}/${a.slug}`)
+  }
+  for (const [t, n] of titleCounts) if (n > 1) byTitle.delete(t)
+
   // IDENTIFY AN ARTICLE FROM WHATEVER SHAPE THE MODEL USED.
   // The strict reading — require `category` and `slug` as separate exact fields — is why a
   // reply that WAS a review still produced "nothing in the reply could be read as a review":
@@ -167,6 +188,9 @@ export function parseAutodocResponse(text: string, articles: AutodocArticle[]): 
       const tail = cleaned.split('/').pop() ?? ''
       const hits = [...known].filter((k) => k.endsWith(`/${tail}`))
       if (tail && hits.length === 1) return hits[0]!
+      // ...or the model labelled the row with the article's TITLE rather than its filename.
+      const byTitleHit = byTitle.get(titleSlug(tail || cleaned))
+      if (byTitleHit) return byTitleHit
     }
     return null
   }
