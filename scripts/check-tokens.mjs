@@ -3,11 +3,22 @@
 // doesn't regress into hardcoded style (AGENTS.md §46,63: colors are DAWN tokens only,
 // type uses the named scale).
 //
-// Scope: .tsx/.ts under app/ and components/. Flags three hardcoded-style anti-patterns:
+// Scope: .tsx/.ts under app/, components/ AND lib/. (lib/ was ungoverned until 2026-08-04 and held
+// the largest raw-hex concentration in the repo — ~185 matches across 24 files. Nearly all of them
+// are legitimate: email HTML, generated raster/print assets, validated color DATA. They are
+// enumerated one by one in ALLOWLIST below with the reason, rather than skipped as a directory,
+// so a NEW hardcoded color in lib/ is still caught.) Flags three hardcoded-style anti-patterns:
 //   (a) raw hex colors           #rgb / #rrggbb / #rrggbbaa   → use a DAWN token utility/var
 //   (b) arbitrary type sizes     text-[Npx]                   → use the named scale
 //                                                               (text-2xs=11px, text-3xs=10px, xs/sm/base…)
 //   (c) inline rgb()/rgba()      color literals in className/style → use a token
+//
+// NOT here, on purpose: arbitrary px in SIZING utilities (`h-[18px]`, `min-w-[180px]`). ~140 of
+// those predate the rule and no sweep owns them, so hard-failing would either block every PR or
+// force a blanket exemption. They are held by the `raw-px-arbitrary` RATCHET instead
+// (scripts/adoption-baselines.json) — the count can shrink, never grow, and screen passes retire
+// it. Type size stays a hard failure here because `text-[Npx]` has no legitimate use: the named
+// scale covers every size, and off-scale type is the thing the scale exists to prevent.
 //
 // These are DAWN tokens, not raw values: the token names live in app/globals.css
 // (primary/signal/broadcast/ink/on-ink/surface/border/success/warning/danger/info,
@@ -25,7 +36,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const ROOTS = ['app', 'components']
+const ROOTS = ['app', 'components', 'lib']
 // Escape hatch: `// token-ok: <reason>` (line comment) or a `/* token-ok … */` block comment — the
 // latter covers both the JSX `{/* token-ok */}` form and a bare CSS/JS block comment (so a literal
 // inside a CSS-in-JS template can be annotated on its own line). Honored on the match line OR the
@@ -71,6 +82,44 @@ const ALLOWLIST = [
   (p) => /\/qr\/.*style[^/]*\.tsx?$/.test(p),
   // dataviz / chart color files
   (p) => /(?:^|\/)(?:charts?|dataviz)\//.test(p) || /(?:chart|dataviz)[^/]*colou?r/i.test(p),
+
+  // ── lib/ (added to ROOTS 2026-08-04, UX-MATURITY-PLAN addendum) ──────────────────────────
+  // lib/ holds no UI chrome; what it holds is (1) HTML that renders OUTSIDE the app's CSS
+  // cascade, (2) generated assets, (3) color as DATA. Each file is listed with its reason so
+  // the exemption is reviewable and a NEW hardcoded color elsewhere in lib/ still fails.
+  //
+  // (1) TRANSACTIONAL EMAIL HTML. Email clients do not resolve CSS custom properties (and many
+  //     strip <style> entirely), so the medium REQUIRES literal hex in inline styles. Changing
+  //     these to tokens would ship colorless mail.
+  (p) => p === 'lib/email.ts',
+  (p) => p === 'lib/email-studio/render.ts',
+  (p) => p === 'lib/comms/email-template.ts',
+  (p) => p === 'lib/comms/outbound-batch.ts',
+  (p) => p === 'lib/automations.ts',
+  (p) => p === 'lib/nurture/runner.ts',
+  (p) => p === 'lib/studio/agent.ts',
+  (p) => p === 'lib/studio/campaigns.ts',
+  (p) => p === 'lib/spaces/campaigns.ts',
+  (p) => p === 'lib/spaces/campaigns-send-due.ts',
+  (p) => p === 'lib/spaces/drip-runner.ts',
+  (p) => p.startsWith('lib/ai/vera/') && /(?:autonomous-send|execute|owner-brief)\.ts$/.test(p),
+  // (2) GENERATED ASSETS rendered outside the DOM — OG/social rasters, QR codes, the print
+  //     flyer, canvas/SVG exports. A canvas fillStyle cannot read a CSS variable.
+  (p) => p.startsWith('lib/og/'),
+  (p) => p.startsWith('lib/qr/'),
+  (p) => p === 'lib/entry-points/brand.ts',
+  (p) => p === 'lib/library/export-svg.ts',
+  // (3) COLOR AS DATA — token sources, member-supplied color validators, and derived-contrast
+  //     helpers. The hex here is the VALUE being validated/stored/computed, not applied style.
+  (p) => p === 'lib/spotlight/theme.ts',
+  (p) => p === 'lib/spaces/email-colors.ts',
+  // (4) A third-party API payload with a literal-hex field (the Google Wallet pass background).
+  (p) => p === 'lib/wallet/google.ts',
+  // (5) PROSE that merely contains a #hex-SHAPED token: an AI prompt's example license number
+  //     ("Lic #123456") and the member-facing hint "enter a hex like #E2912F". Neither file can
+  //     carry styling — one builds a model prompt, the other validates a settings form.
+  (p) => p === 'lib/ai/connections-ai.ts',
+  (p) => p === 'lib/spaces/profile-settings.ts',
 ]
 
 function isAllowed(relPath) {

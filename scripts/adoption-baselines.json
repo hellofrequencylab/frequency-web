@@ -1,0 +1,199 @@
+{
+  "_readme": [
+    "Frozen adoption-debt baselines for scripts/check-adoption.mjs (Lift 2a of docs/UX-MATURITY-PLAN.md).",
+    "A count may HOLD or SHRINK; a rise fails CI. Re-freeze after a sweep with `node scripts/check-adoption.mjs --update`",
+    "so this file reads as the scoreboard of what the sweeps bought. Numbers seeded 2026-08-04 by",
+    "re-measuring the verification round's census (UX-MATURITY-PLAN addendum) with this harness, at the",
+    "START of the wave, so the wave's own sweeps show up as a delta rather than as a silent zero.",
+    "Each entry: key · description · patterns (ripgrep-class, JS RegExp source, matched with the `g` flag) ·",
+    "optional `absent` patterns that disqualify a file · include/exclude globs over the POSIX repo-relative",
+    "path · mode (`matches` counts occurrences, `files` counts qualifying files) · baseline."
+  ],
+  "roots": [
+    "app",
+    "components",
+    "lib"
+  ],
+  "extensions": [
+    ".ts",
+    ".tsx",
+    ".mts"
+  ],
+  "entries": [
+    {
+      "key": "literal-radius",
+      "description": "Literal rounded-* utilities instead of the role radii (rounded-card / rounded-control / rounded-pill)",
+      "mode": "matches",
+      "patterns": [
+        "\\brounded-(?:sm|md|lg|xl|2xl|3xl|full)\\b"
+      ],
+      "include": [
+        "{app,components,lib}/**/*.{ts,tsx,mts}"
+      ],
+      "exclude": [
+        "**/*.{test,spec}.{ts,tsx}"
+      ],
+      "baseline": 5541
+    },
+    {
+      "key": "shadow-literals",
+      "description": "Literal Tailwind shadow-* instead of the DAWN depth language (lift-*)",
+      "mode": "matches",
+      "patterns": [
+        "\\bshadow-(?:sm|md|lg|xl|2xl)\\b"
+      ],
+      "include": [
+        "{app,components,lib}/**/*.{ts,tsx,mts}"
+      ],
+      "exclude": [
+        "**/*.{test,spec}.{ts,tsx}"
+      ],
+      "baseline": 684
+    },
+    {
+      "key": "white-black-literals",
+      "description": "Hardcoded monochromes (-white / -black / white\\/NN) that ignore theme generations — the only bug class in the census",
+      "mode": "matches",
+      "patterns": [
+        "(?:-white\\b|white/\\d+|-black\\b)"
+      ],
+      "include": [
+        "{app,components,lib}/**/*.{ts,tsx,mts}"
+      ],
+      "exclude": [
+        "**/*.{test,spec}.{ts,tsx}",
+        "lib/og/**",
+        "app/**/opengraph-image.tsx",
+        "app/**/twitter-image.tsx"
+      ],
+      "baseline": 419
+    },
+    {
+      "key": "subtle-tiny-type",
+      "description": "text-subtle paired with text-2xs/text-3xs on the same element — sub-AA by construction (Lift 3)",
+      "mode": "matches",
+      "patterns": [
+        "text-subtle[^\\n]{0,80}?text-(?:2xs|3xs)\\b",
+        "text-(?:2xs|3xs)\\b[^\\n]{0,80}?text-subtle"
+      ],
+      "include": [
+        "{app,components,lib}/**/*.{ts,tsx,mts}"
+      ],
+      "exclude": [
+        "**/*.{test,spec}.{ts,tsx}"
+      ],
+      "baseline": 832
+    },
+    {
+      "key": "raw-button-bg",
+      "description": "Raw <button> carrying bg-primary instead of the Button primitive (the census corrected the docs' '~18' by 27x)",
+      "mode": "matches",
+      "patterns": [
+        "<button[\\s\\S]{0,500}?bg-primary"
+      ],
+      "include": [
+        "{app,components,lib}/**/*.tsx"
+      ],
+      "exclude": [
+        "**/*.{test,spec}.tsx",
+        "components/ui/button.tsx",
+        "components/ui/icon-button.tsx"
+      ],
+      "baseline": 529
+    },
+    {
+      "key": "adhoc-progress",
+      "description": "Hand-rolled progress bars (rounded-full track + inline width style) instead of the ProgressTrack primitive",
+      "mode": "matches",
+      "patterns": [
+        "rounded-full[\\s\\S]{0,240}?style=\\{\\{\\s*width:"
+      ],
+      "include": [
+        "{app,components}/**/*.tsx"
+      ],
+      "exclude": [
+        "**/*.{test,spec}.tsx",
+        "components/ui/progress-track.tsx",
+        "components/ui/meter.tsx",
+        "components/ui/streak-meter.tsx"
+      ],
+      "baseline": 51
+    },
+    {
+      "key": "bespoke-cards",
+      "description": "Files named *-card.tsx that render markup and do not compose EntityCard/PersonCard/StatCard/RowCard — browse cards owed to the kit",
+      "mode": "files",
+      "patterns": [
+        "className="
+      ],
+      "absent": [
+        "\\b(?:EntityCard|PersonCard|StatCard|RowCard)\\b"
+      ],
+      "include": [
+        "{app,components}/**/*-card.tsx"
+      ],
+      "exclude": [
+        "components/cards/*.tsx",
+        "components/ui/*.tsx",
+        "**/*.{test,spec}.tsx"
+      ],
+      "baseline": 23
+    },
+    {
+      "key": "bespoke-rows",
+      "description": "Files named *row*.tsx that render markup and do not compose RowCard — list rows owed to the kit",
+      "mode": "files",
+      "patterns": [
+        "className="
+      ],
+      "absent": [
+        "\\bRowCard\\b"
+      ],
+      "include": [
+        "{app,components}/**/*row*.tsx"
+      ],
+      "exclude": [
+        "components/cards/*.tsx",
+        "**/*.{test,spec}.tsx"
+      ],
+      "baseline": 14
+    },
+    {
+      "key": "handrolled-tabs",
+      "description": "Hand-rolled underline tab strips (border-b-2 + px- padding) instead of the one UnderlineTabs vocabulary",
+      "mode": "files",
+      "patterns": [
+        "border-b-2[^\\n]{0,60}px-\\d"
+      ],
+      "include": [
+        "{app,components}/**/*.tsx"
+      ],
+      "exclude": [
+        "**/underline-tabs.tsx",
+        "**/*.{test,spec}.tsx"
+      ],
+      "baseline": 3
+    },
+    {
+      "key": "raw-px-arbitrary",
+      "description": "Arbitrary px in SIZING/SPACING utilities (h-[18px], w-[22px], min-w-[180px] …) instead of the spacing scale. Ratcheted rather than hard-failed: ~140 sites predate the rule and no sweep owns them, so the gate holds the line while screen passes retire them (check:tokens still hard-fails text-[Npx], which has no legitimate use). Allowlisted: min-h/min-w-[44px] (the WCAG 2.5.5 tap-target floor, a load-bearing exact value), the -9999px offscreen idiom, the icon primitives (glyph optical sizing is their job), and the raster OG/print surfaces where px IS the unit.",
+      "mode": "matches",
+      "patterns": [
+        "\\b(?!min-[hw]-\\[44px\\]|(?:top|left|right|bottom|inset)-\\[-9999px\\])(?:h|w|size|min-w|min-h|max-w|max-h|basis|gap|gap-x|gap-y|p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|top|right|bottom|left|inset|translate-x|translate-y)-\\[-?\\d+(?:\\.\\d+)?px\\]"
+      ],
+      "include": [
+        "{app,components,lib}/**/*.tsx"
+      ],
+      "exclude": [
+        "**/*.{test,spec}.tsx",
+        "lib/og/**",
+        "app/**/opengraph-image.tsx",
+        "app/**/twitter-image.tsx",
+        "app/print/**",
+        "components/ui/icon.tsx",
+        "components/ui/icon-button.tsx"
+      ],
+      "baseline": 139
+    }
+  ]
+}

@@ -50,6 +50,10 @@ jobs:
         run: pnpm check:elements
       - name: Token contract check (no hardcoded style)
         run: pnpm check:tokens
+      - name: Contrast gate (WCAG token pairs, all four render states — Lift 3a)
+        run: pnpm check:contrast
+      - name: Adoption ratchet (design debt may shrink, never grow — Lift 2a)
+        run: pnpm check:adoption
       - name: Header contract check (no hand-rolled page <h1>)
         run: pnpm check:headers
       - name: SEO/sitemap coherence
