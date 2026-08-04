@@ -35,6 +35,7 @@ import { DonateRender } from '@/components/onboarding/renders/donate-render'
 import { TicketsRender } from '@/components/onboarding/renders/tickets-render'
 import { CrmRender } from '@/components/onboarding/renders/crm-render'
 import { WizardProgress, wizardPrimaryClass } from '@/components/templates'
+import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
 
@@ -482,9 +483,15 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   }
 
   function renderAvatar() {
-    if (avatarPreview) {
+    // The preview is a blob: URL this component minted itself, so it was never actually
+    // reachable by an attacker — but it was the one upload-preview sink in the product
+    // with NO guard on it, while the other two had one each. Same allowlist as those now;
+    // a rejected URL falls through to initials, which is the honest failure for an image.
+    // NOT named `preview` — that is the component's own prop, meaning preview MODE.
+    const previewSrc = safeUploadPreviewSrc(avatarPreview)
+    if (previewSrc) {
       // eslint-disable-next-line @next/next/no-img-element
-      return <img src={avatarPreview} alt="Avatar preview" className="h-24 w-24 rounded-pill object-cover shrink-0 ring-2 ring-primary" />
+      return <img src={previewSrc} alt="Avatar preview" className="h-24 w-24 rounded-pill object-cover shrink-0 ring-2 ring-primary" />
     }
     const initials = getInitials(displayName || userEmail)
     return (

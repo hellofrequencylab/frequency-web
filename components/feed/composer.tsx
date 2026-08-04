@@ -11,7 +11,7 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { EmojiPicker } from './emoji-picker'
 import { ComposeLightbox } from './compose-lightbox'
-import { safeImageSrc } from '@/lib/safe-image-src'
+import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024 // 5 MB (post-prep; raw camera shots are converted + downscaled first)
 
@@ -529,7 +529,7 @@ export function Composer({
               blob: src that the Next image optimizer can't (and shouldn't) touch,
               so a plain <img> is correct here. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={safeImageSrc(imagePreview) ?? undefined} alt="Upload preview" className="max-h-48 rounded-card border border-border object-cover" />
+          <img src={safeUploadPreviewSrc(imagePreview) ?? undefined} alt="Upload preview" className="max-h-48 rounded-card border border-border object-cover" />
           <button
             type="button"
             onClick={removeImage}
