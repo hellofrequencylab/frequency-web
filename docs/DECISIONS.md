@@ -17089,3 +17089,29 @@ Removing the gate is the part with teeth. `app/sign-in/actions.ts` no longer pas
 One thing was rescued rather than removed. `drainQueueNow` — the manual outbox drain, and the documented fallback for the single most common "emails are not arriving" cause — happened to live in the deleted triage page. It moves to `/admin/marketing/deliverability`, beside the Queue health counts an operator is already staring at when they reach for it, and now reports what the drain *did* (sent / retrying / parked) instead of merely that it ran.
 
 The durable rule: **when a queue is removed, the thing in front of it has to become an open door, not an empty frame** — every surface that asked someone to wait now asks them to walk in.
+
+## ADR-934 — The speed gate's first real reading: thresholds hold, and the whole marketing surface scores zero on unused JavaScript (2026-08-04)
+
+**Status.** Accepted. Follows ADR-930, which shipped the Lighthouse gate and said in as many words that its thresholds were guesses to be re-set from real data.
+
+**Context.** ADR-930's gate went green on its first complete run (30926550859: 4 URLs × 3 runs against the PR's own Vercel preview). Reading it produced two findings, one about the numbers and one about the instrument.
+
+**The instrument first, because it blocked the numbers.** `lighthouse-ci` prints only assertions that **fail**. A fully passing run therefore reports nothing — not the values, not the margins — so "it went green" and "it passed by 4ms" are indistinguishable in the log. The values live in the uploaded artifact, but that is a 26MB zip on `blob.core.windows.net`, which this environment's egress policy denies outright; the production apex is denied too, so re-measuring locally was not a route either. **The evidence existed and was unreadable from where the decision had to be made.** That is the same failure ADR-930 recorded one layer down, where the artifact never uploaded at all: a gate whose evidence cannot be reached is a gate you have to take on faith.
+
+**Decision.** The gate reports its own numbers. A `Report the numbers` step reads `.lighthouseci/lhr-*.json`, takes the **median** per URL per metric (the same aggregation the assertions use), and writes a table of value / budget / **headroom %** to `$GITHUB_STEP_SUMMARY`. It never fails the job — the assertions gate, this reports — so a summary problem can never masquerade as a speed regression. Evidence now lands where the result is read, and no download is required to act on it.
+
+**The thresholds stay put this round, and that is a decision, not a deferral.** What the run establishes is that LCP / CLS / TBT are inside 4000 / 0.1 / 600 on all four URLs, and FCP and byte-weight inside their warns. What it does **not** establish is by how much. Tightening a lab threshold on a shared runner without knowing the current margin is how a gate becomes flaky, and a flaky gate gets ignored, which costs more than a loose one. The headroom column arrives on the next run; the numbers get set from it then.
+
+**The finding worth acting on is not a threshold.** Three warns fired on **all four URLs, identically across all three runs** — consistency that rules out runner noise:
+
+| Audit | Score | Reading |
+|---|---|---|
+| `unused-javascript` | **0** | The floor. Not "some waste" — the worst score the audit awards, on every page measured. |
+| `render-blocking-resources` | 0.5 | Something in the critical path is serialising the first paint. |
+| `uses-responsive-images` | 0.5 (0 on `/loneliness`) | Images shipped larger than they render. |
+
+`unused-javascript: 0` across `/`, `/pricing`, `/the-community` and `/loneliness` — four **marketing** pages, the ones a stranger meets first — says the client bundle those routes pull is largely dead weight to them. That is a payload-shape problem with a real fix (route-level splitting, auditing what the marketing shell drags in), and it is precisely the kind of thing a lab run is good at finding and bad at gating: it does not regress, it is simply always wrong, so an error-level assertion would fail every PR for a debt none of them created.
+
+**Consequences.** ⚠️ These three stay **warn**, deliberately. Promoting them to error would block unrelated work on pre-existing debt, which is the ratchet mistake ADR-928 exists to avoid. ⚠️ The bundle work is **recorded, not done** — it is a sizing exercise against the marketing routes, not a line change, and it wants its own pass. ⚠️ The artifact upload stays even though it is unreachable from here; it is reachable from a browser, and it holds the full traces the summary table cannot.
+
+The durable rule: **a gate that only speaks when it fails cannot tell you whether it is calibrated** — make it report its margins, or you are gating on a number nobody has ever seen.
