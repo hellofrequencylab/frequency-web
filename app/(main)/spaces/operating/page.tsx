@@ -58,13 +58,13 @@ function SpaceAnchor({ logoUrl }: { logoUrl: string | null }) {
       <img
         src={logoUrl}
         alt=""
-        className="h-11 w-11 rounded-card border border-border bg-surface object-contain"
+        className="h-11 w-11 rounded-control border border-border bg-surface object-contain"
       />
     )
   }
   return (
     <span
-      className="flex h-11 w-11 items-center justify-center rounded-card bg-surface-elevated text-subtle"
+      className="flex h-11 w-11 items-center justify-center rounded-control bg-surface-elevated text-subtle"
       aria-hidden
     >
       <Building2 className="h-5 w-5" />

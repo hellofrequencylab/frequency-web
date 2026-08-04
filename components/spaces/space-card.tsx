@@ -43,13 +43,13 @@ function SpaceLogo({ logoUrl }: { logoUrl: string | null }) {
       <img
         src={logoUrl}
         alt=""
-        className="h-12 w-12 rounded-card border border-border bg-surface object-contain lift-1"
+        className="h-12 w-12 rounded-control border border-border bg-surface object-contain lift-1"
       />
     )
   }
   return (
     <span
-      className="flex h-12 w-12 items-center justify-center rounded-card border border-border bg-surface text-subtle lift-1"
+      className="flex h-12 w-12 items-center justify-center rounded-control border border-border bg-surface text-subtle lift-1"
       aria-hidden
     >
       <Building2 className="h-5 w-5" />
