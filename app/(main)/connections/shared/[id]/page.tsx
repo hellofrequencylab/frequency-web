@@ -67,7 +67,7 @@ export default async function SharedContactPage({ params }: { params: Promise<{ 
           </span>
         }
       >
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
         {/* How to act on it: ask the capturing steward for an intro. */}
         <div className="rounded-xl bg-surface-elevated/60 p-3">
           <p className="flex items-center gap-1.5 text-sm text-muted">

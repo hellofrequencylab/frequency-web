@@ -257,7 +257,7 @@ function CatalogItemRow({
           </Button>
         </div>
       </div>
-      <p className="text-2xs text-subtle">
+      <p className="text-2xs text-muted">
         Member is charged {centsToDollars(dollarsToCents(monthlyFounding)) && formatDollars(monthlyFounding)} a month
         {' '}({formatDollars(monthlyList)} list), or {formatCentsLabel(derivedYearlyFounding)} a year.
       </p>
@@ -285,7 +285,7 @@ function AddonEnableToggle({ addon, initial }: { addon: AddonKey; initial: boole
   }
   return (
     <div className="flex items-center gap-2">
-      <span className={`text-2xs font-semibold uppercase tracking-wide ${on ? 'text-success' : 'text-subtle'}`}>
+      <span className={`text-2xs font-semibold uppercase tracking-wide ${on ? 'text-success' : 'text-muted'}`}>
         {on ? 'Offered' : 'Hidden'}
       </span>
       <Toggle
@@ -327,7 +327,7 @@ function SeatConfigRow({ bundledFloor, seatItem }: { bundledFloor: number; seatI
           </Button>
         </div>
       </div>
-      <p className="text-2xs text-subtle">
+      <p className="text-2xs text-muted">
         Each seat is {formatCentsLabel(seatItem.monthlyFoundingCents)} a month ({formatCentsLabel(seatItem.monthlyListCents)}{' '}
         list). The floor bills at least {floor || '1'} seats.
       </p>
@@ -369,7 +369,7 @@ function PwywConfigRow({ minCents, suggestedCents }: { minCents: number; suggest
           </Button>
         </div>
       </div>
-      <p className="text-2xs text-subtle">The suggested amount is raised to the minimum if you set it lower.</p>
+      <p className="text-2xs text-muted">The suggested amount is raised to the minimum if you set it lower.</p>
       {error && <p className="text-xs text-danger">{error}</p>}
     </div>
   )
@@ -423,7 +423,7 @@ function OperatorSeatRow({ item, active }: { item: ResolvedCatalogItem; active: 
               {on ? 'Active' : 'Placeholder'}
             </StatusChip>
           </div>
-          <p className="mt-1 text-2xs text-subtle">
+          <p className="mt-1 text-2xs text-muted">
             {on
               ? 'The seat is active. The next catalog sync will mint its Stripe price from the amount below.'
               : 'The seat is a placeholder. The catalog sync skips it, so no Stripe price is minted. Set the price first, then turn it on.'}
@@ -513,7 +513,7 @@ function FoundingBusinessRow({ founding }: { founding: FoundingConfig }) {
           </Button>
         </div>
       </div>
-      <p className="text-2xs text-subtle">
+      <p className="text-2xs text-muted">
         A Founding Business pays {formatDollars(monthly)} a month with a {takePct || '0'}% marketplace fee, up to{' '}
         {cityCap || '0'} per city.
       </p>
@@ -580,22 +580,22 @@ function GatingReadout({ gating }: { gating: PricingConsoleData['gating'] }) {
   return (
     <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border border-border bg-surface-elevated px-4 py-3">
       <span className="inline-flex items-center gap-2 text-sm text-text">
-        <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Billing</span>
+        <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Billing</span>
         <StatusChip tone={gating.billingLive ? 'success' : 'neutral'}>
           {gating.billingLive ? 'Live, checkout sells' : 'Off, nothing charges'}
         </StatusChip>
       </span>
       <span className="inline-flex items-center gap-2 text-sm text-text">
-        <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Paid gates</span>
+        <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Paid gates</span>
         <StatusChip tone={gating.gatesLive ? 'warning' : 'neutral'}>
           {gating.gatesLive ? 'Enforced' : 'Not enforced, everyone keeps access'}
         </StatusChip>
       </span>
       <span className="inline-flex items-center gap-2 text-sm text-text">
-        <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Beta grace ends</span>
+        <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Beta grace ends</span>
         <span className="text-sm font-semibold tabular-nums text-text">{graceLabel}</span>
       </span>
-      <p className="w-full text-2xs text-subtle">
+      <p className="w-full text-2xs text-muted">
         Two switches, not one. Billing decides whether anyone can be charged. The beta grace date decides
         when the paid feature gates start blocking. Turning billing on sells plans without taking anything
         away; the gates begin on the grace date at 00:00 UTC. Edit the date under Beta controls.
@@ -692,7 +692,7 @@ function BetaEndsAtRow({ initial }: { initial: string }) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wide text-subtle">
+        <label className="flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wide text-muted">
           End date
           <input
             type="date"
@@ -728,7 +728,7 @@ function BetaEndsAtRow({ initial }: { initial: string }) {
           )}
         </div>
       </div>
-      <p className="text-2xs text-subtle">
+      <p className="text-2xs text-muted">
         {days == null
           ? 'No date set. The countdown banner is hidden.'
           : days === 0
@@ -975,7 +975,7 @@ function Field({
   placeholder?: string
 }) {
   return (
-    <label className="flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wide text-subtle">
+    <label className="flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wide text-muted">
       {label}
       <input
         type="text"
@@ -1116,7 +1116,7 @@ function FeatureGatesSection({ gates }: { gates: FeatureGateRow[] }) {
       description="Which plan each feature needs. These take effect only once the master switch is on. While billing is off, every feature stays available exactly as today."
     >
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-        <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 border-b border-border bg-surface-elevated px-4 py-2 text-2xs font-bold uppercase tracking-wide text-subtle">
+        <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 border-b border-border bg-surface-elevated px-4 py-2 text-2xs font-bold uppercase tracking-wide text-muted">
           <span>Feature</span>
           <span>Axis</span>
           <span>Needs</span>
@@ -1170,9 +1170,9 @@ function GateRow({ gate }: { gate: FeatureGateRow }) {
             customized
           </StatusChip>
         )}
-        <p className="truncate text-2xs text-subtle">{gate.feature}</p>
+        <p className="truncate text-2xs text-muted">{gate.feature}</p>
       </div>
-      <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">{gate.axis}</span>
+      <span className="text-2xs font-semibold uppercase tracking-wide text-muted">{gate.axis}</span>
       <select
         value={min}
         disabled={pending}
@@ -1336,7 +1336,7 @@ function SyncRow({
 function PriceMapTable({ prices, foundingLabel }: { prices: PricingConsoleData['stripe']['prices']; foundingLabel?: boolean }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-      <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-border bg-surface-elevated px-4 py-2 text-2xs font-bold uppercase tracking-wide text-subtle">
+      <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-border bg-surface-elevated px-4 py-2 text-2xs font-bold uppercase tracking-wide text-muted">
         <span>Key</span>
         <span>Price id</span>
         <span className="text-right">State</span>
@@ -1352,7 +1352,7 @@ function PriceMapTable({ prices, foundingLabel }: { prices: PricingConsoleData['
                 </StatusChip>
               )}
             </span>
-            <span className="truncate font-mono text-2xs text-subtle">{p.priceId ?? '—'}</span>
+            <span className="truncate font-mono text-2xs text-muted">{p.priceId ?? '—'}</span>
             <span className="text-right">
               <StatusChip tone={p.synced ? 'success' : 'neutral'} size="sm">
                 {p.synced ? 'synced' : 'not synced'}
@@ -1397,7 +1397,7 @@ function BetaGraceRow({ initial }: { initial: string | null }) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wide text-subtle">
+        <label className="flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wide text-muted">
           Gates start
           <input
             type="date"
@@ -1426,7 +1426,7 @@ function BetaGraceRow({ initial }: { initial: string | null }) {
           )}
         </div>
       </div>
-      <p className="text-2xs text-subtle">
+      <p className="text-2xs text-muted">
         {value.trim()
           ? `Paid features stay open to everyone through the day before, and the gates begin on ${value.trim()} at 00:00 UTC.`
           : 'No grace window. The paid gates follow the master billing switch, so they start blocking as soon as billing goes live.'}
@@ -1439,7 +1439,7 @@ function BetaGraceRow({ initial }: { initial: string | null }) {
 function StatusItem({ label, ok, okText, offText }: { label: string; ok: boolean; okText: string; offText: string }) {
   return (
     <div>
-      <dt className="text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</dt>
+      <dt className="text-2xs font-semibold uppercase tracking-wide text-muted">{label}</dt>
       <dd className="mt-1">
         <StatusChip tone={ok ? 'success' : 'neutral'}>{ok ? okText : offText}</StatusChip>
       </dd>

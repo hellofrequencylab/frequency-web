@@ -64,7 +64,7 @@ export function StartRunButton({ circleId, journeys }: { circleId: string; journ
         ))}
       </select>
       <label className="mb-2 block">
-        <span className="mb-1 block text-2xs font-medium text-subtle">Kickoff meetup (optional)</span>
+        <span className="mb-1 block text-2xs font-medium text-muted">Kickoff meetup (optional)</span>
         <input
           type="datetime-local"
           value={kickoff}

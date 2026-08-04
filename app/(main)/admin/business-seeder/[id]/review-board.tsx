@@ -260,7 +260,7 @@ export function ReviewBoard({
         {/* Directions (Importer v2.1): a freeform steer folded into the re-voice. Persists on re-seed, so it
             keeps driving future runs. Blank leaves any stored directions untouched. */}
         <div className="mt-3">
-          <label htmlFor="reseed-directions" className="block text-2xs font-semibold uppercase tracking-wide text-subtle">
+          <label htmlFor="reseed-directions" className="block text-2xs font-semibold uppercase tracking-wide text-muted">
             Directions for the re-seed
           </label>
           <textarea
@@ -272,7 +272,7 @@ export function ReviewBoard({
             placeholder="e.g. Lead with the retreat space, keep it calm and grounded, mention the sky deck."
             className="mt-1 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text placeholder:text-subtle outline-none focus:border-primary"
           />
-          <p className="mt-1 text-2xs text-subtle">Steers the wording and tone. Pick a mood above to re-seed with these directions.</p>
+          <p className="mt-1 text-2xs text-muted">Steers the wording and tone. Pick a mood above to re-seed with these directions.</p>
         </div>
 
         {reseedMsg && (
@@ -313,7 +313,7 @@ export function ReviewBoard({
                 ] as const
               ).map((box) => (
                 <label key={box.key} className="block">
-                  <span className="block text-2xs font-semibold uppercase tracking-wide text-subtle">{box.label}</span>
+                  <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">{box.label}</span>
                   <textarea
                     rows={2}
                     value={info[box.key]}
@@ -467,7 +467,7 @@ function FieldRow({
                 <Sparkles className="h-3 w-3" aria-hidden /> AI copy
               </span>
             )}
-            {field.commercial && <span className="text-2xs text-subtle">commercial fact</span>}
+            {field.commercial && <span className="text-2xs text-muted">commercial fact</span>}
           </div>
 
           {/* Value / edit field */}

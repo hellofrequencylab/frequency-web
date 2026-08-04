@@ -1,4 +1,5 @@
 import { Users, Zap } from 'lucide-react'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // CollectiveGoal — the cooperative headline of the Quest leaderboard. Research on
 // global/absolute boards (JMIR 2021; Festinger 1954) is plain: ranking the non-top
@@ -62,7 +63,7 @@ export function CollectiveGoal({
 
   return (
     <section
-      className="overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary-bg/55 via-surface to-surface shadow-sm dark:from-primary-bg/20"
+      className="overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary-bg/55 via-surface to-surface lift-1 dark:from-primary-bg/20"
       aria-labelledby="collective-goal-heading"
     >
       <div className="px-6 pt-6 sm:px-7">
@@ -93,19 +94,13 @@ export function CollectiveGoal({
           <p className="shrink-0 text-sm font-semibold tabular-nums text-text">{pct}%</p>
         </div>
 
-        <div
-          className="mt-3 h-3 overflow-hidden rounded-full bg-surface-elevated"
-          role="progressbar"
-          aria-valuenow={pct}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label={`${scopeLabel} progress to the next milestone`}
-        >
-          <div
-            className="h-full rounded-full bg-primary transition-[width] duration-700 ease-out motion-reduce:transition-none"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
+        <ProgressTrack
+          value={pct}
+          label={`${scopeLabel} progress to the next milestone`}
+          size="2xl"
+          animate
+          className="mt-3"
+        />
 
         <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
           <p className="inline-flex items-center gap-1.5 text-sm text-muted">

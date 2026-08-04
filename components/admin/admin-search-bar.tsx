@@ -125,7 +125,7 @@ export function AdminSearchBar({ role, webRole = 'none', staffRole = null }: Pro
                       <l.Icon className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-medium text-text">{l.label}</span>
-                        <span className="block truncate text-2xs text-subtle">{l.desc}</span>
+                        <span className="block truncate text-2xs text-muted">{l.desc}</span>
                       </span>
                       <ArrowRight className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
                     </Link>

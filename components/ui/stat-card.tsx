@@ -95,7 +95,7 @@ export function StatCard({
         {Icon && <Icon className={`mt-0.5 shrink-0 text-subtle ${xs ? 'h-3 w-3' : 'h-3.5 w-3.5'}`} />}
       </div>
       <p className={`font-medium text-muted ${xs ? 'mt-0.5 text-2xs' : 'mt-1 text-xs'}`}>{label}</p>
-      {detail && <p className={`text-subtle ${xs ? 'mt-0.5 text-2xs' : 'mt-0.5 text-xs'}`}>{detail}</p>}
+      {detail && <p className={`text-muted ${xs ? 'mt-0.5 text-2xs' : 'mt-0.5 text-xs'}`}>{detail}</p>}
       {delta && t && (
         <p className={`mt-1 inline-flex items-center gap-1 text-xs font-medium ${t.cls}`}>
           <t.Icon className="h-3.5 w-3.5 shrink-0" />
@@ -112,7 +112,7 @@ export function StatCard({
 
   const cls = `block ${xs ? 'rounded-xl px-3 py-2' : 'rounded-2xl'} ${
     sm ? 'px-4 py-3' : xs ? '' : 'px-3.5 py-2.5'
-  } ${bordered ? 'border border-border bg-surface shadow-sm' : 'bg-surface-elevated/60'}`
+  } ${bordered ? 'border border-border bg-surface lift-1' : 'bg-surface-elevated/60'}`
   return href ? (
     <Link
       href={href}

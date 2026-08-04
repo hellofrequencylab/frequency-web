@@ -32,7 +32,7 @@ function OrderRow({ o }: { o: CommerceOrder }) {
       <div className="flex items-center gap-3">
         <span className="text-right text-sm">
           <span className="font-semibold text-text">{usd(o.amountCents, o.currency)}</span>
-          {o.platformFeeCents > 0 && <span className="block text-2xs text-subtle">fee {usd(o.platformFeeCents, o.currency)}</span>}
+          {o.platformFeeCents > 0 && <span className="block text-2xs text-muted">fee {usd(o.platformFeeCents, o.currency)}</span>}
         </span>
         {refundable && (
           <form action={refundOrderAction.bind(null, o.id)}>

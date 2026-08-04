@@ -130,7 +130,7 @@ export default async function RoommatesPage({
                   <Link
                     key={m.listingId}
                     href={`/housing/${m.listingId}`}
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-primary/60"
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 lift-1 transition-colors hover:border-primary/60"
                   >
                     <div className="min-w-0">
                       <p className="flex items-center gap-1.5 font-medium text-text">

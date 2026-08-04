@@ -121,7 +121,7 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
         return (
           <div
             key={report.id}
-            className="rounded-2xl border border-border bg-surface shadow-sm p-4"
+            className="rounded-2xl border border-border bg-surface lift-1 p-4"
           >
             {/* Header: reporter + timestamp */}
             <div className="flex items-start gap-3 mb-3">

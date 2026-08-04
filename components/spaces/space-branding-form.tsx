@@ -214,7 +214,7 @@ export function SpaceBrandingForm({
   }
 
   return (
-    <div className="space-y-8 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6">
+    <div className="space-y-8 rounded-2xl border border-border bg-surface p-5 lift-1 sm:p-6">
       {error && (
         <p className="rounded-lg border border-danger bg-danger-bg px-3 py-2 text-sm font-medium text-danger">
           {error}
@@ -337,7 +337,7 @@ export function SpaceBrandingForm({
         <summary className="flex cursor-pointer list-none items-center gap-2.5 rounded-xl px-4 py-3 text-sm font-semibold text-text outline-none transition-colors hover:border-border-strong hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary/50 [&::-webkit-details-marker]:hidden">
           <PanelTop className="h-4 w-4 shrink-0 text-primary" aria-hidden />
           <span className="flex-1">Header style</span>
-          <span className="text-2xs font-medium text-subtle group-open:hidden">Edit</span>
+          <span className="text-2xs font-medium text-muted group-open:hidden">Edit</span>
           <ChevronDown className="h-4 w-4 shrink-0 text-subtle transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
         </summary>
         <div className="space-y-5 px-4 pb-4 pt-1">
@@ -556,7 +556,7 @@ export function SpaceBrandingForm({
         <summary className="flex cursor-pointer list-none items-center gap-2.5 rounded-xl px-4 py-3 text-sm font-semibold text-text outline-none transition-colors hover:border-border-strong hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary/50 [&::-webkit-details-marker]:hidden">
           <Type className="h-4 w-4 shrink-0 text-primary" aria-hidden />
           <span className="flex-1">Page style</span>
-          <span className="text-2xs font-medium text-subtle group-open:hidden">Edit</span>
+          <span className="text-2xs font-medium text-muted group-open:hidden">Edit</span>
           <ChevronDown className="h-4 w-4 shrink-0 text-subtle transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
         </summary>
         <div className="space-y-2 px-4 pb-4 pt-1">

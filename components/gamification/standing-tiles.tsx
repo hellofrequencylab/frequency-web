@@ -91,7 +91,7 @@ function ScoreTile({
       <span className="flex items-center justify-center gap-1 text-base font-bold tabular-nums text-text">
         <Icon className={`h-3.5 w-3.5 ${iconCls}`} /> {value}
       </span>
-      <span className="text-2xs font-medium uppercase tracking-wide text-subtle">{label}</span>
+      <span className="text-2xs font-medium uppercase tracking-wide text-muted">{label}</span>
     </>
   )
   const cls = 'rounded-lg bg-primary-bg/40 px-2 py-2 text-center'

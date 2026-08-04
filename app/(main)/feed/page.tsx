@@ -292,7 +292,7 @@ export default async function FeedPage({
                   href="?sort=nearby"
                   className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                     sort === 'nearby'
-                      ? 'bg-surface text-text shadow-sm'
+                      ? 'bg-surface text-text lift-1'
                       : 'text-muted hover:text-text'
                   }`}
                 >
@@ -303,7 +303,7 @@ export default async function FeedPage({
                 href="?sort=relevant"
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                   sort === 'relevant'
-                    ? 'bg-surface text-text shadow-sm'
+                    ? 'bg-surface text-text lift-1'
                     : 'text-muted hover:text-text'
                 }`}
               >
@@ -313,7 +313,7 @@ export default async function FeedPage({
                 href="?sort=recent"
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                   sort === 'recent'
-                    ? 'bg-surface text-text shadow-sm'
+                    ? 'bg-surface text-text lift-1'
                     : 'text-muted hover:text-text'
                 }`}
               >
@@ -323,7 +323,7 @@ export default async function FeedPage({
                 href="?sort=popular"
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                   sort === 'popular'
-                    ? 'bg-surface text-text shadow-sm'
+                    ? 'bg-surface text-text lift-1'
                     : 'text-muted hover:text-text'
                 }`}
               >
@@ -333,7 +333,7 @@ export default async function FeedPage({
                 href="?sort=story"
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                   sort === 'story'
-                    ? 'bg-surface text-text shadow-sm'
+                    ? 'bg-surface text-text lift-1'
                     : 'text-muted hover:text-text'
                 }`}
               >

@@ -92,7 +92,7 @@ export function CommentSection({
                   >
                     {c.author.display_name}
                   </Link>
-                  <span className="text-2xs text-subtle">{relativeTime(c.created_at)}</span>
+                  <span className="text-2xs text-muted">{relativeTime(c.created_at)}</span>
                 </div>
                 <p className="text-sm text-text leading-relaxed mt-0.5 whitespace-pre-wrap break-words">
                   {c.body}

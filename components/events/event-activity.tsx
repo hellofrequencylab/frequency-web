@@ -399,7 +399,7 @@ export function EventActivity({
                   className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
                     asDispatch
                       ? 'bg-primary-bg text-primary-strong'
-                      : 'text-subtle hover:bg-surface-elevated hover:text-muted'
+                      : 'text-muted hover:bg-surface-elevated hover:text-muted'
                   }`}
                 >
                   <Radio className="h-3.5 w-3.5" />
@@ -418,7 +418,7 @@ export function EventActivity({
           </div>
 
           {asDispatch && (
-            <p className="mt-2 text-2xs text-subtle">
+            <p className="mt-2 text-2xs text-muted">
               Sends as an event announcement. Guests who RSVP&rsquo;d get it in their Dispatches,
               unless they muted this event.
             </p>
@@ -480,7 +480,7 @@ export function EventActivity({
                           RSVP&rsquo;d
                         </span>
                       )}
-                      <span className="text-2xs text-subtle">{timeAgo(post.createdAt)}</span>
+                      <span className="text-2xs text-muted">{timeAgo(post.createdAt)}</span>
                     </div>
                     {canDelete && (
                       <DeletePostButton postId={post.id} slug={slug} />
@@ -606,7 +606,7 @@ function BoopBar({
           disabled={disabled || pending}
           title={disabled ? 'Sign in to boop' : undefined}
           aria-label="Add a boop"
-          className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-2xs font-medium text-subtle transition-colors hover:border-border-strong hover:text-muted disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:border-border-strong hover:text-muted disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Smile className="h-3.5 w-3.5" />
           {hasAny ? '' : 'Boop'}

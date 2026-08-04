@@ -86,7 +86,7 @@ export function FunctionGrid({ spaceId, rows }: { spaceId: string; rows: Functio
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-surface shadow-sm">
+    <section className="rounded-2xl border border-border bg-surface lift-1">
       <div className="flex items-start justify-between gap-3 border-b border-border p-4">
         <div>
           <h2 className="flex items-center gap-2 text-sm font-semibold text-text">

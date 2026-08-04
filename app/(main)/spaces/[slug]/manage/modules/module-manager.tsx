@@ -241,7 +241,7 @@ export function ModuleManager({
                 return (
                   <li
                     key={id}
-                    className={`flex flex-col gap-3 rounded-2xl border bg-surface p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between ${
+                    className={`flex flex-col gap-3 rounded-2xl border bg-surface p-3 lift-1 sm:flex-row sm:items-center sm:justify-between ${
                       advancedOff ? 'border-dashed border-primary/30' : 'border-border'
                     }`}
                   >
@@ -256,7 +256,7 @@ export function ModuleManager({
                             {TIER_LABEL[row.tier]}
                           </span>
                           {isHidden && (
-                            <span className="inline-flex items-center rounded-full bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-subtle">
+                            <span className="inline-flex items-center rounded-full bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-muted">
                               Hidden
                             </span>
                           )}
@@ -362,7 +362,7 @@ export function ModuleManager({
                           </>
                         )
                       ) : (
-                        <span className="flex h-7 items-center rounded-lg px-2 text-2xs font-medium text-subtle">
+                        <span className="flex h-7 items-center rounded-lg px-2 text-2xs font-medium text-muted">
                           Always on
                         </span>
                       )}
@@ -409,7 +409,7 @@ function ReviewsOffDialog({
       ariaLabel="Are you sure you want to turn reviews off?"
       className="max-w-sm"
     >
-      <div className="relative w-full rounded-2xl border border-border bg-surface p-6 shadow-2xl">
+      <div className="relative w-full rounded-2xl border border-border bg-surface p-6 lift-3">
         <h2 className="text-base font-bold leading-tight text-text">Are you sure?</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted">
           Reviews build trust with new members. We recommend keeping them on. Turning {label.toLowerCase()} off

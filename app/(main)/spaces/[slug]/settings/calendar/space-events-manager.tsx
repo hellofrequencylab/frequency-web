@@ -75,7 +75,7 @@ export function SpaceEventsManager({ events }: { events: ManagedEvent[] }) {
                     Cancelled
                   </span>
                 ) : ev.isPast ? (
-                  <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle">
+                  <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
                     Past
                   </span>
                 ) : (

@@ -28,7 +28,7 @@ export function EmailSignatureCard({ initial, autoDefault }: { initial: string; 
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
       <h2 className="text-sm font-semibold text-text">Email signature</h2>
       <p className="mt-1 text-sm text-muted">
         Added to the bottom of the emails you send from your inbox. Leave it blank to use the default below.
@@ -44,7 +44,7 @@ export function EmailSignatureCard({ initial, autoDefault }: { initial: string; 
         className="mt-3 w-full resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-text focus:border-border-strong focus:outline-none"
       />
       <div className="mt-2 flex items-center justify-between gap-3">
-        <p className="text-2xs text-subtle">
+        <p className="text-2xs text-muted">
           Default: <span className="whitespace-pre-wrap">{autoDefault.replace(/\n/g, ' · ')}</span>
         </p>
         <div className="flex items-center gap-2">

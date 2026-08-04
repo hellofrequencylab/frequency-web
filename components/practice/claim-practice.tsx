@@ -124,7 +124,7 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+        className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
       >
         <Sparkles className="h-4 w-4" /> Claim &amp; make it yours
       </button>
@@ -138,7 +138,7 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
             role="dialog"
             aria-modal="true"
             aria-label={step === 1 ? 'Make it yours' : 'Your practice'}
-            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-border bg-surface p-5 shadow-xl sm:rounded-2xl"
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-border bg-surface p-5 lift-3 sm:rounded-2xl"
           >
             <div className="mb-4 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-lg font-bold text-text">
@@ -192,7 +192,7 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
                   <button
                     onClick={askVera}
                     disabled={thinking || !goal.trim()}
-                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover disabled:opacity-50"
                   >
                     {thinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                     {thinking ? 'Vera is shaping it…' : 'Ask Vera'}
@@ -230,7 +230,7 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
                   <button
                     onClick={claim}
                     disabled={pending || !title.trim()}
-                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover disabled:opacity-50"
                   >
                     {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 fill-on-primary" />}
                     {pending ? 'Claiming…' : 'Claim it'}

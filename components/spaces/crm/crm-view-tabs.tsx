@@ -27,7 +27,7 @@ const TABS: Tab[] = [
 
 export function CrmViewTabs({ boardHref, active }: { boardHref: string; active: CrmView }) {
   return (
-    <nav aria-label="CRM views" className="flex flex-wrap gap-1 rounded-2xl border border-border bg-surface p-1 shadow-sm">
+    <nav aria-label="CRM views" className="flex flex-wrap gap-1 rounded-2xl border border-border bg-surface p-1 lift-1">
       {TABS.map((tab) => {
         const isActive = tab.view === active
         // People is the default view, so its tab points at the bare board (no ?view=), keeping the

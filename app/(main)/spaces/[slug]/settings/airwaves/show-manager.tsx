@@ -367,7 +367,7 @@ export function ShowManager({
                       <img src={coverUrl} alt="" className="h-full w-full object-cover" />
                     </span>
                   ) : (
-                    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-dashed border-border text-subtle">
+                    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-dashed border-border text-muted">
                       <Podcast className="h-5 w-5" aria-hidden />
                     </span>
                   )}
@@ -384,7 +384,7 @@ export function ShowManager({
                         {STATUS_LABEL[show.status]}
                       </span>
                     </div>
-                    <p className="text-2xs text-subtle">
+                    <p className="text-2xs text-muted">
                       {eps.length} {eps.length === 1 ? 'episode' : 'episodes'}
                       {eps.length > 0 && ` · ${liveCount} live in the feed`}
                     </p>
@@ -424,13 +424,13 @@ export function ShowManager({
                         <Copy className="h-3 w-3" aria-hidden /> {copied === feedUrlFor(show) ? 'Copied' : 'Copy'}
                       </button>
                     </div>
-                    <p className="text-3xs text-subtle">
+                    <p className="text-3xs text-muted">
                       Submit this feed link once in Apple Podcasts Connect and in Spotify for Podcasters. They
                       pull in new episodes on their own after that, so you only submit it the first time.
                     </p>
                   </div>
                 ) : (
-                  <p className="text-2xs text-subtle">
+                  <p className="text-2xs text-muted">
                     Publish this show to get its feed link for Apple Podcasts and Spotify.
                   </p>
                 )}
@@ -498,7 +498,7 @@ function EpisodePanel({
   return (
     <div className="space-y-4 rounded-xl border border-border bg-canvas p-3">
       <div className="space-y-2">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Episodes</p>
+        <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Episodes</p>
         {eps.length === 0 ? (
           <p className="text-2xs text-muted">No episodes yet. Add recordings from the list below.</p>
         ) : (
@@ -514,7 +514,7 @@ function EpisodePanel({
                         aria-label="Move up"
                         disabled={pending || i === 0}
                         onClick={() => onMove(ep.id, -1)}
-                        className="rounded p-0.5 text-subtle hover:text-text disabled:opacity-30"
+                        className="rounded p-0.5 text-muted hover:text-text disabled:opacity-30"
                       >
                         <ChevronUp className="h-3.5 w-3.5" aria-hidden />
                       </button>
@@ -523,7 +523,7 @@ function EpisodePanel({
                         aria-label="Move down"
                         disabled={pending || i === eps.length - 1}
                         onClick={() => onMove(ep.id, 1)}
-                        className="rounded p-0.5 text-subtle hover:text-text disabled:opacity-30"
+                        className="rounded p-0.5 text-muted hover:text-text disabled:opacity-30"
                       >
                         <ChevronDown className="h-3.5 w-3.5" aria-hidden />
                       </button>
@@ -539,7 +539,7 @@ function EpisodePanel({
                       aria-label={`Remove ${ep.title} from this show`}
                       disabled={pending}
                       onClick={() => onRemove(ep.id)}
-                      className="rounded p-1 text-subtle transition-colors hover:bg-danger-bg hover:text-danger disabled:opacity-40"
+                      className="rounded p-1 text-muted transition-colors hover:bg-danger-bg hover:text-danger disabled:opacity-40"
                     >
                       <X className="h-3.5 w-3.5" aria-hidden />
                     </button>
@@ -547,7 +547,7 @@ function EpisodePanel({
 
                   <div className="flex flex-wrap items-center gap-2 pl-6">
                     <label className="flex items-center gap-1.5">
-                      <span className="text-3xs font-semibold uppercase tracking-wide text-subtle">Who can see</span>
+                      <span className="text-3xs font-semibold uppercase tracking-wide text-muted">Who can see</span>
                       <select
                         value={ep.visibility}
                         disabled={pending}
@@ -564,7 +564,7 @@ function EpisodePanel({
                       </select>
                     </label>
                     <label className="flex items-center gap-1.5">
-                      <span className="text-3xs font-semibold uppercase tracking-wide text-subtle">Publish date</span>
+                      <span className="text-3xs font-semibold uppercase tracking-wide text-muted">Publish date</span>
                       <input
                         type="datetime-local"
                         value={toLocalInput(ep.publishedAt)}
@@ -585,7 +585,7 @@ function EpisodePanel({
                     )}
                   </div>
 
-                  <p className={`pl-6 text-3xs ${status.live ? 'text-success' : 'text-subtle'}`}>{status.note}</p>
+                  <p className={`pl-6 text-3xs ${status.live ? 'text-success' : 'text-muted'}`}>{status.note}</p>
                 </li>
               )
             })}
@@ -594,7 +594,7 @@ function EpisodePanel({
       </div>
 
       <div className="space-y-2">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Add from your recordings</p>
+        <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Add from your recordings</p>
         {unassigned.length === 0 ? (
           <p className="text-2xs text-muted">
             Every recording is already in a show. Upload more in the Recordings tab to add them here.
@@ -654,7 +654,7 @@ function ShowFormDialog({
 
   return (
     <Dialog open onClose={onCancel} ariaLabel={isNew ? 'Create a show' : 'Edit show'} className="max-w-lg">
-      <div className="max-h-[86vh] overflow-y-auto rounded-2xl border border-border bg-canvas p-5 shadow-lg">
+      <div className="max-h-[86vh] overflow-y-auto rounded-2xl border border-border bg-canvas p-5 lift-3">
         <div className="mb-4 flex items-center justify-between gap-2">
           <h2 className="text-base font-bold text-text">{isNew ? 'New show' : 'Edit show'}</h2>
           <button
@@ -688,7 +688,7 @@ function ShowFormDialog({
               onChange={(e) => set('slug', e.target.value)}
               className={field}
             />
-            <span className="text-2xs text-subtle">This becomes the end of your feed link.</span>
+            <span className="text-2xs text-muted">This becomes the end of your feed link.</span>
           </label>
 
           <label className={label}>
@@ -761,7 +761,7 @@ function ShowFormDialog({
           </div>
 
           <div className="space-y-3 rounded-xl border border-border bg-surface p-3">
-            <p className="text-2xs text-subtle">
+            <p className="text-2xs text-muted">
               Apple and Spotify verify a show by emailing its owner. Use an address you can check.
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -794,7 +794,7 @@ function ShowFormDialog({
               className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
             />
             <span className="text-sm font-semibold text-text">Published</span>
-            <span className="text-2xs text-subtle">Off keeps it a private draft.</span>
+            <span className="text-2xs text-muted">Off keeps it a private draft.</span>
           </label>
         </div>
 

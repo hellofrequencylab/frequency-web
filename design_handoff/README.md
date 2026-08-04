@@ -18,6 +18,8 @@ design_handoff/
   README.md      ← this file
   SYNC.md        ← the standing routine (does not change between rounds)
   CHANGES.md     ← THIS round's change set (read newest section last)
+  BRIEF-*.md     ← the outbound direction: orientation briefs + this round's asks
+                   (BRIEF-00-INDEX.md is DAWN's entry point)
   dawn/          ← the vendored DAWN reference set (tokens, components, templates)
 ```
 

@@ -119,9 +119,18 @@ the script with the minimum ratio per role (4.5 body, 3.0 large/decorative). Thi
 the *palette* unable to regress — the class of failure DAWN found becomes structurally
 impossible. Blocking gate in ci.yml.
 
-**3b. axe-core in the e2e suite (M).** `@axe-core/playwright` on the visual-suite
-surfaces + feed/room/settings, both modes; serious/critical violations fail. Runs
-wherever the visual suite runs (Lift 6's cadence); same PW_BASE_URL plumbing.
+**3b. axe-core in the e2e suite (M).** ✅ Shipped as a **ratchet**, not a wall (ADR-928).
+`@axe-core/playwright` on the visual-suite surfaces + feed/room/settings, all four render
+states; serious/critical element counts are frozen per (surface, state, project) in
+`test/e2e/a11y-baselines.json`. A rise fails the run, a fall is annotated and re-frozen, an
+unlisted context is held at zero. Re-freeze with `PW_A11Y_UPDATE=1 pnpm test:e2e:a11y &&
+pnpm a11y:baselines` (the merge refuses to raise a number without `--force`). Runs wherever
+the visual suite runs (Lift 6's cadence); same PW_BASE_URL plumbing.
+
+> **Why a ratchet.** The first honest run found debt older than the suite: the brand amber
+> used as body text, ~1,842 sites across 696 files, 2.52:1 on a light surface. That is a
+> judgment-heavy sweep (ink bands and icon colour follow a different rule), so it becomes
+> its own wave +2 pass rather than a blocker on the wave that surfaced it.
 
 **3c. Focus-visible + keyboard sweep (M, once, then held by 3b).** One audit pass over
 the interactive kit (Button, IconButton, tabs, dialogs, docks, composer): the global

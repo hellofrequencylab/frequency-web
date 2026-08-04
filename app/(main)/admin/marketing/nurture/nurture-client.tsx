@@ -75,7 +75,7 @@ function PersonaCard({ row }: { row: PersonaRow }) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm">
+    <div className="rounded-2xl border border-border bg-surface lift-1">
       <div className="flex items-center gap-3 p-4">
         <span className="text-2xl leading-none" aria-hidden>{row.emoji}</span>
         <button
@@ -197,7 +197,7 @@ function StepEditor({ step, index }: { step: StepRowData; index: number }) {
       <div className={`flex items-start gap-3 rounded-xl border border-border bg-canvas/40 p-3 ${step.enabled ? '' : 'opacity-60'}`}>
         <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary-strong">{index + 1}</span>
         <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-1.5 text-2xs font-medium text-subtle">
+          <p className="flex items-center gap-1.5 text-2xs font-medium text-muted">
             <Clock className="h-3 w-3" /> {humanDelay(step.delayHours)}
           </p>
           <div className="flex items-center gap-1.5">

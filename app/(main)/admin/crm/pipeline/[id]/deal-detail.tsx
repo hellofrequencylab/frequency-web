@@ -159,7 +159,7 @@ export function DealDetail({
       {error && <Banner tone="critical" title="That didn’t go through">{error}</Banner>}
 
       {/* Editable fields */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-xs text-muted">
             Contact
@@ -210,7 +210,7 @@ export function DealDetail({
       </div>
 
       {/* Activities & tasks */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
         <p className="text-sm font-bold text-text">Activity &amp; tasks</p>
 
         {/* Add */}
@@ -270,7 +270,7 @@ export function DealDetail({
                     onClick={() => run(() => toggleTask(a.id, deal.id, !done))}
                     aria-label={done ? 'Mark task not done' : 'Mark task done'}
                     className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
-                      done ? 'border-success bg-success text-on-primary' : 'border-border-strong hover:border-primary'
+                      done ? 'border-success bg-success text-on-success' : 'border-border-strong hover:border-primary'
                     }`}
                   >
                     {done && <Check className="h-3.5 w-3.5" />}

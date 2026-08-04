@@ -10,6 +10,7 @@ import { RankList } from '@/components/admin/rank-list'
 import { StatusChip } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getEngagementDashboard, type FunnelStep, type EventTypeCount } from '@/lib/analytics/dashboard'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // The "Engagement" tab of the consolidated Insights suite (ADR-263) — formerly /admin/engagement.
 // The live engagement dashboard (ENGAGEMENT-MARKETING-ENGINE.md Phase B): WAM + activation, the
@@ -107,9 +108,7 @@ function FunnelView({ steps }: { steps: FunnelStep[] }) {
                 <span className="font-semibold tabular-nums text-text">{s.actors.toLocaleString()}</span>
               </span>
             </div>
-            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-elevated">
-              <div className="h-full rounded-full bg-primary" style={{ width: `${width}%` }} />
-            </div>
+            <ProgressTrack value={width} label={`${s.step} share of actors`} className="mt-1" />
           </div>
         )
       })}

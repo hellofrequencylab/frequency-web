@@ -105,7 +105,7 @@ function RosterGroup({ title, guests }: { title: string; guests: ManageGuest[] }
                   Checked in
                 </span>
               )}
-              <span className="shrink-0 text-xs text-subtle">{fmtDate(g.createdAt)}</span>
+              <span className="shrink-0 text-xs text-muted">{fmtDate(g.createdAt)}</span>
             </li>
           )
         })}
@@ -283,7 +283,7 @@ export async function HomeStatsStrip({ eventId, slug }: { eventId: string; slug:
         }}
       />
       <div>
-        <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Reach</p>
+        <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-muted">Reach</p>
         <div className="flex flex-wrap gap-1.5">
           <StatCard
             size="xs"
@@ -361,7 +361,7 @@ export async function FollowUpSection({ eventId }: { eventId: string }) {
   return (
     <div className="space-y-3">
       {!access.canMessage && (
-        <p className="text-2xs text-subtle">
+        <p className="text-2xs text-muted">
           {EVENT_CRM_LOCKED_MESSAGE}{' '}
           <Link href={EVENT_CRM_UPSELL_HREF} className="font-medium text-primary hover:underline">
             {EVENT_CRM_UPSELL_LINE}
@@ -404,7 +404,7 @@ const GUEST_RSVP_CHIP: Record<GuestRsvpStatus, { Icon: typeof Check; cls: string
 function GuestRsvpChip({ status }: { status: GuestRsvpStatus | null }) {
   if (!status) {
     return (
-      <span className="inline-flex items-center rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle">
+      <span className="inline-flex items-center rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
         No reply
       </span>
     )
@@ -507,7 +507,7 @@ export async function DispatchesSection({ eventId }: { eventId: string }) {
             </div>
             <span className="shrink-0 text-xs text-subtle">{fmtDate(d.createdAt)}</span>
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-2xs text-subtle">
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-2xs text-muted">
             <span className="inline-flex items-center gap-1">
               <MessageSquare className="h-3 w-3" />
               On the page

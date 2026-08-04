@@ -33,7 +33,7 @@ export interface FacetRailData {
 function FacetGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</p>
+      <p className="text-2xs font-semibold uppercase tracking-wide text-muted">{label}</p>
       {children}
     </div>
   )

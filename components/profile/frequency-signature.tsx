@@ -13,6 +13,7 @@ import { Compass } from 'lucide-react'
 import { accentColor } from '@/lib/studio/accents'
 import type { FrequencySignature, PillarKey } from '@/lib/frequency-signature'
 import { PILLAR_KEYS } from '@/lib/frequency-signature'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // Pillar → accent key (matches components/studio/journey/journey-builder.tsx) and the
 // axis position on the dial. Mind left, Body top, Spirit right, Expression bottom —
@@ -86,7 +87,7 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
     if (compact) {
       return (
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-elevated px-2.5 py-1 text-2xs font-medium text-subtle ${className ?? ''}`}
+          className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-elevated px-2.5 py-1 text-2xs font-medium text-muted ${className ?? ''}`}
           title="No Frequency Signature yet. Log practices across the Pillars to form one"
         >
           <Compass className="h-3 w-3" /> No signature yet
@@ -265,7 +266,7 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
   // Full: the constellation with corner Pillar labels overlaid, plus a legend that
   // reads the balance + dominant pillar and the per-pillar shares.
   return (
-    <div className={`rounded-2xl border border-border bg-surface p-5 shadow-sm ${className ?? ''}`}>
+    <div className={`rounded-2xl border border-border bg-surface p-5 lift-1 ${className ?? ''}`}>
       <div className={`flex flex-col items-center gap-5 ${stacked ? '' : 'sm:flex-row sm:items-center sm:gap-6'}`}>
         {/* The constellation, with axis labels positioned at the four cardinals.
             Stacked (narrow sidebar): a responsive square that shrinks to fit. */}
@@ -301,16 +302,17 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
           <div className="mt-3" style={{ color: balanceTint }}>
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-xs font-semibold text-text">Bloom</span>
-              <span className="text-2xs font-medium tabular-nums text-subtle">
+              <span className="text-2xs font-medium tabular-nums text-muted">
                 {Math.round(fill * 100)}% to full
               </span>
             </div>
-            <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-surface-elevated">
-              <span
-                className="block h-full rounded-full bg-current"
-                style={{ width: `${Math.max(2, Math.round(fill * 100))}%` }}
-              />
-            </span>
+            <ProgressTrack
+              value={Math.round(fill * 100)}
+              minVisible={2}
+              label="Bloom"
+              tone="current"
+              className="mt-1"
+            />
           </div>
 
           <ul className="mt-3 space-y-1.5">
@@ -328,7 +330,7 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
                       style={{ width: `${pct}%`, backgroundColor: acc }}
                     />
                   </span>
-                  <span className="w-9 shrink-0 text-right text-2xs tabular-nums text-subtle">
+                  <span className="w-9 shrink-0 text-right text-2xs tabular-nums text-muted">
                     {pct}%
                   </span>
                 </li>
@@ -364,7 +366,7 @@ function AxisLabel({
   return (
     <span
       className={`pointer-events-none absolute text-2xs font-semibold tracking-tight ${place} ${
-        isDom ? '' : 'text-subtle'
+        isDom ? '' : 'text-muted'
       }`}
       style={isDom ? { color: accentColor(PILLARS[pillar].accent) } : undefined}
     >

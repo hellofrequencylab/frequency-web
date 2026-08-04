@@ -77,6 +77,7 @@ export function EconomyPanel({ profileId, displayName }: Props) {
             <button
               type="button"
               onClick={() => { setOp('grant'); setStatus(null) }}
+              // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
               className={`flex items-center gap-1 px-3 py-1.5 transition-colors ${op === 'grant' ? 'bg-success text-white' : 'text-muted hover:bg-surface-elevated'}`}
             >
               <PlusCircle className="w-3 h-3" /> Grant
@@ -118,6 +119,7 @@ export function EconomyPanel({ profileId, displayName }: Props) {
         <button
           type="submit"
           disabled={isPending}
+          // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
           className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-colors disabled:opacity-50 ${op === 'grant' ? 'bg-success hover:bg-success' : 'bg-danger hover:bg-danger'}`}
         >
           {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : (op === 'grant' ? <PlusCircle className="w-3 h-3" /> : <MinusCircle className="w-3 h-3" />)}

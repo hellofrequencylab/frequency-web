@@ -46,7 +46,7 @@ export function Analytics({ data }: { data: AnalyticsData }) {
         <StatCard bordered icon={TrendingUp} label="Last 30 days" value={windowTotal.toLocaleString()} />
       </div>
 
-      <section className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <section className="rounded-2xl border border-border bg-surface p-4 lift-1">
         <h2 className="text-sm font-bold text-text">Scans · last 30 days</h2>
         {windowTotal === 0 ? (
           <p className="mt-3 py-6 text-center text-xs text-muted">No scans yet in this window.</p>

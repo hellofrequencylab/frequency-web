@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import { headers } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SEASON_RANKS, rankForCompletion, journeysFinishedThisSeason } from '@/lib/season-ranks'
-import { GameStatsDockClient, GameStatsPanel, type DockData } from '@/components/sidebar/game-stats-dock'
+import { GameStatsPanel, type DockData } from '@/components/sidebar/game-stats-dock'
 import { getPracticesToLogToday, getRecentPracticeLogs, getMemberPractices } from '@/lib/practices'
 import { getMemberJourneyProgress } from '@/lib/journeys/progress'
 import { DemoNotice } from '@/components/sidebar/demo-notice'
@@ -63,16 +63,6 @@ interface RightSidebarProps {
 //     <Suspense> so a slow one never blocks the rest (PAGE-FRAMEWORK §5).
 // The rail is page-aware via the `x-pathname` request header (set in proxy.ts —
 // Next 16's middleware), which keeps the panels server-rendered while varying by route.
-
-// The Vault dock slot — handed to AppShell's `dock` prop by (main)/layout.tsx and mounted in
-// the rail COLUMN but OUTSIDE the collapsed/expanded ternary, so folding the rail never
-// unmounts the member's score. Reads the same x-pathname header as the rail for the Quest
-// suppression (the /crew tree owns the member's standing on-page; nothing is offered twice).
-export async function VaultDockSlot({ profileId }: { profileId: string }) {
-  const pathname = (await headers()).get('x-pathname') ?? ''
-  if (isQuestSurface(pathname)) return null
-  return <GameStatsDockClient data={await loadGameStats(profileId)} />
-}
 
 // Mobile counterpart — the same stats body (with a zaps/gems/streak summary header) for the
 // mobile LEFT drawer's bottom cluster (AppShell's `mobileStats` slot): the < lg home of the
@@ -158,6 +148,26 @@ export async function loadGameStats(profileId: string): Promise<DockData> {
 // The viewer's practice activity — the Insight-Timer-style bar chart (Days / Weeks / Months),
 // pinned right under the Season Standing block on every rail. Renders nothing until there's
 // something to show.
+// Your Quest — the member's score as a PERSISTENT rail panel, not a floating chip. The
+// bottom-right pill was tried and rolled back (owner call, 2026-08-04): a score you have to
+// click to see is a score you stop reading, and the pill competed with the chat launcher for
+// the same corner. The rail is where standing belongs, so it sits inline with the other
+// panels and scrolls with them. Suppressed on Quest surfaces, where the page already owns
+// the same numbers. In admin mode the settings drawer slides over this whole column, so the
+// rail becomes the operator's settings without this panel having to know about it.
+async function VaultPanel({ profileId }: { profileId: string }) {
+  return (
+    <section>
+      <div className="mb-2 px-1">
+        <h3 className="text-sm font-bold tracking-tight text-text">Your Quest</h3>
+      </div>
+      <div className="rounded-card border border-border bg-surface p-4">
+        <GameStatsPanel data={await loadGameStats(profileId)} showSummary />
+      </div>
+    </section>
+  )
+}
+
 async function ActivityPanel({ profileId }: { profileId: string }) {
   const activity = await getMemberActivity(profileId)
   if (!activity.hasAny) return null
@@ -265,6 +275,12 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
             <ControlCenterPanel profileId={profileId} />
           </Suspense>
         )}
+        {/* Your Quest — the score, back in the rail where it reads without a click. */}
+        {!onQuest && (
+          <Suspense fallback={<PanelSkeleton />}>
+            <VaultPanel profileId={profileId} />
+          </Suspense>
+        )}
         {/* Your activity — under Season Standing, except on /practices which already shows it. */}
         {showActivity && (
           <Suspense fallback={<PanelSkeleton />}>
@@ -282,9 +298,6 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
           </Suspense>
         )}
       </div>
-      {/* The Vault dock no longer mounts here: it lives in AppShell's `dock` slot
-          (VaultDockSlot above, threaded by (main)/layout.tsx) so collapsing the rail
-          to the mini strip never unmounts the member's score. */}
     </div>
   )
 }

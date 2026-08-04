@@ -1154,7 +1154,7 @@ export function MovementSession({
                 {ended ? 'Done' : pos.nextLabel ? `Next: ${pos.nextLabel}` : plan.openEnded ? 'Stop when you are done' : ' '}
               </p>
               {resumeOffset > 0 && (
-                <p className="text-2xs text-subtle">Picking up where you left off.</p>
+                <p className="text-2xs text-muted">Picking up where you left off.</p>
               )}
             </>
           )}
@@ -1217,7 +1217,7 @@ export function MovementSession({
           <button
             type="button"
             onClick={leave}
-            className="rounded-full px-4 py-1 text-2xs font-medium text-subtle transition-colors hover:text-danger"
+            className="rounded-full px-4 py-1 text-2xs font-medium text-muted transition-colors hover:text-danger"
           >
             Cancel · don&rsquo;t log
           </button>
@@ -1273,7 +1273,7 @@ export function MovementSession({
               />
             ))}
           </div>
-          <p className="mt-2 text-2xs text-subtle">
+          <p className="mt-2 text-2xs text-muted">
             {MOVEMENT_MODES.find((m) => m.mode === mode)?.blurb}
           </p>
         </div>
@@ -1306,7 +1306,7 @@ export function MovementSession({
                   </Chip>
                 ))}
               </div>
-              <p className="mt-1.5 text-2xs text-subtle">A gentle chime on the minute, if you want a nudge.</p>
+              <p className="mt-1.5 text-2xs text-muted">A gentle chime on the minute, if you want a nudge.</p>
             </div>
           </div>
         )}
@@ -1338,7 +1338,7 @@ export function MovementSession({
                   </Chip>
                 ))}
               </div>
-              <p className="mt-1.5 text-2xs text-subtle">A chime on the minute to mark your splits, if you want them.</p>
+              <p className="mt-1.5 text-2xs text-muted">A chime on the minute to mark your splits, if you want them.</p>
             </div>
           </div>
         )}
@@ -1353,7 +1353,7 @@ export function MovementSession({
                 </Chip>
               ))}
             </div>
-            <p className="mt-1.5 text-2xs text-subtle">
+            <p className="mt-1.5 text-2xs text-muted">
               {YOGA_PRESETS.find((y) => y.kind === yogaKind)?.blurb}
             </p>
           </div>
@@ -1390,7 +1390,7 @@ export function MovementSession({
                   </Chip>
                 ))}
               </div>
-              <p className="mt-1.5 text-2xs text-subtle">A soft chime to switch sides, if you want one.</p>
+              <p className="mt-1.5 text-2xs text-muted">A soft chime to switch sides, if you want one.</p>
             </div>
           </div>
         )}
@@ -1412,7 +1412,7 @@ export function MovementSession({
                   </Chip>
                 ))}
               </div>
-              <p className="mt-1.5 text-2xs text-subtle">
+              <p className="mt-1.5 text-2xs text-muted">
                 {STRENGTH_PRESETS.find((w) => w.kind === strengthKind)?.blurb}
               </p>
             </div>
@@ -1472,7 +1472,7 @@ export function MovementSession({
             when it has a partial today (resumes the remaining time), else "Start Practice". */}
         <div className="sticky bottom-0 -mx-6 bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-6 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-6">
           {practicedToday >= 3 && (
-            <p className="pb-1.5 text-center text-2xs text-subtle">{practicedToday} members practiced today.</p>
+            <p className="pb-1.5 text-center text-2xs text-muted">{practicedToday} members practiced today.</p>
           )}
           {/* The primary action (teal `move` accent, Get Moving's color). It AUTO-STARTS the
               resolved practice — pressing it arms the single warm-up countdown, then runs. */}
@@ -1601,7 +1601,7 @@ function Tune({
 }) {
   return (
     <div>
-      <p className="mb-1 text-center text-2xs font-medium uppercase tracking-wider text-subtle">{label}</p>
+      <p className="mb-1 text-center text-2xs font-medium uppercase tracking-wider text-muted">{label}</p>
       <Stepper label={value} onLess={onLess} onMore={onMore} />
     </div>
   )

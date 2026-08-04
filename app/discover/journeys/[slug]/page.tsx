@@ -87,7 +87,7 @@ export default async function DiscoverJourneyPage({
       <Link href="/sign-in" className={buttonClasses('primary', 'md', 'w-full')}>
         Create a free account
       </Link>
-      <p className="text-2xs leading-relaxed text-subtle">
+      <p className="text-2xs leading-relaxed text-muted">
         Free to start. Run it with your Circle or solo.
       </p>
     </div>
@@ -187,7 +187,7 @@ export default async function DiscoverJourneyPage({
             <InstructorBlock author={author} />
             <JourneyFaq plan={plan} />
 
-            <div className="rounded-2xl border border-border bg-surface p-5 text-center shadow-sm">
+            <div className="rounded-2xl border border-border bg-surface p-5 text-center lift-1">
               <p className="mb-1 text-lg font-bold text-text">Start this Journey</p>
               <p className="mx-auto mb-4 max-w-sm text-sm leading-relaxed text-muted">
                 Sign up free to start it. Its phases drip one per week, your Circle can run it

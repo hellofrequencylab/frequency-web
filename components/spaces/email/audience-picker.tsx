@@ -122,7 +122,7 @@ export function AudiencePicker({
     : null
 
   return (
-    <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+    <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 lift-1">
       <div>
         <p className="text-sm font-semibold text-text">Audience</p>
         <p className="mt-0.5 text-xs text-muted">

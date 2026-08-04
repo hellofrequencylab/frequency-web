@@ -45,11 +45,11 @@ export default async function AdminSupportTicketPage({ params }: { params: Promi
         {/* Conversation + triage */}
         <div className="space-y-5">
           <section className="rounded-2xl border border-border bg-surface p-4">
-            <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Conversation</p>
+            <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-muted">Conversation</p>
             <TicketMessages messages={ticket.messages} />
           </section>
           <section className="rounded-2xl border border-border bg-surface p-4">
-            <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Triage</p>
+            <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-muted">Triage</p>
             <AdminTicketControls
               ticketId={ticket.id}
               status={ticket.status}
@@ -64,7 +64,7 @@ export default async function AdminSupportTicketPage({ params }: { params: Promi
         <aside className="space-y-4">
           {ticket.reporter && (
             <div className="rounded-2xl border border-border bg-surface p-4">
-              <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Reporter</p>
+              <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Reporter</p>
               <p className="mt-1.5 text-sm font-bold text-text">{ticket.reporter.name}</p>
               <p className="text-xs text-subtle">@{ticket.reporter.handle}</p>
               <p className="mt-1 text-xs text-muted">

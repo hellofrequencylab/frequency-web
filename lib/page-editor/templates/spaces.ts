@@ -7,36 +7,53 @@ import {
 } from '@/lib/site'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SPACES — "call in the community builders". For the organizer who already
-// gathers people, or wants to, and wants to run THEIR OWN community on
-// Frequency's rails. The owner's brief, answered most directly: "Call in all the
-// community builders. This is a space where we can all exist together and support
-// each other." The promise that does the heavy lifting: you bring your people,
-// and your people join free. We never charge the people who walk through your
-// door. We only ask the builder to cover the room.
+// SPACES — regenerated onto the DAWN 2 block set (UX-MATURITY-PLAN Lift 5b),
+// matching about.ts and the-lab.ts: one shared `L` layout literal, the DAWN bands
+// carrying the spine (Hero with the glass fact dock, StoryBeats on the reading
+// measure, the ink ValueBand, the numbered BuildTimeline), with the product-story
+// blocks kept where they are the truer expression (LeadFunnel draws the booking
+// flow, RolesPath draws the Member → Mentor ladder; no generic band draws either).
+// The DAWN operator reference (design_handoff/dawn/ui_kits/marketing/operators.html)
+// is the visual model: a numbered three-step row on the cream schematic, then the
+// capability set on ink, then the deal.
 //
-// HOW THIS FILE IS BUILT (copies the-community.ts shape + section rhythm):
-//  • One `const L` layout literal reused on every block (`...L` or inline) so the
-//    spacing rhythm is consistent. Override per block only with intent.
-//  • Section rhythm = an alternating beat of tones (surface → canvas → surface …),
-//    a `Statement` interstitial between movements, exactly ONE dark `ink` beat near
-//    the end, then the ink close.
-//  • Storyline: who it's for (you already gather people, or want to) → what you get
-//    (the format, the tools, Circles, Runs, events, your people join free) → how it
-//    works (the simple deal + three steps) → the welcome (you're not building alone;
-//    we hand you the rails and the backup).
-//  • Compose ONLY from registered blocks (lib/page-editor/config.tsx). Canon terms
-//    verbatim (Circle, Channel, Pillar, Journey, Run; Member → Crew → Host → Guide →
-//    Mentor). No em dashes. Sentence-case headings. Contractions always.
+// "Call in the community builders." For the organizer who already gathers people,
+// or wants to, and wants to run THEIR OWN community on Frequency's rails. The
+// promise that does the heavy lifting: you bring your people, and your people join
+// free. We never charge the people who walk through your door. We only ask the
+// builder to cover the room.
+//
+// COPY PROVENANCE (owner rule: default to what's on the site already). Every
+// sentence is lifted verbatim from something already published:
+//  • the live template this replaces (the render path for /spaces today), and
+//  • the coded body in app/(marketing)/spaces/page.tsx, from which TWO sections
+//    are RECOVERED because the live page had quietly dropped them:
+//      1. "What a Space gets" — the six things a room needs, now on the DAWN ink
+//         principles band (the operators.html capability band).
+//      2. "Guides for builders" — the Labs-track SEO cluster cross-links. Losing
+//         them cost /spaces its role as the hub of that internal-link graph. The
+//         fourth card's href is corrected to /host-a-recurring-gathering (the
+//         coded body pointed two cards at the same guide).
+//    Plus the coded "who this is for" prose, as the second ruled story beat.
+//
+// HERO FACT DOCK: the three figures are the page's own, not new claims. 0% on your
+// own bookings and "your people join free" are stated in the bands below; the "no
+// card" line is the same honest founding status the hero note already carried.
+//
+// CANON + VOICE:
+//  • Canon terms verbatim (Circle, Channel, Pillar, Journey, Run; Member → Crew →
+//    Host → Guide → Mentor). No em dashes. Sentence-case headings. Contractions.
 //  • Honest at day zero: no invented member counts, no logos, no fake numbers.
 //  • Pricing stays a simple "what it costs and what your members get", NOT the full
 //    table. The full table lives on /pricing; this page links there as the quiet
 //    secondary door.
+//  • Rhythm: an alternating light beat with a `Statement` interstitial between
+//    movements, TWO dark beats (the ink capability band, the ink "why we do it this
+//    way"), the slat Marquee, then the ink close.
 //  • CTA SYSTEM: the primary action is BETA_CTA_LABEL ("Start a Circle") and appears
 //    at THREE moments — the hero, a mid-page CallToAction after the how-it-works
 //    steps (highest intent), and the ink close. Each primary carries ONE quiet
-//    secondary text link (BETA_CTA_SECONDARY_*). Never stack two buttons; a secondary
-//    text link is not a button. The hero's `note` carries honest founding status.
+//    secondary text link (BETA_CTA_SECONDARY_*). Never stack two buttons.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const L = { spaceTop: 'default', spaceBottom: 'default', visibility: 'all' } as const
@@ -46,7 +63,8 @@ export const data: Data = {
   content: [
     // ── Hero ── the summons. The builder, not the party-goer, is the reader. Image
     // is a real hosted gathering under a shade tent. One primary door (Start a
-    // Circle) and one quiet secondary link for the not-yet-ready Seeker. ──────────
+    // Circle) and one quiet secondary link for the not-yet-ready Seeker. The DAWN
+    // fact dock hangs the deal over the seam. ───────────────────────────────────
     {
       type: 'Hero',
       props: {
@@ -59,7 +77,12 @@ export const data: Data = {
           "If you already gather people, or you've been meaning to, this is where you run your own community on rails that work. Your people join free. You cover the room, and we hand you the format and the backup.",
         image: '/images/site/outdoor-group.jpg',
         focal: 'center',
-        minHeight: 'screen',
+        minHeight: 'auto',
+        facts: [
+          { value: '0%', label: 'On your own bookings' },
+          { value: 'Free', label: 'For everyone you bring' },
+          { value: 'No card', label: 'To open your room' },
+        ],
         ctaPrimaryLabel: BETA_CTA_LABEL,
         ctaPrimaryHref: BETA_CTA_HREF,
         ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL,
@@ -72,33 +95,29 @@ export const data: Data = {
       },
     },
 
-    // ── Name the reader ── who this is for, said plainly. The builder narrative as
-    // CONTENT, never a gate: you don't apply, you start. ─────────────────────────
+    // ── Name the reader ── who this is for, said plainly, as ruled prose on the
+    // reading measure. The builder narrative as CONTENT, never a gate: you don't
+    // apply, you start. Beat two is the coded page's own framing of the same
+    // reader, kept because it names the job the rest of the page answers. ───────
     {
-      type: 'Heading',
+      type: 'StoryBeats',
       props: {
-        id: 'sp-reader-h',
+        id: 'sp-reader',
         eyebrow: 'Who this is for',
-        title: 'For the people who gather people.',
-        titleAccent: 'gather people',
         kicker: "You already do this, or you've felt the pull. You just want rails under it.",
-        size: 'default',
+        items: [
+          {
+            title: 'For the people who gather people.',
+            body: "Maybe you teach a class, run a studio, hold a weekly walk, or keep a table that the same faces find every week. Maybe you've tried to start something and it fizzled. Either way, you're the one who shows up early and sets out the chairs.\n\nFrequency is for you. You don't have to build a community from scratch, and you don't have to do it alone. Bring the people you already have, or the few you want to call in, and we hand you a format, the tools, and a hand on your shoulder. This is a place where builders exist together and back each other up.",
+          },
+          {
+            title: 'The practitioners who already do the work.',
+            body: 'You are already the reason a few people have somewhere to go. The hard part is the rest: a front door so new people find you, a format so a group lasts, and a way to grow without losing what made it yours.\n\nA Space is your community on Frequency. Your Channels, your Circles, your Runs, inside a structure built to last and a network of neighbors looking for exactly what you do.',
+          },
+        ],
+        flow: 'cont',
         tone: 'canvas',
-        width: 'default',
-        align: 'left',
         layout: L,
-      },
-    },
-    {
-      type: 'Text',
-      props: {
-        id: 'sp-reader-b',
-        body: "Maybe you teach a class, run a studio, hold a weekly walk, or keep a table that the same faces find every week. Maybe you've tried to start something and it fizzled. Either way, you're the one who shows up early and sets out the chairs.\n\nFrequency is for you. You don't have to build a community from scratch, and you don't have to do it alone. Bring the people you already have, or the few you want to call in, and we hand you a format, the tools, and a hand on your shoulder. This is a place where builders exist together and back each other up.",
-        size: 'lg',
-        tone: 'canvas',
-        width: 'default',
-        align: 'left',
-        layout: { spaceTop: 'none', spaceBottom: 'default', visibility: 'all' },
       },
     },
     {
@@ -214,6 +233,54 @@ export const data: Data = {
       },
     },
 
+    // ── What a Space gets ── RECOVERED from the coded body, on the DAWN ink
+    // principles band with the sheen pass (the operators.html capability band).
+    // The page's first dark beat: the six things a room needs to last. ──────────
+    {
+      type: 'ValueBand',
+      props: {
+        id: 'sp-inside',
+        eyebrow: 'What a Space gets',
+        title: 'Everything a room needs to last.',
+        titleAccent: 'last',
+        kicker: 'The front door, the format, and the backup, in one place.',
+        columns: '3',
+        items: [
+          {
+            icon: 'DoorOpen',
+            title: 'A real front door',
+            body: 'Your Space gets a page in Discover, so the people looking for what you do can actually find you.',
+          },
+          {
+            icon: 'Compass',
+            title: 'Channels that connect',
+            body: 'List what you practice as Channels, and the neighbors who care about the same thing land in your room.',
+          },
+          {
+            icon: 'CalendarDays',
+            title: 'Runs, not one-offs',
+            body: 'Host Circles that walk a Journey together week after week. The format comes with it, so a group lasts past week three.',
+          },
+          {
+            icon: 'Users',
+            title: 'A path for your people',
+            body: 'Member to Crew to Host to Guide to Mentor. Your regulars can step up, and nobody runs a room alone.',
+          },
+          {
+            icon: 'HandHeart',
+            title: 'A door held open',
+            body: 'Your people join free, always, and a free Space sells from day one. You keep 100% of the bookings you bring yourself, and the network earns only on the business it sends you.',
+          },
+          {
+            icon: 'LineChart',
+            title: 'Tools to grow',
+            body: 'A simple way to run the day to day, set the rhythm, and see your community take shape. Start free, grow when you are ready.',
+          },
+        ],
+        layout: L,
+      },
+    },
+
     // ── How it works ── the simple deal said plainly: members free, you cover the
     // room. NOT the full table; /pricing is the quiet door. ──────────────────────
     {
@@ -275,32 +342,49 @@ export const data: Data = {
       },
     },
 
-    // ── Three steps ── make "claim a Space" concrete. The builder leaves knowing
-    // exactly what to do. "We hand you the format" lives inside step three. ──────
+    // ── Three steps ── make "claim a Space" concrete, as the DAWN numbered
+    // milestone cards on the cream schematic (operators.html "How a space goes
+    // live"). The builder leaves knowing exactly what to do. ────────────────────
     {
-      type: 'FeatureGrid',
+      type: 'BuildTimeline',
       props: {
         id: 'sp-how-steps',
         eyebrow: 'How you start',
         title: "Three steps and your room is open.",
         titleAccent: 'your room is open',
-        style: 'number',
-        columns: '3',
+        kicker: '',
+        intro: '',
         items: [
-          { icon: 'Compass', image: '', title: 'Pick what you gather around', body: "A class, a walk, a supper table, a sit. That's your Channel.", href: '' },
-          { icon: 'Users', image: '', title: 'Bring your people', body: "The regulars you have, or a few you want to call in. That's your Circle.", href: '' },
-          { icon: 'CalendarDays', image: '', title: 'Hold the door, same time each week', body: 'We hand you the format, the script, and the backup.', href: '' },
+          {
+            label: '01',
+            title: 'Pick what you gather around',
+            body: "A class, a walk, a supper table, a sit. That's your Channel.",
+            highlight: 'normal',
+          },
+          {
+            label: '02',
+            title: 'Bring your people',
+            body: "The regulars you have, or a few you want to call in. That's your Circle.",
+            highlight: 'normal',
+          },
+          {
+            label: '03',
+            title: 'Hold the door, same time each week',
+            body: 'We hand you the format, the script, and the backup.',
+            highlight: 'chosen',
+          },
         ],
+        footnote: '',
+        texture: 'dots',
+        flow: 'beat',
         tone: 'canvas',
-        width: 'default',
-        align: 'left',
         layout: L,
       },
     },
 
     // ── Mid-page CTA ── the highest-intent moment: they've seen what they get, the
     // deal, and the three steps. Ask here, not just at the bottom. Not ink (the
-    // single dark beat is the welcome, below). ──────────────────────────────────
+    // second dark beat is the welcome, below). ──────────────────────────────────
     {
       type: 'CallToAction',
       props: {
@@ -313,6 +397,7 @@ export const data: Data = {
         ctaPrimaryHref: BETA_CTA_HREF,
         ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL,
         ctaSecondaryHref: BETA_CTA_SECONDARY_HREF,
+        emphasis: { scale: 'default', accent: 'none' },
         tone: 'surface',
         width: 'default',
         align: 'center',
@@ -357,8 +442,8 @@ export const data: Data = {
       },
     },
 
-    // ── The single dark beat ── why we run it this way. Exactly one ink section,
-    // near the end, before the ink close. Atmospheric sunset image. ─────────────
+    // ── The second dark beat ── why we run it this way, before the marquee and the
+    // close. Atmospheric sunset image. ─────────────────────────────────────────
     {
       type: 'MediaText',
       props: {
@@ -397,6 +482,54 @@ export const data: Data = {
       },
     },
 
+    // ── Guides for builders ── RECOVERED from the coded body: the Labs-track SEO
+    // cluster cross-links that keep /spaces the hub of the builder funnel. ──────
+    {
+      type: 'FeatureGrid',
+      props: {
+        id: 'sp-guides',
+        eyebrow: 'Guides for builders',
+        title: 'How to build a third space.',
+        titleAccent: 'third space',
+        style: 'icon',
+        columns: '2',
+        items: [
+          {
+            icon: '',
+            image: '',
+            title: 'What a third space is',
+            body: 'The definition, why they got rare, and how to build one today.',
+            href: '/loneliness',
+          },
+          {
+            icon: '',
+            image: '',
+            title: 'How to run a community space',
+            body: 'The operator playbook: a rhythm, a room, a few regulars, light tooling.',
+            href: '/how-to-build-community',
+          },
+          {
+            icon: '',
+            image: '',
+            title: 'Tools for community builders',
+            body: 'The four jobs a builder needs, and how one Space covers them.',
+            href: '/tools-for-community-builders',
+          },
+          {
+            icon: '',
+            image: '',
+            title: 'Host a recurring gathering',
+            body: 'The logistics of recurrence: cadence, a run-of-show, and reminders.',
+            href: '/host-a-recurring-gathering',
+          },
+        ],
+        tone: 'canvas',
+        width: 'default',
+        align: 'left',
+        layout: L,
+      },
+    },
+
     // ── Close ── the ink CTA. Primary action plus the quiet member path. ─────────
     {
       type: 'CallToAction',
@@ -410,6 +543,7 @@ export const data: Data = {
         ctaPrimaryHref: BETA_CTA_HREF,
         ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL,
         ctaSecondaryHref: BETA_CTA_SECONDARY_HREF,
+        emphasis: { scale: 'default', accent: 'none' },
         tone: 'ink',
         width: 'default',
         align: 'center',

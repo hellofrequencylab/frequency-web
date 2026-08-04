@@ -71,7 +71,7 @@ export function IntakeList({ intakes }: { intakes: ListingIntakeListItem[] }) {
                 <StatusChip tone={meta.tone} size="sm">
                   {meta.glyph} {meta.label}
                 </StatusChip>
-                <span className="text-2xs text-subtle">{timeAgo(it.updatedAt)}</span>
+                <span className="text-2xs text-muted">{timeAgo(it.updatedAt)}</span>
               </>
             }
           />

@@ -302,7 +302,7 @@ export function DraftEditor({
             alt="Event cover"
             className="h-28 w-28 shrink-0 rounded-2xl border border-border object-cover"
           />
-          <p className="text-xs text-subtle">
+          <p className="text-xs text-muted">
             The cover, cut from your poster. It fronts the event on local events.
           </p>
         </div>

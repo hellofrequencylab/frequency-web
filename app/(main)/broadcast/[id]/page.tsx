@@ -209,7 +209,7 @@ export default async function DispatchDetailPage({ params }: Props) {
 
         {/* Linked Challenge CTA */}
         {linkedTask && (
-          <div className="mt-10 rounded-2xl border-2 border-warning bg-warning-bg/20 shadow-sm px-5 py-4">
+          <div className="mt-10 rounded-2xl border-2 border-warning bg-warning-bg/20 lift-1 px-5 py-4">
             <div className="flex items-center gap-2 mb-1">
               <Zap className="w-4 h-4 text-primary" />
               <span className="text-xs font-black uppercase tracking-[0.12em] text-warning">

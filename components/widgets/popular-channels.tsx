@@ -16,7 +16,7 @@ export async function PopularChannels() {
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
-      <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Channels</p>
+      <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Channels</p>
       <ul className="mt-3 space-y-1">
         {data.map((channel) => (
           <li key={channel.id}>

@@ -28,7 +28,7 @@ export async function EventConnectors({
         <Users className="h-4 w-4 text-primary-strong" />
         <h2 className="text-sm font-bold tracking-tight text-text">People to meet</h2>
       </div>
-      <p className="mt-1 text-2xs text-subtle">
+      <p className="mt-1 text-2xs text-muted">
         Going to the same things you are, into the same Channels. Say hi before the room does.
       </p>
 
@@ -47,7 +47,7 @@ export async function EventConnectors({
               >
                 {s.displayName}
               </a>
-              <p className="truncate text-2xs text-subtle">{sharedLine(s.sharedChannels)}</p>
+              <p className="truncate text-2xs text-muted">{sharedLine(s.sharedChannels)}</p>
             </div>
             <PulseConnectButton targetId={s.profileId} />
           </div>

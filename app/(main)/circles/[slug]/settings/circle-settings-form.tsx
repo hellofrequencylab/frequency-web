@@ -170,7 +170,7 @@ export function CircleSettingsForm({
       </div>
 
       <div className="mt-2 border-t border-border pt-5 sm:col-span-2">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Danger zone</p>
+        <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Danger zone</p>
         <button
           type="button"
           onClick={() => setConfirmArchive(true)}

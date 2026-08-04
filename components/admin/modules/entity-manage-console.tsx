@@ -63,7 +63,7 @@ export function EntityManageConsole({ caps }: { caps: readonly Capability[] }) {
         }
         const Body = MODULE_COMPONENTS[id]
         return Body ? (
-          <div key={id} className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <div key={id} className="rounded-2xl border border-border bg-surface p-5 lift-1">
             <Body />
           </div>
         ) : null

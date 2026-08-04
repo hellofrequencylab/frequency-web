@@ -5,6 +5,7 @@
 // yet (a fresh funnel has nothing in the ledger).
 
 import { EmptyState } from '@/components/ui/empty-state'
+import { ProgressTrack } from '@/components/ui/progress-track'
 import type { FunnelRollupStage } from '@/lib/funnels/store'
 
 export async function FunnelRollup({ promise }: { promise: Promise<FunnelRollupStage[]> }) {
@@ -29,7 +30,7 @@ export async function FunnelRollup({ promise }: { promise: Promise<FunnelRollupS
           <div key={s.stageId}>
             <div className="flex items-baseline justify-between gap-2 text-sm">
               <span className="truncate text-text">
-                <span className="text-2xs uppercase tracking-wide text-subtle">{s.kind}</span>{' '}
+                <span className="text-2xs uppercase tracking-wide text-muted">{s.kind}</span>{' '}
                 {s.label}
               </span>
               <span className="shrink-0 tabular-nums text-muted">
@@ -39,9 +40,7 @@ export async function FunnelRollup({ promise }: { promise: Promise<FunnelRollupS
                 )}
               </span>
             </div>
-            <div className="mt-1 h-2 overflow-hidden rounded-full bg-surface-elevated">
-              <div className="h-full rounded-full bg-primary" style={{ width: `${width}%` }} />
-            </div>
+            <ProgressTrack value={width} size="lg" className="mt-1" label={`${s.label}: ${s.actors} of ${top}`} />
           </div>
         )
       })}

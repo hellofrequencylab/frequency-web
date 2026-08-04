@@ -482,7 +482,7 @@ function RewardStep({
 
 function Stat({ big, small }: { big: string; small: string }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface px-3 py-4 shadow-sm">
+    <div className="rounded-2xl border border-border bg-surface px-3 py-4 lift-1">
       <p className="text-2xl font-bold text-text">{big}</p>
       <p className="mt-0.5 text-xs text-muted">{small}</p>
     </div>

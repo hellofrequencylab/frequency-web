@@ -8,6 +8,7 @@ import {
   objectPositionToXY,
   xyToObjectPosition,
 } from '@/lib/images/focal-point'
+import { safeImageSrc } from '@/lib/safe-image-src'
 
 // ImageFocalPicker — a reusable control for choosing WHERE a cropped image sits in its frame.
 // Cropped surfaces (hero/cover banners, cards) render with `object-cover`, which crops to center
@@ -211,7 +212,7 @@ export function ImageFocalPicker({
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={imageUrl}
+          src={safeImageSrc(imageUrl) ?? undefined}
           alt={alt}
           draggable={false}
           style={{ objectPosition }}
@@ -222,7 +223,7 @@ export function ImageFocalPicker({
             the sliders below give precise, accessible control. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-primary/80 shadow-md ring-2 ring-black/30"
+          className="pointer-events-none absolute h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-primary/80 lift-1 ring-2 ring-black/30"
           style={{ left: `${x}%`, top: `${y}%` }}
         />
       </div>
@@ -231,7 +232,7 @@ export function ImageFocalPicker({
           drag target. 0 keeps the TOP of the photo, 100 keeps the BOTTOM. */}
       {showSliders && (
         <div className="space-y-1">
-          <label htmlFor={vId} className="flex items-center justify-between text-2xs font-medium text-subtle">
+          <label htmlFor={vId} className="flex items-center justify-between text-2xs font-medium text-muted">
             <span>Vertical focus</span>
             <span className="tabular-nums">{y}%</span>
           </label>
@@ -252,7 +253,7 @@ export function ImageFocalPicker({
       {/* HORIZONTAL slider — secondary, for the rarer case where the crop needs a left/right nudge. */}
       {showSliders && (
         <div className="space-y-1">
-          <label htmlFor={hId} className="flex items-center justify-between text-2xs font-medium text-subtle">
+          <label htmlFor={hId} className="flex items-center justify-between text-2xs font-medium text-muted">
             <span>Horizontal focus</span>
             <span className="tabular-nums">{x}%</span>
           </label>
@@ -270,7 +271,7 @@ export function ImageFocalPicker({
         </div>
       )}
 
-      {hint && <p className="text-2xs text-subtle">{hint}</p>}
+      {hint && <p className="text-2xs text-muted">{hint}</p>}
     </div>
   )
 }

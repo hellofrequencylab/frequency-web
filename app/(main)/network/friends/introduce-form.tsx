@@ -73,7 +73,7 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">
+          <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
             First friend
           </span>
           <select
@@ -94,7 +94,7 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">
+          <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
             Second friend
           </span>
           <select
@@ -116,8 +116,8 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
       </div>
 
       <label className="mt-3 block">
-        <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">
-          Why they’d click <span className="font-normal normal-case text-subtle">(optional)</span>
+        <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
+          Why they’d click <span className="font-normal normal-case text-muted">(optional)</span>
         </span>
         <textarea
           value={note}
@@ -128,7 +128,7 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
           rows={2}
           maxLength={500}
           placeholder="A line on what they have in common. It’ll be shown to them."
-          className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+          className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-muted focus:border-primary focus:outline-none"
         />
       </label>
 

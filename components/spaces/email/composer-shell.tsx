@@ -145,7 +145,7 @@ export function ComposerShell({
           disabled={disabled}
         />
 
-        <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+        <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
           <div>
             <Label htmlFor="campaign-subject" className="font-semibold">
               Subject
@@ -216,7 +216,7 @@ export function ComposerShell({
           </p>
         )}
 
-        <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+        <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 lift-1">
           <p className="text-sm font-semibold text-text">Send</p>
 
           <div className="flex flex-wrap items-end gap-3">

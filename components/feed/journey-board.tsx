@@ -9,6 +9,7 @@ import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-rank
 import { STREAK_MILESTONES, streakProgress } from '@/lib/streak'
 import type { Practice, PartialPracticeToday } from '@/lib/practices'
 import type { PillarCount } from '@/lib/pillars'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // The graduated home surface. Once a member finishes activation, the streak box
 // "levels up" into this: a multi-purpose journey guide + resource center that takes
@@ -110,7 +111,7 @@ export function JourneyBoard({
     return (
       <div className="mb-6 overflow-hidden rounded-2xl border border-primary-bg bg-primary-bg/30">
         <div className="flex items-center gap-2.5 px-3 py-2">
-          <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong shadow-sm">
+          <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong lift-1">
             <Flame className="h-3 w-3" />
           </span>
           <p className="shrink-0 text-sm font-bold leading-tight text-text">
@@ -127,12 +128,7 @@ export function JourneyBoard({
           {atRisk && !willFreezeProtect && (
             <span className="hidden truncate text-xs text-muted sm:inline">Log one practice today to keep it.</span>
           )}
-          <div className="h-1.5 min-w-8 flex-1 overflow-hidden rounded-full bg-surface">
-            <div
-              className="h-full rounded-full bg-primary transition-[width] duration-500"
-              style={{ width: `${p.pct}%` }}
-            />
-          </div>
+          <ProgressTrack value={p.pct} label="Journey progress" track="surface" animate className="min-w-8 flex-1" />
           <button
             type="button"
             onClick={toggle}
@@ -154,7 +150,7 @@ export function JourneyBoard({
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-primary/10 to-transparent" />
         <div className="relative flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">
-            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong shadow-sm">
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong lift-1">
               <Flame className="h-4 w-4" />
             </span>
             <div className="min-w-0">
@@ -222,12 +218,7 @@ export function JourneyBoard({
 
         {/* Streak progress — slim bar + milestone pips. */}
         <div className="mt-3">
-          <div className="h-2 w-full overflow-hidden rounded-full bg-surface">
-            <div
-              className="h-full rounded-full bg-primary transition-[width] duration-500"
-              style={{ width: `${p.pct}%` }}
-            />
-          </div>
+          <ProgressTrack value={p.pct} label="Journey progress" size="lg" track="surface" animate className="w-full" />
           <div className="mt-2.5 flex items-center justify-between gap-1">
             {STREAK_MILESTONES.map((m) => {
               const hit = m.day <= streak
@@ -241,7 +232,7 @@ export function JourneyBoard({
                       ? 'bg-primary text-on-primary'
                       : isNext
                         ? 'bg-surface text-primary-strong ring-2 ring-primary'
-                        : 'bg-surface text-subtle'
+                        : 'bg-surface text-muted'
                   }`}
                 >
                   {hit ? <Check className="h-3 w-3" strokeWidth={3} /> : m.day}
@@ -325,7 +316,7 @@ export function JourneyBoard({
                 ? `Next: ${activeJourney.nextStepTitle}`
                 : `Keep going in ${activeJourney.title}`}
             </p>
-            <p className="truncate text-2xs text-subtle">
+            <p className="truncate text-2xs text-muted">
               {activeJourney.title}
               {activeJourney.total > 0 ? ` · ${activeJourney.done}/${activeJourney.total} phases done` : ''}
             </p>
@@ -338,7 +329,7 @@ export function JourneyBoard({
           Pillars. Coverage, not a score. */}
       {stageIndex >= 3 && pillarBalance && pillarBalance.length > 0 && (
         <div className="mt-3 border-t border-primary-bg px-4 pt-3">
-          <p className="mb-1.5 text-2xs font-medium text-subtle">Your pillars</p>
+          <p className="mb-1.5 text-2xs font-medium text-muted">Your pillars</p>
           <div className="flex gap-1.5">
             {pillarBalance.map((p) => (
               <div
@@ -350,7 +341,7 @@ export function JourneyBoard({
                 <p className={`text-sm font-bold tabular-nums ${p.count > 0 ? 'text-text' : 'text-subtle'}`}>
                   {p.count}
                 </p>
-                <p className="text-3xs text-subtle">{p.name}</p>
+                <p className="text-3xs text-muted">{p.name}</p>
               </div>
             ))}
           </div>

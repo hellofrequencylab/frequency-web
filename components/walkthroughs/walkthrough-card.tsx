@@ -29,13 +29,13 @@ export function WalkthroughCard({ walkthrough }: { walkthrough: Walkthrough }) {
 
   return (
     <>
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
         <div className="flex items-start gap-4">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
             <Sparkles className="h-5 w-5" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Walkthrough</p>
+            <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Walkthrough</p>
             <h3 className="mt-0.5 text-base font-bold text-text">{walkthrough.name}</h3>
             {walkthrough.description && (
               <p className="mt-1 text-sm leading-relaxed text-muted">{walkthrough.description}</p>

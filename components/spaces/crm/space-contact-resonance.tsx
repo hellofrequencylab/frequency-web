@@ -44,7 +44,7 @@ export async function SpaceContactResonance({ profileId }: { profileId: string |
           {matches.map((m) => (
             <li
               key={m.profileId}
-              className="flex items-start justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm"
+              className="flex items-start justify-between gap-3 rounded-2xl border border-border bg-surface p-4 lift-1"
             >
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">

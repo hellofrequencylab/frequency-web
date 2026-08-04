@@ -198,7 +198,7 @@ async function DashboardActivity({ spaceId, slug }: { spaceId: string; slug: str
           description="Emails, messages, event check-ins, and joins show up here as they happen."
         />
       ) : (
-        <ul className="divide-y divide-border rounded-2xl border border-border bg-surface shadow-sm">
+        <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
           {items.map((it) => (
             <ActivityRow key={it.id} item={it} />
           ))}
@@ -218,7 +218,7 @@ function ActivityRow({ item }: { item: ContactInteraction }) {
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm text-text">{line}</p>
-        <p className="text-2xs text-subtle">{relativeTime(item.occurredAt)}</p>
+        <p className="text-2xs text-muted">{relativeTime(item.occurredAt)}</p>
       </div>
     </li>
   )
@@ -255,7 +255,7 @@ async function DashboardUpcoming({ spaceId, slug }: { spaceId: string; slug: str
           description="Upcoming events and bookings for your space show up here."
         />
       ) : (
-        <ul className="divide-y divide-border rounded-2xl border border-border bg-surface shadow-sm">
+        <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
           {events.map((e) => (
             <li key={e.id} className="flex items-center gap-3 px-4 py-2.5">
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
@@ -265,7 +265,7 @@ async function DashboardUpcoming({ spaceId, slug }: { spaceId: string; slug: str
                 <Link href={`/events/${e.slug}`} className="truncate text-sm font-medium text-text hover:underline">
                   {e.title || 'Event'}
                 </Link>
-                <p className="text-2xs text-subtle">
+                <p className="text-2xs text-muted">
                   {e.is_cancelled ? 'Cancelled' : formatWhen(e.starts_at)}
                 </p>
               </div>

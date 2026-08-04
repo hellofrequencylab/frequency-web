@@ -83,7 +83,7 @@ export default async function NonprofitVerifyPage({
         )}
 
         {showForm && (
-          <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
             <VerifyForm slug={slug} readOnly={staffViewing} />
           </div>
         )}
@@ -106,14 +106,14 @@ function StatusCard({
   const ui = STATUS_UI[status]
   const Icon = ui.icon
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
       <div className="flex items-start gap-3">
         <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${ui.tone}`} aria-hidden />
         <div className="min-w-0 space-y-1">
           <p className="text-sm font-bold text-text">{ui.title}</p>
           <p className="text-xs leading-relaxed text-muted">{ui.body}</p>
           {(orgLegalName || ein) && (
-            <p className="pt-1 text-2xs text-subtle">
+            <p className="pt-1 text-2xs text-muted">
               {orgLegalName}
               {orgLegalName && ein ? ' · ' : ''}
               {ein ? `EIN ${formatEin(ein)}` : ''}

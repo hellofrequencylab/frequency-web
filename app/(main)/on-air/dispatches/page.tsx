@@ -58,9 +58,9 @@ export default async function DispatchesPage() {
           {dispatches.map((d) => (
             <li
               key={d.day}
-              className="rounded-2xl border border-border bg-surface px-4 py-3 shadow-sm"
+              className="rounded-2xl border border-border bg-surface px-4 py-3 lift-1"
             >
-              <p className="flex items-center gap-1.5 text-2xs font-bold uppercase tracking-widest text-subtle">
+              <p className="flex items-center gap-1.5 text-2xs font-bold uppercase tracking-widest text-muted">
                 <Radio className="h-3 w-3 text-primary" /> {dayLabel(d.day)}
               </p>
               <p className="mt-1.5 text-sm font-medium leading-relaxed text-text">{d.copy}</p>

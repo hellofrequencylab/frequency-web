@@ -23,7 +23,7 @@ export function JourneyDangerZone({ planId, title }: { planId: string; title: st
 
   return (
     <div>
-      <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Danger zone</p>
+      <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Danger zone</p>
       <button
         type="button"
         onClick={() => setOpen(true)}

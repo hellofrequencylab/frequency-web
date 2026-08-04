@@ -85,7 +85,7 @@ export function VeraProfile({
           {WHAT_SHE_DOES.map(({ Icon, title, line, href, linkLabel }) => (
             <li
               key={title}
-              className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm"
+              className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 lift-1"
             >
               <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
                 <Icon className="h-[18px] w-[18px]" aria-hidden />

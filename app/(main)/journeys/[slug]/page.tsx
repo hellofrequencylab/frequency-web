@@ -38,7 +38,7 @@ export const dynamic = 'force-dynamic'
 // Kept token-for-token in sync with HERO_ACTION_CLASS. Only the HEADER instance is wrapped — the light
 // repeat-CTA card keeps its normal styling.
 const HERO_CTA_WRAP =
-  '[&_a]:!inline-flex [&_a]:!items-center [&_a]:!justify-center [&_a]:!gap-1.5 [&_a]:!rounded-lg [&_a]:!border [&_a]:!border-white/40 [&_a]:!bg-white/10 [&_a]:!px-3 [&_a]:!py-1.5 [&_a]:!text-sm [&_a]:!font-semibold [&_a]:!text-on-ink [&_a]:!backdrop-blur-sm [&_a]:hover:!bg-white/20 [&_a]:hover:!text-on-ink [&_button]:!inline-flex [&_button]:!items-center [&_button]:!justify-center [&_button]:!gap-1.5 [&_button]:!rounded-lg [&_button]:!border [&_button]:!border-white/40 [&_button]:!bg-white/10 [&_button]:!px-3 [&_button]:!py-1.5 [&_button]:!text-sm [&_button]:!font-semibold [&_button]:!text-on-ink [&_button]:!backdrop-blur-sm [&_button]:hover:!bg-white/20 [&_button]:hover:!text-on-ink'
+  '[&_a]:!inline-flex [&_a]:!items-center [&_a]:!justify-center [&_a]:!gap-1.5 [&_a]:!rounded-lg [&_a]:!border [&_a]:!border-on-ink/40 [&_a]:!bg-on-ink/10 [&_a]:!px-3 [&_a]:!py-1.5 [&_a]:!text-sm [&_a]:!font-semibold [&_a]:!text-on-ink [&_a]:!backdrop-blur-sm [&_a]:hover:!bg-on-ink/20 [&_a]:hover:!text-on-ink [&_button]:!inline-flex [&_button]:!items-center [&_button]:!justify-center [&_button]:!gap-1.5 [&_button]:!rounded-lg [&_button]:!border [&_button]:!border-on-ink/40 [&_button]:!bg-on-ink/10 [&_button]:!px-3 [&_button]:!py-1.5 [&_button]:!text-sm [&_button]:!font-semibold [&_button]:!text-on-ink [&_button]:!backdrop-blur-sm [&_button]:hover:!bg-on-ink/20 [&_button]:hover:!text-on-ink'
 
 // The one Journey page (docs/JOURNEYS.md §10). It flips between three faces:
 //   • AUTHOR    → redirects to the v2 editor at /journeys/[slug]/edit (identity + delivery +
@@ -304,7 +304,7 @@ export default async function JourneyPlanPage({
 
           {/* The repeat CTA closes the page (no bottom dump of rewards/rules). */}
           {!isAuthor && (
-            <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+            <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
               <p className="mb-3 text-sm font-semibold text-text">
                 Start it solo, or run it with your Circle.
               </p>

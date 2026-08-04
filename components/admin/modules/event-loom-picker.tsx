@@ -66,7 +66,7 @@ export function EventLoomPicker({
       </button>
 
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="Select an image from the Loom" className="max-w-lg">
-        <div className="rounded-2xl border border-border bg-canvas p-4 shadow-lg">
+        <div className="rounded-2xl border border-border bg-canvas p-4 lift-1">
           <div className="mb-3 flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold text-text">Your Loom</h2>
             <button

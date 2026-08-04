@@ -157,13 +157,13 @@ export default async function UpgradePage({
       )}
 
       {/* Main card */}
-      <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+      <div className="rounded-2xl border border-border bg-surface lift-1 overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-br bg-primary px-6 py-8 text-center">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm mb-4">
-            <Zap className="w-7 h-7 text-white" />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-on-primary/20 backdrop-blur-sm mb-4">
+            <Zap className="w-7 h-7 text-on-primary" />
           </div>
-          <p className="text-2xl font-bold text-white mb-1">Join the Crew</p>
+          <p className="text-2xl font-bold text-on-primary mb-1">Join the Crew</p>
           <p className="text-primary-bg/80 text-sm">The personal tier: your badge, the whole game, and backing the community</p>
           {/* PWYW (ADR-908): Crew has no single price to headline, so the hero states the FLOOR and
               the picker below carries the choice. Never render a struck-through anchor here: there is
@@ -175,12 +175,12 @@ export default async function UpgradePage({
             {live ? (
               <>
                 <span className="text-primary-strong text-sm mr-1">from</span>
-                <span className="text-4xl font-black text-white">{formatCents(pwyw.minCents)}</span>
+                <span className="text-4xl font-black text-on-primary">{formatCents(pwyw.minCents)}</span>
                 <span className="text-primary-strong text-sm ml-1">/ month</span>
               </>
             ) : (
               <>
-                <span className="text-4xl font-black text-white">Free</span>
+                <span className="text-4xl font-black text-on-primary">Free</span>
                 <span className="text-primary-strong text-sm ml-1">during beta</span>
               </>
             )}
@@ -194,7 +194,7 @@ export default async function UpgradePage({
 
         {/* Benefits */}
         <div className="px-6 py-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-subtle mb-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted mb-4">
             What you get
           </p>
           <ul className="space-y-3.5">

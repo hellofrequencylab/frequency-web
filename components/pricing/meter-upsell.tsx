@@ -63,7 +63,7 @@ export async function MeterUpsell({
 
   return (
     <section
-      className={`rounded-2xl border border-border bg-surface p-4 shadow-sm ${className ?? ''}`}
+      className={`rounded-2xl border border-border bg-surface p-4 lift-1 ${className ?? ''}`}
       aria-label={`${copy.dimension} allowance`}
       data-meter-upsell={featureKey}
       data-meter-surface={surface?.kind ?? 'unregistered'}
@@ -76,7 +76,7 @@ export async function MeterUpsell({
       <p className="mt-1.5 text-sm font-semibold text-text">{copy.have}</p>
       <p className="mt-1 text-sm text-muted">{copy.change}</p>
       {/* The standing promise, stated in the affirmative: nothing is ever taken away at a limit. */}
-      <p className="mt-1 text-2xs leading-relaxed text-subtle">{copy.promise}</p>
+      <p className="mt-1 text-2xs leading-relaxed text-muted">{copy.promise}</p>
       <Link
         href={upgradeHref}
         className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"

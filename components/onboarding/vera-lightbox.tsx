@@ -218,7 +218,7 @@ export function VeraLightbox({
               <button
                 type="button"
                 onClick={() => (lastSlide ? setPhase('chat') : setSlide((s) => s + 1))}
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
               >
                 {lastSlide ? 'Meet Vera' : 'Next'} <ArrowRight className="h-4 w-4" />
               </button>

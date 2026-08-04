@@ -13,7 +13,7 @@ export async function CommunityPulse() {
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
-      <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Community pulse</p>
+      <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Community pulse</p>
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div>
           <p className="text-2xl font-bold tabular-nums text-text">{(members ?? 0).toLocaleString()}</p>

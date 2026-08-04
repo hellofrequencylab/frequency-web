@@ -159,7 +159,7 @@ export function StartImportForm() {
 
       {/* Structured content boxes: labeled so the extractor can identify content. Everything here is a
           SOURCE (parsed into the draft); paste anything you scraped about the business. */}
-      <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-subtle">Content to parse</p>
+      <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-muted">Content to parse</p>
       <p className="mb-2 text-2xs text-muted">
         Paste anything you have. Labeled boxes help the seeder sort it. All of it is treated as a source.
       </p>

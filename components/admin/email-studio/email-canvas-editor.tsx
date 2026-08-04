@@ -162,7 +162,7 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
       <aside className="min-w-0 space-y-3" aria-label="Blocks and settings">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-text">Blocks</h3>
-          <span className="flex items-center gap-1 text-2xs text-subtle" role="status" aria-live="polite">
+          <span className="flex items-center gap-1 text-2xs text-muted" role="status" aria-live="polite">
             {store.saving ? <><Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Saving</> : 'Saved'}
           </span>
         </div>
@@ -354,7 +354,7 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
           registry is reachable. Clicking appends the block and opens its settings tile in the left rail. */}
       {addable.length > 0 && (
         <div className="space-y-1.5 rounded-2xl border border-border bg-surface-elevated/40 p-3">
-          <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Add a block</p>
+          <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Add a block</p>
           <div className="flex flex-wrap gap-1.5">
             {addable.map((b) => (
               <button

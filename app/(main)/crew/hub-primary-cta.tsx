@@ -29,7 +29,7 @@ export function HubPrimaryCta({
   const button = (
     <Link
       href={href}
-      className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-base font-bold text-on-primary shadow-sm transition-colors hover:bg-primary-hover motion-reduce:transition-none"
+      className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-base font-bold text-on-primary lift-1 transition-colors hover:bg-primary-hover motion-reduce:transition-none"
     >
       <Flame className="h-5 w-5" aria-hidden />
       {label}

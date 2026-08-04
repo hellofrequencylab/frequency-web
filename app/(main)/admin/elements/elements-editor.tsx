@@ -77,7 +77,7 @@ export function ElementEditor({ def, resolved }: { def: ElementDef; resolved: Re
             )}
 
             {/* Role gate */}
-            <label className="flex shrink-0 items-center gap-1.5 text-2xs text-subtle">
+            <label className="flex shrink-0 items-center gap-1.5 text-2xs text-muted">
               Who
               <select
                 value={roles[f.key] ?? f.defaultRole}

@@ -75,7 +75,7 @@ export function BoardControls({
               role="tab"
               aria-selected={active}
               className={`inline-flex min-h-11 items-center rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors motion-reduce:transition-none ${
-                active ? 'bg-surface text-text shadow-sm' : 'text-muted hover:text-text'
+                active ? 'bg-surface text-text lift-1' : 'text-muted hover:text-text'
               }`}
             >
               {label}
@@ -99,7 +99,7 @@ export function BoardControls({
               role="tab"
               aria-selected={active}
               className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors motion-reduce:transition-none ${
-                active ? 'bg-surface text-text shadow-sm' : 'text-muted hover:text-text'
+                active ? 'bg-surface text-text lift-1' : 'text-muted hover:text-text'
               }`}
             >
               <Icon className="h-3.5 w-3.5" aria-hidden />

@@ -104,7 +104,7 @@ export function EdgePill({
       onClick={handleClick}
       aria-label={ariaLabel}
       aria-haspopup="dialog"
-      className={`fixed bottom-20 z-40 flex h-11 items-center justify-center text-sm font-semibold shadow-md transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6 ${
+      className={`fixed bottom-20 z-40 flex h-11 items-center justify-center text-sm font-semibold lift-1 transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6 ${
         expanded
           ? `gap-1.5 px-4 ${onLeft ? 'flex-row-reverse pl-3' : 'pr-3'}`
           : 'w-7 md:w-11'
@@ -128,7 +128,7 @@ export function EdgePill({
       <span className="relative shrink-0">
         {icon}
         {badgeCount > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-3xs font-bold text-on-primary">
+          <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-3xs font-bold text-on-danger">
             {badgeCount > 9 ? '9+' : badgeCount}
           </span>
         )}

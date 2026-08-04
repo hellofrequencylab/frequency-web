@@ -41,7 +41,7 @@ export function FeedRadiusSlider({ initialRadiusM }: { initialRadiusM: number })
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-surface px-4 py-4 shadow-sm">
+    <section className="rounded-2xl border border-border bg-surface px-4 py-4 lift-1">
       <div className="mb-1 flex items-center gap-2">
         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
           <Radar className="h-4 w-4" />
@@ -54,7 +54,7 @@ export function FeedRadiusSlider({ initialRadiusM }: { initialRadiusM: number })
       </p>
       <div className="mb-2 flex items-baseline justify-between">
         <p className="text-sm font-medium text-text">Show me activity within ~{milesLabel(draft)}</p>
-        <span className="text-2xs text-subtle">{milesLabel(MIN_M)}&ndash;{milesLabel(MAX_M)}</span>
+        <span className="text-2xs text-muted">{milesLabel(MIN_M)}&ndash;{milesLabel(MAX_M)}</span>
       </div>
       <input
         type="range"

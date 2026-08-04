@@ -147,7 +147,7 @@ export function SpaceSettingsForm({
 
   return (
     <form
-      className="space-y-8 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6"
+      className="space-y-8 rounded-2xl border border-border bg-surface p-5 lift-1 sm:p-6"
       onSubmit={(e) => {
         e.preventDefault()
         if (!pending && !readOnly) save()
@@ -282,7 +282,7 @@ export function SpaceSettingsForm({
                     <span className="font-display text-sm font-semibold text-text">{t.label}</span>
                     {selected && <Check className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />}
                   </span>
-                  <span className="mt-0.5 block text-2xs font-medium uppercase tracking-wide text-subtle">
+                  <span className="mt-0.5 block text-2xs font-medium uppercase tracking-wide text-muted">
                     {t.displayFont} · {t.bodyFont}
                   </span>
                   <span className="mt-1 block text-xs leading-snug text-muted">{t.description}</span>

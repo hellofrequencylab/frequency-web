@@ -60,7 +60,7 @@ export function ContentReportDialog({ targetType, targetId, open, onClose }: Rep
       ariaLabel={`Report ${targetType}`}
       className="max-w-sm"
     >
-      <div className="bg-surface rounded-2xl shadow-xl border border-border p-6 w-full">
+      <div className="bg-surface rounded-2xl lift-3 border border-border p-6 w-full">
         {submitted ? (
           <>
             <h3 className="text-sm font-semibold text-text mb-2">
@@ -136,7 +136,7 @@ export function ContentReportDialog({ targetType, targetId, open, onClose }: Rep
               <button
                 disabled={!reason || isPending}
                 onClick={handleSubmit}
-                className="rounded-lg bg-danger px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-colors"
+                className="rounded-lg bg-danger px-3 py-1.5 text-xs font-semibold text-on-danger hover:opacity-90 disabled:opacity-50 transition-colors"
               >
                 {isPending ? 'Submitting...' : 'Submit Report'}
               </button>

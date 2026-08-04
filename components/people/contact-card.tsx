@@ -40,7 +40,7 @@ export function ContactCard({
   return (
     <Link
       href={`/people/${handle}`}
-      className={`group flex h-full flex-col items-center rounded-2xl border border-border bg-surface p-5 text-center shadow-sm transition-all hover:border-primary-bg hover:shadow-md motion-reduce:transition-none ${
+      className={`group flex h-full flex-col items-center rounded-2xl border border-border bg-surface p-5 text-center lift-2 transition-all hover:border-primary-bg motion-reduce:transition-none ${
         isDemo ? 'dimmed' : ''
       }`}
     >

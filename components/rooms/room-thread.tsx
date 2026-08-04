@@ -166,7 +166,7 @@ export function RoomThread({
                       <span className={`text-sm font-semibold ${isOwn ? 'text-primary-strong' : 'text-text'}`}>
                         {a?.display_name ?? 'Unknown'}
                       </span>
-                      <span className="text-3xs text-subtle">{formatTime(m.created_at)}</span>
+                      <span className="text-3xs text-muted">{formatTime(m.created_at)}</span>
                     </div>
                   )}
                   <p className="text-sm text-text whitespace-pre-wrap leading-relaxed">{m.body}</p>
@@ -256,7 +256,7 @@ export function RoomThread({
                 </button>
               </div>
               {kind && (
-                <p className="mt-1.5 text-2xs text-subtle">{KIND_COPY[kind].hint}</p>
+                <p className="mt-1.5 text-2xs text-muted">{KIND_COPY[kind].hint}</p>
               )}
             </div>
           </form>

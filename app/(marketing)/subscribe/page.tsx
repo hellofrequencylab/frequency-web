@@ -83,7 +83,7 @@ export default function SubscribePage() {
         </div>
         <ol className="grid sm:grid-cols-3 gap-5">
           {HOW_IT_WORKS.map(({ Icon, t, b }) => (
-            <li key={t} className="rounded-2xl border border-border bg-surface p-7 shadow-sm">
+            <li key={t} className="rounded-2xl border border-border bg-surface p-7 lift-1">
               <span className="inline-flex w-10 h-10 rounded-2xl bg-primary-bg items-center justify-center mb-4">
                 <Icon className="w-5 h-5 text-primary-strong" aria-hidden />
               </span>

@@ -62,9 +62,9 @@ export function ApplyForm({ track, questions }: { track: string; questions: Appl
         <div key={q.key}>
           <Label htmlFor={`q-${q.key}`}>
             {q.label}
-            {!q.required && <span className="ml-1.5 text-2xs font-normal text-subtle">Optional</span>}
+            {!q.required && <span className="ml-1.5 text-2xs font-normal text-muted">Optional</span>}
           </Label>
-          {q.hint && <p className="mb-1.5 text-xs text-subtle">{q.hint}</p>}
+          {q.hint && <p className="mb-1.5 text-xs text-muted">{q.hint}</p>}
           {q.short ? (
             <Input
               id={`q-${q.key}`}

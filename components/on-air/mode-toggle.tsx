@@ -32,8 +32,8 @@ export function ModeToggle({
     `flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold transition-colors ${
       active
         ? accent === 'move'
-          ? 'bg-move text-on-move shadow-sm'
-          : 'bg-primary text-on-primary shadow-sm'
+          ? 'bg-move text-on-move lift-1'
+          : 'bg-primary text-on-primary lift-1'
         : 'text-muted hover:text-text'
     }`
   return (

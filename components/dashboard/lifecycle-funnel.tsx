@@ -47,7 +47,7 @@ export function LifecycleFunnelPanel({
   const max = Math.max(1, funnel.new, funnel.activated, funnel.engaged)
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
       <p className="text-sm text-muted">
         Where members stall on the climb from new to engaged. Tap a stage to see who is stuck there.
       </p>
@@ -61,7 +61,7 @@ export function LifecycleFunnelPanel({
           return (
             <div key={step.key}>
               {prev != null && (
-                <p className="py-0.5 pl-1 text-2xs text-subtle">{conversion(count, prev)} carry through</p>
+                <p className="py-0.5 pl-1 text-2xs text-muted">{conversion(count, prev)} carry through</p>
               )}
               <Link
                 href={`${drillBase}?stage=${step.stage}`}

@@ -73,7 +73,7 @@ export function InviteLauncher() {
         role="dialog"
         aria-modal="true"
         aria-label="Invite friends"
-        className="relative flex w-full flex-col overflow-y-auto border-border bg-canvas p-4 shadow-2xl motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[92vh] sm:max-w-md sm:rounded-3xl sm:border"
+        className="relative flex w-full flex-col overflow-y-auto border-border bg-canvas p-4 lift-3 motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[92vh] sm:max-w-md sm:rounded-3xl sm:border"
         style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
       >
         <div className="mb-1 flex items-center justify-between">
@@ -108,7 +108,7 @@ export function InviteLauncher() {
                 <img src={`/api/qr?code=${encodeURIComponent(data.codeId)}&format=png&size=512`} alt="Your invite QR code" className="h-full w-full" />
               </div>
             </div>
-            <p className="mt-2 text-center text-2xs text-subtle">Point a phone camera at this to join through you.</p>
+            <p className="mt-2 text-center text-2xs text-muted">Point a phone camera at this to join through you.</p>
 
             {/* Link + actions */}
             <div className="mt-4 flex items-center gap-2">
@@ -123,7 +123,7 @@ export function InviteLauncher() {
               <Share2 className="h-4 w-4" /> Share your invite
             </button>
 
-            <p className="mt-3 flex items-center justify-center gap-1.5 text-2xs text-subtle">
+            <p className="mt-3 flex items-center justify-center gap-1.5 text-2xs text-muted">
               <Gem className="h-3 w-3 text-signal" /> They land on your profile; when they join, you’re connected and the zaps are yours.
             </p>
           </>

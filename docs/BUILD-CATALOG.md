@@ -1,5 +1,11 @@
 # Build Catalog — the reconciled master index of all unfinished work
 
+> ⚠️ **Superseded for near-term planning (2026-08-04).** The live plan is
+> [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) (ADR-925) with the phase runway in
+> [`BUILD-LIST.md`](BUILD-LIST.md) (ADR-921). This file predates the DAWN / UX-maturity
+> program and its status marks are not maintained. Kept for history and for the items it
+> still names that no current plan has absorbed.
+
 > **The answer, first.** This is the single anti-loss index of **everything not yet shipped**,
 > reconciled from a six-way sweep (2026-06-30) across the backlog reservoirs, the five audits, the
 > three track plans, the feature specs, the ADR log, and a code-level seam scan. It exists so **no

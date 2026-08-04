@@ -12,6 +12,8 @@
     "test:e2e": "playwright test --grep-invert @visual",
     "test:e2e:visual": "playwright test --grep @visual",
     "test:e2e:update": "playwright test --update-snapshots --grep @visual",
+    "test:e2e:a11y": "playwright test --grep @a11y",
+    "a11y:baselines": "node scripts/a11y-baselines.mjs",
     "test:rls": "supabase test db",
     "check:authz": "node scripts/check-authz-guards.mjs",
     "check:canon": "node scripts/check-canon.mjs",
@@ -20,6 +22,8 @@
     "check:migrations": "node scripts/check-migrations.mjs",
     "check:elements": "node scripts/check-elements.mjs",
     "check:tokens": "node scripts/check-tokens.mjs",
+    "check:contrast": "node scripts/check-contrast.mjs",
+    "check:adoption": "node scripts/check-adoption.mjs",
     "check:rls": "node scripts/check-rls.mjs",
     "check:admin-client": "node scripts/check-admin-client.mjs",
     "check:seo": "node scripts/check-seo.mjs",
@@ -69,6 +73,7 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@iconify-json/lucide": "^1.2.121",
     "@iconify-json/ph": "^1.2.2",
     "@iconify-json/tabler": "^1.2.38",

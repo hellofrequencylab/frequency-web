@@ -46,7 +46,7 @@ export async function ConnectionPanel({
     const drifted = tie.orbit === 'outer'
 
     return (
-      <section className="mb-6 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <section className="mb-6 rounded-2xl border border-border bg-surface p-4 lift-1">
         <div className="mb-3 flex items-center justify-between gap-2">
           <p className="flex items-center gap-1.5 text-sm font-bold text-text">
             <Sparkles className="h-4 w-4 text-primary" /> How you’re connected
@@ -89,7 +89,7 @@ export async function ConnectionPanel({
 
         {drifted && (
           <div className="mt-3 border-t border-border pt-3">
-            <p className="mb-2 flex items-center gap-1.5 text-2xs text-subtle">
+            <p className="mb-2 flex items-center gap-1.5 text-2xs text-muted">
               <Clock className="h-3.5 w-3.5" /> It’s been a while. Say hi?
             </p>
             {/* Opens the chat dock in place (ADR-896). It used to submit a navigating form,
@@ -116,7 +116,7 @@ export async function ConnectionPanel({
     const context = resonanceContext(tie)
     if (!context) return null
     return (
-      <section className="mb-6 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <section className="mb-6 rounded-2xl border border-border bg-surface p-4 lift-1">
         <p className="mb-2 flex items-center gap-1.5 text-sm font-bold text-text">
           <Sparkles className="h-4 w-4 text-primary" /> How you’re connected
         </p>
@@ -133,7 +133,7 @@ export async function ConnectionPanel({
   if (!friendAction) return null
 
   return (
-    <section className="mb-6 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <section className="mb-6 rounded-2xl border border-border bg-surface p-4 lift-1">
       <p className="mb-1 flex items-center gap-1.5 text-sm font-bold text-text">
         <Sparkles className="h-4 w-4 text-primary" /> Connect with {firstName}
       </p>

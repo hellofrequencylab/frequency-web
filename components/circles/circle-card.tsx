@@ -8,6 +8,7 @@ import { FeaturedBadge } from '@/components/ui/featured-badge'
 import { StarterBadge } from '@/components/ui/starter-badge'
 import { TemplateHeaderArt } from '@/components/circles/template-art'
 import type { PillarSlug } from '@/lib/pillars'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 export type CircleCardData = {
   id: string
@@ -126,14 +127,14 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
               ))}
             {hasCap && (
               <div className="mt-1 w-full">
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated">
-                  <div
-                    className={`h-full rounded-full transition-[width] ${
-                      full ? 'bg-danger' : nearlyFull ? 'bg-warning' : 'bg-primary'
-                    }`}
-                    style={{ width: `${Math.max(6, pct)}%` }}
-                  />
-                </div>
+                <ProgressTrack
+                  value={pct}
+                  minVisible={6}
+                  label="Seats filled"
+                  tone={full ? 'danger' : nearlyFull ? 'warning' : 'primary'}
+                  animate
+                  className="w-full"
+                />
               </div>
             )}
           </>
@@ -143,14 +144,14 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
         circle.isStarter ? (
           <Link
             href={href}
-            className="inline-flex rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+            className="inline-flex rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
           >
             Remix
           </Link>
         ) : isMember ? (
           <Link
             href={`/circles/${circle.slug}`}
-            className="inline-flex rounded-lg bg-surface px-3 py-1.5 text-xs font-semibold text-primary-strong shadow-sm ring-1 ring-border transition-colors hover:bg-surface-elevated"
+            className="inline-flex rounded-lg bg-surface px-3 py-1.5 text-xs font-semibold text-primary-strong lift-1 ring-1 ring-border transition-colors hover:bg-surface-elevated"
           >
             Open
           </Link>
@@ -158,10 +159,10 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
           <JoinCircleButton
             circleId={circle.id}
             circleSlug={circle.slug}
-            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
           />
         ) : (
-          <span className="inline-flex rounded-lg bg-surface px-3 py-1.5 text-xs font-medium text-muted shadow-sm ring-1 ring-border">
+          <span className="inline-flex rounded-lg bg-surface px-3 py-1.5 text-xs font-medium text-muted lift-1 ring-1 ring-border">
             Full
           </span>
         )

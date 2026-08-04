@@ -51,7 +51,7 @@ export function MarketingMobileMenu({ light }: { light: boolean }) {
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
         className={`rounded-lg p-2 transition-colors ${
-          light ? 'text-text hover:bg-surface-elevated' : 'text-white hover:bg-white/10'
+          light ? 'text-text hover:bg-surface-elevated' : 'text-on-ink hover:bg-on-ink/10'
         }`}
       >
         <Menu className="h-6 w-6" aria-hidden />
@@ -78,7 +78,7 @@ export function MarketingMobileMenu({ light }: { light: boolean }) {
             <div className="mb-3 flex items-center justify-between">
               <span
                 id={titleId}
-                className="text-2xs font-bold uppercase tracking-wider text-subtle"
+                className="text-2xs font-bold uppercase tracking-wider text-muted"
               >
                 Menu
               </span>
@@ -104,7 +104,7 @@ export function MarketingMobileMenu({ light }: { light: boolean }) {
                   {node.label}
                 </Link>
               ))}
-              <p className="pb-1 pt-4 text-2xs font-bold uppercase tracking-wider text-subtle">
+              <p className="pb-1 pt-4 text-2xs font-bold uppercase tracking-wider text-muted">
                 Discover
               </p>
               {DISCOVER_NAV.map((item) => (

@@ -87,7 +87,7 @@ export function SpaceBrandEditor({
       back={{ href: '/admin/spaces', label: 'Spaces' }}
     >
       <AdminSection>
-        <div className="space-y-5 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+        <div className="space-y-5 rounded-2xl border border-border bg-surface p-5 lift-1">
           {/* Theme (the per-Space skin assignment — spaces.skin) */}
           <div>
             <label htmlFor="space-skin" className={labelClass}>
@@ -138,7 +138,7 @@ export function SpaceBrandEditor({
                       <span className="font-display text-sm font-semibold text-text">{t.label}</span>
                       {selected && <Check className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />}
                     </span>
-                    <span className="mt-0.5 block text-2xs font-medium uppercase tracking-wide text-subtle">
+                    <span className="mt-0.5 block text-2xs font-medium uppercase tracking-wide text-muted">
                       {t.displayFont} · {t.bodyFont}
                     </span>
                   </button>

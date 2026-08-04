@@ -56,7 +56,7 @@ export function RoomSearch({ roomId }: { roomId: string }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-30 mt-2 w-80 max-w-[85vw] rounded-2xl border border-border bg-surface p-3 shadow-xl shadow-black/5">
+        <div className="absolute right-0 top-full z-30 mt-2 w-80 max-w-[85vw] rounded-2xl border border-border bg-surface p-3 lift-3">
           <form onSubmit={run} className="flex items-center gap-2">
             <div className="flex flex-1 items-center gap-2 rounded-lg border border-border bg-surface-elevated/60 px-2.5 py-1.5">
               <Search className="h-4 w-4 shrink-0 text-subtle" />
@@ -88,7 +88,7 @@ export function RoomSearch({ roomId }: { roomId: string }) {
                 <p className="px-1 py-2 text-xs text-subtle">No matching messages.</p>
               ) : (
                 <>
-                  <p className="mb-1.5 flex items-center gap-1 px-1 text-2xs font-medium uppercase tracking-wide text-subtle">
+                  <p className="mb-1.5 flex items-center gap-1 px-1 text-2xs font-medium uppercase tracking-wide text-muted">
                     {mode === 'semantic' ? <><Sparkles className="h-3 w-3 text-primary-strong" /> Closest in meaning</> : 'Matches'}
                     <span className="ml-auto normal-case tracking-normal">{hits.length}</span>
                   </p>
@@ -96,7 +96,7 @@ export function RoomSearch({ roomId }: { roomId: string }) {
                     {hits.map((h) => (
                       <li key={h.id} className="rounded-lg px-2 py-1.5 hover:bg-surface-elevated">
                         <p className="line-clamp-3 text-sm leading-snug text-text">{h.body}</p>
-                        <p className="mt-0.5 text-2xs text-subtle">{relativeTime(h.created_at)}</p>
+                        <p className="mt-0.5 text-2xs text-muted">{relativeTime(h.created_at)}</p>
                       </li>
                     ))}
                   </ul>

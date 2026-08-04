@@ -78,7 +78,7 @@ function MergePairItem({
               Fold in
             </StatusChip>
           </div>
-          <p className="mt-1 flex flex-wrap items-center gap-1.5 text-2xs text-subtle">
+          <p className="mt-1 flex flex-wrap items-center gap-1.5 text-2xs text-muted">
             <StatusChip tone={alikeTone(row.similarity)} size="sm">
               {similarityPercent(row.similarity)}% alike
             </StatusChip>

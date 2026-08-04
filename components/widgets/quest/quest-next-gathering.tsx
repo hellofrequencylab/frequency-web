@@ -20,7 +20,7 @@ export async function QuestNextGathering() {
   return (
     <Link
       href={`/events/${g.slug}`}
-      className="group block rounded-2xl border border-success-bg bg-success-bg/50 px-4 py-3.5 shadow-sm transition-colors hover:border-success dark:bg-success-bg/20"
+      className="group block rounded-2xl border border-success-bg bg-success-bg/50 px-4 py-3.5 lift-1 transition-colors hover:border-success dark:bg-success-bg/20"
     >
       <div className="flex items-center gap-3.5">
         <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl bg-success-bg">
@@ -37,7 +37,7 @@ export async function QuestNextGathering() {
           <p className="mt-0.5 line-clamp-1 text-base font-bold text-text transition-colors group-hover:text-success">
             {g.title}
           </p>
-          <div className="mt-0.5 flex items-center gap-2 text-2xs text-subtle">
+          <div className="mt-0.5 flex items-center gap-2 text-2xs text-muted">
             <span className="tabular-nums">{dateStr}</span>
             {g.location && (
               <span className="flex items-center gap-0.5">

@@ -60,7 +60,7 @@ export async function MarketingDeliverabilityDeadLetters() {
       description="Jobs that exhausted every retry. They no longer drain on their own. Fix the cause and requeue, or discard a poison job that will never succeed."
     >
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-3 lift-1">
           <RequeueButton label="Requeue all" />
           <DiscardButton label="Discard all" />
           {summary.map((s) => (

@@ -128,7 +128,7 @@ export function InlineCover({
             type="button"
             onClick={openSource}
             disabled={pending}
-            className="inline-flex items-center gap-1 rounded-lg bg-surface/90 px-2.5 py-1 text-xs font-medium text-text shadow-sm backdrop-blur transition-colors hover:bg-surface disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-lg bg-surface/90 px-2.5 py-1 text-xs font-medium text-text lift-1 backdrop-blur transition-colors hover:bg-surface disabled:opacity-50"
           >
             {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
             Change
@@ -138,7 +138,7 @@ export function InlineCover({
             onClick={onRemove}
             disabled={pending}
             aria-label="Remove cover"
-            className="inline-flex items-center rounded-lg bg-surface/90 px-2 py-1 text-xs text-muted shadow-sm backdrop-blur transition-colors hover:text-danger disabled:opacity-50"
+            className="inline-flex items-center rounded-lg bg-surface/90 px-2 py-1 text-xs text-muted lift-1 backdrop-blur transition-colors hover:text-danger disabled:opacity-50"
           >
             <X className="h-3.5 w-3.5" />
           </button>

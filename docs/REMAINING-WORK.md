@@ -1,5 +1,11 @@
 # Remaining work (deferred build list)
 
+> ⚠️ **Superseded for near-term planning (2026-08-04).** The live plan is
+> [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) (ADR-925) with the phase runway in
+> [`BUILD-LIST.md`](BUILD-LIST.md) (ADR-921). This file predates the DAWN / UX-maturity
+> program and its status marks are not maintained. Kept for history and for the items it
+> still names that no current plan has absorbed.
+
 **What it is:** the consolidated, honestly-marked list of work deliberately deferred after the
 Pricing (ADR-362/363/364) and My Contacts CRM (ADR-361) builds shipped, plus the still-designed-only
 Network rework (ADR-154). Each item already lives in a source doc; this page is the one place to read

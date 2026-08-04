@@ -29,7 +29,7 @@ export function CircleTextDefaultEditor({ initial }: { initial: string }) {
   }
 
   return (
-    <div className="max-w-2xl space-y-2 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <div className="max-w-2xl space-y-2 rounded-2xl border border-border bg-surface p-4 lift-1">
       <label className="block space-y-1.5">
         <span className={labelClasses}>Default text</span>
         <textarea

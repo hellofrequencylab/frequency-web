@@ -104,7 +104,7 @@ export function MembershipJoinCard({
   }
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-border bg-surface p-5 shadow-sm">
+    <div className="flex h-full flex-col rounded-2xl border border-border bg-surface p-5 lift-1">
       <h3 className="text-base font-bold leading-tight text-text">{tier.name}</h3>
       <p className="mt-1 text-sm text-muted">
         {free ? (
@@ -153,7 +153,7 @@ export function MembershipJoinCard({
         {/* Capacity states (ADR-824): open (spots shown when limited), full-with-waitlist, or
             closed. The server re-checks on join, so these are honest hints, not the gate. */}
         {spotsLeft != null && spotsLeft > 0 && (
-          <p className="mb-2 text-2xs text-subtle">
+          <p className="mb-2 text-2xs text-muted">
             {spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left
           </p>
         )}
@@ -175,13 +175,13 @@ export function MembershipJoinCard({
           </Button>
         )}
         {full && tier.waitlist && (
-          <p className="mt-2 text-2xs text-subtle">
+          <p className="mt-2 text-2xs text-muted">
             This tier is full. Joining adds you to the waitlist; you become a member when a spot
             opens.
           </p>
         )}
         {!free && !full && (
-          <p className="mt-2 text-2xs text-subtle">
+          <p className="mt-2 text-2xs text-muted">
             {billingOn
               ? 'Join opens secure checkout. You can cancel any time.'
               : 'No payment is taken yet. Paid billing comes later.'}

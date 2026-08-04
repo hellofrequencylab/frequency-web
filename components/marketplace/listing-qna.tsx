@@ -249,7 +249,7 @@ export function ListingQna({
                       ) : (
                         <span className="text-sm font-semibold text-text">A member</span>
                       )}
-                      <span className="text-2xs text-subtle">{timeAgo(c.createdAt)}</span>
+                      <span className="text-2xs text-muted">{timeAgo(c.createdAt)}</span>
                     </div>
                     {canDelete && <DeleteCommentButton commentId={c.id} revalidatePath={revalidatePath} />}
                   </div>

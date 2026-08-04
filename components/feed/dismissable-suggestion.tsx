@@ -34,7 +34,7 @@ export function DismissableSuggestion({
             await hideSuggestionAction(profileId)
           })
         }}
-        className="absolute right-2 top-2 z-10 rounded-full bg-surface/85 p-1 text-subtle shadow-sm transition-colors hover:bg-surface-elevated hover:text-text"
+        className="absolute right-2 top-2 z-10 rounded-full bg-surface/85 p-1 text-subtle lift-1 transition-colors hover:bg-surface-elevated hover:text-text"
       >
         <X className="h-3.5 w-3.5" />
       </button>

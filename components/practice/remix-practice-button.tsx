@@ -35,7 +35,7 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
       </button>
 
       <Dialog open={open} onClose={() => (pending ? null : setOpen(false))} ariaLabel="Remix this practice?" className="max-w-md">
-        <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+        <div className="rounded-2xl border border-border bg-surface p-6 lift-1">
           <div className="mb-3 flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
               <Wand2 className="h-4 w-4" />
@@ -70,7 +70,7 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
               type="button"
               disabled={pending}
               onClick={confirm}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover disabled:opacity-60"
             >
               {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
               {pending ? 'Making your copy…' : 'Remix it'}

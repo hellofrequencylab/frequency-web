@@ -281,7 +281,7 @@ export function LoomPicker({
               screen and squeezed the grid). */}
           <aside className="flex shrink-0 gap-3 overflow-x-auto border-b border-border p-3 sm:w-48 sm:flex-col sm:gap-0 sm:space-y-3 sm:overflow-x-visible sm:overflow-y-auto sm:border-b-0 sm:border-r">
             <div className="flex shrink-0 gap-1 sm:block sm:space-y-0.5">
-              <p className="hidden px-2.5 pb-1 text-2xs font-semibold uppercase tracking-wide text-subtle sm:block">Browse</p>
+              <p className="hidden px-2.5 pb-1 text-2xs font-semibold uppercase tracking-wide text-muted sm:block">Browse</p>
               {showImages && (
                 <button type="button" onClick={() => { setView('images'); setTag(null) }} className={`${rail} ${activeView === 'images' && !tag ? railOn : railOff}`}>
                   <ImageIcon className="h-4 w-4 shrink-0" /> Images
@@ -308,7 +308,7 @@ export function LoomPicker({
                 caller has already chosen the context, so no switcher renders. */}
             {!scopeKey && config.tabs.spaces && (
             <div className="flex shrink-0 gap-1 sm:block sm:space-y-0.5">
-              <p className="hidden px-2.5 pb-1 text-2xs font-semibold uppercase tracking-wide text-subtle sm:block">Library</p>
+              <p className="hidden px-2.5 pb-1 text-2xs font-semibold uppercase tracking-wide text-muted sm:block">Library</p>
               {scopes.map((s) => {
                 const on = s.key === scope
                 const Icon = s.kind === 'mine' ? User : Building2
@@ -403,10 +403,10 @@ export function LoomPicker({
                     </div>
                   )}
                   {activeView === 'elements' && (
-                    <p className="mb-2 text-2xs text-subtle">Elements are images created with AI. Upload generated art here, or generate new Elements (coming soon).</p>
+                    <p className="mb-2 text-2xs text-muted">Elements are images created with AI. Upload generated art here, or generate new Elements (coming soon).</p>
                   )}
                   {activeView === 'icons' && (
-                    <p className="mb-2 text-2xs text-subtle">Site icons plus any you upload. Search by name, or drop a new icon above.</p>
+                    <p className="mb-2 text-2xs text-muted">Site icons plus any you upload. Search by name, or drop a new icon above.</p>
                   )}
                   {loading ? (
                     <p className="flex items-center justify-center gap-2 py-10 text-sm text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading</p>
@@ -432,12 +432,12 @@ export function LoomPicker({
                               {/* eslint-disable-next-line @next/next/no-img-element -- Loom asset URL or an inline SVG data URL, not a configured next/image domain */}
                               <img src={t.src} alt={t.label} loading="lazy" className={`h-full w-full ${t.contain ? 'object-contain p-3' : 'object-cover'}`} />
                               {t.generated && (
-                                <span className="absolute left-1 top-1 inline-flex items-center gap-0.5 rounded-full bg-canvas/90 px-1.5 py-0.5 text-2xs font-semibold text-primary-strong shadow-sm">
+                                <span className="absolute left-1 top-1 inline-flex items-center gap-0.5 rounded-full bg-canvas/90 px-1.5 py-0.5 text-2xs font-semibold text-primary-strong lift-1">
                                   <Sparkles className="h-2.5 w-2.5" /> AI
                                 </span>
                               )}
                               {on && (
-                                <span className="absolute right-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-on-primary shadow-sm">
+                                <span className="absolute right-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-on-primary lift-1">
                                   <Check className="h-3 w-3" />
                                 </span>
                               )}

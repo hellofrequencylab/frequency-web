@@ -425,7 +425,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
 
       {/* ── Step 4: Review ── */}
       {step === 4 && (
-                <div className="mt-2 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+                <div className="mt-2 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface lift-1">
                   <div className="flex items-center gap-4 p-5">
                     {renderAvatar('lg')}
                     <div className="min-w-0">

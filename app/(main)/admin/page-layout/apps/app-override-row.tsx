@@ -101,7 +101,7 @@ export function AppOverrideRow({
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-3">
-        <span className="text-2xs text-subtle tabular-nums" aria-live="polite">
+        <span className="text-2xs text-muted tabular-nums" aria-live="polite">
           {isPending ? 'Saving…' : saved ? 'Saved' : overridden ? '' : 'Catalog default'}
         </span>
 

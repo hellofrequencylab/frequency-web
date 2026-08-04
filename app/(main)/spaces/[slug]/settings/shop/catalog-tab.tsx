@@ -107,17 +107,17 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
             return (
               <div
                 key={p.id}
-                className="flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
+                className="flex flex-col overflow-hidden rounded-2xl border border-border bg-surface lift-1"
               >
                 {/* Header image — the listing's first photo, or a branded gradient + type icon. */}
                 <div className="relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-surface-elevated">
                   <ProductCover image={p.images[0]} group={group} sizes="(min-width:1024px) 33vw, 100vw" />
                   <div className="absolute left-2 top-2 flex flex-wrap gap-1.5">
-                    <span className={`rounded-full px-2 py-0.5 text-2xs font-semibold shadow-sm ${STATUS_TONE[p.status]}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-2xs font-semibold lift-1 ${STATUS_TONE[p.status]}`}>
                       {STATUS_LABEL[p.status]}
                     </span>
                     {p.marketPublished && (
-                      <span className="rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong shadow-sm">
+                      <span className="rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong lift-1">
                         In Market
                       </span>
                     )}
@@ -126,13 +126,13 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
 
                 <div className="flex flex-1 flex-col p-4">
                   <div className="flex items-center gap-1.5">
-                    <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle">
+                    <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
                       {GROUP_LABEL[group]}
                     </span>
                     <span className="text-sm font-bold text-text">{priceLabel(p)}</span>
                   </div>
                   <p className="mt-1.5 line-clamp-2 font-semibold text-text">{p.title}</p>
-                  {policy && <p className="mt-0.5 line-clamp-1 text-xs text-subtle">{policy}</p>}
+                  {policy && <p className="mt-0.5 line-clamp-1 text-xs text-muted">{policy}</p>}
 
                   {!readOnly && (
                     <div className="mt-auto pt-3">

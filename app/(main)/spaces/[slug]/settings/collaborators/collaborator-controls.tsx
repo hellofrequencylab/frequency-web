@@ -147,7 +147,7 @@ export function InviteCollaborator({ spaceId }: { spaceId: string }) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
       <p className="text-sm font-semibold text-text">Invite a collaborator</p>
       <p className="mt-1 text-xs text-subtle">
         Paste the other business space&rsquo;s link or slug. They run inside your space but keep their own

@@ -55,7 +55,7 @@ export async function SpaceStageList({
           description="Once the overnight refresh scores this Space's members, the ones at this stage show here, each linking to their detail."
         />
       ) : (
-        <ul className="divide-y divide-border rounded-2xl border border-border bg-surface shadow-sm">
+        <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
           {rows.map((row) => (
             <MemberRow key={row.profileId} row={row} boardHref={boardHref} />
           ))}

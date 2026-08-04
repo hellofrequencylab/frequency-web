@@ -25,7 +25,7 @@ export function BetaForm() {
 
   if (status === 'done' || status === 'already') {
     return (
-      <div className="rounded-2xl border border-border bg-surface p-8 text-center shadow-sm" role="status">
+      <div className="rounded-2xl border border-border bg-surface p-8 text-center lift-1" role="status">
         <div className="mx-auto w-12 h-12 rounded-full bg-success-bg text-success flex items-center justify-center mb-4">
           <Check className="w-6 h-6" strokeWidth={2.5} aria-hidden />
         </div>
@@ -42,7 +42,7 @@ export function BetaForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="rounded-2xl border border-border bg-surface p-7 sm:p-8 shadow-sm text-left">
+    <form onSubmit={onSubmit} className="rounded-2xl border border-border bg-surface p-7 sm:p-8 lift-1 text-left">
       <div className="space-y-4">
         <div>
           <label htmlFor="beta-name" className="block text-sm font-semibold text-text mb-1.5">

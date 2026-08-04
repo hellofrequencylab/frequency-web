@@ -226,7 +226,7 @@ function DealCard({
   const lane = laneMeta(deal.source)
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-3 shadow-sm">
+    <div className="rounded-xl border border-border bg-surface p-3 lift-1">
       <div className="flex items-start justify-between gap-1">
         <Link href={`/admin/crm/pipeline/${deal.id}`} className="block min-w-0 flex-1">
           <p className="line-clamp-2 text-sm font-semibold text-text hover:underline">{deal.title}</p>
@@ -265,7 +265,7 @@ function DealCard({
         >
           <ChevronLeft className="h-3.5 w-3.5" />
         </button>
-        <span className="truncate text-2xs font-semibold uppercase tracking-wide text-subtle">{stages[idx]?.name ?? '–'}</span>
+        <span className="truncate text-2xs font-semibold uppercase tracking-wide text-muted">{stages[idx]?.name ?? '–'}</span>
         <button
           type="button"
           disabled={!next || pending}

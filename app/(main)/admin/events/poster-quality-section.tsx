@@ -24,7 +24,7 @@ export async function PosterQualitySection() {
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-sm">
+    <div className="overflow-x-auto rounded-2xl border border-border bg-surface lift-1">
       <table className="w-full min-w-[640px] border-collapse">
         <thead>
           <tr className="border-b border-border">

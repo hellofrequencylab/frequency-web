@@ -74,7 +74,7 @@ export function PulseWelcomeRow({
         <a href={`/people/${handle}`} className="block truncate text-sm font-semibold text-text hover:text-primary-strong">
           {displayName}
         </a>
-        <p className="truncate text-2xs text-subtle">{line}</p>
+        <p className="truncate text-2xs text-muted">{line}</p>
       </div>
       {gems != null ? (
         <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-success-bg px-3 py-1.5 text-2xs font-semibold text-success">

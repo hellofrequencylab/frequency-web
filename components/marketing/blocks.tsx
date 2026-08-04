@@ -106,7 +106,7 @@ export function LivePostsBlock({ heading, live, pad, vis = '' }: { heading?: str
             const showRole = hasRole(a?.community_role ?? null)
             const initials = a?.display_name ? getInitials(a.display_name) : '?'
             return (
-              <article key={post.id} className="rounded-2xl border border-border bg-surface shadow-sm">
+              <article key={post.id} className="rounded-2xl border border-border bg-surface lift-1">
                 <div className="p-5">
                   <div className="flex items-start gap-3 mb-3">
                     {a?.avatar_url ? (

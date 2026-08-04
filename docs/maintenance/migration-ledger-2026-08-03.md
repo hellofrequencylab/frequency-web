@@ -25,10 +25,12 @@ Both landed in PR #2002 (commit `251dbfe`, merged 2026-08-03, ADR-920 "Practices
 
 | Version | File | Marker? | Verified against live schema |
 | --- | --- | --- | --- |
-| `20270204000000` | `member_practice_terms.sql` | none | 🔴 NOT applied — `member_practices.source/term_weeks/cue/retired_at` absent in prod |
-| `20270205000000` | `practice_reminder_prefs.sql` | none | 🔴 NOT applied — `notification_preferences.*_practice/freq_practice` columns absent in prod |
+| `20270204000000` | `member_practice_terms.sql` | none | ✅ Applied — all four of `member_practices.source/term_weeks/cue/retired_at` present in prod (re-verified 2026-08-04) |
+| `20270205000000` | `practice_reminder_prefs.sql` | none | ✅ Applied — the `notification_preferences` practice columns are present in prod (re-verified 2026-08-04) |
 
-Both are written additive + idempotent (`add column if not exists`), so applying them is low-risk, but the app code from PR #2002 that writes/reads these columns is presumably already deployed (merging to `main` deploys). **This is the one live drift item: production is running code whose migrations have not been applied.** Verify whether any deployed path touches these columns today; if yes, apply promptly.
+**RESOLVED 2026-08-04.** Both were applied shortly after this ledger was written; a live `information_schema.columns` check confirms all four columns on `member_practices` and the practice columns on `notification_preferences`. This file's single 🔴 drift finding no longer holds, and the sentence that once read "production is running code whose migrations have not been applied" is retained here only so the correction is legible rather than silent.
+
+The residual, and it is a real one: these two rows still do not appear in the prod ledger under their repo version numbers, because migrations applied through the MCP are stamped with their own timestamps. `check:migrations` only enforces filename uniqueness inside the repo, so it cannot see that divergence. A fresh `db push` would re-run them — harmless, since both are `add column if not exists`, but the ledger is not a reliable record of what ran.
 
 ### Cross-reference: the "NOT APPLIED" / "SQL editor" marker files
 

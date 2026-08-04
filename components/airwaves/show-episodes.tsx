@@ -50,7 +50,7 @@ export function ShowEpisodes({ episodes }: { episodes: ShowEpisodeItem[] }) {
           <li
             key={ep.id}
             id={ep.anchor}
-            className="scroll-mt-24 rounded-2xl border border-border bg-surface p-5 shadow-sm"
+            className="scroll-mt-24 rounded-2xl border border-border bg-surface p-5 lift-1"
           >
             <div className="flex items-start gap-4">
               <button

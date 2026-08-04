@@ -59,12 +59,12 @@ export function DemoToggle({
       >
         <Zap className={`h-3.5 w-3.5 ${on ? 'fill-warning text-warning' : 'text-subtle'}`} aria-hidden />
         <span className={`relative inline-flex h-3.5 w-6 items-center rounded-full transition-colors ${on ? 'bg-warning' : 'bg-border-strong'}`}>
-          <span className={`inline-block h-2.5 w-2.5 transform rounded-full bg-white transition-transform ${on ? 'translate-x-3' : 'translate-x-0.5'}`} />
+          <span className={`inline-block h-2.5 w-2.5 transform rounded-full bg-surface transition-transform ${on ? 'translate-x-3' : 'translate-x-0.5'}`} />
         </span>
         {tip && (
           <span
             role="tooltip"
-            className="pointer-events-none absolute left-1/2 top-full z-50 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-text px-2 py-1 text-2xs font-semibold text-on-primary shadow-lg"
+            className="pointer-events-none absolute left-1/2 top-full z-50 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-text px-2 py-1 text-2xs font-semibold text-on-primary lift-3"
           >
             Demo Content
           </span>
@@ -86,7 +86,7 @@ export function DemoToggle({
       <Zap className={`h-4 w-4 ${on ? 'fill-warning text-warning' : 'text-subtle'}`} aria-hidden />
       <span>Demo</span>
       <span className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${on ? 'bg-warning' : 'bg-border-strong'}`}>
-        <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${on ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+        <span className={`inline-block h-3 w-3 transform rounded-full bg-surface transition-transform ${on ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
       </span>
     </button>
   )

@@ -28,7 +28,7 @@ export function StageCelebration({
 
   return (
     <div className="mb-4 flex items-start gap-3 rounded-xl border border-primary bg-primary-bg/40 px-4 py-3">
-      <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong shadow-sm">
+      <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong lift-1">
         <Sparkles className="h-4 w-4" />
       </span>
       <div className="min-w-0 flex-1">

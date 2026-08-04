@@ -41,7 +41,7 @@ export function PageSettingsModule({
   if (pathname.startsWith('/admin')) {
     return (
       <div className="min-w-0">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Page</p>
+        <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Page</p>
         <p className="mb-3 mt-0.5 text-xs text-muted">
           Tune what shows inside this page. The app shell (the global rails and header) stays put.
         </p>
@@ -84,7 +84,7 @@ export function PageSettingsModule({
 
   return (
     <div className="min-w-0">
-      <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Page</p>
+      <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Page</p>
       <p className="mb-3 mt-0.5 text-xs text-muted">
         Tune what shows inside this page. The app shell (the global rails and header) stays put.
       </p>
@@ -117,7 +117,7 @@ export function PageSettingsModule({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-text">{section.label}</span>
-                  <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle">
+                  <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
                     Next
                   </span>
                 </div>

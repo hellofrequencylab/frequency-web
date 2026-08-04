@@ -165,7 +165,7 @@ function JourneyDetails({ status, visibility, details }: { status: string; visib
   return (
     <div className="w-full rounded-2xl border border-border bg-surface p-3.5 lg:w-72">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Journey Details</span>
+        <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Journey Details</span>
         <span className="inline-flex items-center gap-1 text-2xs font-medium text-muted">
           <StatusPill status={status} /> · {vis}
         </span>
@@ -177,7 +177,7 @@ function JourneyDetails({ status, visibility, details }: { status: string; visib
             <dt className="sr-only">{r.label}</dt>
             <dd className="min-w-0">
               <span className="block truncate text-sm font-bold tabular-nums text-text">{r.value}</span>
-              <span className="block text-2xs text-subtle">{r.label}</span>
+              <span className="block text-2xs text-muted">{r.label}</span>
             </dd>
           </div>
         ))}
@@ -318,13 +318,13 @@ export function JourneyBuilder({
               <IconAccentFace icon={icon} accent={accent} size="md" />
             )}
             {/* A camera badge cues that the logo is clickable (build item 1). */}
-            <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-surface text-subtle shadow-sm group-hover/icn:text-text">
+            <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-surface text-subtle lift-1 group-hover/icn:text-text">
               <Camera className="h-3 w-3" aria-hidden />
             </span>
           </button>
           {iconOpen && (
-            <div className="absolute left-0 top-[3.75rem] z-30 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface p-3 text-left shadow-xl">
-              <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Color</p>
+            <div className="absolute left-0 top-[3.75rem] z-30 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface p-3 text-left lift-3">
+              <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Color</p>
               <div className="flex flex-wrap gap-2">
                 {STUDIO_ACCENTS.map((a) => {
                   const on = accent === a.key
@@ -348,7 +348,7 @@ export function JourneyBuilder({
                   cover, so the small face + the cover band stay in sync: the upload sets BOTH the cover
                   banner (coverImage) AND the header leading chip (logoImage), so it truly "replaces the
                   icon" on the live header. The rail Settings module can set the two separately. */}
-              <p className="mb-1.5 mt-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Logo or profile image</p>
+              <p className="mb-1.5 mt-3 text-2xs font-semibold uppercase tracking-wide text-muted">Logo or profile image</p>
               <ImageUpload
                 label="Logo or profile image"
                 value={cover}
@@ -486,7 +486,7 @@ export function JourneyBuilder({
         {!draft && (
           <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-5">
             <JourneyActions slug={slug} planId={planId} visibility={visibility} hasAnchor={hasAnchor} align="left" />
-            <span className="text-2xs text-subtle">Every field saves automatically as you go.</span>
+            <span className="text-2xs text-muted">Every field saves automatically as you go.</span>
           </div>
         )}
       </div>

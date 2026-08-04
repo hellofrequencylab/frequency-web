@@ -50,7 +50,7 @@ export function HomeSeoForm({
 
   return (
     <div className="space-y-4">
-      <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
         <div>
           <label className={LABEL} htmlFor="home-seo-title">
             Title <span className="ml-1.5 font-normal text-subtle/70">· blank = the coded title</span>
@@ -98,7 +98,7 @@ export function HomeSeoForm({
       </div>
 
       {/* How it reads in a search result */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-subtle">Search preview</p>
         <p className="truncate text-base font-semibold text-broadcast">{effectiveTitle}</p>
         <p className="mt-0.5 text-xs text-success">{SITE_URL.replace(/^https?:\/\//, '')}</p>

@@ -47,7 +47,7 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
   }
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-4 lift-1">
       <p className="text-sm font-bold text-text">Tip {recipientName}</p>
       <p className="mt-0.5 text-xs text-muted">Sends directly to them. Frequency takes a small fee.</p>
 

@@ -205,7 +205,7 @@ export function BookingPicker({
       </div>
 
       {selected && (
-        <div className="space-y-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+        <div className="space-y-3 rounded-2xl border border-border bg-surface p-4 lift-1">
           <p className="text-sm font-semibold text-text">
             Confirm {timeFmt.format(new Date(selected.startsAt))} on{' '}
             {dayFmt.format(new Date(selected.startsAt))} ({viewerTzLabel})

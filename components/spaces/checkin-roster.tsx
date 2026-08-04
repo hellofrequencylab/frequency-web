@@ -30,7 +30,7 @@ export async function CheckinRoster({ spaceId }: { spaceId: string }) {
   })
 
   return (
-    <ul className="divide-y divide-border rounded-2xl border border-border bg-surface shadow-sm">
+    <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
       {roster.map((entry) => (
         <li key={entry.id} className="flex items-center justify-between gap-4 px-4 py-3">
           <div className="min-w-0">

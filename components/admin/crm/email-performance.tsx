@@ -10,12 +10,12 @@ const pct = (n: number): string => `${Math.round(n * 100)}%`
 
 function PerfStat({ value, label, hint }: { value: React.ReactNode; label: string; hint?: string }) {
   return (
-    <div className="rounded-xl border border-border bg-surface px-3 py-2 shadow-sm">
+    <div className="rounded-xl border border-border bg-surface px-3 py-2 lift-1">
       <div className="flex items-baseline gap-1.5">
         <span className="text-base font-extrabold tabular-nums text-text">{value}</span>
         <span className="text-xs font-medium text-muted">{label}</span>
       </div>
-      {hint && <p className="mt-0.5 text-2xs text-subtle">{hint}</p>}
+      {hint && <p className="mt-0.5 text-2xs text-muted">{hint}</p>}
     </div>
   )
 }

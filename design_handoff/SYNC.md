@@ -17,7 +17,10 @@
 4. **Build + sanity check.** Run the project build (and `npm run dev` to eyeball
    the affected surfaces if a visual change). Fix anything that breaks.
 5. **Open a PR.** Title `DAWN sync: <summary>`. Body = the changelog from
-   CHANGES.md. **Do not deploy and do not merge** — the user reviews and merges.
+   CHANGES.md, plus the three standing-rule lines below: which "what users tripped on"
+   rows this round answered (and which it did not), the mobile behavior per screen
+   touched, and confirmation that no ratchet count rose. **Do not deploy and do not
+   merge** — the user reviews and merges.
 6. **Report back** the PR link and a one-line summary of what changed.
 
 ## Mapping (DAWN file → this repo)
@@ -48,6 +51,68 @@ DAWN now ships two starting points as **templates** rather than the retired
 kit, assembled so one import loads the whole shell. They are reading material, not
 shippable code: recreate them in Tailwind/TSX. `ds-base.js` is the one file a consumer
 edits — it points at wherever the compiled system lives.
+
+## Standing rules (every round, both directions)
+
+Three rules that do not change between rounds. They are part of the contract, not part of
+a round: a handoff that skips one is incomplete, and a `CHANGES.md` that ignores one is
+unanswered. Sources: `docs/UX-MATURITY-PLAN.md` Lifts 1c, 7c, 4 and 2.
+
+### 1. Every outbound handoff carries the evidence, and every inbound answers it
+
+The two-way contract had two voices, designer and repo. This adds the third: the user.
+
+**Outbound (repo → DAWN), two required sections in the handoff doc:**
+
+| Section | Source | Shape |
+|---|---|---|
+| **What users tripped on** | the newest `docs/research/findings/YYYY-MM-DD.md` | The findings file's own trip table, copied verbatim: severity · journey · where · what happened. Worst-first. |
+| **Vitals vs budget** | `lib/analytics/vitals-budgets.ts` + the `/admin/insights` Vitals panel | p75 per templated route against its budget, with ✅ / ⚠️ / 🔴 per row. |
+
+Rules for the two sections:
+
+- If the newest findings file is older than 100 days, say so in one line and send it
+  anyway. Stale evidence is still evidence; silence is not.
+- If there has never been a round, write "No moderated round has run yet" and link
+  `docs/research/PROTOCOL.md`. Never omit the heading.
+- A **🔴 budget on a surface this round redesigns is a stated constraint for that round**:
+  "this page must get lighter, not heavier." Say it in the handoff, in those words.
+- Two consecutive 🔴 weeks on any surface puts a perf task in the next wave, ahead of new
+  screens.
+
+**Inbound (DAWN → repo):** `CHANGES.md` is expected to **answer each trip row and each 🔴
+budget row**. An answer is any of: a design change that addresses it, a reasoned decline,
+or a question back. "Not addressed this round" is a legal answer. Skipping the row is not.
+When applying a `CHANGES.md`, check the trip rows are accounted for before opening the PR,
+and say which ones were not in the PR body.
+
+### 2. Every screen pass states its mobile behavior
+
+Explicitly, per screen, in both directions. **"Mobile: unchanged" is a legal answer.
+Silence is not.**
+
+Mobile is the weakest surface we ship precisely because it has been inherited rather than
+decided, one breakpoint at a time. This rule is the smallest thing that stops that from
+continuing. The grammar it feeds is `BRIEF-07-MOBILE-GRAMMAR.md`.
+
+- A DAWN screen that changes on a phone comes with a **mobile reference frame**, not a
+  description.
+- A repo screen pass states the phone behavior in the PR body, next to the desktop one.
+- "It reflows" is not a statement of behavior. Name the breakpoint and what moves.
+
+### 3. Ratchet counts only shrink
+
+The adoption baselines (`scripts/adoption-baselines.json`, enforced by `check:adoption`)
+are frozen debt counts: literal radius, shadow literals, white/black literals, ad-hoc
+progress bars, bespoke cards and rows, hand-rolled tabs.
+
+- A round that **raises** any count fails CI. That is the whole mechanism.
+- Baselines are lowered with `--update` **after** a sweep lands, never before, and never to
+  make a red build green.
+- A genuinely bespoke-by-design component gets an **allowlist entry with a reason**, not a
+  rewrite and not a raised baseline.
+- New DAWN components arrive as kit primitives, so adopting them should move a count DOWN.
+  If a round would push one up, say so in the handoff and get it ruled on first.
 
 ## Going the other way (repo → DAWN)
 

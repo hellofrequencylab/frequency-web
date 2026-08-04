@@ -31,7 +31,7 @@ export default async function EntryPointsPage() {
   if (!isPaid(me.membershipTier) && !atLeastRole(me.community_role, 'host')) {
     return (
       <DashboardTemplate eyebrow="Entry points" title="Bring people in" width="default">
-        <div className="rounded-2xl border border-border bg-surface p-8 text-center shadow-sm">
+        <div className="rounded-2xl border border-border bg-surface p-8 text-center lift-1">
           <Megaphone className="mx-auto h-8 w-8 text-primary-strong" aria-hidden />
           <p className="mt-3 text-lg font-bold text-text">Entry points are a Crew feature</p>
           <p className="mx-auto mt-1.5 max-w-md text-sm text-muted">

@@ -96,7 +96,7 @@ export function EventHostOfferField({ eventId, slug }: { eventId: string; slug: 
             <>
               {/* Naming the consequence at the point of the click. Accepting is not a credit change:
                   it moves who receives the money and who owes the refunds. */}
-              <p className="mt-1 text-2xs text-subtle">
+              <p className="mt-1 text-2xs text-muted">
                 Accepting means registrations and ticket payments run through your Space, and refunds
                 are yours to issue.
               </p>
@@ -121,7 +121,7 @@ export function EventHostOfferField({ eventId, slug }: { eventId: string; slug: 
             </>
           ) : (
             <div className="mt-2">
-              <p className="text-2xs text-subtle">Waiting for them to accept.</p>
+              <p className="text-2xs text-muted">Waiting for them to accept.</p>
               <button
                 type="button"
                 disabled={pending}
@@ -135,7 +135,7 @@ export function EventHostOfferField({ eventId, slug }: { eventId: string; slug: 
         </div>
       ) : (
         <>
-          <p className="mt-0.5 text-2xs text-subtle">
+          <p className="mt-0.5 text-2xs text-muted">
             The Space you pick becomes the host: registrations and ticket money run through it. It
             stays at this venue, and they have to accept.
           </p>
@@ -237,7 +237,7 @@ function HostSpaceSearch({ pending, onPick }: { pending: boolean; onPick: (space
       {/* Results render IN FLOW, not as an absolute overlay: the settings module's @container wrapper
           clips a `top-full` dropdown (the same reason ScopeSearch and SpaceSearch do it this way). */}
       {spaces.length > 0 && (
-        <div className="mt-1 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-xl shadow-black/5">
+        <div className="mt-1 overflow-hidden rounded-xl border border-border bg-surface py-1 lift-3">
           {spaces.map((h) => (
             <button
               key={h.id}

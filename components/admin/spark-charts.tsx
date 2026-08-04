@@ -106,7 +106,7 @@ export function ChartCard({
       </div>
       {value && <p className="mt-0.5 text-xl font-bold leading-tight text-text">{value}</p>}
       <div className="mt-2 min-h-12 flex-1">{children}</div>
-      {caption && <p className="mt-1.5 text-2xs text-subtle">{caption}</p>}
+      {caption && <p className="mt-1.5 text-2xs text-muted">{caption}</p>}
     </div>
   )
 }

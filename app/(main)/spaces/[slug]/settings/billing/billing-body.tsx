@@ -152,7 +152,7 @@ export async function BillingBody({ slug }: { slug: string }) {
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
 
       <div className="space-y-8">
-        <div className="rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm">
+        <div className="rounded-2xl border border-border bg-surface px-5 py-4 lift-1">
           <p className="text-xs font-semibold uppercase tracking-widest text-subtle">Current plan</p>
           <p className="mt-1 text-lg font-bold text-text">{SPACE_PLAN_LABEL[currentPlan]}</p>
         </div>
@@ -161,7 +161,7 @@ export async function BillingBody({ slug }: { slug: string }) {
             recorded. Shows the plan, the locked rate, how far the space is paid, and how it settles.
             No self-serve controls on purpose: the crew manages the deal. */}
         {manualAgreement && (
-          <div className="rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm">
+          <div className="rounded-2xl border border-border bg-surface px-5 py-4 lift-1">
             <p className="text-xs font-semibold uppercase tracking-widest text-subtle">Billing agreement</p>
             <p className="mt-1 text-sm font-semibold text-text">
               {SPACE_PLAN_LABEL[asSpacePlan(manualAgreement.plan)]} plan, billed{' '}
@@ -261,7 +261,7 @@ export async function BillingBody({ slug }: { slug: string }) {
                 offer had none, which is why a founding_members business row could never be created
                 through checkout. Shown to unpaid Spaces beside the standard upgrade, never instead
                 of it. */}
-            <p className="text-2xs text-subtle">
+            <p className="text-2xs text-muted">
               Opening a business in a city we are just starting in?{' '}
               <Link
                 href={`/spaces/${space.slug}/settings/billing/founding`}

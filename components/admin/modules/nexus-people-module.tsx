@@ -55,7 +55,7 @@ export function NexusPeopleModule() {
           ].map((s) => (
             <div key={s.label} className="rounded-xl border border-border bg-surface p-3">
               <div className="text-lg font-bold text-text">{s.value}</div>
-              <div className="text-2xs font-medium uppercase tracking-wide text-subtle">{s.label}</div>
+              <div className="text-2xs font-medium uppercase tracking-wide text-muted">{s.label}</div>
             </div>
           ))}
         </div>
@@ -78,9 +78,9 @@ export function NexusPeopleModule() {
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-text">{h.name}</span>
-                  {h.guideName && <span className="block text-2xs text-subtle">Guide: {h.guideName}</span>}
+                  {h.guideName && <span className="block text-2xs text-muted">Guide: {h.guideName}</span>}
                 </span>
-                <span className="shrink-0 text-2xs tabular-nums text-subtle">
+                <span className="shrink-0 text-2xs tabular-nums text-muted">
                   {h.circleCount} circles · {h.memberCount} members
                 </span>
               </li>

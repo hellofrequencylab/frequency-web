@@ -235,7 +235,7 @@ export function EventLocationFields({
               requestAnimationFrame(commit)
             }}
           />
-          <p className="text-2xs text-subtle">
+          <p className="text-2xs text-muted">
             Drag the pin or tap the map to set the exact spot. This is the precise venue, not the
             city-level area shown to people browsing.
           </p>

@@ -145,7 +145,7 @@ export function VenueAutocomplete({
         </span>
       )}
       {open && results.length > 0 && (
-        <ul className="absolute z-30 mt-1 w-full overflow-hidden rounded-lg border border-border bg-surface shadow-lg">
+        <ul className="absolute z-30 mt-1 w-full overflow-hidden rounded-lg border border-border bg-surface lift-3">
           {results.map((r) => (
             <li key={r.label}>
               <button

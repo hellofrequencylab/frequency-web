@@ -67,13 +67,13 @@ export function BlockPicker({
   const group = (label: string, blocks: EntityBlockDef[]) =>
     blocks.length > 0 ? (
       <div className="space-y-0.5">
-        <p className="px-2.5 pt-1 text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</p>
+        <p className="px-2.5 pt-1 text-2xs font-semibold uppercase tracking-wide text-muted">{label}</p>
         {blocks.map(option)}
       </div>
     ) : null
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-2 shadow-sm" role="dialog" aria-label="Add a block">
+    <div className="rounded-xl border border-border bg-surface p-2 lift-1" role="dialog" aria-label="Add a block">
       <div className="mb-1 flex items-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-2">
         <Search className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
         <input

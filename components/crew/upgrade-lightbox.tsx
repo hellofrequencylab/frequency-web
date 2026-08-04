@@ -60,7 +60,7 @@ export function UpgradeLightbox({
 }) {
   return (
     <Dialog open={open} onClose={onClose} ariaLabel={title ?? DEFAULT_COPY.title} className="max-w-sm">
-      <div className="relative w-full rounded-3xl border border-border bg-surface p-6 text-center shadow-2xl">
+      <div className="relative w-full rounded-3xl border border-border bg-surface p-6 text-center lift-3">
         <button
           type="button"
           onClick={onClose}

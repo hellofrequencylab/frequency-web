@@ -157,7 +157,7 @@ function OwnerMenu({ practiceId, title }: { practiceId: string; title: string })
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-30 mt-1 w-44 overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-lg"
+          className="absolute right-0 top-full z-30 mt-1 w-44 overflow-hidden rounded-lg border border-border bg-surface py-1 lift-3"
         >
           <Link
             href={`/practices/${practiceId}/edit`}

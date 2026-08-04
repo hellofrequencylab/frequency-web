@@ -25,7 +25,7 @@ export function SidebarCard({
   children: ReactNode
 }) {
   return (
-    <div className="rounded-card border border-border bg-surface shadow-sm overflow-hidden">
+    <div className="rounded-card border border-border bg-surface lift-1 overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border">
         {Icon && <Icon className="h-4 w-4 shrink-0 text-primary-strong" />}
         <h3 className="flex-1 flex items-baseline gap-2 text-sm font-bold text-text">

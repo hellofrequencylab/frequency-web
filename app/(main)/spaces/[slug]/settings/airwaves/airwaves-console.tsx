@@ -156,7 +156,7 @@ export function AirwavesConsole({
               <Upload className="h-4 w-4" aria-hidden />
               {pending ? 'Uploading' : 'Upload audio or video'}
             </button>
-            <p className="text-2xs text-subtle">Audio or video, up to 500 MB. It lands in your Loom.</p>
+            <p className="text-2xs text-muted">Audio or video, up to 500 MB. It lands in your Loom.</p>
           </div>
           {error && <p className="text-xs text-danger">{error}</p>}
         </section>

@@ -6,6 +6,7 @@ import { Sparkles, Flame, Check, ChevronDown } from 'lucide-react'
 import { LogPracticeButton } from './log-practice-button'
 import { STREAK_MILESTONES, streakProgress } from '@/lib/streak'
 import type { Practice, PartialPracticeToday } from '@/lib/practices'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 const COLLAPSE_KEY = 'fq_streak_collapsed'
 
@@ -60,7 +61,7 @@ export function PracticePrompt({
     return (
       <div className="mb-6 rounded-xl border border-primary-bg bg-primary-bg/30 px-3 py-1.5">
         <div className="flex items-center gap-2.5">
-          <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong shadow-sm">
+          <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong lift-1">
             <Flame className="h-3.5 w-3.5" />
           </span>
           <p className="min-w-0 truncate text-xs font-bold text-text">
@@ -69,9 +70,7 @@ export function PracticePrompt({
               {p.maxed ? '· legend' : p.next ? `· ${p.toNext} to ${p.next.day}-day` : ''}
             </span>
           </p>
-          <div className="ml-auto h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-surface">
-            <div className="h-full rounded-full bg-primary" style={{ width: `${p.pct}%` }} />
-          </div>
+          <ProgressTrack value={p.pct} label="Streak progress" track="surface" className="ml-auto w-16 shrink-0" />
           <button
             type="button"
             onClick={toggle}
@@ -91,7 +90,7 @@ export function PracticePrompt({
       {/* Streak header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong shadow-sm">
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong lift-1">
             <Flame className="h-4 w-4" />
           </span>
           <div className="min-w-0">
@@ -124,12 +123,7 @@ export function PracticePrompt({
 
       {/* Progress bar — always shown (slim); checkpoints only when expanded. */}
       <div className="mt-2.5">
-        <div className="h-2 w-full overflow-hidden rounded-full bg-surface">
-          <div
-            className="h-full rounded-full bg-primary transition-[width] duration-500"
-            style={{ width: `${p.pct}%` }}
-          />
-        </div>
+        <ProgressTrack value={p.pct} label="Streak progress" size="lg" track="surface" animate className="w-full" />
 
         {!collapsed && (
           <div className="mt-2.5 flex items-center justify-between gap-1">
@@ -144,7 +138,7 @@ export function PracticePrompt({
                         ? 'bg-primary text-on-primary'
                         : isNext
                           ? 'bg-surface text-primary-strong ring-2 ring-primary'
-                          : 'bg-surface text-subtle'
+                          : 'bg-surface text-muted'
                     }`}
                   >
                     {hit ? <Check className="h-3 w-3" strokeWidth={3} /> : m.day}

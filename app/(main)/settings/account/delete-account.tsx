@@ -34,6 +34,7 @@ export function DeleteAccount() {
               if (r && isError(r)) setErr(r.error)
             })
           }
+          // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
           className="rounded-lg bg-danger text-white px-4 py-1.5 text-sm font-semibold disabled:opacity-50"
         >
           {pending ? 'Deleting…' : 'Delete account'}

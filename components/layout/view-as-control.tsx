@@ -112,9 +112,9 @@ export function ViewAsControl({
             bottom: anchor.bottom,
             width: Math.max(anchor.width, 208),
           }}
-          className="z-[60] rounded-xl border border-border bg-surface-elevated shadow-xl shadow-black/10 py-1"
+          className="z-[60] rounded-xl border border-border bg-surface-elevated lift-3 py-1"
         >
-          <p className="px-3 py-1.5 text-3xs font-semibold uppercase tracking-wider text-subtle">
+          <p className="px-3 py-1.5 text-3xs font-semibold uppercase tracking-wider text-muted">
             View the app as
           </p>
           {ROLE_HIERARCHY.filter((r) => roleRank(r) <= roleRank(realRole)).map((r) => {

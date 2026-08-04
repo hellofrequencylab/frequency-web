@@ -134,7 +134,7 @@ function CreateCodeForm({ spaceId }: { spaceId: string }) {
 
   return (
     <form
-      className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm"
+      className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1"
       onSubmit={(e) => {
         e.preventDefault()
         if (!pending) submit()
@@ -210,7 +210,7 @@ function CodeRow({ code, slug, readOnly }: { code: SpaceCode; slug: string; read
   const [open, setOpen] = useState(false)
 
   return (
-    <li className="rounded-2xl border border-border bg-surface shadow-sm">
+    <li className="rounded-2xl border border-border bg-surface lift-1">
       <div className="flex items-center justify-between gap-4 px-4 py-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-text">{code.title}</p>

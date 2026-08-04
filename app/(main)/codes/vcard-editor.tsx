@@ -39,7 +39,7 @@ export function VcardEditor({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-1.5 text-sm font-bold text-text">
           <Contact className="h-4 w-4 text-primary-strong" /> Contact card

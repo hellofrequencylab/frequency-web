@@ -273,7 +273,7 @@ export function PersonalAppearanceModule() {
                   type="button"
                   onClick={() => fileRef.current?.click()}
                   disabled={pending || uploading}
-                  className="rounded-lg bg-canvas/90 px-2.5 py-1 text-xs font-medium text-text shadow-sm backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60"
+                  className="rounded-lg bg-canvas/90 px-2.5 py-1 text-xs font-medium text-text lift-1 backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60"
                 >
                   {uploading ? 'Uploading' : 'Replace'}
                 </button>
@@ -282,7 +282,7 @@ export function PersonalAppearanceModule() {
                   onClick={() => saveBackground({ ...background, assetPath: null })}
                   disabled={pending || uploading}
                   aria-label="Remove background"
-                  className="rounded-lg bg-canvas/90 p-1 text-subtle shadow-sm backdrop-blur transition-colors hover:text-danger disabled:opacity-60"
+                  className="rounded-lg bg-canvas/90 p-1 text-subtle lift-1 backdrop-blur transition-colors hover:text-danger disabled:opacity-60"
                 >
                   <X className="h-4 w-4" aria-hidden />
                 </button>
@@ -402,7 +402,7 @@ export function PersonalAppearanceModule() {
 
           {pickable.length > 0 && (
             <div className="border-t border-border pt-3">
-              <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Add a friend</p>
+              <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Add a friend</p>
               <ul className="max-h-48 space-y-1 overflow-y-auto">
                 {pickable.map((f) => (
                   <li key={f.profileId}>

@@ -56,9 +56,9 @@ export function MergeTagPicker() {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-30 mt-1 w-64 rounded-xl border border-border bg-surface p-1 shadow-lg"
+          className="absolute right-0 z-30 mt-1 w-64 rounded-xl border border-border bg-surface p-1 lift-3"
         >
-          <p className="px-2.5 py-1.5 text-3xs font-semibold uppercase tracking-wide text-subtle">
+          <p className="px-2.5 py-1.5 text-3xs font-semibold uppercase tracking-wide text-muted">
             Copy a tag, then paste it in
           </p>
           {MERGE_TAG_VARIABLES.map((v) => {
@@ -73,7 +73,7 @@ export function MergeTagPicker() {
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-xs font-semibold text-text">{v.label}</span>
-                  <span className="block truncate font-mono text-3xs text-subtle">{mergeTagText(v.token)}</span>
+                  <span className="block truncate font-mono text-3xs text-muted">{mergeTagText(v.token)}</span>
                 </span>
                 {isCopied ? (
                   <Check className="h-3.5 w-3.5 shrink-0 text-success" aria-hidden />

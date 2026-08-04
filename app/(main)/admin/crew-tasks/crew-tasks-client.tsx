@@ -34,7 +34,7 @@ function Toggle({ value, onChange, disabled }: { value: boolean; onChange: (v: b
       disabled={disabled}
       className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors disabled:opacity-50 ${value ? 'bg-primary' : 'bg-border-strong'}`}
     >
-      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${value ? 'translate-x-4' : 'translate-x-0'}`} />
+      <span className={`inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform ${value ? 'translate-x-4' : 'translate-x-0'}`} />
     </button>
   )
 }
@@ -68,7 +68,7 @@ function TaskForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg shadow-sm">
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg lift-1">
       <div className="sm:col-span-2">
         <label className={label}>Task name *</label>
         <input
@@ -164,7 +164,7 @@ function VerificationQueue({ items }: { items: PendingVerification[] }) {
       </h2>
       <div className="space-y-2">
         {items.map((c) => (
-          <div key={c.id} className="flex items-center gap-3 rounded-2xl border border-warning bg-warning-bg/40 dark:bg-warning-bg/20 shadow-sm px-4 py-3">
+          <div key={c.id} className="flex items-center gap-3 rounded-2xl border border-warning bg-warning-bg/40 dark:bg-warning-bg/20 lift-1 px-4 py-3">
             {c.member?.avatar_url ? (
               <Image src={avatarSrc(c.member.avatar_url)} alt={c.member.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" style={avatarFocusStyle(c.member.avatar_url)} />
             ) : (
@@ -188,6 +188,7 @@ function VerificationQueue({ items }: { items: PendingVerification[] }) {
                 onClick={() => handleApprove(c.id)}
                 disabled={isPending}
                 title="Approve"
+                // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-success text-white text-xs font-semibold hover:bg-success disabled:opacity-50 transition-colors"
               >
                 <ShieldCheck className="w-3.5 h-3.5" /> Approve
@@ -245,7 +246,7 @@ export function CrewTasksClient({ tasks, pendingVerifications = [] }: { tasks: C
               isPending={isPending}
             />
           ) : (
-            <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface shadow-sm px-4 py-3 group">
+            <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface lift-1 px-4 py-3 group">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-medium text-text">{task.name}</span>

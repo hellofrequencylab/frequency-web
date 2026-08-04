@@ -101,6 +101,35 @@ export function withVisibleBlocks(data: Data): Data {
   return { ...data, content: visibleContent(content) as Data['content'] }
 }
 
+/** Re-attach the parked (hidden) blocks from the STORED doc onto a doc coming back from the full
+ *  editor, which never saw them.
+ *
+ *  The full editor loads through withVisibleBlocks, so hidden blocks are absent from the document it
+ *  holds. Publishing replaces the stored doc wholesale, so without this merge every parked block is
+ *  destroyed the first time an operator opens the full editor and hits Publish — silently, and with
+ *  no way back. That contradicts the hidden flag's whole contract: parked, restorable from the quick
+ *  panel.
+ *
+ *  Each parked block goes back at its original index, clamped to the new length, restoring in
+ *  ascending index order so a run of adjacent parked blocks keeps its relative order. Position is
+ *  approximate by necessity (the editor may have reordered, added or removed the visible blocks
+ *  around them); survival is not. PURE. */
+export function withParkedBlocks(stored: Data | null | undefined, next: Data): Data {
+  const storedContent = stored?.content
+  if (!Array.isArray(storedContent)) return next
+
+  const parked = (storedContent as unknown[])
+    .map((block, index) => ({ block, index }))
+    .filter(({ block }) => isBlock(block) && block.hidden === true)
+  if (parked.length === 0) return next
+
+  const content = Array.isArray(next.content) ? [...(next.content as unknown[])] : []
+  for (const { block, index } of parked) {
+    content.splice(Math.min(index, content.length), 0, block)
+  }
+  return { ...next, content: content as Data['content'] }
+}
+
 /** Move the block at `index` one step up (dir < 0) or down (dir > 0) in the top-level content array,
  *  clamped at the ends (a no-op past an edge). Returns a NEW content array; never mutates. PURE. */
 export function moveBlock(content: readonly unknown[], index: number, dir: -1 | 1): unknown[] {

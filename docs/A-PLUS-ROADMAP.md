@@ -1,5 +1,11 @@
 # A+ roadmap: every domain to A+
 
+> ⚠️ **Superseded for near-term planning (2026-08-04).** The live plan is
+> [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) (ADR-925) with the phase runway in
+> [`BUILD-LIST.md`](BUILD-LIST.md) (ADR-921). This file predates the DAWN / UX-maturity
+> program and its status marks are not maintained. Kept for history and for the items it
+> still names that no current plan has absorbed.
+
 > The plan to take every element of the platform to **A+**, with **nothing dropped**. Built by
 > re-verifying the `docs/AUDIT-2026-06-15.md` grades against the *current* code (several audit
 > assumptions were stale, corrected below), folding in `OPEN-THREADS.md`, and a fresh

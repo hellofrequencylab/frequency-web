@@ -74,7 +74,7 @@ export function MembershipEventAccess({
   return (
     <div className="space-y-2">
       {error && <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger">{error}</p>}
-      <ul className="divide-y divide-border rounded-2xl border border-border bg-surface shadow-sm">
+      <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
         {rows.map((r) => (
           <li key={r.eventId} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
             <div className="min-w-0">

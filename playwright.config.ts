@@ -1,8 +1,18 @@
-// Playwright smoke + visual-snapshot harness (RETHEME safety net).
+// Playwright smoke + a11y + visual-snapshot harness (RETHEME safety net).
 //
 // No local server is spawned: point PW_BASE_URL at a Vercel preview URL or an
 // already-running dev server. Without PW_BASE_URL every spec skips itself, so
 // `playwright test --list` and CI collection always work.
+//
+// TAG CONTRACT (the greps live in package.json, not here — setting grep/grepInvert in
+// this file would silently intersect with the CLI flags and empty the run):
+//   @smoke  — reachability + no-500 checks.        default run
+//   @a11y   — axe-core WCAG A/AA gate.             default run  (no baseline dependency;
+//                                                  see the rationale in a11y.spec.ts)
+//   @visual — pixel baselines.                     OPT-IN ONLY (`--grep @visual`), because
+//                                                  a missing baseline is noise, not signal.
+// So `pnpm test:e2e` (`--grep-invert @visual`) stays correct as written: it runs smoke +
+// a11y and excludes exactly the one suite that needs committed PNGs.
 //
 // See test/e2e/README.md for the run/baseline workflow.
 import { existsSync } from 'node:fs';
@@ -25,6 +35,9 @@ export default defineConfig({
   snapshotPathTemplate:
     '{testDir}/__screenshots__/{testFileName}/{arg}-{projectName}{ext}',
   fullyParallel: true,
+  // 30s (the default) was tight once a test became "cold-start a preview route, wait out a
+  // capped networkidle, wait out font swap, THEN run axe or take a full-page capture".
+  timeout: 60_000,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI

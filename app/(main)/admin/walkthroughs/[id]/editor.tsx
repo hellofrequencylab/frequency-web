@@ -180,7 +180,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
         {/* ── LEFT: controls ── */}
         <div className="space-y-5">
           {/* Sequence meta */}
-          <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
             <h2 className="text-base font-bold text-text">Sequence</h2>
             <div>
               <label className={lbl}>Name</label>
@@ -255,7 +255,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
             <div className="flex items-center justify-between rounded-xl border border-border bg-surface-elevated/40 px-3 py-2.5">
               <div>
                 <p className="text-sm font-semibold text-text">Live</p>
-                <p className="text-2xs text-subtle">On = reaching members once Phase B fires it.</p>
+                <p className="text-2xs text-muted">On = reaching members once Phase B fires it.</p>
               </div>
               <button
                 type="button"
@@ -278,7 +278,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
           </div>
 
           {/* Slide list */}
-          <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 lift-1">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold text-text">Slides</h2>
               <Button type="button" variant="secondary" size="sm" onClick={addStep}>
@@ -346,7 +346,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
 
           {/* Per-slide editor */}
           {step && (
-            <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+            <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
               <h2 className="text-base font-bold text-text">Slide {selected + 1}</h2>
               <div>
                 <label className={lbl}>Title</label>
@@ -425,7 +425,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
 
               {/* Icon picker */}
               <div>
-                <label className={lbl}>Icon <span className="font-normal text-subtle/70">· optional</span></label>
+                <label className={lbl}>Icon <span className="font-normal text-muted/70">· optional</span></label>
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     type="button"
@@ -510,7 +510,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
               Add a slide to preview it.
             </div>
           )}
-          <p className="mt-2 text-2xs text-subtle">
+          <p className="mt-2 text-2xs text-muted">
             This is how the slide presents in-app. Phase B fires it for the right member at the right moment.
           </p>
         </div>

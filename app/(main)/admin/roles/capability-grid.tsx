@@ -90,7 +90,7 @@ export function CapabilityGrid({
   }
 
   return (
-    <section className="mt-8 rounded-2xl border border-border bg-surface shadow-sm">
+    <section className="mt-8 rounded-2xl border border-border bg-surface lift-1">
       <div className="border-b border-border p-4">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-text">
           <Grid3x3 className="h-4 w-4 text-primary-strong" />

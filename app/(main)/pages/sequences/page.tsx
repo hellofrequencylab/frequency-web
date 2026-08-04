@@ -141,7 +141,7 @@ export default async function SplashFunnelsPage() {
               New funnels start from a separate prompts template, so they never disturb this one. ── */}
       <section>
         <SectionHeader title="Funnel 1 — your live onboarding" />
-        <div className="flex max-w-3xl flex-col gap-4 rounded-2xl border border-primary/40 bg-primary-bg/60 p-5 shadow-sm sm:flex-row sm:items-center">
+        <div className="flex max-w-3xl flex-col gap-4 rounded-2xl border border-primary/40 bg-primary-bg/60 p-5 lift-1 sm:flex-row sm:items-center">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-on-primary">
             <Sparkles className="h-5 w-5" aria-hidden />
           </span>
@@ -185,7 +185,7 @@ export default async function SplashFunnelsPage() {
         </p>
         <div className="grid gap-3 sm:grid-cols-3">
           {FUNNEL_STYLES.map((s) => (
-            <div key={s.id} className={`flex flex-col rounded-2xl border bg-surface p-4 shadow-sm ${s.accent.ring}`}>
+            <div key={s.id} className={`flex flex-col rounded-2xl border bg-surface p-4 lift-1 ${s.accent.ring}`}>
               <div className="flex items-center justify-between">
                 <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${s.accent.icon}`}>
                   <s.icon className="h-4 w-4" aria-hidden />
@@ -236,7 +236,7 @@ export default async function SplashFunnelsPage() {
             {onboardingCards.map(({ slug, status, seq, inductionPath, inductionQr, tagDef }) => (
               <article
                 key={slug}
-                className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm"
+                className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1"
               >
                 {/* Header: audience, status, link, tag */}
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -331,7 +331,7 @@ export default async function SplashFunnelsPage() {
                 {styleCards.map(({ slug, status, source, seq, inductionPath }) => (
                   <article
                     key={slug}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm"
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 lift-1"
                   >
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
@@ -407,7 +407,7 @@ export default async function SplashFunnelsPage() {
           Same fill-in template as the button above, but name the audience up front so the funnel
           and its marketing tag are labelled from the start.
         </p>
-        <div className="max-w-3xl rounded-2xl border border-border bg-surface p-5 shadow-sm">
+        <div className="max-w-3xl rounded-2xl border border-border bg-surface p-5 lift-1">
           <form action={createSequenceVersion} className="flex flex-wrap items-end gap-2">
             <label className="min-w-0 flex-1">
               <span className="mb-1 block text-xs font-semibold text-subtle">Audience name</span>
@@ -433,7 +433,7 @@ export default async function SplashFunnelsPage() {
       {/* ── How it works — the share-and-segment loop in plain terms. ── */}
       <section>
         <SectionHeader title="How it works" />
-        <ol className="max-w-3xl space-y-2 rounded-2xl border border-border bg-surface p-5 text-sm text-muted shadow-sm">
+        <ol className="max-w-3xl space-y-2 rounded-2xl border border-border bg-surface p-5 text-sm text-muted lift-1">
           <li>
             <span className="font-semibold text-text">1. Make a funnel, then share its link.</span>{' '}
             Each funnel gets a link and a QR (PNG or SVG) into its induction (
@@ -497,7 +497,7 @@ function RolePromotionTours() {
       </p>
       <div className="grid gap-3 sm:grid-cols-3">
         {tours.map((t) => (
-          <div key={t.slug} className="flex flex-col rounded-2xl border border-border bg-surface p-4 shadow-sm">
+          <div key={t.slug} className="flex flex-col rounded-2xl border border-border bg-surface p-4 lift-1">
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center rounded-full bg-broadcast-bg px-2 py-0.5 text-2xs font-semibold text-broadcast-strong">
                 {TRIGGER_CHIP[t.trigger]}
@@ -505,7 +505,7 @@ function RolePromotionTours() {
             </div>
             <h3 className="mt-2 text-sm font-bold text-text">{t.name}</h3>
             <p className="mt-1 flex-1 text-xs leading-relaxed text-muted">{t.description}</p>
-            <p className="mt-2 text-2xs font-medium text-subtle">
+            <p className="mt-2 text-2xs font-medium text-muted">
               {t.steps.length} {t.steps.length === 1 ? 'slide' : 'slides'}
             </p>
             <RolePromotionPreview walkthrough={t} />

@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import { Check } from 'lucide-react'
 import { getEventPeopleData, approveEventRsvp, type EventPeopleData } from '@/app/(main)/events/admin-actions'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // In-place "People" module (ENTITY-MANAGEMENT-OVERHAUL §4, the 'people' spine cell). Renders in
 // the page admin dock on /events/[slug]; the server returns null unless the caller holds
@@ -78,7 +79,7 @@ export function EventPeopleModule() {
           ].map((s) => (
             <div key={s.label} className="rounded-lg border border-border bg-surface px-2.5 py-1.5">
               <div className="text-sm font-bold leading-tight text-text">{s.value}</div>
-              <div className="text-2xs font-medium uppercase tracking-wide text-subtle">{s.label}</div>
+              <div className="text-2xs font-medium uppercase tracking-wide text-muted">{s.label}</div>
             </div>
           ))}
         </div>
@@ -94,12 +95,7 @@ export function EventPeopleModule() {
                   {analytics.checkedIn > 0 && <span className="text-subtle"> · {analytics.checkedIn} checked in</span>}
                 </span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-surface-elevated">
-                <div
-                  className="h-full rounded-full bg-primary transition-all"
-                  style={{ width: `${fillPct}%` }}
-                />
-              </div>
+              <ProgressTrack value={fillPct ?? 0} label="Seats filled" size="lg" animate />
             </>
           ) : (
             <p className="text-xs text-subtle">

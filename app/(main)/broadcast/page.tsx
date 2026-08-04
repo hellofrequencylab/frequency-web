@@ -182,7 +182,7 @@ export default async function BroadcastPage({
             {ctaLabel && ctaHref && (
               <a
                 href={ctaHref}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
               >
                 {ctaLabel}
               </a>
@@ -318,7 +318,7 @@ function QuickLink({ href, Icon, label, sub, color }: {
   return (
     <Link
       href={href}
-      className="group rounded-2xl border border-border bg-surface p-3 shadow-sm transition-colors hover:border-primary-bg dark:hover:border-primary"
+      className="group rounded-2xl border border-border bg-surface p-3 lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
     >
       <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-lg ${color}`}>
         <Icon className="h-4 w-4" />

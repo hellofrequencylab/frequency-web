@@ -550,7 +550,7 @@ function ProfileCard({
             </div>
             {/* No Sign out here (three-docks law): signing out is a SYSTEM act and
                 lives in the account menu, top right — nothing is offered twice. */}
-            <p className="px-2 pt-1.5 pb-1 text-2xs leading-relaxed text-subtle">
+            <p className="px-2 pt-1.5 pb-1 text-2xs leading-relaxed text-muted">
               Appearance and sign out live in the account menu, top right.
             </p>
           </div>
@@ -1412,7 +1412,6 @@ export default function AppShell({
   availableContexts = [],
   children,
   sidebar,
-  dock,
   mobileStats,
   ticker,
   unreadCount = 0,
@@ -1464,13 +1463,9 @@ export default function AppShell({
   availableContexts?: AvailableContext[]
   children: React.ReactNode
   sidebar?: React.ReactNode
-  /** The Vault dock (fixed bottom right, three-docks law). Mounted in the rail COLUMN but
-   *  OUTSIDE the collapsed/expanded ternary, so folding the rail never unmounts the member's
-   *  score. Shares the rail slot's visibility (rail 'none' surfaces get no dock). */
-  dock?: React.ReactNode
   /** The game-stats block (MobileGameStats) for the mobile left drawer's bottom cluster —
-   *  the < lg home of the game counts now that the Vault dock is desktop-only and the streak
-   *  chip left the top bar (nothing is offered twice, but everything is offered once). */
+   *  the < lg home of the game counts. On lg the same numbers live in the rail's Your Quest
+   *  panel (nothing is offered twice, but everything is offered once). */
   mobileStats?: React.ReactNode
   /** Community news ticker pinned above the page content (streamed via Suspense). */
   ticker?: React.ReactNode
@@ -1828,7 +1823,7 @@ export default function AppShell({
           >
             <Search className="w-4 h-4" />
             <span>Search</span>
-            <kbd className="text-3xs leading-none rounded px-1.5 py-1 border border-border bg-surface text-subtle">
+            <kbd className="text-3xs leading-none rounded px-1.5 py-1 border border-border bg-surface text-muted">
               ⌘K
             </kbd>
           </button>
@@ -1871,7 +1866,7 @@ export default function AppShell({
                 <Link
                   href="/admin/support"
                   aria-label={`Bug Alert: ${openSupportTickets} open support ${openSupportTickets === 1 ? 'ticket' : 'tickets'}. Open the support queue`}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-danger px-3 py-1.5 text-sm font-bold text-on-primary shadow-sm ring-1 ring-danger/40 transition-transform hover:scale-105 motion-safe:animate-pulse"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-danger px-3 py-1.5 text-sm font-bold text-on-danger shadow-sm ring-1 ring-danger/40 transition-transform hover:scale-105 motion-safe:animate-pulse"
                 >
                   <Bug className="h-4 w-4" />
                   <span className="hidden sm:inline">Bug</span>
@@ -2078,12 +2073,6 @@ export default function AppShell({
                     )}
                   </aside>
                 )}
-                {/* The Vault dock — position:fixed, so it takes no column space. Mounted HERE,
-                    outside the collapsed/expanded ternary, so folding the rail to the mini
-                    strip never unmounts the member's score; it still lives inside the rail
-                    column, so its visibility follows the same page-chrome map as the rail
-                    (railFor 'none' surfaces render neither). */}
-                {dock}
                 {/* The settings drawer slides over THIS column (absolute, full height) on the
                     `open-settings` event, reporting its width up so the column sizes to match. */}
                 <AdminBar onStateChange={setSettings} />

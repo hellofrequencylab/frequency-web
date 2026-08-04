@@ -81,7 +81,7 @@ export function SpacePlaybookPicker({
   if (done) {
     return (
       <section>
-        <div className="rounded-2xl border border-border bg-surface p-4 text-sm text-muted shadow-sm">
+        <div className="rounded-2xl border border-border bg-surface p-4 text-sm text-muted lift-1">
           {done === 'ran' ? 'Done. The move is on their timeline above.' : 'Set aside for now. Vera will learn from that.'}
         </div>
       </section>
@@ -90,7 +90,7 @@ export function SpacePlaybookPicker({
 
   return (
     <section>
-      <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-subtle">
             <Sparkles className="h-3.5 w-3.5" aria-hidden /> Next best move

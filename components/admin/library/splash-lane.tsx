@@ -137,7 +137,7 @@ export function SplashLane({
               {templates.map((t) => (
                 <div
                   key={t.id}
-                  className="group relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-shadow hover:shadow-pop"
+                  className="group relative overflow-hidden rounded-2xl border border-border bg-surface lift-1 transition-shadow hover:shadow-pop"
                 >
                   <button type="button" onClick={() => setOpenId(t.id)} className="block w-full text-left">
                     <span className="block aspect-[4/3] overflow-hidden bg-surface-elevated transition-transform duration-200 group-hover:scale-[1.02]">
@@ -146,7 +146,7 @@ export function SplashLane({
                     <span className="block px-3 py-2">
                       <span className="flex items-center justify-between gap-2">
                         <span className="truncate text-sm text-text" title={t.title}>{t.title}</span>
-                        <span className="shrink-0 text-2xs uppercase tracking-wide text-subtle">Splash</span>
+                        <span className="shrink-0 text-2xs uppercase tracking-wide text-muted">Splash</span>
                       </span>
                       <span className="mt-1.5 flex flex-wrap gap-1">
                         <KindBadge kind={t.kind} />
@@ -236,7 +236,7 @@ function UsageList({ usages }: { usages: SplashUsage[] }) {
             key={`${u.context}:${u.refId ?? ''}:${u.blockId ?? ''}:${i}`}
             className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm"
           >
-            <span className="shrink-0 rounded-full border border-border bg-surface-elevated px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-subtle">
+            <span className="shrink-0 rounded-full border border-border bg-surface-elevated px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-muted">
               {u.context}
             </span>
             {href ? (
@@ -258,7 +258,7 @@ function UsageList({ usages }: { usages: SplashUsage[] }) {
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</p>
+      <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-muted">{label}</p>
       <div className="text-sm text-text">{children}</div>
     </div>
   )

@@ -66,7 +66,7 @@ export function AssignJourneyToSeason({ questId, journeys }: { questId: string; 
         </Button>
       </div>
       {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
-      <p className="mt-1.5 text-2xs text-subtle">
+      <p className="mt-1.5 text-2xs text-muted">
         Files the Journey under this season’s Quest. A Journey already in another season moves here.
       </p>
     </div>

@@ -144,7 +144,7 @@ export function SeekerForm({ initial }: { initial: SeekerFormValues }) {
   return (
     <form
       action={saveSeekerProfileAction}
-      className="mb-8 space-y-5 rounded-2xl border border-border bg-surface p-5 shadow-sm"
+      className="mb-8 space-y-5 rounded-2xl border border-border bg-surface p-5 lift-1"
     >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>

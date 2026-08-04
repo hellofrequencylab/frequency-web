@@ -43,7 +43,7 @@ export function ListingHero({
       {/* TOP-LEFT: the short price badge (the hero-ad price tag). */}
       {priceShort && (
         <span
-          className={`absolute left-4 top-4 inline-flex items-center rounded-xl px-3 py-1.5 text-lg font-bold shadow-sm sm:text-xl ${
+          className={`absolute left-4 top-4 inline-flex items-center rounded-xl px-3 py-1.5 text-lg font-bold lift-1 sm:text-xl ${
             image ? 'bg-white text-black' : 'bg-primary text-on-primary'
           }`}
         >

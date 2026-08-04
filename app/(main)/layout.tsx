@@ -17,7 +17,7 @@ import { resolveTheme } from '@/lib/theme/server/resolve'
 import { structureFor } from '@/lib/theme/structure'
 import { THEME_COOKIE, parseThemeCookie } from '@/lib/theme/cookie'
 import { loadActiveThemeCss, resolveActiveOccasionSlug } from '@/lib/theme/server/themes'
-import RightSidebar, { VaultDockSlot, MobileGameStats } from '@/components/sidebar/right-sidebar'
+import RightSidebar, { MobileGameStats } from '@/components/sidebar/right-sidebar'
 import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
@@ -440,18 +440,8 @@ export default async function MainLayout({
     </Suspense>
   )
 
-  // The Vault dock — the member's score as a floating chip, fixed bottom right (three-docks
-  // law). Its own slot (NOT inside RightSidebar) so the shell can keep it mounted while the
-  // rail is collapsed; the shell renders it inside the rail column, so rail-'none' surfaces
-  // get no dock. Streams behind its own Suspense (multi-hop stats load never blocks the shell).
-  const dock = (
-    <Suspense fallback={null}>
-      <VaultDockSlot profileId={profile.id} />
-    </Suspense>
-  )
-
   // The < lg counterpart — the same stats body in the mobile left drawer's bottom cluster
-  // (the dock above renders only beside the desktop rail; the score must exist ONCE on phones).
+  // (on lg the score lives in the rail's Your Quest panel; it must exist ONCE per viewport).
   const mobileStats = (
     <Suspense fallback={null}>
       <MobileGameStats profileId={profile.id} />
@@ -586,7 +576,7 @@ export default async function MainLayout({
       operatorContext={operatorContext}
       availableContexts={availableContexts}
       sidebar={sidebar}
-      dock={dock}
+
       mobileStats={mobileStats}
       ticker={ticker}
       unreadCount={unreadCount}

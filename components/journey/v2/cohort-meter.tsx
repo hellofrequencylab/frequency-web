@@ -4,6 +4,7 @@
 
 import { Users, Trophy } from 'lucide-react'
 import type { CohortProgress } from '@/lib/journeys/cohort'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 export function CohortMeter({ progress, circleName }: { progress: CohortProgress; circleName?: string | null }) {
   if (progress.memberCount === 0) return null
@@ -21,9 +22,7 @@ export function CohortMeter({ progress, circleName }: { progress: CohortProgress
         </span>
       </div>
 
-      <div className="h-2 overflow-hidden rounded-full bg-surface-elevated">
-        <div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${Math.max(2, progress.meanPercent)}%` }} />
-      </div>
+      <ProgressTrack value={progress.meanPercent} minVisible={2} label="Cohort mean progress" size="lg" animate />
 
       {progress.allComplete ? (
         <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-success">

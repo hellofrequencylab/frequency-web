@@ -47,7 +47,7 @@ export async function RelationshipTimeline({
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="text-xs font-medium text-text">{item.title}</span>
                   {item.at && (
-                    <time className="shrink-0 text-2xs text-subtle" dateTime={item.at}>
+                    <time className="shrink-0 text-2xs text-muted" dateTime={item.at}>
                       {relativeTime(item.at)}
                     </time>
                   )}

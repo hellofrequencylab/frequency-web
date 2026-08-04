@@ -67,7 +67,7 @@ function RichBubble({ editor }: { editor: Editor }) {
   return (
     <BubbleMenu
       editor={editor}
-      className="flex items-center gap-0.5 rounded-lg border border-border bg-surface p-1 shadow-lg"
+      className="flex items-center gap-0.5 rounded-lg border border-border bg-surface p-1 lift-3"
     >
       <button
         type="button"

@@ -72,13 +72,13 @@ export function EmojiPicker({ onSelect, disabled }: { onSelect: (emoji: string) 
 
       {open && (
         <div
-          className="absolute bottom-full left-0 z-50 mb-2 max-h-64 w-72 overflow-y-auto rounded-2xl border border-border bg-surface p-2 shadow-xl shadow-black/5"
+          className="absolute bottom-full left-0 z-50 mb-2 max-h-64 w-72 overflow-y-auto rounded-2xl border border-border bg-surface p-2 lift-3"
           // Don't let clicks bubble to the textarea's blur / outside handlers.
           onMouseDown={(e) => e.preventDefault()}
         >
           {GROUPS.map((group) => (
             <div key={group.label} className="mb-1.5 last:mb-0">
-              <p className="px-1.5 pb-1 pt-1 text-3xs font-semibold uppercase tracking-wide text-subtle">
+              <p className="px-1.5 pb-1 pt-1 text-3xs font-semibold uppercase tracking-wide text-muted">
                 {group.label}
               </p>
               <div className="grid grid-cols-8 gap-0.5">

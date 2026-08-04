@@ -65,7 +65,7 @@ export function ConsentScopesForm({ initial }: { initial: ConsentScopeState }) {
         </p>
       </div>
 
-      <div className="rounded-2xl border border-border bg-surface shadow-sm divide-y divide-border overflow-hidden">
+      <div className="rounded-2xl border border-border bg-surface lift-1 divide-y divide-border overflow-hidden">
         {ORDER.map((scope) => {
           const meta = SCOPE_META[scope]
           if (!meta) return null
@@ -90,7 +90,7 @@ export function ConsentScopesForm({ initial }: { initial: ConsentScopeState }) {
                 `}
               >
                 <span
-                  className={`inline-block w-4 h-4 bg-white rounded-full shadow transform transition-transform ${checked ? 'translate-x-2' : '-translate-x-2'}`}
+                  className={`inline-block w-4 h-4 bg-surface rounded-full shadow transform transition-transform ${checked ? 'translate-x-2' : '-translate-x-2'}`}
                 />
               </button>
             </div>

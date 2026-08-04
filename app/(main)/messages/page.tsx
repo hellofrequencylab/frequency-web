@@ -350,7 +350,7 @@ export default async function MessagesPage({
           key={f.value}
           href={threadsHref(f.value, sort)}
           className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-            filter === f.value ? 'bg-surface text-text shadow-sm' : 'text-muted hover:text-text'
+            filter === f.value ? 'bg-surface text-text lift-1' : 'text-muted hover:text-text'
           }`}
         >
           {f.label}
@@ -366,7 +366,7 @@ export default async function MessagesPage({
           key={s.value}
           href={threadsHref(filter, s.value)}
           className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-            sort === s.value ? 'bg-surface text-text shadow-sm' : 'text-muted hover:text-text'
+            sort === s.value ? 'bg-surface text-text lift-1' : 'text-muted hover:text-text'
           }`}
         >
           {s.label}
@@ -396,7 +396,7 @@ export default async function MessagesPage({
           {ctaLabel && ctaHref && (
             <a
               href={ctaHref}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
             >
               {ctaLabel}
             </a>

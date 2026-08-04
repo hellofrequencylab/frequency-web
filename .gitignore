@@ -56,3 +56,8 @@ supabase/backups/*.json
 # Editor/filesystem artifacts
 .fuse_hidden*
 test-results/
+
+# a11y ratchet CAPTURE file. Written only under PW_A11Y_UPDATE=1, consumed and
+# deleted by scripts/a11y-baselines.mjs. The merged result (a11y-baselines.json)
+# IS tracked — the raw per-worker capture is not.
+test/e2e/.a11y-observed.jsonl

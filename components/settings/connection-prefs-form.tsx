@@ -74,7 +74,7 @@ export function ConnectionPrefsForm({ initial }: { initial: ConnectionPrefsIniti
     <div className="space-y-6">
       {/* ── Ghost mode — the prominent master override ────────────────────── */}
       <section
-        className={`rounded-2xl border shadow-sm overflow-hidden transition-colors ${
+        className={`rounded-2xl border lift-1 overflow-hidden transition-colors ${
           ghostMode
             ? 'border-primary bg-primary-bg/50 dark:bg-primary-bg/30'
             : 'border-border bg-surface'
@@ -136,7 +136,7 @@ export function ConnectionPrefsForm({ initial }: { initial: ConnectionPrefsIniti
         aria-hidden={overridden}
       >
         {/* Directory visibility */}
-        <section className="rounded-2xl border border-border bg-surface shadow-sm">
+        <section className="rounded-2xl border border-border bg-surface lift-1">
           <button
             type="button"
             onClick={() => {
@@ -162,7 +162,7 @@ export function ConnectionPrefsForm({ initial }: { initial: ConnectionPrefsIniti
           legend="Who can find me nearby"
           hint="Controls who can surface you by location."
         >
-          <div className="rounded-2xl border border-border bg-surface shadow-sm divide-y divide-border/80 dark:divide-border/50 overflow-hidden">
+          <div className="rounded-2xl border border-border bg-surface lift-1 divide-y divide-border/80 dark:divide-border/50 overflow-hidden">
             {DISCOVERABLE_OPTIONS.map(({ value, label, hint }) => {
               const active = discoverableBy === value
               return (
@@ -186,7 +186,7 @@ export function ConnectionPrefsForm({ initial }: { initial: ConnectionPrefsIniti
           legend="Location precision others see"
           hint="We never share your exact spot, only a coarse area."
         >
-          <div className="rounded-2xl border border-border bg-surface shadow-sm divide-y divide-border/80 dark:divide-border/50 overflow-hidden">
+          <div className="rounded-2xl border border-border bg-surface lift-1 divide-y divide-border/80 dark:divide-border/50 overflow-hidden">
             {LOCATION_BAND_OPTIONS.map(({ value, label, hint }) => {
               const active = locationBand === value
               return (
@@ -210,12 +210,12 @@ export function ConnectionPrefsForm({ initial }: { initial: ConnectionPrefsIniti
           legend="Discoverability radius"
           hint="How far away people can be and still discover you."
         >
-          <div className="rounded-2xl border border-border bg-surface shadow-sm px-4 py-4">
+          <div className="rounded-2xl border border-border bg-surface lift-1 px-4 py-4">
             <div className="flex items-baseline justify-between mb-3">
               <p className="text-sm font-medium text-text">
                 Be findable within ~{formatMiles(radiusDraft)} mi
               </p>
-              <span className="text-2xs text-subtle">
+              <span className="text-2xs text-muted">
                 {formatMiles(initial.minDiscoveryRadiusM)}–{formatMiles(initial.maxDiscoveryRadiusM)} mi
               </span>
             </div>
@@ -282,7 +282,7 @@ function Toggle({ checked }: { checked: boolean }) {
       }`}
     >
       <span
-        className={`inline-block w-4 h-4 bg-white rounded-full shadow transform transition-transform ${
+        className={`inline-block w-4 h-4 bg-surface rounded-full shadow transform transition-transform ${
           checked ? 'translate-x-5' : 'translate-x-1'
         }`}
       />

@@ -175,7 +175,7 @@ export function PostPreview({ post, isAuthed = false }: { post: PublicPost; isAu
         <span className="text-sm font-semibold text-text truncate block">
           {post.author_display_name ?? 'Community member'}
         </span>
-        <p className="text-2xs text-subtle mt-0.5">
+        <p className="text-2xs text-muted mt-0.5">
           {post.author_handle && <>@{post.author_handle} · </>}
           {relativeTime(post.created_at)}
         </p>
@@ -183,7 +183,7 @@ export function PostPreview({ post, isAuthed = false }: { post: PublicPost; isAu
     </>
   )
   return (
-    <article className="rounded-2xl border border-border bg-surface shadow-sm p-4">
+    <article className="rounded-2xl border border-border bg-surface lift-1 p-4">
       {post.author_handle ? (
         <Link
           href={communityHref(`/people/${post.author_handle}`, isAuthed)}

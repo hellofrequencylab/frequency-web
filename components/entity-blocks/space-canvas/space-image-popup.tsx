@@ -90,7 +90,7 @@ export function SpaceImagePopup({
 
   return (
     <Dialog open={open} onClose={onClose} ariaLabel="Choose a photo" className="max-w-lg">
-      <div className="overflow-hidden rounded-3xl border border-border bg-surface shadow-xl">
+      <div className="overflow-hidden rounded-3xl border border-border bg-surface lift-3">
         <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
           <div>
             <h2 className="text-base font-bold text-text">Choose a photo</h2>
@@ -128,7 +128,7 @@ export function SpaceImagePopup({
           <LoomPicker open={loomOpen} onClose={() => setLoomOpen(false)} onSelect={onPickFromLoom} title="Choose a photo" />
 
           <div>
-            <label className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Image link</label>
+            <label className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Image link</label>
             <input
               type="url"
               value={url}
@@ -139,7 +139,7 @@ export function SpaceImagePopup({
           </div>
 
           <div>
-            <label className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Alt text</label>
+            <label className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Alt text</label>
             <textarea
               value={alt}
               onChange={(e) => setAlt(e.target.value)}

@@ -164,7 +164,7 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
                     >
                       <span
                         className={`
-                          inline-block w-4 h-4 bg-white rounded-full shadow transform transition-transform
+                          inline-block w-4 h-4 bg-surface rounded-full shadow transform transition-transform
                           ${checked ? 'translate-x-2' : '-translate-x-2'}
                         `}
                       />
@@ -217,7 +217,7 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
         >
           <span
             className={`
-              inline-block w-4 h-4 bg-white rounded-full shadow transform transition-transform
+              inline-block w-4 h-4 bg-surface rounded-full shadow transform transition-transform
               ${settings.space_event_reminders === true ? 'translate-x-2' : '-translate-x-2'}
             `}
           />

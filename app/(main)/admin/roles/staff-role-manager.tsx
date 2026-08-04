@@ -76,7 +76,7 @@ export function StaffRoleManager({ members }: { members: StaffMemberRow[] }) {
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-surface shadow-sm">
+    <section className="rounded-2xl border border-border bg-surface lift-1">
       <div className="border-b border-border p-4">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-text">
           <Briefcase className="h-4 w-4 text-primary-strong" />
@@ -117,7 +117,7 @@ export function StaffRoleManager({ members }: { members: StaffMemberRow[] }) {
           type="button"
           onClick={add}
           disabled={!handle.trim() || adding}
-          className="shrink-0 shadow-sm"
+          className="shrink-0 lift-1"
         >
           <UserPlus className="h-4 w-4" />
           {adding ? 'Adding…' : 'Add'}

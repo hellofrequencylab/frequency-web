@@ -204,7 +204,7 @@ export function RecordingReviews({
                         <span className="text-sm font-semibold text-text">A member</span>
                       )}
                       <Stars value={r.rating} />
-                      <span className="text-2xs text-subtle">{timeAgo(r.createdAt)}</span>
+                      <span className="text-2xs text-muted">{timeAgo(r.createdAt)}</span>
                     </div>
                     {canDelete && (
                       <button

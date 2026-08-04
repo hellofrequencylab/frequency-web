@@ -128,7 +128,7 @@ export function ProgramForm({
         if (!pending) save()
       }}
     >
-      <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
         <div>
           <Label htmlFor="program-name" className="font-semibold">
             Name

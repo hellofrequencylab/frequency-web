@@ -73,7 +73,7 @@ export function CampaignDetail({
   return (
     <div className="space-y-6">
       {/* Campaign controls. */}
-      <section className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <section className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface p-4 lift-1">
         {renaming ? (
           <>
             <input
@@ -119,7 +119,7 @@ export function CampaignDetail({
 
       {/* Add an entry point under this campaign. */}
       {adding && (
-        <section className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+        <section className="rounded-2xl border border-border bg-surface p-4 lift-1">
           {!template ? (
             <div>
               <div className="mb-3 flex items-center justify-between">

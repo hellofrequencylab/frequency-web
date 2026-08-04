@@ -55,7 +55,7 @@ export function DealForm({ stages, deal }: { stages: CrmStage[]; deal?: CrmDeal 
   }
 
   return (
-    <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+    <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
       <div>
         <label className={label}>Title *</label>
         <input className={input} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Partner: Encinitas Yoga" autoFocus />

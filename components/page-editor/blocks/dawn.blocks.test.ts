@@ -19,6 +19,7 @@ const KEYS = [
   'PhotoCardRow',
   'PlanBand',
   'PillarNav',
+  'DawnHowToSteps',
 ] as const
 
 describe('every DAWN block is a well-formed ComponentConfig', () => {
@@ -79,7 +80,14 @@ describe('DAWN blocks are registered + categorised in the shared config', () => 
     expect(media).toContain('PhotoBeat')
     expect(media).toContain('PhotoTrio')
     expect(content).toContain('StoryBeats')
-    for (const key of ['ValueBand', 'BuildTimeline', 'PhotoCardRow', 'PlanBand', 'PillarNav']) {
+    for (const key of [
+      'ValueBand',
+      'BuildTimeline',
+      'PhotoCardRow',
+      'PlanBand',
+      'PillarNav',
+      'DawnHowToSteps',
+    ]) {
       expect(sections).toContain(key)
     }
   })

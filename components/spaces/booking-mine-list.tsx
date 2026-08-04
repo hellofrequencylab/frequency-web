@@ -34,7 +34,7 @@ export function BookingMineList({
   })
 
   return (
-    <ul className="divide-y divide-border rounded-2xl border border-border bg-surface shadow-sm">
+    <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
       {bookings.map((b) => (
         <li key={b.id} className="px-4 py-3">
           <BookingMineRow spaceId={spaceId} booking={b} whenLabel={whenFmt.format(new Date(b.startsAt))} timezone={timezone} />

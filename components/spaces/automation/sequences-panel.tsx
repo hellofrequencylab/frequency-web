@@ -127,7 +127,7 @@ export function SequencesPanel({
           {sequences.map((seq) => (
             <li
               key={seq.id}
-              className="space-y-3 rounded-2xl border border-border bg-surface p-4 shadow-sm"
+              className="space-y-3 rounded-2xl border border-border bg-surface p-4 lift-1"
             >
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
@@ -188,7 +188,7 @@ export function SequencesPanel({
 
       {!readOnly &&
         (showForm ? (
-          <div className="space-y-4 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+          <div className="space-y-4 rounded-2xl border border-border bg-surface p-4 lift-1">
             <div className="space-y-1">
               <Label htmlFor="seq-name">Sequence name</Label>
               <Input

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { HostInviteButton } from '@/components/circles/host-invite-button'
 import { HostInviteEmail } from '@/components/circles/host-invite-email'
 import { getCirclePeopleData, type CirclePeopleData } from '@/app/(main)/circles/admin-actions'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // In-place "People" module (ADMIN-RAIL.md Phase 7, the 'people' spine cell). Renders in the page
 // admin dock on /circles/[slug]; the server returns null unless the caller holds circle.moderate,
@@ -63,7 +64,7 @@ export function CirclePeopleModule() {
           ].map((s) => (
             <div key={s.label} className="rounded-xl border border-border bg-surface p-3">
               <div className="text-lg font-bold text-text">{s.value}</div>
-              <div className="text-2xs font-medium uppercase tracking-wide text-subtle">{s.label}</div>
+              <div className="text-2xs font-medium uppercase tracking-wide text-muted">{s.label}</div>
             </div>
           ))}
         </div>
@@ -76,9 +77,7 @@ export function CirclePeopleModule() {
               {data.memberCount} / {cap}
             </span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-surface-elevated">
-            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${fillPct ?? 0}%` }} />
-          </div>
+          <ProgressTrack value={fillPct ?? 0} label={`${data.memberCount} of ${cap} seats filled`} size="lg" animate />
         </div>
 
         {/* Roster slice with roles. */}

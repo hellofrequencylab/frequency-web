@@ -62,7 +62,7 @@ export function JourneyEventLink({
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-2xs font-medium text-subtle">Event</span>
+      <span className="text-2xs font-medium text-muted">Event</span>
 
       {eventId ? (
         <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/40 bg-primary-bg px-2.5 py-1.5">
@@ -108,7 +108,7 @@ export function JourneyEventLink({
         </button>
       )}
 
-      <p className="text-2xs text-subtle">Tie this Journey to an event so people know when to gather.</p>
+      <p className="text-2xs text-muted">Tie this Journey to an event so people know when to gather.</p>
 
       <EventPickerDialog
         planId={planId}
@@ -178,7 +178,7 @@ function EventPickerDialog({
 
   return (
     <Dialog open={open} onClose={onClose} ariaLabel="Link or create an event" className="max-w-md">
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-xl">
+      <div className="rounded-2xl border border-border bg-surface p-5 lift-3">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="text-base font-bold text-text">Link an event</h2>
@@ -222,7 +222,7 @@ function EventPickerDialog({
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium text-text">{e.title}</span>
                       {formatEventDate(e.startsAt) && (
-                        <span className="block text-2xs text-subtle">{formatEventDate(e.startsAt)}</span>
+                        <span className="block text-2xs text-muted">{formatEventDate(e.startsAt)}</span>
                       )}
                     </span>
                   </button>

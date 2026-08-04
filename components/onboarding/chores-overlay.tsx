@@ -8,6 +8,7 @@ import type { ProfileChores } from '@/lib/onboarding/profile-chores'
 import type { OnboardingStep } from '@/lib/onboarding/status'
 import { claimChoresReward } from '@/app/(main)/feed/chores-actions'
 import { EdgePill } from '@/components/layout/edge-pill'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // Vera's coach — the bait-and-switch (BETA-ACTIVATION §2) plus the "what next" nudge
 // (§5, build item 1.3 folded in here rather than a competing feed card). One Vera
@@ -159,7 +160,7 @@ export function ChoresOverlay({
           aria-modal="true"
           aria-labelledby="chores-title"
           tabIndex={-1}
-          className="relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-2xl outline-none motion-safe:animate-[slideUp_0.25s_ease-out]"
+          className="relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-border bg-surface lift-3 outline-none motion-safe:animate-[slideUp_0.25s_ease-out]"
         >
           <button
             type="button"
@@ -232,7 +233,7 @@ export function ChoresOverlay({
               >
                 Don’t show till tomorrow
               </button>
-              <p className="mt-1.5 text-2xs text-subtle/70">Finish all your tasks and I’ll see myself out.</p>
+              <p className="mt-1.5 text-2xs text-muted/70">Finish all your tasks and I’ll see myself out.</p>
             </div>
           ) : (
             /* ── Beat 1: chores first ────────────────────────────────────────── */
@@ -247,9 +248,14 @@ export function ChoresOverlay({
                   Let’s get your corner of this place in order. Won’t take a minute.
                 </p>
                 <div className="mt-3 flex items-center gap-2">
-                  <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-broadcast-bg">
-                    <span className="block h-full rounded-full bg-broadcast transition-all duration-500" style={{ width: `${chores.pct}%` }} />
-                  </span>
+                  <ProgressTrack
+                    value={chores.pct}
+                    label="Setup progress"
+                    tone="broadcast"
+                    track="broadcast"
+                    animate
+                    className="flex-1"
+                  />
                   <span className="text-xs font-bold tabular-nums text-broadcast-strong">{chores.pct}%</span>
                 </div>
               </div>
@@ -287,7 +293,7 @@ export function ChoresOverlay({
                 <button type="button" onClick={close} className="text-xs font-medium text-subtle transition-colors hover:text-muted">
                   Fine, in a minute.
                 </button>
-                <p className="mt-1 text-2xs text-subtle/70">
+                <p className="mt-1 text-2xs text-muted/70">
                   (I’ve “locked” your screen. Dramatic, I know. The ✕ still works. I’m not a monster.)
                 </p>
               </div>

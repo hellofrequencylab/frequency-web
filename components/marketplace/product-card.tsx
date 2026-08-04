@@ -97,7 +97,7 @@ export function ProductCard({
             </span>
           )}
           {soldOut && (
-            <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-subtle">
+            <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
               Sold out
             </span>
           )}

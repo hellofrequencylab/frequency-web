@@ -658,7 +658,7 @@ export default async function ProfilePage({
           </div>
 
           {/* Achievements — the earned / nearly-earned chips. */}
-          <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+          <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
             <p className="mb-3 text-sm font-bold tracking-tight text-text">
               Achievements <span className="font-medium text-subtle">· {rewardsEarned}/{rewards.length}</span>
             </p>
@@ -685,7 +685,7 @@ function ProfileFeedSkeleton() {
   return (
     <div className="space-y-4" aria-hidden>
       {[0, 1, 2].map((i) => (
-        <div key={i} className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+        <div key={i} className="rounded-2xl border border-border bg-surface p-4 lift-1">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 animate-pulse rounded-full bg-surface-elevated" />
             <div className="flex-1 space-y-2">
@@ -727,7 +727,7 @@ function ProfileStandingCard({
     { icon: Trophy, label: 'Rank', value: rankDef.label, href: isOwner ? '/crew/leaderboard' : null },
   ]
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-bold tracking-tight text-text">Standing</p>
         <span className="rank-badge text-2xs font-medium" style={seasonRankStyle(rank)}>{rankDef.label}</span>
@@ -739,6 +739,8 @@ function ProfileStandingCard({
             <span className="font-semibold text-text">Climbing to {next.label}</span>
             <span className="tabular-nums text-subtle">{zapsToNext.toLocaleString()} ⚡ to go</span>
           </div>
+          {/* Left ad-hoc: ProgressTrack's `track` vocabulary has no warm/warning track, and this
+              rank-climb bar reads against the Zap tone rather than a neutral grey one. */}
           <div className="h-2 overflow-hidden rounded-full bg-warning-bg/60">
             <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
           </div>

@@ -83,7 +83,7 @@ export function EntityCard({
   const coverAspectClass = coverAspect === 'short' ? 'aspect-[16/7]' : 'aspect-[16/9]'
   return (
     <div
-      className={`group press relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-[colors,transform] hover:border-primary-bg hover:shadow-md has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/50 has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-canvas motion-reduce:transition-none ${
+      className={`group press relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface lift-1 transition-[colors,transform] hover:border-primary-bg has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/50 has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-canvas motion-reduce:transition-none ${
         dimmed ? 'dimmed' : ''
       }`}
     >

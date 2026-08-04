@@ -194,7 +194,7 @@ function Avatar({ initials, role }: { initials: string; role: 'jade' | 'teal' | 
 function FeedPanel() {
   return (
     <>
-      <article className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <article className="rounded-2xl border border-border bg-surface p-4 lift-1">
         <div className="flex items-start gap-3 mb-3">
           <Avatar initials="MR" role="jade" />
           <div className="flex-1 min-w-0">
@@ -202,7 +202,7 @@ function FeedPanel() {
               <span className="text-sm font-semibold text-text truncate">Maya R.</span>
               <RoleBadge role="host" className="text-[9px] leading-tight" />
             </div>
-            <p className="text-2xs text-subtle mt-0.5">@maya · 12m · Sunrise Breathwork</p>
+            <p className="text-2xs text-muted mt-0.5">@maya · 12m · Sunrise Breathwork</p>
           </div>
         </div>
         <p className="text-sm text-text leading-relaxed">
@@ -225,7 +225,7 @@ function FeedPanel() {
         </div>
       </article>
 
-      <article className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <article className="rounded-2xl border border-border bg-surface p-4 lift-1">
         <div className="flex items-start gap-3 mb-2">
           <Avatar initials="DT" role="stone" />
           <div className="flex-1 min-w-0">
@@ -233,7 +233,7 @@ function FeedPanel() {
               <span className="text-sm font-semibold text-text truncate">Devon T.</span>
               <RoleBadge role="crew" className="text-[9px] leading-tight" />
             </div>
-            <p className="text-2xs text-subtle mt-0.5">@devon · 1h · Saturday Sauna</p>
+            <p className="text-2xs text-muted mt-0.5">@devon · 1h · Saturday Sauna</p>
           </div>
         </div>
         <p className="text-sm text-text leading-relaxed">
@@ -248,7 +248,7 @@ function FeedPanel() {
 function CirclesPanel() {
   return (
     <>
-      <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
         <div className="flex items-center gap-2 mb-1">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-2.5 py-1 text-3xs font-bold uppercase tracking-widest text-primary-strong">
             <Sparkles className="w-3 h-3" aria-hidden />
@@ -285,7 +285,7 @@ function CirclesPanel() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-info-bg px-2.5 py-1 text-3xs font-bold uppercase tracking-widest text-info">
           <Sparkles className="w-3 h-3" aria-hidden />
           Human relating
@@ -313,14 +313,14 @@ function EventRow({
   meta: string
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 shadow-sm">
+    <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 lift-1">
       <div className="shrink-0 w-11 h-11 rounded-xl bg-primary-bg flex flex-col items-center justify-center">
         <span className="text-[8px] font-bold text-primary-strong leading-none">{month}</span>
         <span className="text-base font-bold text-primary-strong leading-tight">{day}</span>
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-text truncate">{title}</p>
-        <p className="text-2xs text-subtle mt-0.5">{meta}</p>
+        <p className="text-2xs text-muted mt-0.5">{meta}</p>
       </div>
       <span className="text-2xs font-bold uppercase tracking-widest text-primary-strong shrink-0">
         RSVP
@@ -362,7 +362,7 @@ function ZapExample({ note, to }: { note: string; to: string }) {
 function ZapsPanel() {
   return (
     <>
-      <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
         <div className="flex items-center gap-2 mb-3">
           <Zap className="w-4 h-4 text-signal-strong" aria-hidden />
           <span className="text-2xs font-bold uppercase tracking-widest text-muted">
@@ -375,7 +375,7 @@ function ZapsPanel() {
           <ZapExample note="Glad you showed up." to="a friend" />
         </div>
       </div>
-      <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 shadow-sm">
+      <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 lift-1">
         <Repeat className="w-5 h-5 text-primary shrink-0" aria-hidden />
         <p className="text-xs text-muted leading-relaxed">
           Zaps are gratitude, not points. Give one when someone shows up for you.

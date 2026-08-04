@@ -43,7 +43,7 @@ export function SpaceSettingsForm({
   }
 
   return (
-    <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6">
+    <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1 sm:p-6">
       <section className="space-y-3">
         <SectionHeader title="Visibility" />
         <VisibilityField
@@ -53,7 +53,7 @@ export function SpaceSettingsForm({
             if (!readOnly) save(v)
           }}
         />
-        <p className="text-2xs text-subtle" aria-live="polite">
+        <p className="text-2xs text-muted" aria-live="polite">
           {pending
             ? 'Saving…'
             : saved

@@ -40,7 +40,7 @@ export function MarketingCodes({
   const atLimit = cards.length >= limit
 
   return (
-    <section className="rounded-2xl border border-border bg-surface shadow-sm">
+    <section className="rounded-2xl border border-border bg-surface lift-1">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div>
           <h2 className="flex items-center gap-1.5 text-sm font-bold text-text">
@@ -115,6 +115,7 @@ function MarketingRow({ card, targets }: { card: MarketingCard; targets: Marketi
     <div className="rounded-xl border border-border bg-canvas/40 p-3">
       <div className="flex gap-3">
         <div
+          // // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
           className="shrink-0 w-20 h-20 rounded-lg border border-border bg-white p-1 [&>svg]:w-full [&>svg]:h-full"
           dangerouslySetInnerHTML={{ __html: card.svg }}
         />

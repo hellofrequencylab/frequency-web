@@ -64,7 +64,7 @@ function PublishButton({ slug, pageSlug }: { slug: string; pageSlug: string }) {
       title={dirty ? 'Publish your changes. They go live immediately' : 'No changes to publish'}
       className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors ${
         active
-          ? 'bg-primary text-on-primary shadow-sm hover:bg-primary-hover'
+          ? 'bg-primary text-on-primary lift-1 hover:bg-primary-hover'
           : 'bg-surface-elevated text-subtle cursor-default'
       } ${status === 'publishing' ? 'opacity-70' : ''}`}
     >

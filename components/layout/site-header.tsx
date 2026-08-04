@@ -177,7 +177,7 @@ export async function SiteHeader({ profile: profileProp, variant = 'light', auth
         isAuth={isAuth}
         className={`hidden sm:flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-colors ${
           isDark
-            ? 'border-white/20 bg-white/10 text-white/60 hover:bg-white/20 hover:text-white/80'
+            ? 'border-on-ink/20 bg-on-ink/10 text-on-ink-muted hover:bg-on-ink/20 hover:text-on-ink'
             : 'border-border bg-surface-elevated text-muted hover:border-border-strong'
         }`}
       >
@@ -186,8 +186,8 @@ export async function SiteHeader({ profile: profileProp, variant = 'light', auth
         <kbd
           className={`text-3xs rounded px-1 border ${
             isDark
-              ? 'border-white/20 text-white/40'
-              : 'border-border text-subtle'
+              ? 'border-on-ink/20 text-on-ink-subtle'
+              : 'border-border text-muted'
           }`}
         >
           ⌘K
@@ -200,7 +200,7 @@ export async function SiteHeader({ profile: profileProp, variant = 'light', auth
         isAuth={isAuth}
         className={`sm:hidden p-2 rounded-lg transition-colors ${
           isDark
-            ? 'text-white/60 hover:text-white hover:bg-white/10'
+            ? 'text-on-ink-muted hover:text-on-ink hover:bg-on-ink/10'
             : 'text-muted hover:text-text hover:bg-surface-elevated'
         }`}
         aria-label="Search"

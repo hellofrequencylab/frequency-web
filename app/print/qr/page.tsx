@@ -89,6 +89,7 @@ export default async function QrPrintPage({
 // A foldable table tent — two mirrored panels so it reads from both sides once
 // folded along the centre line.
 function TentSheet({ svg, title, url }: { svg: string; title: string; url: string }) {
+  // KEEP bg-white: these sheets are printed, and paper is white whatever generation the screen is on.
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-white print:rounded-none print:border-0">
       {[0, 1].map((i) => (
@@ -96,7 +97,7 @@ function TentSheet({ svg, title, url }: { svg: string; title: string; url: strin
           key={i}
           className={`flex flex-col items-center gap-4 px-8 py-10 ${i === 0 ? 'border-b border-dashed border-border' : 'rotate-180'}`}
         >
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-subtle">Scan to connect</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Scan to connect</p>
           <h1 className="text-center text-2xl font-bold text-text">{title}</h1>
           <div className="h-[300px] w-[300px] [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />
           <p className="text-sm text-muted">{prettyUrl(url)}</p>
@@ -125,9 +126,10 @@ function StickerSheet({ svg, title }: { svg: string; title: string }) {
 
 // One big centred code for a wall poster.
 function PosterSheet({ svg, title, url }: { svg: string; title: string; url: string }) {
+  // KEEP bg-white: these sheets are printed, and paper is white whatever generation the screen is on.
   return (
     <div className="flex min-h-[1000px] flex-col items-center justify-center gap-8 rounded-xl border border-border bg-white px-10 py-16 text-center print:min-h-screen print:rounded-none print:border-0">
-      <p className="text-sm font-semibold uppercase tracking-[0.25em] text-subtle">Scan to join</p>
+      <p className="text-sm font-semibold uppercase tracking-[0.25em] text-muted">Scan to join</p>
       <h1 className="text-4xl font-bold text-text">{title}</h1>
       <div className="h-[460px] w-[460px] [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />
       <p className="text-lg text-muted">{prettyUrl(url)}</p>

@@ -43,7 +43,7 @@ export function QrGenerator({
   const warnings = useMemo(() => scannabilityWarnings(style), [style])
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+    <section className="overflow-hidden rounded-2xl border border-border bg-surface lift-1">
       {/* Header */}
       <div className="border-b border-border px-5 py-4">
         <h2 className="flex items-center gap-1.5 text-sm font-bold text-text">
@@ -59,12 +59,13 @@ export function QrGenerator({
         {/* ── Column 1 — preview, presets, type selector ──────────────────── */}
         <div className="space-y-5 bg-surface p-5">
           <div
-            className="mx-auto aspect-square w-full max-w-[200px] rounded-xl border border-border bg-white p-2 shadow-sm [&>svg]:h-full [&>svg]:w-full"
+            // // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
+            className="mx-auto aspect-square w-full max-w-[200px] rounded-xl border border-border bg-white p-2 lift-1 [&>svg]:h-full [&>svg]:w-full"
             dangerouslySetInnerHTML={{ __html: svg }}
           />
 
           <div className="space-y-2">
-            <p className="text-2xs font-semibold uppercase tracking-wider text-subtle">Presets</p>
+            <p className="text-2xs font-semibold uppercase tracking-wider text-muted">Presets</p>
             <div className="flex flex-wrap gap-1.5">
               {STYLE_PRESETS.map((p) => (
                 <button
@@ -92,12 +93,12 @@ export function QrGenerator({
           </div>
 
           <div className="space-y-2">
-            <p className="text-2xs font-semibold uppercase tracking-wider text-subtle">Type</p>
+            <p className="text-2xs font-semibold uppercase tracking-wider text-muted">Type</p>
             <div className="inline-flex w-full rounded-lg border border-border bg-canvas p-0.5">
               <Seg active={kind === 'link'} onClick={() => setKind('link')} Icon={Link2} label="Dynamic link" />
               <Seg active={kind === 'node'} onClick={() => setKind('node')} Icon={MapPin} label="Check-in code" />
             </div>
-            <p className="text-2xs leading-relaxed text-subtle">
+            <p className="text-2xs leading-relaxed text-muted">
               {kind === 'link'
                 ? 'A retargetable /q/… short link. Point it anywhere, track every scan.'
                 : 'A check-in code that runs the verified earn pipeline (Zaps + practice).'}

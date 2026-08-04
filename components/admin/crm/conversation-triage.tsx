@@ -143,7 +143,7 @@ export function ConversationTriage({
   return (
     <div className="space-y-2 border-t border-border p-3">
       <div className="flex items-center justify-between">
-        <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Manage thread</span>
+        <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Manage thread</span>
         <button
           type="button"
           onClick={() => setOpen(false)}
@@ -217,7 +217,7 @@ export function ConversationTriage({
               {aiPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />} Suggest priority
             </button>
           )}
-          {note && <span className="text-2xs text-subtle">{note}</span>}
+          {note && <span className="text-2xs text-muted">{note}</span>}
         </div>
       )}
       {error && (

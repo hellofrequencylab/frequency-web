@@ -136,7 +136,7 @@ export function SmsForm({
                   type="button"
                   onClick={onSendCode}
                   disabled={isPending || !phone.trim()}
-                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary disabled:opacity-50"
                 >
                   {isPending ? 'Sending…' : 'Send code'}
                 </button>
@@ -160,7 +160,7 @@ export function SmsForm({
                     type="button"
                     onClick={onVerify}
                     disabled={isPending || !code.trim()}
-                    className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                    className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary disabled:opacity-50"
                   >
                     {isPending ? 'Verifying…' : 'Verify'}
                   </button>
@@ -208,7 +208,7 @@ export function SmsForm({
                     }`}
                   >
                     <span
-                      className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                      className={`inline-block h-4 w-4 rounded-full bg-surface shadow transition-transform ${
                         prefs[key] ? 'translate-x-2' : '-translate-x-2'
                       }`}
                     />

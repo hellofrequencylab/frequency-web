@@ -403,7 +403,7 @@ export default async function CommunityPage({
             {ctaLabel && ctaHref && (
               <a
                 href={ctaHref}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
               >
                 {ctaLabel}
               </a>
@@ -516,7 +516,7 @@ export default async function CommunityPage({
                         <span className="truncate text-sm font-semibold text-text">{l.displayName}</span>
                         <span className="shrink-0 rounded-md bg-surface-elevated px-1.5 py-0.5 text-3xs font-medium text-muted">Lead</span>
                       </span>
-                      <span className="mt-0.5 block truncate text-xs text-subtle">
+                      <span className="mt-0.5 block truncate text-xs text-muted">
                         {[l.email, l.city, l.ownerName ? `shared by ${l.ownerName}` : null]
                           .filter(Boolean)
                           .join(' · ') || 'Saved contact'}

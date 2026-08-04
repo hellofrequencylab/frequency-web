@@ -77,7 +77,7 @@ function MilestoneStrip({ milestones }: { milestones: Milestone[] }) {
   if (milestones.length === 0) return null
   return (
     <div>
-      <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Milestones</p>
+      <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Milestones</p>
       <ul className="flex gap-2 overflow-x-auto pb-1">
         {milestones.map((m, i) => (
           <li
@@ -86,7 +86,7 @@ function MilestoneStrip({ milestones }: { milestones: Milestone[] }) {
           >
             <Sparkles className="h-3 w-3 shrink-0 text-primary-strong" aria-hidden />
             <span className="whitespace-nowrap text-2xs font-medium text-text">{m.title}</span>
-            {m.detail && <span className="whitespace-nowrap text-2xs text-subtle">{m.detail}</span>}
+            {m.detail && <span className="whitespace-nowrap text-2xs text-muted">{m.detail}</span>}
           </li>
         ))}
       </ul>
@@ -108,7 +108,7 @@ function EntryRow({ entry }: { entry: PathEntry }) {
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <ChannelIcon channel={entry.channel} className="h-3.5 w-3.5 shrink-0 text-subtle" />
         <span className="text-xs font-semibold text-text">{entry.sender}</span>
-        <span className="text-2xs text-subtle">{relativeTime(entry.at) || ''}</span>
+        <span className="text-2xs text-muted">{relativeTime(entry.at) || ''}</span>
         {entry.ref && <EventRefBadge refInfo={entry.ref} />}
       </div>
       <p className="mt-0.5 text-xs text-muted">{entry.snippet || entry.title}</p>
@@ -141,7 +141,7 @@ function ThreadRow({ thread }: { thread: PathThread }) {
             <span className="truncate text-sm font-medium text-text">{thread.subject}</span>
             {thread.ref && <EventRefBadge refInfo={thread.ref} />}
           </span>
-          <span className="mt-0.5 block text-2xs text-subtle">{meta}</span>
+          <span className="mt-0.5 block text-2xs text-muted">{meta}</span>
           {solo && thread.entries[0]?.snippet && (
             <span className="mt-0.5 block text-xs text-muted">{thread.entries[0].snippet}</span>
           )}
@@ -204,7 +204,7 @@ export function MessagePathFold({
         <RouteIcon className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
         <span className="text-sm font-bold tracking-tight text-text">The Path</span>
         {total > 0 && <span className="text-xs font-medium tabular-nums text-subtle">{total}</span>}
-        <span className="min-w-0 flex-1 truncate text-right text-2xs text-subtle">{summary}</span>
+        <span className="min-w-0 flex-1 truncate text-right text-2xs text-muted">{summary}</span>
         <ChevronRight
           className={cn('h-4 w-4 shrink-0 text-subtle transition-transform', open && 'rotate-90')}
           aria-hidden

@@ -98,7 +98,7 @@ export function PhotoHero({
           </p>
         )}
         <h1
-          className={`font-display uppercase text-white text-balance leading-[0.95] ${
+          className={`font-display uppercase text-on-ink text-balance leading-[0.95] ${
             isScreen ? 'text-[clamp(2.5rem,9vw,6rem)]' : 'text-[clamp(2.25rem,8vw,4.5rem)]'
           }`}
         >
@@ -106,7 +106,7 @@ export function PhotoHero({
         </h1>
         {subtitle && (
           <p
-            className={`text-white/80 leading-relaxed mx-auto max-w-2xl ${
+            className={`text-on-ink-muted leading-relaxed mx-auto max-w-2xl ${
               isScreen ? 'mt-5 text-lg sm:text-xl' : 'mt-6 text-base sm:text-lg'
             }`}
           >
@@ -348,7 +348,7 @@ export function Faq({ q, children }: { q: string; children: React.ReactNode }) {
   return (
     // rounded-card (was rounded-2xl, the same 1rem at :root): inside a Space subtree the page theme
     // shapes the FAQ card (ADR-578); everywhere else the token resolves exactly as before.
-    <details className="group rounded-card border border-border bg-surface px-6 py-5 shadow-sm [&_summary]:list-none">
+    <details className="group rounded-card border border-border bg-surface px-6 py-5 lift-1 [&_summary]:list-none">
       <summary className="flex cursor-pointer items-center justify-between gap-4 text-left select-none">
         <span className="text-lg font-semibold text-text leading-snug">{q}</span>
         <ChevronDown
@@ -387,7 +387,7 @@ const BUTTON_SIZES: Record<ButtonSize, string> = {
   lg: 'px-10 py-4 text-lg gap-2',
 }
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'text-emboss bg-primary text-white hover:bg-primary-hover shadow-pop',
+  primary: 'text-emboss bg-primary text-on-primary hover:bg-primary-hover shadow-pop',
   secondary: 'border border-border bg-surface text-text hover:bg-surface-elevated',
   ghost: 'text-primary-strong hover:underline',
 }
@@ -532,7 +532,7 @@ export function Card({
 }) {
   const tones = {
     soft: 'bg-surface-elevated/60',
-    feature: 'border border-border bg-surface shadow-sm',
+    feature: 'border border-border bg-surface lift-1',
     elevated: 'border border-border bg-surface shadow-pop',
     // The one CHOSEN card in a set (the featured plan). A tone rather than a className override, so
     // the border width cannot depend on which utility Tailwind happened to emit last.
@@ -747,7 +747,7 @@ export function ZigZag({
       <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10 md:gap-16 items-center">
         <div
           className={`w-full ${wrapMax} rounded-2xl overflow-hidden border ${
-            isInk ? 'border-ink-border shadow-pop' : 'border-border shadow-md'
+            isInk ? 'border-ink-border shadow-pop' : 'border-border lift-1'
           } ${reverse ? 'md:order-last' : ''}`}
         >
           <SiteImage
@@ -810,10 +810,10 @@ export function ZigZag({
 export function Marquee({ items }: { items: string[] }) {
   const row = [...items, ...items]
   return (
-    <div className="overflow-hidden border-y border-white/10 py-5 select-none">
+    <div className="overflow-hidden border-y border-on-ink/10 py-5 select-none">
       <div className="flex w-max animate-marquee items-center whitespace-nowrap">
         {row.map((t, i) => (
-          <span key={i} className="flex items-center font-display uppercase text-3xl text-white/15">
+          <span key={i} className="flex items-center font-display uppercase text-3xl text-on-ink/15">
             <span className="px-7">{t}</span>
             <span className="text-primary text-xl">&bull;</span>
           </span>

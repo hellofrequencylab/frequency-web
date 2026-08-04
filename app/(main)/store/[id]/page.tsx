@@ -90,7 +90,7 @@ export default async function ShopProductPage({ params }: { params: Promise<{ id
         subtitle={<span className="font-semibold text-text">{usd(product.priceCents, product.currency)}</span>}
         badges={product.category ? <span className="text-xs text-subtle">{product.category}</span> : undefined}
       >
-        <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm">
+        <div className="rounded-3xl border border-border bg-surface p-5 lift-1">
           {product.images.length > 0 && (
             <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
               {product.images.map((src, i) => (

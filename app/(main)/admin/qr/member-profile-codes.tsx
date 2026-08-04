@@ -60,9 +60,10 @@ function MemberCard({ code }: { code: MemberProfileCode }) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-3 shadow-sm">
+    <div className="rounded-2xl border border-border bg-surface p-3 lift-1">
       <div className="flex gap-3">
         <div
+          // // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
           className="h-20 w-20 shrink-0 rounded-lg border border-border bg-white p-1 [&>svg]:h-full [&>svg]:w-full"
           dangerouslySetInnerHTML={{ __html: code.svg }}
         />

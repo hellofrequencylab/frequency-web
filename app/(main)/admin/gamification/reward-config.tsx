@@ -29,7 +29,7 @@ function prettify(action: string): string {
 // Stage A.)
 export function RewardConfig({ zaps, gems }: { zaps: RewardRow[]; gems: RewardRow[] }) {
   return (
-    <section className="mb-8 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+    <section className="mb-8 overflow-hidden rounded-2xl border border-border bg-surface lift-1">
       <div className="border-b border-border px-4 py-3">
         <h2 className="text-sm font-bold text-text">Reward economy</h2>
         <p className="mt-0.5 text-xs text-muted">

@@ -123,7 +123,7 @@ export function ContextSwitcher({
         aria-expanded={open}
         className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
       >
-        <span className="text-3xs font-semibold uppercase tracking-wider text-subtle">In</span>
+        <span className="text-3xs font-semibold uppercase tracking-wider text-muted">In</span>
         <span className="flex-1 truncate text-left">{activeLabel(context, available)}</span>
         <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
@@ -140,9 +140,9 @@ export function ContextSwitcher({
               ...(anchor.top != null ? { top: anchor.top } : { bottom: anchor.bottom }),
               width: Math.max(anchor.width, 208),
             }}
-            className="z-[60] rounded-xl border border-border bg-surface-elevated py-1 shadow-xl shadow-black/10"
+            className="z-[60] rounded-xl border border-border bg-surface-elevated py-1 lift-3"
           >
-            <p className="px-3 py-1.5 text-3xs font-semibold uppercase tracking-wider text-subtle">
+            <p className="px-3 py-1.5 text-3xs font-semibold uppercase tracking-wider text-muted">
               You&apos;re in
             </p>
             {available.map((option) => {

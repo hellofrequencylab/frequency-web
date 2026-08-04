@@ -30,7 +30,7 @@ function findLink(href: string): AdminLink | undefined {
 function FootCol({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="mb-2.5 text-3xs font-semibold uppercase tracking-wider text-subtle">{title}</p>
+      <p className="mb-2.5 text-3xs font-semibold uppercase tracking-wider text-muted">{title}</p>
       <ul className="space-y-1.5">{children}</ul>
     </div>
   )
@@ -116,7 +116,7 @@ export function AdminFooter({ role, webRole = 'none', staffRole = null }: AdminF
           </FootCol>
         </div>
 
-        <p className="mt-8 text-2xs text-subtle">
+        <p className="mt-8 text-2xs text-muted">
           Frequency admin · you have access scoped to your role. Sensitive actions are logged to the audit trail.
         </p>
         </div>

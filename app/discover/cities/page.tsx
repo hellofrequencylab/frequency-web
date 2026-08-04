@@ -80,7 +80,7 @@ export default async function DiscoverCitiesIndexPage() {
               <Link
                 key={c.slug}
                 href={`/discover/cities/${c.slug}`}
-                className="group flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-6 py-5 shadow-sm transition-colors hover:border-primary"
+                className="group flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-6 py-5 lift-1 transition-colors hover:border-primary"
               >
                 <span className="text-lg font-semibold text-text">{c.city}</span>
                 <ArrowRight className="h-5 w-5 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong" aria-hidden />

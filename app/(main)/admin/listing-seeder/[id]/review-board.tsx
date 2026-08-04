@@ -213,7 +213,7 @@ export function ReviewBoard({
         </section>
       ))}
 
-      <p className="text-2xs text-subtle">
+      <p className="text-2xs text-muted">
         Seeding a {kind === 'housing' ? 'housing' : 'classifieds'} listing.
         {appliedListingId ? ' Already published.' : ''}
       </p>
@@ -593,6 +593,7 @@ function PhotoStrip({
         {images.map((url, i) => (
           <div key={url} className="group relative aspect-square overflow-hidden rounded-xl border border-border">
             <Image src={url} alt="" width={240} height={240} unoptimized className="h-full w-full object-cover" />
+            {/* KEEP the black/white pair below: A scrim chip painted on a photo thumbnail, not on a themed surface, so the monochrome pair stays. */}
             {i === 0 && (
               <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full bg-black/60 px-1.5 py-0.5 text-2xs font-semibold text-white">
                 <Star className="h-3 w-3 fill-current" aria-hidden /> Primary

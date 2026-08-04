@@ -145,7 +145,7 @@ function Segment<T extends number>({
     <div
       role="radiogroup"
       aria-label={label}
-      className="inline-flex items-center gap-1 rounded-full border border-border bg-surface p-1 shadow-sm"
+      className="inline-flex items-center gap-1 rounded-full border border-border bg-surface p-1 lift-1"
     >
       {options.map((n) => {
         const Icon: LucideIcon = icons[n]

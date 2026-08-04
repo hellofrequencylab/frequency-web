@@ -95,7 +95,7 @@ export function PersonaChooser({
 
       {/* Selected → what we'll show them + the way in. */}
       {chosen && (
-        <div className="mx-auto mt-8 max-w-xl rounded-3xl border border-border bg-surface p-7 text-center shadow-sm">
+        <div className="mx-auto mt-8 max-w-xl rounded-3xl border border-border bg-surface p-7 text-center lift-1">
           <p className="font-display uppercase text-2xl text-text">{chosen.track.headline}</p>
           <ul className="mx-auto mt-4 max-w-md space-y-2 text-left">
             {chosen.track.shows.map((s) => (

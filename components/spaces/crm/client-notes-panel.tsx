@@ -77,7 +77,7 @@ export function ClientNotesPanel({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
         <p className="text-sm font-semibold text-text">Notes on {contactName}</p>
         <p className="mt-0.5 text-xs text-muted">
           Private to this space. Only your team sees these.
@@ -135,7 +135,7 @@ export function ClientNotesPanel({
           {notes.map((note) => (
             <li
               key={note.id}
-              className="rounded-2xl border border-border bg-surface p-4 shadow-sm"
+              className="rounded-2xl border border-border bg-surface p-4 lift-1"
             >
               <p className="whitespace-pre-wrap text-sm text-text">{note.body}</p>
               <div className="mt-2 flex items-center justify-between gap-3">

@@ -80,7 +80,7 @@ export function ResonanceMatchingToggle({
             optedIn ? 'bg-primary' : 'bg-surface-elevated border border-border'
           }`}
         >
-          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${optedIn ? 'translate-x-6' : 'translate-x-1'}`} />
+          <span className={`inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform ${optedIn ? 'translate-x-6' : 'translate-x-1'}`} />
         </button>
       </div>
 
@@ -105,7 +105,7 @@ export function ResonanceMatchingToggle({
               muted ? 'bg-primary' : 'bg-surface-elevated border border-border'
             }`}
           >
-            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${muted ? 'translate-x-6' : 'translate-x-1'}`} />
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform ${muted ? 'translate-x-6' : 'translate-x-1'}`} />
           </button>
         </div>
       )}

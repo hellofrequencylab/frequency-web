@@ -68,7 +68,7 @@ export async function TicketsMember({
           return (
             <div
               key={tier.id}
-              className="flex h-full flex-col rounded-2xl border border-border bg-surface p-5 shadow-sm"
+              className="flex h-full flex-col rounded-2xl border border-border bg-surface p-5 lift-1"
             >
               <div className="flex items-start justify-between gap-2">
                 <h3 className="text-base font-bold leading-tight text-text">{tier.name}</h3>
@@ -82,7 +82,7 @@ export async function TicketsMember({
               )}
 
               {tier.kind === 'rsvp' && tier.capacity != null && (
-                <p className="mt-2 text-2xs text-subtle">{tier.capacity} spots</p>
+                <p className="mt-2 text-2xs text-muted">{tier.capacity} spots</p>
               )}
 
               <div className="mt-auto pt-4">

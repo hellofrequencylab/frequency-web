@@ -14,6 +14,7 @@ import { updateHubField } from '../admin-actions'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ProgressTrack } from '@/components/ui/progress-track'
 import type { CircleBase } from '@/lib/types/circle'
 
 type HubDetail = {
@@ -214,12 +215,13 @@ export default async function HubPage({
                         <span className="text-xs text-subtle tabular-nums">
                           {circle.member_count} / {circle.member_cap}
                         </span>
-                        <div className="h-1 w-20 rounded-full bg-surface-elevated overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${full ? 'bg-danger' : 'bg-primary'}`}
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
+                        <ProgressTrack
+                          value={pct}
+                          tone={full ? 'danger' : 'primary'}
+                          size="sm"
+                          className="w-20"
+                          label={`${circle.member_count} of ${circle.member_cap} seats taken`}
+                        />
                       </div>
                     </div>
                     <span className="text-subtle transition-colors group-hover:text-text">→</span>

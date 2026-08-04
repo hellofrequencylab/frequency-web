@@ -350,11 +350,11 @@ export function EventSpark({
           {onReview && draft && (
             <div className="space-y-3">
               <label className="block">
-                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Title</span>
+                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Title</span>
                 <input value={title} onChange={(e) => setTitle(e.target.value)} className={`${FIELD} font-semibold`} placeholder="Name your event" />
               </label>
               <label className="block">
-                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Description</span>
+                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Description</span>
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className={FIELD} placeholder="What it is and who it's for." />
               </label>
               <div className="space-y-1.5 rounded-xl border border-border bg-canvas px-3 py-3 text-sm text-muted">
@@ -377,7 +377,7 @@ export function EventSpark({
                     {detailSummary(draft)}
                   </p>
                 )}
-                <p className="text-2xs text-subtle">You&apos;ll fine-tune everything (and the links) in the editor next.</p>
+                <p className="text-2xs text-muted">You&apos;ll fine-tune everything (and the links) in the editor next.</p>
               </div>
             </div>
           )}

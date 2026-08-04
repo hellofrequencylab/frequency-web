@@ -167,7 +167,7 @@ function PlaceTimeFields({
                 requestAnimationFrame(saveNow)
               }}
             />
-            <p className="text-2xs text-subtle">
+            <p className="text-2xs text-muted">
               Drag the pin or tap the map to set the meeting spot. This is what the circle&apos;s map shows.
             </p>
             <input type="hidden" name="lat" value={lat ?? ''} />

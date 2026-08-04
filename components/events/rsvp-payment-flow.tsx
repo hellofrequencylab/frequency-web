@@ -195,7 +195,7 @@ export function RsvpPaymentFlow({
                     )}
                     Pay {selected.priceLabel} and complete your RSVP
                   </button>
-                  <p className="text-2xs text-subtle">
+                  <p className="text-2xs text-muted">
                     Your RSVP holds the spot; payment completes in secure checkout.
                   </p>
                 </>
@@ -210,7 +210,7 @@ export function RsvpPaymentFlow({
                     {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                     Confirm RSVP
                   </button>
-                  <p className="text-2xs text-subtle">
+                  <p className="text-2xs text-muted">
                     Pay the {selected.priceLabel} at the door. Online payment opens once the host
                     connects payouts.
                   </p>

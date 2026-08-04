@@ -44,7 +44,7 @@ import { BlockIcon } from '@/components/entity-blocks/block-icon'
 export function ControlRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="shrink-0 text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</span>
+      <span className="shrink-0 text-2xs font-semibold uppercase tracking-wide text-muted">{label}</span>
       <div className="flex min-w-0 items-center justify-end">{children}</div>
     </div>
   )
@@ -66,7 +66,7 @@ export function ControlGroup({
       open={defaultOpen}
       className="border-t border-border pt-2 [&_summary::-webkit-details-marker]:hidden"
     >
-      <summary className="cursor-pointer select-none text-2xs font-semibold uppercase tracking-wide text-subtle">
+      <summary className="cursor-pointer select-none text-2xs font-semibold uppercase tracking-wide text-muted">
         {label}
       </summary>
       <div className="mt-2 space-y-2">{children}</div>
@@ -81,7 +81,7 @@ export function ControlGroup({
 export function ControlStack({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <span className="block text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</span>
+      <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">{label}</span>
       <div>{children}</div>
     </div>
   )
@@ -430,7 +430,7 @@ export function PickerControl({
   if (items.length === 0) {
     return (
       <div className="space-y-1.5">
-        <span className="block text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</span>
+        <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">{label}</span>
         {createHref ? (
           <Link
             href={createHref}
@@ -439,7 +439,7 @@ export function PickerControl({
             <Plus className="h-3.5 w-3.5" aria-hidden /> {createLabel ?? 'Create the first one'}
           </Link>
         ) : (
-          <p className="text-2xs text-subtle">Nothing to feature here yet.</p>
+          <p className="text-2xs text-muted">Nothing to feature here yet.</p>
         )}
       </div>
     )
@@ -459,8 +459,8 @@ export function PickerControl({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</span>
-        <span className="text-3xs text-subtle">{showingAll ? 'Showing all' : `${chosen.size} chosen`}</span>
+        <span className="text-2xs font-semibold uppercase tracking-wide text-muted">{label}</span>
+        <span className="text-3xs text-muted">{showingAll ? 'Showing all' : `${chosen.size} chosen`}</span>
       </div>
       <ul className="space-y-1" role="group" aria-label={label}>
         {items.map((it) => {
@@ -500,7 +500,7 @@ export function PickerControl({
           )
         })}
       </ul>
-      <p className="text-3xs text-subtle">
+      <p className="text-3xs text-muted">
         {showingAll ? 'Every one shows. Tap to feature only some.' : 'Only the ones you tap show. Tap all to clear.'}
       </p>
     </div>
@@ -568,7 +568,7 @@ export function IconPicker({
           <div
             role="dialog"
             aria-label={`Choose ${ariaLabel.toLowerCase()}`}
-            className="absolute left-0 top-10 z-50 w-64 space-y-2 rounded-xl border border-border bg-surface p-2 shadow-lg"
+            className="absolute left-0 top-10 z-50 w-64 space-y-2 rounded-xl border border-border bg-surface p-2 lift-3"
           >
             <div className="flex items-center gap-1">
               <button type="button" aria-pressed={source === 'icon'} className={tabCls(source === 'icon')} onClick={() => setSource('icon')}>
@@ -629,7 +629,7 @@ export function IconPicker({
                     </button>
                   ))}
               {((source === 'icon' && lucideResults.length === 0) || (source === 'emoji' && emojiResults.length === 0)) && (
-                <p className="col-span-6 py-3 text-center text-2xs text-subtle">No matches. Try another word.</p>
+                <p className="col-span-6 py-3 text-center text-2xs text-muted">No matches. Try another word.</p>
               )}
             </div>
           </div>

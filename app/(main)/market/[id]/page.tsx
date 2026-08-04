@@ -208,7 +208,7 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
       }
       footer={
         <>
-          <div className="mt-3 rounded-3xl border border-border bg-surface p-5 shadow-sm">
+          <div className="mt-3 rounded-3xl border border-border bg-surface p-5 lift-1">
             {isService ? (
               isOwner ? (
                 <p className="text-sm text-subtle">This is your service. Members pick a time here to book.</p>

@@ -122,7 +122,7 @@ function GoalStep({ onPick, selected }: { onPick: (key: string) => void; selecte
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
                   <Icon className="h-4 w-4" aria-hidden />
                 </span>
-                <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-subtle">
+                <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-muted">
                   {g.object === 'funnel' ? 'Funnel' : 'Campaign'}
                 </span>
               </span>
@@ -262,7 +262,7 @@ function QuestionsStep({
                     <span className="block text-xs font-semibold text-text">{s.title}</span>
                     <span className="block text-2xs text-muted">{s.note}</span>
                   </span>
-                  <span className="shrink-0 text-2xs text-subtle">{s.timing}</span>
+                  <span className="shrink-0 text-2xs text-muted">{s.timing}</span>
                 </li>
               ))}
             </ol>
@@ -361,7 +361,7 @@ function BuildStep({
               ? 'Open the flow view with the series set up, ready for you to write.'
               : 'Open the composer with the audience preset, ready to write.'}
           </span>
-          <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-subtle">
+          <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
             Start from a template
           </span>
         </button>

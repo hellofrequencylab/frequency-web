@@ -76,7 +76,7 @@ export function MessagingConsole({
     <div className="space-y-5">
       {/* Status legend */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-2xl border border-border bg-surface px-4 py-3">
-        <span className="text-2xs font-bold uppercase tracking-wide text-subtle">Status</span>
+        <span className="text-2xs font-bold uppercase tracking-wide text-muted">Status</span>
         {MESSAGING_STATUS_LEGEND.map((s) => (
           <span key={s.key} className="inline-flex items-center gap-1.5 text-xs text-muted" title={s.hint}>
             <span aria-hidden>{s.glyph}</span>
@@ -255,7 +255,7 @@ function CampaignsPanel({
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-border">
           <table className="w-full text-left text-sm">
-            <thead className="bg-surface-elevated text-2xs uppercase tracking-wide text-subtle">
+            <thead className="bg-surface-elevated text-2xs uppercase tracking-wide text-muted">
               <tr>
                 <th className="px-4 py-2.5 font-semibold">Subject</th>
                 <th className="px-4 py-2.5 font-semibold">Audience</th>
@@ -462,7 +462,7 @@ export const FunnelCard = forwardRef<HTMLElement, {
         </p>
       </div>
       {compact ? (
-        <span className="text-2xs text-subtle">{stepLine}</span>
+        <span className="text-2xs text-muted">{stepLine}</span>
       ) : (
         <div className="flex items-center gap-1.5">
           {f.stageKinds.map((_, i) => (
@@ -471,7 +471,7 @@ export const FunnelCard = forwardRef<HTMLElement, {
               {i < f.stageKinds.length - 1 && <span className="h-px w-3 bg-border" />}
             </span>
           ))}
-          <span className="ml-1 text-2xs text-subtle">{stepLine}</span>
+          <span className="ml-1 text-2xs text-muted">{stepLine}</span>
         </div>
       )}
       <span className="mt-auto inline-flex items-center gap-1 text-xs font-semibold text-primary-strong">

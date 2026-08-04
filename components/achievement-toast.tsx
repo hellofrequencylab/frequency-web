@@ -56,7 +56,7 @@ function AchievementToastCard({ achievement, onDismiss }: ToastProps) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
-              <p className="text-3xs font-bold uppercase tracking-wider text-subtle">
+              <p className="text-3xs font-bold uppercase tracking-wider text-muted">
                 Achievement Unlocked
               </p>
               <button

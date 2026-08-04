@@ -41,7 +41,7 @@ export function ScanInviteToggle({ enabled }: { enabled: boolean }) {
         }`}
       >
         <span
-          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+          className={`inline-block h-5 w-5 transform rounded-full bg-surface shadow transition-transform ${
             enabled ? 'translate-x-6' : 'translate-x-1'
           }`}
         />

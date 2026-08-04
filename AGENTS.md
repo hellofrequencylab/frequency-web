@@ -4,6 +4,27 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
+# Which plan is live — read this before picking up "what's next"
+
+The repo carries years of planning documents, and **five of them describe themselves as the
+single source of truth**. Four are wrong. The live plan is:
+
+- **[`docs/UX-MATURITY-PLAN.md`](docs/UX-MATURITY-PLAN.md)** (ADR-925) — the near-term program:
+  eight lifts, each with its gate and its number. Its §Sequencing table says what ships next.
+- **[`docs/BUILD-LIST.md`](docs/BUILD-LIST.md)** (ADR-921) — the phase runway around it, including
+  the phases the owner has deliberately parked.
+- **[`docs/DECISIONS.md`](docs/DECISIONS.md)** — the ADR record both cite. Recent decisions land
+  here first; a plan doc that contradicts an ADR is stale, not authoritative.
+
+Every other planning file (`BUILD-SEQUENCE`, `MASTER-TODO`, `BUILD-CATALOG`, `A-PLUS-ROADMAP`,
+`OPEN-THREADS`, `REMAINING-WORK`, `DEVELOPMENT-MAP`, `BACKLOG`, `MASTER-PLAN`, `BUILD-PHASES`,
+`CHECKLIST`, `PATCH-LIST`) is history. Each carries a superseded banner. They are still worth
+reading for items no current plan absorbed — but never for status.
+
+**When the code and a plan doc disagree, the code wins**, and the doc gets fixed in the same pass.
+The machine-readable state beats prose: `scripts/adoption-baselines.json` is the live design-debt
+scoreboard, `supabase/migrations/` plus the project's ledger is the live schema state.
+
 # Naming + voice — consult BEFORE writing or editing ANY copy
 
 Two locked canons govern everything a member, visitor, or operator can read (UI

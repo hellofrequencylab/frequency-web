@@ -148,7 +148,7 @@ export function HowItWorks({ config }: { config: FunnelConfig }) {
       <ol className="mx-auto mt-12 grid max-w-5xl gap-10 sm:grid-cols-3 sm:gap-8">
         {howItWorks.steps.map((s, i) => (
           <li key={i} className="flex flex-col items-center text-center">
-            <div className="w-full max-w-[220px] rounded-2xl border border-border bg-surface p-5 shadow-sm">
+            <div className="w-full max-w-[220px] rounded-2xl border border-border bg-surface p-5 lift-1">
               <SetupStepGraphic step={i as 0 | 1 | 2} />
             </div>
             <span className="mt-6 inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-on-primary">
@@ -181,7 +181,7 @@ export function FeatureBlocks({ config }: { config: FunnelConfig }) {
                 f.soft
                   ? 'border-dashed border-border bg-canvas'
                   : spine
-                    ? 'border-primary/50 bg-primary-bg/50 shadow-sm'
+                    ? 'border-primary/50 bg-primary-bg/50 lift-1'
                     : 'border-border bg-surface-elevated'
               } ${i % 2 === 1 ? 'sm:flex-row-reverse' : ''}`}
             >

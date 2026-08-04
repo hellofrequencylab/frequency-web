@@ -107,7 +107,7 @@ export function VenueHoldsPanel({
     <div className="space-y-6">
       {/* Incoming requests on THIS space's venue. */}
       {incoming.length > 0 && (
-        <div className="rounded-2xl border border-primary bg-surface p-5 shadow-sm">
+        <div className="rounded-2xl border border-primary bg-surface p-5 lift-1">
           <h3 className="text-sm font-bold text-text">Requests for your venue</h3>
           <ul className="mt-3 space-y-3">
             {incoming.map((h) => (
@@ -144,7 +144,7 @@ export function VenueHoldsPanel({
 
       {/* Request to use a collaborator's venue. */}
       {collaborators.length > 0 && (
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+        <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
           <h3 className="text-sm font-bold text-text">Request a venue</h3>
           <p className="mt-1 text-xs text-muted">
             Ask a space you collaborate with to hold their venue for you. They approve the time. This is a
@@ -223,7 +223,7 @@ export function VenueHoldsPanel({
 
       {/* The current holds (pending + accepted), either side, with cancel. */}
       {active.length > 0 && (
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+        <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
           <h3 className="text-sm font-bold text-text">Venue holds</h3>
           <ul className="mt-3 space-y-3">
             {active.map((h) => (
@@ -236,7 +236,7 @@ export function VenueHoldsPanel({
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle">
+                  <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
                     {STATUS_LABEL[h.status]}
                   </span>
                   <button
@@ -259,7 +259,7 @@ export function VenueHoldsPanel({
 
       {/* Declined holds, so a turned-down request stays visible (re-send from the form above). */}
       {declined.length > 0 && (
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+        <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
           <h3 className="text-sm font-bold text-text">Declined</h3>
           <ul className="mt-3 space-y-3">
             {declined.map((h) => (
@@ -271,7 +271,7 @@ export function VenueHoldsPanel({
                     {when(h.startsAt)} to {when(h.endsAt)}
                   </p>
                 </div>
-                <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle">
+                <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
                   {STATUS_LABEL[h.status]}
                 </span>
               </li>

@@ -87,7 +87,7 @@ export function ThemePreview({ tokens }: { tokens: ThemeTokens }) {
               borderRadius: 'var(--radius-card)',
               transitionDuration: 'var(--motion-base)',
             }}
-            className="space-y-3 border p-4 shadow-sm"
+            className="space-y-3 border p-4 lift-1"
           >
             <div className="flex items-center justify-between gap-2">
               <h4 style={{ color: 'var(--color-text)' }} className="text-base font-bold">

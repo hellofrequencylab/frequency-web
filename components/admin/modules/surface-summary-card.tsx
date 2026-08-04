@@ -97,7 +97,7 @@ export function SurfaceSummaryCard({
           <span className="block truncate text-sm font-medium text-text">{app.label}</span>
           <span className="block truncate text-xs text-subtle">{entry.format(data)}</span>
         </span>
-        <span className="flex shrink-0 items-center gap-1 text-2xs font-medium text-subtle transition-colors group-hover:text-primary-strong">
+        <span className="flex shrink-0 items-center gap-1 text-2xs font-medium text-muted transition-colors group-hover:text-primary-strong">
           View more
           <ArrowRight
             className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
@@ -109,7 +109,7 @@ export function SurfaceSummaryCard({
       {meter && (
         <div className="border-t border-border px-2.5 py-2">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-2xs text-subtle">
+            <span className="text-2xs text-muted">
               {meter.allowance == null
                 ? `${data.count.toLocaleString('en-US')} ${meter.unit} · unlimited`
                 : `${data.count.toLocaleString('en-US')} / ${meter.allowance.toLocaleString('en-US')} ${meter.unit}`}
@@ -132,7 +132,7 @@ export function SurfaceSummaryCard({
             </div>
           )}
           {/* The one shared nudge sentence (ADR-837): plain, no urgency, links only via the chip above. */}
-          {meter.nearLimit && <p className="mt-1 text-2xs text-subtle">{ALLOWANCE_NUDGE}</p>}
+          {meter.nearLimit && <p className="mt-1 text-2xs text-muted">{ALLOWANCE_NUDGE}</p>}
         </div>
       )}
     </div>

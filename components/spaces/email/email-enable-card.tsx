@@ -43,7 +43,7 @@ export function EmailEnableCard({
   }
 
   return (
-    <div className="space-y-4 rounded-2xl border border-border bg-surface p-6 shadow-sm">
+    <div className="space-y-4 rounded-2xl border border-border bg-surface p-6 lift-1">
       <div className="flex items-start gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
           <Mail className="h-5 w-5" aria-hidden />

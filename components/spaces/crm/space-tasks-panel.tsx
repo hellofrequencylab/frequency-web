@@ -155,7 +155,7 @@ export function SpaceTasksPanel({
 
       {!readOnly && (
         <form
-          className="mb-4 rounded-2xl border border-border bg-surface p-4 shadow-sm"
+          className="mb-4 rounded-2xl border border-border bg-surface p-4 lift-1"
           onSubmit={(e) => {
             e.preventDefault()
             if (!pending) add()
@@ -234,7 +234,7 @@ export function SpaceTasksPanel({
       ) : (
         <ul className="space-y-2">
           {open.map((task) => (
-            <li key={task.id} className="rounded-2xl border border-border bg-surface p-3 shadow-sm">
+            <li key={task.id} className="rounded-2xl border border-border bg-surface p-3 lift-1">
               {editingId === task.id ? (
                 <div className="space-y-2">
                   <Input

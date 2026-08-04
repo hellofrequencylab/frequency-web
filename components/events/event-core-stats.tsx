@@ -83,7 +83,7 @@ export function EventCoreStatsCards({
       <>
         {groups.map((g) => (
           <div key={g.label}>
-            <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-subtle">{g.label}</p>
+            <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-muted">{g.label}</p>
             <div className="flex flex-wrap gap-1.5">
               {g.tiles.map((t) => (
                 <StatCard key={t.key} size="xs" label={t.label} value={t.value} icon={t.Icon} detail={t.detail} href={g.href} />
@@ -109,8 +109,8 @@ export function EventCoreStatsCards({
           <t.Icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
           <div className="min-w-0">
             <div className="truncate text-sm font-bold leading-tight text-text">{t.value}</div>
-            <div className="truncate text-2xs font-medium uppercase tracking-wide text-subtle">{t.label}</div>
-            {t.detail && <div className="truncate text-2xs text-subtle">{t.detail}</div>}
+            <div className="truncate text-2xs font-medium uppercase tracking-wide text-muted">{t.label}</div>
+            {t.detail && <div className="truncate text-2xs text-muted">{t.detail}</div>}
           </div>
         </div>
       ))}

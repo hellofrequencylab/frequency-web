@@ -59,7 +59,7 @@ function StatusChip({ intro, rewardGems }: { intro: IntroductionMade; rewardGems
   }
   if (intro.status === 'declined') {
     return (
-      <span className="shrink-0 rounded-full bg-surface px-2.5 py-1 text-2xs font-medium text-subtle">
+      <span className="shrink-0 rounded-full bg-surface px-2.5 py-1 text-2xs font-medium text-muted">
         Didn’t take
       </span>
     )

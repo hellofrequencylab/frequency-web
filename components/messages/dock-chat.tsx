@@ -365,7 +365,7 @@ export function DockChat({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate text-sm font-medium text-text">{title}</span>
-                        {c.lastMessage && <span className="shrink-0 text-3xs text-subtle">{relativeTime(c.lastMessage.created_at)}</span>}
+                        {c.lastMessage && <span className="shrink-0 text-3xs text-muted">{relativeTime(c.lastMessage.created_at)}</span>}
                       </div>
                       <span className="block truncate text-xs text-muted">{c.lastMessage?.body ?? 'No messages yet'}</span>
                     </div>
@@ -383,7 +383,7 @@ export function DockChat({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate text-sm font-medium text-text">{r.name}</span>
-                      {r.last_message_at && <span className="shrink-0 text-3xs text-subtle">{relativeTime(r.last_message_at)}</span>}
+                      {r.last_message_at && <span className="shrink-0 text-3xs text-muted">{relativeTime(r.last_message_at)}</span>}
                     </div>
                     <span className="block truncate text-xs text-muted capitalize">{r.visibility} room</span>
                   </div>

@@ -71,7 +71,7 @@ export default async function MarketReadPage() {
 
 function PainPointCard({ pain }: { pain: PainPoint }) {
   return (
-    <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+    <section className="rounded-2xl border border-border bg-surface p-5 lift-1">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">

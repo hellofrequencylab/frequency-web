@@ -175,7 +175,7 @@ function HostEntityControl({ eventId, slug }: { eventId: string; slug: string })
       <p className="flex items-center gap-1.5 text-xs font-semibold text-text">
         <Building2 className="h-3.5 w-3.5 text-subtle" /> Hosted by
       </p>
-      <p className="mt-0.5 text-2xs text-subtle">
+      <p className="mt-0.5 text-2xs text-muted">
         {hostSpace
           ? `${hostSpace.name} is the host. Registrations and ticket payments run through it.`
           : 'You host this personally. Pick a space to run it through the space instead.'}
@@ -198,7 +198,7 @@ function HostEntityControl({ eventId, slug }: { eventId: string; slug: string })
           )}
         </select>
       ) : hostSpace ? (
-        <p className="mt-1 text-2xs text-subtle">Only someone who helps run {hostSpace.name} can change this.</p>
+        <p className="mt-1 text-2xs text-muted">Only someone who helps run {hostSpace.name} can change this.</p>
       ) : null}
       {error && <p className="mt-1 text-xs text-danger">{error}</p>}
     </div>
@@ -320,7 +320,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
             className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
           />
           {hits.length > 0 && (
-            <div className="mt-1 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-xl shadow-black/5">
+            <div className="mt-1 overflow-hidden rounded-xl border border-border bg-surface py-1 lift-3">
               {hits.map((p) => (
                 <button
                   key={p.id}
@@ -337,7 +337,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-semibold text-text">{p.display_name}</p>
-                    <p className="truncate text-2xs text-subtle">@{p.handle}</p>
+                    <p className="truncate text-2xs text-muted">@{p.handle}</p>
                   </div>
                 </button>
               ))}
@@ -450,7 +450,7 @@ function ScopeSearch({
       {/* Results render IN FLOW (not an absolute overlay) — the module's @container wrapper clips a
           `top-full` dropdown, so an in-flow list is the reliable pattern (see cohost-manager). */}
       {hasResults && (
-        <div className="mt-1 overflow-hidden rounded-xl border border-border bg-surface shadow-xl shadow-black/5">
+        <div className="mt-1 overflow-hidden rounded-xl border border-border bg-surface lift-3">
           {spaces.length > 0 && <ResultGroup label="Spaces" type="space" hits={spaces} pending={pending} onPick={onPick} />}
           {circles.length > 0 && <ResultGroup label="Circles" type="circle" hits={circles} pending={pending} onPick={onPick} />}
         </div>
@@ -474,7 +474,7 @@ function ResultGroup({
 }) {
   return (
     <div className="py-1">
-      <p className="px-3 py-1 text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</p>
+      <p className="px-3 py-1 text-2xs font-semibold uppercase tracking-wide text-muted">{label}</p>
       {hits.map((h) => (
         <button
           key={h.id}

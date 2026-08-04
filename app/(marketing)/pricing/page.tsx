@@ -814,7 +814,7 @@ function ComparisonBlock({
       note: (
         <span className="flex items-baseline gap-1.5">
           {offering?.listAnchor && (
-            <span className="text-2xs font-semibold text-subtle line-through">{offering.listAnchor}</span>
+            <span className="text-2xs font-semibold text-muted line-through">{offering.listAnchor}</span>
           )}
           <span className="text-sm font-bold text-primary-strong">{offering?.monthly}</span>
         </span>

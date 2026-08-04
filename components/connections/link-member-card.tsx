@@ -82,7 +82,7 @@ export function LinkMemberCard({
   }
 
   return (
-    <section className="mt-6 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <section className="mt-6 rounded-2xl border border-border bg-surface p-4 lift-1">
       <h2 className="flex items-center gap-1.5 text-sm font-bold text-text">
         <UserRoundCheck className="h-4 w-4 text-primary-strong" /> On Frequency
       </h2>
@@ -112,7 +112,7 @@ export function LinkMemberCard({
               <Link2Off className="h-3.5 w-3.5" /> Unlink
             </button>
           </div>
-          <p className="w-full text-2xs text-subtle">
+          <p className="w-full text-2xs text-muted">
             Linked to their member profile. Their live profile fills this card in; your logged details and notes stay yours.
           </p>
         </div>

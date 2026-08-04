@@ -351,7 +351,7 @@ export default async function LoomStudioPage({
                       className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-1.5 text-sm text-text hover:bg-surface-elevated"
                     >
                       <span className="truncate">{t.title}</span>
-                      <span className="shrink-0 text-2xs uppercase tracking-wide text-subtle">{t.kind}</span>
+                      <span className="shrink-0 text-2xs uppercase tracking-wide text-muted">{t.kind}</span>
                     </Link>
                   ))}
                 </div>
@@ -359,7 +359,7 @@ export default async function LoomStudioPage({
             )}
             {assets.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border-strong px-6 py-16 text-center">
-                <Images className="mx-auto mb-3 h-8 w-8 text-subtle" aria-hidden />
+                <Images className="mx-auto mb-3 h-8 w-8 text-muted" aria-hidden />
                 <p className="text-base text-muted">
                   {q || kind || category || collectionId ? 'No assets match.' : 'No assets yet.'}
                 </p>

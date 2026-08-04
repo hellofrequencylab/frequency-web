@@ -122,7 +122,7 @@ export function CircleLocationSearch({
         )}
 
         {open && results.length > 0 && (
-          <ul className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-border bg-surface shadow-lg">
+          <ul className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-border bg-surface lift-3">
             {results.map((r) => (
               <li key={r.label}>
                 <button

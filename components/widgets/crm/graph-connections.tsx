@@ -51,7 +51,7 @@ function ConnectionRow({ connection, rank }: { connection: StrongConnection; ran
   const reasons = connection.reasons.map((r) => r.label)
   const why = reasons.length ? reasons.join(' and ') : 'a shared affinity'
   return (
-    <li className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <li className="rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-2 text-sm">
           <span className="text-xs font-bold tabular-nums text-subtle">{rank}</span>

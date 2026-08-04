@@ -183,7 +183,7 @@ export function AdminBarBody({
       >
         <div className="flex items-center gap-2">
           <section.Icon className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-          <h2 className="text-2xs font-semibold uppercase tracking-wide text-subtle">{section.label}</h2>
+          <h2 className="text-2xs font-semibold uppercase tracking-wide text-muted">{section.label}</h2>
         </div>
         <div className="space-y-4">
           {section.nodes.map((item) => (
@@ -223,7 +223,7 @@ export function AdminBarBody({
       {q ? (
         // ── SEARCH results — a flat list across all scoped apps (derived filter, not a screen). ──
         <div aria-live="polite" className="space-y-1">
-          <p className="px-1 text-2xs font-semibold uppercase tracking-wide text-subtle">
+          <p className="px-1 text-2xs font-semibold uppercase tracking-wide text-muted">
             {results.length === 0
               ? 'No settings match'
               : `${results.length} ${results.length === 1 ? 'result' : 'results'}`}
@@ -286,7 +286,7 @@ export function AdminBarBody({
           {model.lockedApps.length > 0 && (
             <div className="space-y-1 pt-2">
               {(inlineSections.length > 0 || model.pageGroup) && <hr className="border-border" />}
-              <p className="px-1 pt-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Unlock more</p>
+              <p className="px-1 pt-2 text-2xs font-semibold uppercase tracking-wide text-muted">Unlock more</p>
               {model.lockedApps.map((row) => (
                 <div key={row.id} className="flex items-start gap-3 rounded-lg px-2 py-2">
                   <Lock className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
@@ -322,7 +322,7 @@ export function AdminBarBody({
               <summary className="flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-subtle outline-none transition-colors hover:text-text focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
                 More
                 <span
-                  className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle"
+                  className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted"
                   aria-label={`${extraCount} more ${extraCount === 1 ? 'setting' : 'settings'}`}
                 >
                   {extraCount}
@@ -343,7 +343,7 @@ export function AdminBarBody({
               pinned as the LAST block. Browse branch only (hidden in search); rendered only when non-empty. ── */}
           {!model.hub && model.bank.length > 0 && (
             <div className="min-w-0 space-y-2 pt-2">
-              <p className="px-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Go to</p>
+              <p className="px-1 text-2xs font-semibold uppercase tracking-wide text-muted">Go to</p>
               <div className="grid grid-cols-2 gap-2">
                 {model.bank.map((link) => {
                   const Icon = link.icon

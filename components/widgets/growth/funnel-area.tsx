@@ -5,6 +5,7 @@ import { FreshnessNote } from '@/components/admin/freshness-note'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPracticeMetrics } from '@/lib/analytics/practice'
 import { getEngagementDashboard } from '@/lib/analytics/dashboard'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // Growth layout module (LP7): "Funnel & activation" — new members joining, and how many reach the
 // North-Star moment (a verified practice) within their first week. Self-fetching RSC; the page owns
@@ -137,9 +138,7 @@ export async function GrowthFunnel() {
                         )}
                       </span>
                     </div>
-                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-elevated">
-                      <div className="h-full rounded-full bg-primary" style={{ width: `${width}%` }} />
-                    </div>
+                    <ProgressTrack value={width} label={`${s.step} share`} className="mt-1" />
                   </div>
                 )
               })}

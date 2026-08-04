@@ -86,7 +86,7 @@ export function PracticeComposer({ id, isEmpty }: { id: string; isEmpty: boolean
             </button>
           </div>
           <div className="mt-4">
-            <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">What you&apos;ll get</p>
+            <p className="text-2xs font-semibold uppercase tracking-wide text-muted">What you&apos;ll get</p>
             <ul className="mt-2 grid gap-2 sm:grid-cols-2">
               {PREVIEW.map((p, i) => (
                 <li key={i} className="flex items-start gap-2 rounded-lg border border-border bg-surface px-3 py-2">

@@ -13,7 +13,7 @@ export function TypingIndicator({ names }: { names: string[] }) {
   else label = 'Several people are typing'
 
   return (
-    <div className="flex items-center gap-2 px-1 py-1 text-2xs text-subtle" aria-live="polite">
+    <div className="flex items-center gap-2 px-1 py-1 text-2xs text-muted" aria-live="polite">
       <span className="flex items-center gap-0.5" aria-hidden>
         <Dot delay="0ms" />
         <Dot delay="150ms" />

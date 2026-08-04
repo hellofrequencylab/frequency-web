@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 // blank while the blocks stream (no layout shift).
 function JourneyCardSkeleton() {
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+    <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-5 lift-1">
       <Skeleton className="h-12 w-12 shrink-0 rounded-xl" />
       <div className="min-w-0 flex-1 space-y-2">
         <Skeleton className="h-5 w-48" />

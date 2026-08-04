@@ -84,7 +84,7 @@ export function QrStudio({
     <div className="space-y-6">
       {/* Create */}
       {!hideCreate && (
-        <div className="rounded-2xl border border-border bg-surface shadow-sm">
+        <div className="rounded-2xl border border-border bg-surface lift-1">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <div>
               <h2 className="text-sm font-bold text-text">New code</h2>
@@ -174,11 +174,12 @@ function NodeCard({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+    <div className="rounded-2xl border border-border bg-surface lift-1 overflow-hidden">
       <div className="flex flex-col sm:flex-row gap-4 p-4">
         {/* QR preview */}
         <div className="shrink-0 mx-auto sm:mx-0">
           <div
+            // // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
             className="w-28 h-28 rounded-lg border border-border bg-white p-1.5 [&>svg]:w-full [&>svg]:h-full"
             // Server-rendered, same-origin SVG of a Frequency URL — safe to inline.
             dangerouslySetInnerHTML={{ __html: node.svg }}

@@ -64,7 +64,7 @@ export function RecordingPickerControl({
     }
   }, [slug])
 
-  const labelCls = 'block text-2xs font-semibold uppercase tracking-wide text-subtle'
+  const labelCls = 'block text-2xs font-semibold uppercase tracking-wide text-muted'
 
   if (choices === null) {
     return (
@@ -79,7 +79,7 @@ export function RecordingPickerControl({
     return (
       <div className="space-y-1.5">
         <span className={labelCls}>{label}</span>
-        <div className="flex items-center gap-1.5 rounded-lg border border-dashed border-border px-2.5 py-2 text-2xs text-subtle">
+        <div className="flex items-center gap-1.5 rounded-lg border border-dashed border-border px-2.5 py-2 text-2xs text-muted">
           <Radio className="h-3.5 w-3.5" aria-hidden /> No recordings yet. Add one in Airwaves.
         </div>
       </div>

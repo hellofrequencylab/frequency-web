@@ -174,7 +174,7 @@ export default async function HousingPage({
             {!savedOnly && (
             <form
               method="get"
-              className="space-y-4 rounded-2xl border border-border bg-surface p-4 shadow-sm"
+              className="space-y-4 rounded-2xl border border-border bg-surface p-4 lift-1"
               aria-label="Filter housing"
             >
               <div className="flex items-center gap-2 text-sm font-medium text-text">

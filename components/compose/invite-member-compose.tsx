@@ -22,7 +22,9 @@ export function InviteMemberCompose({
 
   const signupUrl = 'https://frequencylocal.com/sign-in'
   const mailtoBody = `${message}\n\n${signupUrl}\n\nSee you there!\n${inviterName}`
-  const mailto = `mailto:${email}?subject=${encodeURIComponent('Join me on Frequency')}&body=${encodeURIComponent(mailtoBody)}`
+  // The address is encoded like every other part of the URL: it is typed by the member, and
+  // an unencoded `&` or `?` in it would otherwise inject extra mail headers into the link.
+  const mailto = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent('Join me on Frequency')}&body=${encodeURIComponent(mailtoBody)}`
 
   function handleCopy() {
     navigator.clipboard.writeText(`${message}\n\n${signupUrl}`)
@@ -59,7 +61,7 @@ export function InviteMemberCompose({
           <label className={cmLabel}>Your message</label>
           <textarea value={message} onChange={e => setMessage(e.target.value)}
             rows={4} className={`${cmInput} resize-y leading-relaxed`} />
-          <p className="text-2xs text-subtle mt-1">
+          <p className="text-2xs text-muted mt-1">
             The signup link will be added automatically at the bottom.
           </p>
         </div>

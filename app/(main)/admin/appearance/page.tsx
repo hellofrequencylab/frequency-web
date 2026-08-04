@@ -39,7 +39,7 @@ function NewThemeLink({ size = 'md' }: { size?: 'sm' | 'md' }) {
 
 function ThemeRowCard({ t }: { t: ThemeRow }) {
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 lift-1 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <Link

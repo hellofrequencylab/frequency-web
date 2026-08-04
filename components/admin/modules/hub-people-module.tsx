@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { getHubPeopleData, type HubPeopleData } from '@/app/(main)/hubs/admin-actions'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // In-place "People" module (ADMIN-RAIL.md Phase 7, the 'people' spine cell for hubs — the LP-EVENT
 // recipe applied to hubs). Renders in the page admin dock on /hubs/[slug]; the server returns null
@@ -56,7 +57,7 @@ export function HubPeopleModule() {
           ].map((s) => (
             <div key={s.label} className="rounded-xl border border-border bg-surface p-3">
               <div className="text-lg font-bold text-text">{s.value}</div>
-              <div className="text-2xs font-medium uppercase tracking-wide text-subtle">{s.label}</div>
+              <div className="text-2xs font-medium uppercase tracking-wide text-muted">{s.label}</div>
             </div>
           ))}
         </div>
@@ -78,14 +79,12 @@ export function HubPeopleModule() {
                 <li key={c.id} className="rounded-xl border border-border bg-surface p-3">
                   <div className="flex items-center justify-between gap-2">
                     <span className="min-w-0 truncate text-sm font-semibold text-text">{c.name}</span>
-                    <span className="shrink-0 text-2xs tabular-nums text-subtle">
+                    <span className="shrink-0 text-2xs tabular-nums text-muted">
                       {c.memberCount} / {c.memberCap}
                     </span>
                   </div>
-                  {c.hostName && <p className="mt-0.5 text-2xs text-subtle">Host: {c.hostName}</p>}
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-elevated">
-                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
-                  </div>
+                  {c.hostName && <p className="mt-0.5 text-2xs text-muted">Host: {c.hostName}</p>}
+                  <ProgressTrack value={pct} label={`${c.memberCount} of ${c.memberCap} seats filled`} animate className="mt-1.5" />
                 </li>
               )
             })}

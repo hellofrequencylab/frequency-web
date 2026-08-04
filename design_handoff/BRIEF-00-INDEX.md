@@ -19,6 +19,7 @@
 | 5 | Design direction | The "warm editorial community" direction: principles, the physical-space reference, composition system, iconography, the Midnight skin, do/don't lists | https://raw.githubusercontent.com/hellofrequencylab/frequency-web/main/design_handoff/BRIEF-05-DESIGN-DIRECTION.md |
 | 6 | Styles handoff (working reference) | Every current token value for DAWN + the Midnight skin (colors, shadows, radius, motion, type, effects), the drift since the last sync, open questions for Daniel | https://raw.githubusercontent.com/hellofrequencylab/frequency-web/main/design_handoff/HANDOFF-TO-DAWN-2026-08-03.md |
 | 7 | Full system overview | Every feature on the site: the 32 member-facing domains, operator consoles, the 62 admin studios, the 15 platform engines, tenancy/white-label state, what's dormant, and where truth lives — feature awareness for design rounds and the orientation handoff for Claude Code sessions | https://raw.githubusercontent.com/hellofrequencylab/frequency-web/main/design_handoff/BRIEF-06-SYSTEM-OVERVIEW.md |
+| 8 | The mobile grammar (this round's ask) | Production truth for the phone: breakpoints, the bottom edge, the drawer, safe areas, and the marketing rhythm measured at 390px, plus the seven open questions only a design round can answer. Read after brief 05 | https://raw.githubusercontent.com/hellofrequencylab/frequency-web/main/design_handoff/BRIEF-07-MOBILE-GRAMMAR.md |
 
 ## Companion specs (separate deliverable: the teaser-infographic set)
 

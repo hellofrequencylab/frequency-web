@@ -83,8 +83,8 @@ export function SpaceEventsList({ items }: { items: SpaceEventsViewItem[] }) {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-bold text-text">{e.title}</span>
-                <span className="block truncate text-2xs text-subtle">{e.whenLabel}</span>
-                {e.location && <span className="block truncate text-2xs text-subtle">{e.location}</span>}
+                <span className="block truncate text-2xs text-muted">{e.whenLabel}</span>
+                {e.location && <span className="block truncate text-2xs text-muted">{e.location}</span>}
               </span>
               <Calendar className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
             </button>
@@ -156,7 +156,7 @@ function EventPopupBody({ item, onClose }: { item: SpaceEventsViewItem; onClose:
 
   const eventHref = `/events/${item.slug}`
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-xl">
+    <div className="overflow-hidden rounded-2xl border border-border bg-surface lift-3">
       {item.coverUrl && (
         // eslint-disable-next-line @next/next/no-img-element -- external public bucket URL, not a local asset
         <img

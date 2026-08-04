@@ -7,6 +7,7 @@ import type { OnboardingStatus } from '@/lib/onboarding/status'
 import { forceOnboardingStep } from '@/app/(main)/feed/onboarding-actions'
 import { SpotlightTour } from '@/components/onboarding/spotlight-tour'
 import { SPOTLIGHT_STOPS } from '@/lib/onboarding/spotlight'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // Where the spotlight tour parks its progress so "Take the tour" knows whether to
 // offer a fresh walk or a Resume, and which stop to pick back up from. Mirrors the
@@ -100,9 +101,14 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
           <span className="hidden min-w-0 flex-1 truncate text-xs font-medium text-broadcast-strong/90 sm:block">
             Next: {current.label}
           </span>
-          <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-broadcast-bg sm:hidden">
-            <span className="block h-full rounded-full bg-broadcast transition-all" style={{ width: `${status.pct}%` }} />
-          </span>
+          <ProgressTrack
+            value={status.pct}
+            label={`${status.doneCount} of ${status.total} setup steps done`}
+            tone="broadcast"
+            track="broadcast"
+            animate
+            className="flex-1 sm:hidden"
+          />
           <ChevronDown className="h-4 w-4 shrink-0 -rotate-90 text-broadcast-strong" />
         </button>
       </>

@@ -24,7 +24,7 @@ export function EventManageConsole({ eventId, slug }: { eventId: string; slug: s
         <p className="-mt-2 mb-3 text-sm text-muted">
           Title, description, cover, location, time, and permalink.
         </p>
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+        <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
           <EventSettingsModule />
         </div>
       </section>
@@ -32,7 +32,7 @@ export function EventManageConsole({ eventId, slug }: { eventId: string; slug: s
       <section>
         <SectionHeader title="Danger zone" />
         <p className="-mt-2 mb-3 text-sm text-muted">Delete this event. This cannot be undone.</p>
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+        <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
           <DangerDelete
             entity="event"
             warning="Permanently removes this event. RSVPs and check-ins are cleared. If this event is part of a recurring series, only this occurrence is deleted. Once deleted it cannot be recovered."

@@ -43,7 +43,7 @@ export function SupportConversationsPanel() {
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
       <NewRequest onSent={(ref) => { setOpenRef(ref); setView('thread') }} />
 
-      <p className="mt-4 text-2xs font-semibold uppercase tracking-wide text-subtle">Your requests</p>
+      <p className="mt-4 text-2xs font-semibold uppercase tracking-wide text-muted">Your requests</p>
       {threads === null ? (
         <div className="flex items-center justify-center py-6"><Loader2 className="h-4 w-4 animate-spin text-muted" /></div>
       ) : threads.length === 0 ? (
@@ -59,7 +59,7 @@ export function SupportConversationsPanel() {
               >
                 <span className="flex items-center justify-between gap-2">
                   <span className="min-w-0 truncate text-sm font-medium text-text">{t.subject}</span>
-                  <span className="shrink-0 text-3xs font-semibold uppercase tracking-wide text-subtle">{STATUS_COPY[t.status] ?? t.status}</span>
+                  <span className="shrink-0 text-3xs font-semibold uppercase tracking-wide text-muted">{STATUS_COPY[t.status] ?? t.status}</span>
                 </span>
               </button>
             </li>
@@ -89,7 +89,7 @@ function NewRequest({ onSent }: { onSent: (ref: string) => void }) {
 
   return (
     <div>
-      <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Send us a message</p>
+      <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Send us a message</p>
       <p className="mt-1 text-xs text-muted">Tell us what you need. We&rsquo;ll reply right here and by email.</p>
       <textarea
         value={message}

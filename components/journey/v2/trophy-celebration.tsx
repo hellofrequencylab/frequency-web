@@ -74,7 +74,7 @@ export function TrophyCelebration({ milestone, onDismiss }: { milestone: TrophyM
       onClick={onDismiss}
     >
       <div
-        className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-primary-bg bg-surface p-8 text-center shadow-2xl animate-[slideUp_0.45s_ease-out]"
+        className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-primary-bg bg-surface p-8 text-center lift-3 animate-[slideUp_0.45s_ease-out]"
         onClick={(e) => e.stopPropagation()}
       >
         <Burst />

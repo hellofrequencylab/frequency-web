@@ -41,7 +41,7 @@ export function BookingAvailabilitySummary({ windows }: { windows: AvailabilityW
   ]
 
   return (
-    <dl className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-border bg-border shadow-sm sm:grid-cols-3">
+    <dl className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-border bg-border lift-1 sm:grid-cols-3">
       {stats.map(({ icon: Icon, value, label }) => (
         <div key={label} className="flex items-center gap-3 bg-surface px-4 py-3.5">
           <Icon className="h-5 w-5 shrink-0 text-muted" aria-hidden />

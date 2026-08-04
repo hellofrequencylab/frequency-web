@@ -64,7 +64,7 @@ export function PillarBalance({
                 </span>
               )}
               <dt
-                className="text-2xs font-medium uppercase tracking-wide text-subtle"
+                className="text-2xs font-medium uppercase tracking-wide text-muted"
                 style={isExpression ? { ...expressionPillarStyle(), color: 'var(--rank-deep)' } : undefined}
               >
                 {PILLAR_LABEL[slug]}
@@ -76,7 +76,7 @@ export function PillarBalance({
       </dl>
 
       {empty ? (
-        <p className="mt-2 text-2xs text-subtle">
+        <p className="mt-2 text-2xs text-muted">
           Add Practices across the four Pillars to see the balance.
         </p>
       ) : balance.balanced ? (

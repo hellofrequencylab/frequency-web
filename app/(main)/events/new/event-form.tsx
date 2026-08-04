@@ -482,7 +482,7 @@ export function EventForm({
             <span>
               More photos{' '}
               {galleryImagePaths.length > 0 && (
-                <span className="text-2xs font-normal text-subtle">({galleryImagePaths.length} added)</span>
+                <span className="text-2xs font-normal text-muted">({galleryImagePaths.length} added)</span>
               )}
             </span>
             <span aria-hidden className="text-subtle transition-transform group-open:rotate-180">
@@ -508,7 +508,7 @@ export function EventForm({
           {/* Description — the wide left column (~2/3). */}
           <div className="space-y-1.5 lg:col-span-2">
             <Label className="text-sm text-text" htmlFor="event-description">
-              Description <span className="text-2xs font-normal text-subtle">(optional)</span>
+              Description <span className="text-2xs font-normal text-muted">(optional)</span>
             </Label>
             <Textarea id="event-description"
               value={description}
@@ -536,7 +536,7 @@ export function EventForm({
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-text" htmlFor="event-ends-at">
-                Ends at <span className="text-2xs font-normal text-subtle">(optional)</span>
+                Ends at <span className="text-2xs font-normal text-muted">(optional)</span>
               </Label>
               <Input id="event-ends-at"
                 type="datetime-local"
@@ -633,7 +633,7 @@ export function EventForm({
         {attendanceMode !== 'in_person' && (
           <div className="space-y-1.5">
             <Label className="text-sm text-text" htmlFor="event-online-url">
-              Join link <span className="text-2xs font-normal text-subtle">(optional)</span>
+              Join link <span className="text-2xs font-normal text-muted">(optional)</span>
             </Label>
             <Input id="event-online-url"
               type="url"
@@ -648,7 +648,7 @@ export function EventForm({
 
         <div className="space-y-1.5">
           <Label className="text-sm text-text" htmlFor="event-location">
-            Location <span className="text-2xs font-normal text-subtle">(optional)</span>
+            Location <span className="text-2xs font-normal text-muted">(optional)</span>
           </Label>
           <Input id="event-location"
             type="text"
@@ -677,7 +677,7 @@ export function EventForm({
             >
               <div className="space-y-1">
                 <Label className="text-sm text-text" id="event-address-label">
-                  Address <span className="text-2xs font-normal text-subtle">(optional, for the map)</span>
+                  Address <span className="text-2xs font-normal text-muted">(optional, for the map)</span>
                 </Label>
                 <p className="text-2xs text-muted">
                   Start typing a venue or address and pick it to fill the rest and drop the pin. Then
@@ -943,7 +943,7 @@ export function EventForm({
 
           <div className="space-y-1.5">
             <Label className="text-sm text-text" htmlFor="event-capacity">
-              Group size <span className="text-2xs font-normal text-subtle">(optional)</span>
+              Group size <span className="text-2xs font-normal text-muted">(optional)</span>
             </Label>
             <Input id="event-capacity"
               type="number"
@@ -959,7 +959,7 @@ export function EventForm({
 
           <div className="space-y-1.5">
             <Label className="text-sm text-text" htmlFor="event-energy">
-              Energy <span className="text-2xs font-normal text-subtle">(optional)</span>
+              Energy <span className="text-2xs font-normal text-muted">(optional)</span>
             </Label>
             <select id="event-energy"
               value={energyTag}
@@ -981,7 +981,7 @@ export function EventForm({
           {/* Special instructions — practical notes for attendees. */}
           <div className="space-y-1.5">
             <Label className="text-sm text-text" htmlFor="event-special-instructions">
-              Special instructions <span className="text-2xs font-normal text-subtle">(optional)</span>
+              Special instructions <span className="text-2xs font-normal text-muted">(optional)</span>
             </Label>
             <Textarea id="event-special-instructions"
               value={specialInstructions}

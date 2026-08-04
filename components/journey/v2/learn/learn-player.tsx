@@ -22,6 +22,7 @@ import { PracticeActions } from '@/components/journey/v2/learn/practice-actions'
 import type { JourneyTree } from '@/lib/journeys/tree'
 import type { LessonContent, CheckConfig } from '@/lib/journeys/store'
 import type { PartialToday } from '@/lib/practices'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 interface Props {
   slug: string
@@ -280,9 +281,13 @@ export function LearnPlayer({
           <span className="font-semibold text-text">Your progress</span>
           <span className="tabular-nums text-muted">{tree.doneRequired} of {tree.totalRequired} done</span>
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-surface-elevated">
-          <div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${Math.max(2, tree.percent)}%` }} />
-        </div>
+        <ProgressTrack
+          value={tree.percent}
+          minVisible={2}
+          label={`${tree.doneRequired} of ${tree.totalRequired} done`}
+          size="lg"
+          animate
+        />
       </div>
 
       {/* Mobile: the syllabus is a drawer, collapsed by default (don't push the lesson down). */}
@@ -294,7 +299,7 @@ export function LearnPlayer({
       >
         <List className="h-4 w-4 text-subtle" />
         Contents
-        <span className="ml-auto tabular-nums text-2xs text-subtle">{idx >= 0 ? idx + 1 : 0} / {order.length}</span>
+        <span className="ml-auto tabular-nums text-2xs text-muted">{idx >= 0 ? idx + 1 : 0} / {order.length}</span>
         <ChevronDown className={`h-4 w-4 text-subtle transition-transform ${mobileToc ? '' : '-rotate-90'}`} />
       </button>
 
@@ -317,16 +322,16 @@ export function LearnPlayer({
                   <span className="min-w-0 flex-1">
                     {/* The "Week N" eyebrow only when the phase is a real, titled phase (a flat/
                         legacy journey has one untitled implicit phase — no week label there). */}
-                    {p.title && <span className="block text-2xs font-semibold uppercase tracking-wide text-subtle">Week {pi + 1}</span>}
+                    {p.title && <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">Week {pi + 1}</span>}
                     <span className="block truncate text-sm font-semibold text-text">{p.title || `Phase ${pi + 1}`}</span>
-                    {locked && <span className="block text-2xs font-medium text-subtle">{unlockLabel(lock?.unlockAt ?? null)}</span>}
+                    {locked && <span className="block text-2xs font-medium text-muted">{unlockLabel(lock?.unlockAt ?? null)}</span>}
                   </span>
                   {locked ? (
                     <Lock className="h-4 w-4 shrink-0 text-subtle" />
                   ) : p.complete ? (
                     <Check className="h-4 w-4 shrink-0 text-success" />
                   ) : (
-                    <span className="shrink-0 tabular-nums text-2xs text-subtle">{p.doneRequired}/{p.totalRequired}</span>
+                    <span className="shrink-0 tabular-nums text-2xs text-muted">{p.doneRequired}/{p.totalRequired}</span>
                   )}
                 </button>
 
@@ -355,7 +360,7 @@ export function LearnPlayer({
                     {p.modules.map((m) => (
                       <div key={m.id}>
                         {m.title && (
-                          <p className="px-2 pb-0.5 pt-1 text-2xs font-semibold uppercase tracking-wide text-subtle">{m.title}</p>
+                          <p className="px-2 pb-0.5 pt-1 text-2xs font-semibold uppercase tracking-wide text-muted">{m.title}</p>
                         )}
                         <ul className="space-y-0.5">
                           {m.lessons.map((l) => {
@@ -381,7 +386,7 @@ export function LearnPlayer({
                                     active ? 'bg-primary-bg font-medium text-primary-strong' : 'text-text hover:bg-surface-elevated'
                                   }`}
                                 >
-                                  <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${l.done ? 'border-success bg-success text-on-primary' : active ? 'border-primary' : 'border-border'}`}>
+                                  <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${l.done ? 'border-success bg-success text-on-success' : active ? 'border-primary' : 'border-border'}`}>
                                     {l.done && <Check className="h-2.5 w-2.5" />}
                                   </span>
                                   <span className="min-w-0 flex-1 truncate">{l.title}</span>
@@ -389,7 +394,7 @@ export function LearnPlayer({
                                     <Anchor className="h-3 w-3 shrink-0 text-primary-strong" aria-label="Daily anchor" />
                                   )}
                                   {pillar && (
-                                    <span className="shrink-0 rounded-full bg-surface-elevated px-1.5 py-0.5 text-3xs font-medium text-subtle">
+                                    <span className="shrink-0 rounded-full bg-surface-elevated px-1.5 py-0.5 text-3xs font-medium text-muted">
                                       {pillar}
                                     </span>
                                   )}
@@ -446,7 +451,7 @@ export function LearnPlayer({
                 </div>
               )}
 
-              <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">
+              <p className="text-2xs font-semibold uppercase tracking-wide text-muted">
                 Lesson {idx + 1} of {order.length}{lesson.estMinutes ? ` · ${lesson.estMinutes} min` : ''}{lesson.required ? '' : ' · optional'}
               </p>
               <div className="mt-1 flex flex-wrap items-center gap-2">

@@ -56,7 +56,7 @@ export function CircleQuestModule() {
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <h4 className="text-2xs font-semibold uppercase tracking-wide text-subtle">{children}</h4>
+  return <h4 className="text-2xs font-semibold uppercase tracking-wide text-muted">{children}</h4>
 }
 
 function QuestList({ label, items, empty }: { label: string; items: CircleQuestItem[]; empty: string }) {

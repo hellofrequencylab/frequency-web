@@ -41,7 +41,7 @@ export function TeamBlock({
           {team.map((member) => (
             <li
               key={member.profileId}
-              className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-sm"
+              className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 lift-1"
             >
               {member.avatarUrl ? (
                 <Image

@@ -22,7 +22,7 @@ export function CommunityProof({
 
   if (!hasProof) {
     return (
-      <div className="rounded-2xl border border-border bg-surface px-6 py-5 text-center shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface px-6 py-5 text-center lift-1">
         <p className="text-sm text-muted leading-relaxed">
           The first Circles are taking root in{' '}
           <strong className="text-text">{FOUNDING_PLACE}</strong>. The founding members are
@@ -33,7 +33,7 @@ export function CommunityProof({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface px-6 py-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-surface px-6 py-5 lift-1">
       <p className="mb-4 text-center text-xs font-bold uppercase tracking-[0.2em] text-primary">
         Already happening in {FOUNDING_PLACE}
       </p>

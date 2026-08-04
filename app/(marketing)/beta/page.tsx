@@ -45,9 +45,9 @@ export default function BetaPage() {
         title="Be one of the first."
         subtitle={`We're opening Frequency to a small group at a time, starting in ${FOUNDING_PLACE}. Add your name and we'll reach out when a spot opens for you.`}
         footer={
-          <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/60">
-            <span className="font-semibold text-white/80">Free during the beta.</span>
-            <span aria-hidden className="text-white/30">·</span>
+          <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-on-ink/60">
+            <span className="font-semibold text-on-ink/80">Free during the beta.</span>
+            <span aria-hidden className="text-on-ink/30">·</span>
             <span>No card · Pay what you want later · Leave anytime</span>
           </p>
         }
@@ -111,7 +111,7 @@ export default function BetaPage() {
             { n: '02', t: 'We reach out', b: 'When a spot opens near you, we send a personal invite, not a mass blast.' },
             { n: '03', t: 'Show up', b: "Find your Circle, meet your people, and start being missed when you're gone." },
           ].map((s) => (
-            <li key={s.n} className="rounded-2xl border border-border bg-surface p-7 shadow-sm">
+            <li key={s.n} className="rounded-2xl border border-border bg-surface p-7 lift-1">
               <span className="font-display text-3xl text-border-strong" aria-hidden>
                 {s.n}
               </span>

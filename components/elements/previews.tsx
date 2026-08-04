@@ -77,7 +77,7 @@ function HeaderPreview() {
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <ArrowDownUp className="h-3.5 w-3.5 text-subtle" aria-hidden />
-        <span className="text-2xs uppercase tracking-wide text-subtle">Sort</span>
+        <span className="text-2xs uppercase tracking-wide text-muted">Sort</span>
         {(['name', 'type'] as const).map((s) => (
           <button
             key={s}
@@ -94,7 +94,7 @@ function HeaderPreview() {
           <div key={p.key} className="space-y-2">
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm font-semibold text-text">{p.name}</p>
-              <span className="text-2xs uppercase tracking-wide text-subtle">{p.type}</span>
+              <span className="text-2xs uppercase tracking-wide text-muted">{p.type}</span>
             </div>
             <PageHero
               variant={p.variant}
@@ -167,7 +167,7 @@ export function ElementPreview({ elementKey }: { elementKey: ElementKey }) {
   if (!body) return null
   return (
     <div className="mt-4 rounded-xl border border-border bg-surface-elevated/40 p-3">
-      <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Preview</p>
+      <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Preview</p>
       {body}
     </div>
   )

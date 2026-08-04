@@ -1,6 +1,7 @@
 import { Check, Circle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { scoreProfileCompleteness, type CompletenessInput } from '@/lib/spaces/completeness'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // PROFILE READINESS CARD — the operator-facing "how findable is my Space" indicator, seated at the top
 // of the Basics editor (the Identity surface). It scores the SEO / answer-engine-relevant fields the
@@ -19,8 +20,6 @@ export function ProfileCompletenessCard({ input }: { input: CompletenessInput })
   // as primary, an early one as a quiet warning nudge. Tokens only, never a hex.
   const tone =
     report.score >= 100 ? 'success' : report.score >= 50 ? 'primary' : 'warning'
-  const barColor =
-    tone === 'success' ? 'bg-success' : tone === 'primary' ? 'bg-primary' : 'bg-warning'
   const scoreColor =
     tone === 'success' ? 'text-success' : tone === 'primary' ? 'text-primary-strong' : 'text-warning'
 
@@ -41,20 +40,15 @@ export function ProfileCompletenessCard({ input }: { input: CompletenessInput })
         <span className={cn('text-sm font-bold tabular-nums', scoreColor)}>{report.score}%</span>
       </div>
 
-      {/* The meter. Decorative fill + an accessible progress role so a screen reader reads the score. */}
-      <div
-        className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-elevated"
-        role="progressbar"
-        aria-valuenow={report.score}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label="Profile completeness"
-      >
-        <div
-          className={cn('h-full rounded-full transition-all', barColor)}
-          style={{ width: `${report.score}%` }}
-        />
-      </div>
+      {/* The meter. ProgressTrack carries the progressbar role and the score for a screen reader. */}
+      <ProgressTrack
+        value={report.score}
+        tone={tone}
+        size="lg"
+        animate
+        className="mt-3 w-full"
+        label="Profile completeness"
+      />
 
       <p className="mt-2.5 text-xs text-muted">{headline}</p>
 

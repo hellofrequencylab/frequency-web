@@ -13,7 +13,7 @@ export default function JournalLoading() {
       <div className="mb-5 border-b border-border sm:mb-6" />
       <div className="max-w-2xl space-y-4">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <div key={i} className="rounded-2xl border border-border bg-surface p-5 lift-1">
             <Skeleton className="mb-3 h-3 w-24" />
             <Skeleton className="mb-2 h-4 w-full" />
             <Skeleton className="h-4 w-2/3" />

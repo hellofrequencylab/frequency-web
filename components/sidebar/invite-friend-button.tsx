@@ -87,7 +87,7 @@ export function InviteFriendButton({
             onClick={() => setOpen(false)}
             className="absolute inset-0 cursor-default bg-ink/50 backdrop-blur-sm"
           />
-          <div className="relative w-full max-w-sm rounded-2xl border border-border bg-surface p-6 shadow-xl">
+          <div className="relative w-full max-w-sm rounded-2xl border border-border bg-surface p-6 lift-3">
             <button
               type="button"
               onClick={() => setOpen(false)}

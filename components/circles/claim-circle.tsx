@@ -71,7 +71,7 @@ export function ClaimCircle({
 
       {/* Modal wizard */}
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="Make it yours" className="max-w-md">
-          <div className="w-full rounded-2xl border border-border bg-surface p-5 shadow-xl">
+          <div className="w-full rounded-2xl border border-border bg-surface p-5 lift-3">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-base font-bold text-text">Make it yours</h2>
               <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="text-subtle hover:text-text">

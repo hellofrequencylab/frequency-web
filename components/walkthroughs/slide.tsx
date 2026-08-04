@@ -43,8 +43,8 @@ export const ACCENT_CLASSES: Record<StepAccent, { solid: string; onSolid: string
   primary: { solid: 'bg-primary', onSolid: 'text-on-primary', soft: 'bg-primary-bg', text: 'text-primary-strong' },
   signal: { solid: 'bg-signal', onSolid: 'text-on-signal', soft: 'bg-signal-bg', text: 'text-signal-strong' },
   broadcast: { solid: 'bg-broadcast', onSolid: 'text-on-broadcast', soft: 'bg-broadcast-bg', text: 'text-broadcast-strong' },
-  success: { solid: 'bg-success', onSolid: 'text-white', soft: 'bg-success-bg', text: 'text-success' },
-  warning: { solid: 'bg-warning', onSolid: 'text-white', soft: 'bg-warning-bg', text: 'text-warning' },
+  success: { solid: 'bg-success', onSolid: 'text-on-success', soft: 'bg-success-bg', text: 'text-success' },
+  warning: { solid: 'bg-warning', onSolid: 'text-on-warning', soft: 'bg-warning-bg', text: 'text-warning' },
   'rank-gold': { solid: 'bg-[var(--rank-gold)]', onSolid: 'text-white', soft: 'bg-[var(--rank-gold-bright)]/30', text: 'text-[var(--rank-gold-deep)]' },
   'rank-jade': { solid: 'bg-[var(--rank-jade)]', onSolid: 'text-white', soft: 'bg-[var(--rank-jade-bright)]/30', text: 'text-[var(--rank-jade-deep)]' },
   'rank-teal': { solid: 'bg-[var(--rank-teal)]', onSolid: 'text-white', soft: 'bg-[var(--rank-teal-bright)]/30', text: 'text-[var(--rank-teal-deep)]' },
@@ -55,7 +55,7 @@ export const ACCENT_CLASSES: Record<StepAccent, { solid: string; onSolid: string
 
 // The card shell — hoisted so it isn't re-created on every render.
 function PreviewCard({ children }: { children: ReactNode }) {
-  return <div className="overflow-hidden rounded-3xl border border-border bg-surface shadow-2xl">{children}</div>
+  return <div className="overflow-hidden rounded-3xl border border-border bg-surface lift-3">{children}</div>
 }
 
 // A faithful render of a slide in the in-app card language (chores-overlay / vera-lightbox),

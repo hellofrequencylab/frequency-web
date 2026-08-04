@@ -54,7 +54,7 @@ export async function FeedPeopleStrip({ viewerProfileId }: { viewerProfileId: st
                     <VerifiedBadge verified={p.verified} />
                   </span>
                 }
-                meta={why ? <span className="text-2xs text-subtle">{why}</span> : undefined}
+                meta={why ? <span className="text-2xs text-muted">{why}</span> : undefined}
               />
             </DismissableSuggestion>
           )

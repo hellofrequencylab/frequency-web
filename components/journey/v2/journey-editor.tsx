@@ -74,7 +74,7 @@ function CheckEditor({ initial, disabled, onSave }: { initial: CheckConfig | nul
   const inputCls = 'w-full rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none'
   return (
     <div className="mt-2 space-y-2 rounded-lg border border-border bg-surface p-2.5">
-      <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Knowledge check</p>
+      <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Knowledge check</p>
       <input value={cfg.question} disabled={disabled} onChange={(e) => setCfg({ ...cfg, question: e.target.value })} onBlur={() => onSave(cfg)} placeholder="Question" className={inputCls} />
       <div className="space-y-1.5">
         {cfg.options.map((opt, i) => (
@@ -85,7 +85,7 @@ function CheckEditor({ initial, disabled, onSave }: { initial: CheckConfig | nul
               onClick={() => commit({ ...cfg, answer: i })}
               aria-label="Mark as the correct answer"
               title="Correct answer"
-              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-2xs font-bold ${cfg.answer === i ? 'border-success text-success' : 'border-border text-subtle hover:border-text'}`}
+              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-2xs font-bold ${cfg.answer === i ? 'border-success text-success' : 'border-border text-muted hover:border-text'}`}
             >
               {cfg.answer === i ? <Check className="h-3.5 w-3.5" /> : String.fromCharCode(65 + i)}
             </button>
@@ -104,7 +104,7 @@ function CheckEditor({ initial, disabled, onSave }: { initial: CheckConfig | nul
         </button>
       )}
       <input value={cfg.explanation ?? ''} disabled={disabled} onChange={(e) => setCfg({ ...cfg, explanation: e.target.value })} onBlur={() => onSave(cfg)} placeholder="Why (shown after they answer)" className={inputCls} />
-      <p className="text-2xs text-subtle">Tap the circle to mark the correct option. Members get instant feedback and can retry.</p>
+      <p className="text-2xs text-muted">Tap the circle to mark the correct option. Members get instant feedback and can retry.</p>
     </div>
   )
 }
@@ -162,7 +162,7 @@ function SlotCoaching({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
           <Sparkles className="h-3.5 w-3.5 text-primary-strong" />
-          <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Vera coaching prompt</span>
+          <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Vera coaching prompt</span>
           {pillarName && (
             <span className="rounded-full border border-border bg-surface px-1.5 py-0.5 text-2xs font-medium text-muted">{pillarName}</span>
           )}
@@ -187,7 +187,7 @@ function SlotCoaching({
       />
       {/* Per-step warm-up override (ADR-592, P5): shown in the timer pre-roll for this step, over
           the practice's own warm-up message. Blank = the practice's message (or a silent pre-roll). */}
-      <label className="mt-2 block text-2xs font-semibold uppercase tracking-wide text-subtle">Warm-up message for this step</label>
+      <label className="mt-2 block text-2xs font-semibold uppercase tracking-wide text-muted">Warm-up message for this step</label>
       <textarea
         value={warmup}
         disabled={disabled}
@@ -296,7 +296,7 @@ export function JourneyEditor({
   const ModuleGroup = (m: EditorBlock) => (
     <div key={m.id} className="rounded-xl border border-border bg-canvas p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="shrink-0 text-2xs font-semibold uppercase tracking-wide text-subtle">Module</span>
+        <span className="shrink-0 text-2xs font-semibold uppercase tracking-wide text-muted">Module</span>
         <input
           defaultValue={m.title}
           onBlur={(e) => run(() => updateBlockAction(slug, m.id, { title: e.target.value }))}
@@ -536,7 +536,7 @@ export function JourneyEditor({
                     </span>
                   ) : (
                     <>
-                      <span className="text-2xs text-subtle">No practice yet.</span>
+                      <span className="text-2xs text-muted">No practice yet.</span>
                       {/* Mint a REAL practice from this slot (title + note + Pillar), so it carries a
                           timer and earns Zaps in the player instead of staying an inert block. */}
                       <button
@@ -581,7 +581,7 @@ export function JourneyEditor({
                     <Anchor className="h-3.5 w-3.5" /> {anchored ? 'Anchor (daily through-line)' : 'Make this the Anchor'}
                   </button>
                   {!anchored && anchorBlock && (
-                    <span className="text-2xs text-subtle">
+                    <span className="text-2xs text-muted">
                       An anchor is already set on {anchorBlock.title || 'another practice'}.
                     </span>
                   )}
@@ -617,7 +617,7 @@ export function JourneyEditor({
         {otherLeaves.length > 0 && <ul className="mt-3 space-y-2">{otherLeaves.map(LeafRow)}</ul>}
         {practiceLeaves.length > 0 && (
           <div className="mt-3">
-            <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+            <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
               <Dumbbell className="h-3.5 w-3.5" /> Practices
             </p>
             <ul className="space-y-2">{practiceLeaves.map(LeafRow)}</ul>
@@ -754,7 +754,7 @@ export function JourneyEditor({
                   >
                     <Sparkles className="h-4 w-4" /> {pending ? 'Building…' : 'Populate this week with Vera'}
                   </button>
-                  <p className="mt-1.5 text-center text-2xs text-subtle">Vera follows your outline and pulls matching practices from the library. Or add your own below.</p>
+                  <p className="mt-1.5 text-center text-2xs text-muted">Vera follows your outline and pulls matching practices from the library. Or add your own below.</p>
                 </div>
               )}
               {renderLeaves(p.id)}

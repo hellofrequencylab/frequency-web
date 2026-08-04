@@ -116,7 +116,7 @@ export function PlanLadder({
   // The Independent rung only appears for a Space already on it (grandfathered); it is not sold.
   const rungs = currentPlan === 'independent' ? [...RUNGS, INDEPENDENT_RUNG] : RUNGS
   return (
-    <section aria-labelledby="collective-ladder-heading" className="rounded-2xl border border-border bg-surface px-5 py-5 shadow-sm">
+    <section aria-labelledby="collective-ladder-heading" className="rounded-2xl border border-border bg-surface px-5 py-5 lift-1">
       <h2 id="collective-ladder-heading" className="text-base font-bold text-text">
         The Community Collective
       </h2>

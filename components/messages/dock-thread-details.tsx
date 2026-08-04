@@ -163,7 +163,7 @@ export function DockThreadDetails({
           <div className="shrink-0 border-b border-border px-3 py-2.5">
             {editing ? (
               <div>
-                <label htmlFor="dock-conversation-name" className="block text-2xs font-semibold uppercase tracking-wider text-subtle">
+                <label htmlFor="dock-conversation-name" className="block text-2xs font-semibold uppercase tracking-wider text-muted">
                   Group name
                 </label>
                 <input
@@ -179,7 +179,7 @@ export function DockThreadDetails({
                   // and a zoom-and-restore jump inside a 68dvh sheet is far worse than on a page.
                   className="mt-1 w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-base text-text outline-none focus:border-border-strong focus:ring-1 focus:ring-border-strong/30 sm:text-sm"
                 />
-                <p className="mt-1 text-3xs text-subtle">Leave it blank to go back to the members&rsquo; names.</p>
+                <p className="mt-1 text-3xs text-muted">Leave it blank to go back to the members&rsquo; names.</p>
                 {renameError && <p role="alert" className="mt-1 text-xs text-danger">{renameError}</p>}
                 <div className="mt-2 flex gap-2">
                   <button
@@ -202,7 +202,7 @@ export function DockThreadDetails({
             ) : (
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-2xs font-semibold uppercase tracking-wider text-subtle">Group name</p>
+                  <p className="text-2xs font-semibold uppercase tracking-wider text-muted">Group name</p>
                   <p className="truncate text-sm text-text">{name || 'Not set'}</p>
                 </div>
                 <button
@@ -219,7 +219,7 @@ export function DockThreadDetails({
         )}
 
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <h3 className="px-3 pt-2.5 pb-1 text-2xs font-semibold uppercase tracking-wider text-subtle">
+          <h3 className="px-3 pt-2.5 pb-1 text-2xs font-semibold uppercase tracking-wider text-muted">
             People ({participants.length})
           </h3>
           <ul className="divide-y divide-border/50">
@@ -244,7 +244,7 @@ export function DockThreadDetails({
                       {p.display_name}
                       {p.id === myProfileId && <span className="ml-1 font-normal text-subtle">(You)</span>}
                     </span>
-                    <span className="block truncate text-3xs text-subtle">@{p.handle}</span>
+                    <span className="block truncate text-3xs text-muted">@{p.handle}</span>
                   </span>
                 </Link>
               </li>
@@ -266,7 +266,7 @@ export function DockThreadDetails({
                     disabled={leaving}
                     aria-busy={leaving}
                     autoFocus
-                    className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg bg-danger px-3 text-sm font-medium text-on-primary transition-opacity hover:opacity-90 disabled:opacity-60"
+                    className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg bg-danger px-3 text-sm font-medium text-on-danger transition-opacity hover:opacity-90 disabled:opacity-60"
                   >
                     {leaving && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />} Yes, leave
                   </button>

@@ -130,14 +130,14 @@ function VariantRow({ codeId, v, groups, isWinner }: { codeId: string; v: Varian
         </span>
         <button onClick={() => setEditing(true)} className="min-w-0 text-left">
           <span className="block truncate text-sm text-text">{v.label}</span>
-          <span className="block truncate text-2xs text-subtle">{v.targetUrl}</span>
+          <span className="block truncate text-2xs text-muted">{v.targetUrl}</span>
         </button>
         <span className="text-right text-sm tabular-nums text-muted">{v.weight}</span>
         <span className="text-right text-sm tabular-nums text-text">{v.scans}</span>
         <span className="text-right text-sm tabular-nums font-semibold text-text">{v.conversions}</span>
         <span className={`text-right text-sm tabular-nums ${isWinner ? 'font-bold text-primary-strong' : 'text-muted'}`}>{pct(v.rate)}</span>
         <div className="flex items-center justify-end gap-1">
-          <button onClick={toggle} disabled={pending} title={v.active ? 'Pause' : 'Resume'} aria-label={v.active ? 'Pause variant' : 'Resume variant'} className="text-2xs font-semibold text-subtle hover:text-text disabled:opacity-60">{v.active ? '❚❚' : '▶'}</button>
+          <button onClick={toggle} disabled={pending} title={v.active ? 'Pause' : 'Resume'} aria-label={v.active ? 'Pause variant' : 'Resume variant'} className="text-2xs font-semibold text-muted hover:text-text disabled:opacity-60">{v.active ? '❚❚' : '▶'}</button>
           <button onClick={remove} disabled={pending} aria-label="Delete variant" className="text-muted hover:text-danger disabled:opacity-60"><Trash2 className="h-3 w-3" /></button>
         </div>
       </div>
@@ -172,7 +172,7 @@ function AddVariant({ codeId, groups }: { codeId: string; groups: DestinationGro
     )
   }
   return (
-    <div className="space-y-2 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <div className="space-y-2 rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="grid gap-2 sm:grid-cols-[6rem_1fr]">
         <input value={key} onChange={(e) => setKey(e.target.value)} placeholder="Key (a)" className={field} />
         <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (e.g. Event flow)" className={field} />

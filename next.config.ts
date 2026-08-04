@@ -28,7 +28,11 @@ const csp = [
   // maps.googleapis.com + maps.gstatic.com: the Google Maps JS API loader and the chunks it
   // pulls in, used ONLY when NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY is set (ADR-901). With no
   // browsable key nothing from those hosts is ever requested — the maps run on MapLibre.
-  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''} https://www.googletagmanager.com https://va.vercel-scripts.com https://*.vercel.live https://maps.googleapis.com https://maps.gstatic.com`,
+  // vercel.live is listed TWICE on purpose, here and below. A CSP wildcard matches
+  // sub-domains ONLY: `https://*.vercel.live` does not cover the apex, and the preview
+  // toolbar serves its feedback bundle from `https://vercel.live/_next-live/...`. The
+  // smoke suite caught this as a console error on every preview deployment.
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''} https://www.googletagmanager.com https://va.vercel-scripts.com https://vercel.live https://*.vercel.live https://maps.googleapis.com https://maps.gstatic.com`,
   // fonts.googleapis.com: the Maps JS API injects a Roboto stylesheet link at runtime.
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
@@ -40,10 +44,10 @@ const csp = [
   // keyed path, ADR-901), Photon (address geocoding), ipapi (IP geo). Web vitals are
   // first-party (POST /api/vitals, ADR-922) — the old vitals.vercel-insights.com entry
   // was the stale allowlist ADR-922 said should go rather than grow a third collector.
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.frequencylocal.com wss://api.frequencylocal.com https://www.google-analytics.com https://region1.google-analytics.com https://*.vercel.live https://tiles.openfreemap.org https://maps.googleapis.com https://maps.gstatic.com https://photon.komoot.io https://ipapi.co",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.frequencylocal.com wss://api.frequencylocal.com https://www.google-analytics.com https://region1.google-analytics.com https://vercel.live https://*.vercel.live https://tiles.openfreemap.org https://maps.googleapis.com https://maps.gstatic.com https://photon.komoot.io https://ipapi.co",
   // frame-src — the only hosts we may embed. Spotlight media embeds (lib/spotlight/embeds.ts)
   // reconstruct iframe srcs ONLY for these allowlisted players; keep the two lists in sync.
-  "frame-src 'self' https://*.vercel.live https://www.youtube.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com",
+  "frame-src 'self' https://vercel.live https://*.vercel.live https://www.youtube.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com",
   "media-src 'self' blob: https:",
   "worker-src 'self' blob:",
   'report-uri /api/csp-report', // keep reporting even while enforcing — catch any miss

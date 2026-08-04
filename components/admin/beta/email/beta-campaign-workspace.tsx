@@ -234,7 +234,7 @@ export function BetaCampaignWorkspace({
                             </span>
                           )}
                         </button>
-                        <label className="flex items-center gap-1.5 text-2xs text-subtle">
+                        <label className="flex items-center gap-1.5 text-2xs text-muted">
                           <CalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden />
                           <span className="shrink-0">{target ? 'Target' : 'Set target date'}</span>
                           <input
@@ -296,7 +296,7 @@ export function BetaCampaignWorkspace({
               />
             </div>
             <div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
-              <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+              <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
                 <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Sequence progress
               </p>
               <div className="flex items-baseline gap-2">
