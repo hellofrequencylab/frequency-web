@@ -112,7 +112,13 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
       {/* The four-channel grid: topics down, channels across (Email / In-app / Push / SMS),
           plus the per-topic frequency. SMS renders as a placeholder column — see the
           Text messages card below for the real controls. */}
-      <div className="rounded-card border border-border bg-surface lift-1 overflow-hidden">
+      {/* overflow-x-auto, not overflow-hidden. The grid below is rigid: three w-16 channel
+          columns (192) + w-12 SMS (48) + w-28 Frequency (112) + five gap-3 (60) + px-4 (32)
+          = 444px before the 1fr Topic column gets a pixel. Inside the shell's padding on a
+          393px iPhone that clipped the Frequency dropdown and the SMS column with no way to
+          scroll to them -- so a member could not switch a topic to digest on a phone, which
+          is the single most common reason to open this page. */}
+      <div className="rounded-card border border-border bg-surface lift-1 overflow-x-auto">
         <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 px-4 py-3 border-b border-border bg-surface-elevated">
           <span className="text-xs font-semibold text-muted uppercase tracking-wide">Topic</span>
           {CHANNELS.map(({ key, label, Icon, disabled }) => (

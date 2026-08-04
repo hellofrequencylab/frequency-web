@@ -94,18 +94,77 @@ export type DomainWithTopics = Domain & {
   topics: Array<TopicalChannel & { circleCount: number }>
 }
 
+/**
+ * A read that FAILED, as distinct from one that found nothing.
+ *
+ * `supabase.rpc()` and PostgREST both RESOLVE with `{ data: null, error }` on a query-level
+ * failure rather than rejecting, so the `const { data } = await …; return data ?? []` shape
+ * these readers used turns a database outage into an empty list that every caller treats as
+ * measured truth. On a DETAIL route that empty list becomes `notFound()`; on an INDEX route
+ * it becomes the founding-state copy ("the calendar is quiet for now"), and since every
+ * discover page sets `revalidate = 3600`, ISR then serves that lie to everyone for an hour
+ * after the database has recovered.
+ *
+ * Two different failure shapes, deliberately:
+ *   · listRead  — fails SOFT to [] and reports it, because an index page that 500s is worse
+ *                 than one missing a section. Callers that care read `ok`.
+ *   · detailRead — THROWS, because the alternative is answering Googlebot with a genuine 404
+ *                 on a sitemapped URL. A 500 is retried; a 404 is believed and de-indexed.
+ *
+ * Mirrors `settle()` in lib/page-editor/live-data.ts, which fixed this same bug for the
+ * marketing blocks and was never applied here.
+ */
+export class DiscoverReadError extends Error {
+  constructor(source: string, cause?: unknown) {
+    super(`discover read failed: ${source}`)
+    this.name = 'DiscoverReadError'
+    this.cause = cause
+  }
+}
+
+/** One list read. `ok: false` means the query broke; `[]` with `ok: true` means genuinely empty. */
+export type ListRead<T> = { rows: T[]; ok: boolean }
+
+async function listRead<T>(
+  source: string,
+  query: PromiseLike<{ data: unknown; error: unknown }>,
+): Promise<ListRead<T>> {
+  try {
+    const { data, error } = await query
+    if (error) {
+      console.error(`[discover] ${source} failed`, error)
+      return { rows: [], ok: false }
+    }
+    return { rows: (data ?? []) as T[], ok: true }
+  } catch (cause) {
+    console.error(`[discover] ${source} threw`, cause)
+    return { rows: [], ok: false }
+  }
+}
+
+async function detailRead<T>(
+  source: string,
+  query: PromiseLike<{ data: unknown; error: unknown }>,
+): Promise<T[]> {
+  const { data, error } = await query
+  if (error) throw new DiscoverReadError(source, error)
+  return (data ?? []) as T[]
+}
+
 // ── Events ────────────────────────────────────────────────────────────────────
 
 export async function getPublicEvents(limit = 50): Promise<PublicEvent[]> {
   const supabase = createPublicClient()
-  const { data } = await supabase.rpc('public_events', { _limit: limit })
-  return (data ?? []) as PublicEvent[]
+  const { rows } = await listRead<PublicEvent>('public_events', supabase.rpc('public_events', { _limit: limit }))
+  return rows
 }
 
 export async function getPublicEventBySlug(slug: string): Promise<PublicEvent | null> {
   const supabase = createPublicClient()
-  const { data } = await supabase.rpc('public_event_by_slug', { _slug: slug })
-  const rows = (data ?? []) as PublicEvent[]
+  const rows = await detailRead<PublicEvent>(
+    'public_event_by_slug',
+    supabase.rpc('public_event_by_slug', { _slug: slug }),
+  )
   return rows[0] ?? null
 }
 
@@ -113,14 +172,16 @@ export async function getPublicEventBySlug(slug: string): Promise<PublicEvent | 
 
 export async function getPublicCircles(limit = 50): Promise<PublicCircle[]> {
   const supabase = createPublicClient()
-  const { data } = await supabase.rpc('public_circles', { _limit: limit })
-  return (data ?? []) as PublicCircle[]
+  const { rows } = await listRead<PublicCircle>('public_circles', supabase.rpc('public_circles', { _limit: limit }))
+  return rows
 }
 
 export async function getPublicCircleById(id: string): Promise<PublicCircle | null> {
   const supabase = createPublicClient()
-  const { data } = await supabase.rpc('public_circle_by_id', { _id: id })
-  const rows = (data ?? []) as PublicCircle[]
+  const rows = await detailRead<PublicCircle>(
+    'public_circle_by_id',
+    supabase.rpc('public_circle_by_id', { _id: id }),
+  )
   return rows[0] ?? null
 }
 
@@ -141,8 +202,8 @@ export async function getPublicCirclesByChannel(
 
 export async function getPublicPosts(limit = 20): Promise<PublicPost[]> {
   const supabase = createPublicClient()
-  const { data } = await supabase.rpc('public_posts', { _limit: limit })
-  return (data ?? []) as PublicPost[]
+  const { rows } = await listRead<PublicPost>('public_posts', supabase.rpc('public_posts', { _limit: limit }))
+  return rows
 }
 
 // ── Topical channels (public-read table) ──────────────────────────────────────
