@@ -135,24 +135,6 @@ export const PAIRS = [
 // without an owner palette call, and app/globals.css is the only file that could fix them.
 export const WAIVERS = [
   {
-    fg: '--color-text-on-primary',
-    bg: '--color-primary',
-    floors: { 'DAWN light': 2.52, 'DAWN dark': 1.88, 'Midnight light': 2.86 },
-    why: '🔴 OWNER — white on the amber primary is 2.52:1 light / 1.88:1 dark. This is the primary Button (bg-primary text-on-primary), so it is the most-seen label in the product. The fix is a palette decision: darken --color-primary for filled controls, or set --color-text-on-primary to the ink token in the states where the amber is bright.',
-  },
-  {
-    fg: '--color-text-on-primary',
-    bg: '--color-primary-hover',
-    floors: { 'DAWN light': 3.12, 'DAWN dark': 1.59, 'Midnight light': 3.61 },
-    why: '🔴 OWNER — the same label on the hover fill. Rides on the decision above.',
-  },
-  {
-    fg: '--color-text-on-broadcast',
-    bg: '--color-broadcast',
-    floors: { 'DAWN light': 2.46, 'DAWN dark': 1.7, 'Midnight light': 2.46, 'Midnight dark': 1.7 },
-    why: '🔴 OWNER — white on the robin\'s-egg broadcast fill is 2.46:1 / 1.70:1, the worst pair in the table. Broadcast is a comms-only accent, so the blast radius is smaller than primary, but the fill carries button labels. Same shape of fix.',
-  },
-  {
     fg: '--color-text-on-signal',
     bg: '--color-signal',
     floors: { 'DAWN light': 4.08, 'Midnight light': 4.08 },
@@ -193,18 +175,6 @@ export const WAIVERS = [
     bg: '--color-surface',
     floors: { 'DAWN light': 3.89, 'Midnight light': 3.89 },
     why: 'Warning text on a plain card at 3.89:1. Warning is the only status tone that misses on the plain surfaces; danger/success/info clear it.',
-  },
-  {
-    fg: '--color-focus-ring',
-    bg: '--color-canvas',
-    floors: { 'DAWN light': 2.38, 'Midnight light': 2.53 },
-    why: '🔴 OWNER — the amber focus ring is 2.38:1 on the light canvas; WCAG 1.4.11 asks 3.0 for a focus indicator. Both dark states pass comfortably (9.9:1). The fix is a two-tone ring or a darker ring token in light mode.',
-  },
-  {
-    fg: '--color-focus-ring',
-    bg: '--color-surface',
-    floors: { 'DAWN light': 2.52, 'Midnight light': 2.86 },
-    why: 'The same ring, on a card. Rides on the decision above.',
   },
   {
     fg: '--color-primary',

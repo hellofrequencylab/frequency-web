@@ -136,7 +136,7 @@ export function ContentReportDialog({ targetType, targetId, open, onClose }: Rep
               <button
                 disabled={!reason || isPending}
                 onClick={handleSubmit}
-                className="rounded-lg bg-danger px-3 py-1.5 text-xs font-semibold text-on-primary hover:opacity-90 disabled:opacity-50 transition-colors"
+                className="rounded-lg bg-danger px-3 py-1.5 text-xs font-semibold text-on-danger hover:opacity-90 disabled:opacity-50 transition-colors"
               >
                 {isPending ? 'Submitting...' : 'Submit Report'}
               </button>

@@ -40,7 +40,7 @@ export async function DemoNotice() {
     <section className="overflow-hidden rounded-2xl border border-warning/40 bg-gradient-to-b from-warning-bg/80 to-warning-bg/30 lift-1">
       {/* Bold header band — a big bolt + a punchy line, so it reads as an ad, not a footnote. */}
       <div className="flex items-center gap-2.5 border-b border-warning/20 bg-warning-bg/60 px-3.5 py-3">
-        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-warning text-on-primary lift-1">
+        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-warning text-on-warning lift-1">
           <Zap className="h-5 w-5 fill-current" aria-hidden />
         </span>
         <div className="min-w-0">

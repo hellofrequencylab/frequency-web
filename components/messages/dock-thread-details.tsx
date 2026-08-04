@@ -266,7 +266,7 @@ export function DockThreadDetails({
                     disabled={leaving}
                     aria-busy={leaving}
                     autoFocus
-                    className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg bg-danger px-3 text-sm font-medium text-on-primary transition-opacity hover:opacity-90 disabled:opacity-60"
+                    className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg bg-danger px-3 text-sm font-medium text-on-danger transition-opacity hover:opacity-90 disabled:opacity-60"
                   >
                     {leaving && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />} Yes, leave
                   </button>

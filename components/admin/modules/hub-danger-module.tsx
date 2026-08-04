@@ -87,7 +87,7 @@ export function HubDangerModule() {
                   type="button"
                   onClick={handleArchive}
                   disabled={pending}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-danger px-4 py-2 text-xs font-semibold text-on-primary transition-colors hover:bg-danger/90 disabled:opacity-40"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-danger px-4 py-2 text-xs font-semibold text-on-danger transition-colors hover:bg-danger/90 disabled:opacity-40"
                 >
                   {pending ? 'Archiving…' : 'Yes, archive it'}
                 </button>

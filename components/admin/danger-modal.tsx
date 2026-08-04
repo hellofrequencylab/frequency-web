@@ -91,7 +91,7 @@ export function DangerModal({
               onConfirm()
               onClose()
             }}
-            className="rounded-lg bg-danger px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-danger/90 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-lg bg-danger px-3 py-1.5 text-sm font-semibold text-on-danger transition-colors hover:bg-danger/90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {confirmLabel}
           </button>

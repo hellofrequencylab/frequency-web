@@ -270,7 +270,7 @@ export function DealDetail({
                     onClick={() => run(() => toggleTask(a.id, deal.id, !done))}
                     aria-label={done ? 'Mark task not done' : 'Mark task done'}
                     className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
-                      done ? 'border-success bg-success text-on-primary' : 'border-border-strong hover:border-primary'
+                      done ? 'border-success bg-success text-on-success' : 'border-border-strong hover:border-primary'
                     }`}
                   >
                     {done && <Check className="h-3.5 w-3.5" />}

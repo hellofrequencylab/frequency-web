@@ -1871,7 +1871,7 @@ export default function AppShell({
                 <Link
                   href="/admin/support"
                   aria-label={`Bug Alert: ${openSupportTickets} open support ${openSupportTickets === 1 ? 'ticket' : 'tickets'}. Open the support queue`}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-danger px-3 py-1.5 text-sm font-bold text-on-primary shadow-sm ring-1 ring-danger/40 transition-transform hover:scale-105 motion-safe:animate-pulse"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-danger px-3 py-1.5 text-sm font-bold text-on-danger shadow-sm ring-1 ring-danger/40 transition-transform hover:scale-105 motion-safe:animate-pulse"
                 >
                   <Bug className="h-4 w-4" />
                   <span className="hidden sm:inline">Bug</span>

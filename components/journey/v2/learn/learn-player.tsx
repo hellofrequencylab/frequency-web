@@ -386,7 +386,7 @@ export function LearnPlayer({
                                     active ? 'bg-primary-bg font-medium text-primary-strong' : 'text-text hover:bg-surface-elevated'
                                   }`}
                                 >
-                                  <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${l.done ? 'border-success bg-success text-on-primary' : active ? 'border-primary' : 'border-border'}`}>
+                                  <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${l.done ? 'border-success bg-success text-on-success' : active ? 'border-primary' : 'border-border'}`}>
                                     {l.done && <Check className="h-2.5 w-2.5" />}
                                   </span>
                                   <span className="min-w-0 flex-1 truncate">{l.title}</span>

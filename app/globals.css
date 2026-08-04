@@ -66,7 +66,7 @@
   --color-primary-hover:    #CE8023;
   --color-primary-strong:   #9A5E12;
   --color-primary-bg:       #FBEFD9;
-  --color-text-on-primary:  #FFFFFF;
+  --color-text-on-primary:  #1A1206;
 
   /* Brand. Signal (emerald-teal) — a deep, green-leaning jewel teal, distinct in hue
      from Broadcast's cyan and cohesive with the teal success. */
@@ -81,7 +81,7 @@
   --color-broadcast:          #1EB6C5;
   --color-broadcast-strong:   #0E808D;
   --color-broadcast-bg:       #D8F2F5;
-  --color-text-on-broadcast:  #FFFFFF;
+  --color-text-on-broadcast:  #1A1206;
 
   /* Brand. Move (cerulean blue-teal) — the Get Moving accent for the Mindless door.
      A clear blue-leaning teal that sits roughly opposite the warm amber primary on the
@@ -101,11 +101,18 @@
   --color-warning-bg:       #F6ECD8;
   --color-danger:           #BA3B30;
   --color-danger-bg:        #F7E4E1;
+  /* Labels ON a solid semantic fill. Split out from --color-text-on-primary, which is the
+     amber pair and now resolves to ink: ink on the light danger red is 3.31 (sub-AA), so a
+     shared token cannot serve both. Measured light: white/danger 5.59, ink/warning 4.77,
+     white/success 4.67. */
+  --color-text-on-danger:   #FFFFFF;
+  --color-text-on-warning:  #1A1206;
+  --color-text-on-success:  #FFFFFF;
   --color-info:             #2F6FB0;
   --color-info-bg:          #E3EDF7;
 
   /* Focus */
-  --color-focus-ring:       #E2912F;
+  --color-focus-ring:       #B86A15;
 
   /* Rank spectrum. Primitives (same in both modes).
      core = solid dot/fill · deep = text on light · bright = text on dark */
@@ -218,11 +225,14 @@
   --color-primary-hover:     #CE8023;
   --color-primary-strong:    #9A5E12;
   --color-primary-bg:        #FBEFD9;
-  --color-text-on-primary:   #FFFFFF;
+  --color-text-on-primary:   #1A1206;
   --color-success:           #11827A;
   --color-success-bg:        #D7EFEA;
   --color-danger:            #BA3B30;
   --color-danger-bg:         #F7E4E1;
+  --color-text-on-danger:    #FFFFFF;
+  --color-text-on-warning:   #1A1206;
+  --color-text-on-success:   #FFFFFF;
   --color-move:              #1C7FB5;
   --color-move-hover:        #176A98;
   --color-move-strong:       #0F4E72;
@@ -284,10 +294,10 @@
   --color-primary-hover:     #C2741F;
   --color-primary-strong:    #8C5410;
   --color-primary-bg:        #F6E7CF;
-  --color-text-on-primary:   #FFFFFF;
+  --color-text-on-primary:   #1A1206;
 
   /* Focus follows primary, as DAWN does. */
-  --color-focus-ring:        #D9852A;
+  --color-focus-ring:        #B86A15;
 
   /* Feel — sharper, more architectural than DAWN's soft radii. */
   --radius-control: 0.375rem;
@@ -331,7 +341,7 @@
   --color-primary-hover:    #F8C56F;
   --color-primary-strong:   #F2B14E;
   --color-primary-bg:       #30240F;
-  --color-text-on-primary:  #FFFFFF;
+  --color-text-on-primary:  #1A1206;
 
   /* Teal stays the calibrated secondary (pool-water accent); slightly richer
      tint so it reads clearly teal against the warm dark wood. Amber still leads. */
@@ -344,7 +354,7 @@
   --color-broadcast:          #69D6E6;
   --color-broadcast-strong:   #69D6E6;
   --color-broadcast-bg:       #0F2A34;
-  --color-text-on-broadcast:  #FFFFFF;
+  --color-text-on-broadcast:  #1A1206;
 
   /* Move (cerulean) — brighter blue-teal so the Get Moving accent reads clearly against
      the warm dark wood while still sitting opposite the amber. */
@@ -360,6 +370,10 @@
   --color-warning-bg:       #2C2310;
   --color-danger:           #F0857A;
   --color-danger-bg:        #2E1714;
+  /* Dark fills are light tints, so all three take ink: 7.36 / 9.86 / 10.19. */
+  --color-text-on-danger:   #1A1206;
+  --color-text-on-warning:  #1A1206;
+  --color-text-on-success:  #1A1206;
   --color-info:             #6FA8DC;
   --color-info-bg:          #15212E;
 
@@ -906,6 +920,9 @@
   --color-primary-strong:   var(--color-primary-strong);
   --color-primary-bg:       var(--color-primary-bg);
   --color-on-primary:       var(--color-text-on-primary);
+  --color-on-danger:        var(--color-text-on-danger);
+  --color-on-warning:       var(--color-text-on-warning);
+  --color-on-success:       var(--color-text-on-success);
 
   --color-signal:           var(--color-signal);
   --color-signal-strong:    var(--color-signal-strong);

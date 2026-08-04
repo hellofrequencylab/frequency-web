@@ -1251,7 +1251,7 @@ function BlockPill({
               <div className="px-2.5 py-2">
                 <p className="mb-1.5 text-xs text-text">Remove {label(id)} for good?</p>
                 <div className="flex gap-1.5">
-                  <button type="button" onClick={onConfirmDelete} className="rounded-md bg-danger px-2 py-1 text-2xs font-semibold text-on-primary">
+                  <button type="button" onClick={onConfirmDelete} className="rounded-md bg-danger px-2 py-1 text-2xs font-semibold text-on-danger">
                     Remove
                   </button>
                   <button type="button" onClick={onCancelDelete} className="rounded-md border border-border px-2 py-1 text-2xs font-medium text-muted">
