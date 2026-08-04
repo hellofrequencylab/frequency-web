@@ -312,6 +312,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Install Chromium
         if: steps.preview.outputs.ready == 'true'
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Lighthouse (synthetic speed)
         if: ${{ always() && steps.preview.outputs.ready == 'true' }}
         env:

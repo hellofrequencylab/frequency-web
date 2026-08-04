@@ -46,6 +46,11 @@ jobs:
         run: pnpm check:canon
       - name: Admin-menu contract check
         run: pnpm check:menu
+      # A workflow can parse as valid YAML and still be REJECTED by GitHub, near-silently:
+      # the run gets named after the file path, fails instantly, and the gate it carried
+      # just vanishes from the PR. That happened on 2026-08-04 to this very directory.
+      - name: Workflow contract check (every step runs something, no duplicate keys)
+        run: pnpm check:workflows
       - name: Elements contract check (one catalog + store, mounted via registry)
         run: pnpm check:elements
       - name: Token contract check (no hardcoded style)
