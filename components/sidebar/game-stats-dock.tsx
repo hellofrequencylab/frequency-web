@@ -58,7 +58,25 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
   }, [open])
 
   return (
-    <div ref={rootRef} className="fixed bottom-4 right-4 z-30 flex flex-col items-end print:hidden">
+    // ── THE BOTTOM-RIGHT STACKING CONTRACT (one rule for every fixed element) ──
+    // Slots, from the corner up (desktop):
+    //   SLOT 0 · corner  — the chat edge pill (components/layout/edge-pill.tsx):
+    //            right-0, md:bottom-6 (1.5rem), h-11 (2.75rem), z-40. It is the
+    //            system-wide affordance and KEEPS the corner.
+    //   SLOT 1 · dock    — THIS chip: right-4, bottom-20 (5rem = pill offset
+    //            1.5rem + pill height 2.75rem + 0.75rem gap), z-30. lg+ only (the
+    //            rail column is hidden < lg, so the mobile tab bar is never in
+    //            play). The expanded panel opens UPWARD from the chip (it renders
+    //            before the chip in-flow, growing away from the corner).
+    //   SLOT 2 · toasts  — transient toasts (zap-toast.tsx, achievement-toast.tsx):
+    //            right-4, lg:bottom-32 (8rem = dock offset 5rem + chip ~2.375rem +
+    //            gap), md:bottom-20 where no dock renders, z-50. Transient, so they
+    //            may outrank everything below the drawers.
+    // z tiers: page content < dock chip (z-30) < edge pill (z-40) < panels/toasts/
+    // operator settings drawer (z-50; the drawer covering the chip while open is
+    // accepted). A NEW fixed bottom-right element must take the next slot up, never
+    // an existing offset.
+    <div ref={rootRef} className="fixed bottom-20 right-4 z-30 flex flex-col items-end print:hidden">
       {/* Expanded panel — grows from the chip toward the interior, scrolls inside. */}
       {open && (
         <div
@@ -111,9 +129,11 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
 // ── Shared stats panel body ───────────────────────────────────────────────────
 // The actual stats content (today's move · streak · rank · journey · vault ·
 // dashboard), factored out so it can render BOTH inside the desktop dock above and
-// inside the mobile right-side stats menu (app-shell.tsx). `showSummary` prepends a
-// zaps/gems/streak + rank header — the desktop dock already shows that in its bar,
-// so it passes false; the mobile menu passes true.
+// inside the mobile LEFT drawer's bottom cluster (MobileGameStats in
+// right-sidebar.tsx → AppShell's `mobileStats` slot — the < lg home of the game
+// counts). `showSummary` prepends a zaps/gems/streak + rank header; both current
+// mounts pass true (the collapsed chip shows only zaps + streak, so the expanded
+// panel leads with the full line).
 
 export function GameStatsPanel({ data, showSummary = false }: { data: DockData; showSummary?: boolean }) {
   const { zaps, gems, streak, rank, todaysMove, last7, rankProgress, arc, vaultGems } = data

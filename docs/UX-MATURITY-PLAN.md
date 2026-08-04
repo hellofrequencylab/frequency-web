@@ -346,3 +346,66 @@ the Auth leaked-password toggle (3-note) · the /the-community design gap goes t
 **The grade math.** Lifts 1 (40→75), 3 (60→85), 4 (55→80), and the craft spend from
 Lifts 2+5+6 (65→85) move the weighted total from 74 to the low 90s — with every point
 held by a gate rather than a memory.
+
+---
+
+## Addendum 2026-08-04 — the Road to 100: verified baselines and the corrected work order
+
+> Four-technique verification round (quantitative census · DAWN's own adherence config ·
+> render-level diffing · hygiene pass) run after the wave-2 polish. This addendum corrects
+> the plan's assumptions with measured numbers and fixes the sweep order by payoff.
+
+### Frozen ratchet baselines (Lift 2's `check:adoption` seeds — measured, reproducible)
+
+| Baseline key | Count | Pattern basis |
+|---|---|---|
+| `literal-radius` | **5,543** (4,474 steps + 1,069 full; token adoption 1.9%) | `rounded-(sm|md|lg|xl|2xl|3xl|full)\b` |
+| `shadow-literals` | **684** (535 are `shadow-sm`) vs 33 lift-* adopters | `\bshadow-(sm|md|lg|xl|2xl)\b` |
+| `white-black-literals` | **382** (`app/page.tsx` alone: 29) | `-white\b|white/\d+|-black\b` |
+| `subtle-tiny-type` | **832** genuine sub-AA pairings (2xs/3xs) | `text-subtle` within 80 chars of `text-(2xs|3xs)` |
+| `raw-button-bg` | **494** (the docs' "~18" was wrong by 27×; corrected here) | `<button` + `bg-primary` within 500 chars |
+| `adhoc-progress` | **52** in 42 files; ProgressTrack adopters: **0** | `rounded-full…style={{ width:` |
+| `bespoke-cards` / `bespoke-rows` | **35** / **15** files (EntityCard 42 / RowCard 3 importers) | `*-card.tsx` / `*row*.tsx` |
+| `handrolled-tabs` | **3** genuine strips + 4 pill consoles (owner-ruled) | `border-b-2` selected-tab |
+
+### The corrected sweep order (payoff per effort — supersedes the earlier P3-first framing)
+
+1. **shadow → lift codemod** (S): one mechanical rename flips the app's depth language from
+   4.6% to near-total adoption; zero box-model risk. The single biggest visual win on the board.
+2. **white/black literal pass** (M): the only *bug* class — hardcoded monochromes ignore theme
+   generations (invisible text on light generations). 382 sites, five directories hold 110.
+3. **subtle+tiny AA rule** (M): "text-subtle may not pair with 2xs/3xs" as a check + sweep of
+   832 sites concentrated in events/admin/spaces/feed. Changes perceived craft of every list.
+4. **ProgressTrack adoption** (S): a shipped primitive earning nothing; 52 bars retire it.
+5. **Radius roles** (L): biggest number, worst ratio (per-site role judgment, few-px deltas) —
+   ratchet-and-hold at 5,543, spend adoption inside screen passes rather than as its own wave.
+
+### Gate corrections (found by the round, all cheap)
+
+- **`check:tokens` scope hole**: `ROOTS = ['app','components']` — `lib/` is entirely ungoverned
+  and holds the largest hex concentration (95). Add `lib` to ROOTS with a reasoned allowlist
+  (email templates, spotlight/theme-studio token sources are legitimate).
+- **Raw-px gap** (the one real finding from DAWN's adherence config): the guard bans `text-[Npx]`
+  only; arbitrary sizing px (`h-[18px]`) passes — ~150 in-app instances. Extend the pattern with
+  an icon/OG/print allowlist. The rest of DAWN's lint config is over-strict against its own
+  components (verdict recorded: not CI material; TypeScript owns our port's contracts).
+- **Preview e2e validity**: Vercel Deployment Protection serves its interstitial to Playwright —
+  suites were testing the wall (viewport-tall captures, `/login` redirects). Bypass header now
+  wired; 🔴 owner creates the Protection Bypass secret in Vercel + mirrors it as the
+  `VERCEL_AUTOMATION_BYPASS_SECRET` Actions secret. Until then, e2e verdicts are valid against
+  production only.
+
+### Hygiene state (done this round / carried)
+
+Done: dead utilities + keyframes and the ADR-922 stale CSP entry removed; bundle-era
+`design_handoff` root duplicates dropped for the canonical `dawn/tokens/`; RETHEME-PLAN gains
+its historical banner. Carried: 6 zero-reference images in `public/images/site` (possible
+DB-authored page-doc references — verify against published Puck docs before deleting);
+`va.vercel-scripts.com` in script-src looks stale but is an owner CSP call; `.mk-cream`/`.mk-ink`
+/`.rank-dot`/`tap-target`/`text-scaled-*` stay as await-adoption contract classes.
+
+### Primitive adoption scoreboard (the round's truth of "implemented globally")
+
+Landed at scale: EmptyState 244 · SectionHeader 141 · StatCard 114 · EntityCard 42.
+Shipped-but-idle: ProgressTrack 0 · StreakMeter 0 · Meter 1 · Counter 2 · GateNotice 3 —
+the fabric phase's first targets, now with exact counts to ratchet against.

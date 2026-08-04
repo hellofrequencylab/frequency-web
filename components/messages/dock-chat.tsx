@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Hash, Lock, MessageSquare, Loader2, ArrowRight, Users, ChevronLeft, Info } from 'lucide-react'
+import { Hash, MessageSquare, Loader2, ArrowRight, Users, ChevronLeft, Info } from 'lucide-react'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import {
@@ -378,7 +378,7 @@ export function DockChat({
               <li key={r.id}>
                 <button type="button" onClick={() => openRoom(r.id, r.name)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-elevated">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-subtle">
-                    {r.visibility === 'private' ? <Lock className="h-4 w-4" aria-hidden /> : <Hash className="h-4 w-4" aria-hidden />}
+                    <Hash className="h-4 w-4" aria-hidden />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">

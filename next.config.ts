@@ -36,9 +36,11 @@ const csp = [
   "font-src 'self' data: https://fonts.gstatic.com",
   // connect-src is the exfiltration gate — every runtime fetch/XHR/WS target is listed:
   // Supabase (REST + realtime), GA (incl. GA4's region-routed /g/collect endpoint), Vercel
-  // insights/live, OpenFreeMap tiles (maplibre), Google Maps tiles/metadata (the keyed path,
-  // ADR-901), Photon (address geocoding), ipapi (IP geo).
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.frequencylocal.com wss://api.frequencylocal.com https://www.google-analytics.com https://region1.google-analytics.com https://vitals.vercel-insights.com https://*.vercel.live https://tiles.openfreemap.org https://maps.googleapis.com https://maps.gstatic.com https://photon.komoot.io https://ipapi.co",
+  // live (preview toolbar), OpenFreeMap tiles (maplibre), Google Maps tiles/metadata (the
+  // keyed path, ADR-901), Photon (address geocoding), ipapi (IP geo). Web vitals are
+  // first-party (POST /api/vitals, ADR-922) — the old vitals.vercel-insights.com entry
+  // was the stale allowlist ADR-922 said should go rather than grow a third collector.
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.frequencylocal.com wss://api.frequencylocal.com https://www.google-analytics.com https://region1.google-analytics.com https://*.vercel.live https://tiles.openfreemap.org https://maps.googleapis.com https://maps.gstatic.com https://photon.komoot.io https://ipapi.co",
   // frame-src — the only hosts we may embed. Spotlight media embeds (lib/spotlight/embeds.ts)
   // reconstruct iframe srcs ONLY for these allowlisted players; keep the two lists in sync.
   "frame-src 'self' https://*.vercel.live https://www.youtube.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com",

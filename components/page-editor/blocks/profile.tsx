@@ -157,7 +157,7 @@ function AnchorSection({ anchor, children }: { anchor: string; children: React.R
 // section reads as a deliberate, well-defined card that stands off the canvas (the old hairline
 // translucent treatment washed out and read as cramped). `ink` swaps to the dark-band treatment for
 // legibility. One radius/spacing/elevation rhythm across the whole set. `rounded-card` (not a
-// rounded-card literal): the Space's page theme shapes its cards (ADR-578 — editorial squares them,
+// rounded-2xl literal): the Space's page theme shapes its cards (ADR-578 — editorial squares them,
 // playful pillows them); the [data-space-theme] baseline pin keeps `bold` at exactly today's 1rem.
 function InfoCard({ children, ink, className = '' }: { children: React.ReactNode; ink?: boolean; className?: string }) {
   return (
@@ -233,10 +233,10 @@ function IdentityLockup({
             <img
               src={logo}
               alt=""
-              className="h-20 w-20 rounded-card border-4 border-surface bg-surface object-contain shadow-md sm:h-24 sm:w-24"
+              className="h-20 w-20 rounded-2xl border-4 border-surface bg-surface object-contain shadow-md sm:h-24 sm:w-24"
             />
           ) : (
-            <span className="flex h-20 w-20 items-center justify-center rounded-card border-4 border-surface bg-surface-elevated text-2xl font-bold text-subtle shadow-md sm:h-24 sm:w-24">
+            <span className="flex h-20 w-20 items-center justify-center rounded-2xl border-4 border-surface bg-surface-elevated text-2xl font-bold text-subtle shadow-md sm:h-24 sm:w-24">
               {getInitials(identity.name)}
             </span>
           )}
@@ -273,14 +273,14 @@ function IdentityLockup({
           {identity.primaryCta && (
             <Link
               href={identity.primaryCta.href || '#'}
-              className="inline-flex items-center gap-2 rounded-card bg-primary px-6 py-2.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover shadow-pop"
+              className="inline-flex items-center gap-2 rounded-control bg-primary px-6 py-2.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover shadow-pop"
             >
               {identity.primaryCta.label}
             </Link>
           )}
           {showFollow && (
             <span
-              className={`inline-flex items-center gap-2 rounded-card border px-6 py-2.5 text-sm font-bold ${
+              className={`inline-flex items-center gap-2 rounded-control border px-6 py-2.5 text-sm font-bold ${
                 overlay ? 'border-on-ink/40 text-on-ink' : 'border-border-strong text-text'
               }`}
             >
@@ -829,7 +829,7 @@ export function SpaceBookingBlock({
   return (
     <InfoCard ink={ink} className={accent && !ink ? 'border-primary/25 bg-primary-bg/40' : ''}>
       <div className="flex items-start gap-5">
-        <span className={`mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-card ${ink ? 'bg-on-ink/10 text-primary' : 'bg-primary-bg text-primary-strong'}`}>
+        <span className={`mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${ink ? 'bg-on-ink/10 text-primary' : 'bg-primary-bg text-primary-strong'}`}>
           <CalendarCheck className="h-6 w-6" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">

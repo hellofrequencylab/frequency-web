@@ -110,7 +110,10 @@ export function AchievementToastContainer() {
   if (toasts.length === 0) return null
 
   return (
-    <div className="fixed bottom-20 md:bottom-6 right-4 z-50 flex flex-col gap-3 pointer-events-none">
+    // The TOAST LANE of the bottom-right stacking contract (see the comment in
+    // components/sidebar/game-stats-dock.tsx): md clears the chat edge pill (bottom-20),
+    // lg clears the Vault dock chip too (bottom-32). Mobile keeps bottom-20 (above the tab bar).
+    <div className="fixed bottom-20 lg:bottom-32 right-4 z-50 flex flex-col gap-3 pointer-events-none">
       {toasts.map(t => (
         <AchievementToastCard
           key={t.id}

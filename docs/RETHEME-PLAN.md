@@ -1,5 +1,7 @@
 # Site Re-Theme Plan — every surface unified, one parent to change
 
+> ⚠️ **Historical sequencing (2026-07-18).** The near-term order of operations now lives in [UX-MATURITY-PLAN.md](UX-MATURITY-PLAN.md) §Sequencing ([ADR-925](DECISIONS.md)) interleaved with the DAWN rounds (`design_handoff/SYNC.md`); this doc remains the phase-detail reference for the re-theme (P1–P8) linked from [BUILD-LIST.md](BUILD-LIST.md).
+
 > **The goal.** Any look change (a color, a corner radius, a heading font, a header, a card, a line of
 > copy) is a **single edit to a parent**, and the change reaches **every surface** with no drift. This is
 > the execution roadmap that finishes the [THEME-PROTOCOL](THEME-PROTOCOL.md) — it turns "mostly

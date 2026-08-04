@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { MapPin, Megaphone, Zap, Gem, Flame, Compass, ArrowRight, Users, Trophy, Sparkles, CalendarDays, CircleDot } from 'lucide-react'
+import { MapPin, Megaphone, Zap, Gem, Compass, ArrowRight, Users, Sparkles, CalendarDays, CircleDot } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 import {
@@ -14,12 +14,11 @@ import {
 import { circleEventVisibilities } from '@/lib/events/circle-upcoming'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
-import { RANK_LABELS, seasonRankStyle, rankForCompletion, journeysFinishedThisSeason, SEASON_RANKS, type SeasonRank } from '@/lib/season-ranks'
+import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { isOnline, ONLINE_MS, RECENT_MS } from '@/lib/presence'
 import { getRecentDispatchesForProfile } from '@/lib/dispatches'
 import { getOnboardingStatus, nextStepsEnabled } from '@/lib/onboarding/status'
 import { WidgetCard } from '@/components/modules/module-card'
-import { StandingTiles } from '@/components/gamification/standing-tiles'
 
 // The rail's PAGE PANELS (ADR-161) — contextual stat cards keyed into the right rail
 // by route (lib/layout/rail-panels.ts). Each is an independent async server component
@@ -322,116 +321,51 @@ export async function LeaderboardPanel() {
   )
 }
 
-// ── Control center (STANDING, top of the rail) ───────────────────────────────
-// Always-on "where am I in the Quest" cockpit: the next onboarding/setup step (with
-// a gems nudge) when there's one, else a keep-climbing line, plus live rank progress
-// and the streak. Pinned to the TOP of the rail on every page (right-sidebar.tsx).
+// ── Control center (nudges only, top of the rail) ────────────────────────────
+// The rail's contextual-nudge box. The game NUMBERS — zaps, gems, streak, rank and
+// the progress-to-next-rank bar — do NOT render here: the Vault dock (bottom right,
+// components/sidebar/game-stats-dock.tsx) is their one home per the three-docks law
+// (DAWN 2026-08-03 — nothing is offered twice; the reference rail's Season standing
+// card folded into the dock). This panel keeps only what the dock does not carry:
+// the next onboarding/setup step (with its gems nudge) and the remaining setup
+// steps. It renders nothing when there is no step, so the rail never shows an
+// empty shell.
 export async function ControlCenterPanel({ profileId }: { profileId: string }) {
-  const [status, prof, showNextSteps] = await Promise.all([
+  const [status, showNextSteps] = await Promise.all([
     getOnboardingStatus(profileId).catch(() => null),
-    createAdminClient()
-      .from('profiles')
-      .select('current_season_zaps, lifetime_gems, current_streak')
-      .eq('id', profileId)
-      .maybeSingle(),
     nextStepsEnabled(),
   ])
-  const p = prof.data as {
-    current_season_zaps?: number; lifetime_gems?: number; current_streak?: number
-  } | null
-  const zaps = p?.current_season_zaps ?? 0
-  const gems = p?.lifetime_gems ?? 0
-  const streak = p?.current_streak ?? 0
-  const finishedCount = await journeysFinishedThisSeason(profileId)
-  const rank = rankForCompletion(finishedCount)
-  const idx = SEASON_RANKS.findIndex((r) => r.rank === rank)
-  const cur = idx < 0 ? 0 : idx
-  const next = SEASON_RANKS[cur + 1]
-  const curMin = SEASON_RANKS[cur]?.minJourneys ?? 0
-  const pct = next && next.minJourneys > curMin ? Math.round(((finishedCount - curMin) / (next.minJourneys - curMin)) * 100) : 100
   // Next Steps prompts are shipped off (see lib/onboarding/status.ts) while the
-  // Walkthroughs suite takes over; the Quest cockpit (rank/standing/streak) stays.
+  // Walkthroughs suite takes over; with them off this panel self-hides entirely
+  // (the standing numbers live in the Vault dock now).
   const nextStep = showNextSteps ? (status?.current ?? null) : null
+  if (!nextStep) return null
 
   return (
     <WidgetCard title="Your Quest">
-      {/* Hero — the panel that has to stand out. A bordered, tinted block with a
-          rank crest, live progress-to-next-rank bar, and the season scoreboard so
-          the whole "where am I in the game" answer is scannable at a glance. */}
-      <div className="overflow-hidden rounded-2xl border border-primary-bg bg-gradient-to-br from-primary-bg/60 via-warning-bg/40 to-surface shadow-sm">
-        <div className="flex items-center justify-between gap-2 border-b border-primary-bg/60 bg-primary-bg/40 px-3.5 py-2.5">
-          <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-primary-strong">
-            <Trophy className="h-4 w-4" /> Season standing
-          </span>
-          <span className="rank-badge text-xs font-bold leading-tight" style={seasonRankStyle(rank)}>
-            {RANK_LABELS[rank] ?? rank}
-          </span>
-        </div>
-
-        <div className="space-y-3 px-3.5 py-3.5">
-          {/* Rank progress to next tier → leaderboard */}
-          <Link
-            href="/crew/leaderboard"
-            className="block space-y-1.5 rounded-lg px-1.5 py-1 transition-colors hover:bg-primary-bg/60"
-          >
-            <div className="flex items-center justify-between gap-2 text-xs">
-              <span className="font-semibold text-text">{next ? `Climbing to ${next.label}` : 'Top rank reached'}</span>
-              <span className="tabular-nums text-subtle">
-                {next ? <>{next.minJourneys - finishedCount} {next.minJourneys - finishedCount === 1 ? 'Journey' : 'Journeys'} to go</> : 'Max'}
-              </span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-warning-bg/60">
-              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
-            </div>
-          </Link>
-
-          {/* Season scoreboard — zaps · gems · streak, each linking into the Quest dashboard */}
-          <StandingTiles
-            variant="compact"
-            zaps={zaps}
-            gems={gems}
-            streak={streak}
-            rank={rank}
-            links={{ zaps: '/crew/leaderboard', gems: '/crew/store', streak: '/crew/leaderboard' }}
-          />
-
-          {streak > 0 && (
-            <p className="flex items-center gap-1 text-xs font-semibold text-primary-strong">
-              <Flame className="h-3.5 w-3.5" /> {streak}-day streak, keep it alive
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Next step — the actionable nudge sits below the standing hero. */}
-      {nextStep ? (
-        <Link
-          href={nextStep.href}
-          className="group mt-2.5 block rounded-xl border border-broadcast/30 bg-broadcast-bg/30 p-3 transition-colors hover:bg-broadcast-bg/50"
-        >
-          <p className="flex items-center justify-between text-2xs font-semibold uppercase tracking-wide text-broadcast-strong">
-            <span className="inline-flex items-center gap-1"><Compass className="h-3 w-3" /> Next step</span>
-            {status && <span className="tabular-nums">{status.pct}%</span>}
-          </p>
-          <p className="mt-1 text-sm font-bold leading-snug text-text">{nextStep.headline}</p>
-          <p className="mt-0.5 line-clamp-2 text-xs text-muted">{nextStep.blurb}</p>
-          <p className="mt-2 flex items-center justify-between">
-            <span className="inline-flex items-center gap-1 text-2xs font-semibold text-signal">
-              <Gem className="h-3 w-3" /> Earn Gems for finishing
-            </span>
-            <span className="inline-flex items-center gap-0.5 text-2xs font-semibold text-broadcast-strong">
-              {nextStep.cta} <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-            </span>
-          </p>
-        </Link>
-      ) : (
-        <p className="mt-2.5 rounded-xl bg-surface-elevated/50 px-3.5 py-3 text-sm text-muted">
-          You’re all set up. Keep your streak alive and climb the ranks.
+      {/* Next step — the actionable nudge (the one thing the Vault dock does not carry). */}
+      <Link
+        href={nextStep.href}
+        className="group block rounded-xl border border-broadcast/30 bg-broadcast-bg/30 p-3 transition-colors hover:bg-broadcast-bg/50"
+      >
+        <p className="flex items-center justify-between text-2xs font-semibold uppercase tracking-wide text-broadcast-strong">
+          <span className="inline-flex items-center gap-1"><Compass className="h-3 w-3" /> Next step</span>
+          {status && <span className="tabular-nums">{status.pct}%</span>}
         </p>
-      )}
+        <p className="mt-1 text-sm font-bold leading-snug text-text">{nextStep.headline}</p>
+        <p className="mt-0.5 line-clamp-2 text-xs text-muted">{nextStep.blurb}</p>
+        <p className="mt-2 flex items-center justify-between">
+          <span className="inline-flex items-center gap-1 text-2xs font-semibold text-signal">
+            <Gem className="h-3 w-3" /> Earn Gems for finishing
+          </span>
+          <span className="inline-flex items-center gap-0.5 text-2xs font-semibold text-broadcast-strong">
+            {nextStep.cta} <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </p>
+      </Link>
 
       {/* The rest of the setup steps as tight progress cards. */}
-      {showNextSteps && status && status.todo.length > 1 && (
+      {status && status.todo.length > 1 && (
         <div className="mt-2 space-y-1">
           {status.todo.slice(1, 4).map((s) => (
             <Link

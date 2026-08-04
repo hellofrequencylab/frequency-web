@@ -89,6 +89,9 @@ export function EdgePill({
 
   // A tab flush to the screen edge, rounded only on its inner side. At rest it shows
   // ONLY its icon (a sliver peeking from the margin); hover/tap slides the label out.
+  // GEOMETRY CONTRACT: the right pill anchors the bottom-right stack — the Vault dock
+  // (components/sidebar/game-stats-dock.tsx) computes its `bottom` offset from THIS
+  // pill's md:bottom-6 + h-11 (+ gap). Change those and the dock's offset must follow.
   const skin = onLeft
     ? 'left-0 rounded-r-full border-y border-r border-border bg-surface/95 text-broadcast-strong backdrop-blur-sm'
     : 'right-0 rounded-l-full bg-primary/95 text-on-primary'
