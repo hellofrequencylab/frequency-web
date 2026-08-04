@@ -23,7 +23,12 @@ import { pathToFileURL } from 'node:url'
 
 const BASELINE = join('scripts', 'admin-client-baseline.txt')
 const ROOTS = ['app', 'lib', 'components', 'test', 'scripts']
-const IMPORT_RE = /from\s+['"]@\/lib\/supabase\/admin['"]/
+// BOTH import forms. The original pattern required `from '...'`, which the dynamic form
+// does not have -- so `const { createAdminClient } = await import('@/lib/supabase/admin')`
+// was invisible to this gate. Seven files had already adopted the RLS-bypassing client that
+// way and appeared in no baseline, and any new file could have done the same and passed CI.
+// A ratchet you can step around by changing import syntax is not a ratchet.
+const IMPORT_RE = /(?:from\s+['"]@\/lib\/supabase\/admin['"]|import\(\s*['"]@\/lib\/supabase\/admin['"]\s*\))/
 
 function walk(dir, out = []) {
   for (const entry of readdirSync(dir)) {
@@ -64,6 +69,29 @@ function main() {
   const importers = findImporters()
 
   if (process.argv.includes('--update')) {
+    // A ratchet must be ASYMMETRIC or it is just a snapshot. Regenerating used to accept a
+    // RISE silently, and the baseline had already drifted 736 -> 738 across two PRs, one of
+    // whose commit messages claimed the list had got smaller. Growing the RLS-bypass surface
+    // is now an explicit, reviewable act: --allow-raise plus a reason the diff carries.
+    // Mirrors scripts/check-adoption.mjs, which ADR-928 gave this treatment already.
+    const prior = (() => { try { return loadBaseline() } catch { return new Set() } })()
+    const rising = importers.filter((f) => !prior.has(f))
+    const allowRaise = process.argv.includes('--allow-raise')
+    const reasonArg = process.argv.find((a) => a.startsWith('--reason='))
+    const reason = reasonArg ? reasonArg.slice('--reason='.length).trim() : ''
+    if (rising.length > 0 && prior.size > 0 && !allowRaise) {
+      console.error(
+        `✗ admin-client baseline: refusing to RAISE by ${rising.length} file(s).\n` +
+          rising.map((f) => `    + ${f}`).join('\n') +
+          `\n  Each of these gains a full RLS bypass. If that is intended:\n` +
+          `    node scripts/check-admin-client.mjs --update --allow-raise --reason="why"`,
+      )
+      process.exit(1)
+    }
+    if (rising.length > 0 && prior.size > 0 && reason.length < 12) {
+      console.error('✗ admin-client baseline: --allow-raise needs --reason="..." (>= 12 chars).')
+      process.exit(1)
+    }
     writeFileSync(
       BASELINE,
       '# check:admin-client baseline — every file allowed to import the RLS-bypassing service-role\n' +

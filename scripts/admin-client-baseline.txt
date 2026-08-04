@@ -113,6 +113,7 @@ app/(main)/circles/remix-actions.ts
 app/(main)/codes/actions.ts
 app/(main)/codes/page.tsx
 app/(main)/connections/[id]/page.tsx
+app/(main)/connections/actions.ts
 app/(main)/connections/shared/[id]/page.tsx
 app/(main)/crew/actions.ts
 app/(main)/crew/circle-task-actions.ts
@@ -364,6 +365,7 @@ lib/ai/vera/feature-posts.ts
 lib/ai/vera/owner-brief.ts
 lib/ai/vera/read-tools.ts
 lib/ai/vera/today.ts
+lib/ai/vera/usage-gate.ts
 lib/airwaves/asset-usage.ts
 lib/airwaves/playback.ts
 lib/airwaves/recordings.ts
@@ -378,6 +380,7 @@ lib/analytics/outcomes.ts
 lib/analytics/practice.ts
 lib/applications/handoff.ts
 lib/applications/store.ts
+lib/apps/overrides.ts
 lib/attribution/acquisition.ts
 lib/attribution/backfill.ts
 lib/attribution/rollup.ts
@@ -557,6 +560,7 @@ lib/journeys/publish-gate.ts
 lib/journeys/run-gate.ts
 lib/journeys/runs.ts
 lib/keystone/store.ts
+lib/layout/page-chrome.ts
 lib/library.ts
 lib/library/embeddings.ts
 lib/library/event-loom.ts
@@ -609,6 +613,8 @@ lib/page-editor/loom-field-actions.ts
 lib/page-editor/member-search-action.ts
 lib/page-editor/upload-action.ts
 lib/page-settings/actions.ts
+lib/page-settings/store.test.ts
+lib/page-settings/store.ts
 lib/partners/collaborators.ts
 lib/partners/read.ts
 lib/people-suggestions.ts
@@ -633,6 +639,7 @@ lib/practices/lifecycle.ts
 lib/practices/lineage.ts
 lib/pricing/dunning.ts
 lib/pricing/gamification-access.ts
+lib/pricing/gates.ts
 lib/pricing/member-meter-usage.ts
 lib/pricing/settings.ts
 lib/pricing/space-allowance.ts
@@ -741,3 +748,4 @@ lib/walkthroughs.ts
 lib/walkthroughs/progress.ts
 lib/zaps.ts
 test/authz/check-authz-lib.test.ts
+test/contract/tenancy-entity-modules.test.ts

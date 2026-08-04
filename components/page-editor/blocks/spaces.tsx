@@ -473,6 +473,8 @@ export const spacesComponents: Record<string, ComponentConfig> = {
         <AnchorSection anchor="faq">
           <SpaceFaqBlock
             eyebrow={(eyebrow as string) || undefined}
+            // Light on purpose: SpaceFaqBlock takes an `ink` prop but no caller sets it,
+            // and this block exposes no tone control, so the band is always light.
             heading={heading ? accentize(heading as string, titleAccent as string) : undefined}
             faqs={d.faqs}
             emphasis={emphasis as EmphasisValue}

@@ -308,7 +308,29 @@ that round ("this page must get lighter, not heavier"). Breach protocol: two con
 (ADR-922's own note); add the `viewport_class` field (Lift 4). Keep it account-free —
 that invariant is the consent posture.
 
+**7e. The lab smoke alarm (S, shipped 2026-08-04, ADR-930).** A Lighthouse run on the
+PR's own preview, inside the existing `pr-compare` job: LCP / CLS / TBT, three runs,
+median, four representative public URLs. It exists because 7a–7c score FIELD p75, and
+field data needs traffic that does not exist pre-beta — so until it does, nothing at all
+was failing when a PR made a page heavier. Its thresholds sit deliberately ABOVE the 7a
+budgets and it answers *did anything collapse*, not *did we meet the budget*; a green
+tick here is not evidence of 7a compliance. INP is absent because the lab cannot produce
+one. ⚠️ The thresholds are first-run guesses and should be re-set from the first real
+runs rather than defended.
+
 **Metric:** budget table all-green; time-from-breach-to-fix.
+
+### Follow-ups this lift has NOT absorbed
+
+- 🔴 **The vitals ratchet.** 7e is a stopgap instrument, not the goal. The better gate is
+  the ADR-928 ratchet shape applied to live p75: freeze per budget class, fail a rise,
+  celebrate and re-freeze a fall. It needs real traffic to be anything but noise, so it
+  waits on beta rather than on a decision.
+- ⚠️ **Sitemap `lastmod` for the dynamic sets.** ADR-930 stopped the sitemap fabricating
+  timestamps, and the entries that had a real date keep it. Several dynamic sets could
+  carry one but do not, because their list functions never project `updated_at`
+  (`listNetworkedSpaces` is the largest). Plumbing it through is a data-layer change, not
+  a sitemap one, which is why ADR-930 omitted the field instead of guessing at it.
 
 ---
 

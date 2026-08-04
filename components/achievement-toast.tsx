@@ -113,7 +113,17 @@ export function AchievementToastContainer() {
     // The TOAST LANE of the bottom-right stacking contract (see the comment in
     // components/sidebar/game-stats-dock.tsx): md clears the chat edge pill (bottom-20),
     // lg clears the Vault dock chip too (bottom-32). Mobile keeps bottom-20 (above the tab bar).
-    <div className="fixed bottom-20 lg:bottom-32 right-4 z-50 flex flex-col gap-3 pointer-events-none">
+    // BOTTOM-RIGHT LANE, and the arithmetic behind it (verified 2026-08-04).
+    // Mobile: the chat edge pill sits at bottom-20 with h-11, so it occupies 80-124px, and
+    // the tab bar is 3.5rem + env(safe-area-inset-bottom) = up to ~90px on a home-indicator
+    // phone. bottom-32 (128px) is the first lane clearing BOTH; the previous bottom-20 sat
+    // on top of the pill and, with the inset, back inside the bar.
+    // md and up: the tab bar is gone and the pill drops to bottom-6 (24-68px), so bottom-20
+    // clears it by 12px. Deliberately LOWER than mobile, because the pill is what has to be
+    // cleared and the pill is higher on mobile.
+    // The old lg:bottom-32 reserved 128px for GameStatsDockClient, which has had zero mount
+    // sites since the Vault moved back into the rail.
+    <div className="fixed bottom-32 md:bottom-20 right-4 z-50 flex flex-col gap-3 pointer-events-none">
       {toasts.map(t => (
         <AchievementToastCard
           key={t.id}

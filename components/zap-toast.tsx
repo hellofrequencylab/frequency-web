@@ -57,7 +57,17 @@ export function ZapToastContainer() {
     // never cover the Zaps counter at the exact reward moment. On mobile the lane clears
     // the bottom tab bar (h-14) at bottom-20, matching achievement-toast: at bottom-4 a
     // reward toast landed BEHIND the tab bar, which is the one moment it must be readable.
-    <div className="pointer-events-none fixed bottom-20 right-4 z-50 flex flex-col gap-2 items-end lg:bottom-32">
+    // BOTTOM-RIGHT LANE, and the arithmetic behind it (verified 2026-08-04).
+    // Mobile: the chat edge pill sits at bottom-20 with h-11, so it occupies 80-124px, and
+    // the tab bar is 3.5rem + env(safe-area-inset-bottom) = up to ~90px on a home-indicator
+    // phone. bottom-32 (128px) is the first lane clearing BOTH; the previous bottom-20 sat
+    // on top of the pill and, with the inset, back inside the bar.
+    // md and up: the tab bar is gone and the pill drops to bottom-6 (24-68px), so bottom-20
+    // clears it by 12px. Deliberately LOWER than mobile, because the pill is what has to be
+    // cleared and the pill is higher on mobile.
+    // The old lg:bottom-32 reserved 128px for GameStatsDockClient, which has had zero mount
+    // sites since the Vault moved back into the rail.
+    <div className="pointer-events-none fixed bottom-32 right-4 z-50 flex flex-col gap-2 items-end md:bottom-20">
       {toasts.map((t) => (
         <ZapToastCard key={t.key} reward={t.reward} onDismiss={() => dismiss(t.key)} />
       ))}

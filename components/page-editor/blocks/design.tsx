@@ -73,12 +73,18 @@ function DesignHeading({
   size = 'default',
   as: Tag = 'h2',
   className,
+  ink = false,
 }: {
   title?: string
   accentWord?: string
   headerFont?: string
   size?: 'default' | 'lg'
   as?: 'h1' | 'h2' | 'h3'
+  /** True when this heading sits on a DARK band, so the accent word keeps the brand amber
+   *  instead of the deeper `-strong` shade. Stated separately from `className` because the
+   *  colour override and the contrast decision are not the same thing: the Banner sets both,
+   *  the image-scrim beat below sets neither (it veils with cream, not ink). */
+  ink?: boolean
   /** Override the default warm-text color (e.g. `text-on-ink` when the heading sits over a photo scrim). */
   className?: string
 }) {
@@ -101,7 +107,7 @@ function DesignHeading({
   if (accentWord && clean.includes(accentWord)) {
     return (
       <Tag className={cls} style={style}>
-        {accentize(clean, accentWord)}
+        {accentize(clean, accentWord, ink)}
       </Tag>
     )
   }
@@ -209,6 +215,7 @@ export function PhotoHeroBlock({
         title={title}
         accentWord={accentWord}
         headerFont={headerFont}
+        ink={onInk}
         size="lg"
         // A Banner is a SECTION hero inside a page whose h1 is the entity name (the profile shell / page
         // lockup already emits it), so its headline is an h2. Emitting h1 here put a SECOND h1 on any space
@@ -687,6 +694,8 @@ export function AccentBeatBlock({
       {mode === 'quote' ? (
         <figure>
           <blockquote className="font-display text-[clamp(1.5rem,4vw,2.5rem)] uppercase leading-tight text-text" style={headerFontStyle(headerFont)}>
+            {/* Light on purpose: the image variant veils the photo with CREAM
+                (bg-canvas/85 below), not ink, so this never sits on a dark band. */}
             {accentWord ? accentize(title ?? '', accentWord) : title}
           </blockquote>
           {quoteBy && <figcaption className="mt-4 text-sm font-semibold text-muted">{quoteBy}</figcaption>}
@@ -749,6 +758,7 @@ export function DisplayHeadingBlock({
   if (accentWord && clean.includes(accentWord)) {
     return (
       <h2 className={cls} style={style}>
+        {/* Light on purpose: this heading hardcodes text-text, it has no ink variant. */}
         {accentize(clean, accentWord)}
       </h2>
     )

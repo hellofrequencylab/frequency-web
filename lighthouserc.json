@@ -1,0 +1,53 @@
+{
+  "$comment": [
+    "Lighthouse CI — the synthetic speed gate on the PR's own Vercel preview (ADR-930).",
+    "",
+    "WHAT THIS IS NOT: it is not a measurement of the Core Web Vitals budgets in",
+    "lib/analytics/vitals-budgets.ts. Those are FIELD p75 numbers from real visitors on real",
+    "devices, scored by the vitals_p75 RPC. This is a LAB run on a shared GitHub runner",
+    "against a cold preview deployment. The two are different instruments and gating field",
+    "budgets on lab numbers would be a category error -- a shared runner under load can miss",
+    "a 2.0s LCP on a page that is comfortably fast for every real visitor.",
+    "",
+    "WHAT IT IS: a regression smoke alarm. The thresholds sit deliberately ABOVE the field",
+    "budgets so that passing here means 'nothing collapsed', not 'we met the budget'. A PR",
+    "that doubles the JS on a marketing page or drops a render-blocking font trips it; a PR",
+    "that costs 80ms does not, and should not, because the run cannot resolve 80ms.",
+    "",
+    "INP IS ABSENT ON PURPOSE. It needs a real interaction from a real person, so Lighthouse",
+    "cannot produce one. Total Blocking Time is the lab stand-in and is asserted instead.",
+    "Anyone reading a green tick here should not conclude the INP budget is met -- only the",
+    "field data in the insights Experience tab can say that.",
+    "",
+    "numberOfRuns 3 + median: a single lab run on shared CI is too noisy to gate on.",
+    "",
+    "The URLs are the ONE-PER-SHAPE set, not everything: the home PhotoHero (the heaviest",
+    "LCP on the site), a dense product page, a Puck-rendered template, and an SEO guide.",
+    "Adding every route would multiply runtime for very little extra signal."
+  ],
+  "ci": {
+    "collect": {
+      "numberOfRuns": 3,
+      "settings": {
+        "preset": "desktop",
+        "chromeFlags": "--no-sandbox --headless=new"
+      }
+    },
+    "assert": {
+      "assertions": {
+        "largest-contentful-paint": ["error", { "maxNumericValue": 4000, "aggregationMethod": "median" }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1, "aggregationMethod": "median" }],
+        "total-blocking-time": ["error", { "maxNumericValue": 600, "aggregationMethod": "median" }],
+        "first-contentful-paint": ["warn", { "maxNumericValue": 2500, "aggregationMethod": "median" }],
+        "total-byte-weight": ["warn", { "maxNumericValue": 3500000, "aggregationMethod": "median" }],
+        "uses-responsive-images": "warn",
+        "unused-javascript": "warn",
+        "render-blocking-resources": "warn"
+      }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": ".lighthouseci"
+    }
+  }
+}

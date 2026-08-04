@@ -154,7 +154,9 @@ export function PhotoBeatBlock({
         image={image || '/images/site/adult-playground-parachute.jpg'}
         alt={alt ?? ''}
         eyebrow={eyebrow || undefined}
-        line={accentize(line, lineAccent)}
+        // PhotoBeat lays its copy on an ink gradient (--color-ink at 82%), so the
+        // accent word keeps the brand amber wherever the block is placed.
+        line={accentize(line, lineAccent, true)}
         note={note || undefined}
         focal={focalClass(focal)}
       />
@@ -217,7 +219,7 @@ export function PhotoTrioBlock({
             tone={ink ? 'ink' : 'light'}
             align="center"
             eyebrow={eyebrow || undefined}
-            title={accentize(title, titleAccent)}
+            title={accentize(title, titleAccent, ink)}
             kicker={kicker || undefined}
           />
         )}
@@ -338,7 +340,7 @@ export function ValueBandBlock({
             tone="ink"
             align="center"
             eyebrow={eyebrow || undefined}
-            title={accentize(title, titleAccent)}
+            title={accentize(title, titleAccent, true)}
             kicker={kicker || undefined}
           />
         )}
@@ -433,9 +435,13 @@ export function BuildTimelineBlock({
       <div className="relative z-10">
         {(eyebrow || title || kicker) && (
           <SectionHeading
+            // This heading alone never received a tone, unlike the four identical
+            // SectionHeadings elsewhere in this file, so an operator who set the
+            // band to ink got warm text on slat. It follows the band now.
+            tone={t === 'ink' ? 'ink' : 'light'}
             align="center"
             eyebrow={eyebrow || undefined}
-            title={accentize(title, titleAccent)}
+            title={accentize(title, titleAccent, t === 'ink')}
             kicker={kicker || undefined}
           />
         )}
@@ -533,7 +539,7 @@ export function PhotoCardRowBlock({
             tone={ink ? 'ink' : 'light'}
             align="center"
             eyebrow={eyebrow || undefined}
-            title={accentize(title, titleAccent)}
+            title={accentize(title, titleAccent, ink)}
             kicker={kicker || undefined}
           />
         )}
@@ -926,7 +932,7 @@ export function PlanBandBlock({
             tone={ink ? 'ink' : 'light'}
             align="center"
             eyebrow={eyebrow || undefined}
-            title={accentize(title, titleAccent)}
+            title={accentize(title, titleAccent, ink)}
             kicker={kicker || undefined}
           />
         )}
@@ -1063,7 +1069,7 @@ export function DawnHowToStepsBlock({
           <SectionHeading
             tone={ink ? 'ink' : 'light'}
             eyebrow={eyebrow || undefined}
-            title={accentize(name, nameAccent)}
+            title={accentize(name, nameAccent, ink)}
             kicker={kicker || undefined}
           />
         )}
