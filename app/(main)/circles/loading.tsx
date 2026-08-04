@@ -2,19 +2,19 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 function CircleCardSkeleton() {
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0 space-y-2">
           <div className="flex items-center gap-2">
             <Skeleton className="h-4 w-36" />
-            <Skeleton className="h-4 w-14 rounded-full" />
+            <Skeleton className="h-4 w-14 rounded-pill" />
           </div>
           <Skeleton className="h-3 w-48" />
           <Skeleton className="h-3 w-full" />
           <Skeleton className="h-3 w-4/5" />
           <div className="pt-1 space-y-1.5">
             <Skeleton className="h-3 w-28" />
-            <Skeleton className="h-1.5 max-w-xs rounded-full" />
+            <Skeleton className="h-1.5 max-w-xs rounded-pill" />
           </div>
         </div>
         <Skeleton className="h-8 w-16 rounded-lg shrink-0" />

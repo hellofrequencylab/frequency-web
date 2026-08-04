@@ -62,7 +62,7 @@ export function RoleManager({ members }: { members: RoleMember[] }) {
             </p>
           </div>
         </div>
-        <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-surface-elevated px-3 py-2">
+        <div className="mt-3 flex items-center gap-2 rounded-card border border-border bg-surface-elevated px-3 py-2">
           <Search className="h-4 w-4 text-subtle" />
           <input
             value={query}
@@ -87,9 +87,9 @@ export function RoleManager({ members }: { members: RoleMember[] }) {
                 {i + 1}
               </span>
               {m.avatarUrl ? (
-                <Image src={avatarSrc(m.avatarUrl)} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-full object-cover" style={avatarFocusStyle(m.avatarUrl)} />
+                <Image src={avatarSrc(m.avatarUrl)} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(m.avatarUrl)} />
               ) : (
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-xs font-semibold text-muted">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-xs font-semibold text-muted">
                   {getInitials(m.displayName)}
                 </span>
               )}

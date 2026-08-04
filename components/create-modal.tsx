@@ -93,7 +93,7 @@ export function CreateModal({
       >
         {/* Mobile drag indicator */}
         <div className="sm:hidden flex justify-center pt-2.5 pb-1">
-          <div className="w-10 h-1 rounded-full bg-border-strong" />
+          <div className="w-10 h-1 rounded-pill bg-border-strong" />
         </div>
 
         {/* Header — a warm sand band so the title reads as a deliberate, on-brand

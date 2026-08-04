@@ -17,7 +17,7 @@ export default function ConfirmPage() {
         divider={false}
       >
         <div className="w-full text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary-bg">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-pill bg-primary-bg">
             <svg
               className="w-6 h-6 text-primary-strong"
               fill="none"

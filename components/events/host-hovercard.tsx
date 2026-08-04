@@ -37,11 +37,11 @@ export function HostHovercard({
               alt=""
               width={44}
               height={44}
-              className="h-11 w-11 shrink-0 rounded-full object-cover"
+              className="h-11 w-11 shrink-0 rounded-pill object-cover"
               style={avatarFocusStyle(host.avatar_url)}
             />
           ) : (
-            <span className="flex h-11 w-11 shrink-0 select-none items-center justify-center rounded-full bg-primary-bg text-sm font-semibold text-primary-strong">
+            <span className="flex h-11 w-11 shrink-0 select-none items-center justify-center rounded-pill bg-primary-bg text-sm font-semibold text-primary-strong">
               {getInitials(host.display_name)}
             </span>
           )}

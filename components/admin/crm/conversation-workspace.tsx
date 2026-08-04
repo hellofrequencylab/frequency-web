@@ -70,7 +70,7 @@ function hrefWith(
 
 function StatusPill({ status }: { status: string }) {
   return (
-    <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-3xs font-semibold ${statusTone(status)}`}>
+    <span className={`inline-flex items-center rounded-pill px-1.5 py-0.5 text-3xs font-semibold ${statusTone(status)}`}>
       {STATUS_LABELS[status as ConversationStatus] ?? status}
     </span>
   )
@@ -171,14 +171,14 @@ export function ConversationWorkspace({
                     </div>
                     <div className="mt-0.5 flex items-center gap-1.5">
                       {r.awaitingReply && (
-                        <span className="inline-block size-1.5 shrink-0 rounded-full bg-primary" aria-label="Awaiting reply" />
+                        <span className="inline-block size-1.5 shrink-0 rounded-pill bg-primary" aria-label="Awaiting reply" />
                       )}
                       <span className="truncate text-xs text-muted">{r.snippet || r.subject}</span>
                     </div>
                     <div className="mt-1 flex items-center gap-1.5">
                       <StatusPill status={r.status} />
                       {r.spaceName && (
-                        <span className="truncate rounded-full bg-surface-elevated px-1.5 py-0.5 text-3xs font-medium text-muted">
+                        <span className="truncate rounded-pill bg-surface-elevated px-1.5 py-0.5 text-3xs font-medium text-muted">
                           {r.spaceName}
                         </span>
                       )}
@@ -297,7 +297,7 @@ function ContextBand({ thread }: { thread: ConversationThread }) {
   }
 
   const chipClass =
-    'inline-flex max-w-48 items-center truncate rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium'
+    'inline-flex max-w-48 items-center truncate rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-medium'
   return (
     <div className="flex flex-wrap items-center gap-1.5 border-b border-border px-3 py-1.5">
       <span className="text-2xs text-muted">

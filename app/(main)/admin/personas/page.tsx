@@ -42,9 +42,9 @@ function PersonaRow({ row, trust }: { row: PersonaQueueRow; trust?: number }) {
     <li className="flex flex-wrap items-center gap-3 px-4 py-3">
       <Link href={`/people/${row.handle ?? ''}`} className="flex min-w-0 flex-1 items-center gap-3">
         {row.avatarUrl ? (
-          <Image src={avatarSrc(row.avatarUrl)} alt={row.displayName} width={36} height={36} className="h-9 w-9 rounded-full object-cover" style={avatarFocusStyle(row.avatarUrl)} />
+          <Image src={avatarSrc(row.avatarUrl)} alt={row.displayName} width={36} height={36} className="h-9 w-9 rounded-pill object-cover" style={avatarFocusStyle(row.avatarUrl)} />
         ) : (
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-bg text-xs font-semibold text-primary-strong">
+          <div className="flex h-9 w-9 items-center justify-center rounded-pill bg-primary-bg text-xs font-semibold text-primary-strong">
             {getInitials(row.displayName)}
           </div>
         )}

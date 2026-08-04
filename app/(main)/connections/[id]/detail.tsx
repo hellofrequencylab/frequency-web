@@ -129,9 +129,9 @@ export function Detail({
         <span className="inline-flex items-center gap-3 align-middle">
           {avatarUrl ? (
             // Private `network-contacts` signed URL — skip the optimizer (see network/contacts page note).
-            <Image src={avatarSrc(avatarUrl)} alt="" width={48} height={48} unoptimized className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-surface" style={avatarFocusStyle(avatarUrl)} />
+            <Image src={avatarSrc(avatarUrl)} alt="" width={48} height={48} unoptimized className="h-12 w-12 shrink-0 rounded-pill object-cover ring-2 ring-surface" style={avatarFocusStyle(avatarUrl)} />
           ) : (
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-base font-semibold text-muted">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-base font-semibold text-muted">
               {contact.displayName ? getInitials(name) : <User className="h-6 w-6" />}
             </span>
           )}
@@ -374,7 +374,7 @@ export function Detail({
       <Section title="Tags">
         <div className="flex flex-wrap items-center gap-1.5">
           {tags.map((t) => (
-            <span key={t.id} className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
+            <span key={t.id} className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
               {t.source === 'ai' && <Sparkles className="h-3 w-3" />}
               {t.tag}
               <button type="button" disabled={pending} onClick={() => start(async () => { await removeTag(contact.id, t.id); router.refresh() })} aria-label={`Remove ${t.tag}`}>
@@ -415,7 +415,7 @@ export function Detail({
         <ul className="mt-4 space-y-3">
           {notes.length === 0 && <li className="text-sm text-subtle">No notes yet.</li>}
           {notes.map((n) => (
-            <li key={n.id} className="group rounded-xl bg-surface-elevated/50 p-3">
+            <li key={n.id} className="group rounded-card bg-surface-elevated/50 p-3">
               <div className="mb-1 flex items-center gap-2 text-xs text-subtle">
                 {n.kind === 'connection' && <span className="rounded bg-primary-bg px-1.5 py-0.5 font-medium text-primary-strong">Connection</span>}
                 {n.kind === 'ai' && <span className="inline-flex items-center gap-1 rounded bg-surface-elevated px-1.5 py-0.5 font-medium text-muted"><Sparkles className="h-3 w-3" /> Vera</span>}
@@ -461,7 +461,7 @@ function FollowUp({ contactId, reminders }: { contactId: string; reminders: Cont
       <ul className="space-y-2">
         {reminders.length === 0 && <li className="text-sm text-subtle">No follow-ups yet.</li>}
         {reminders.map((r) => (
-          <li key={r.id} className="group flex items-center gap-2 rounded-xl bg-surface-elevated/50 p-3">
+          <li key={r.id} className="group flex items-center gap-2 rounded-card bg-surface-elevated/50 p-3">
             <CalendarClock className="h-4 w-4 shrink-0 text-subtle" />
             <div className="min-w-0 flex-1">
               <p className={`text-sm font-medium ${isOverdue(r.dueAt) ? 'text-danger' : 'text-text'}`}>
@@ -537,7 +537,7 @@ function CardImage({ url, label }: { url: string; label: string }) {
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="group relative block overflow-hidden rounded-xl border border-border bg-surface-elevated"
+      className="group relative block overflow-hidden rounded-card border border-border bg-surface-elevated"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={url} alt={`${label} of the card`} className="w-full object-contain" />

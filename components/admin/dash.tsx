@@ -246,7 +246,7 @@ export function SeverityChip({ severity }: { severity: 'good' | 'watch' | 'risk'
         : 'bg-success-bg text-success'
   const label = severity === 'risk' ? 'Needs attention' : severity === 'watch' ? 'Watch' : 'Healthy'
   return (
-    <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-2xs font-semibold ${cls}`}>
+    <span className={`inline-flex shrink-0 items-center rounded-pill px-2 py-0.5 text-2xs font-semibold ${cls}`}>
       {label}
     </span>
   )

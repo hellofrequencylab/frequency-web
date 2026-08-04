@@ -96,7 +96,7 @@ export default async function PartnerPage({
               action={
                 <Link
                   href="/partners"
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-border px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+                  className="inline-flex items-center gap-1.5 rounded-card border border-border px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
                 >
                   Browse partners
                 </Link>

@@ -85,7 +85,7 @@ export function PromoteToContacts({
   }
 
   return (
-    <div className="space-y-3 rounded-xl border border-border-strong bg-surface-elevated/50 p-4">
+    <div className="space-y-3 rounded-card border border-border-strong bg-surface-elevated/50 p-4">
       <p className="text-sm font-semibold text-text">Add {name} to Frequency contacts?</p>
       <ul className="space-y-1.5 text-sm text-muted">
         <li className="flex gap-2">

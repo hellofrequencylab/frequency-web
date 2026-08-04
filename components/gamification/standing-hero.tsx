@@ -92,8 +92,8 @@ export function StandingHero({
 
       {/* Climb ladder — the rank progress bar + the six-tier spine. */}
       <div className="px-6 py-5 sm:px-7">
-        <div className="h-2.5 overflow-hidden rounded-full bg-surface-elevated">
-          <div className={`h-full rounded-full transition-all ${def.color}`} style={{ width: `${pct}%` }} />
+        <div className="h-2.5 overflow-hidden rounded-pill bg-surface-elevated">
+          <div className={`h-full rounded-pill transition-all ${def.color}`} style={{ width: `${pct}%` }} />
         </div>
         <div className="mt-2.5 flex justify-between">
           {SEASON_RANKS.map((r) => {
@@ -102,7 +102,7 @@ export function StandingHero({
             return (
               <div key={r.rank} className="flex flex-col items-center gap-1">
                 <span
-                  className={`h-2.5 w-2.5 rounded-full ring-2 transition-all ${
+                  className={`h-2.5 w-2.5 rounded-pill ring-2 transition-all ${
                     current ? `${r.color} ring-current ring-offset-1` : achieved ? `${r.color} ring-transparent` : 'bg-border-strong ring-transparent'
                   }`}
                 />

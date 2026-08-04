@@ -171,7 +171,7 @@ export function Scanner({ hint = 'default' }: { hint?: string }) {
             type="button"
             onClick={leave}
             aria-label="Close"
-            className="absolute right-0 rounded-full bg-black/40 p-2 text-white/80 transition-colors hover:text-white"
+            className="absolute right-0 rounded-pill bg-black/40 p-2 text-white/80 transition-colors hover:text-white"
           >
             <X className="h-5 w-5" />
           </button>
@@ -206,7 +206,7 @@ export function Scanner({ hint = 'default' }: { hint?: string }) {
                   setState({ kind: 'starting' })
                   setAttempt((a) => a + 1)
                 }}
-                className="rounded-full bg-white px-6 py-2.5 text-sm font-bold text-black transition-opacity hover:opacity-90"
+                className="rounded-pill bg-white px-6 py-2.5 text-sm font-bold text-black transition-opacity hover:opacity-90"
               >
                 Scan again
               </button>
@@ -226,7 +226,7 @@ export function Scanner({ hint = 'default' }: { hint?: string }) {
           {(state.kind === 'denied' || state.kind === 'unsupported') && (
             <Link
               href="/feed"
-              className="rounded-full bg-white px-6 py-2.5 text-sm font-bold text-black transition-opacity hover:opacity-90"
+              className="rounded-pill bg-white px-6 py-2.5 text-sm font-bold text-black transition-opacity hover:opacity-90"
             >
               Back home
             </Link>

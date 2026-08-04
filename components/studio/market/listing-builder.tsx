@@ -93,7 +93,7 @@ export function ListingBuilder(props: ListingBuilderProps) {
 
   const footer = (
     <StudioFooter left={<SaveStatus state={saveState} error={error} />}>
-      <a href={`/classifieds/${props.id}`} className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated">
+      <a href={`/classifieds/${props.id}`} className="inline-flex items-center gap-1.5 rounded-card border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated">
         <Eye className="h-4 w-4" /> View
       </a>
       <button type="button" onClick={close} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
@@ -189,7 +189,7 @@ export function ListingBuilder(props: ListingBuilderProps) {
                     type="button"
                     onClick={() => addPreset(p.label)}
                     disabled={added}
-                    className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-pill border border-border px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
                   >
                     {added ? <Check className="h-3.5 w-3.5 text-success" /> : <Plus className="h-3.5 w-3.5" />} {p.label}
                   </button>

@@ -191,7 +191,7 @@ function GalleryView({ items, publicBase }: { items: GalleryRow[]; publicBase: s
   return (
     <div className="grid grid-cols-3 gap-2">
       {safe.map((it, i) => (
-        <div key={i} className="relative aspect-square overflow-hidden rounded-xl border border-border">
+        <div key={i} className="relative aspect-square overflow-hidden rounded-card border border-border">
           <Image
             src={`${publicBase}${it.assetPath}`}
             alt={it.alt ?? ''}
@@ -239,7 +239,7 @@ const STAT_LABEL: Record<SpotlightStatKey, string> = {
 
 function StatPill({ icon: Icon, value, label }: { icon: typeof Flame; value: string; label: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2">
+    <div className="flex items-center gap-2 rounded-card border border-border bg-surface px-3 py-2">
       <Icon className="h-4 w-4 text-primary-strong" aria-hidden />
       <span className="text-sm font-semibold text-text tabular-nums">{value}</span>
       {label && <span className="text-xs text-muted">{label}</span>}
@@ -264,7 +264,7 @@ function StatsView({ show, meta }: { show: SpotlightStatKey[]; meta: SpotlightRe
     return (
       <div className="flex flex-wrap gap-2">
         {show.map((key) => (
-          <div key={key} className="flex items-center gap-2 rounded-xl border border-dashed border-border px-3 py-2 text-xs text-subtle">
+          <div key={key} className="flex items-center gap-2 rounded-card border border-dashed border-border px-3 py-2 text-xs text-subtle">
             {STAT_LABEL[key]}
           </div>
         ))}
@@ -284,7 +284,7 @@ function TopFriendsView({ title, meta }: { title?: string; meta: SpotlightRender
     return (
       <section>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-subtle">{title?.trim() || 'Top Friends'}</h2>
-        <p className="rounded-xl border border-dashed border-border px-3 py-4 text-center text-xs text-subtle">
+        <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-xs text-subtle">
           Pick your Top Friends to fill this grid
         </p>
       </section>
@@ -300,12 +300,12 @@ function TopFriendsView({ title, meta }: { title?: string; meta: SpotlightRender
             <Link
               key={f.profileId}
               href={`/people/${f.handle}`}
-              className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-2 text-center transition-colors hover:bg-surface-elevated"
+              className="flex flex-col items-center gap-1.5 rounded-card border border-border bg-surface p-2 text-center transition-colors hover:bg-surface-elevated"
             >
               {f.avatarUrl ? (
-                <Image src={avatarSrc(f.avatarUrl)} alt={name} width={64} height={64} className="h-14 w-14 rounded-full object-cover" style={avatarFocusStyle(f.avatarUrl)} />
+                <Image src={avatarSrc(f.avatarUrl)} alt={name} width={64} height={64} className="h-14 w-14 rounded-pill object-cover" style={avatarFocusStyle(f.avatarUrl)} />
               ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-bg text-sm font-bold text-primary-strong">
+                <div className="flex h-14 w-14 items-center justify-center rounded-pill bg-primary-bg text-sm font-bold text-primary-strong">
                   {getInitials(name)}
                 </div>
               )}

@@ -142,7 +142,7 @@ async function TimelineBoard() {
             </div>
           ))}
           <div
-            className="absolute top-0 -translate-x-1/2 rounded-full bg-primary px-1.5 py-0.5 text-2xs font-bold text-on-primary"
+            className="absolute top-0 -translate-x-1/2 rounded-pill bg-primary px-1.5 py-0.5 text-2xs font-bold text-on-primary"
             style={{ left: `${nowLeft}%` }}
           >
             Today
@@ -185,7 +185,7 @@ async function TimelineBoard() {
                   {sends.map((s) => (
                     <div
                       key={`${s.type}:${s.id}`}
-                      className="absolute top-1/2 z-10 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-surface bg-primary-strong"
+                      className="absolute top-1/2 z-10 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-pill border-2 border-surface bg-primary-strong"
                       style={{ left: `${pct(new Date(s.scheduledFor as string).getTime(), min, max)}%` }}
                       title={`${s.label} · ${fmt(s.scheduledFor as string)}`}
                     />

@@ -384,7 +384,7 @@ function TierManager({
             ) : (
               <div
                 key={t.id}
-                className={`flex items-start justify-between gap-3 rounded-xl border border-border px-3.5 py-2.5 ${
+                className={`flex items-start justify-between gap-3 rounded-card border border-border px-3.5 py-2.5 ${
                   t.active ? '' : 'opacity-60'
                 }`}
               >
@@ -493,7 +493,7 @@ function TierForm({
   }
 
   return (
-    <form onSubmit={handle} className="rounded-xl border border-border-strong bg-surface-elevated p-4 space-y-3">
+    <form onSubmit={handle} className="rounded-card border border-border-strong bg-surface-elevated p-4 space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className={tLbl}>Tier name *</label>

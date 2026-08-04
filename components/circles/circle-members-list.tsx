@@ -76,11 +76,11 @@ export function CircleMembersList({
                     alt={profile.display_name}
                     width={32}
                     height={32}
-                    className="w-8 h-8 rounded-full object-cover shrink-0"
+                    className="w-8 h-8 rounded-pill object-cover shrink-0"
                     style={avatarFocusStyle(profile.avatar_url)}
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                  <div className="w-8 h-8 rounded-pill bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                     {getInitials(profile.display_name)}
                   </div>
                 )}

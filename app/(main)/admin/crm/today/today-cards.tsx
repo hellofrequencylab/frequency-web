@@ -68,8 +68,8 @@ function CardRow({ card, onDone }: { card: TodayCard; onDone: (contactId: string
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <span className="text-sm font-bold text-text">{card.name}</span>
         <span className="text-xs text-subtle">{card.context}</span>
-        <span className={`ml-auto rounded-full px-2 py-0.5 text-2xs font-medium ${chip.cls}`}>{chip.label}</span>
-        <span className={`rounded-full px-2 py-0.5 text-2xs font-medium ${badge.cls}`}>{badge.label}</span>
+        <span className={`ml-auto rounded-pill px-2 py-0.5 text-2xs font-medium ${chip.cls}`}>{chip.label}</span>
+        <span className={`rounded-pill px-2 py-0.5 text-2xs font-medium ${badge.cls}`}>{badge.label}</span>
       </div>
 
       <p className="mt-2 text-sm text-muted">{card.whyNow}</p>
@@ -90,14 +90,14 @@ function CardRow({ card, onDone }: { card: TodayCard; onDone: (contactId: string
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder="Subject"
-            className="w-full rounded-xl border border-border bg-canvas px-3 py-2 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+            className="w-full rounded-card border border-border bg-canvas px-3 py-2 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
           />
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Write the note in your own words. You approve before it sends."
             rows={4}
-            className="w-full rounded-xl border border-border bg-canvas px-3 py-2 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+            className="w-full rounded-card border border-border bg-canvas px-3 py-2 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
           />
         </div>
       )}
@@ -119,7 +119,7 @@ function CardRow({ card, onDone }: { card: TodayCard; onDone: (contactId: string
             type="button"
             disabled={pending}
             onClick={() => setTweaking((t) => !t)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-card border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
           >
             <Pencil className="h-4 w-4" />
             Tweak
@@ -129,7 +129,7 @@ function CardRow({ card, onDone }: { card: TodayCard; onDone: (contactId: string
           type="button"
           disabled={pending}
           onClick={notNow}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-card border border-border px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
         >
           <X className="h-4 w-4" />
           Not now

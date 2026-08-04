@@ -32,12 +32,12 @@ export function ProfileAvatar({
       width={112}
       height={112}
       style={resolvedFocus ? { objectPosition: resolvedFocus } : undefined}
-      className={`h-16 w-16 shrink-0 rounded-full object-cover ring-4 ring-surface sm:h-20 sm:w-20 ${
+      className={`h-16 w-16 shrink-0 rounded-pill object-cover ring-4 ring-surface sm:h-20 sm:w-20 ${
         dimmed ? 'dimmed' : ''
       }`}
     />
   ) : (
-    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary-bg text-2xl font-semibold text-primary-strong ring-4 ring-surface sm:h-20 sm:w-20">
+    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-2xl font-semibold text-primary-strong ring-4 ring-surface sm:h-20 sm:w-20">
       {initials}
     </span>
   )

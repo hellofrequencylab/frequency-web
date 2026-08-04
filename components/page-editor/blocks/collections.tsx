@@ -381,7 +381,7 @@ export function ShowcaseBlock({
               key={i}
               className={`flex flex-col items-center sm:items-stretch sm:flex-row ${reverse ? 'sm:flex-row-reverse' : ''}`}
             >
-              <div className="relative w-80 h-80 sm:w-[32rem] sm:h-[32rem] rounded-full overflow-hidden border-4 border-on-ink/10 shrink-0">
+              <div className="relative w-80 h-80 sm:w-[32rem] sm:h-[32rem] rounded-pill overflow-hidden border-4 border-on-ink/10 shrink-0">
                 <Image
                   src={p.image || '/images/site/lab-storefront.jpg'}
                   alt={p.title || ''}
@@ -515,7 +515,7 @@ export function TiersBlock({
           return (
             <article key={i} className={`relative flex flex-col h-full ${pad} ${cardTone}`}>
               {featured && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-primary text-on-primary px-4 py-1 text-xs font-black uppercase tracking-widest shadow-md">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-pill bg-primary text-on-primary px-4 py-1 text-xs font-black uppercase tracking-widest shadow-md">
                   <Star className="w-3.5 h-3.5 fill-current" aria-hidden /> Most popular
                 </span>
               )}

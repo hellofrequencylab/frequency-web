@@ -138,12 +138,12 @@ export default async function DiscoverJourneyPage({
         badges={
           <span className="inline-flex flex-wrap items-center gap-1.5">
             {plan.official && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-xs font-semibold text-primary-strong">
+              <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-xs font-semibold text-primary-strong">
                 <Flame className="h-3 w-3" /> Official
               </span>
             )}
             {topPillar && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
+              <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
                 {topPillar.name}
               </span>
             )}

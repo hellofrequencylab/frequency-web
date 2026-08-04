@@ -118,7 +118,7 @@ export function SellForm() {
         </label>
         <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1.5 focus-within:border-primary">
           {tags.map((t) => (
-            <span key={t} className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-xs text-text">
+            <span key={t} className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-xs text-text">
               {t}
               <button
                 type="button"

@@ -28,9 +28,9 @@ const WIDTHS = {
 // Shared footer button vocabulary — exported for the rare step that needs a fully
 // custom footer (a sign-in block, a multi-action row) but still wants the kit buttons.
 export const wizardPrimaryClass =
-  'inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-on-primary lift-1 transition-all hover:bg-primary-hover enabled:hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0'
+  'inline-flex items-center justify-center gap-1.5 rounded-card bg-primary px-5 py-3 text-sm font-semibold text-on-primary lift-1 transition-all hover:bg-primary-hover enabled:hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0'
 export const wizardSecondaryClass =
-  'inline-flex items-center justify-center rounded-xl border border-border-strong bg-surface px-5 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated motion-reduce:transition-none'
+  'inline-flex items-center justify-center rounded-card border border-border-strong bg-surface px-5 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated motion-reduce:transition-none'
 
 export function WizardShell({
   step,

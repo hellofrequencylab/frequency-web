@@ -22,7 +22,7 @@ const fieldLabel = labelClasses
 const EventLocationPicker = dynamic(() => import('@/components/events/event-location-picker'), {
   ssr: false,
   loading: () => (
-    <div className="h-56 w-full animate-pulse rounded-xl border border-border bg-surface-elevated" />
+    <div className="h-56 w-full animate-pulse rounded-card border border-border bg-surface-elevated" />
   ),
 })
 
@@ -163,7 +163,7 @@ export function EventLocationFields({
 
       {/* Address box (in person / hybrid). A venue pick fills every field and drops the pin. */}
       {mode !== 'online' && (
-        <div className="space-y-3 rounded-xl border border-border bg-surface-elevated/40 p-3">
+        <div className="space-y-3 rounded-card border border-border bg-surface-elevated/40 p-3">
           <span className={fieldLabel}>
             Address <span className="font-normal text-subtle">(search a venue to fill it in and drop the pin)</span>
           </span>

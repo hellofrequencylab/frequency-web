@@ -74,7 +74,7 @@ export function ProductCard({
       title={product.title}
       badge={
         <span className="flex items-center gap-1.5">
-          <span className="rounded-full bg-primary-bg/60 px-2 py-0.5 text-2xs font-semibold text-primary-strong">
+          <span className="rounded-pill bg-primary-bg/60 px-2 py-0.5 text-2xs font-semibold text-primary-strong">
             {groupLabel}
           </span>
           <VerifiedBadge verified={verified} />
@@ -97,7 +97,7 @@ export function ProductCard({
             </span>
           )}
           {soldOut && (
-            <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
+            <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
               Sold out
             </span>
           )}

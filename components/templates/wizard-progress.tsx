@@ -35,7 +35,7 @@ export function WizardProgress({
           <span
             key={i}
             aria-hidden
-            className={`h-2 rounded-full transition-all duration-500 motion-reduce:transition-none ${
+            className={`h-2 rounded-pill transition-all duration-500 motion-reduce:transition-none ${
               i + 1 === current ? 'w-6 bg-primary' : 'w-2 bg-border-strong'
             }`}
           />
@@ -59,7 +59,7 @@ export function WizardProgress({
           <span
             key={i}
             aria-hidden
-            className={`h-1.5 flex-1 rounded-full transition-colors duration-500 motion-reduce:transition-none ${
+            className={`h-1.5 flex-1 rounded-pill transition-colors duration-500 motion-reduce:transition-none ${
               i < current ? 'bg-primary' : 'bg-border-strong'
             }`}
           />

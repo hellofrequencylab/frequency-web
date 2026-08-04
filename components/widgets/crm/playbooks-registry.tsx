@@ -86,7 +86,7 @@ function PlaybookRow({ playbook, paused }: { playbook: Playbook; paused: boolean
         <div className="flex items-center gap-2">
           <p className="truncate text-sm font-bold text-text">{playbook.name}</p>
           {paused && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-xs font-semibold text-danger">
+            <span className="inline-flex items-center gap-1 rounded-pill bg-danger/10 px-2 py-0.5 text-xs font-semibold text-danger">
               <PauseCircle className="h-3 w-3" aria-hidden /> Paused
             </span>
           )}
@@ -96,7 +96,7 @@ function PlaybookRow({ playbook, paused }: { playbook: Playbook; paused: boolean
       </div>
       <div className="flex shrink-0 items-center gap-3 sm:flex-col sm:items-end sm:gap-1">
         <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-text">
-          <span className={`h-2 w-2 rounded-full ${TIER_DOT[playbook.autonomyTier]}`} aria-hidden />
+          <span className={`h-2 w-2 rounded-pill ${TIER_DOT[playbook.autonomyTier]}`} aria-hidden />
           {TIER_LABEL[playbook.autonomyTier]}
         </span>
         <span className="text-xs text-subtle">

@@ -54,7 +54,7 @@ export function ManagePayoutButton() {
       <button
         onClick={go}
         disabled={isPending}
-        className="inline-flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-card border border-border px-4 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
       >
         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings className="h-4 w-4" />}
         Manage payouts

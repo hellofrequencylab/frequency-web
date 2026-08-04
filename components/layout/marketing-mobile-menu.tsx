@@ -123,7 +123,7 @@ export function MarketingMobileMenu({ light }: { light: boolean }) {
               <Link
                 href="/sign-in"
                 onClick={() => setOpen(false)}
-                className="rounded-xl border border-border py-2.5 text-center text-base font-semibold text-text transition-colors hover:bg-surface-elevated"
+                className="rounded-card border border-border py-2.5 text-center text-base font-semibold text-text transition-colors hover:bg-surface-elevated"
               >
                 Sign in
               </Link>

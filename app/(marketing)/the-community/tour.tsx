@@ -183,7 +183,7 @@ function Avatar({ initials, role }: { initials: string; role: 'jade' | 'teal' | 
         : 'bg-surface-elevated text-muted'
   return (
     <div
-      className={`w-10 h-10 rounded-full ${tint} text-xs font-bold flex items-center justify-center shrink-0 select-none`}
+      className={`w-10 h-10 rounded-pill ${tint} text-xs font-bold flex items-center justify-center shrink-0 select-none`}
       aria-hidden
     >
       {initials}
@@ -250,7 +250,7 @@ function CirclesPanel() {
     <>
       <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
         <div className="flex items-center gap-2 mb-1">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-2.5 py-1 text-3xs font-bold uppercase tracking-widest text-primary-strong">
+          <span className="inline-flex items-center gap-1.5 rounded-pill bg-primary-bg px-2.5 py-1 text-3xs font-bold uppercase tracking-widest text-primary-strong">
             <Sparkles className="w-3 h-3" aria-hidden />
             Movement
           </span>
@@ -266,7 +266,7 @@ function CirclesPanel() {
             {['MR', 'JL', 'AC', 'SK'].map((i, n) => (
               <span
                 key={i}
-                className={`w-7 h-7 rounded-full border-2 border-surface text-[9px] font-bold flex items-center justify-center ${
+                className={`w-7 h-7 rounded-pill border-2 border-surface text-[9px] font-bold flex items-center justify-center ${
                   n % 2 === 0
                     ? 'bg-success-bg text-success'
                     : 'bg-info-bg text-info'
@@ -275,7 +275,7 @@ function CirclesPanel() {
                 {i}
               </span>
             ))}
-            <span className="w-7 h-7 rounded-full border-2 border-surface bg-surface-elevated text-[9px] font-bold text-muted flex items-center justify-center">
+            <span className="w-7 h-7 rounded-pill border-2 border-surface bg-surface-elevated text-[9px] font-bold text-muted flex items-center justify-center">
               +4
             </span>
           </div>
@@ -286,7 +286,7 @@ function CirclesPanel() {
       </div>
 
       <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-info-bg px-2.5 py-1 text-3xs font-bold uppercase tracking-widest text-info">
+        <span className="inline-flex items-center gap-1.5 rounded-pill bg-info-bg px-2.5 py-1 text-3xs font-bold uppercase tracking-widest text-info">
           <Sparkles className="w-3 h-3" aria-hidden />
           Human relating
         </span>
@@ -347,7 +347,7 @@ function ZapExample({ note, to }: { note: string; to: string }) {
   return (
     <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
       <span
-        className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-signal-bg text-signal-strong"
+        className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-signal-bg text-signal-strong"
         aria-hidden
       >
         <Zap className="h-3.5 w-3.5" />

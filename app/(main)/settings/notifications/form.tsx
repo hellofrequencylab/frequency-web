@@ -160,7 +160,7 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
                       title={disabled ? 'Not yet available' : undefined}
                       className={`
                         relative inline-flex items-center justify-center
-                        w-10 h-6 rounded-full transition-colors
+                        w-10 h-6 rounded-pill transition-colors
                         ${disabled
                           ? 'bg-surface-elevated cursor-not-allowed opacity-50'
                           : checked
@@ -170,7 +170,7 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
                     >
                       <span
                         className={`
-                          inline-block w-4 h-4 bg-surface rounded-full shadow transform transition-transform
+                          inline-block w-4 h-4 bg-surface rounded-pill shadow transform transition-transform
                           ${checked ? 'translate-x-2' : '-translate-x-2'}
                         `}
                       />
@@ -217,13 +217,13 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
           aria-label="Remind me about events from Spaces I follow"
           className={`
             relative inline-flex items-center justify-center shrink-0
-            w-10 h-6 rounded-full transition-colors
+            w-10 h-6 rounded-pill transition-colors
             ${settings.space_event_reminders === true ? 'bg-primary' : 'bg-border hover:bg-border-strong'}
           `}
         >
           <span
             className={`
-              inline-block w-4 h-4 bg-surface rounded-full shadow transform transition-transform
+              inline-block w-4 h-4 bg-surface rounded-pill shadow transform transition-transform
               ${settings.space_event_reminders === true ? 'translate-x-2' : '-translate-x-2'}
             `}
           />

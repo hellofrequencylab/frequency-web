@@ -182,7 +182,7 @@ export function ChannelSettingsModule() {
         {/* Visibility — the archive switch, in its own box so the consequence reads before the click.
             A select, not a checkbox: an unchecked checkbox submits nothing, and the action only writes
             fields it was actually given. */}
-        <div className="space-y-1.5 rounded-xl border border-border bg-surface-elevated/40 p-3">
+        <div className="space-y-1.5 rounded-card border border-border bg-surface-elevated/40 p-3">
           <span className={fieldLabel}>Visibility</span>
           <select name="is_active" defaultValue={data.is_active ? 'on' : 'off'} className={input}>
             <option value="on">Live (listed in the Channels directory)</option>

@@ -94,7 +94,7 @@ function Category({
         <Icon className="h-4 w-4 text-primary-strong" />
         {title}
         {typeof count === 'number' && (
-          <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">{count}</span>
+          <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">{count}</span>
         )}
       </h2>
       {children}

@@ -237,7 +237,7 @@ function HostSpaceSearch({ pending, onPick }: { pending: boolean; onPick: (space
       {/* Results render IN FLOW, not as an absolute overlay: the settings module's @container wrapper
           clips a `top-full` dropdown (the same reason ScopeSearch and SpaceSearch do it this way). */}
       {spaces.length > 0 && (
-        <div className="mt-1 overflow-hidden rounded-xl border border-border bg-surface py-1 lift-3">
+        <div className="mt-1 overflow-hidden rounded-card border border-border bg-surface py-1 lift-3">
           {spaces.map((h) => (
             <button
               key={h.id}

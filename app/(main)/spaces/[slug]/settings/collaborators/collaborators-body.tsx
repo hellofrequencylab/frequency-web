@@ -54,7 +54,7 @@ export async function CollaboratorsBody({
     // host pays nothing extra per guest.
     if (lockedReason === 'plan') {
       return (
-        <div className="rounded-xl border border-dashed border-border bg-surface px-4 py-6 text-sm text-muted">
+        <div className="rounded-card border border-dashed border-border bg-surface px-4 py-6 text-sm text-muted">
           <p className="text-text">
             Host other businesses inside your space. A wellness center hosts independent practitioners; a
             venue hosts the makers who sell there. Each keeps their own page, and they show as your
@@ -74,7 +74,7 @@ export async function CollaboratorsBody({
       )
     }
     return (
-      <p className="rounded-xl border border-dashed border-border bg-surface px-4 py-6 text-sm text-muted">
+      <p className="rounded-card border border-dashed border-border bg-surface px-4 py-6 text-sm text-muted">
         Collaborators is turned off for this space. Turn it on in the Module Manager to host other
         businesses inside your space.
       </p>
@@ -102,7 +102,7 @@ export async function CollaboratorsBody({
           <h2 className="text-sm font-semibold text-text">Requests to approve</h2>
           <ul className="space-y-2">
             {incoming.map((v) => (
-              <li key={v.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface p-4">
+              <li key={v.id} className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface p-4">
                 <PartnerRow view={v} />
                 <RequestControls collaborationId={v.id} />
               </li>
@@ -114,13 +114,13 @@ export async function CollaboratorsBody({
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-text">Collaborators</h2>
         {accepted.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border bg-surface px-4 py-6 text-sm text-muted">
+          <p className="rounded-card border border-dashed border-border bg-surface px-4 py-6 text-sm text-muted">
             No collaborators yet. Invite a business that runs inside your space above.
           </p>
         ) : (
           <ul className="space-y-2">
             {accepted.map((v) => (
-              <li key={v.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface p-4">
+              <li key={v.id} className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface p-4">
                 <PartnerRow view={v} />
                 <RevokeControl collaborationId={v.id} label="End collaboration" />
               </li>
@@ -134,7 +134,7 @@ export async function CollaboratorsBody({
           <h2 className="text-sm font-semibold text-text">Invites sent</h2>
           <ul className="space-y-2">
             {pendingSent.map((v) => (
-              <li key={v.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-surface p-4">
+              <li key={v.id} className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-dashed border-border bg-surface p-4">
                 <PartnerRow view={v} />
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-medium text-subtle">Waiting for them to approve</span>
@@ -151,7 +151,7 @@ export async function CollaboratorsBody({
           <h2 className="text-sm font-semibold text-text">Declined</h2>
           <ul className="space-y-2">
             {declined.map((v) => (
-              <li key={v.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-surface p-4">
+              <li key={v.id} className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-dashed border-border bg-surface p-4">
                 <PartnerRow view={v} />
                 <ReinviteControl
                   spaceId={spaceId}

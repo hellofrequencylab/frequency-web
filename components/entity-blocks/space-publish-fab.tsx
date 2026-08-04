@@ -193,7 +193,7 @@ export function SpacePublishFab({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/95 px-3.5 py-2 text-xs font-semibold text-text shadow-pop backdrop-blur transition-colors hover:bg-surface-elevated"
+          className="pointer-events-auto inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface/95 px-3.5 py-2 text-xs font-semibold text-text shadow-pop backdrop-blur transition-colors hover:bg-surface-elevated"
         >
           <ChevronUp className="h-3.5 w-3.5" aria-hidden />{' '}
           {hasUnpublishedChanges ? 'Unpublished changes' : 'Editing tools'}
@@ -254,12 +254,12 @@ export function SpacePublishFab({
         >
           <span
             aria-hidden
-            className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${
+            className={`relative h-4 w-7 shrink-0 rounded-pill transition-colors ${
               published ? 'bg-primary' : 'bg-border-strong'
             }`}
           >
             <span
-              className={`absolute top-0.5 h-3 w-3 rounded-full bg-on-primary transition-all ${
+              className={`absolute top-0.5 h-3 w-3 rounded-pill bg-on-primary transition-all ${
                 published ? 'left-3.5' : 'left-0.5'
               }`}
             />

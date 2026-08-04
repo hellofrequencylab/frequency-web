@@ -228,7 +228,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
       {kickoff && (
         <Link
           href={`/events/${kickoff.slug}`}
-          className="mb-4 flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm transition-colors hover:border-primary"
+          className="mb-4 flex items-center gap-2 rounded-card border border-border bg-surface px-3 py-2.5 text-sm transition-colors hover:border-primary"
         >
           <CalendarClock className="h-4 w-4 shrink-0 text-primary-strong" />
           <span className="font-medium text-text">Kickoff meetup</span>

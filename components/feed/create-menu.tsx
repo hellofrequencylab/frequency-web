@@ -33,7 +33,7 @@ export function CreateMenu({ role }: { role: CommunityRole }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-border bg-surface lift-3 py-1 z-50">
+        <div className="absolute right-0 top-full mt-2 w-64 rounded-card border border-border bg-surface lift-3 py-1 z-50">
           <div className="px-3 py-2 border-b border-border">
             <p className="text-3xs font-semibold uppercase tracking-wider text-muted">
               Quick Create

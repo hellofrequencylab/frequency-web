@@ -123,7 +123,7 @@ export function GoBusinessCta({
           ) : (
             <div
               aria-disabled
-              className="flex w-full cursor-default items-center justify-center gap-2 rounded-xl border border-dashed border-border px-4 py-3 text-xs font-semibold text-subtle"
+              className="flex w-full cursor-default items-center justify-center gap-2 rounded-card border border-dashed border-border px-4 py-3 text-xs font-semibold text-subtle"
             >
               <Lock className="h-3.5 w-3.5" aria-hidden /> Available soon
             </div>

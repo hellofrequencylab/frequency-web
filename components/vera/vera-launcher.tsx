@@ -238,7 +238,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                   <ArrowLeft className="h-4 w-4" aria-hidden />
                 </button>
               ) : (
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
+                <span className="flex h-9 w-9 items-center justify-center rounded-pill bg-primary-bg text-primary-strong">
                   <HeaderIcon className="h-4 w-4" aria-hidden />
                 </span>
               )}
@@ -263,7 +263,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                 >
                   <MessageSquare className="h-4 w-4" aria-hidden /> Messages
                   {unread > 0 && (
-                    <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-3xs font-bold text-on-primary">{unread > 9 ? '9+' : unread}</span>
+                    <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-pill bg-primary px-1 text-3xs font-bold text-on-primary">{unread > 9 ? '9+' : unread}</span>
                   )}
                 </button>
                 <button

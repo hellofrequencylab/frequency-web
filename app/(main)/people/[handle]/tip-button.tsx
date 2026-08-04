@@ -65,7 +65,7 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
             ${c / 100}
           </button>
         ))}
-        <div className="flex items-center gap-1 rounded-xl border border-border px-2.5 py-1.5">
+        <div className="flex items-center gap-1 rounded-card border border-border px-2.5 py-1.5">
           <span className="text-sm text-subtle">$</span>
           <input
             type="number"
@@ -86,7 +86,7 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
         onChange={(e) => setMessage(e.target.value)}
         maxLength={280}
         placeholder="Add a note (optional)"
-        className="mt-3 w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text outline-none placeholder:text-subtle focus:border-primary"
+        className="mt-3 w-full rounded-card border border-border bg-surface px-3 py-2 text-sm text-text outline-none placeholder:text-subtle focus:border-primary"
       />
 
       {error && <p className="mt-2 text-sm text-danger">{error}</p>}
@@ -102,7 +102,7 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
         </button>
         <button
           onClick={() => { setOpen(false); setError(null) }}
-          className="rounded-xl px-3 py-2 text-sm font-semibold text-muted transition-colors hover:bg-surface-elevated"
+          className="rounded-card px-3 py-2 text-sm font-semibold text-muted transition-colors hover:bg-surface-elevated"
         >
           Cancel
         </button>

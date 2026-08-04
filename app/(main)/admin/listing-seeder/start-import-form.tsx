@@ -215,11 +215,11 @@ export function StartImportForm() {
       <p className="mb-2 text-2xs text-muted">The first photo is the primary. You can add or reorder more on the next screen.</p>
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
         {previews.map((p, i) => (
-          <div key={p.url} className="group relative aspect-square overflow-hidden rounded-xl border border-border">
+          <div key={p.url} className="group relative aspect-square overflow-hidden rounded-card border border-border">
             <Image src={p.url} alt="" width={200} height={200} unoptimized className="h-full w-full object-cover" />
             {/* KEEP the black/white pair below: A scrim chip painted on a photo thumbnail, not on a themed surface, so the monochrome pair stays. */}
             {i === 0 && (
-              <span className="absolute left-1.5 top-1.5 rounded-full bg-black/60 px-1.5 py-0.5 text-2xs font-semibold text-white">
+              <span className="absolute left-1.5 top-1.5 rounded-pill bg-black/60 px-1.5 py-0.5 text-2xs font-semibold text-white">
                 Primary
               </span>
             )}
@@ -227,7 +227,7 @@ export function StartImportForm() {
               type="button"
               onClick={() => setPhotos((prev) => prev.filter((f) => f !== p.file))}
               aria-label="Remove photo"
-              className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity hover:bg-black/80 focus:opacity-100 group-hover:opacity-100"
+              className="absolute right-1.5 top-1.5 rounded-pill bg-black/60 p-1 text-white opacity-0 transition-opacity hover:bg-black/80 focus:opacity-100 group-hover:opacity-100"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -236,7 +236,7 @@ export function StartImportForm() {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border text-2xs text-muted transition-colors hover:border-border-strong hover:text-text"
+          className="flex aspect-square flex-col items-center justify-center gap-1 rounded-card border border-dashed border-border text-2xs text-muted transition-colors hover:border-border-strong hover:text-text"
         >
           <ImagePlus className="h-5 w-5" aria-hidden />
           Add

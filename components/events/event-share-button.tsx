@@ -113,7 +113,7 @@ export function EventShareButton({
               </p>
               <div
                 aria-label={`QR code for ${title}`}
-                className="mx-auto aspect-square w-40 rounded-xl border border-border bg-white p-2 lift-1 [&>svg]:h-full [&>svg]:w-full"
+                className="mx-auto aspect-square w-40 rounded-card border border-border bg-white p-2 lift-1 [&>svg]:h-full [&>svg]:w-full"
                 dangerouslySetInnerHTML={{ __html: svg }}
               />
               {/* Take the code with you: PNG for flyers and socials, SVG for print at any size. */}

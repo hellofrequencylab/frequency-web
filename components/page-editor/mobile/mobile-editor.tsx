@@ -377,7 +377,7 @@ export function MobileEditor({
           type="button"
           aria-label="Show editor controls"
           onClick={() => setDockHidden(false)}
-          className="absolute bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] right-4 z-[60] flex h-12 w-12 items-center justify-center rounded-full bg-surface-elevated text-text shadow-xl"
+          className="absolute bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] right-4 z-[60] flex h-12 w-12 items-center justify-center rounded-pill bg-surface-elevated text-text shadow-xl"
         >
           <Eye className="h-5 w-5" aria-hidden />
         </button>
@@ -472,7 +472,7 @@ export function MobileEditor({
                       title={b.reason}
                       aria-disabled="true"
                       aria-label={b.reason ? `${b.label}. ${b.reason}` : b.label}
-                      className="flex min-h-[64px] cursor-not-allowed flex-col items-center justify-center gap-1 rounded-xl border border-border bg-surface-elevated px-2 py-2 text-center text-xs font-medium text-subtle opacity-60"
+                      className="flex min-h-[64px] cursor-not-allowed flex-col items-center justify-center gap-1 rounded-card border border-border bg-surface-elevated px-2 py-2 text-center text-xs font-medium text-subtle opacity-60"
                     >
                       <span className="line-clamp-2">{b.label}</span>
                     </div>
@@ -481,7 +481,7 @@ export function MobileEditor({
                       key={b.type}
                       type="button"
                       onClick={() => handleAdd(b.type)}
-                      className="flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-xl border border-border bg-surface px-2 py-2 text-center text-xs font-medium text-text hover:bg-surface-elevated"
+                      className="flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-card border border-border bg-surface px-2 py-2 text-center text-xs font-medium text-text hover:bg-surface-elevated"
                     >
                       <span className="line-clamp-2">{b.label}</span>
                     </button>

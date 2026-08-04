@@ -53,9 +53,9 @@ export function CohostManager({
           {cohosts.map((c) => (
             <li key={c.id} className="flex items-center gap-3 rounded-lg px-3 py-2 -mx-3 hover:bg-surface transition-colors">
               {c.avatarUrl ? (
-                <Image src={avatarSrc(c.avatarUrl)} alt={c.displayName} width={28} height={28} className="h-7 w-7 shrink-0 rounded-full object-cover" style={avatarFocusStyle(c.avatarUrl)} />
+                <Image src={avatarSrc(c.avatarUrl)} alt={c.displayName} width={28} height={28} className="h-7 w-7 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(c.avatarUrl)} />
               ) : (
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-bg text-2xs font-bold text-primary-strong select-none">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-2xs font-bold text-primary-strong select-none">
                   {getInitials(c.displayName)}
                 </div>
               )}
@@ -80,9 +80,9 @@ export function CohostManager({
             {pendingInvites.map((p) => (
               <li key={p.id} className="flex items-center gap-3 rounded-lg px-3 py-2 -mx-3 hover:bg-surface transition-colors">
                 {p.avatarUrl ? (
-                  <Image src={avatarSrc(p.avatarUrl)} alt={p.displayName} width={28} height={28} className="h-7 w-7 shrink-0 rounded-full object-cover" style={avatarFocusStyle(p.avatarUrl)} />
+                  <Image src={avatarSrc(p.avatarUrl)} alt={p.displayName} width={28} height={28} className="h-7 w-7 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(p.avatarUrl)} />
                 ) : (
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-2xs font-bold text-muted select-none">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-2xs font-bold text-muted select-none">
                     {getInitials(p.displayName)}
                   </div>
                 )}
@@ -90,7 +90,7 @@ export function CohostManager({
                   <p className="truncate text-sm font-medium text-text">{p.displayName}</p>
                   <p className="truncate text-xs text-subtle">@{p.handle}</p>
                 </Link>
-                <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+                <span className="shrink-0 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
                   Invited
                 </span>
                 <RemoveCohostButton eventId={eventId} slug={slug} cohostProfileId={p.profileId} label="Cancel invite" />
@@ -196,7 +196,7 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
           dropdown — the real reason the matches never showed. An in-flow list pushes the
           content below it down and is never clipped. */}
       {hits.length > 0 && (
-        <div className="mt-1 w-full max-w-sm rounded-xl border border-border bg-surface py-1 lift-3">
+        <div className="mt-1 w-full max-w-sm rounded-card border border-border bg-surface py-1 lift-3">
           {hits.map((p) => (
             <button
               key={p.id}
@@ -206,9 +206,9 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
               className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-elevated disabled:opacity-40"
             >
               {p.avatar_url ? (
-                <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-full object-cover" style={avatarFocusStyle(p.avatar_url)} />
+                <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(p.avatar_url)} />
               ) : (
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-bg text-3xs font-bold text-primary-strong">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-3xs font-bold text-primary-strong">
                   {getInitials(p.display_name)}
                 </div>
               )}
@@ -281,7 +281,7 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
   }
 
   return (
-    <div className="mt-3 rounded-xl border border-border bg-surface p-3">
+    <div className="mt-3 rounded-card border border-border bg-surface p-3">
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold text-text">Transfer host role</p>
         <button
@@ -337,7 +337,7 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
             className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
           />
           {hits.length > 0 && (
-            <div className="mt-1 w-full max-w-sm rounded-xl border border-border bg-surface py-1 lift-3">
+            <div className="mt-1 w-full max-w-sm rounded-card border border-border bg-surface py-1 lift-3">
               {hits.map((p) => (
                 <button
                   key={p.id}
@@ -346,9 +346,9 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
                   className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-elevated"
                 >
                   {p.avatar_url ? (
-                    <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-full object-cover" style={avatarFocusStyle(p.avatar_url)} />
+                    <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(p.avatar_url)} />
                   ) : (
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-bg text-3xs font-bold text-primary-strong">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-3xs font-bold text-primary-strong">
                       {getInitials(p.display_name)}
                     </div>
                   )}

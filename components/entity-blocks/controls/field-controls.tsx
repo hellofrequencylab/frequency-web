@@ -189,13 +189,13 @@ export function Toggle({
       aria-label={ariaLabel}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors disabled:opacity-40 ${
+      className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-pill transition-colors disabled:opacity-40 ${
         checked ? 'bg-primary' : 'bg-border-strong/50'
       }`}
     >
       <span
         aria-hidden
-        className={`inline-block h-3 w-3 transform rounded-full bg-surface shadow-sm transition-transform ${
+        className={`inline-block h-3 w-3 transform rounded-pill bg-surface shadow-sm transition-transform ${
           checked ? 'translate-x-3.5' : 'translate-x-0.5'
         }`}
       />
@@ -350,7 +350,7 @@ export function ColorControl({
             aria-label={o.label}
             title={o.label}
             onClick={() => onSelect(o.value)}
-            className={`h-5 w-5 rounded-full border transition-transform hover:scale-110 ${colorSwatchClass(o.value)} ${
+            className={`h-5 w-5 rounded-pill border transition-transform hover:scale-110 ${colorSwatchClass(o.value)} ${
               on ? 'border-text ring-2 ring-primary ring-offset-1 ring-offset-surface' : 'border-border'
             }`}
           />
@@ -568,7 +568,7 @@ export function IconPicker({
           <div
             role="dialog"
             aria-label={`Choose ${ariaLabel.toLowerCase()}`}
-            className="absolute left-0 top-10 z-50 w-64 space-y-2 rounded-xl border border-border bg-surface p-2 lift-3"
+            className="absolute left-0 top-10 z-50 w-64 space-y-2 rounded-card border border-border bg-surface p-2 lift-3"
           >
             <div className="flex items-center gap-1">
               <button type="button" aria-pressed={source === 'icon'} className={tabCls(source === 'icon')} onClick={() => setSource('icon')}>

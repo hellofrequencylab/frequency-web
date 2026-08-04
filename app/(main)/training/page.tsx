@@ -27,7 +27,7 @@ export default async function TrainingPage() {
     >
       {!active ? (
         <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
-          <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-broadcast-bg text-broadcast-strong">
+          <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-pill bg-broadcast-bg text-broadcast-strong">
             <Trophy className="h-6 w-6" aria-hidden />
           </span>
           <p className="text-sm font-semibold text-text">You’re all caught up</p>
@@ -36,7 +36,7 @@ export default async function TrainingPage() {
       ) : (
         <div className="space-y-5">
           <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-5 lift-1">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-broadcast-bg text-broadcast-strong">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-broadcast-bg text-broadcast-strong">
               <GraduationCap className="h-6 w-6" aria-hidden />
             </span>
             <div>

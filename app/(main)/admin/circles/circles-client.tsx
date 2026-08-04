@@ -353,7 +353,7 @@ export function CirclesClient({
           </summary>
           <div className="mt-2 space-y-2 opacity-60">
             {archived.map(circle => (
-              <div key={circle.id} className="flex items-center gap-3 rounded-xl border border-border px-4 py-3">
+              <div key={circle.id} className="flex items-center gap-3 rounded-card border border-border px-4 py-3">
                 <span className="flex-1 text-sm text-muted">{circle.name}</span>
                 <span className="text-xs text-subtle">archived</span>
               </div>

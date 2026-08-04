@@ -99,7 +99,7 @@ export function HostCohostSection({
           {/* 2b. PEOPLE — the recessed panel, so a person co-hosting never reads as a Space. */}
           {hasPersonCohosts ? (
             <div
-              className={`rounded-xl border border-border bg-surface-elevated p-3 ${
+              className={`rounded-card border border-border bg-surface-elevated p-3 ${
                 hasSpaceCohosts ? 'mt-3' : ''
               }`}
             >
@@ -133,11 +133,11 @@ function PersonCohostRow({ cohost }: { cohost: CohostView }) {
           alt={cohost.displayName}
           width={32}
           height={32}
-          className="h-8 w-8 shrink-0 rounded-full object-cover"
+          className="h-8 w-8 shrink-0 rounded-pill object-cover"
           style={avatarFocusStyle(cohost.avatarUrl)}
         />
       ) : (
-        <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-primary-bg text-2xs font-bold text-primary-strong">
+        <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-pill bg-primary-bg text-2xs font-bold text-primary-strong">
           {getInitials(cohost.displayName)}
         </div>
       )}

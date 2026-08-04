@@ -208,7 +208,7 @@ function RewardTable({
 
       {/* Add a new action. */}
       {adding ? (
-        <div className="mt-3 space-y-2 rounded-xl border border-dashed border-border bg-canvas/50 p-3">
+        <div className="mt-3 space-y-2 rounded-card border border-dashed border-border bg-canvas/50 p-3">
           <input
             autoFocus
             value={draft.action_type}

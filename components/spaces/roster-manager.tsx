@@ -69,14 +69,14 @@ function Avatar({ row }: { row: RosterRow }) {
         width={36}
         height={36}
         style={avatarFocusStyle(row.avatarUrl)}
-        className="h-9 w-9 shrink-0 rounded-full object-cover"
+        className="h-9 w-9 shrink-0 rounded-pill object-cover"
         aria-hidden
       />
     )
   }
   return (
     <span
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-bg text-sm font-semibold text-primary-strong select-none"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-sm font-semibold text-primary-strong select-none"
       aria-hidden
     >
       {getInitials(row.displayName)}

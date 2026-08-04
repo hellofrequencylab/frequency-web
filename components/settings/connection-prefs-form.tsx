@@ -113,7 +113,7 @@ export function ConnectionPrefsForm({ initial }: { initial: ConnectionPrefsIniti
 
       {/* No-home note — proximity is inert without a home location. */}
       {!initial.hasHome && (
-        <div className="flex items-start gap-3 rounded-xl border border-border bg-surface-elevated px-4 py-3">
+        <div className="flex items-start gap-3 rounded-card border border-border bg-surface-elevated px-4 py-3">
           <MapPin className="w-4 h-4 text-muted shrink-0 mt-0.5" />
           <p className="text-xs text-muted">
             Proximity features need a home location.{' '}
@@ -246,7 +246,7 @@ export function ConnectionPrefsForm({ initial }: { initial: ConnectionPrefsIniti
       </div>
 
       {/* ── Reassurance + save status ─────────────────────────────────────── */}
-      <div className="flex items-start gap-2.5 rounded-xl border border-border bg-surface-elevated px-4 py-3">
+      <div className="flex items-start gap-2.5 rounded-card border border-border bg-surface-elevated px-4 py-3">
         <ShieldAlert className="w-4 h-4 text-muted shrink-0 mt-0.5" />
         <p className="text-xs text-muted">
           Frequency never shares your exact location. Others only see a fuzzed area or your city.
@@ -277,12 +277,12 @@ export function ConnectionPrefsForm({ initial }: { initial: ConnectionPrefsIniti
 function Toggle({ checked }: { checked: boolean }) {
   return (
     <span
-      className={`relative inline-flex items-center w-10 h-6 rounded-full transition-colors shrink-0 ${
+      className={`relative inline-flex items-center w-10 h-6 rounded-pill transition-colors shrink-0 ${
         checked ? 'bg-primary' : 'bg-border'
       }`}
     >
       <span
-        className={`inline-block w-4 h-4 bg-surface rounded-full shadow transform transition-transform ${
+        className={`inline-block w-4 h-4 bg-surface rounded-pill shadow transform transition-transform ${
           checked ? 'translate-x-5' : 'translate-x-1'
         }`}
       />

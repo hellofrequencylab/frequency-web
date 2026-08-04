@@ -90,7 +90,7 @@ export function AdminSearchBar({ role, webRole = 'none', staffRole = null }: Pro
   return (
     <div className="flex items-center gap-2">
       <div ref={boxRef} className="relative flex-1">
-        <div className="flex items-center gap-2.5 rounded-xl bg-surface px-3.5 py-2.5">
+        <div className="flex items-center gap-2.5 rounded-card bg-surface px-3.5 py-2.5">
           <Search className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
           <input
             value={q}
@@ -109,7 +109,7 @@ export function AdminSearchBar({ role, webRole = 'none', staffRole = null }: Pro
         </div>
 
         {open && q.trim() && (
-          <div className="absolute inset-x-0 top-full z-30 mt-1.5 overflow-hidden rounded-xl border border-border bg-surface shadow-pop">
+          <div className="absolute inset-x-0 top-full z-30 mt-1.5 overflow-hidden rounded-card border border-border bg-surface shadow-pop">
             {suggestions.length > 0 ? (
               <ul className="py-1">
                 {suggestions.map((l, i) => (

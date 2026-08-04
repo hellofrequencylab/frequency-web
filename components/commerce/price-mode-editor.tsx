@@ -222,7 +222,7 @@ function PriceControl({
       )}
 
       {mode === 'choose' && (
-        <div className="space-y-4 rounded-xl border border-border/70 bg-surface p-3">
+        <div className="space-y-4 rounded-card border border-border/70 bg-surface p-3">
           <DollarField
             id={`${idPrefix}-suggested`}
             label={
@@ -272,7 +272,7 @@ function PriceControl({
           )}
 
           {donation && (
-            <div className="space-y-4 rounded-xl border border-border/70 bg-surface-elevated p-3">
+            <div className="space-y-4 rounded-card border border-border/70 bg-surface-elevated p-3">
               {fund && (
                 <>
                   <div>
@@ -431,7 +431,7 @@ export function PriceModeEditor({
         {options.map((opt, idx) => (
           <div
             key={idx}
-            className="space-y-3 rounded-xl border border-border-strong bg-surface-elevated p-4"
+            className="space-y-3 rounded-card border border-border-strong bg-surface-elevated p-4"
           >
             <div className="flex items-center gap-2">
               <input

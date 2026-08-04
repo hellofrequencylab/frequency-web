@@ -85,20 +85,20 @@ export function WarmProof({
                 alt={a.displayName}
                 width={28}
                 height={28}
-                className="h-7 w-7 rounded-full object-cover ring-2 ring-surface"
+                className="h-7 w-7 rounded-pill object-cover ring-2 ring-surface"
                 style={avatarFocusStyle(a.avatarUrl)}
               />
             ) : (
               <div
                 key={a.id}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-bg text-2xs font-semibold text-primary-strong ring-2 ring-surface select-none"
+                className="flex h-7 w-7 items-center justify-center rounded-pill bg-primary-bg text-2xs font-semibold text-primary-strong ring-2 ring-surface select-none"
               >
                 {getInitials(a.displayName)}
               </div>
             )
           )}
           {overflow > 0 && (
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-surface-elevated text-2xs font-semibold text-muted ring-2 ring-surface select-none">
+            <div className="flex h-7 w-7 items-center justify-center rounded-pill bg-surface-elevated text-2xs font-semibold text-muted ring-2 ring-surface select-none">
               +{overflow}
             </div>
           )}

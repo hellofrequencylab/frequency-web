@@ -175,7 +175,7 @@ function StepEditor({ step, index }: { step: StepRowData; index: number }) {
 
   if (editing) {
     return (
-      <div className="space-y-2 rounded-xl border border-border bg-canvas/40 p-3">
+      <div className="space-y-2 rounded-card border border-border bg-canvas/40 p-3">
         <div className="flex items-center gap-2">
           <label className="text-xs text-subtle">Wait</label>
           <input value={delay} onChange={(e) => setDelay(e.target.value)} inputMode="numeric" className="w-20 rounded-md border border-border bg-canvas px-2 py-1 text-sm text-text" />
@@ -194,8 +194,8 @@ function StepEditor({ step, index }: { step: StepRowData; index: number }) {
 
   return (
     <div className="space-y-1">
-      <div className={`flex items-start gap-3 rounded-xl border border-border bg-canvas/40 p-3 ${step.enabled ? '' : 'opacity-60'}`}>
-        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary-strong">{index + 1}</span>
+      <div className={`flex items-start gap-3 rounded-card border border-border bg-canvas/40 p-3 ${step.enabled ? '' : 'opacity-60'}`}>
+        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-primary/10 text-xs font-bold text-primary-strong">{index + 1}</span>
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-1.5 text-2xs font-medium text-muted">
             <Clock className="h-3 w-3" /> {humanDelay(step.delayHours)}
@@ -219,7 +219,7 @@ function StepEditor({ step, index }: { step: StepRowData; index: number }) {
       </div>
       {error && <p role="alert" className="text-xs text-danger">{error}</p>}
       {designing && (
-        <div className="rounded-xl border border-border bg-canvas/40 p-3">
+        <div className="rounded-card border border-border bg-canvas/40 p-3">
           <StepBlockEditor
             key={`block-${step.id}`}
             stepId={step.id}
@@ -258,7 +258,7 @@ function AddStep({ sequenceId }: { sequenceId: string }) {
     )
   }
   return (
-    <div className="space-y-2 rounded-xl border border-border bg-canvas/40 p-3">
+    <div className="space-y-2 rounded-card border border-border bg-canvas/40 p-3">
       <div className="flex items-center gap-2">
         <label className="text-xs text-subtle">Wait</label>
         <input value={delay} onChange={(e) => setDelay(e.target.value)} inputMode="numeric" className="w-20 rounded-md border border-border bg-canvas px-2 py-1 text-sm text-text" />

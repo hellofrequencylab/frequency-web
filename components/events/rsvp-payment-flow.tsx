@@ -173,7 +173,7 @@ export function RsvpPaymentFlow({
 
       {/* Phase 3 — the payment area slides open under the answer. */}
       {showPayment && selected && (
-        <div className="space-y-3 rounded-xl border border-primary/40 bg-surface-elevated/40 p-4 motion-safe:animate-[slideUp_0.2s_ease-out]">
+        <div className="space-y-3 rounded-card border border-primary/40 bg-surface-elevated/40 p-4 motion-safe:animate-[slideUp_0.2s_ease-out]">
           {selected.kind === 'general' ? (
             <>
               <div className="flex items-center justify-between gap-3">

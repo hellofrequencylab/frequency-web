@@ -150,7 +150,7 @@ export function ReportDialog({
       >
         <div className="mb-1 flex items-center justify-between">
           <p className="text-base font-bold text-text">{done ? 'Report sent' : 'Send a report'}</p>
-          <button type="button" onClick={onClose} aria-label="Close" className="rounded-full p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text">
+          <button type="button" onClick={onClose} aria-label="Close" className="rounded-pill p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -158,7 +158,7 @@ export function ReportDialog({
         {done ? (
           <div className="space-y-4 py-2">
             <div className="flex items-center gap-3 rounded-2xl border border-success/40 bg-success-bg/40 p-4">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success-bg text-success">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-success-bg text-success">
                 <Check className="h-5 w-5" />
               </span>
               <div className="min-w-0">
@@ -210,7 +210,7 @@ export function ReportDialog({
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder={type === 'bug' ? 'e.g. Capture button does nothing on the feed' : 'A short summary'}
                 maxLength={160}
-                className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+                className="w-full rounded-card border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
               />
             </label>
 
@@ -221,7 +221,7 @@ export function ReportDialog({
                 onChange={(e) => setBody(e.target.value)}
                 rows={4}
                 placeholder="What you were doing, what you expected, and what happened instead."
-                className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+                className="w-full resize-none rounded-card border border-border bg-surface px-3 py-2 text-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
               />
             </label>
 
@@ -229,10 +229,10 @@ export function ReportDialog({
             <div className="mt-3">
               <span className="mb-1 block text-xs font-medium text-subtle">Screenshot <span className="font-normal text-subtle">· optional, paste or attach</span></span>
               {shot ? (
-                <div className="relative overflow-hidden rounded-xl border border-border">
+                <div className="relative overflow-hidden rounded-card border border-border">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={safeImageSrc(shot.url) ?? undefined} alt="Attached screenshot" className="max-h-48 w-full object-contain bg-surface-elevated" />
-                  <button type="button" onClick={() => setShot(null)} aria-label="Remove screenshot" className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white transition-colors hover:bg-black/80">
+                  <button type="button" onClick={() => setShot(null)} aria-label="Remove screenshot" className="absolute right-2 top-2 rounded-pill bg-black/60 p-1.5 text-white transition-colors hover:bg-black/80">
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -240,7 +240,7 @@ export function ReportDialog({
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-surface px-3 py-4 text-xs font-medium text-muted transition-colors hover:border-primary hover:text-text"
+                  className="flex w-full items-center justify-center gap-2 rounded-card border border-dashed border-border bg-surface px-3 py-4 text-xs font-medium text-muted transition-colors hover:border-primary hover:text-text"
                 >
                   <ImagePlus className="h-4 w-4" /> Paste a screenshot, or tap to attach
                 </button>
@@ -256,7 +256,7 @@ export function ReportDialog({
 
             {/* Captured context — collapsed by default */}
             {lines.length > 0 && (
-              <div className="mt-3 rounded-xl border border-border bg-surface-elevated/40">
+              <div className="mt-3 rounded-card border border-border bg-surface-elevated/40">
                 <button type="button" onClick={() => setShowContext((v) => !v)} aria-expanded={showContext} className="flex w-full items-center justify-between px-3 py-2 text-xs font-semibold text-muted">
                   <span>Page details we’ll include</span>
                   {showContext ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}

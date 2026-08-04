@@ -111,7 +111,7 @@ function LoomImageField({
       />
 
       {value ? (
-        <div className={`relative ${aspect} w-full overflow-hidden rounded-xl border border-border`}>
+        <div className={`relative ${aspect} w-full overflow-hidden rounded-card border border-border`}>
           {/* eslint-disable-next-line @next/next/no-img-element -- Loom-served asset preview in the editor, not a build-time asset */}
           <img src={value} alt="" className="h-full w-full object-cover" />
           <div className="absolute right-2 top-2 flex gap-1.5">
@@ -140,7 +140,7 @@ function LoomImageField({
             type="button"
             onClick={() => setPicking((p) => !p)}
             disabled={busy || !slug}
-            className={`flex ${aspect} flex-1 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-surface/60 px-3 text-center text-sm font-medium text-muted transition-colors hover:border-border-strong hover:bg-surface disabled:opacity-50`}
+            className={`flex ${aspect} flex-1 flex-col items-center justify-center gap-1.5 rounded-card border border-dashed border-border bg-surface/60 px-3 text-center text-sm font-medium text-muted transition-colors hover:border-border-strong hover:bg-surface disabled:opacity-50`}
           >
             <ImageIcon className="h-5 w-5" aria-hidden />
             Pick from the Loom
@@ -175,7 +175,7 @@ function LoomImageField({
       )}
 
       {picking && slug && (
-        <div className="rounded-xl border border-border bg-surface p-2">
+        <div className="rounded-card border border-border bg-surface p-2">
           <div className="mb-2 flex items-center gap-2 rounded-lg border border-border bg-surface px-2">
             <Search className="h-3.5 w-3.5 text-subtle" aria-hidden />
             <input

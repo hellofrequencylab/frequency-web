@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 function ContactCardSkeleton() {
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
-      <Skeleton className="mx-auto h-16 w-16 rounded-full" />
+      <Skeleton className="mx-auto h-16 w-16 rounded-pill" />
       <Skeleton className="mx-auto mt-3 h-4 w-24" />
       <Skeleton className="mx-auto mt-1.5 h-3 w-16" />
     </div>

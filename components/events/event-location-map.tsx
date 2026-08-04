@@ -14,7 +14,7 @@ import type { EventMapPin } from './events-map'
 const EventsMap = dynamic(() => import('./events-map'), {
   ssr: false,
   loading: () => (
-    <div className="h-40 w-full animate-pulse rounded-xl border border-border bg-surface-elevated" />
+    <div className="h-40 w-full animate-pulse rounded-card border border-border bg-surface-elevated" />
   ),
 })
 
@@ -23,7 +23,7 @@ const EventsMap = dynamic(() => import('./events-map'), {
 const EventVenueMap = dynamic(() => import('./event-venue-map'), {
   ssr: false,
   loading: () => (
-    <div className="h-40 w-full animate-pulse rounded-xl border border-border bg-surface-elevated" />
+    <div className="h-40 w-full animate-pulse rounded-card border border-border bg-surface-elevated" />
   ),
 })
 
@@ -41,7 +41,7 @@ export function EventLocationMap({
   if (isOnline) return null
 
   // A horizontal 16:9 map so the venue reads clearly across the full block width.
-  const mapClass = 'aspect-video w-full overflow-hidden rounded-xl border border-border'
+  const mapClass = 'aspect-video w-full overflow-hidden rounded-card border border-border'
 
   if (venuePoint) {
     return (

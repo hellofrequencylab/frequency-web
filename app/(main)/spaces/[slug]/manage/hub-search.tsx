@@ -27,7 +27,7 @@ export function HubSearch({ items }: { items: HubSearchItem[] }) {
 
   return (
     <div className="relative">
-      <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 lift-1 focus-within:border-border-strong">
+      <div className="flex items-center gap-2 rounded-card border border-border bg-surface px-3 py-2.5 lift-1 focus-within:border-border-strong">
         <Search className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
         <input
           type="search"
@@ -42,7 +42,7 @@ export function HubSearch({ items }: { items: HubSearchItem[] }) {
         />
       </div>
       {q && (
-        <div className="absolute inset-x-0 top-full z-30 mt-1.5 overflow-hidden rounded-xl border border-border bg-surface lift-3">
+        <div className="absolute inset-x-0 top-full z-30 mt-1.5 overflow-hidden rounded-card border border-border bg-surface lift-3">
           {matches.length > 0 ? (
             <ul className="max-h-[60vh] overflow-y-auto py-1">
               {matches.map((it) => (

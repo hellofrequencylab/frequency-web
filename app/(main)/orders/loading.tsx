@@ -8,7 +8,7 @@ function OrderCardSkeleton() {
     <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="flex items-center justify-between gap-3">
         <Skeleton className="h-3 w-24" />
-        <Skeleton className="h-4 w-16 rounded-full" />
+        <Skeleton className="h-4 w-16 rounded-pill" />
       </div>
       <div className="mt-3 space-y-2">
         <Skeleton className="h-4 w-48" />

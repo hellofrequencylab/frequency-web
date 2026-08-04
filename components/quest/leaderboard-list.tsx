@@ -97,12 +97,12 @@ export function LeaderboardList({
                   alt=""
                   width={36}
                   height={36}
-                  className="h-9 w-9 shrink-0 rounded-full object-cover"
+                  className="h-9 w-9 shrink-0 rounded-pill object-cover"
                   style={avatarFocusStyle(entry.avatarUrl)}
                 />
               ) : (
                 <span
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-bg text-xs font-bold text-primary-strong"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-xs font-bold text-primary-strong"
                   aria-hidden
                 >
                   {getInitials(entry.displayName)}

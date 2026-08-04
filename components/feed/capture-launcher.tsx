@@ -134,7 +134,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
                 cached line arrives. */}
             <div className="mb-4 flex shrink-0 items-start justify-between gap-2 px-1 pt-[max(0px,env(safe-area-inset-top))]">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-primary-strong">
                   <Zap className="h-5 w-5 fill-primary-strong/20" aria-hidden />
                 </span>
                 <div className="min-w-0">
@@ -148,7 +148,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
                 type="button"
                 onClick={close}
                 aria-label="Close"
-                className="-mr-1 shrink-0 rounded-full p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+                className="-mr-1 shrink-0 rounded-pill p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -182,7 +182,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2">
                   <span className="block text-base font-bold leading-tight text-text">Mindless</span>
-                  <span className="hidden shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-2xs font-bold uppercase tracking-wide text-primary-strong min-[400px]:inline-block">
+                  <span className="hidden shrink-0 rounded-pill bg-primary/15 px-2 py-0.5 text-2xs font-bold uppercase tracking-wide text-primary-strong min-[400px]:inline-block">
                     Daily timer
                   </span>
                 </span>
@@ -190,7 +190,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
                   Tune out.
                 </span>
               </span>
-              <span className="flex h-8 shrink-0 items-center gap-0.5 rounded-full bg-primary pl-3 pr-2 text-xs font-bold text-on-primary shadow-sm transition-transform group-hover:scale-105">
+              <span className="flex h-8 shrink-0 items-center gap-0.5 rounded-pill bg-primary pl-3 pr-2 text-xs font-bold text-on-primary shadow-sm transition-transform group-hover:scale-105">
                 Start
                 <ChevronRight className="h-3.5 w-3.5" aria-hidden />
               </span>
@@ -209,7 +209,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             <Link
               href="/journal"
               onClick={tapTile('journal')}
-              className="mt-4 flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+              className="mt-4 flex shrink-0 items-center justify-center gap-1.5 rounded-card px-3 py-2.5 text-xs font-semibold text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <BookOpen className="h-3.5 w-3.5" aria-hidden /> View your log
             </Link>
@@ -246,13 +246,13 @@ function ZapTile({
   const inner = (
     <>
       {alert && (
-        <span aria-hidden className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-primary motion-safe:animate-pulse" />
+        <span aria-hidden className="absolute right-2.5 top-2.5 h-2 w-2 rounded-pill bg-primary motion-safe:animate-pulse" />
       )}
       <span className="flex h-12 w-full items-center justify-center">{art}</span>
       <span className="mt-1.5 block text-sm font-bold text-text">{label}</span>
       <span className="block text-2xs leading-snug text-muted">{soon ? 'Soon' : sub}</span>
       {zaps && (
-        <span className="mt-1 inline-flex items-center gap-0.5 rounded-full bg-primary-bg px-1.5 py-0.5 text-3xs font-bold text-primary-strong">
+        <span className="mt-1 inline-flex items-center gap-0.5 rounded-pill bg-primary-bg px-1.5 py-0.5 text-3xs font-bold text-primary-strong">
           <Zap className="h-2.5 w-2.5" /> {zaps}
         </span>
       )}

@@ -145,7 +145,7 @@ function Segment<T extends number>({
     <div
       role="radiogroup"
       aria-label={label}
-      className="inline-flex items-center gap-1 rounded-full border border-border bg-surface p-1 lift-1"
+      className="inline-flex items-center gap-1 rounded-pill border border-border bg-surface p-1 lift-1"
     >
       {options.map((n) => {
         const Icon: LucideIcon = icons[n]
@@ -159,7 +159,7 @@ function Segment<T extends number>({
             aria-label={`${n} ${n === 1 ? 'column' : 'columns'}`}
             title={`${n} ${n === 1 ? 'column' : 'columns'}`}
             onClick={() => onChange(n)}
-            className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors motion-reduce:transition-none ${
+            className={`inline-flex h-8 w-8 items-center justify-center rounded-pill transition-colors motion-reduce:transition-none ${
               on ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated hover:text-text'
             }`}
           >

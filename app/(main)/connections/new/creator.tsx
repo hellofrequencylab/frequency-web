@@ -480,7 +480,7 @@ export function Creator({ userId }: { userId: string }) {
   return (
     <div className="space-y-5">
       {/* Tabs */}
-      <div className="flex gap-1 rounded-xl border border-border bg-surface p-1">
+      <div className="flex gap-1 rounded-card border border-border bg-surface p-1">
         <TabBtn active={tab === 'scan'} onClick={() => setTab('scan')} icon={ScanText} label="Scan a card" />
         <TabBtn active={tab === 'manual'} onClick={() => setTab('manual')} icon={Pencil} label="Manual entry" />
       </div>
@@ -535,7 +535,7 @@ export function Creator({ userId }: { userId: string }) {
                     onClick={() => removeExtraFile(i)}
                     aria-label={`Remove extra image ${i + 1}`}
                     // KEEP the black/white pair: A scrim chip painted on a photo thumbnail, not on a themed surface, so the monochrome pair stays.
-                    className="absolute right-1 top-1 rounded-full bg-black/55 p-0.5 text-white transition-colors hover:bg-black/70"
+                    className="absolute right-1 top-1 rounded-pill bg-black/55 p-0.5 text-white transition-colors hover:bg-black/70"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -614,21 +614,21 @@ export function Creator({ userId }: { userId: string }) {
                 <button
                   type="button"
                   onClick={() => { const s = pickSide; setPickSide(null); (s === 'back' ? backCamRef : frontCamRef).current?.click() }}
-                  className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  className="flex w-full items-center gap-3 rounded-card px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
                 >
                   <Camera className="h-5 w-5 text-primary-strong" /> Take photo
                 </button>
                 <button
                   type="button"
                   onClick={() => { const s = pickSide; setPickSide(null); (s === 'back' ? backRef : frontRef).current?.click() }}
-                  className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  className="flex w-full items-center gap-3 rounded-card px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
                 >
                   <Upload className="h-5 w-5 text-primary-strong" /> Choose from library
                 </button>
                 <button
                   type="button"
                   onClick={() => setPickSide(null)}
-                  className="flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated"
+                  className="flex w-full items-center justify-center rounded-card px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated"
                 >
                   Cancel
                 </button>
@@ -676,9 +676,9 @@ export function Creator({ userId }: { userId: string }) {
           <div className="flex items-center gap-4">
             {avatarPreview ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarPreview} alt="" className="h-16 w-16 shrink-0 rounded-full object-cover ring-2 ring-surface" />
+              <img src={avatarPreview} alt="" className="h-16 w-16 shrink-0 rounded-pill object-cover ring-2 ring-surface" />
             ) : (
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-muted">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-muted">
                 <User className="h-6 w-6" />
               </div>
             )}
@@ -778,7 +778,7 @@ export function Creator({ userId }: { userId: string }) {
 
           {/* One-time intro invite — shown only when there's an email */}
           {form.email.trim() && (
-            <label className="flex items-start gap-2.5 rounded-xl border border-border bg-surface-elevated/40 p-3 text-sm">
+            <label className="flex items-start gap-2.5 rounded-card border border-border bg-surface-elevated/40 p-3 text-sm">
               <input
                 type="checkbox"
                 checked={sendInvite}
@@ -822,7 +822,7 @@ function CardSlot({
       <button
         type="button"
         onClick={onPick}
-        className="flex aspect-[8/5] w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-xl border border-border-strong bg-surface-elevated/40 text-center transition-colors hover:bg-surface-elevated"
+        className="flex aspect-[8/5] w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-card border border-border-strong bg-surface-elevated/40 text-center transition-colors hover:bg-surface-elevated"
       >
         {thumb ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -846,7 +846,7 @@ function CardSlot({
           type="button"
           onClick={onClear}
           aria-label={`Remove ${label.toLowerCase()}`}
-          className="absolute right-1 top-1 rounded-full bg-black/55 p-0.5 text-white transition-colors hover:bg-black/70"
+          className="absolute right-1 top-1 rounded-pill bg-black/55 p-0.5 text-white transition-colors hover:bg-black/70"
         >
           <X className="h-3 w-3" />
         </button>

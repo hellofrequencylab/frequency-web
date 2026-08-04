@@ -136,7 +136,7 @@ export default async function VaultLedgerPage() {
                         className={`flex items-center gap-3 px-4 py-3 ${i > 0 ? 'border-t border-border' : ''}`}
                       >
                         <span
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-pill ${
                             isZap ? 'bg-primary-bg text-primary' : 'bg-signal-bg text-signal-strong'
                           }`}
                         >

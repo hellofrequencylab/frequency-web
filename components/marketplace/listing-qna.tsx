@@ -172,13 +172,13 @@ export function ListingQna({
                 width={160}
                 height={160}
                 unoptimized
-                className="max-h-40 w-auto rounded-xl border border-border object-cover"
+                className="max-h-40 w-auto rounded-card border border-border object-cover"
               />
               <button
                 type="button"
                 onClick={clearImage}
                 aria-label="Remove image"
-                className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
+                className="absolute right-1.5 top-1.5 rounded-pill bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -231,11 +231,11 @@ export function ListingQna({
                     width={32}
                     height={32}
                     unoptimized
-                    className="h-8 w-8 shrink-0 rounded-full object-cover"
+                    className="h-8 w-8 shrink-0 rounded-pill object-cover"
                     style={avatarFocusStyle(a.avatarUrl)}
                   />
                 ) : (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-bg text-2xs font-bold text-primary-strong select-none">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-2xs font-bold text-primary-strong select-none">
                     {a ? getInitials(a.displayName) : '?'}
                   </div>
                 )}
@@ -263,7 +263,7 @@ export function ListingQna({
                       width={480}
                       height={360}
                       unoptimized
-                      className="mt-2 max-h-72 w-auto rounded-xl border border-border object-cover"
+                      className="mt-2 max-h-72 w-auto rounded-card border border-border object-cover"
                     />
                   )}
                 </div>

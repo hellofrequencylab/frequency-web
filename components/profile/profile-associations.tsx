@@ -164,7 +164,7 @@ export async function ProfileAssociations({
                 // heading ("Circles you are both in") is the only context; the title restates the
                 // destination so the pill stands on its own.
                 title={`Open ${c.label}`}
-                className="inline-flex items-center gap-1.5 rounded-full bg-surface-elevated/60 px-2.5 py-1 text-xs font-medium text-text transition-colors hover:bg-surface-elevated"
+                className="inline-flex items-center gap-1.5 rounded-pill bg-surface-elevated/60 px-2.5 py-1 text-xs font-medium text-text transition-colors hover:bg-surface-elevated"
               >
                 <CircleDot className="h-3 w-3 shrink-0 text-subtle" aria-hidden />
                 {c.label}
@@ -179,7 +179,7 @@ export async function ProfileAssociations({
       {isOwner && ownGroups.length > 0 && (
         <div
           aria-label="Only you can see this"
-          className="mt-4 rounded-xl border border-border bg-surface-elevated/40 p-4"
+          className="mt-4 rounded-card border border-border bg-surface-elevated/40 p-4"
         >
           <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-text">
             <Lock className="h-3.5 w-3.5 text-subtle" aria-hidden /> Only you can see this

@@ -114,10 +114,10 @@ export function UserMenu({
             width={28}
             height={28}
             style={avatarFocusStyle(profile.avatar_url)}
-            className="w-7 h-7 rounded-full object-cover"
+            className="w-7 h-7 rounded-pill object-cover"
           />
         ) : (
-          <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center select-none">
+          <div className="w-7 h-7 rounded-pill bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center select-none">
             {getInitials(profile.display_name)}
           </div>
         )}
@@ -127,7 +127,7 @@ export function UserMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 w-52 rounded-xl border border-border bg-surface-elevated lift-3 py-1 z-50">
+        <div className="absolute right-0 top-full mt-1.5 w-52 rounded-card border border-border bg-surface-elevated lift-3 py-1 z-50">
           {/* Identity */}
           <div className="px-3 py-2.5 border-b border-border">
             <p className="text-sm font-semibold text-text truncate">

@@ -104,7 +104,7 @@ const RECURRENCE_LABEL: Record<string, string> = {
   monthly: 'Repeats monthly',
 }
 
-// Attendance-mode PILL (EVENTS-DESIGN §2.4) — one bordered rounded-full chip in the
+// Attendance-mode PILL (EVENTS-DESIGN §2.4) — one bordered rounded-pill chip in the
 // DetailTemplate `badges` slot, so it reads as a tag beside the title rather than plain
 // inline text. DAWN tokens only.
 const MODE_CHIP: Record<AttendanceMode, { Icon: typeof Video; cls: string; label: string }> = {
@@ -1745,7 +1745,7 @@ export default async function EventDetailPage({
       }
       // [A2] attendance-mode pill.
       badges={
-        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${mode.cls}`}>
+        <span className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-xs font-semibold ${mode.cls}`}>
           <mode.Icon className="h-3.5 w-3.5" /> {mode.label}
         </span>
       }
@@ -1928,7 +1928,7 @@ export default async function EventDetailPage({
               ) : (
                 <Link
                   href={`/onboarding/beta?seq=event-experience-hosts-copy&next=${encodeURIComponent(`/events/${event.slug}?claim=${extra.claim_token}`)}`}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-8 py-4 text-base font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-card bg-primary px-8 py-4 text-base font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
                 >
                   <Zap className="h-5 w-5" aria-hidden /> Claim This Event
                 </Link>

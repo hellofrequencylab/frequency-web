@@ -34,12 +34,12 @@ export function OnOffToggle({
         aria-label={label}
         disabled={disabled || locked}
         onClick={() => onChange(on ? 'hidden' : 'active')}
-        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-pill transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
           on ? 'bg-primary' : 'bg-surface-elevated'
         }`}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-canvas shadow transition-transform ${
+          className={`inline-block h-4 w-4 transform rounded-pill bg-canvas shadow transition-transform ${
             on ? 'translate-x-4' : 'translate-x-0.5'
           }`}
         />

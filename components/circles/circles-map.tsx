@@ -137,13 +137,13 @@ export function MapBanner() {
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {ctx.circles.length > 0 && (
           <span className="inline-flex items-center gap-1.5 text-xs text-subtle">
-            <span className="h-2.5 w-2.5 rounded-full bg-primary" />
+            <span className="h-2.5 w-2.5 rounded-pill bg-primary" />
             {ctx.circles.length} in-person {ctx.circles.length === 1 ? 'circle' : 'circles'}
           </span>
         )}
         {ctx.starters.length > 0 && (
           <span className="inline-flex items-center gap-1.5 text-xs text-subtle">
-            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: '#7C5CD6' }} />
+            <span className="h-2.5 w-2.5 rounded-pill" style={{ backgroundColor: '#7C5CD6' }} />
             {ctx.starters.length} {ctx.starters.length === 1 ? 'Starter to claim' : 'Starters to claim'}
           </span>
         )}

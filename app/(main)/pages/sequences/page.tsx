@@ -148,7 +148,7 @@ export default async function SplashFunnelsPage() {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold text-text">Your live onboarding funnel</h3>
-              <span className="shrink-0 rounded-full bg-success-bg px-2 py-0.5 text-xs font-medium text-success">
+              <span className="shrink-0 rounded-pill bg-success-bg px-2 py-0.5 text-xs font-medium text-success">
                 Always live
               </span>
             </div>
@@ -191,11 +191,11 @@ export default async function SplashFunnelsPage() {
                   <s.icon className="h-4 w-4" aria-hidden />
                 </span>
                 {s.status === 'live' ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-success-bg px-2 py-0.5 text-2xs font-semibold text-success">
+                  <span className="inline-flex items-center gap-1 rounded-pill bg-success-bg px-2 py-0.5 text-2xs font-semibold text-success">
                     <CheckCircle2 className="h-3 w-3" /> Live
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+                  <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
                     <Lock className="h-3 w-3" /> Planned
                   </span>
                 )}
@@ -257,13 +257,13 @@ export default async function SplashFunnelsPage() {
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <span
-                      className="inline-flex items-center gap-1.5 rounded-full bg-success-bg px-2.5 py-1 text-xs font-semibold text-success"
+                      className="inline-flex items-center gap-1.5 rounded-pill bg-success-bg px-2.5 py-1 text-xs font-semibold text-success"
                       title="Members who signed up through this funnel (its marketing tag)"
                     >
                       <UserCheck className="h-3 w-3" />
                       {signupCounts[seq.marketingTag] ?? 0} signed up
                     </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-2.5 py-1 text-xs font-semibold text-primary-strong">
+                    <span className="inline-flex items-center gap-1.5 rounded-pill bg-primary-bg px-2.5 py-1 text-xs font-semibold text-primary-strong">
                       <Tag className="h-3 w-3" />
                       {seq.marketingTag}
                     </span>
@@ -351,7 +351,7 @@ export default async function SplashFunnelsPage() {
                     </div>
                     <div className="flex shrink-0 flex-wrap items-center gap-2">
                       <span
-                        className="inline-flex items-center gap-1.5 rounded-full bg-success-bg px-2.5 py-1 text-xs font-semibold text-success"
+                        className="inline-flex items-center gap-1.5 rounded-pill bg-success-bg px-2.5 py-1 text-xs font-semibold text-success"
                         title="Members who signed up through this funnel (its marketing tag)"
                       >
                         <UserCheck className="h-3 w-3" />
@@ -362,7 +362,7 @@ export default async function SplashFunnelsPage() {
                       </a>
                       {source === 'code' ? (
                         <span
-                          className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-subtle"
+                          className="inline-flex items-center gap-1.5 rounded-pill border border-border px-2.5 py-1 text-xs font-medium text-subtle"
                           title="This funnel is defined in the repo (a code sequence), so it is managed in code, not here."
                         >
                           <Lock className="h-3 w-3" /> Managed in code
@@ -499,7 +499,7 @@ function RolePromotionTours() {
         {tours.map((t) => (
           <div key={t.slug} className="flex flex-col rounded-2xl border border-border bg-surface p-4 lift-1">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center rounded-full bg-broadcast-bg px-2 py-0.5 text-2xs font-semibold text-broadcast-strong">
+              <span className="inline-flex items-center rounded-pill bg-broadcast-bg px-2 py-0.5 text-2xs font-semibold text-broadcast-strong">
                 {TRIGGER_CHIP[t.trigger]}
               </span>
             </div>

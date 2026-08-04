@@ -80,7 +80,7 @@ export function AppsRail({
     <nav className="space-y-0.5" aria-label="Apps folders">
       <Link
         href="/admin/library"
-        className="mb-1 flex items-center gap-1.5 rounded-xl px-2 py-1.5 text-xs text-subtle transition-colors hover:bg-surface-elevated hover:text-text sm:px-2.5 sm:text-sm"
+        className="mb-1 flex items-center gap-1.5 rounded-card px-2 py-1.5 text-xs text-subtle transition-colors hover:bg-surface-elevated hover:text-text sm:px-2.5 sm:text-sm"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden /> Library
       </Link>

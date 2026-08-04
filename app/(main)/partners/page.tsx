@@ -148,11 +148,11 @@ function OfferCard({ offer }: { offer: LiveOffer }) {
       }
       trailing={
         offer.redeemedAt ? (
-          <span className="flex shrink-0 items-center gap-1 rounded-full bg-success-bg/50 px-2 py-0.5 text-2xs font-semibold text-success">
+          <span className="flex shrink-0 items-center gap-1 rounded-pill bg-success-bg/50 px-2 py-0.5 text-2xs font-semibold text-success">
             <Check className="h-3 w-3" /> Unlocked
           </span>
         ) : until ? (
-          <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+          <span className="shrink-0 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
             Until {until}
           </span>
         ) : undefined

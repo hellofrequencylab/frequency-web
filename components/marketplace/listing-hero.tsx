@@ -43,7 +43,7 @@ export function ListingHero({
       {/* TOP-LEFT: the short price badge (the hero-ad price tag). */}
       {priceShort && (
         <span
-          className={`absolute left-4 top-4 inline-flex items-center rounded-xl px-3 py-1.5 text-lg font-bold lift-1 sm:text-xl ${
+          className={`absolute left-4 top-4 inline-flex items-center rounded-card px-3 py-1.5 text-lg font-bold lift-1 sm:text-xl ${
             image ? 'bg-white text-black' : 'bg-primary text-on-primary'
           }`}
         >
@@ -54,7 +54,7 @@ export function ListingHero({
       {/* TOP-RIGHT: the category pill. */}
       {categoryLabel && (
         <span
-          className={`absolute right-4 top-4 inline-flex items-center rounded-full px-3 py-1 text-2xs font-semibold uppercase tracking-wide ${
+          className={`absolute right-4 top-4 inline-flex items-center rounded-pill px-3 py-1 text-2xs font-semibold uppercase tracking-wide ${
             image ? 'bg-white/20 text-white backdrop-blur-sm' : 'bg-primary-bg text-primary-strong'
           }`}
         >

@@ -122,7 +122,7 @@ function GoalStep({ onPick, selected }: { onPick: (key: string) => void; selecte
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
                   <Icon className="h-4 w-4" aria-hidden />
                 </span>
-                <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-muted">
+                <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-muted">
                   {g.object === 'funnel' ? 'Funnel' : 'Campaign'}
                 </span>
               </span>
@@ -201,7 +201,7 @@ function QuestionsStep({
         )}
 
         {goal.object === 'funnel' && goal.triggerHint && (
-          <div className="rounded-xl border border-border bg-surface px-3 py-2.5">
+          <div className="rounded-card border border-border bg-surface px-3 py-2.5">
             <p className="text-xs font-semibold text-text">Trigger</p>
             <p className="text-xs text-muted">{goal.triggerHint}. You can wire the exact event in the flow view.</p>
           </div>
@@ -255,7 +255,7 @@ function QuestionsStep({
             <ol className="mt-1.5 space-y-1.5">
               {goal.outline.map((s, i) => (
                 <li key={i} className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-bg text-2xs font-bold text-primary-strong">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-2xs font-bold text-primary-strong">
                     {i + 1}
                   </span>
                   <span className="min-w-0 flex-1">
@@ -340,7 +340,7 @@ function BuildStep({
                 ? 'Vera writes every email in the series from your answers. Each lands as a draft to review and edit.'
                 : 'Vera writes the subject, preheader, and body from your answers, as a draft to review and edit.'}
           </span>
-          <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-success-bg px-2 py-0.5 text-2xs font-medium text-success">
+          <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-pill bg-success-bg px-2 py-0.5 text-2xs font-medium text-success">
             <Check className="h-3 w-3" aria-hidden /> Ready
           </span>
         </button>
@@ -361,7 +361,7 @@ function BuildStep({
               ? 'Open the flow view with the series set up, ready for you to write.'
               : 'Open the composer with the audience preset, ready to write.'}
           </span>
-          <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
+          <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
             Start from a template
           </span>
         </button>

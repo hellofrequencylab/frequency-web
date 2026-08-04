@@ -46,7 +46,7 @@ export function ContactCaptureForm() {
   if (savedName) {
     return (
       <div className="flex flex-col items-center gap-2 py-4 text-center">
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-broadcast-bg text-broadcast-strong">
+        <span className="flex h-10 w-10 items-center justify-center rounded-pill bg-broadcast-bg text-broadcast-strong">
           <Check className="h-5 w-5" strokeWidth={3} aria-hidden />
         </span>
         <p className="text-sm font-semibold text-text">{savedName} is in your contacts</p>

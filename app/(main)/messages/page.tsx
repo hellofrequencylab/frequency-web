@@ -381,7 +381,7 @@ export default async function MessagesPage({
         <span className="flex items-center gap-2">
           {pageTitle}
           {totalUnread > 0 && (
-            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-bold text-on-primary">
+            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-pill bg-primary px-1.5 text-xs font-bold text-on-primary">
               {totalUnread > 9 ? '9+' : totalUnread}
             </span>
           )}
@@ -575,9 +575,9 @@ async function DMRowItem({ conv, myProfileId, onlineIds }: { conv: ConversationR
         {isGroup ? (
           <GroupAvatars participants={conv.participants} />
         ) : conv.participants[0]?.avatar_url ? (
-          <Image src={avatarSrc(conv.participants[0].avatar_url!)} alt={conv.participants[0].display_name} width={40} height={40} style={avatarFocusStyle(conv.participants[0].avatar_url)} className="w-10 h-10 rounded-full object-cover" />
+          <Image src={avatarSrc(conv.participants[0].avatar_url!)} alt={conv.participants[0].display_name} width={40} height={40} style={avatarFocusStyle(conv.participants[0].avatar_url)} className="w-10 h-10 rounded-pill object-cover" />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-primary-bg text-primary-strong text-sm font-semibold flex items-center justify-center select-none">
+          <div className="w-10 h-10 rounded-pill bg-primary-bg text-primary-strong text-sm font-semibold flex items-center justify-center select-none">
             {conv.participants[0] ? getInitials(conv.participants[0].display_name) : '?'}
           </div>
         )}
@@ -598,7 +598,7 @@ async function DMRowItem({ conv, myProfileId, onlineIds }: { conv: ConversationR
               ? conv.lastMessage.sender_id === myProfileId ? `You: ${conv.lastMessage.body}` : conv.lastMessage.body
               : 'No messages yet'}
           </p>
-          {hasUnread && <span className="shrink-0 w-2 h-2 rounded-full bg-primary" />}
+          {hasUnread && <span className="shrink-0 w-2 h-2 rounded-pill bg-primary" />}
         </div>
       </div>
     </Link>
@@ -617,10 +617,10 @@ function GroupAvatars({ participants }: { participants: Profile[] }) {
         return p.avatar_url ? (
           <Image key={p.id} src={avatarSrc(p.avatar_url)} alt={p.display_name} width={40} height={40}
             style={avatarFocusStyle(p.avatar_url)}
-            className={`${size} ${pos} rounded-full object-cover ring-2 ring-surface`} />
+            className={`${size} ${pos} rounded-pill object-cover ring-2 ring-surface`} />
         ) : (
           <div key={p.id}
-            className={`${size} ${pos} rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center ring-2 ring-surface`}>
+            className={`${size} ${pos} rounded-pill bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center ring-2 ring-surface`}>
             {getInitials(p.display_name)}
           </div>
         )

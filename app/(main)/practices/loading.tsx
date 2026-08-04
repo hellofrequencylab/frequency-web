@@ -8,13 +8,13 @@ function PracticeCardSkeleton() {
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
       <div className="flex items-center justify-between gap-2">
-        <Skeleton className="h-5 w-24 rounded-full" />
+        <Skeleton className="h-5 w-24 rounded-pill" />
         <Skeleton className="h-4 w-10" />
       </div>
       <Skeleton className="mt-3 h-5 w-40" />
       <Skeleton className="mt-2 h-4 w-full max-w-xs" />
       <div className="mt-4 flex items-center gap-2">
-        <Skeleton className="h-5 w-5 rounded-full" />
+        <Skeleton className="h-5 w-5 rounded-pill" />
         <Skeleton className="h-3 w-24" />
       </div>
     </div>
@@ -35,9 +35,9 @@ export default function PracticesLoading() {
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Skeleton className="h-9 w-full rounded-lg sm:max-w-xs" />
         <div className="flex flex-wrap items-center gap-1.5">
-          <Skeleton className="h-7 w-20 rounded-full" />
-          <Skeleton className="h-7 w-20 rounded-full" />
-          <Skeleton className="h-7 w-16 rounded-full" />
+          <Skeleton className="h-7 w-20 rounded-pill" />
+          <Skeleton className="h-7 w-20 rounded-pill" />
+          <Skeleton className="h-7 w-16 rounded-pill" />
         </div>
       </div>
 

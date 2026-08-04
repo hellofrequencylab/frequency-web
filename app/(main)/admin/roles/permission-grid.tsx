@@ -156,7 +156,7 @@ function GroupRows({
                 {!isDefault && (
                   <span
                     title={`Default: ${LEVEL_LABEL[defaults[area.key]]}`}
-                    className="inline-flex items-center gap-0.5 rounded-full bg-primary-bg px-1.5 py-0.5 text-xs font-semibold text-primary-strong"
+                    className="inline-flex items-center gap-0.5 rounded-pill bg-primary-bg px-1.5 py-0.5 text-xs font-semibold text-primary-strong"
                   >
                     <RotateCcw className="h-2.5 w-2.5" /> custom
                   </span>

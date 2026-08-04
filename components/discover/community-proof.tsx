@@ -61,7 +61,7 @@ function ProofStat({
 }) {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-bg text-primary">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-primary">
         {icon}
       </span>
       <div className="text-left leading-tight">

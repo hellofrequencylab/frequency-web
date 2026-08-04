@@ -67,7 +67,7 @@ const SECTION_LABEL: Record<SectionKey, string> = {
 /** Small amber "the model was unsure here" marker. */
 function CheckChip() {
   return (
-    <span className="shrink-0 rounded-full border border-primary/40 bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
+    <span className="shrink-0 rounded-pill border border-primary/40 bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
       Check this
     </span>
   )
@@ -600,9 +600,9 @@ export function DraftEditor({
               <div key={i} className="relative">
                 {row.imagePath && signedUrls[row.imagePath] ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={signedUrls[row.imagePath]} alt={row.note ?? ''} className="h-20 w-20 rounded-xl border border-border object-cover" />
+                  <img src={signedUrls[row.imagePath]} alt={row.note ?? ''} className="h-20 w-20 rounded-card border border-border object-cover" />
                 ) : (
-                  <span className="flex h-20 w-20 items-center justify-center rounded-xl bg-surface-elevated text-subtle">
+                  <span className="flex h-20 w-20 items-center justify-center rounded-card bg-surface-elevated text-subtle">
                     <ImageIcon className="h-5 w-5" />
                   </span>
                 )}
@@ -610,7 +610,7 @@ export function DraftEditor({
                   type="button"
                   onClick={() => setGallery((p) => p.filter((_, x) => x !== i))}
                   aria-label="Remove image"
-                  className="absolute -right-1.5 -top-1.5 rounded-full border border-border bg-surface p-0.5 text-subtle transition-colors hover:text-danger"
+                  className="absolute -right-1.5 -top-1.5 rounded-pill border border-border bg-surface p-0.5 text-subtle transition-colors hover:text-danger"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -655,7 +655,7 @@ export function DraftEditor({
               type="button"
               onClick={() => addSection(k)}
               disabled={pending}
-              className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-border-strong hover:text-text"
+              className="inline-flex items-center gap-1 rounded-pill border border-border px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-border-strong hover:text-text"
             >
               <Plus className="h-3 w-3" /> {SECTION_LABEL[k]}
             </button>

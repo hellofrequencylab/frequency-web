@@ -44,7 +44,7 @@ type EditStep = {
 }
 
 const inputBase =
-  'w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/20'
+  'w-full rounded-card border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/20'
 
 /** The operator-editable copy field keys for a step type, read from its Zod contentSchema shape. */
 function contentFieldsFor(type: StepType): string[] {
@@ -118,7 +118,7 @@ function StatusBadge({ status }: { status: string }) {
   const live = LIVE.has(status)
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+      className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-0.5 text-xs font-medium ${
         live ? 'bg-primary text-on-primary' : 'border border-border text-muted'
       }`}
     >
@@ -321,11 +321,11 @@ export function SequenceEditor({
             return (
               <div key={step.id} className="rounded-2xl border border-border bg-surface p-4">
                 <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
+                  <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
                     Step {index + 1}
                   </span>
                   {isLast && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
+                    <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
                       Completes onboarding
                     </span>
                   )}
@@ -426,7 +426,7 @@ export function SequenceEditor({
                       setSaved(false)
                     }}
                     aria-pressed={on}
-                    className={`rounded-full px-3 py-1.5 text-sm font-medium ${
+                    className={`rounded-pill px-3 py-1.5 text-sm font-medium ${
                       on ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:bg-surface-elevated'
                     }`}
                   >
@@ -484,7 +484,7 @@ export function SequenceEditor({
                     type="button"
                     onClick={() => rollback(v.id)}
                     disabled={pending}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs font-medium text-text hover:bg-surface-elevated disabled:opacity-60"
+                    className="inline-flex items-center gap-1.5 rounded-card border border-border px-3 py-1.5 text-xs font-medium text-text hover:bg-surface-elevated disabled:opacity-60"
                   >
                     <RotateCcw className="h-3.5 w-3.5" aria-hidden />
                     Restore

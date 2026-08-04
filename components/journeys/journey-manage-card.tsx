@@ -97,7 +97,7 @@ function Menu({
           <button type="button" aria-hidden tabIndex={-1} onClick={onClose} className="fixed inset-0 z-40 cursor-default" />
           <div
             role="menu"
-            className="absolute right-0 z-50 mt-1 w-60 rounded-xl border border-border bg-surface p-1 lift-3"
+            className="absolute right-0 z-50 mt-1 w-60 rounded-card border border-border bg-surface p-1 lift-3"
             onKeyDown={(e) => e.key === 'Escape' && onClose()}
           >
             {children}
@@ -201,7 +201,7 @@ export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
             <Link href={`/journeys/${plan.slug}/edit`} className="truncate text-base font-bold text-text hover:text-primary-strong">
               {plan.title}
             </Link>
-            <span className={`shrink-0 rounded-full px-2 py-0.5 text-2xs font-semibold ${badge.cls}`}>{badge.label}</span>
+            <span className={`shrink-0 rounded-pill px-2 py-0.5 text-2xs font-semibold ${badge.cls}`}>{badge.label}</span>
           </div>
           {plan.summary && <p className="mt-0.5 line-clamp-1 text-sm text-muted">{plan.summary}</p>}
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-muted">

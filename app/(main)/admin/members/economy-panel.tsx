@@ -46,7 +46,7 @@ export function EconomyPanel({ profileId, displayName }: Props) {
   const currencyColor = currency === 'gems' ? 'text-signal' : 'text-primary'
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-3 space-y-3">
+    <div className="rounded-card border border-border bg-surface p-3 space-y-3">
       <p className="text-xs font-bold text-text flex items-center gap-1.5">
         <CurrencyIcon className={`w-3.5 h-3.5 ${currencyColor}`} />
         Economy adjustment

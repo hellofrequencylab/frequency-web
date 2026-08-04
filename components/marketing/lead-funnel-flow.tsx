@@ -30,7 +30,7 @@ export const LEAD_FUNNEL_STEPS: readonly LeadFunnelStep[] = [
 ] as const
 
 const BADGE =
-  'absolute -left-1 -top-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-sm font-semibold text-on-primary'
+  'absolute -left-1 -top-1 flex h-7 w-7 items-center justify-center rounded-pill bg-primary text-sm font-semibold text-on-primary'
 
 function StepCard({
   step,

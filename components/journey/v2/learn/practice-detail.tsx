@@ -44,7 +44,7 @@ export function PracticeDetail({
         {facts.map((f) => (
           <span
             key={f.label}
-            className="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-2xs font-medium text-muted"
+            className="inline-flex items-center gap-1.5 rounded-pill bg-surface px-2.5 py-1 text-2xs font-medium text-muted"
           >
             <f.icon className="h-3 w-3 shrink-0 text-subtle" aria-hidden />
             <span className="font-semibold text-text">{f.value}</span> {f.label}

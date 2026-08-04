@@ -63,7 +63,7 @@ export function PosterLineup({
           const path = media?.lineup?.[String(i)]
           const url = path ? signedUrls[path] : undefined
           return (
-            <div key={`${item.name}-${i}`} className="flex items-center gap-3 rounded-xl border border-border bg-surface p-2.5">
+            <div key={`${item.name}-${i}`} className="flex items-center gap-3 rounded-card border border-border bg-surface p-2.5">
               {url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={url} alt={item.name} className="h-11 w-11 shrink-0 rounded-lg object-cover" />
@@ -118,7 +118,7 @@ export function PosterFeatures({ details }: { details: EventDetailsWithMedia }) 
       <SectionHeader title="Good to know" />
       <div className="flex flex-wrap gap-1.5">
         {features.map((f) => (
-          <span key={f} className="rounded-full bg-primary-bg px-2.5 py-1 text-xs font-medium text-primary-strong">
+          <span key={f} className="rounded-pill bg-primary-bg px-2.5 py-1 text-xs font-medium text-primary-strong">
             {f}
           </span>
         ))}

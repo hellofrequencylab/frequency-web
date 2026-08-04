@@ -51,7 +51,7 @@ export async function JournalEntries() {
   if (entries.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
-        <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-broadcast-bg text-broadcast-strong">
+        <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-pill bg-broadcast-bg text-broadcast-strong">
           <Camera className="h-6 w-6" aria-hidden />
         </span>
         <p className="text-sm font-semibold text-text">Nothing captured yet</p>
@@ -82,7 +82,7 @@ export async function JournalEntries() {
               const Icon = e.post_type === 'note' ? NotebookPen : hasPhoto ? Camera : PenLine
               return (
                 <li key={e.id} className="flex gap-3 rounded-2xl border border-border bg-surface p-3">
-                  <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-broadcast-bg text-broadcast-strong">
+                  <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-broadcast-bg text-broadcast-strong">
                     <Icon className="h-3.5 w-3.5" aria-hidden />
                   </span>
                   <div className="min-w-0 flex-1">
@@ -91,7 +91,7 @@ export async function JournalEntries() {
                     </p>
                     {e.body && <p className="mt-0.5 whitespace-pre-wrap text-sm text-text">{e.body}</p>}
                     {hasPhoto && (
-                      <div className="mt-2 overflow-hidden rounded-xl border border-border">
+                      <div className="mt-2 overflow-hidden rounded-card border border-border">
                         <Image
                           src={e.media_urls![0]}
                           alt=""

@@ -270,7 +270,7 @@ export function MemberComposer({
           {chips.map((chip) => (
             <span
               key={chip.key}
-              className="inline-flex items-center gap-1 rounded-full border border-border bg-canvas px-2.5 py-1 text-xs font-medium text-text"
+              className="inline-flex items-center gap-1 rounded-pill border border-border bg-canvas px-2.5 py-1 text-xs font-medium text-text"
             >
               {chip.kind === 'group' && <Users className="h-3 w-3 text-subtle" aria-hidden />}
               {chip.label}
@@ -278,7 +278,7 @@ export function MemberComposer({
                 type="button"
                 aria-label={`Remove ${chip.label}`}
                 onClick={() => removeChip(chip.key)}
-                className="rounded-full p-0.5 text-subtle transition-colors hover:text-danger"
+                className="rounded-pill p-0.5 text-subtle transition-colors hover:text-danger"
               >
                 <X className="h-3 w-3" aria-hidden />
               </button>
@@ -296,7 +296,7 @@ export function MemberComposer({
                   key={`circle:${c.id}`}
                   type="button"
                   onClick={() => addChip({ key: `circle:${c.id}`, label: `Everyone in ${c.name}`, kind: 'group' })}
-                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-border px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-primary hover:text-text"
+                  className="inline-flex items-center gap-1 rounded-pill border border-dashed border-border px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-primary hover:text-text"
                 >
                   <Plus className="h-3 w-3" aria-hidden /> Everyone in {c.name}
                 </button>
@@ -308,7 +308,7 @@ export function MemberComposer({
                   key={`event:${e.id}`}
                   type="button"
                   onClick={() => addChip({ key: `event:${e.id}`, label: `Everyone who RSVP'd ${e.title}`, kind: 'group' })}
-                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-border px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-primary hover:text-text"
+                  className="inline-flex items-center gap-1 rounded-pill border border-dashed border-border px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-primary hover:text-text"
                 >
                   <Plus className="h-3 w-3" aria-hidden /> Everyone who RSVP&apos;d {e.title}
                 </button>

@@ -128,7 +128,7 @@ export function EdgePill({
       <span className="relative shrink-0">
         {icon}
         {badgeCount > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-3xs font-bold text-on-danger">
+          <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-pill bg-danger px-1 text-3xs font-bold text-on-danger">
             {badgeCount > 9 ? '9+' : badgeCount}
           </span>
         )}

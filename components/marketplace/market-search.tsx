@@ -43,7 +43,7 @@ export function MarketSearchBar({ placeholder = 'Search' }: { placeholder?: stri
         onChange={(e) => setQuery(e.target.value.trim().toLowerCase())}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="w-full rounded-full border border-on-ink/40 bg-on-ink/95 py-3 pl-11 pr-4 text-sm text-ink lift-2 outline-none placeholder:text-ink/50 focus:border-primary focus:ring-2 focus:ring-primary/40"
+        className="w-full rounded-pill border border-on-ink/40 bg-on-ink/95 py-3 pl-11 pr-4 text-sm text-ink lift-2 outline-none placeholder:text-ink/50 focus:border-primary focus:ring-2 focus:ring-primary/40"
       />
     </div>
   )

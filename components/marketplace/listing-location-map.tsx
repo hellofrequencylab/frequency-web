@@ -81,7 +81,7 @@ export function ListingLocationMap({
 
       <Dialog open={expanded} onClose={() => setExpanded(false)} ariaLabel="Pickup location map" className="max-w-3xl">
         <div className="rounded-2xl border border-border bg-surface p-3 shadow-pop sm:p-4">
-          <div className="relative h-[60vh] w-full overflow-hidden rounded-xl border border-border">
+          <div className="relative h-[60vh] w-full overflow-hidden rounded-card border border-border">
             {expanded && <ListingLocationMapCanvas lat={lat} lng={lng} precise={precise} />}
           </div>
           {caption}

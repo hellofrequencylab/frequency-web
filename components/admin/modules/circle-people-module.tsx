@@ -62,7 +62,7 @@ export function CirclePeopleModule() {
             { label: 'Capacity', value: cap },
             { label: 'Crew', value: data.crewCount },
           ].map((s) => (
-            <div key={s.label} className="rounded-xl border border-border bg-surface p-3">
+            <div key={s.label} className="rounded-card border border-border bg-surface p-3">
               <div className="text-lg font-bold text-text">{s.value}</div>
               <div className="text-2xs font-medium uppercase tracking-wide text-muted">{s.label}</div>
             </div>
@@ -88,14 +88,14 @@ export function CirclePeopleModule() {
               return (
                 <li
                   key={m.profileId}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface p-2.5"
+                  className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface p-2.5"
                 >
                   <span className="min-w-0 truncate text-sm text-text">
                     {m.displayName}
                     {m.handle && <span className="text-subtle"> @{m.handle}</span>}
                   </span>
                   {chip && (
-                    <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+                    <span className="shrink-0 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
                       {chip}
                     </span>
                   )}

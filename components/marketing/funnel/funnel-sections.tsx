@@ -105,7 +105,7 @@ export function AssuranceBar({ config }: { config: FunnelConfig }) {
       <ul className="mx-auto grid max-w-5xl grid-cols-2 divide-x divide-y divide-border sm:grid-cols-4 sm:divide-y-0">
         {items.map((it) => (
           <li key={it} className="flex items-center justify-center gap-2 px-4 py-4 text-center text-xs font-semibold text-muted sm:text-sm">
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
+            <span className="h-1.5 w-1.5 shrink-0 rounded-pill bg-primary" aria-hidden />
             {it}
           </li>
         ))}
@@ -151,7 +151,7 @@ export function HowItWorks({ config }: { config: FunnelConfig }) {
             <div className="w-full max-w-[220px] rounded-2xl border border-border bg-surface p-5 lift-1">
               <SetupStepGraphic step={i as 0 | 1 | 2} />
             </div>
-            <span className="mt-6 inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-on-primary">
+            <span className="mt-6 inline-flex h-9 w-9 items-center justify-center rounded-pill bg-primary text-sm font-bold text-on-primary">
               {i + 1}
             </span>
             <h3 className="mt-3 font-display text-xl uppercase text-text">{s.title}</h3>

@@ -53,7 +53,7 @@ export function NexusPeopleModule() {
               value: data.hubCount > 0 ? Math.round(data.totalMembers / data.hubCount) : 0,
             },
           ].map((s) => (
-            <div key={s.label} className="rounded-xl border border-border bg-surface p-3">
+            <div key={s.label} className="rounded-card border border-border bg-surface p-3">
               <div className="text-lg font-bold text-text">{s.value}</div>
               <div className="text-2xs font-medium uppercase tracking-wide text-muted">{s.label}</div>
             </div>
@@ -74,7 +74,7 @@ export function NexusPeopleModule() {
             {data.hubs.map((h) => (
               <li
                 key={h.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface p-2.5"
+                className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface p-2.5"
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-text">{h.name}</span>

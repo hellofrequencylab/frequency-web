@@ -37,7 +37,7 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
       <Dialog open={open} onClose={() => (pending ? null : setOpen(false))} ariaLabel="Remix this practice?" className="max-w-md">
         <div className="rounded-2xl border border-border bg-surface p-6 lift-1">
           <div className="mb-3 flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
+            <span className="flex h-9 w-9 items-center justify-center rounded-pill bg-primary-bg text-primary-strong">
               <Wand2 className="h-4 w-4" />
             </span>
             <h2 className="text-lg font-bold text-text">Remix this practice?</h2>
@@ -47,7 +47,7 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
             Make it yours: a new angle, a different setting, your own niche. Publish your version so
             the community gets a practice only you would make. The original stays exactly as it is.
           </p>
-          <div className="mt-4 rounded-xl bg-surface-elevated/60 p-4">
+          <div className="mt-4 rounded-card bg-surface-elevated/60 p-4">
             <p className="text-2xs font-semibold uppercase tracking-widest text-primary-strong">
               Ways to make it yours
             </p>

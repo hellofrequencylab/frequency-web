@@ -85,7 +85,7 @@ function RosterGroup({ title, guests }: { title: string; guests: ManageGuest[] }
           return (
             <li key={g.profileId} className="flex items-center gap-3 px-4 py-3">
               <span
-                className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-semibold ${chip.cls}`}
+                className={`inline-flex shrink-0 items-center gap-1 rounded-pill px-2 py-0.5 text-2xs font-semibold ${chip.cls}`}
               >
                 <chip.Icon className="h-3 w-3" />
                 {chip.label}
@@ -100,7 +100,7 @@ function RosterGroup({ title, guests }: { title: string; guests: ManageGuest[] }
                 )}
               </div>
               {g.checkedIn && (
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-success-bg px-2 py-0.5 text-2xs font-semibold text-success">
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-pill bg-success-bg px-2 py-0.5 text-2xs font-semibold text-success">
                   <Zap className="h-3 w-3" />
                   Checked in
                 </span>
@@ -404,7 +404,7 @@ const GUEST_RSVP_CHIP: Record<GuestRsvpStatus, { Icon: typeof Check; cls: string
 function GuestRsvpChip({ status }: { status: GuestRsvpStatus | null }) {
   if (!status) {
     return (
-      <span className="inline-flex items-center rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+      <span className="inline-flex items-center rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
         No reply
       </span>
     )
@@ -412,7 +412,7 @@ function GuestRsvpChip({ status }: { status: GuestRsvpStatus | null }) {
   const chip = GUEST_RSVP_CHIP[status]
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-semibold ${chip.cls}`}
+      className={`inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-2xs font-semibold ${chip.cls}`}
     >
       <chip.Icon className="h-3 w-3" />
       {chip.label}
@@ -513,13 +513,13 @@ export async function DispatchesSection({ eventId }: { eventId: string }) {
               On the page
             </span>
             {d.toDispatch && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-broadcast-bg px-2 py-0.5 text-broadcast-strong">
+              <span className="inline-flex items-center gap-1 rounded-pill bg-broadcast-bg px-2 py-0.5 text-broadcast-strong">
                 <Radio className="h-3 w-3" />
                 Sent as a Dispatch
               </span>
             )}
             {d.toSms && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5">
+              <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5">
                 <Megaphone className="h-3 w-3" />
                 Texted the group
               </span>

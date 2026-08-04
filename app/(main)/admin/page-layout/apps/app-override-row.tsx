@@ -86,12 +86,12 @@ export function AppOverrideRow({
         <div className="flex flex-wrap items-center gap-2">
           <span className="truncate text-sm font-bold text-text">{label}</span>
           {overridden && (
-            <span className="shrink-0 rounded-full bg-broadcast-bg px-2 py-0.5 text-2xs font-semibold text-broadcast-strong">
+            <span className="shrink-0 rounded-pill bg-broadcast-bg px-2 py-0.5 text-2xs font-semibold text-broadcast-strong">
               Override
             </span>
           )}
           {!state.enabled && (
-            <span className="shrink-0 rounded-full border border-border bg-canvas px-2 py-0.5 text-2xs font-semibold text-muted">
+            <span className="shrink-0 rounded-pill border border-border bg-canvas px-2 py-0.5 text-2xs font-semibold text-muted">
               Hidden
             </span>
           )}

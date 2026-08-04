@@ -70,7 +70,7 @@ export function StyleEditor({
             key={p.key}
             type="button"
             onClick={() => onChange({ ...p.style })}
-            className="rounded-full border border-border px-2.5 py-1 text-2xs font-medium text-muted transition-colors hover:border-primary hover:bg-primary-bg hover:text-primary-strong"
+            className="rounded-pill border border-border px-2.5 py-1 text-2xs font-medium text-muted transition-colors hover:border-primary hover:bg-primary-bg hover:text-primary-strong"
           >
             {p.label}
           </button>
@@ -299,7 +299,7 @@ export function StyleEditor({
       <div className="space-y-4">
         <div
           // // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
-          className="mx-auto aspect-square w-full max-w-[220px] rounded-xl border border-border bg-white p-2 lift-1 [&>svg]:h-full [&>svg]:w-full"
+          className="mx-auto aspect-square w-full max-w-[220px] rounded-card border border-border bg-white p-2 lift-1 [&>svg]:h-full [&>svg]:w-full"
           dangerouslySetInnerHTML={{ __html: svg }}
         />
         <div>
@@ -323,7 +323,7 @@ export function StyleEditor({
   //    left column and the controls in a wide right column). We just supply the nodes. ──
   if (compact && renderCompact) {
     return (
-      <div className="rounded-xl border border-border bg-canvas/50 p-4">
+      <div className="rounded-card border border-border bg-canvas/50 p-4">
         <div className="flex items-center gap-1.5 mb-3">
           <Palette className="w-4 h-4 text-primary-strong" />
           <h4 className="text-xs font-semibold uppercase tracking-wider text-text">Design</h4>
@@ -351,7 +351,7 @@ export function StyleEditor({
 
   // ── Inline layout (default) — compact bordered card in an item's edit form ───
   return (
-    <div className="rounded-xl border border-border bg-canvas/50 p-4">
+    <div className="rounded-card border border-border bg-canvas/50 p-4">
       <div className="flex items-center gap-1.5 mb-3">
         <Palette className="w-4 h-4 text-primary-strong" />
         <h4 className="text-xs font-semibold uppercase tracking-wider text-text">Design</h4>

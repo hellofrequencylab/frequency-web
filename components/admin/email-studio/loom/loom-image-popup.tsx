@@ -247,7 +247,7 @@ export function LoomImagePopup({
                     <Loader2 className="h-5 w-5 animate-spin text-subtle" aria-hidden />
                   </div>
                 ) : images.length === 0 ? (
-                  <div className="flex min-h-[220px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border text-center">
+                  <div className="flex min-h-[220px] flex-col items-center justify-center gap-2 rounded-card border border-dashed border-border text-center">
                     <ImagePlus className="h-6 w-6 text-subtle" aria-hidden />
                     <p className="text-sm text-muted">No photos yet. Upload one to get started.</p>
                   </div>
@@ -271,7 +271,7 @@ export function LoomImagePopup({
                             {/* eslint-disable-next-line @next/next/no-img-element -- operator Loom asset URL, not a build asset */}
                             <img src={img.url} alt={img.alt ?? ''} className="h-full w-full object-cover" />
                             {on && (
-                              <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-on-primary">
+                              <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-pill bg-primary text-on-primary">
                                 <Check className="h-3 w-3" aria-hidden />
                               </span>
                             )}
@@ -289,7 +289,7 @@ export function LoomImagePopup({
               <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Selected</p>
               {selectedUrl ? (
                 <>
-                  <div className="overflow-hidden rounded-xl border border-border bg-surface">
+                  <div className="overflow-hidden rounded-card border border-border bg-surface">
                     {/* eslint-disable-next-line @next/next/no-img-element -- operator Loom asset URL, not a build asset */}
                     <img src={selectedUrl} alt={alt} className="max-h-40 w-full object-contain" />
                   </div>
@@ -314,7 +314,7 @@ export function LoomImagePopup({
                   </div>
                 </>
               ) : (
-                <p className="rounded-xl border border-dashed border-border px-3 py-8 text-center text-xs text-muted">
+                <p className="rounded-card border border-dashed border-border px-3 py-8 text-center text-xs text-muted">
                   Pick or upload a photo to preview it here.
                 </p>
               )}

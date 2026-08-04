@@ -89,7 +89,7 @@ export function TasksWorkspace({ tasks, viewerId }: { tasks: CrmTask[]; viewerId
             key={t.key}
             type="button"
             onClick={() => setTab(t.key)}
-            className={`rounded-full px-3 py-1 text-sm ${
+            className={`rounded-pill px-3 py-1 text-sm ${
               tab === t.key ? 'bg-primary text-on-primary' : 'bg-surface text-muted hover:text-text'
             }`}
           >

@@ -127,7 +127,7 @@ export function CircleEngageModule() {
         {/* Adopted challenges with collective progress. */}
         <div className="mt-5 space-y-2">
           {data.adopted.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border bg-surface-elevated/40 p-4 text-center">
+            <div className="rounded-card border border-dashed border-border bg-surface-elevated/40 p-4 text-center">
               <Trophy className="mx-auto mb-2 h-5 w-5 text-subtle" />
               <p className="text-sm font-medium text-text">No shared challenges yet</p>
               <p className="mt-1 text-xs text-muted">
@@ -140,7 +140,7 @@ export function CircleEngageModule() {
                 const pct =
                   c.memberCount > 0 ? Math.min(100, Math.round((c.membersCompleted / c.memberCount) * 100)) : 0
                 return (
-                  <li key={c.id} className="rounded-xl border border-border bg-surface p-3">
+                  <li key={c.id} className="rounded-card border border-border bg-surface p-3">
                     <div className="flex items-start justify-between gap-2">
                       <span className="min-w-0 text-sm font-semibold text-text">{c.name}</span>
                       <button

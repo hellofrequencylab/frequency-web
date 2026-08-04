@@ -85,7 +85,7 @@ function CheckEditor({ initial, disabled, onSave }: { initial: CheckConfig | nul
               onClick={() => commit({ ...cfg, answer: i })}
               aria-label="Mark as the correct answer"
               title="Correct answer"
-              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-2xs font-bold ${cfg.answer === i ? 'border-success text-success' : 'border-border text-muted hover:border-text'}`}
+              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-pill border text-2xs font-bold ${cfg.answer === i ? 'border-success text-success' : 'border-border text-muted hover:border-text'}`}
             >
               {cfg.answer === i ? <Check className="h-3.5 w-3.5" /> : String.fromCharCode(65 + i)}
             </button>
@@ -164,7 +164,7 @@ function SlotCoaching({
           <Sparkles className="h-3.5 w-3.5 text-primary-strong" />
           <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Vera coaching prompt</span>
           {pillarName && (
-            <span className="rounded-full border border-border bg-surface px-1.5 py-0.5 text-2xs font-medium text-muted">{pillarName}</span>
+            <span className="rounded-pill border border-border bg-surface px-1.5 py-0.5 text-2xs font-medium text-muted">{pillarName}</span>
           )}
         </div>
         <button
@@ -294,7 +294,7 @@ export function JourneyEditor({
   // A Module groups lessons into a session within a Phase (build item §11.1 #3). Own title +
   // its leaves + the same add-step tools. The player/tree already render Phase → Module → Lesson.
   const ModuleGroup = (m: EditorBlock) => (
-    <div key={m.id} className="rounded-xl border border-border bg-canvas p-3">
+    <div key={m.id} className="rounded-card border border-border bg-canvas p-3">
       <div className="flex flex-wrap items-center gap-2">
         <span className="shrink-0 text-2xs font-semibold uppercase tracking-wide text-muted">Module</span>
         <input
@@ -345,7 +345,7 @@ export function JourneyEditor({
   //    box + Pillar facets keep their state across renders. `onPick` is what to do with the chosen
   //    practice (add a block, or swap this slot's practice); `onClose` dismisses the panel. ──
   const practicePicker = (onPick: (practiceId: string) => void, onClose: () => void) => (
-    <div className="mt-2 rounded-xl border border-border bg-canvas p-2">
+    <div className="mt-2 rounded-card border border-border bg-canvas p-2">
       {/* Pillar facets — tap a Pillar to preload its practices. Unselected Pillars stay
           on screen, greyed, so the whole set is always one tap away (Mind/Body/Spirit/
           Expression). No selection = the whole library. */}
@@ -359,7 +359,7 @@ export function JourneyEditor({
                 type="button"
                 onClick={() => togglePillar(pl.id)}
                 aria-pressed={on}
-                className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                className={`rounded-pill border px-2.5 py-1 text-xs font-medium transition-colors ${
                   on
                     ? 'border-primary/40 bg-primary-bg text-primary-strong'
                     : 'border-border bg-surface text-subtle opacity-60 hover:opacity-100 hover:text-text'
@@ -373,7 +373,7 @@ export function JourneyEditor({
             <button
               type="button"
               onClick={() => setPillarFilter(new Set())}
-              className="rounded-full px-2 py-1 text-xs font-medium text-muted hover:text-text"
+              className="rounded-pill px-2 py-1 text-xs font-medium text-muted hover:text-text"
             >
               Clear
             </button>
@@ -429,7 +429,7 @@ export function JourneyEditor({
     const open = openLeaves.has(l.id)
     const anchored = isPractice && isAnchor(l)
     return (
-      <li key={l.id} className={`rounded-xl border ${open ? 'p-3' : 'px-3 py-2'} ${isExtra ? 'border-signal/30 bg-signal-bg/20' : 'border-border bg-canvas'}`}>
+      <li key={l.id} className={`rounded-card border ${open ? 'p-3' : 'px-3 py-2'} ${isExtra ? 'border-signal/30 bg-signal-bg/20' : 'border-border bg-canvas'}`}>
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -682,7 +682,7 @@ export function JourneyEditor({
       </header>
 
       {empty && (
-        <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted">
+        <p className="rounded-card border border-dashed border-border p-6 text-center text-sm text-muted">
           Nothing here yet. Build it with Vera above, or add your first phase by hand.
         </p>
       )}

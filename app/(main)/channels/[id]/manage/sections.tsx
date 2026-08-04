@@ -304,7 +304,7 @@ export async function CirclesSection({
                   </td>
                   <td className="px-4 py-2.5">
                     <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-semibold ${chip.cls}`}
+                      className={`inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-2xs font-semibold ${chip.cls}`}
                     >
                       <chip.Icon className="h-3 w-3" aria-hidden />
                       {chip.label}

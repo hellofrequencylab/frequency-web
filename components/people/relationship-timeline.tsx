@@ -41,7 +41,7 @@ export async function RelationshipTimeline({
             const Icon = ICON[item.kind] ?? CalendarDays
             return (
               <li key={`${item.kind}-${item.at ?? i}-${i}`} className="relative">
-                <span className="absolute -left-[1.4375rem] flex h-5 w-5 items-center justify-center rounded-full bg-surface-elevated ring-2 ring-surface">
+                <span className="absolute -left-[1.4375rem] flex h-5 w-5 items-center justify-center rounded-pill bg-surface-elevated ring-2 ring-surface">
                   <Icon className="h-3 w-3 text-subtle" />
                 </span>
                 <div className="flex items-baseline justify-between gap-2">

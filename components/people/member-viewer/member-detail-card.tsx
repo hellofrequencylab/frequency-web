@@ -95,14 +95,14 @@ function Avatar({ detail, size = 64 }: { detail: MemberDetail; size?: number }) 
         alt={detail.displayName}
         width={size}
         height={size}
-        className="rounded-full object-cover"
+        className="rounded-pill object-cover"
         style={{ width: size, height: size, ...avatarFocusStyle(detail.avatarUrl) }}
       />
     )
   }
   return (
     <div
-      className="flex items-center justify-center rounded-full bg-primary-bg font-semibold text-primary-strong select-none"
+      className="flex items-center justify-center rounded-pill bg-primary-bg font-semibold text-primary-strong select-none"
       style={{ width: size, height: size }}
     >
       {getInitials(detail.displayName)}
@@ -147,7 +147,7 @@ function StatGrid({ stats }: { stats: NonNullable<MemberDetail['engagementStats'
   return (
     <dl className="grid grid-cols-2 gap-3 @lg:grid-cols-3">
       {stats.map((s) => (
-        <div key={s.label} className="rounded-xl border border-border bg-surface p-3">
+        <div key={s.label} className="rounded-card border border-border bg-surface p-3">
           <dt className="text-2xs font-medium uppercase tracking-wide text-muted">{s.label}</dt>
           <dd className="mt-0.5 text-lg font-bold text-text">{s.value}</dd>
           {s.hint && <p className="mt-0.5 text-2xs text-muted">{s.hint}</p>}
@@ -176,7 +176,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
                 <span
                   key={r.label}
                   className={cn(
-                    'inline-flex items-center rounded-full border px-2 py-0.5 text-2xs font-semibold',
+                    'inline-flex items-center rounded-pill border px-2 py-0.5 text-2xs font-semibold',
                     roleToneClass(r.tone),
                   )}
                 >
@@ -259,10 +259,10 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
           {detail.pipeline && (
             <section>
               <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Pipeline</h3>
-              <div className="flex items-center gap-2 rounded-xl border border-border bg-surface p-3">
+              <div className="flex items-center gap-2 rounded-card border border-border bg-surface p-3">
                 <GitBranch className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
                 <span className="min-w-0 flex-1 truncate text-sm text-muted">{detail.pipeline.label}</span>
-                <span className="shrink-0 rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
+                <span className="shrink-0 rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
                   {detail.pipeline.stage}
                 </span>
               </div>
@@ -277,12 +277,12 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
                 {detail.funnels.map((f, i) => (
                   <li
                     key={`${f.name}-${i}`}
-                    className="flex items-center gap-2 rounded-xl border border-border bg-surface p-2.5"
+                    className="flex items-center gap-2 rounded-card border border-border bg-surface p-2.5"
                   >
                     <Route className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
                     <span className="min-w-0 flex-1 truncate text-sm text-text">{f.name}</span>
                     {f.stage && (
-                      <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
+                      <span className="shrink-0 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
                         {f.stage}
                       </span>
                     )}

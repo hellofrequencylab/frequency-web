@@ -45,7 +45,7 @@ export function ReportButton({ targetKind, targetId }: { targetKind: ReportTarge
               else setError(res.error ?? 'Could not file the report.')
             })
           }
-          className="rounded-full border border-border px-2.5 py-1 text-xs text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+          className="rounded-pill border border-border px-2.5 py-1 text-xs text-muted transition-colors hover:bg-surface-elevated hover:text-text"
         >
           {reason}
         </button>

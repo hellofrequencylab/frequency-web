@@ -236,7 +236,7 @@ export function VenueHoldsPanel({
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+                  <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
                     {STATUS_LABEL[h.status]}
                   </span>
                   <button
@@ -271,7 +271,7 @@ export function VenueHoldsPanel({
                     {when(h.startsAt)} to {when(h.endsAt)}
                   </p>
                 </div>
-                <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+                <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
                   {STATUS_LABEL[h.status]}
                 </span>
               </li>

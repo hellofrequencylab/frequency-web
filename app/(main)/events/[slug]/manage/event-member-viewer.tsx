@@ -36,7 +36,7 @@ export async function EventMemberViewer({ eventId, slug }: { eventId: string; sl
   return (
     <div className="space-y-3">
       {locked && (
-        <p className="flex items-start gap-1.5 rounded-xl border border-border bg-surface-elevated px-3 py-2 text-2xs text-muted">
+        <p className="flex items-start gap-1.5 rounded-card border border-border bg-surface-elevated px-3 py-2 text-2xs text-muted">
           <Lock className="mt-px h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
           <span>
             {EVENT_CRM_LOCKED_MESSAGE}{' '}

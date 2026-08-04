@@ -142,7 +142,7 @@ export function PlanLadder({
           return (
             <li
               key={rung.plan}
-              className="flex items-start gap-3 rounded-xl border border-border bg-surface-elevated/40 px-4 py-3"
+              className="flex items-start gap-3 rounded-card border border-border bg-surface-elevated/40 px-4 py-3"
             >
               <div className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-bg/40">
                 <Icon className="h-4 w-4 text-primary-strong" aria-hidden />

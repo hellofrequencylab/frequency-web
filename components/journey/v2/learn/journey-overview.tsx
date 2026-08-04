@@ -126,7 +126,7 @@ export function AboutThisJourneyHero({
               {pillarBalance.map(({ pillar, count }) => (
                 <span
                   key={pillar.slug}
-                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+                  className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-xs font-medium ${
                     count > 0 ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-subtle'
                   }`}
                 >
@@ -141,12 +141,12 @@ export function AboutThisJourneyHero({
           {(attrs.category || attrs.tags.length > 0) && (
             <div className="flex flex-wrap items-center gap-1.5">
               {attrs.category && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2.5 py-1 text-xs font-medium text-muted">
+                <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2.5 py-1 text-xs font-medium text-muted">
                   <Tag className="h-3 w-3 shrink-0 text-subtle" aria-hidden /> {attrs.category}
                 </span>
               )}
               {attrs.tags.map((t) => (
-                <span key={t} className="rounded-full bg-surface-elevated px-2 py-0.5 text-xs text-subtle">
+                <span key={t} className="rounded-pill bg-surface-elevated px-2 py-0.5 text-xs text-subtle">
                   #{t}
                 </span>
               ))}
@@ -203,7 +203,7 @@ function TouchpointDetails({
         <p className="flex items-center gap-2 text-sm font-semibold text-text">
           {label}
           {fmt && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
+            <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
               <fmt.icon className="h-3 w-3 shrink-0" aria-hidden /> {fmt.label}
             </span>
           )}
@@ -227,7 +227,7 @@ function TouchpointDetails({
         (event ? (
           <Link
             href={`/events/${event.slug}`}
-            className={`flex items-center gap-2 rounded-xl border border-border bg-surface-elevated/40 px-3 py-2.5 text-sm transition-colors hover:border-primary ${
+            className={`flex items-center gap-2 rounded-card border border-border bg-surface-elevated/40 px-3 py-2.5 text-sm transition-colors hover:border-primary ${
               rows.length > 0 ? 'mt-3' : ''
             }`}
           >
@@ -308,11 +308,11 @@ export function AuthorBlock({ author }: { author: PlanAuthor | null }) {
             alt=""
             width={44}
             height={44}
-            className="h-11 w-11 shrink-0 rounded-full object-cover"
+            className="h-11 w-11 shrink-0 rounded-pill object-cover"
             style={avatarFocusStyle(author.avatarUrl)}
           />
         ) : (
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-sm font-bold text-muted">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-sm font-bold text-muted">
             {author.displayName.slice(0, 1).toUpperCase()}
           </span>
         )}

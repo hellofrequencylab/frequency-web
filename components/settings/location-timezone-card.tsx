@@ -47,7 +47,7 @@ export function LocationTimezoneCard({ currentTimezone }: { currentTimezone: str
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-start gap-3">
-        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
+        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-primary-strong">
           <MapPin className="h-4 w-4" />
         </span>
         <div className="min-w-0 flex-1">

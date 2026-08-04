@@ -196,9 +196,9 @@ export function DealDetail({
             {deal.owner && (
               <span className="inline-flex items-center gap-1.5">
                 {deal.owner.avatar_url ? (
-                  <Image src={avatarSrc(deal.owner.avatar_url)} alt="" width={20} height={20} className="h-5 w-5 rounded-full object-cover" style={avatarFocusStyle(deal.owner.avatar_url)} />
+                  <Image src={avatarSrc(deal.owner.avatar_url)} alt="" width={20} height={20} className="h-5 w-5 rounded-pill object-cover" style={avatarFocusStyle(deal.owner.avatar_url)} />
                 ) : (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-bg text-2xs font-semibold text-primary-strong">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-pill bg-primary-bg text-2xs font-semibold text-primary-strong">
                     {getInitials(deal.owner.display_name)}
                   </span>
                 )}
@@ -214,7 +214,7 @@ export function DealDetail({
         <p className="text-sm font-bold text-text">Activity &amp; tasks</p>
 
         {/* Add */}
-        <div className="mt-3 space-y-2 rounded-xl border border-border bg-surface-elevated/40 p-3">
+        <div className="mt-3 space-y-2 rounded-card border border-border bg-surface-elevated/40 p-3">
           <div className="flex flex-wrap items-center gap-2">
             <select value={actKind} onChange={(e) => setActKind(e.target.value as CrmActivity['kind'])} className={field}>
               {(['note', 'call', 'email', 'meeting', 'task'] as const).map((k) => (
@@ -262,7 +262,7 @@ export function DealDetail({
             const isTask = a.kind === 'task'
             const done = !!a.completed_at
             return (
-              <li key={a.id} className="flex items-start gap-3 rounded-xl border border-border bg-surface p-3">
+              <li key={a.id} className="flex items-start gap-3 rounded-card border border-border bg-surface p-3">
                 {isTask ? (
                   <button
                     type="button"

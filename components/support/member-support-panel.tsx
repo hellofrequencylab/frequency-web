@@ -28,7 +28,7 @@ export async function MemberSupportPanel({ profileId }: { profileId: string }) {
               href={`/admin/support/${t.id}`}
               className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 transition-colors hover:bg-surface-elevated"
             >
-              <span className={`shrink-0 rounded-full px-2 py-0.5 text-2xs font-semibold ${statusChipClass(t.status)}`}>
+              <span className={`shrink-0 rounded-pill px-2 py-0.5 text-2xs font-semibold ${statusChipClass(t.status)}`}>
                 {STATUS_LABELS[t.status]}
               </span>
               <span className="min-w-0 flex-1 truncate text-xs font-medium text-text">{t.subject}</span>

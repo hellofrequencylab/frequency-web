@@ -50,7 +50,7 @@ function CommentRow({
     <div>
       {/* Warmer, tighter, less-boxy row: a soft inset tint (a step off the white
           card, no border), so the thread reads as a quiet conversation. */}
-      <div className="flex items-start gap-2.5 rounded-xl bg-surface-elevated/60 px-2.5 py-2 dark:bg-canvas/40">
+      <div className="flex items-start gap-2.5 rounded-card bg-surface-elevated/60 px-2.5 py-2 dark:bg-canvas/40">
         <Link href={author ? `/people/${author.handle}` : '#'} className="shrink-0">
           {author?.avatar_url ? (
             <Image
@@ -59,11 +59,11 @@ function CommentRow({
               width={avatar}
               height={avatar}
               style={avatarFocusStyle(author.avatar_url)}
-              className={`${avatarBox} rounded-full object-cover`}
+              className={`${avatarBox} rounded-pill object-cover`}
             />
           ) : (
             <div
-              className={`${avatarBox} rounded-full bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center`}
+              className={`${avatarBox} rounded-pill bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center`}
             >
               {getInitials(author?.display_name ?? '?')}
             </div>
@@ -156,7 +156,7 @@ function ReplyComposer({
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) onSubmit(e)
         }}
-        className="flex-1 resize-none rounded-xl bg-surface-elevated/50 px-3.5 py-2 text-xs leading-relaxed text-text placeholder-subtle ring-1 ring-border/50 focus:outline-none focus:ring-1 focus:ring-border-strong/50 disabled:opacity-50 dark:bg-canvas/40"
+        className="flex-1 resize-none rounded-card bg-surface-elevated/50 px-3.5 py-2 text-xs leading-relaxed text-text placeholder-subtle ring-1 ring-border/50 focus:outline-none focus:ring-1 focus:ring-border-strong/50 disabled:opacity-50 dark:bg-canvas/40"
       />
       <button
         type="submit"

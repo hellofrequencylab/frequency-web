@@ -82,7 +82,7 @@ function PillarGauge({ pillar }: { pillar: PillarProgress }) {
 
         {/* The Pillar's site icon, dropped into the gauge's mouth. */}
         <span
-          className={`absolute bottom-0 flex h-9 w-9 items-center justify-center rounded-full lift-1 ${
+          className={`absolute bottom-0 flex h-9 w-9 items-center justify-center rounded-pill lift-1 ${
             active ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-subtle'
           }`}
           aria-hidden
@@ -167,7 +167,7 @@ export function SeasonMap({
           style={seasonRankStyle(rank)}
         >
           <span
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-on-primary lift-1"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-card text-on-primary lift-1"
             style={{ background: `var(--rank-${RANK_TO_KEY[rank]})` }}
             aria-hidden
           >
@@ -199,7 +199,7 @@ export function SeasonMap({
               return (
                 <li key={r.rank} className="flex items-center gap-1.5" style={seasonRankStyle(r.rank)}>
                   <span
-                    className={`h-2.5 w-2.5 rounded-full ${
+                    className={`h-2.5 w-2.5 rounded-pill ${
                       isCurrent ? 'ring-2 ring-offset-1 ring-offset-surface' : ''
                     }`}
                     style={{

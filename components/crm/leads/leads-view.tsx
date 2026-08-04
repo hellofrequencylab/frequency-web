@@ -56,7 +56,7 @@ function LeadGrabGuide({ codesHref }: { codesHref: string }) {
         {(Object.keys(DOOR_META) as LeadDoor[]).map((door) => {
           const m = doorMeta(door)
           return (
-            <li key={door} className="flex gap-3 rounded-xl border border-border/60 bg-surface p-3">
+            <li key={door} className="flex gap-3 rounded-card border border-border/60 bg-surface p-3">
               <m.Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
               <div>
                 <p className="text-sm font-semibold text-text">{m.label}</p>
@@ -66,7 +66,7 @@ function LeadGrabGuide({ codesHref }: { codesHref: string }) {
           )
         })}
       </ul>
-      <div className="mt-4 rounded-xl border border-dashed border-border bg-surface p-4">
+      <div className="mt-4 rounded-card border border-dashed border-border bg-surface p-4">
         <p className="text-sm font-semibold text-text">Make a lead-grab QR code</p>
         <p className="mt-1 text-xs text-muted">
           Open your space codes, add a code pointed at your booking page, class, or offer, and turn on
@@ -87,26 +87,26 @@ function LeadGrabGuide({ codesHref }: { codesHref: string }) {
 function ConsentBadge({ state }: { state: SpaceLead['consentState'] }) {
   if (state === 'subscribed') {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
+      <span className="inline-flex items-center gap-1 rounded-pill bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
         <UserCheck className="h-3 w-3" aria-hidden /> Mailable
       </span>
     )
   }
   if (state === 'unsubscribed') {
-    return <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-subtle">Opted out</span>
+    return <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-subtle">Opted out</span>
   }
   return (
-    <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">Not mailable</span>
+    <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">Not mailable</span>
   )
 }
 
 function ClaimBadge({ claimed }: { claimed: boolean }) {
   return claimed ? (
-    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-strong">
+    <span className="inline-flex items-center gap-1 rounded-pill bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-strong">
       <CircleCheck className="h-3 w-3" aria-hidden /> Joined
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-subtle">
+    <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-subtle">
       <CircleDashed className="h-3 w-3" aria-hidden /> Lead
     </span>
   )
@@ -119,7 +119,7 @@ function LeadRow({ lead, boardHref }: { lead: SpaceLead; boardHref: string }) {
     <li>
       <Link
         href={`${boardHref}?contact=${lead.contactId}`}
-        className="flex items-center gap-3 rounded-xl border border-border/60 bg-surface p-3 transition-colors hover:border-primary/40"
+        className="flex items-center gap-3 rounded-card border border-border/60 bg-surface p-3 transition-colors hover:border-primary/40"
       >
         <m.Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
         <div className="min-w-0 flex-1">

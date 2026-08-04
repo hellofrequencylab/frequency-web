@@ -83,13 +83,13 @@ function SpaceRow({ entry, masterProfileIntakeId }: { entry: SpaceWithHealth; ma
           >
             {brandName}
           </Link>
-          <span className="inline-flex items-center rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+          <span className="inline-flex items-center rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
             {modeTag(s)}
           </span>
           <StatusChip tone={STATUS_TONE[s.status]} size="sm">
             {s.status}
           </StatusChip>
-          <span className="inline-flex items-center rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+          <span className="inline-flex items-center rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
             {planLabel}
           </span>
         </div>

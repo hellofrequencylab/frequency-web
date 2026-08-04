@@ -168,7 +168,7 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
         </div>
 
         {blocks.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border px-3 py-6 text-center text-xs text-muted">
+          <p className="rounded-card border border-dashed border-border px-3 py-6 text-center text-xs text-muted">
             This email has no blocks yet. Add one below.
           </p>
         ) : (

@@ -154,11 +154,11 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
                     alt={m.displayName}
                     width={32}
                     height={32}
-                    className="w-8 h-8 rounded-full object-cover shrink-0 mt-0.5"
+                    className="w-8 h-8 rounded-pill object-cover shrink-0 mt-0.5"
                     style={avatarFocusStyle(m.avatarUrl)}
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none mt-0.5">
+                  <div className="w-8 h-8 rounded-pill bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none mt-0.5">
                     {getInitials(m.displayName)}
                   </div>
                 )}

@@ -29,7 +29,7 @@ export function SpaceCreditRow({
   return (
     <Link
       href={`/spaces/${space.slug}`}
-      className="flex items-center gap-3 rounded-xl p-1 transition-colors hover:bg-surface-elevated"
+      className="flex items-center gap-3 rounded-card p-1 transition-colors hover:bg-surface-elevated"
     >
       {space.logoUrl ? (
         <Image

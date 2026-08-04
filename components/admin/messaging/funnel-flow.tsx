@@ -207,7 +207,7 @@ export function FunnelFlow({ funnel }: { funnel: FlowFunnel }) {
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
                       <span className="truncate text-sm font-semibold text-text">{stage.label}</span>
-                      <span className="shrink-0 rounded-full bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium uppercase tracking-wide text-muted">
+                      <span className="shrink-0 rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium uppercase tracking-wide text-muted">
                         {kindMeta.label}
                       </span>
                     </span>
@@ -414,7 +414,7 @@ function StagePanel({
       </div>
 
       {/* Add a link */}
-      <div className="mt-3 space-y-2 rounded-xl border border-dashed border-border p-2.5">
+      <div className="mt-3 space-y-2 rounded-card border border-dashed border-border p-2.5">
         <label className="sr-only" htmlFor={`reftype-${stage.id}`}>
           What to wire this step to
         </label>

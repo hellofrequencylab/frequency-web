@@ -199,7 +199,7 @@ export default async function NexusPage({
                   <Link
                     key={hub.id}
                     href={`/hubs/${hub.slug}`}
-                    className="group flex items-center gap-3 rounded-xl px-4 py-3 transition-colors hover:bg-surface-elevated/60 motion-reduce:transition-none"
+                    className="group flex items-center gap-3 rounded-card px-4 py-3 transition-colors hover:bg-surface-elevated/60 motion-reduce:transition-none"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">

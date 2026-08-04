@@ -269,7 +269,7 @@ export function EntryForm({
       <div className="shrink-0">
         <p className={labelCls}>Flyer preview</p>
         <div
-          className="w-[200px] overflow-hidden rounded-xl border border-border [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
+          className="w-[200px] overflow-hidden rounded-card border border-border [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
           dangerouslySetInnerHTML={{ __html: previewSvg }}
         />
       </div>

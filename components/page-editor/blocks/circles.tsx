@@ -54,7 +54,7 @@ function ChannelPills({ links }: { links: CirclesIndexData['channelLinks'] }) {
             key={link.href}
             href={link.href}
             aria-current={link.active ? 'page' : undefined}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+            className={`inline-flex items-center gap-1.5 rounded-pill px-3.5 py-1.5 text-sm font-semibold transition-colors ${
               link.active ? activeClass : 'bg-surface-elevated text-muted hover:bg-surface hover:text-text'
             }`}
           >

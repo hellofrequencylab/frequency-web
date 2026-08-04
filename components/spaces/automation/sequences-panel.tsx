@@ -298,7 +298,7 @@ function StepList({
               className="flex items-center justify-between gap-3 rounded-lg bg-surface-elevated/50 px-3 py-2"
             >
               <div className="flex min-w-0 items-center gap-2 text-sm">
-                <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface text-xs font-semibold text-muted">
+                <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-pill bg-surface text-xs font-semibold text-muted">
                   {i + 1}
                 </span>
                 <span className="inline-flex items-center gap-1 text-xs text-muted">

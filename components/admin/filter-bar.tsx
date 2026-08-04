@@ -91,7 +91,7 @@ export function FilterBar({
                 key={f.key}
                 type="button"
                 onClick={() => setParam(f.key, null)}
-                className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2.5 py-0.5 text-xs font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70"
+                className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2.5 py-0.5 text-xs font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70"
               >
                 {f.label}: {opt?.label ?? value}
                 <X className="h-3 w-3" aria-hidden />

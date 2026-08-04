@@ -61,7 +61,7 @@ export function ProfileQrCard({
       </p>
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div
-          className="h-40 w-40 shrink-0 overflow-hidden rounded-xl border border-border bg-white p-2 [&>svg]:h-full [&>svg]:w-full"
+          className="h-40 w-40 shrink-0 overflow-hidden rounded-card border border-border bg-white p-2 [&>svg]:h-full [&>svg]:w-full"
           dangerouslySetInnerHTML={{ __html: svg }}
         />
         <div className="min-w-0 flex-1 space-y-2">

@@ -95,7 +95,7 @@ export function EntryPointShare({
   // reveal the QR & admin options.
   if (!expanded) {
     return (
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface-elevated/40 px-3 py-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-card border border-border bg-surface-elevated/40 px-3 py-2">
         <Link2 className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
         <code className="min-w-0 flex-1 truncate font-mono text-xs text-muted" title={shareUrl}>
           {shareUrl}
@@ -118,7 +118,7 @@ export function EntryPointShare({
 
   // Expanded: the admin options — incoming-point toggle, the live QR, and downloads.
   return (
-    <div className="rounded-xl border border-border bg-surface-elevated/40 p-4">
+    <div className="rounded-card border border-border bg-surface-elevated/40 p-4">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Entry point · share &amp; QR</p>
         <button

@@ -55,7 +55,7 @@ export function HubPeopleModule() {
               value: data.circleCount > 0 ? Math.round(data.totalMembers / data.circleCount) : 0,
             },
           ].map((s) => (
-            <div key={s.label} className="rounded-xl border border-border bg-surface p-3">
+            <div key={s.label} className="rounded-card border border-border bg-surface p-3">
               <div className="text-lg font-bold text-text">{s.value}</div>
               <div className="text-2xs font-medium uppercase tracking-wide text-muted">{s.label}</div>
             </div>
@@ -76,7 +76,7 @@ export function HubPeopleModule() {
             {data.circles.map((c) => {
               const pct = c.memberCap > 0 ? Math.min(100, Math.round((c.memberCount / c.memberCap) * 100)) : 0
               return (
-                <li key={c.id} className="rounded-xl border border-border bg-surface p-3">
+                <li key={c.id} className="rounded-card border border-border bg-surface p-3">
                   <div className="flex items-center justify-between gap-2">
                     <span className="min-w-0 truncate text-sm font-semibold text-text">{c.name}</span>
                     <span className="shrink-0 text-2xs tabular-nums text-muted">

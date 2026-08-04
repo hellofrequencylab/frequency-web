@@ -108,14 +108,14 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
       >
         <Bell className="w-5 h-5" />
         {unread > 0 && (
-          <span className="absolute top-1 right-1 flex items-center justify-center min-w-[14px] h-[14px] rounded-full bg-danger text-on-danger text-3xs font-bold leading-none px-0.5">
+          <span className="absolute top-1 right-1 flex items-center justify-center min-w-[14px] h-[14px] rounded-pill bg-danger text-on-danger text-3xs font-bold leading-none px-0.5">
             {unread > 9 ? '9+' : unread}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-border bg-surface-elevated lift-3 z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-80 rounded-card border border-border bg-surface-elevated lift-3 z-50 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <p className="text-sm font-semibold text-text">Notifications</p>
             {unread > 0 && (
@@ -132,7 +132,7 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
           <div className="max-h-96 overflow-y-auto divide-y divide-border">
             {!loaded && (
               <div className="py-8 text-center">
-                <div className="w-5 h-5 border-2 border-primary-bg border-t-primary rounded-full animate-spin mx-auto" />
+                <div className="w-5 h-5 border-2 border-primary-bg border-t-primary rounded-pill animate-spin mx-auto" />
               </div>
             )}
 
@@ -149,7 +149,7 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
                   !n.read_at ? 'bg-primary-bg/50' : ''
                 }`}
               >
-                <div className="w-7 h-7 rounded-full bg-surface flex items-center justify-center text-sm shrink-0">
+                <div className="w-7 h-7 rounded-pill bg-surface flex items-center justify-center text-sm shrink-0">
                   {TYPE_ICON[n.type] ?? '🔔'}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -162,7 +162,7 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
                   <p className="text-2xs text-muted mt-0.5">{relativeTime(n.created_at)}</p>
                 </div>
                 {!n.read_at && (
-                  <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1" />
+                  <span className="w-2 h-2 rounded-pill bg-primary shrink-0 mt-1" />
                 )}
               </Link>
             ))}

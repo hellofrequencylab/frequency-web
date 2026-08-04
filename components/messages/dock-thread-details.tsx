@@ -233,9 +233,9 @@ export function DockThreadDetails({
                   className="flex min-h-11 items-center gap-2.5 px-3 py-2 transition-colors hover:bg-surface-elevated"
                 >
                   {p.avatar_url ? (
-                    <Image src={avatarSrc(p.avatar_url)} alt="" width={28} height={28} className="h-7 w-7 shrink-0 rounded-full object-cover" style={avatarFocusStyle(p.avatar_url)} />
+                    <Image src={avatarSrc(p.avatar_url)} alt="" width={28} height={28} className="h-7 w-7 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(p.avatar_url)} />
                   ) : (
-                    <span className="flex h-7 w-7 shrink-0 select-none items-center justify-center rounded-full bg-primary-bg text-3xs font-semibold text-primary-strong">
+                    <span className="flex h-7 w-7 shrink-0 select-none items-center justify-center rounded-pill bg-primary-bg text-3xs font-semibold text-primary-strong">
                       {getInitials(p.display_name)}
                     </span>
                   )}

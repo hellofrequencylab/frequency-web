@@ -410,7 +410,7 @@ export function AirwavesPlayer({
         </div>
       ) : (
         <div className="flex items-center gap-4 border-b border-border bg-surface-elevated/40 p-4">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-surface-elevated">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-card bg-surface-elevated">
             {artworkUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={artworkUrl} alt="" className="h-full w-full object-cover" />
@@ -457,7 +457,7 @@ export function AirwavesPlayer({
         <div className="space-y-3 p-4">
           {/* Resume affordance (item 4). */}
           {resumeAt != null && (
-            <div className="flex items-center gap-2 rounded-xl border border-border bg-surface-elevated/50 px-3 py-2">
+            <div className="flex items-center gap-2 rounded-card border border-border bg-surface-elevated/50 px-3 py-2">
               <button
                 type="button"
                 onClick={useResume}
@@ -479,7 +479,7 @@ export function AirwavesPlayer({
               native range on top for keyboard + pointer seek (accessible by default). */}
           <div className="space-y-1.5">
             <div className="group relative h-6">
-              <div className="pointer-events-none absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 overflow-hidden rounded-full bg-surface-elevated peer-focus-visible:ring-2 peer-focus-visible:ring-primary">
+              <div className="pointer-events-none absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 overflow-hidden rounded-pill bg-surface-elevated peer-focus-visible:ring-2 peer-focus-visible:ring-primary">
                 <div className="absolute inset-y-0 left-0 bg-border-strong/50" style={{ width: `${bufferedPct}%` }} />
                 <div className="absolute inset-y-0 left-0 bg-primary" style={{ width: `${pct}%` }} />
               </div>
@@ -495,7 +495,7 @@ export function AirwavesPlayer({
                   />
                 ))}
               <span
-                className="pointer-events-none absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary shadow"
+                className="pointer-events-none absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-pill bg-primary shadow"
                 style={{ left: `${pct}%` }}
                 aria-hidden
               />
@@ -536,7 +536,7 @@ export function AirwavesPlayer({
             <button
               type="button"
               onClick={togglePlay}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-primary text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-pill bg-primary text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
               aria-label={playing ? 'Pause' : 'Play'}
             >
               {playing ? <Pause className="h-5 w-5" aria-hidden /> : <Play className="h-5 w-5 translate-x-0.5" aria-hidden />}

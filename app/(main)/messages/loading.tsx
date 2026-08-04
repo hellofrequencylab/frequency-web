@@ -2,8 +2,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 function ConversationRowSkeleton() {
   return (
-    <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-surface">
-      <Skeleton className="w-10 h-10 rounded-full shrink-0" />
+    <div className="flex items-center gap-3 px-4 py-3 rounded-card border border-border bg-surface">
+      <Skeleton className="w-10 h-10 rounded-pill shrink-0" />
       <div className="flex-1 min-w-0 space-y-1.5">
         <Skeleton className="h-3.5 w-32" />
         <Skeleton className="h-3 w-56" />

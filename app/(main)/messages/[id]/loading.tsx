@@ -4,7 +4,7 @@ function MessageBubbleSkeleton({ align }: { align: 'left' | 'right' }) {
   const isRight = align === 'right'
   return (
     <div className={`flex items-end gap-2 ${isRight ? 'flex-row-reverse' : ''}`}>
-      {!isRight && <Skeleton className="w-7 h-7 rounded-full shrink-0 mb-1" />}
+      {!isRight && <Skeleton className="w-7 h-7 rounded-pill shrink-0 mb-1" />}
       <div className={`space-y-1 max-w-[70%] ${isRight ? 'items-end' : 'items-start'} flex flex-col`}>
         <Skeleton className={`h-10 rounded-2xl ${isRight ? 'w-48' : 'w-56'}`} />
       </div>
@@ -21,7 +21,7 @@ export default function ConversationLoading() {
     <div className="-mx-4 -my-6 sm:-mx-6 lg:-mx-8 flex flex-col h-[calc(100dvh-3.5rem)]">
       {/* Header */}
       <header className="shrink-0 flex items-center gap-3 px-5 py-3 border-b border-border bg-surface">
-        <Skeleton className="w-9 h-9 rounded-full shrink-0" />
+        <Skeleton className="w-9 h-9 rounded-pill shrink-0" />
         <div className="flex-1 min-w-0 space-y-1.5">
           <Skeleton className="h-4 w-32" />
           <Skeleton className="h-3 w-20" />

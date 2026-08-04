@@ -33,7 +33,7 @@ const STATUS_LABEL: Record<string, string> = { draft: 'Draft', active: 'Live', s
 
 function CatalogRow({ p, oversight = false }: { p: CommerceProduct; oversight?: boolean }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-3">
       <div className="min-w-0">
         <p className="truncate font-medium text-text">{p.title}</p>
         <p className="text-xs text-subtle">
@@ -122,7 +122,7 @@ export default async function MarketplaceAdminPage() {
           {MARKET_AREAS.map((area) => {
             const published = visibility[area]
             return (
-              <div key={area} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+              <div key={area} className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-3">
                 <div className="flex items-center gap-2">
                   {published ? (
                     <Eye className="h-4 w-4 text-primary" aria-hidden />
@@ -131,7 +131,7 @@ export default async function MarketplaceAdminPage() {
                   )}
                   <span className="font-medium text-text">{AREA_LABEL[area]}</span>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide ${published ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-muted'}`}
+                    className={`rounded-pill px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide ${published ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-muted'}`}
                   >
                     {published ? 'Published' : 'Hidden'}
                   </span>

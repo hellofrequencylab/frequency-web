@@ -87,7 +87,7 @@ function suggestHandle(name: string): string {
 }
 
 const inputBase =
-  'w-full rounded-xl border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/25'
+  'w-full rounded-card border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/25'
 
 // Only paint a preview for a known-safe image scheme — a blob: URL from
 // createObjectURL or our http(s) upload URL. Guards the <img> src sink so a tainted
@@ -100,12 +100,12 @@ function Avatar({ url, name, email, size = 'md' }: { url: string; name: string; 
   if (url && SAFE_IMG_SRC.test(url)) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={url} alt="Avatar preview" className={`${dim} rounded-full object-cover shrink-0 ring-2 ring-primary-bg`} />
+      <img src={url} alt="Avatar preview" className={`${dim} rounded-pill object-cover shrink-0 ring-2 ring-primary-bg`} />
     )
   }
   const initials = getInitials(name || email)
   return (
-    <div className={`${dim} rounded-full bg-primary-bg text-primary-strong font-semibold flex items-center justify-center shrink-0`}>
+    <div className={`${dim} rounded-pill bg-primary-bg text-primary-strong font-semibold flex items-center justify-center shrink-0`}>
       {initials || '?'}
     </div>
   )
@@ -384,7 +384,7 @@ function RegionStep({ content, draft, patch, ctx }: StepViewProps) {
         {c.regionLabel} <span className="text-danger">*</span>
       </label>
       {ctx.regions.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border bg-surface/50 px-4 py-6 text-center text-sm text-subtle">
+        <p className="rounded-card border border-dashed border-border bg-surface/50 px-4 py-6 text-center text-sm text-subtle">
           {c.emptyText}
         </p>
       ) : (

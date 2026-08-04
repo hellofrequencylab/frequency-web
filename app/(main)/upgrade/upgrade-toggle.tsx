@@ -31,7 +31,7 @@ export function UpgradeToggle({ isCrew }: { isCrew: boolean }) {
         <button
           onClick={handleToggle}
           disabled={isPending}
-          className="flex items-center justify-center gap-2 w-full rounded-xl border border-border px-4 py-3 text-sm font-medium text-muted hover:text-text hover:bg-surface-elevated transition-colors disabled:opacity-50"
+          className="flex items-center justify-center gap-2 w-full rounded-card border border-border px-4 py-3 text-sm font-medium text-muted hover:text-text hover:bg-surface-elevated transition-colors disabled:opacity-50"
         >
           {isPending ? (
             <Loader2 className="w-4 h-4 animate-spin" />

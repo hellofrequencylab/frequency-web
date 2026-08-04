@@ -165,9 +165,9 @@ export default async function DispatchDetailPage({ params }: Props) {
           subtitle={
             <div className="flex items-center gap-2 flex-wrap">
               {author?.avatar_url ? (
-                <Image src={avatarSrc(author.avatar_url)} alt={author.display_name} width={20} height={20} className="w-5 h-5 rounded-full object-cover" style={avatarFocusStyle(author.avatar_url)} />
+                <Image src={avatarSrc(author.avatar_url)} alt={author.display_name} width={20} height={20} className="w-5 h-5 rounded-pill object-cover" style={avatarFocusStyle(author.avatar_url)} />
               ) : (
-                <span className="w-5 h-5 rounded-full bg-primary-bg flex items-center justify-center text-3xs font-bold text-primary-strong">
+                <span className="w-5 h-5 rounded-pill bg-primary-bg flex items-center justify-center text-3xs font-bold text-primary-strong">
                   {getInitials(author?.display_name ?? '?')}
                 </span>
               )}

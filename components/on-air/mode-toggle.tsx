@@ -29,7 +29,7 @@ export function ModeToggle({
   // Each active segment wears its OWN mode's accent (not the door's current mode), so the
   // control reads as a two-color toggle: amber for Be Still, teal/blue move for Get Moving.
   const seg = (active: boolean, accent: 'still' | 'move') =>
-    `flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold transition-colors ${
+    `flex flex-1 items-center justify-center gap-1.5 rounded-pill px-3 py-2 text-sm font-semibold transition-colors ${
       active
         ? accent === 'move'
           ? 'bg-move text-on-move lift-1'
@@ -40,7 +40,7 @@ export function ModeToggle({
     <div
       role="tablist"
       aria-label="Timer mode"
-      className="mx-auto flex w-full max-w-xs items-center gap-1 rounded-full border border-border bg-surface-elevated/60 p-1"
+      className="mx-auto flex w-full max-w-xs items-center gap-1 rounded-pill border border-border bg-surface-elevated/60 p-1"
     >
       <button
         type="button"
@@ -98,7 +98,7 @@ export function MindlessMasthead({
           // so at -top-1 the only close affordance on the setup screen sat behind the status
           // bar in the iOS PWA (app/layout.tsx sets viewportFit: "cover"). max() keeps the
           // unnotched placement identical.
-          className="absolute -right-2 top-[max(1.25rem,env(safe-area-inset-top))] rounded-full p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+          className="absolute -right-2 top-[max(1.25rem,env(safe-area-inset-top))] rounded-pill p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
         >
           <X className="h-4 w-4" />
         </button>

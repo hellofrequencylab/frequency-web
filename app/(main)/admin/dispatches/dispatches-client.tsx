@@ -406,7 +406,7 @@ export function DispatchesClient({
                 isPending={isPending}
               />
             ) : (
-              <div className="flex items-start gap-3 rounded-xl border border-border bg-surface px-4 py-3 group">
+              <div className="flex items-start gap-3 rounded-card border border-border bg-surface px-4 py-3 group">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-0.5">
                     <Link

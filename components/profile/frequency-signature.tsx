@@ -87,7 +87,7 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
     if (compact) {
       return (
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-elevated px-2.5 py-1 text-2xs font-medium text-muted ${className ?? ''}`}
+          className={`inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface-elevated px-2.5 py-1 text-2xs font-medium text-muted ${className ?? ''}`}
           title="No Frequency Signature yet. Log practices across the Pillars to form one"
         >
           <Compass className="h-3 w-3" /> No signature yet
@@ -322,11 +322,11 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
               const acc = accentColor(PILLARS[k].accent)
               return (
                 <li key={k} className="flex items-center gap-2.5">
-                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: acc }} />
+                  <span className="h-2 w-2 shrink-0 rounded-pill" style={{ backgroundColor: acc }} />
                   <span className="w-20 shrink-0 text-xs font-medium text-text">{PILLARS[k].label}</span>
-                  <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-elevated">
+                  <span className="h-1.5 flex-1 overflow-hidden rounded-pill bg-surface-elevated">
                     <span
-                      className="block h-full rounded-full"
+                      className="block h-full rounded-pill"
                       style={{ width: `${pct}%`, backgroundColor: acc }}
                     />
                   </span>

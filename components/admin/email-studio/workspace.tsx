@@ -183,7 +183,7 @@ export function EmailStudioWorkspace({
           type="button"
           onClick={onNew}
           disabled={pending}
-          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2.5 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-1.5 rounded-card border border-dashed border-border py-2.5 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text disabled:opacity-50"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Plus className="h-4 w-4" aria-hidden />}
           New email
@@ -196,7 +196,7 @@ export function EmailStudioWorkspace({
         )}
 
         {cards.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border px-3 py-8 text-center text-xs text-muted">
+          <p className="rounded-card border border-dashed border-border px-3 py-8 text-center text-xs text-muted">
             No emails yet. Start one above.
           </p>
         ) : (

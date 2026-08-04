@@ -469,7 +469,7 @@ export function OutcomePanel({
       {Icon && (
         <div
           aria-hidden
-          className={`mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full ${OUTCOME_TONES[tone]}`}
+          className={`mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-pill ${OUTCOME_TONES[tone]}`}
         >
           <Icon className="h-7 w-7" strokeWidth={2.5} />
         </div>
@@ -506,7 +506,7 @@ export function OutcomeSkeleton() {
   return (
     <section className="px-6 py-24 sm:py-32">
       <div className="mx-auto max-w-md animate-pulse text-center" aria-hidden>
-        <div className="mx-auto mb-6 h-14 w-14 rounded-full bg-surface-elevated" />
+        <div className="mx-auto mb-6 h-14 w-14 rounded-pill bg-surface-elevated" />
         <div className="mx-auto h-10 w-4/5 rounded-lg bg-surface-elevated sm:h-12" />
         <div className="mt-4 space-y-2">
           <div className="mx-auto h-5 w-full rounded bg-surface-elevated" />

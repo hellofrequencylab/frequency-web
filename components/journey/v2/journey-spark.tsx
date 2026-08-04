@@ -27,7 +27,7 @@ const EMPTY_MEETING: SparkMeeting = { format: null, schedule: null, timezone: nu
 // that commit. "Build it myself" hands off to the manual draft editor.
 
 const FIELD =
-  'w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
+  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
 const WEEK_CHOICES = [2, 4, 6, 8] as const
 
@@ -220,7 +220,7 @@ export function JourneySpark({
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
                     Recommended framework
-                    <span className="rounded-full bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong">Best start</span>
+                    <span className="rounded-pill bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong">Best start</span>
                   </span>
                   <span className="block text-xs leading-snug text-muted">The proven shape: a welcome, weekly practices across the Pillars, an Expression Challenge each week, and a capstone.</span>
                 </span>
@@ -233,7 +233,7 @@ export function JourneySpark({
                   type="button"
                   onClick={() => chooseTemplate(t.id)}
                   disabled={pending}
-                  className="flex w-full items-start gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated disabled:opacity-60"
+                  className="flex w-full items-start gap-3 rounded-card border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated disabled:opacity-60"
                 >
                   <span className="text-2xl leading-none" aria-hidden>{t.emoji}</span>
                   <span className="min-w-0 flex-1">
@@ -252,7 +252,7 @@ export function JourneySpark({
                 type="button"
                 onClick={() => setMode('manual')}
                 disabled={pending}
-                className="flex w-full items-start gap-3 rounded-xl border border-dashed border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-surface-elevated disabled:opacity-60"
+                className="flex w-full items-start gap-3 rounded-card border border-dashed border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-surface-elevated disabled:opacity-60"
               >
                 <PenLine className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                 <span className="min-w-0 flex-1">
@@ -315,7 +315,7 @@ export function JourneySpark({
                 <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Weeks</span>
                 {WEEK_CHOICES.map((w) => (
                   <button key={w} type="button" onClick={() => setWeeks(w)} aria-pressed={weeks === w}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${weeks === w ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}>
+                    className={`rounded-pill border px-3 py-1 text-xs font-medium transition-colors ${weeks === w ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}>
                     {w}
                   </button>
                 ))}
@@ -340,7 +340,7 @@ export function JourneySpark({
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1 text-sm font-semibold text-text">
                     Upload your course
-                    <span className="rounded-full bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong">Vera AI</span>
+                    <span className="rounded-pill bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong">Vera AI</span>
                   </span>
                   <span className="block text-xs leading-snug text-muted">Already have a course written? Upload your outline and any supporting documents, all at once, and let Vera sort it out.</span>
                 </span>
@@ -352,7 +352,7 @@ export function JourneySpark({
                 type="button"
                 onClick={() => setPicking(true)}
                 disabled={pending}
-                className="mt-3 flex w-full items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-surface-elevated disabled:opacity-60"
+                className="mt-3 flex w-full items-center gap-3 rounded-card border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-surface-elevated disabled:opacity-60"
               >
                 <LayoutTemplate className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                 <span className="min-w-0 flex-1">
@@ -375,7 +375,7 @@ export function JourneySpark({
                 <div className="flex flex-wrap items-center gap-2">
                   {WEEK_CHOICES.map((w) => (
                     <button key={w} type="button" onClick={() => setWeeks(w)} aria-pressed={weeks === w}
-                      className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${weeks === w ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}>
+                      className={`rounded-pill border px-3.5 py-1.5 text-sm font-medium transition-colors ${weeks === w ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}>
                       {w} weeks
                     </button>
                   ))}
@@ -386,7 +386,7 @@ export function JourneySpark({
                 <div className="grid grid-cols-2 gap-2">
                   {([['light', 'Light', 'A few minutes'], ['medium', 'Medium', 'Ten to twenty minutes']] as const).map(([key, lbl, hint]) => (
                     <button key={key} type="button" onClick={() => setPace(key)} aria-pressed={pace === key}
-                      className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${pace === key ? 'border-primary/50 bg-primary-bg' : 'border-border bg-surface hover:bg-surface-elevated'}`}>
+                      className={`rounded-card border px-3 py-2.5 text-left transition-colors ${pace === key ? 'border-primary/50 bg-primary-bg' : 'border-border bg-surface hover:bg-surface-elevated'}`}>
                       <span className="block text-sm font-semibold text-text">{lbl}</span>
                       <span className="block text-xs text-muted">{hint}</span>
                     </button>
@@ -400,7 +400,7 @@ export function JourneySpark({
           {onReview && (
             <div className="space-y-3">
               {pending && !title ? (
-                <p className="flex items-center gap-2 rounded-xl border border-border bg-canvas px-4 py-3 text-sm text-muted">
+                <p className="flex items-center gap-2 rounded-card border border-border bg-canvas px-4 py-3 text-sm text-muted">
                   <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary-strong" aria-hidden /> Vera is drafting your Journey…
                 </p>
               ) : (
@@ -434,7 +434,7 @@ export function JourneySpark({
 
                   {/* How the group meets (ADR-302). Optional and pre-filled from Vera's read of the
                       outline; the full editor lives in the Journey's Settings panel later. */}
-                  <div className="rounded-xl border border-border bg-canvas px-3 py-3">
+                  <div className="rounded-card border border-border bg-canvas px-3 py-3">
                     <span className="mb-1.5 block text-2xs font-semibold uppercase tracking-wide text-muted">How will you meet?</span>
                     <div className="flex flex-wrap gap-1.5">
                       {MEETING_FORMATS.map(([value, Icon, lbl]) => (
@@ -443,7 +443,7 @@ export function JourneySpark({
                           type="button"
                           onClick={() => patchMeeting({ format: meeting.format === value ? null : value })}
                           aria-pressed={meeting.format === value}
-                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${meeting.format === value ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}
+                          className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-xs font-medium transition-colors ${meeting.format === value ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}
                         >
                           <Icon className="h-3.5 w-3.5" /> {lbl}
                         </button>

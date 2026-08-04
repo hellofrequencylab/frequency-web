@@ -63,7 +63,7 @@ export function Worklist({
                     </div>
                     <p className="mt-0.5 line-clamp-2 text-sm text-muted">{row.whyNow}</p>
                     <span
-                      className={`mt-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-medium ${badge.cls}`}
+                      className={`mt-1.5 inline-flex items-center rounded-pill px-2 py-0.5 text-2xs font-medium ${badge.cls}`}
                     >
                       {row.playbookName} · {badge.label}
                     </span>

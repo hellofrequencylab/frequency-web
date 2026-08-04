@@ -14,7 +14,7 @@ import { MapCanvas } from '@/components/maps/map-canvas'
 export default function EventVenueMap({
   lat,
   lng,
-  className = 'h-40 w-full overflow-hidden rounded-xl border border-border',
+  className = 'h-40 w-full overflow-hidden rounded-card border border-border',
 }: {
   lat: number
   lng: number

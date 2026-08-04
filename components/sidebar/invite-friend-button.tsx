@@ -108,7 +108,7 @@ export function InviteFriendButton({
 
               {/* The branded QR (avatar in the middle), pre-rendered server-side. */}
               <div
-                className="mt-4 h-44 w-44 overflow-hidden rounded-xl border border-border bg-white p-2 [&>svg]:h-full [&>svg]:w-full"
+                className="mt-4 h-44 w-44 overflow-hidden rounded-card border border-border bg-white p-2 [&>svg]:h-full [&>svg]:w-full"
                 dangerouslySetInnerHTML={{ __html: svg }}
               />
 

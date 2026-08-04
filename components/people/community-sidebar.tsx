@@ -32,7 +32,7 @@ export function OnlineMembersCard({ members }: { members: OnlineMember[] }) {
             <li key={m.id}>
               <Link
                 href={`/people/${m.handle}`}
-                className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 transition-colors hover:bg-surface-elevated"
+                className="flex items-center gap-2.5 rounded-card px-2 py-1.5 transition-colors hover:bg-surface-elevated"
               >
                 <span className="relative shrink-0">
                   {m.avatarUrl ? (
@@ -42,17 +42,17 @@ export function OnlineMembersCard({ members }: { members: OnlineMember[] }) {
                       width={32}
                       height={32}
                       sizes="32px"
-                      className="h-8 w-8 rounded-full object-cover"
+                      className="h-8 w-8 rounded-pill object-cover"
                       style={avatarFocusStyle(m.avatarUrl)}
                     />
                   ) : (
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-bg text-2xs font-semibold text-primary-strong select-none">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-pill bg-primary-bg text-2xs font-semibold text-primary-strong select-none">
                       {getInitials(m.displayName)}
                     </span>
                   )}
                   <span
                     aria-hidden
-                    className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-surface"
+                    className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-pill bg-success ring-2 ring-surface"
                   />
                 </span>
                 <span className="min-w-0 flex-1">

@@ -185,11 +185,11 @@ export function RecordingReviews({
                     width={32}
                     height={32}
                     unoptimized
-                    className="h-8 w-8 shrink-0 rounded-full object-cover"
+                    className="h-8 w-8 shrink-0 rounded-pill object-cover"
                     style={avatarFocusStyle(a.avatarUrl)}
                   />
                 ) : (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-bg text-2xs font-bold text-primary-strong select-none">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-2xs font-bold text-primary-strong select-none">
                     {a ? getInitials(a.displayName) : '?'}
                   </div>
                 )}

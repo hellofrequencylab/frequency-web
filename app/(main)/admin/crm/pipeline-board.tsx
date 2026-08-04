@@ -158,7 +158,7 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
             <div key={stage.id} className="w-72 shrink-0 rounded-2xl border border-border bg-surface-elevated/40 p-3">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2">
-                  <span className={`h-2 w-2 shrink-0 rounded-full ${stage.kind === 'won' ? 'bg-success' : stage.kind === 'lost' ? 'bg-danger' : 'bg-primary'}`} />
+                  <span className={`h-2 w-2 shrink-0 rounded-pill ${stage.kind === 'won' ? 'bg-success' : stage.kind === 'lost' ? 'bg-danger' : 'bg-primary'}`} />
                   <p className="truncate text-sm font-semibold text-text">{stage.name}</p>
                   <span className="shrink-0 text-xs tabular-nums text-subtle">{items.length}</span>
                 </div>
@@ -172,7 +172,7 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
                   })} />
                 ))}
                 {items.length === 0 && (
-                  <p className="rounded-xl border border-dashed border-border px-3 py-6 text-center text-xs text-subtle">Nothing here yet</p>
+                  <p className="rounded-card border border-dashed border-border px-3 py-6 text-center text-xs text-subtle">Nothing here yet</p>
                 )}
               </div>
             </div>
@@ -189,7 +189,7 @@ function LaneTab({ active, onClick, children }: { active: boolean; onClick: () =
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+      className={`rounded-pill border px-3 py-1 text-xs font-semibold transition-colors ${
         active ? 'border-primary bg-primary-bg text-primary-strong' : 'border-border text-muted hover:text-text'
       }`}
     >
@@ -200,9 +200,9 @@ function LaneTab({ active, onClick, children }: { active: boolean; onClick: () =
 
 function Avatar({ person }: { person: PersonLite }) {
   return person.avatar_url ? (
-    <Image src={avatarSrc(person.avatar_url)} alt={person.display_name} width={20} height={20} className="h-5 w-5 rounded-full object-cover" style={avatarFocusStyle(person.avatar_url)} />
+    <Image src={avatarSrc(person.avatar_url)} alt={person.display_name} width={20} height={20} className="h-5 w-5 rounded-pill object-cover" style={avatarFocusStyle(person.avatar_url)} />
   ) : (
-    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-bg text-2xs font-semibold text-primary-strong select-none">
+    <span className="flex h-5 w-5 items-center justify-center rounded-pill bg-primary-bg text-2xs font-semibold text-primary-strong select-none">
       {getInitials(person.display_name)}
     </span>
   )
@@ -226,7 +226,7 @@ function DealCard({
   const lane = laneMeta(deal.source)
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-3 lift-1">
+    <div className="rounded-card border border-border bg-surface p-3 lift-1">
       <div className="flex items-start justify-between gap-1">
         <Link href={`/admin/crm/pipeline/${deal.id}`} className="block min-w-0 flex-1">
           <p className="line-clamp-2 text-sm font-semibold text-text hover:underline">{deal.title}</p>
@@ -240,7 +240,7 @@ function DealCard({
         </Link>
       </div>
       {lane && (
-        <span className="mt-1 inline-block rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+        <span className="mt-1 inline-block rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
           {lane.label}
         </span>
       )}

@@ -64,7 +64,7 @@ export function SeatCounter({
       {canManage && (
         <Link
           href={billingHref}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-bold text-text transition-colors hover:bg-surface-elevated"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-card border border-border px-3 py-2 text-xs font-bold text-text transition-colors hover:bg-surface-elevated"
         >
           <Plus className="h-3.5 w-3.5" aria-hidden /> Add a seat
         </Link>

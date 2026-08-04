@@ -61,7 +61,7 @@ function EventRefBadge({ refInfo }: { refInfo: PathEventRef }) {
     </>
   )
   const chip =
-    'inline-flex max-w-full items-center gap-1 rounded-full border border-primary/30 bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong'
+    'inline-flex max-w-full items-center gap-1 rounded-pill border border-primary/30 bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong'
   if (refInfo.href) {
     return (
       <Link href={refInfo.href} className={cn(chip, 'hover:border-primary/60')} onClick={(e) => e.stopPropagation()}>
@@ -82,7 +82,7 @@ function MilestoneStrip({ milestones }: { milestones: Milestone[] }) {
         {milestones.map((m, i) => (
           <li
             key={`${m.kind}-${m.at}-${i}`}
-            className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface-elevated px-2.5 py-1"
+            className="flex shrink-0 items-center gap-1.5 rounded-pill border border-border bg-surface-elevated px-2.5 py-1"
           >
             <Sparkles className="h-3 w-3 shrink-0 text-primary-strong" aria-hidden />
             <span className="whitespace-nowrap text-2xs font-medium text-text">{m.title}</span>
@@ -100,7 +100,7 @@ function EntryRow({ entry }: { entry: PathEntry }) {
     <li className="relative">
       <span
         className={cn(
-          'absolute -left-[21px] top-1.5 h-2 w-2 rounded-full',
+          'absolute -left-[21px] top-1.5 h-2 w-2 rounded-pill',
           entry.direction === 'inbound' ? 'bg-success' : 'bg-primary',
         )}
         aria-hidden
@@ -125,7 +125,7 @@ function ThreadRow({ thread }: { thread: PathThread }) {
     .join(' · ')
 
   return (
-    <li className="rounded-xl border border-border bg-surface-elevated/50">
+    <li className="rounded-card border border-border bg-surface-elevated/50">
       <button
         type="button"
         onClick={() => !solo && setOpen((v) => !v)}
@@ -221,7 +221,7 @@ export function MessagePathFold({
               ))}
             </ul>
           ) : (
-            <p className="rounded-xl border border-dashed border-border px-3 py-4 text-center text-xs text-subtle">
+            <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-xs text-subtle">
               No messages in this lane yet. Send one and it shows up here.
             </p>
           )}

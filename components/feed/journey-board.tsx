@@ -111,7 +111,7 @@ export function JourneyBoard({
     return (
       <div className="mb-6 overflow-hidden rounded-2xl border border-primary-bg bg-primary-bg/30">
         <div className="flex items-center gap-2.5 px-3 py-2">
-          <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong lift-1">
+          <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-surface text-primary-strong lift-1">
             <Flame className="h-3 w-3" />
           </span>
           <p className="shrink-0 text-sm font-bold leading-tight text-text">
@@ -120,7 +120,7 @@ export function JourneyBoard({
           {freezeTokens > 0 && (
             <span
               title={`${freezeTokens} streak freeze${freezeTokens === 1 ? '' : 's'} banked, bridges a missed day`}
-              className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-signal-bg/50 px-1.5 py-0.5 text-3xs font-semibold text-signal-strong"
+              className="inline-flex shrink-0 items-center gap-0.5 rounded-pill bg-signal-bg/50 px-1.5 py-0.5 text-3xs font-semibold text-signal-strong"
             >
               <Snowflake className="h-3 w-3" />{freezeTokens}
             </span>
@@ -150,7 +150,7 @@ export function JourneyBoard({
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-primary/10 to-transparent" />
         <div className="relative flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">
-            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong lift-1">
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-surface text-primary-strong lift-1">
               <Flame className="h-4 w-4" />
             </span>
             <div className="min-w-0">
@@ -164,7 +164,7 @@ export function JourneyBoard({
                 {freezeTokens > 0 && (
                   <span
                     title={`${freezeTokens} streak freeze${freezeTokens === 1 ? '' : 's'} banked, bridges a missed day`}
-                    className="inline-flex items-center gap-0.5 rounded-full bg-signal-bg/50 px-1.5 py-0.5 text-3xs font-semibold text-signal-strong"
+                    className="inline-flex items-center gap-0.5 rounded-pill bg-signal-bg/50 px-1.5 py-0.5 text-3xs font-semibold text-signal-strong"
                   >
                     <Snowflake className="h-3 w-3" />{freezeTokens}
                   </span>
@@ -227,7 +227,7 @@ export function JourneyBoard({
                 <span
                   key={m.day}
                   title={`${m.label} · ${m.day} days`}
-                  className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-3xs font-bold transition-colors ${
+                  className={`inline-flex h-6 w-6 items-center justify-center rounded-pill text-3xs font-bold transition-colors ${
                     hit
                       ? 'bg-primary text-on-primary'
                       : isNext
@@ -307,7 +307,7 @@ export function JourneyBoard({
           href={activeJourney.href}
           className="group mx-4 mt-3 flex items-center gap-2.5 border-t border-primary-bg pt-3"
         >
-          <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong">
+          <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-surface text-primary-strong">
             <Route className="h-3.5 w-3.5" />
           </span>
           <div className="min-w-0 flex-1">
@@ -358,7 +358,7 @@ export function JourneyBoard({
             <Link
               key={href}
               href={href}
-              className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text transition-colors hover:border-primary hover:text-primary-strong"
+              className="inline-flex items-center gap-1 rounded-pill border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text transition-colors hover:border-primary hover:text-primary-strong"
             >
               <Icon className="h-3 w-3" /> {label}
             </Link>

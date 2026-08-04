@@ -77,7 +77,7 @@ export function ActivityChart({
               {pct > 0 ? (
                 <div className={`w-full rounded-sm ${b.minutes > 0 ? 'bg-primary' : 'bg-primary/45'}`} style={{ height: `${pct}%` }} />
               ) : (
-                <div className="h-px w-full rounded-full bg-border" />
+                <div className="h-px w-full rounded-pill bg-border" />
               )}
             </div>
           )

@@ -50,7 +50,7 @@ function ContactConsentBar({ reach }: { reach: ContactReach }) {
         </span>
       </div>
       <div
-        className="flex h-2 overflow-hidden rounded-full bg-surface-elevated"
+        className="flex h-2 overflow-hidden rounded-pill bg-surface-elevated"
         role="img"
         aria-label={`${reach.subscribed} subscribed, ${notYet} not yet opted in, ${reach.unsubscribed} unsubscribed, of ${reach.total} contacts`}
       >
@@ -67,7 +67,7 @@ function ContactConsentBar({ reach }: { reach: ContactReach }) {
       <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
         {segments.map((s) => (
           <li key={s.key} className="inline-flex items-center gap-1.5 text-xs text-muted">
-            <span className={`h-2 w-2 shrink-0 rounded-full ${s.dot}`} aria-hidden />
+            <span className={`h-2 w-2 shrink-0 rounded-pill ${s.dot}`} aria-hidden />
             <span>{s.label}</span>
             <span className="font-medium tabular-nums text-text">{s.count}</span>
           </li>
@@ -97,7 +97,7 @@ function AtRiskPanel({ atRisk, slug }: { atRisk: AtRiskSummary; slug: string }) 
         {atRisk.top.map((c) => (
           <li
             key={c.id}
-            className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-surface-elevated px-3 py-2"
+            className="flex flex-wrap items-center justify-between gap-2 rounded-card bg-surface-elevated px-3 py-2"
           >
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-text">{c.displayName || c.email || 'Contact'}</p>
@@ -205,7 +205,7 @@ export async function CrmFunnelPanel({ spaceId, slug }: { spaceId: string; slug:
               <div className="mb-1 flex items-baseline justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
                   <span
-                    className={`h-2 w-2 shrink-0 rounded-full ${stageBarClass(stage.kind)}`}
+                    className={`h-2 w-2 shrink-0 rounded-pill ${stageBarClass(stage.kind)}`}
                     aria-hidden
                   />
                   <p className="truncate text-sm font-medium text-text">{stage.name}</p>
@@ -215,9 +215,9 @@ export async function CrmFunnelPanel({ spaceId, slug }: { spaceId: string; slug:
                   {formatMoney(stage.value)}
                 </span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-surface-elevated">
+              <div className="h-2 overflow-hidden rounded-pill bg-surface-elevated">
                 <div
-                  className={`h-full rounded-full ${stageBarClass(stage.kind)} transition-[width] motion-reduce:transition-none`}
+                  className={`h-full rounded-pill ${stageBarClass(stage.kind)} transition-[width] motion-reduce:transition-none`}
                   style={{ width: `${width}%` }}
                 />
               </div>

@@ -322,7 +322,7 @@ export function AdminBarBody({
               <summary className="flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-subtle outline-none transition-colors hover:text-text focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
                 More
                 <span
-                  className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted"
+                  className="rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted"
                   aria-label={`${extraCount} more ${extraCount === 1 ? 'setting' : 'settings'}`}
                 >
                   {extraCount}

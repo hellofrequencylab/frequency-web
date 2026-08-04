@@ -104,7 +104,7 @@ export function AssetVersions({ assetId }: { assetId: string }) {
       <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-subtle">
         <History className="h-3.5 w-3.5" /> Versions {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
       </p>
-      <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border">
+      <ul className="divide-y divide-border overflow-hidden rounded-card border border-border">
         {versions.map((v) => (
           <li key={v.id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
             <span className="min-w-0 truncate text-text">

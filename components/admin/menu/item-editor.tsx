@@ -108,7 +108,7 @@ export function ItemEditor({
   }
 
   return (
-    <li className={`rounded-xl border border-border bg-canvas/40 ${isDragging ? 'opacity-40' : ''}`}>
+    <li className={`rounded-card border border-border bg-canvas/40 ${isDragging ? 'opacity-40' : ''}`}>
       <div className="flex items-center gap-2 px-2.5 py-2">
         {pinned ? (
           <span

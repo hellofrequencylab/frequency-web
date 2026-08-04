@@ -53,7 +53,7 @@ export function PracticeAdminMenu({
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden />
-          <div className="absolute right-0 z-50 mt-1 w-44 overflow-hidden rounded-xl border border-border bg-surface py-1 lift-3">
+          <div className="absolute right-0 z-50 mt-1 w-44 overflow-hidden rounded-card border border-border bg-surface py-1 lift-3">
             <Link href={`/practices/${practiceId}/edit`} className={ITEM} onClick={() => setOpen(false)}>
               <Pencil className="h-4 w-4 text-subtle" /> Edit
             </Link>

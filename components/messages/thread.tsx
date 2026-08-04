@@ -208,10 +208,10 @@ export function MessageThread({
                       width={28}
                       height={28}
                       style={avatarFocusStyle(sender.avatar_url)}
-                      className="w-7 h-7 rounded-full object-cover"
+                      className="w-7 h-7 rounded-pill object-cover"
                     />
                   ) : (
-                    <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-3xs font-bold flex items-center justify-center select-none">
+                    <div className="w-7 h-7 rounded-pill bg-primary-bg text-primary-strong text-3xs font-bold flex items-center justify-center select-none">
                       {sender ? getInitials(sender.display_name) : '?'}
                     </div>
                   )
@@ -295,7 +295,7 @@ export function MessageThread({
             placeholder="Message…"
             rows={1}
             disabled={isPending}
-            className="flex-1 resize-none text-sm text-text placeholder-subtle outline-none leading-relaxed bg-surface rounded-xl px-3 py-2.5 max-h-32 disabled:opacity-60"
+            className="flex-1 resize-none text-sm text-text placeholder-subtle outline-none leading-relaxed bg-surface rounded-card px-3 py-2.5 max-h-32 disabled:opacity-60"
             style={{ minHeight: '42px' }}
           />
           <button

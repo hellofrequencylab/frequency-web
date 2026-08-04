@@ -295,7 +295,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
     <StudioFooter left={<SaveStatus state={saveState} error={error} />}>
       <a
         href={`/practices/${props.id}`}
-        className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+        className="inline-flex items-center gap-1.5 rounded-card border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
       >
         <Eye className="h-4 w-4" /> View
       </a>

@@ -30,7 +30,7 @@ import type { BlockStyle, MarginStep, TextColorToken } from '@/lib/entity-blocks
 /** A titled demo cell: a heading, the live control(s), and a small value readout. */
 function Demo({ title, note, value, children }: { title: string; note?: string; value?: string; children: ReactNode }) {
   return (
-    <div className="space-y-2 rounded-xl border border-border bg-surface p-3">
+    <div className="space-y-2 rounded-card border border-border bg-surface p-3">
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-xs font-bold text-text">{title}</h3>
         {value !== undefined && (
@@ -157,7 +157,7 @@ function PanelDemo({ id, label }: { id: string; label: string }) {
   const [style, setStyle] = useState<BlockStyle>({})
   const [hidden, setHidden] = useState(false)
   return (
-    <div className="space-y-2 rounded-xl border border-border bg-surface p-3">
+    <div className="space-y-2 rounded-card border border-border bg-surface p-3">
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-xs font-bold text-text">{label}</h3>
         <code className="rounded bg-surface-elevated px-1.5 py-0.5 text-3xs text-muted">{id}</code>
@@ -198,7 +198,7 @@ function HeroPanelDemo() {
     })
   }
   return (
-    <div className="space-y-2 rounded-xl border border-primary/40 bg-surface p-3">
+    <div className="space-y-2 rounded-card border border-primary/40 bg-surface p-3">
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-xs font-bold text-text">Top hero (pinned, fixed first section)</h3>
         <code className="rounded bg-surface-elevated px-1.5 py-0.5 text-3xs text-muted">hero</code>

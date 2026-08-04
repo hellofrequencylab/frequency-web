@@ -59,7 +59,7 @@ export function RecordingBlockEmbed({
     return (
       <div className={`${wrap} animate-pulse rounded-2xl border border-border bg-surface p-6`}>
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-surface-elevated" />
+          <div className="h-10 w-10 rounded-pill bg-surface-elevated" />
           <div className="h-3 w-40 rounded bg-surface-elevated" />
         </div>
       </div>

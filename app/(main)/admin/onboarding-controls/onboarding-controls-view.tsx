@@ -85,7 +85,7 @@ export function OnboardingControlsView({ data }: { data: Data }) {
             <FlagToggle enabled={referrals} ariaLabel="Referral program" action={setReferralsEnabled} />
             <AuditLog events={referralsAudit} />
           </div>
-          <div className="rounded-xl border border-border bg-surface-elevated/50 px-3 py-2.5">
+          <div className="rounded-card border border-border bg-surface-elevated/50 px-3 py-2.5">
             <p className="flex items-center justify-between gap-2 text-sm">
               <span className="inline-flex items-center gap-1.5 font-semibold text-text">
                 <Zap className="h-3.5 w-3.5 text-primary" aria-hidden /> Reward when a referral is accepted

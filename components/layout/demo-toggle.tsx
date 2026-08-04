@@ -55,11 +55,11 @@ export function DemoToggle({
         role="switch"
         aria-checked={on}
         aria-label="Demo Content"
-        className="relative inline-flex items-center gap-1 rounded-full px-1.5 py-1"
+        className="relative inline-flex items-center gap-1 rounded-pill px-1.5 py-1"
       >
         <Zap className={`h-3.5 w-3.5 ${on ? 'fill-warning text-warning' : 'text-subtle'}`} aria-hidden />
-        <span className={`relative inline-flex h-3.5 w-6 items-center rounded-full transition-colors ${on ? 'bg-warning' : 'bg-border-strong'}`}>
-          <span className={`inline-block h-2.5 w-2.5 transform rounded-full bg-surface transition-transform ${on ? 'translate-x-3' : 'translate-x-0.5'}`} />
+        <span className={`relative inline-flex h-3.5 w-6 items-center rounded-pill transition-colors ${on ? 'bg-warning' : 'bg-border-strong'}`}>
+          <span className={`inline-block h-2.5 w-2.5 transform rounded-pill bg-surface transition-transform ${on ? 'translate-x-3' : 'translate-x-0.5'}`} />
         </span>
         {tip && (
           <span
@@ -81,12 +81,12 @@ export function DemoToggle({
       aria-checked={on}
       aria-label="Demo content"
       title={on ? 'Demo content is showing. Click to hide' : 'Demo content is hidden. Click to show'}
-      className="hidden items-center gap-1.5 rounded-full border border-border bg-surface-elevated/70 py-1.5 pl-3 pr-1.5 text-sm font-semibold text-muted transition-colors hover:border-border-strong hover:text-text sm:inline-flex"
+      className="hidden items-center gap-1.5 rounded-pill border border-border bg-surface-elevated/70 py-1.5 pl-3 pr-1.5 text-sm font-semibold text-muted transition-colors hover:border-border-strong hover:text-text sm:inline-flex"
     >
       <Zap className={`h-4 w-4 ${on ? 'fill-warning text-warning' : 'text-subtle'}`} aria-hidden />
       <span>Demo</span>
-      <span className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${on ? 'bg-warning' : 'bg-border-strong'}`}>
-        <span className={`inline-block h-3 w-3 transform rounded-full bg-surface transition-transform ${on ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+      <span className={`relative inline-flex h-4 w-7 items-center rounded-pill transition-colors ${on ? 'bg-warning' : 'bg-border-strong'}`}>
+        <span className={`inline-block h-3 w-3 transform rounded-pill bg-surface transition-transform ${on ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
       </span>
     </button>
   )

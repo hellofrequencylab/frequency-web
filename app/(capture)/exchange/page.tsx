@@ -41,7 +41,7 @@ export default async function ExchangePage({ searchParams }: { searchParams: Pro
       description={`${who} shared their card. Share yours back and you'll both have each other's.`}
     >
       {payload.l?.trim() && (
-        <p className="mb-5 rounded-xl border border-border bg-canvas p-4 text-sm text-muted">
+        <p className="mb-5 rounded-card border border-border bg-canvas p-4 text-sm text-muted">
           {payload.l.trim()}
           {profileLink && (
             <>

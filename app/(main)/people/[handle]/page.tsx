@@ -687,7 +687,7 @@ function ProfileFeedSkeleton() {
       {[0, 1, 2].map((i) => (
         <div key={i} className="rounded-2xl border border-border bg-surface p-4 lift-1">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 animate-pulse rounded-full bg-surface-elevated" />
+            <div className="h-9 w-9 animate-pulse rounded-pill bg-surface-elevated" />
             <div className="flex-1 space-y-2">
               <div className="h-3 w-1/3 animate-pulse rounded bg-surface-elevated" />
               <div className="h-3 w-1/5 animate-pulse rounded bg-surface-elevated" />
@@ -741,8 +741,8 @@ function ProfileStandingCard({
           </div>
           {/* Left ad-hoc: ProgressTrack's `track` vocabulary has no warm/warning track, and this
               rank-climb bar reads against the Zap tone rather than a neutral grey one. */}
-          <div className="h-2 overflow-hidden rounded-full bg-warning-bg/60">
-            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+          <div className="h-2 overflow-hidden rounded-pill bg-warning-bg/60">
+            <div className="h-full rounded-pill bg-primary transition-all" style={{ width: `${pct}%` }} />
           </div>
         </div>
       ) : (
@@ -795,7 +795,7 @@ function AchievementChip({
   return (
     <span
       title={earned ? `${label} (earned)` : showProgress ? `${label} (${current}/${target})` : label}
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+      className={`inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs font-medium ${
         earned ? 'bg-warning-bg text-primary' : 'border border-border text-muted'
       }`}
     >

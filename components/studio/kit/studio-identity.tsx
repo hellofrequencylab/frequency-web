@@ -64,7 +64,7 @@ export function AccentPicker({
             aria-pressed={selected}
             title={a.label}
             onClick={() => onChange(a.key)}
-            className={`${dim} rounded-full ring-offset-2 ring-offset-canvas transition-transform hover:scale-110 ${selected ? 'scale-110 ring-2' : ''}`}
+            className={`${dim} rounded-pill ring-offset-2 ring-offset-canvas transition-transform hover:scale-110 ${selected ? 'scale-110 ring-2' : ''}`}
             style={{ backgroundColor: accentColor(a.key), ['--tw-ring-color' as string]: 'var(--brand-mark)' }}
           />
         )
@@ -95,7 +95,7 @@ export function IconGrid({
           onClick={() => onPick(key)}
           aria-label={label}
           title={label}
-          className={`flex ${cell} items-center justify-center rounded-xl transition-transform hover:scale-110 ${value === key ? 'text-primary-strong ring-2 ring-primary' : 'text-muted hover:bg-surface-elevated hover:text-text'}`}
+          className={`flex ${cell} items-center justify-center rounded-card transition-transform hover:scale-110 ${value === key ? 'text-primary-strong ring-2 ring-primary' : 'text-muted hover:bg-surface-elevated hover:text-text'}`}
         >
           <Icon className={glyph} />
         </button>

@@ -8,7 +8,7 @@ export default function OrganizerLoading() {
 
       {/* Host identity */}
       <div className="flex items-center gap-3 mb-2">
-        <Skeleton className="h-12 w-12 rounded-full" />
+        <Skeleton className="h-12 w-12 rounded-pill" />
         <Skeleton className="h-8 w-1/2" />
       </div>
       <Skeleton className="h-4 w-3/4 mb-8" />

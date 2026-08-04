@@ -45,7 +45,7 @@ export function PillarChips({
   active: string
 }) {
   const base =
-    'rounded-full border px-3 py-1.5 text-sm font-medium transition-colors'
+    'rounded-pill border px-3 py-1.5 text-sm font-medium transition-colors'
   const on = 'border-primary bg-primary-bg text-primary-strong'
   const off = 'border-border bg-surface text-muted hover:border-border-strong hover:text-text'
   return (

@@ -25,7 +25,7 @@ function ProfileSectionSkeleton({ cards = 4 }: { cards?: number }) {
     <div>
       <div className="mb-3 flex items-center gap-2">
         <Skeleton className="h-5 w-40" />
-        <Skeleton className="h-5 w-8 rounded-full" />
+        <Skeleton className="h-5 w-8 rounded-pill" />
       </div>
       <div className="grid gap-5 @lg:grid-cols-2">
         {Array.from({ length: cards }).map((_, i) => (

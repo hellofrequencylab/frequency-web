@@ -27,7 +27,7 @@ export function IntroAccept({ token, spaceName }: { token: string; spaceName: st
   if (status === 'done') {
     return (
       <div className="text-center" role="status">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-success-bg text-success">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-pill bg-success-bg text-success">
           <Check className="h-6 w-6" strokeWidth={2.5} aria-hidden />
         </div>
         <h3 className="text-2xl font-bold text-text">You&apos;re connected.</h3>

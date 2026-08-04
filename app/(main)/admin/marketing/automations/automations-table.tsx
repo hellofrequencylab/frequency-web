@@ -25,7 +25,7 @@ function ToggleCell({ rule }: { rule: AutomationRule }) {
             if (!res.ok) setError(res.error ?? 'Could not update the rule.')
           })
         }}
-        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+        className={`rounded-pill px-2.5 py-0.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
           rule.enabled
             ? 'bg-success-bg text-success hover:bg-surface-elevated'
             : 'bg-surface-elevated text-muted hover:bg-primary-bg hover:text-primary-strong'

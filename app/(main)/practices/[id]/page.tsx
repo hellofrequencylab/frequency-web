@@ -148,17 +148,17 @@ export default async function PracticeDetailPage({ params }: Params) {
         <>
           {pillarName && <PillarBadge name={pillarName} />}
           {/* How it runs, at a glance (ADR-592, P4): the timer mode + shape, or "Log it". */}
-          <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
+          <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
             {practice.uses_timer && <Timer className="h-3 w-3" aria-hidden />}
             {timerPreview({ timerKind: practice.timer_kind, movementConfig: practice.movement_config, durationMin: practice.duration_min })}
           </span>
           {practice.subcategory && (
-            <span className="rounded-full bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
+            <span className="rounded-pill bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
               {practice.subcategory.name}
             </span>
           )}
           {practice.is_template && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-warning-bg px-2 py-0.5 text-xs font-semibold text-warning">
+            <span className="inline-flex items-center gap-1 rounded-pill bg-warning-bg px-2 py-0.5 text-xs font-semibold text-warning">
               <Wand2 className="h-3 w-3" /> Template
             </span>
           )}

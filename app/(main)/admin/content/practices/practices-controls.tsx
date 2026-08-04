@@ -299,7 +299,7 @@ export function PracticeSavedViews() {
         <div
           role="menu"
           aria-label="Saved views"
-          className="absolute right-0 top-full z-50 mt-1 w-64 rounded-xl border border-border bg-surface p-1 shadow-pop"
+          className="absolute right-0 top-full z-50 mt-1 w-64 rounded-card border border-border bg-surface p-1 shadow-pop"
         >
           <button
             type="button"

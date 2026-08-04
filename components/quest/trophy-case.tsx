@@ -35,7 +35,7 @@ function TrophyTile({ trophy }: { trophy: JourneyTrophy }) {
   const inner = (
     <span className="flex h-full items-start gap-3" style={seasonRankStyle(trophy.rankEarned)}>
       <span
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg lift-1"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card text-lg lift-1"
         style={{
           background: 'color-mix(in srgb, var(--rank) 16%, var(--color-surface))',
           color: 'var(--rank-deep)',
@@ -99,7 +99,7 @@ function SeasonSummary({
   ]
   return (
     <div
-      className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-surface-elevated/60 px-3.5 py-2.5"
+      className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-card bg-surface-elevated/60 px-3.5 py-2.5"
       style={seasonRankStyle(finalRank)}
     >
       <span className="flex items-center gap-1.5">
@@ -174,7 +174,7 @@ export function TrophyCase({
     <div className="rounded-2xl border border-border bg-surface/60 p-5 lift-1">
       <div className="mb-4 flex items-center gap-2.5">
         <span
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl lift-1"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-card lift-1"
           style={{
             ...seasonRankStyle('master'),
             background: 'color-mix(in srgb, var(--rank) 16%, var(--color-surface))',

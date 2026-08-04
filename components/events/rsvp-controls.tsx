@@ -222,7 +222,7 @@ export function RsvpControls({
   if (isPending) {
     return (
       <div className="space-y-3">
-        <div className="rounded-xl border border-border bg-surface px-4 py-3">
+        <div className="rounded-card border border-border bg-surface px-4 py-3">
           <p className="flex items-center gap-2 text-sm font-medium text-text">
             <Clock className="h-4 w-4 text-subtle" />
             Request sent. The host will confirm.
@@ -247,7 +247,7 @@ export function RsvpControls({
       <div
         role="group"
         aria-label="RSVP"
-        className={`grid w-full max-w-sm gap-1 rounded-xl border border-border bg-surface p-1 ${
+        className={`grid w-full max-w-sm gap-1 rounded-card border border-border bg-surface p-1 ${
           allowGoing ? 'grid-cols-3' : 'grid-cols-2'
         }`}
       >
@@ -315,7 +315,7 @@ export function RsvpControls({
       {isGoing && requireNames ? (
         <PlusOneNames pending={pending} names={names} setNames={setNames} onSave={saveNames} />
       ) : isGoing ? (
-        <div className="inline-flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2">
+        <div className="inline-flex items-center gap-3 rounded-card border border-border bg-surface px-3 py-2">
           <span className="text-sm font-medium text-muted">
             Bringing {plusOnes > 0 ? `+${plusOnes}` : 'no'} {plusOnes === 1 ? 'guest' : 'guests'}
           </span>
@@ -398,7 +398,7 @@ function RsvpNote({
   }
 
   return (
-    <div className="space-y-2 rounded-xl border border-border bg-surface p-3">
+    <div className="space-y-2 rounded-card border border-border bg-surface p-3">
       <label htmlFor={`rsvp-note-${eventId}`} className="block text-xs font-medium text-muted">
         Say something to the group (optional)
       </label>
@@ -466,7 +466,7 @@ function EventQuestionnaire({
     setAnswers((a) => ({ ...a, [questionId]: value }))
 
   return (
-    <div className="space-y-4 rounded-xl border border-border bg-surface p-4">
+    <div className="space-y-4 rounded-card border border-border bg-surface p-4">
       <p className="text-sm font-semibold text-text">A few questions from the host</p>
       {questions.map((q) => {
         const value = answers[q.id] ?? ''
@@ -497,7 +497,7 @@ function EventQuestionnaire({
                 className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
               />
             ) : q.type === 'boolean' ? (
-              <div className="inline-flex items-center gap-1 rounded-xl border border-border bg-surface p-1">
+              <div className="inline-flex items-center gap-1 rounded-card border border-border bg-surface p-1">
                 {(['yes', 'no'] as const).map((opt) => {
                   const selected = value === opt
                   return (
@@ -600,7 +600,7 @@ function MultiSelectAnswer({
             type="button"
             onClick={() => toggle(opt)}
             aria-pressed={on}
-            className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+            className={`rounded-pill px-3 py-1 text-sm font-medium transition-colors ${
               on
                 ? 'bg-primary-bg text-primary-strong'
                 : 'border border-border text-muted hover:bg-surface-elevated hover:text-text'
@@ -651,7 +651,7 @@ function PlusOneNames({
   }
 
   return (
-    <div className="space-y-2 rounded-xl border border-border bg-surface p-3">
+    <div className="space-y-2 rounded-card border border-border bg-surface p-3">
       <p className="text-xs font-medium text-muted">Who are you bringing? The host needs names.</p>
       {names.map((name, i) => (
         <div key={ids[i] ?? i} className="flex items-center gap-2">

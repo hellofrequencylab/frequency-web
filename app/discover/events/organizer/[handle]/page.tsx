@@ -179,11 +179,11 @@ export default async function OrganizerPage({
                 alt={displayName}
                 width={48}
                 height={48}
-                className="h-12 w-12 rounded-full object-cover"
+                className="h-12 w-12 rounded-pill object-cover"
                 style={avatarFocusStyle(avatarUrl)}
               />
             ) : (
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-bg text-base font-semibold text-primary-strong select-none">
+              <span className="flex h-12 w-12 items-center justify-center rounded-pill bg-primary-bg text-base font-semibold text-primary-strong select-none">
                 {getInitials(displayName)}
               </span>
             )}

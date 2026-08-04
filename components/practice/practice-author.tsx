@@ -30,7 +30,7 @@ export function PracticeAuthor({
       >
         {creator.avatar_url && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={avatarSrc(creator.avatar_url)} alt="" className="h-4 w-4 shrink-0 rounded-full object-cover" style={avatarFocusStyle(creator.avatar_url)} />
+          <img src={avatarSrc(creator.avatar_url)} alt="" className="h-4 w-4 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(creator.avatar_url)} />
         )}
         <span className="truncate">{name}</span>
       </Link>

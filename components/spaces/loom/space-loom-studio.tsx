@@ -159,7 +159,7 @@ export function SpaceLoomStudio({
           />
         </div>
         {tag && (
-          <button type="button" onClick={() => setTag(null)} className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2.5 py-1 text-xs font-medium text-primary-strong">
+          <button type="button" onClick={() => setTag(null)} className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2.5 py-1 text-xs font-medium text-primary-strong">
             {tag} <X className="h-3 w-3" />
           </button>
         )}
@@ -171,7 +171,7 @@ export function SpaceLoomStudio({
               key={t}
               type="button"
               onClick={() => setTag(t)}
-              className="rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-primary/50 hover:text-text"
+              className="rounded-pill border border-border bg-surface px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-primary/50 hover:text-text"
             >
               {t}
             </button>
@@ -192,7 +192,7 @@ export function SpaceLoomStudio({
       ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {assets.map((a) => (
-            <li key={a.id} className="group relative aspect-square overflow-hidden rounded-xl border border-border bg-canvas">
+            <li key={a.id} className="group relative aspect-square overflow-hidden rounded-card border border-border bg-canvas">
               {/* eslint-disable-next-line @next/next/no-img-element -- Loom asset URL, not a configured next/image domain */}
               <img src={a.url} alt={a.alt ?? a.title} loading="lazy" className="h-full w-full object-cover" />
               <button
@@ -200,7 +200,7 @@ export function SpaceLoomStudio({
                 onClick={() => remove(a.id)}
                 disabled={pendingDelete === a.id}
                 aria-label={`Remove ${a.title}`}
-                className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-canvas/90 text-danger opacity-0 shadow-sm transition-opacity hover:bg-canvas focus:opacity-100 group-hover:opacity-100 disabled:opacity-60"
+                className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-pill bg-canvas/90 text-danger opacity-0 shadow-sm transition-opacity hover:bg-canvas focus:opacity-100 group-hover:opacity-100 disabled:opacity-60"
               >
                 {pendingDelete === a.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
               </button>

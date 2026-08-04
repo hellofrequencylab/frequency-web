@@ -51,9 +51,9 @@ export async function PracticesBalance() {
                       {p.count > 0 && <span className="ml-1.5 text-subtle">{share}%</span>}
                     </span>
                   </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-surface-elevated" aria-hidden>
+                  <div className="h-2 overflow-hidden rounded-pill bg-surface-elevated" aria-hidden>
                     <div
-                      className={isExpression(p) ? 'h-full rounded-full' : 'h-full rounded-full bg-primary'}
+                      className={isExpression(p) ? 'h-full rounded-pill' : 'h-full rounded-pill bg-primary'}
                       style={
                         isExpression(p)
                           ? { width: `${share}%`, backgroundColor: 'var(--rank-deep)' }

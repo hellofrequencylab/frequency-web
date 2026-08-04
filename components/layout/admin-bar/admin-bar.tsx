@@ -66,7 +66,7 @@ function AdminBarTopBar({
         <X className="h-5 w-5" aria-hidden />
         {/* A dot, not a count: the state is binary and the rail is dense. aria carries the meaning. */}
         {unpublished && (
-          <span aria-hidden className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary ring-2 ring-surface" />
+          <span aria-hidden className="absolute right-1 top-1 h-2 w-2 rounded-pill bg-primary ring-2 ring-surface" />
         )}
       </button>
     </div>
@@ -369,7 +369,7 @@ export function AdminBar({
           onKeyDown={onHandleKeyDown}
           className="group absolute inset-y-0 left-0 z-10 flex w-3 -translate-x-1/2 cursor-ew-resize touch-none items-center justify-center focus:outline-none"
         >
-          <span className="h-10 w-1 rounded-full bg-border-strong transition-colors group-hover:bg-primary group-focus-visible:bg-primary motion-reduce:transition-none" />
+          <span className="h-10 w-1 rounded-pill bg-border-strong transition-colors group-hover:bg-primary group-focus-visible:bg-primary motion-reduce:transition-none" />
         </div>
 
         {/* The panel cover is full column height, but its CONTENT sticks to the viewport. */}

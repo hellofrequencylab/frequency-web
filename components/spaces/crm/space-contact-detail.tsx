@@ -128,7 +128,7 @@ export async function SpaceContactDetail({
       {/* Identity + fields */}
       <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
         <div className="flex items-start gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-primary-strong">
             <User className="h-5 w-5" aria-hidden />
           </span>
           <div className="min-w-0">
@@ -326,7 +326,7 @@ function InsightBand({ insight }: { insight: SpaceContactInsight }) {
         <p className="mt-1.5 text-sm text-text">{contextLine}</p>
         {hasScores && (
           <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-subtle">
-            <span className={`rounded-full px-2 py-0.5 text-2xs font-medium ${confidenceClass}`}>{confidenceLabel}</span>
+            <span className={`rounded-pill px-2 py-0.5 text-2xs font-medium ${confidenceClass}`}>{confidenceLabel}</span>
             <span>
               <span className="font-medium">Top signals:</span> {readout.signals.join(' · ')}
             </span>
@@ -340,7 +340,7 @@ function InsightBand({ insight }: { insight: SpaceContactInsight }) {
             label={
               <span className="inline-flex items-center gap-1.5">
                 <span
-                  className={`h-2 w-2 shrink-0 rounded-full ${
+                  className={`h-2 w-2 shrink-0 rounded-pill ${
                     scores.resonanceHealth == null
                       ? 'bg-subtle'
                       : healthTone(scores.resonanceHealth) === 'success'
@@ -422,7 +422,7 @@ function TimelineRow({ entry }: { entry: TimelineEntry }) {
   const ago = relativeTime(entry.at)
   return (
     <li className="flex gap-3 rounded-2xl border border-border bg-surface p-4 lift-1">
-      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-muted">
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-muted">
         {timelineIcon(entry)}
       </span>
       <div className="min-w-0 flex-1">

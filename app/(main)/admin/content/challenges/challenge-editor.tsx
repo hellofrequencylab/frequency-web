@@ -238,18 +238,18 @@ function ChallengeListItem({
         <div className="flex flex-wrap items-center gap-2">
           <span className="truncate text-sm font-medium text-text">{challenge.name}</span>
           {isExpression ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-2xs font-medium text-primary">
+            <span className="inline-flex items-center gap-1 rounded-pill bg-primary/10 px-2 py-0.5 text-2xs font-medium text-primary">
               <Mountain className="h-3 w-3" /> Expression
             </span>
           ) : (
-            <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium capitalize text-muted">
+            <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-medium capitalize text-muted">
               {challenge.category}
             </span>
           )}
-          <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium capitalize text-muted">
+          <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-medium capitalize text-muted">
             {challenge.difficulty}
           </span>
-          {!active && <span className="rounded-full bg-warning-bg px-2 py-0.5 text-2xs font-medium text-warning">Paused</span>}
+          {!active && <span className="rounded-pill bg-warning-bg px-2 py-0.5 text-2xs font-medium text-warning">Paused</span>}
         </div>
         <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-subtle">
           target {challenge.target} · <Zap className="h-3 w-3 text-primary" /> {challenge.zaps_reward} ·{' '}

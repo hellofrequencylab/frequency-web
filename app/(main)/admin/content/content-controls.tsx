@@ -54,12 +54,12 @@ function ToggleSwitch({
       onClick={toggle}
       disabled={pending}
       title={optimistic ? titleOn : titleOff}
-      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-60 ${
+      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-pill border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-60 ${
         optimistic ? 'bg-success' : 'bg-border-strong'
       }`}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform ${
+        className={`inline-block h-4 w-4 transform rounded-pill bg-surface shadow transition-transform ${
           optimistic ? 'translate-x-4' : 'translate-x-0'
         }`}
       />
@@ -262,12 +262,12 @@ export function JourneyOfficialControl({
         }}
         disabled={pending}
         title={optimisticOfficial ? 'Official. Click to remove' : 'Not official. Click to mark official'}
-        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-60 ${
+        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-pill border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-60 ${
           optimisticOfficial ? 'bg-success' : 'bg-border-strong'
         }`}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform ${
+          className={`inline-block h-4 w-4 transform rounded-pill bg-surface shadow transition-transform ${
             optimisticOfficial ? 'translate-x-4' : 'translate-x-0'
           }`}
         />

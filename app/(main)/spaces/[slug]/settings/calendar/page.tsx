@@ -170,7 +170,7 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
           {events.length > 0 ? (
             <EventCalendar events={events} initialYear={initialYear} initialMonth1={initialMonth1} />
           ) : (
-            <div className="rounded-xl border border-dashed border-border bg-surface px-4 py-10 text-center">
+            <div className="rounded-card border border-dashed border-border bg-surface px-4 py-10 text-center">
               <p className="text-sm font-semibold text-text">Your calendar is ready.</p>
               <p className="mt-1 text-sm text-muted">
                 Create an event and it shows up here, on your public Calendar tab, and in the subscribe feed.

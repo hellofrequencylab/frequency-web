@@ -117,7 +117,7 @@ function TypeBlock({ block }: { block: TypeDefaultBlock }) {
                       {r.planGated && (
                         <span
                           title="Plan tool. It turns on when a plan grants it; this only sets its lowest role."
-                          className="inline-flex items-center rounded-full bg-surface-elevated px-1.5 py-0.5 text-xs font-semibold text-muted"
+                          className="inline-flex items-center rounded-pill bg-surface-elevated px-1.5 py-0.5 text-xs font-semibold text-muted"
                         >
                           Plan
                         </span>
@@ -125,7 +125,7 @@ function TypeBlock({ block }: { block: TypeDefaultBlock }) {
                       {isCustom && (
                         <span
                           title={`Default: ${r.defaultEnabled ? 'on' : 'off'}, ${ROLE_LABEL[r.defaultMinRole]}`}
-                          className="inline-flex items-center gap-0.5 rounded-full bg-primary-bg px-1.5 py-0.5 text-xs font-semibold text-primary-strong"
+                          className="inline-flex items-center gap-0.5 rounded-pill bg-primary-bg px-1.5 py-0.5 text-xs font-semibold text-primary-strong"
                         >
                           <RotateCcw className="h-2.5 w-2.5" /> custom
                         </span>

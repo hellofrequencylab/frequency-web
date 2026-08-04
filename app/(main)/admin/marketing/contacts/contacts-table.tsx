@@ -137,7 +137,7 @@ export function ContactsTable({ contacts }: { contacts: ContactCore[] }) {
     <div className="space-y-3">
       {/* Bulk action bar — only when something is picked. */}
       {selected.size > 0 && (
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface-elevated/50 px-3 py-2">
+        <div className="flex flex-wrap items-center gap-2 rounded-card border border-border bg-surface-elevated/50 px-3 py-2">
           <span className="text-sm font-medium text-text">{selected.size} selected</span>
           <span className="text-subtle">·</span>
           <Button type="button" size="sm" variant="secondary" onClick={() => bulkConsent('subscribed')} disabled={pending}>

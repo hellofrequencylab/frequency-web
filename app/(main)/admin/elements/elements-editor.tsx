@@ -60,9 +60,9 @@ export function ElementEditor({ def, resolved }: { def: ElementDef; resolved: Re
                 role="switch"
                 aria-checked={settings[f.key] === true}
                 onClick={() => setSettings((s) => ({ ...s, [f.key]: !(s[f.key] === true) }))}
-                className={`inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors ${settings[f.key] === true ? 'border-primary bg-primary' : 'border-border bg-surface-elevated'}`}
+                className={`inline-flex h-6 w-11 shrink-0 items-center rounded-pill border transition-colors ${settings[f.key] === true ? 'border-primary bg-primary' : 'border-border bg-surface-elevated'}`}
               >
-                <span className={`ml-0.5 h-5 w-5 rounded-full bg-canvas shadow transition-transform ${settings[f.key] === true ? 'translate-x-5' : ''}`} />
+                <span className={`ml-0.5 h-5 w-5 rounded-pill bg-canvas shadow transition-transform ${settings[f.key] === true ? 'translate-x-5' : ''}`} />
               </button>
             ) : (
               <select

@@ -265,14 +265,14 @@ export function SpaceMemberComposer({
           {chips.map((chip) => (
             <span
               key={chip.key}
-              className="inline-flex items-center gap-1 rounded-full border border-border bg-canvas px-2.5 py-1 text-xs font-medium text-text"
+              className="inline-flex items-center gap-1 rounded-pill border border-border bg-canvas px-2.5 py-1 text-xs font-medium text-text"
             >
               {chip.label}
               <button
                 type="button"
                 aria-label={`Remove ${chip.label}`}
                 onClick={() => removeChip(chip.key)}
-                className="rounded-full p-0.5 text-subtle transition-colors hover:text-danger"
+                className="rounded-pill p-0.5 text-subtle transition-colors hover:text-danger"
               >
                 <X className="h-3 w-3" aria-hidden />
               </button>

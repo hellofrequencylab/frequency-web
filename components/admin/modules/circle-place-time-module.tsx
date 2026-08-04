@@ -22,7 +22,7 @@ type PlaceTimeData = NonNullable<Awaited<ReturnType<typeof getCirclePlaceTimeDat
 const CircleLocationPicker = dynamic(() => import('@/components/events/event-location-picker'), {
   ssr: false,
   loading: () => (
-    <div className="h-56 w-full animate-pulse rounded-xl border border-border bg-surface-elevated" />
+    <div className="h-56 w-full animate-pulse rounded-card border border-border bg-surface-elevated" />
   ),
 })
 

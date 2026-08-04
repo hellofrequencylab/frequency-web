@@ -195,7 +195,7 @@ export function BetaCampaignWorkspace({
         <section aria-label="Beta email sequence" className="min-w-0">
           <SectionHeader title="Beta email sequence" count={total} />
           {total === 0 ? (
-            <p className="rounded-xl border border-dashed border-border px-3 py-8 text-center text-xs text-muted">
+            <p className="rounded-card border border-dashed border-border px-3 py-8 text-center text-xs text-muted">
               No beta emails yet. Start one below.
             </p>
           ) : (
@@ -211,7 +211,7 @@ export function BetaCampaignWorkspace({
                       }`}
                     >
                       <span
-                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-2xs font-bold tabular-nums ${
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-pill text-2xs font-bold tabular-nums ${
                           active ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-muted'
                         }`}
                         aria-hidden
@@ -273,7 +273,7 @@ export function BetaCampaignWorkspace({
             type="button"
             onClick={onNew}
             disabled={pending}
-            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2.5 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text disabled:opacity-50"
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-card border border-dashed border-border py-2.5 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text disabled:opacity-50"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Plus className="h-4 w-4" aria-hidden />}
             New email

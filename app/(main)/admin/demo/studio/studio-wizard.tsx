@@ -102,7 +102,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
         <div className="mb-4 flex flex-wrap gap-2">
           {PRESETS.map((p) => (
             <button key={p.label} type="button" onClick={() => applyPreset(p)}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${activePreset === p ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-primary-bg'}`}>
+              className={`rounded-pill border px-3 py-1 text-xs font-medium transition-colors ${activePreset === p ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-primary-bg'}`}>
               {p.label}
             </button>
           ))}
@@ -120,7 +120,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
         <div className="mb-3 flex flex-wrap gap-1.5">
           {channels.map((c) => (
             <button key={c.slug} type="button" onClick={() => toggleCh(c.slug)}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${sel.has(c.slug) ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-primary-bg'}`}>
+              className={`rounded-pill border px-3 py-1 text-xs font-medium transition-colors ${sel.has(c.slug) ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-primary-bg'}`}>
               {c.name}
             </button>
           ))}
@@ -156,28 +156,28 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
           <div className="mt-3 space-y-3 text-sm">
             <p className="text-muted">A <b className="text-text">{preview.hub.name}</b> hub led by Guide <b className="text-text">{preview.hub.guide}</b>, over <b className="text-text">{preview.totals.circles}</b> circles with their hosts. <b className="text-text">{preview.totals.people}</b> people, <b className="text-text">{preview.totals.posts}</b> circle posts + <b className="text-text">{preview.totals.replies}</b> replies, <b className="text-text">{preview.totals.walls}</b> wall/feed posts, <b className="text-text">{preview.totals.friendships}</b> friendships, <b className="text-text">{preview.totals.events}</b> events, <b className="text-text">{preview.totals.dispatches}</b> dispatches, <b className="text-text">{preview.totals.journeys}</b> journeys, <b className="text-text">{preview.totals.connections}</b> cross-circle links, plus RSVPs, reactions, practice logs &amp; achievements.</p>
             <div className="flex flex-wrap gap-1.5">
-              {preview.circles.map((c, i) => <span key={i} className="rounded-full bg-surface-elevated px-2 py-0.5 text-xs text-subtle">{c.name} · {c.members}</span>)}
+              {preview.circles.map((c, i) => <span key={i} className="rounded-pill bg-surface-elevated px-2 py-0.5 text-xs text-subtle">{c.name} · {c.members}</span>)}
             </div>
-            <div className="rounded-xl border border-border bg-canvas p-3">
+            <div className="rounded-card border border-border bg-canvas p-3">
               <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">Sample people</p>
               {preview.samplePeople.map((p, i) => <p key={i} className="text-text">{p.name} <span className="text-subtle">@{p.handle} · {p.rank}</span> · <span className="text-muted">{p.bio}</span></p>)}
             </div>
             {preview.sampleThread && (
-              <div className="rounded-xl border border-border bg-canvas p-3">
+              <div className="rounded-card border border-border bg-canvas p-3">
                 <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">Sample thread</p>
                 <p className="text-text"><b>{preview.sampleThread.author}</b>: {preview.sampleThread.body}</p>
                 {preview.sampleThread.replies.map((r, i) => <p key={i} className="ml-3 text-muted">↳ <b className="text-text">{r.author}</b>: {r.body}</p>)}
               </div>
             )}
             {preview.sampleDispatch && (
-              <div className="rounded-xl border border-border bg-canvas p-3">
+              <div className="rounded-card border border-border bg-canvas p-3">
                 <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">Sample dispatch</p>
                 <p className="text-text"><b>{preview.sampleDispatch.title}</b></p>
                 <p className="text-muted">{preview.sampleDispatch.body}</p>
               </div>
             )}
             {preview.sampleWall && (
-              <div className="rounded-xl border border-border bg-canvas p-3">
+              <div className="rounded-card border border-border bg-canvas p-3">
                 <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">Sample wall post</p>
                 <p className="text-muted">{preview.sampleWall.body}</p>
               </div>

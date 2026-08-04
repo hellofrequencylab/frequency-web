@@ -28,7 +28,7 @@ export async function AccountSection() {
             {blocked.map((p) => (
               <li key={p.id} className="flex items-center justify-between gap-4 px-4 py-3">
                 <Link href={`/people/${p.handle}`} className="flex items-center gap-3 min-w-0">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-xs font-semibold text-muted">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-xs font-semibold text-muted">
                     {getInitials(p.display_name)}
                   </span>
                   <span className="min-w-0">

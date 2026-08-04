@@ -133,7 +133,7 @@ export function ThreadResizeHandle() {
         setStoredHeight(null, true)
       }}
     >
-      <span className="h-1 w-10 rounded-full bg-border" aria-hidden />
+      <span className="h-1 w-10 rounded-pill bg-border" aria-hidden />
     </div>
   )
 }

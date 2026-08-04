@@ -197,7 +197,7 @@ function ExpressionPillarLine({ expressionDone }: { expressionDone: boolean }) {
       style={expressionPillarStyle()}
     >
       <span
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full"
+        className="inline-flex h-5 w-5 items-center justify-center rounded-pill"
         style={
           expressionDone
             ? { background: 'var(--rank)', color: 'var(--color-on-primary)' }

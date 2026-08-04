@@ -179,7 +179,7 @@ export function SpacePagePanel({
               </div>
               {comingSoon && (
                 <p
-                  className="mt-3 rounded-xl border border-border bg-surface-elevated/60 px-3 py-2 text-sm font-medium text-text"
+                  className="mt-3 rounded-card border border-border bg-surface-elevated/60 px-3 py-2 text-sm font-medium text-text"
                   role="status"
                 >
                   Coming soon. Standalone websites are on the way. For now your profile is your public page.
@@ -230,7 +230,7 @@ function PageRow({
   return (
     <li
       className={cn(
-        'flex items-center gap-3 rounded-xl border bg-surface p-3 lift-1 transition-colors',
+        'flex items-center gap-3 rounded-card border bg-surface p-3 lift-1 transition-colors',
         active ? 'border-primary ring-1 ring-primary' : 'border-border',
       )}
     >
@@ -265,7 +265,7 @@ function PageRow({
         >
           <span className="block truncate text-sm font-semibold text-text">{page.label}</span>
           {page.system && (
-            <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+            <span className="shrink-0 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
               Main
             </span>
           )}
@@ -340,7 +340,7 @@ function AddPageRow({
 
   if (atCap) {
     return (
-      <p className="mt-3 rounded-xl border border-border bg-surface p-3 text-xs text-muted">
+      <p className="mt-3 rounded-card border border-border bg-surface p-3 text-xs text-muted">
         You have reached the limit of {maxPages} pages. Delete a page to add another.
       </p>
     )
@@ -376,7 +376,7 @@ function AddPageRow({
  *  billing settings where the plan is chosen. */
 function AddPagesUpsell({ slug }: { slug: string }) {
   return (
-    <div className="mt-3 rounded-xl border border-border bg-surface p-4">
+    <div className="mt-3 rounded-card border border-border bg-surface p-4">
       <p className="flex items-center gap-2 text-sm font-semibold text-text">
         <Globe className="h-4 w-4 text-primary" aria-hidden />
         Add more pages with your own website

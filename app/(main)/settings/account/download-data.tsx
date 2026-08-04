@@ -14,7 +14,7 @@ export function DownloadData() {
   const [pending, start] = useTransition()
 
   return (
-    <div className="rounded-xl border border-border bg-surface-elevated p-4">
+    <div className="rounded-card border border-border bg-surface-elevated p-4">
       <h3 className="font-semibold text-text">Download your data</h3>
       <p className="mt-1 text-sm text-muted">
         Get a copy of the data we hold for you: your profile, posts, practice logs,

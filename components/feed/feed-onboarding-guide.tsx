@@ -174,7 +174,7 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
         {status.steps.map((s) => (
           <span
             key={s.key}
-            className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
+            className={`h-1.5 flex-1 rounded-pill transition-all duration-500 ${
               s.done ? 'bg-broadcast' : s.key === current.key ? 'bg-broadcast/40' : 'bg-broadcast-bg'
             }`}
           />
@@ -188,7 +188,7 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
           return (
             <div key={step.key} className="group flex items-center gap-2.5 rounded-lg px-1.5 py-1.5">
               <span
-                className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-pill ${
                   step.done
                     ? 'bg-broadcast text-on-broadcast'
                     : isCurrent
@@ -196,7 +196,7 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
                       : 'border border-broadcast-bg text-subtle'
                 }`}
               >
-                {step.done ? <Check className="h-3 w-3" strokeWidth={3} /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />}
+                {step.done ? <Check className="h-3 w-3" strokeWidth={3} /> : <span className="h-1.5 w-1.5 rounded-pill bg-current" />}
               </span>
               {step.done ? (
                 <span className="flex-1 text-sm text-subtle line-through decoration-broadcast/40">{step.label}</span>

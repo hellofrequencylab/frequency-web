@@ -15,7 +15,7 @@ export function PresenceDot({
     <span
       title={title}
       aria-label={title}
-      className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-surface ${className}`}
+      className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-pill bg-success ring-2 ring-surface ${className}`}
     />
   )
 }

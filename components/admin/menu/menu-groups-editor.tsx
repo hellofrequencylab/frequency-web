@@ -620,7 +620,7 @@ function Bucket({
           type="button"
           onClick={onAddItem}
           disabled={isPending}
-          className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border px-3 py-3 text-xs font-medium text-subtle transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+          className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-card border border-dashed border-border px-3 py-3 text-xs font-medium text-subtle transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
         >
           <Plus className="h-3.5 w-3.5" aria-hidden />
           Add a link, or drop one here

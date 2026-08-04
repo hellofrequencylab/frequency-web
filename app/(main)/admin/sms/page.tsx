@@ -140,15 +140,15 @@ export default async function AdminSmsPage() {
         >
           {consent ? (
             <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-xl border border-border bg-surface p-3">
+              <div className="rounded-card border border-border bg-surface p-3">
                 <p className="text-2xl font-bold tabular-nums text-text">{consent.consented.toLocaleString()}</p>
                 <p className="mt-0.5 text-xs text-muted">Opted in</p>
               </div>
-              <div className="rounded-xl border border-border bg-surface p-3">
+              <div className="rounded-card border border-border bg-surface p-3">
                 <p className="text-2xl font-bold tabular-nums text-text">{consent.optedOut.toLocaleString()}</p>
                 <p className="mt-0.5 text-xs text-muted">Opted out</p>
               </div>
-              <div className="rounded-xl border border-border bg-surface p-3">
+              <div className="rounded-card border border-border bg-surface p-3">
                 <p className="text-2xl font-bold tabular-nums text-text">{consent.pending.toLocaleString()}</p>
                 <p className="mt-0.5 text-xs text-muted">Pending or failed</p>
               </div>

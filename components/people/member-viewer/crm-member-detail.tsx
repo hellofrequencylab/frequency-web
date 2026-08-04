@@ -81,12 +81,12 @@ function Avatar({ detail }: { detail: CrmMemberDetail }) {
         width={56}
         height={56}
         style={avatarFocusStyle(detail.avatarUrl)}
-        className="h-14 w-14 rounded-full object-cover"
+        className="h-14 w-14 rounded-pill object-cover"
       />
     )
   }
   return (
-    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-bg text-lg font-semibold text-primary-strong select-none">
+    <div className="flex h-14 w-14 items-center justify-center rounded-pill bg-primary-bg text-lg font-semibold text-primary-strong select-none">
       {getInitials(detail.displayName)}
     </div>
   )
@@ -305,7 +305,7 @@ export function CrmMemberDetailPane({
               {detail.roles.map((r) => (
                 <span
                   key={r.label}
-                  className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-2xs font-semibold', roleToneClass(r.tone))}
+                  className={cn('inline-flex items-center rounded-pill border px-2 py-0.5 text-2xs font-semibold', roleToneClass(r.tone))}
                 >
                   {r.label}
                 </span>
@@ -480,17 +480,17 @@ function ComposeContextRail({ detail }: { detail: CrmMemberDetail }) {
       {scores && (scores.health != null || scores.tier || scores.lifecycle) && (
         <div className="flex flex-wrap gap-1.5">
           {scores.health != null && (
-            <span className="inline-flex items-center rounded-full border border-border bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+            <span className="inline-flex items-center rounded-pill border border-border bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
               Health {Math.round(scores.health)}
             </span>
           )}
           {scores.tier && (
-            <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
+            <span className="inline-flex items-center rounded-pill border border-primary/30 bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
               {scores.tier}
             </span>
           )}
           {scores.lifecycle && (
-            <span className="inline-flex items-center rounded-full border border-border bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+            <span className="inline-flex items-center rounded-pill border border-border bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
               {scores.lifecycle}
             </span>
           )}
@@ -520,7 +520,7 @@ function ComposeContextRail({ detail }: { detail: CrmMemberDetail }) {
           <ol className="space-y-3 border-l border-border pl-4">
             {interactions.map((it, i) => (
               <li key={`${it.kind}-${it.when}-${i}`} className="relative">
-                <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-primary" aria-hidden />
+                <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-pill bg-primary" aria-hidden />
                 <p className="text-xs font-semibold text-text">
                   {it.kind} <span className="font-normal text-subtle">· {it.when}</span>
                 </p>

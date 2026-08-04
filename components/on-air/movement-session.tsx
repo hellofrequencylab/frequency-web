@@ -1001,7 +1001,7 @@ export function MovementSession({
       <Overlay>
         {/* Sequenced run (P6): a progress chip; when more remain, closing this rolls into the next. */}
         {queuePosition && (
-          <div className="mx-auto shrink-0 rounded-full bg-surface-elevated px-3 py-1.5 text-center text-xs font-medium text-muted">
+          <div className="mx-auto shrink-0 rounded-pill bg-surface-elevated px-3 py-1.5 text-center text-xs font-medium text-muted">
             Practice {queuePosition.index + 1} of {queuePosition.total}
             {hasNext ? ' · closing this starts the next' : ' · last one'}
           </div>
@@ -1105,7 +1105,7 @@ export function MovementSession({
                   Settling into {targetLabel.replace(' session', '')}
                 </p>
               )}
-              <div className="flex h-56 w-56 items-center justify-center rounded-full ring-4 ring-move/40">
+              <div className="flex h-56 w-56 items-center justify-center rounded-pill ring-4 ring-move/40">
                 <p className="text-7xl font-semibold tabular-nums text-move">{preroll}</p>
               </div>
               {/* The warm-up message (ADR-592): a Journey step's override (P5) wins over the
@@ -1127,7 +1127,7 @@ export function MovementSession({
 
               {/* The phase chip — color-coded, with the round counter for Strength. */}
               <span
-                className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ${tone.bg} ${tone.text}`}
+                className={`rounded-pill px-3 py-1 text-xs font-bold uppercase tracking-widest ${tone.bg} ${tone.text}`}
               >
                 {pos.phase.label}
                 {plan.rounds > 1 && pos.phase.kind !== 'prepare' && (
@@ -1140,7 +1140,7 @@ export function MovementSession({
               {/* The big clock. A timed phase rings its ringed wash; the final 3s flips
                   the ring to danger. Play counts up with no ring. */}
               <div
-                className={`flex h-56 w-56 items-center justify-center rounded-full ring-4 transition-colors ${
+                className={`flex h-56 w-56 items-center justify-center rounded-pill ring-4 transition-colors ${
                   closing ? 'ring-danger/60' : tone.ring
                 } ${ended ? 'opacity-60' : ''}`}
               >
@@ -1163,7 +1163,7 @@ export function MovementSession({
             <button
               type="button"
               onClick={restoreCues}
-              className="rounded-full border border-move/50 bg-move-bg/40 px-3 py-1.5 text-xs font-medium text-move transition-colors hover:bg-move-bg/60"
+              className="rounded-pill border border-move/50 bg-move-bg/40 px-3 py-1.5 text-xs font-medium text-move transition-colors hover:bg-move-bg/60"
             >
               Tap to restore sound
             </button>
@@ -1201,14 +1201,14 @@ export function MovementSession({
               }
               togglePause()
             }}
-            className="min-w-44 rounded-full bg-primary px-10 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+            className="min-w-44 rounded-pill bg-primary px-10 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
           >
             {warming ? 'Begin now' : ended ? 'Finish' : paused ? 'Resume' : 'Pause'}
           </button>
           <button
             type="button"
             onClick={() => void finish()}
-            className="rounded-full px-4 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
+            className="rounded-pill px-4 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
           >
             Stop &amp; Log
           </button>
@@ -1217,7 +1217,7 @@ export function MovementSession({
           <button
             type="button"
             onClick={leave}
-            className="rounded-full px-4 py-1 text-2xs font-medium text-muted transition-colors hover:text-danger"
+            className="rounded-pill px-4 py-1 text-2xs font-medium text-muted transition-colors hover:text-danger"
           >
             Cancel · don&rsquo;t log
           </button>
@@ -1245,7 +1245,7 @@ export function MovementSession({
                 type="button"
                 onClick={leave}
                 aria-label="Close"
-                className="absolute -right-2 -top-1 rounded-full p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+                className="absolute -right-2 -top-1 rounded-pill p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -1396,7 +1396,7 @@ export function MovementSession({
         )}
 
         {mode === 'play' && (
-          <div className="rounded-xl border border-border px-4 py-3 text-sm text-muted">
+          <div className="rounded-card border border-border px-4 py-3 text-sm text-muted">
             An open count-up. Start, move, and Stop when you are done.
           </div>
         )}
@@ -1448,7 +1448,7 @@ export function MovementSession({
             {/* The journey-week chip (mirrors session.tsx): the leg replaces the member's own
                 practices by design; the chip makes that a visible mode. */}
             {journeyLegs.length > 0 && (
-              <p className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-move/30 bg-move-bg/20 px-2.5 py-0.5 text-2xs font-semibold text-move">
+              <p className="inline-flex max-w-full items-center gap-1.5 rounded-pill border border-move/30 bg-move-bg/20 px-2.5 py-0.5 text-2xs font-semibold text-move">
                 <span className="truncate">
                   {journeyLegs[0].week != null
                     ? `Week ${journeyLegs[0].week} of ${journeyLegs[0].weeks} · ${journeyLegs[0].title}`
@@ -1566,7 +1566,7 @@ function Stepper({
   className?: string
 }) {
   return (
-    <div className={`flex items-center justify-between rounded-xl border border-border px-1.5 ${className}`}>
+    <div className={`flex items-center justify-between rounded-card border border-border px-1.5 ${className}`}>
       <button
         type="button"
         onClick={onLess}

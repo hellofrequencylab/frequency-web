@@ -63,11 +63,11 @@ function ConnectionRow({ connection, rank }: { connection: StrongConnection; ran
       </div>
       {/* The strength meter: an accessible bar, semantic tokens only (no graph-viz, no hardcoded hex). */}
       <div
-        className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-elevated"
+        className="mt-2 h-1.5 overflow-hidden rounded-pill bg-surface-elevated"
         role="img"
         aria-label={`Resonance strength ${pct} percent`}
       >
-        <div className={`h-full rounded-full ${scoreTone(connection.score)}`} style={{ width: `${Math.max(4, pct)}%` }} />
+        <div className={`h-full rounded-pill ${scoreTone(connection.score)}`} style={{ width: `${Math.max(4, pct)}%` }} />
       </div>
       <p className="mt-2 text-xs text-muted">Because {why}.</p>
     </li>

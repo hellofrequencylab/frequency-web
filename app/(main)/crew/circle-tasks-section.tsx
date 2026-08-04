@@ -114,11 +114,11 @@ export async function CircleTasksSection({
                         alt={task.assignee.displayName}
                         width={16}
                         height={16}
-                        className="w-4 h-4 rounded-full object-cover shrink-0"
+                        className="w-4 h-4 rounded-pill object-cover shrink-0"
                         style={avatarFocusStyle(task.assignee.avatarUrl)}
                       />
                     ) : (
-                      <span className="w-4 h-4 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                      <span className="w-4 h-4 rounded-pill bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                         {getInitials(task.assignee?.displayName ?? '?')}
                       </span>
                     )}

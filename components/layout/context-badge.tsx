@@ -37,7 +37,7 @@ export function ContextBadge({
 
   if (context.kind === 'admin') {
     return (
-      <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-signal-bg px-2 py-0.5 text-3xs font-semibold leading-tight text-signal-strong">
+      <span className="mt-1 inline-flex items-center gap-1 rounded-pill bg-signal-bg px-2 py-0.5 text-3xs font-semibold leading-tight text-signal-strong">
         <ShieldCheck className="h-3 w-3 shrink-0" aria-hidden />
         Admin
       </span>
@@ -48,7 +48,7 @@ export function ContextBadge({
   const opt = operatorOptionFor(context, available)
   if (!opt) return null
   return (
-    <span className="mt-1 inline-flex max-w-full items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-3xs font-semibold leading-tight text-muted">
+    <span className="mt-1 inline-flex max-w-full items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-3xs font-semibold leading-tight text-muted">
       {opt.logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- operator-supplied Space logo URL, not a build-time asset (matches BrandMark / SpaceCard)
         <img src={opt.logoUrl} alt="" className="h-3 w-3 shrink-0 rounded-sm object-contain" />

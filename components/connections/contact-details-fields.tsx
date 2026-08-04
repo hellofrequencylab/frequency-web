@@ -390,7 +390,7 @@ export function DetailsView({ details }: { details: ContactDetails }) {
         <ViewSection label="Services">
           <div className="flex flex-wrap gap-1.5">
             {details.services.map((s, i) => (
-              <span key={i} className="rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-text">{s}</span>
+              <span key={i} className="rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-text">{s}</span>
             ))}
           </div>
         </ViewSection>
@@ -399,7 +399,7 @@ export function DetailsView({ details }: { details: ContactDetails }) {
         <ViewSection label="Certifications">
           <div className="flex flex-wrap gap-1.5">
             {details.certifications.map((c, i) => (
-              <span key={i} className="rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-text">{c}</span>
+              <span key={i} className="rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-text">{c}</span>
             ))}
           </div>
         </ViewSection>

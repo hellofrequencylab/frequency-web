@@ -443,7 +443,7 @@ export default async function CommunityPage({
                   : 'border-border bg-surface text-text hover:border-primary hover:text-primary-strong'
               }`}
             >
-              <span className={`h-1.5 w-1.5 rounded-full ${onlineFilter ? 'bg-on-primary' : 'bg-success'}`} />
+              <span className={`h-1.5 w-1.5 rounded-pill ${onlineFilter ? 'bg-on-primary' : 'bg-success'}`} />
               Online now
             </Link>
           }
@@ -508,7 +508,7 @@ export default async function CommunityPage({
                     href={l.href ?? '#'}
                     className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition-colors hover:bg-surface-elevated"
                   >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-bg text-sm font-semibold text-primary-strong select-none">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-sm font-semibold text-primary-strong select-none">
                       {getInitials(l.displayName)}
                     </span>
                     <span className="min-w-0 flex-1">

@@ -110,7 +110,7 @@ export function MatchPrefsForm({
       </div>
 
       {romance && (
-        <div className="flex items-start gap-2 rounded-xl border border-border bg-surface-elevated px-3 py-2.5">
+        <div className="flex items-start gap-2 rounded-card border border-border bg-surface-elevated px-3 py-2.5">
           <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted" />
           <p className="text-2xs text-muted">
             The safe way to meet is still at a circle or a public event. You can turn this off anytime.
@@ -141,12 +141,12 @@ function Toggle({ on, label, onToggle }: { on: boolean; label: string; onToggle:
       aria-checked={on}
       aria-label={label}
       onClick={onToggle}
-      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-pill transition-colors ${
         on ? 'bg-primary' : 'bg-surface-elevated border border-border'
       }`}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform ${
+        className={`inline-block h-4 w-4 transform rounded-pill bg-surface shadow transition-transform ${
           on ? 'translate-x-6' : 'translate-x-1'
         }`}
       />

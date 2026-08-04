@@ -21,7 +21,7 @@ function ReviewRow({ r }: { r: ModeratedReview }) {
   })
   const hidden = r.status === 'hidden'
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Link href={`/market/${r.productId}`} className="min-w-0 truncate font-medium text-text hover:text-primary">
           {r.productTitle}
@@ -29,7 +29,7 @@ function ReviewRow({ r }: { r: ModeratedReview }) {
         <div className="flex items-center gap-2">
           <Stars value={r.rating} />
           {hidden && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+            <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-muted">
               <EyeOff className="h-3 w-3" aria-hidden /> Hidden
             </span>
           )}

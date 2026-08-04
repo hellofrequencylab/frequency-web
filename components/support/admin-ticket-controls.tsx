@@ -118,7 +118,7 @@ export function AdminTicketControls({
         </label>
       </div>
 
-      <div className="rounded-xl border border-border bg-surface p-3">
+      <div className="rounded-card border border-border bg-surface p-3">
         <div className="mb-2 flex items-center gap-1 rounded-lg bg-surface-elevated p-0.5 text-xs">
           <button type="button" onClick={() => setInternal(false)} aria-pressed={!internal} className={`flex-1 rounded-md px-2 py-1 font-semibold transition-colors ${!internal ? 'bg-surface text-primary-strong lift-1' : 'text-muted'}`}>
             Reply to member

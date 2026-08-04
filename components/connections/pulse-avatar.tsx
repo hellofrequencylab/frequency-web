@@ -24,10 +24,10 @@ export function PulseAvatar({
           width={36}
           height={36}
           style={avatarFocusStyle(avatarUrl)}
-          className="h-9 w-9 rounded-full object-cover"
+          className="h-9 w-9 rounded-pill object-cover"
         />
       ) : (
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-bg text-2xs font-semibold text-primary-strong select-none">
+        <div className="flex h-9 w-9 items-center justify-center rounded-pill bg-primary-bg text-2xs font-semibold text-primary-strong select-none">
           {getInitials(displayName)}
         </div>
       )}

@@ -129,7 +129,7 @@ export function TimelinePanel({
             const Icon = CHANNEL_ICON[e.channel] ?? Activity
             return (
               <li key={e.id} className="relative">
-                <span className="absolute -left-[27px] flex h-5 w-5 items-center justify-center rounded-full bg-surface-elevated text-primary-strong">
+                <span className="absolute -left-[27px] flex h-5 w-5 items-center justify-center rounded-pill bg-surface-elevated text-primary-strong">
                   <Icon className="h-3 w-3" />
                 </span>
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">

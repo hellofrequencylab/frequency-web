@@ -252,7 +252,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
                 />
               </div>
             </div>
-            <div className="flex items-center justify-between rounded-xl border border-border bg-surface-elevated/40 px-3 py-2.5">
+            <div className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/40 px-3 py-2.5">
               <div>
                 <p className="text-sm font-semibold text-text">Live</p>
                 <p className="text-2xs text-muted">On = reaching members once Phase B fires it.</p>
@@ -264,12 +264,12 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
                 aria-label={wt.active ? 'Switch off' : 'Switch on'}
                 disabled={pending}
                 onClick={toggleActive}
-                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+                className={`relative h-6 w-11 shrink-0 rounded-pill transition-colors disabled:opacity-50 ${
                   wt.active ? 'bg-success' : 'bg-surface-elevated'
                 }`}
               >
                 <span
-                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow transition-transform ${
+                  className={`absolute top-0.5 h-5 w-5 rounded-pill bg-surface shadow transition-transform ${
                     wt.active ? 'translate-x-[22px]' : 'translate-x-0.5'
                   }`}
                 />
@@ -312,7 +312,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
                     }`}
                   >
                     <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-subtle active:cursor-grabbing" aria-hidden />
-                    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${ACCENT_CLASSES[st.accent].solid}`} />
+                    <span className={`h-2.5 w-2.5 shrink-0 rounded-pill ${ACCENT_CLASSES[st.accent].solid}`} />
                     <span className="min-w-0 flex-1 truncate font-medium text-text">
                       {i + 1}. {st.title || 'Untitled slide'}
                     </span>
@@ -396,7 +396,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
                       aria-label={ACCENT_TOKENS[a].label}
                       aria-pressed={step.accent === a}
                       onClick={() => setStep(selected, { accent: a })}
-                      className={`h-7 w-7 rounded-full ${ACCENT_TOKENS[a].swatch} ring-offset-2 ring-offset-surface transition ${
+                      className={`h-7 w-7 rounded-pill ${ACCENT_TOKENS[a].swatch} ring-offset-2 ring-offset-surface transition ${
                         step.accent === a ? 'ring-2 ring-text' : 'ring-1 ring-border hover:ring-text/40'
                       }`}
                     />

@@ -132,9 +132,9 @@ export function StaffRoleManager({ members }: { members: StaffMemberRow[] }) {
           {members.map((m) => (
             <li key={m.profileId} className="flex items-center gap-3 p-3">
               {m.avatarUrl ? (
-                <Image src={avatarSrc(m.avatarUrl)} alt={m.displayName} width={36} height={36} className="h-9 w-9 shrink-0 rounded-full object-cover" style={avatarFocusStyle(m.avatarUrl)} />
+                <Image src={avatarSrc(m.avatarUrl)} alt={m.displayName} width={36} height={36} className="h-9 w-9 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(m.avatarUrl)} />
               ) : (
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-bg text-xs font-semibold text-primary-strong">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-xs font-semibold text-primary-strong">
                   {getInitials(m.displayName)}
                 </span>
               )}

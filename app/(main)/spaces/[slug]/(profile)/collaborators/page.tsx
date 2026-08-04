@@ -27,7 +27,7 @@ export default async function SpaceCollaboratorsProfilePage({ params }: { params
         <p className="text-sm text-muted">Businesses that operate together with {brandName}.</p>
       </div>
       {collaborators.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border bg-surface px-4 py-6 text-center text-sm text-muted">
+        <p className="rounded-card border border-dashed border-border bg-surface px-4 py-6 text-center text-sm text-muted">
           No collaborators yet.
         </p>
       ) : (
@@ -36,7 +36,7 @@ export default async function SpaceCollaboratorsProfilePage({ params }: { params
             <Link
               key={v.id}
               href={`/spaces/${v.partner.slug}`}
-              className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4 transition-colors hover:bg-surface-elevated"
+              className="flex items-center gap-3 rounded-card border border-border bg-surface p-4 transition-colors hover:bg-surface-elevated"
             >
               {v.partner.logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- operator-supplied space logo, not a build asset

@@ -80,7 +80,7 @@ export async function RecentSends({ spaceId, limit }: { spaceId: string; limit?:
               </p>
             </div>
             <span
-              className={`shrink-0 rounded-full px-2.5 py-0.5 text-2xs font-semibold ${statusTone(s.status)}`}
+              className={`shrink-0 rounded-pill px-2.5 py-0.5 text-2xs font-semibold ${statusTone(s.status)}`}
             >
               {STATUS_LABEL[s.status]}
             </span>

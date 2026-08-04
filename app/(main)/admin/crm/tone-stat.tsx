@@ -36,7 +36,7 @@ export function ToneStat({
     <StatCard
       label={
         <span className="inline-flex items-center gap-1.5">
-          <span className={`h-2 w-2 shrink-0 rounded-full ${DOT[tone]}`} aria-hidden />
+          <span className={`h-2 w-2 shrink-0 rounded-pill ${DOT[tone]}`} aria-hidden />
           {label}
         </span>
       }

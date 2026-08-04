@@ -38,8 +38,8 @@ export function IconsLaneView() {
                     <span
                       className={
                         set.role === 'house'
-                          ? 'rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-on-primary'
-                          : 'rounded-full border border-border px-2 py-0.5 text-xs text-muted'
+                          ? 'rounded-pill bg-primary px-2 py-0.5 text-xs font-medium text-on-primary'
+                          : 'rounded-pill border border-border px-2 py-0.5 text-xs text-muted'
                       }
                     >
                       {set.role === 'house' ? 'House' : 'Coverage'}
@@ -54,7 +54,7 @@ export function IconsLaneView() {
                   href={set.license.url ?? '#'}
                   target="_blank"
                   rel="noreferrer"
-                  className="shrink-0 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-ink hover:bg-surface-elevated"
+                  className="shrink-0 rounded-pill border border-border px-2.5 py-1 text-xs font-medium text-ink hover:bg-surface-elevated"
                 >
                   {set.license.title} license
                 </a>
@@ -83,7 +83,7 @@ export function IconsLaneView() {
           {Object.entries(ICONS).map(([key, name]) => (
             <div
               key={key}
-              className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5"
+              className="flex items-center gap-3 rounded-card border border-border bg-surface px-3 py-2.5"
             >
               <Icon name={name} className="size-5 shrink-0 text-primary" />
               <div className="min-w-0">

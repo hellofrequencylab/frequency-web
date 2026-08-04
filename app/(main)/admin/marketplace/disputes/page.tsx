@@ -27,9 +27,9 @@ function DisputeRow({ d, payments }: { d: CommerceDispute; payments: boolean }) 
     minute: '2-digit',
   })
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-primary-strong">
+        <span className="inline-flex items-center gap-1.5 rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-primary-strong">
           {STATUS_LABEL[d.status] ?? d.status}
         </span>
         <span className="text-xs text-subtle">{when}</span>
@@ -86,7 +86,7 @@ export default async function MarketplaceDisputesPage() {
       </div>
 
       {!payments && (
-        <div className="mb-6 rounded-xl border border-border bg-surface-elevated/50 p-4 text-sm text-muted">
+        <div className="mb-6 rounded-card border border-border bg-surface-elevated/50 p-4 text-sm text-muted">
           Payments are not turned on yet, so approving a refund records the decision without moving money. When
           payments go live, an approval runs the real refund.
         </div>

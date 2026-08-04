@@ -56,7 +56,7 @@ export function MergeTagPicker() {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-30 mt-1 w-64 rounded-xl border border-border bg-surface p-1 lift-3"
+          className="absolute right-0 z-30 mt-1 w-64 rounded-card border border-border bg-surface p-1 lift-3"
         >
           <p className="px-2.5 py-1.5 text-3xs font-semibold uppercase tracking-wide text-muted">
             Copy a tag, then paste it in

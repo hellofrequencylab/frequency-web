@@ -19,7 +19,7 @@ export function ScanInviteToggle({ enabled }: { enabled: boolean }) {
   }
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3">
+    <div className="flex items-center gap-3 rounded-card border border-border bg-surface p-3">
       <Mail className="h-4 w-4 shrink-0 text-primary-strong" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-text">Scan-intro emails</p>
@@ -36,12 +36,12 @@ export function ScanInviteToggle({ enabled }: { enabled: boolean }) {
         aria-label="Scan-intro emails"
         disabled={pending}
         onClick={toggle}
-        className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 ${
+        className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-pill transition-colors disabled:opacity-60 ${
           enabled ? 'bg-primary' : 'border border-border-strong bg-surface-elevated'
         }`}
       >
         <span
-          className={`inline-block h-5 w-5 transform rounded-full bg-surface shadow transition-transform ${
+          className={`inline-block h-5 w-5 transform rounded-pill bg-surface shadow transition-transform ${
             enabled ? 'translate-x-6' : 'translate-x-1'
           }`}
         />

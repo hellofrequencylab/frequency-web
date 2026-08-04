@@ -219,7 +219,7 @@ function EventPopupBody({ item, onClose }: { item: SpaceEventsViewItem; onClose:
               <p className="text-xs text-muted">Your ticket is your spot. Checkout is on the event page.</p>
             </div>
           ) : join === null ? (
-            <div className="h-16 w-full max-w-sm animate-pulse rounded-xl bg-surface-elevated" aria-hidden />
+            <div className="h-16 w-full max-w-sm animate-pulse rounded-card bg-surface-elevated" aria-hidden />
           ) : !join.signedIn ? (
             <div className="space-y-2">
               <Link

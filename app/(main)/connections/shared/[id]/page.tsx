@@ -47,7 +47,7 @@ export default async function SharedContactPage({ params }: { params: Promise<{ 
       <DetailTemplate
         title={
           <span className="inline-flex items-center gap-3 align-middle">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-base font-semibold text-muted">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-base font-semibold text-muted">
               {c.displayName ? getInitials(name) : <User className="h-6 w-6" />}
             </span>
             <span className="truncate">{name}</span>
@@ -69,7 +69,7 @@ export default async function SharedContactPage({ params }: { params: Promise<{ 
       >
       <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
         {/* How to act on it: ask the capturing steward for an intro. */}
-        <div className="rounded-xl bg-surface-elevated/60 p-3">
+        <div className="rounded-card bg-surface-elevated/60 p-3">
           <p className="flex items-center gap-1.5 text-sm text-muted">
             <Users className="h-4 w-4 shrink-0" /> Shared to the network by{' '}
             {c.ownerHandle ? (

@@ -161,7 +161,7 @@ export function SpotlightTour({
         }`}
       >
         <div className="flex items-start gap-2.5">
-          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
+          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-primary-strong">
             <Sparkles className="h-4 w-4" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
@@ -184,7 +184,7 @@ export function SpotlightTour({
           {stops.map((s, n) => (
             <span
               key={s.title}
-              className={`h-1.5 rounded-full transition-all ${n === i ? 'w-5 bg-primary' : n < i ? 'w-1.5 bg-primary/50' : 'w-1.5 bg-border-strong'}`}
+              className={`h-1.5 rounded-pill transition-all ${n === i ? 'w-5 bg-primary' : n < i ? 'w-1.5 bg-primary/50' : 'w-1.5 bg-border-strong'}`}
             />
           ))}
         </div>

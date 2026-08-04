@@ -14,9 +14,9 @@ const KIND_LABEL: Record<string, string> = { listing: 'Listing', product: 'Produ
 function ReportRow({ r }: { r: MarketplaceReport }) {
   const when = new Date(r.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-primary-strong">
+        <span className="inline-flex items-center gap-1.5 rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-primary-strong">
           {KIND_LABEL[r.targetKind] ?? r.targetKind}
         </span>
         <span className="text-xs text-subtle">{when} · {r.status}</span>

@@ -64,7 +64,7 @@ export async function ResonanceMatches() {
       </p>
       <ul className="mt-4 space-y-3">
         {matches.map((m) => (
-          <li key={m.profileId} className="flex items-center gap-3 rounded-xl border border-border bg-surface-elevated/40 p-3">
+          <li key={m.profileId} className="flex items-center gap-3 rounded-card border border-border bg-surface-elevated/40 p-3">
             {m.avatarUrl ? (
               <Image
                 src={avatarSrc(m.avatarUrl)}
@@ -72,11 +72,11 @@ export async function ResonanceMatches() {
                 width={44}
                 height={44}
                 sizes="44px"
-                className="h-11 w-11 shrink-0 rounded-full object-cover"
+                className="h-11 w-11 shrink-0 rounded-pill object-cover"
                 style={avatarFocusStyle(m.avatarUrl)}
               />
             ) : (
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-bg text-sm font-semibold text-primary-strong" aria-hidden>
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-sm font-semibold text-primary-strong" aria-hidden>
                 {m.name.slice(0, 1).toUpperCase()}
               </span>
             )}

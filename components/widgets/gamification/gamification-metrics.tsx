@@ -129,7 +129,7 @@ export async function GamificationMetrics() {
     <AdminSection title="Economy metrics (Rewards v2)">
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {metrics.map((m) => (
-          <div key={m.label} className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5">
+          <div key={m.label} className="flex items-center gap-3 rounded-card border border-border bg-surface px-3 py-2.5">
             <span className="text-sm">{m.ok === null ? '·' : m.ok ? '✅' : '⚠️'}</span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-medium text-text">{m.label}</p>

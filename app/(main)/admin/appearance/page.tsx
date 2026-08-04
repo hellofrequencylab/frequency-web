@@ -49,18 +49,18 @@ function ThemeRowCard({ t }: { t: ThemeRow }) {
             {t.name || 'Untitled theme'}
           </Link>
           {/* Kind badge */}
-          <span className="inline-flex items-center rounded-full bg-broadcast-bg px-2 py-0.5 text-xs font-semibold capitalize text-broadcast-strong">
+          <span className="inline-flex items-center rounded-pill bg-broadcast-bg px-2 py-0.5 text-xs font-semibold capitalize text-broadcast-strong">
             {t.kind}
           </span>
           {/* Status badge */}
           <span
-            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE[t.status]}`}
+            className={`inline-flex items-center rounded-pill px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE[t.status]}`}
           >
             {STATUS_LABEL[t.status]}
           </span>
           {/* Default badge */}
           {t.isDefault && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-xs font-semibold text-primary-strong">
+            <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-xs font-semibold text-primary-strong">
               <Star className="h-3 w-3" aria-hidden /> Default
             </span>
           )}

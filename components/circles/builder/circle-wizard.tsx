@@ -41,7 +41,7 @@ const PILLAR_LABELS: Record<PillarSlug, string> = {
 }
 
 const FIELD =
-  'w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
+  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
 type Mode = 'choose' | 'upload' | 'questions' | 'review'
 
@@ -165,7 +165,7 @@ export function CircleWizard() {
             <div className="space-y-2.5">
               <Link
                 href="/circles/templates"
-                className="flex w-full items-start gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated"
+                className="flex w-full items-start gap-3 rounded-card border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated"
               >
                 <LayoutTemplate className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                 <span className="min-w-0">
@@ -179,7 +179,7 @@ export function CircleWizard() {
               <button
                 type="button"
                 onClick={() => setMode('upload')}
-                className="flex w-full items-start gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated"
+                className="flex w-full items-start gap-3 rounded-card border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated"
               >
                 <Upload className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                 <span className="min-w-0">
@@ -193,7 +193,7 @@ export function CircleWizard() {
               <button
                 type="button"
                 onClick={() => setMode('questions')}
-                className="flex w-full items-start gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated"
+                className="flex w-full items-start gap-3 rounded-card border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated"
               >
                 <MessageCircleQuestion className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                 <span className="min-w-0">
@@ -208,7 +208,7 @@ export function CircleWizard() {
                 type="button"
                 onClick={scratch}
                 disabled={pending}
-                className="flex w-full items-start gap-3 rounded-xl border border-dashed border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-surface-elevated disabled:opacity-60"
+                className="flex w-full items-start gap-3 rounded-card border border-dashed border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-surface-elevated disabled:opacity-60"
               >
                 {pending ? (
                   <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-primary-strong" aria-hidden />
@@ -293,7 +293,7 @@ export function CircleWizard() {
                       type="button"
                       aria-pressed={primaryPillar === p}
                       onClick={() => setPrimaryPillar((cur) => (cur === p ? null : p))}
-                      className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                      className={`rounded-pill border px-3.5 py-1.5 text-sm font-medium transition-colors ${
                         primaryPillar === p
                           ? 'border-primary/50 bg-primary-bg text-primary-strong'
                           : 'border-border bg-surface text-muted hover:text-text'
