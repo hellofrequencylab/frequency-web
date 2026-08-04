@@ -71,6 +71,22 @@ describe('StreakMeter', () => {
     }
   })
 
+  // The Reading class owes an EMPTY state (docs/INTERACTION-STATES.md §2): zero is a real
+  // answer, and it must render something a person can read, not a collapsed box.
+  it('reads as a beginning when there are no days yet, not "0 of the last 0"', () => {
+    const c = mount([])
+    expect(c.textContent).toContain('No days logged yet')
+    expect(c.textContent).not.toContain('of the last 0')
+    expect(c.querySelectorAll('[data-day]').length).toBe(0)
+  })
+
+  it('never blames the member for an empty streak', () => {
+    const c = mount([])
+    for (const el of Array.from(c.querySelectorAll('*'))) {
+      expect(el.className).not.toContain('danger')
+    }
+  })
+
   it('renders the optional mono count + label', () => {
     const c = mount(['done', 'done'], { count: 12, label: 'day streak' })
     const value = c.querySelector('.font-mono')

@@ -12,8 +12,12 @@ import { cn } from '@/lib/utils'
 // DAWN alignment (dawn/components/core/IconButton.jsx): role radius on the control,
 // and the quiet-by-default color pair — subtle icon at rest, muted on the warm
 // hover wash (one step quieter than text, so icon clusters never shout).
+// State set per docs/INTERACTION-STATES.md §2 (Action control): rest · hover (the warm wash +
+// the `tone()` icon step) · pressed (`.press`) · focus-visible · disabled. `transform` joins the
+// transition list so the press eases rather than snapping; `motion-reduce:transition-none` guards
+// it (`.press` is already collapsed under prefers-reduced-motion in globals.css).
 const iconControl =
-  'inline-flex h-8 w-8 items-center justify-center rounded-control text-subtle transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50'
+  'inline-flex h-8 w-8 items-center justify-center rounded-control text-subtle press transition-[color,background-color,box-shadow,transform] motion-reduce:transition-none hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50'
 
 function tone(danger?: boolean) {
   return danger ? 'hover:text-danger' : 'hover:text-muted'

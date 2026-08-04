@@ -36,23 +36,36 @@ export function StreakMeter({
   label?: string
 }) {
   const frozen = days.filter((d) => d === 'frozen').length
-  const summary =
-    `${days.filter((d) => d === 'done').length} of the last ${days.length} days done` +
-    (frozen > 0 ? `, ${frozen} bridged by a streak freeze` : '')
+  // EMPTY state (docs/INTERACTION-STATES.md §2, Reading class): zero is a real answer. An
+  // empty run used to render an empty box labelled "0 of the last 0 days done", which is both
+  // unreadable and faintly accusing. It now reads as a beginning, in the same tone as a missed
+  // day: an absence, not a failure.
+  const empty = days.length === 0
+  const summary = empty
+    ? 'No days logged yet'
+    : `${days.filter((d) => d === 'done').length} of the last ${days.length} days done` +
+      (frozen > 0 ? `, ${frozen} bridged by a streak freeze` : '')
   return (
     <div className="inline-flex items-center gap-2.5">
-      <span role="img" aria-label={summary} className="inline-flex items-center gap-1">
-        {days.map((day, i) => (
-          <span
-            key={i}
-            data-day={day}
-            aria-hidden
-            className={`inline-flex h-2.5 w-2.5 items-center justify-center rounded-pill ${DOT[day]}`}
-          >
-            {day === 'frozen' && <Snowflake className="h-2 w-2" />}
-          </span>
-        ))}
-      </span>
+      {/* The empty branch is text-xs + text-muted, not text-2xs + text-subtle: it is the one
+          branch READ as a sentence rather than scanned as a legend, and subtle-at-tiny is the
+          sub-AA pairing the adoption ratchet tracks. */}
+      {empty ? (
+        <span className="text-xs font-medium text-muted">{summary}</span>
+      ) : (
+        <span role="img" aria-label={summary} className="inline-flex items-center gap-1">
+          {days.map((day, i) => (
+            <span
+              key={i}
+              data-day={day}
+              aria-hidden
+              className={`inline-flex h-2.5 w-2.5 items-center justify-center rounded-pill ${DOT[day]}`}
+            >
+              {day === 'frozen' && <Snowflake className="h-2 w-2" />}
+            </span>
+          ))}
+        </span>
+      )}
       {count != null && (
         <span className="inline-flex items-baseline gap-1.5">
           <span className="font-mono text-sm font-semibold tabular-nums leading-none text-text">{count}</span>

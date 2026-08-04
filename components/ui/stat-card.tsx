@@ -117,7 +117,10 @@ export function StatCard({
     <Link
       href={href}
       title={title}
-      className={`${cls} transition-colors hover:bg-surface-elevated motion-reduce:transition-none`}
+      // A linked tile is a Card that navigates, so it owes hover + pressed + focus
+      // (docs/INTERACTION-STATES.md §2). `.press` is the pressed look; the focus ring is the
+      // global one every <a> gets. The unlinked tile below stays inert on purpose.
+      className={`${cls} press transition-[background-color,box-shadow,transform] hover:bg-surface-elevated motion-reduce:transition-none`}
     >
       {inner}
     </Link>
