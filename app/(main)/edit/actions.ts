@@ -33,7 +33,11 @@ export async function publishPage(slug: string, data: Data, spaceId?: string | n
       updated_by: janitor.profileId,
       published_at: now,
     } as never,
-    { onConflict: 'slug' },
+    // A page is (space_id, slug), not slug alone — backed by the pages_space_id_slug_key unique
+    // constraint (20270209000000_pages_space_slug_unique.sql, ADR-927). With the old
+    // onConflict: 'slug' this upsert would resolve against ANOTHER Space's row once per-Space
+    // authoring un-gates and overwrite its published document.
+    { onConflict: 'space_id,slug' },
   )
 
   revalidatePath(pathForSlug(slug))
