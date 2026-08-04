@@ -18,9 +18,11 @@ design_handoff/
   README.md      ← this file
   SYNC.md        ← the standing routine (does not change between rounds)
   CHANGES.md     ← THIS round's change set (read newest section last)
-  colors.css     ← the token values, value-for-value
-  skins.css      ← the Midnight skin overrides
+  dawn/          ← the vendored DAWN reference set (tokens, components, templates)
 ```
+
+Token sheets live in `dawn/tokens/` (`colors.css`, `skins.css`, …) — the bundle-era
+root copies were byte-identical duplicates and were removed; `dawn/tokens/` is canonical.
 
 **2. Say this to Claude Code, in the repo:**
 
