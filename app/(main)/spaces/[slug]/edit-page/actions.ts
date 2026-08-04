@@ -7,7 +7,8 @@ import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { isRenderableSpaceDoc } from '@/lib/page-editor/templates/space'
-import { withPageDoc, withoutPageDoc, hasPage, HOME_SLUG } from '@/lib/spaces/profile-pages'
+import { withPageDoc, withoutPageDoc, hasPage, readPageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
+import { withParkedBlocks } from '@/lib/page-editor/templates/space-blocks'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // SPACE PAGE editor actions (multi-page model). The operator edits a SPECIFIC profile page
@@ -78,7 +79,12 @@ export async function publishSpaceLanding(
   if (!auth) return fail('You do not have access to edit this page.')
   if (!hasPage(auth.preferences, pageSlug)) return fail('That page no longer exists.')
 
-  const preferences = withPageDoc(auth.preferences, pageSlug, data)
+  // The full editor loads through withVisibleBlocks, so `data` has never contained this page's
+  // parked (hidden) blocks. Replacing the stored doc with it as-is would delete them permanently,
+  // which is the opposite of what the hidden flag promises. Carry them across.
+  const merged = withParkedBlocks(readPageDoc(auth.preferences, pageSlug), data)
+
+  const preferences = withPageDoc(auth.preferences, pageSlug, merged)
   if (!(await writePreferences(auth.spaceId, preferences))) {
     return fail('Could not publish your changes. Try again.')
   }
