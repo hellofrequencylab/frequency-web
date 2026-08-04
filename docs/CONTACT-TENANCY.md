@@ -146,11 +146,12 @@ existing root row on the new unique index). **All need the lookup scoped to ROOT
 | `app/(marketing)/start/actions.ts:56` | **ROOT** |
 | `app/onboarding/beta/actions.ts:160` `enrollPersonaOnboarding` | **ROOT.** Note: `byProfile` (L157) usually resolves first (the trigger already made the root row); the email fallback is the throwing path. |
 
-### 3.7 Beta invite gate — `lib/beta/invite-gate.ts`
+### 3.7 Beta invite gate — removed
 
-| Site | Assumes | Rescope |
-|---|---|---|
-| `isInvitedBetaContact` — L29-35: `.eq('source','beta_waitlist').ilike('email', clean).limit(1).maybeSingle()` | one beta row | **ROOT (low risk).** `.limit(1)` prevents the multi-row throw and it **fails open**, so signup is never blocked. Still scope to root for correctness (beta waitlist rows are root-owned). |
+`lib/beta/invite-gate.ts` did an unscoped `.eq('source','beta_waitlist').ilike('email', …)` lookup on
+every signup to decide whether the email had been admitted. It was deleted with the beta waitlist
+(ADR-933), so this call site no longer exists and needs no rescope. The `source='beta_waitlist'`
+contacts it read are still there as ordinary root-owned contacts.
 
 ### 3.8 Import commit — `lib/crm/import/commit.ts`
 

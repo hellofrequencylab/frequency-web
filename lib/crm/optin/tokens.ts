@@ -1,9 +1,9 @@
 // Stateless double-opt-in confirm tokens for the inbound subscription funnel.
 //
 // HMAC-signed (email, expiry) pairs. The confirm link carries `?e=<email>&x=<exp>&t=<token>`;
-// verifying proves we issued it, with NO DB row to maintain (mirrors lib/beta-tokens.ts and
-// lib/unsubscribe-tokens.ts). A distinct namespace (`optin-confirm:`) means a beta token can
-// never confirm a subscription and vice versa. Unlike the beta token this one carries an
+// verifying proves we issued it, with NO DB row to maintain (mirrors
+// lib/unsubscribe-tokens.ts). A distinct namespace (`optin-confirm:`) means no other token
+// can confirm a subscription and vice versa. This one also carries an
 // expiry, so a permission-request link goes stale on its own (defence in depth for a link
 // that flips marketing consent).
 

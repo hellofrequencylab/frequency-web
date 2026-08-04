@@ -212,20 +212,27 @@ export function PostPreview({ post, isAuthed = false }: { post: PublicPost; isAu
 
 // ── Sign-in CTA ───────────────────────────────────────────────────────────────
 
+// The single conversion moment on Discover. `href` defaults to /sign-in for the
+// "you already have an account" pages; the browse pages pass BETA_CTA_HREF so a
+// warm visitor lands straight in the induction. It replaced an inline email form
+// that captured people onto a waitlist -- the beta is open, so there is no queue
+// to join and nothing to capture. One component now, not a form and a card.
 export function SignInCta({
   title,
   body,
   action = 'Get started',
+  href = '/sign-in',
 }: {
   title: string
   body: string
   action?: string
+  href?: string
 }) {
   return (
     <Card tone="feature" className="p-8 text-center">
       <p className="text-lg font-bold text-text mb-2">{title}</p>
       <p className="text-sm text-muted leading-relaxed mb-6 max-w-sm mx-auto">{body}</p>
-      <Button href="/sign-in" size="sm">
+      <Button href={href} size="sm">
         {action}
       </Button>
     </Card>

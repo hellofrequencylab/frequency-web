@@ -10,7 +10,7 @@ import {
   getPublicCounts,
   getPublicCityClusters,
 } from '@/lib/discover'
-import { ChannelCard, CircleCard, EventRow, PostPreview } from '@/components/discover/cards'
+import { ChannelCard, CircleCard, EventRow, PostPreview, SignInCta } from '@/components/discover/cards'
 import {
   Statement,
   ZigZag,
@@ -21,7 +21,6 @@ import {
   FaqList,
 } from '@/components/marketing/marketing-ui'
 import { DiscoverLocator } from '@/components/discover/discover-locator'
-import { InlineBetaCapture } from '@/components/discover/inline-beta-capture'
 import {
   FrequencyArcs,
   RippleRings,
@@ -346,10 +345,11 @@ export default async function DiscoverHubPage() {
                 <PostPreview key={p.id} post={p} isAuthed={isAuthed} />
               ))}
             </div>
-            <InlineBetaCapture
-              source="discover_posts"
-              heading="Join to see more"
-              body="Get an invite to the beta: the full feed, events, and your local Circle. No spam, just an invite when a spot opens."
+            <SignInCta
+              title="Join to see more"
+              body="The full feed, the events, and your local Circle."
+              action={BETA_CTA_LABEL}
+              href={BETA_CTA_HREF}
             />
           </div>
         </section>

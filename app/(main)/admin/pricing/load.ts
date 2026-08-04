@@ -16,7 +16,7 @@ import { loadCatalogConfig, type CatalogConfig } from '@/lib/pricing/catalog-con
 import { type FoundingConfig } from '@/lib/pricing/founding'
 import { FEATURE_GATES, loadFeatureGateOverrides, mergeGate, type FeatureGate } from '@/lib/pricing/gates'
 import { billingEnabled } from '@/lib/billing/stripe'
-import { getPlatformSetting, betaInviteOnly, betaHostPromptsFlag } from '@/lib/platform-flags'
+import { getPlatformSetting, betaHostPromptsFlag } from '@/lib/platform-flags'
 import { loadStripePriceMap, type StripePriceRow } from '@/lib/billing/pricing-prices'
 import { allPublicPriceKeys, allFounderPriceKeys, allCatalogPriceKeys } from '@/lib/billing/pricing-keys'
 
@@ -47,7 +47,6 @@ export interface PricingConsoleData {
   founding: FoundingConfig
   /** The three beta controls (invite gate, host prompts, countdown date · ADR-803). */
   beta: {
-    inviteOnly: boolean
     hostPrompts: boolean
     /** The raw `beta_ends_at` value (ISO string or empty). Display-only; grants no access. */
     endsAt: string
@@ -84,7 +83,7 @@ export interface PricingConsoleData {
 }
 
 export async function getPricingConsoleData(): Promise<PricingConsoleData> {
-  const [values, catalog, flags, founding, overrides, priceMap, betaEndsAtRaw, betaInvite, betaPrompts, grace] =
+  const [values, catalog, flags, founding, overrides, priceMap, betaEndsAtRaw, betaPrompts, grace] =
     await Promise.all([
       getPricingValues(),
       loadCatalogConfig(),
@@ -93,7 +92,6 @@ export async function getPricingConsoleData(): Promise<PricingConsoleData> {
       loadFeatureGateOverrides(),
       loadStripePriceMap(),
       getPlatformSetting('beta_ends_at', ''),
-      betaInviteOnly(),
       betaHostPromptsFlag(),
       getBetaGrace(),
     ])
@@ -149,7 +147,7 @@ export async function getPricingConsoleData(): Promise<PricingConsoleData> {
     catalog,
     flags,
     founding,
-    beta: { inviteOnly: betaInvite, hostPrompts: betaPrompts, endsAt: betaEndsAtRaw },
+    beta: { hostPrompts: betaPrompts, endsAt: betaEndsAtRaw },
     // Derived from the SAME pure helper featureGatesLive() uses, so the readout can never claim a state
     // the runtime is not in (ADR-874). billingLive here is `configured && masterLive`, byte-identical to
     // billingLive()'s own definition.

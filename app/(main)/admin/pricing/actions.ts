@@ -304,16 +304,20 @@ export async function setOperatorSeatActive(value: boolean): Promise<ActionResul
 }
 
 // ── Beta controls (ADR-803) ─────────────────────────────────────────────────────────────────────
-// The three beta switches that were database-only: the invite gate, the host-prompt surface, and the
-// countdown clock. The two booleans are audited platform flags; the countdown is a text setting and is
-// DISPLAY-ONLY (it grants no access — it only feeds the countdown banner). Janitor-gated.
+// The beta switches that were database-only: the host-prompt surface and the countdown clock. The
+// boolean is an audited platform flag; the countdown is a text setting and is DISPLAY-ONLY (it grants
+// no access — it only feeds the countdown banner). Janitor-gated.
+//
+// `beta_invite_only` was the third switch: the gate that let only people admitted off the beta
+// waitlist create an account. It went away with the waitlist, so there is no longer a switch that can
+// close signup.
 
 /** The beta boolean flags editable here (default-deny: any other key is rejected). */
-const BETA_FLAG_KEYS = ['beta_invite_only', 'beta_host_prompts'] as const
+const BETA_FLAG_KEYS = ['beta_host_prompts'] as const
 type BetaFlagKey = (typeof BETA_FLAG_KEYS)[number]
 
-/** Set a beta boolean flag (`beta_invite_only` invite gate, `beta_host_prompts` feed nudges). Janitor-
- *  gated; audited in platform_flag_events via setPlatformFlag. */
+/** Set a beta boolean flag (`beta_host_prompts` feed nudges). Janitor-gated; audited in
+ *  platform_flag_events via setPlatformFlag. */
 export async function setBetaFlag(key: string, value: boolean): Promise<ActionResult> {
   const ctx = await requireAdmin('janitor')
   if (!(BETA_FLAG_KEYS as readonly string[]).includes(key)) return fail('Unknown beta switch.')

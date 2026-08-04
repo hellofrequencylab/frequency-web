@@ -95,39 +95,35 @@ button reads it, so the whole funnel opens (or re-closes) with one constant.
 real, building member
 ```
 
-### 2.1 Parked: the waitlist (for the future gated phase)
+### 2.1 Removed: the waitlist
 
-The waitlist surface is **intact and reachable by direct link** (it is *parked*, not
-deleted) and becomes the lead-capture front door again when the **gated weekly-cohort
-phase** lands (AI admits a batch on a metric, with automated onboarding emails). Reviving
-it is a routing change (point `BETA_CTA_HREF` back at `/beta`), not a rebuild.
+There is no waitlist. The Beta is **open**: anyone can create an account from
+`/onboarding/beta`, which is where `BETA_CTA_HREF` points from every CTA on the site.
+
+Until 2026-08-04 a double-opt-in queue sat in front of it. Recording what it was, because
+the shape recurs in planning docs and in the `contacts` table:
 
 ```
-/beta form  ──requestBetaAccess()──▶  contacts row
-                                       source='beta_waitlist'
-                                       consent_state='unknown'         (pending)
-                                       meta.double_optin='pending'
-                                       + queue confirm email (spine)
+/beta form  ──requestBetaAccess()──▶  contacts row source='beta_waitlist'
+        │                              consent_state='unknown', meta.double_optin='pending'
+        ▼  user clicks the confirm email
+/beta/confirm?e=&t=  ──▶  consent_state='subscribed', meta.double_optin='confirmed'
         │
-        ▼  user clicks the email link
-/beta/confirm?e=&t=  ──verifyBetaToken()──▶  consent_state='subscribed'
-                                              meta.double_optin='confirmed'
-        │
-        ▼  admin admits in batches (/studio/beta)
-admitBetaSignup()  ──▶  meta.beta_status='invited' + queue invite email (spine)
+        ▼  admin admits in batches
+admitBetaSignup()  ──▶  meta.beta_status='invited' + invite email
 ```
 
-**Pieces (parked, still present)**
-- `app/(marketing)/beta/actions.ts`: `requestBetaAccess` (validates, skips
-  suppressed, upserts contact, queues confirm email).
-- `app/(marketing)/beta/confirm/page.tsx`: verifies token, flips consent.
-- `lib/beta-tokens.ts`: HMAC confirm tokens (mirrors `unsubscribe-tokens.ts`;
-  secret = `BETA_CONFIRM_SECRET` → `UNSUBSCRIBE_SECRET` → service-key slice).
-- `lib/email.ts`: `sendBetaConfirmEmail`, `sendBetaInviteEmail` (both **queued**
-  through the spine, suppression-checked).
-- No new tables: beta signups are `contacts` (status derived from
-  `consent_state` + `meta`). `consent_state` values: `unknown | subscribed |
-  unsubscribed` (the "pending" state lives in `meta.double_optin`).
+**What was deleted** (ADR-933): `app/(marketing)/beta/actions.ts` (`requestBetaAccess`),
+`app/(marketing)/beta/confirm/`, `lib/beta-tokens.ts`, `lib/beta/invite-gate.ts`,
+`lib/beta/admission.ts`, `lib/studio/beta.ts`, `app/(main)/admin/marketing/beta/`,
+`components/marketing/beta-form.tsx`, `components/discover/inline-beta-capture.tsx`, the
+`sendBetaConfirmEmail` / `sendBetaInviteEmail` senders, the `beta_invite_only` flag and the
+`beta_admission_waves` table.
+
+**What survives.** The four `source='beta_waitlist'` contacts are still there, all confirmed
+and invited. They are a **consent record**, not a queue: `consent_state` governs whether we may
+mail them, and deleting the rows would destroy that record rather than honour it. `/beta` is
+still a live campaign landing page; it sends people to the same induction as every other CTA.
 
 ---
 
@@ -144,14 +140,15 @@ admitBetaSignup()  ──▶  meta.beta_status='invited' + queue invite email (s
 - Reachable from the member app: staff see a **Studio** link in the sidebar's
   **Manage** section (below Admin). Gated on `isStaff`: the `(main)` layout
   computes it via `getStaffMember()` and passes it to `AppShell`.
-- `/studio/beta` (`lib/studio/beta.ts`): the waitlist view, with stats, **Admit**, **Resend
-  confirm**, and a **"Send queued emails now"** manual drain (see §4).
+- `/admin/marketing/deliverability`: outbox health, the dead-letter queue, and the
+  **"Send queued now"** manual drain (see §4). The drain used to live on the waitlist
+  triage page; it moved here when that page was removed (ADR-933).
 - `/studio/contacts` (`lib/studio/contacts.ts`): filter tabs (All / Subscribers /
   Beta / Members) + **Unsubscribe / Resubscribe** (`setContactConsent`).
 
 **Community admin** (`/admin/members`, janitor-gated): the at-a-glance view.
-- Tabbed: **Members · Subscribers · Beta invites**. Subscribers/Beta are read-only
-  here and link to the Studio for actions.
+- Tabbed: **Members · Subscribers**. Subscribers are read-only here and link to the
+  Studio for actions. A third **Beta invites** tab listed the waitlist and went with it.
 - `@moderation` (a system profile, `is_system=true`, no login, used as the
   moderation-DM sender) is hidden from the People directory (`is_system` filter)
   and is intentionally not deletable.
@@ -171,8 +168,10 @@ Mitigations:
 - **Set `CRON_SECRET`** (then Vercel auto-sends it with cron calls).
 - Vercel **Hobby** runs crons once/day regardless of schedule. Use **Pro** for the
   2-min cadence.
-- Manual fallback: the **"Send queued emails now"** button on `/studio/beta`
-  (`drainQueueNow` → `processQueue`, staff-gated), independent of the cron.
+- Manual fallback: the **"Send queued now"** button on
+  `/admin/marketing/deliverability`, in the Queue health block (`drainQueueNow` →
+  `processQueue`, marketing-staff gated), independent of the cron. It reports what the
+  drain did (sent / retrying / parked), not just that it ran.
 
 ---
 

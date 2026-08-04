@@ -8,7 +8,7 @@
 // anything not `approved` (or `scheduled`).
 //
 // ── HOW WAVE-2 SEND CODE MUST USE THIS ──
-// Before ANY real send (sendCampaign, admit a wave, fire a beta sequence), call:
+// Before ANY real send (sendCampaign, fire a beta sequence), call:
 //
 //     import { assertApproved } from '@/lib/beta/approvals'
 //     await assertApproved({ type: 'campaign', id })        // throws unless sendable
@@ -22,8 +22,8 @@
 // ── APPROVAL IS PHASE-BY-PHASE ──
 // The operator reviews + edits a phase's drafted outbound, then ARMS it. Every
 // approvable object carries a nullable `phase_id`. Use:
-//   • listPhaseOutbound(phaseId) — the phase's campaigns + waves (+ sequences,
-//     Wave 2) with their approval_status, for the phase review/arm UI.
+//   • listPhaseOutbound(phaseId) — the phase's campaigns (+ sequences, Wave 2)
+//     with their approval_status, for the phase review/arm UI.
 //   • armPhase(phaseId) — approve EVERY `ready` item in the phase at once (each
 //     still writing its own audit row). Convenience over per-item approve().
 //   • approve({ type, id }) — arm ONE item, for granular control.
@@ -70,17 +70,20 @@ export function isSendable(status: string | null | undefined): boolean {
 
 // ── The approvable object types + their tables. Add a row here to put a new
 //    outbound object on the spine (Wave 2: beta sequences / funnels). ──
-export type ApprovableType = 'campaign' | 'admission_wave'
+//
+// 'admission_wave' used to be the second member here, backed by beta_admission_waves:
+// the engine that admitted people off the beta waitlist in batches. The waitlist is
+// gone, so there is nothing to admit and the type was removed with it. The spine
+// itself is unchanged and still governs every campaign send.
+export type ApprovableType = 'campaign'
 
 const TABLE: Record<ApprovableType, string> = {
   campaign: 'campaigns',
-  admission_wave: 'beta_admission_waves',
 }
 
 /** audit target_type is 1:1 with ApprovableType. */
-const AUDIT_TARGET: Record<ApprovableType, 'campaign' | 'admission_wave'> = {
+const AUDIT_TARGET: Record<ApprovableType, 'campaign'> = {
   campaign: 'campaign',
-  admission_wave: 'admission_wave',
 }
 
 export interface ApprovableRef {
@@ -94,9 +97,9 @@ export interface OutboundItem {
   label: string
   approvalStatus: ApprovalStatus
   phaseId: string | null
-  /** Wave: the audience selector. Campaign: the segment. */
+  /** The campaign's segment. */
   segment: string | null
-  /** Wave: proposed_count. Campaign: recipient_count. */
+  /** The campaign's recipient_count. */
   count: number | null
   scheduledFor: string | null
   createdAt: string | null
@@ -128,7 +131,7 @@ export async function assertApproved(ref: ApprovableRef): Promise<void> {
   }
 }
 
-// ── Row → OutboundItem mappers (the two tables differ in shape). ─────────────
+// ── Row → OutboundItem mapper. ───────────────────────────────────────────────
 
 function mapCampaign(r: Record<string, unknown>): OutboundItem {
   return {
@@ -144,34 +147,18 @@ function mapCampaign(r: Record<string, unknown>): OutboundItem {
   }
 }
 
-function mapWave(r: Record<string, unknown>): OutboundItem {
-  return {
-    type: 'admission_wave',
-    id: String(r.id),
-    label: String(r.label ?? 'Untitled wave'),
-    approvalStatus: (r.approval_status as ApprovalStatus) ?? 'draft',
-    phaseId: (r.phase_id as string) ?? null,
-    segment: (r.segment as string) ?? null,
-    count: r.proposed_count == null ? null : Number(r.proposed_count),
-    scheduledFor: (r.scheduled_for as string) ?? null,
-    createdAt: (r.created_at as string) ?? null,
-  }
-}
-
 const CAMPAIGN_COLS =
   'id, subject, approval_status, phase_id, segment, recipient_count, scheduled_for, created_at'
-const WAVE_COLS =
-  'id, label, approval_status, phase_id, segment, proposed_count, scheduled_for, created_at'
 
-/** Every outbound object (campaigns + waves) in a given approval status. FAIL-SAFE to []. */
+/** Every outbound object in a given approval status. FAIL-SAFE to []. */
 export async function listOutboundByStatus(status: ApprovalStatus): Promise<OutboundItem[]> {
   try {
-    const db = betaDb()
-    const [c, w] = await Promise.all([
-      db.from('campaigns').select(CAMPAIGN_COLS).eq('approval_status', status).order('created_at', { ascending: false }),
-      db.from('beta_admission_waves').select(WAVE_COLS).eq('approval_status', status).order('created_at', { ascending: false }),
-    ])
-    return [...(c.data ?? []).map(mapCampaign), ...(w.data ?? []).map(mapWave)]
+    const { data } = await betaDb()
+      .from('campaigns')
+      .select(CAMPAIGN_COLS)
+      .eq('approval_status', status)
+      .order('created_at', { ascending: false })
+    return (data ?? []).map(mapCampaign)
   } catch (err) {
     console.error('[beta] listOutboundByStatus failed:', err)
     return []
@@ -186,12 +173,12 @@ export async function listReadyForApproval(): Promise<OutboundItem[]> {
 /** All outbound owned by ONE phase, any status (the phase review/arm view). FAIL-SAFE to []. */
 export async function listPhaseOutbound(phaseId: string): Promise<OutboundItem[]> {
   try {
-    const db = betaDb()
-    const [c, w] = await Promise.all([
-      db.from('campaigns').select(CAMPAIGN_COLS).eq('phase_id', phaseId).order('created_at', { ascending: false }),
-      db.from('beta_admission_waves').select(WAVE_COLS).eq('phase_id', phaseId).order('created_at', { ascending: false }),
-    ])
-    return [...(c.data ?? []).map(mapCampaign), ...(w.data ?? []).map(mapWave)]
+    const { data } = await betaDb()
+      .from('campaigns')
+      .select(CAMPAIGN_COLS)
+      .eq('phase_id', phaseId)
+      .order('created_at', { ascending: false })
+    return (data ?? []).map(mapCampaign)
   } catch (err) {
     console.error('[beta] listPhaseOutbound failed:', err)
     return []
@@ -310,7 +297,7 @@ export async function cancel(ref: ApprovableRef): Promise<ActionResult> {
 }
 
 /**
- * Record a TEST send (campaigns only; waves have no test). Sets test_sent_at. A
+ * Record a TEST send. Sets test_sent_at. A
  * test is not the real send, so this is content-writer gated, does not touch
  * approval_status, and never clears assertApproved().
  */

@@ -17067,3 +17067,75 @@ Three consequential moves fall out of the arithmetic, and each is load-bearing r
 **Consequences.** ⚠️ The tab covers the last 69px of the content column at page bottom from `md` up — the operator dock already accepts exactly this. ⚠️ The Space publish bar (`z-[70]`, full-width `bottom-0`) covers the tab on owner-edit surfaces, the same accepted exception the old contract granted the settings drawer. ⚠️ **Playwright visual baselines will move on every signed-in capture**, and the a11y ratchet shifts by one interactive element per page; both need a deliberate re-capture, not a `--update` reflex. ⚠️ Below 768 the tab does not render at all: a 288px tab cannot coexist with a seven-slot tab bar and a centred raised action, so the drawer stays the phone home.
 
 The durable rule: **two floating objects in one corner compete no matter how far apart you push them — the fix is to stop one of them from floating.**
+
+## ADR-933 — The Beta waitlist is removed, and the door is simply open (2026-08-04)
+
+**Status.** Accepted. Owner ruling: *"We're in Beta until September 1st, we can keep the language but delete the waitlist functions and surfaces."*
+
+**Context.** Two things named "waitlist" lived in this repo, and conflating them would have deleted the wrong one. The **seeker waitlist** (`waitlist_entries`, `/waitlist`, ADR-456) is a queue of people waiting for Frequency to open in their city, with real RLS policies and its own admin surface. The **Beta waitlist** was a double-opt-in queue in front of account creation: capture an email, mail a confirm link, then admit people in batches. They share no table, no module and no route — only the word. The ruling names Beta twice, so only the second one goes.
+
+The Beta waitlist was also already inert. `platform_flags.beta_invite_only` had been FALSE for its entire life, so the gate it fed never blocked anyone; `beta_admission_waves` held zero rows, so nobody was ever admitted in a wave; and all four `source='beta_waitlist'` contacts were already `invited` + `subscribed`. **"Approve any Beta submissions" was a no-op against live data** — there was nothing pending. What remained was a funnel that still *said* "Join the Beta" and "we'll reach out when a spot opens" on seven public surfaces, which was no longer true.
+
+**Decision.** Delete the queue, keep the Beta. `/beta` stays as a campaign landing page, the countdown banner stays (`beta_ends_at` is 2026-09-01, exactly the date in the ruling), and `BETA_CTA_HREF` keeps pointing at `/onboarding/beta` as it already did from 36 files. What goes is every mechanism that made someone wait: the capture (`requestBetaAccess`, `BetaForm`, `InlineBetaCapture` on six Discover pages), the confirm route and its HMAC tokens, the admin triage table, the admission-wave engine, `invite-gate.ts` and **both** of its enforcement points, and the two waitlist emails. `admission_wave` leaves the approval spine's `ApprovableType`, which now carries campaigns only.
+
+Removing the gate is the part with teeth. `app/sign-in/actions.ts` no longer passes `shouldCreateUser: false` for unrecognised emails, and `app/auth/callback/route.ts` no longer signs out and **deletes** a brand-new auth user that failed an admission lookup. Both were fail-open, so neither was blocking anyone in practice — but a delete-the-user path that fires on a flag flip is not something to leave lying around once the flag is gone.
+
+**The Discover forms became a link, not a hole.** Six pages carried an inline email capture; each becomes `SignInCta`, the component four other Discover pages already used for exactly this moment, extended with an optional `href`. Ten conversion moments on Discover are now one component. Their copy survives minus the queue clause: *"Join the beta to step inside a Circle near you… no spam, just an invite when a spot opens"* → *"Step inside a Circle near you, RSVP to its standing time, and meet the regulars."*
+
+**The Command Center's numbers got better, not worse.** Its "at a glance" row read the waitlist: 4 rows, of which 4 were invited. It now reads `profiles.created_at` — **52 members, 26 in the last 30 days** — and the launch funnel starts at `Joined` instead of `Waitlisted → Confirmed → Admitted`. The honesty rule (`lib/beta/stats.ts`) is unchanged: uninstrumented stages stay `null` and render a labelled placeholder.
+
+**Consequences.** ⚠️ The four `beta_waitlist` contacts are **kept**. They are a consent record, not a queue: `consent_state` governs whether we may mail them, and deleting the rows would destroy that record rather than honour it. ⚠️ There is no longer any switch that can close signup; re-gating the beta means re-introducing the gate, not flipping a flag. ⚠️ `BETA_CONFIRM_SECRET` stays in `.env.example` — `lib/beta-tokens.ts` is gone, but three unrelated modules (`crm/lead-links`, `crm/optin/tokens`, `qr/event-invite`) still fall back to it. ⚠️ The migration drops `beta_admission_waves` and the flag but deliberately leaves `campaigns.approval_status` / `phase_id`, which the beta migration added and **all** campaigns use.
+
+One thing was rescued rather than removed. `drainQueueNow` — the manual outbox drain, and the documented fallback for the single most common "emails are not arriving" cause — happened to live in the deleted triage page. It moves to `/admin/marketing/deliverability`, beside the Queue health counts an operator is already staring at when they reach for it, and now reports what the drain *did* (sent / retrying / parked) instead of merely that it ran.
+
+The durable rule: **when a queue is removed, the thing in front of it has to become an open door, not an empty frame** — every surface that asked someone to wait now asks them to walk in.
+
+## ADR-934 — The speed gate's first real reading: thresholds hold, and the whole marketing surface scores zero on unused JavaScript (2026-08-04)
+
+**Status.** Accepted. Follows ADR-930, which shipped the Lighthouse gate and said in as many words that its thresholds were guesses to be re-set from real data.
+
+**Context.** ADR-930's gate went green on its first complete run (30926550859: 4 URLs × 3 runs against the PR's own Vercel preview). Reading it produced two findings, one about the numbers and one about the instrument.
+
+**The instrument first, because it blocked the numbers.** `lighthouse-ci` prints only assertions that **fail**. A fully passing run therefore reports nothing — not the values, not the margins — so "it went green" and "it passed by 4ms" are indistinguishable in the log. The values live in the uploaded artifact, but that is a 26MB zip on `blob.core.windows.net`, which this environment's egress policy denies outright; the production apex is denied too, so re-measuring locally was not a route either. **The evidence existed and was unreadable from where the decision had to be made.** That is the same failure ADR-930 recorded one layer down, where the artifact never uploaded at all: a gate whose evidence cannot be reached is a gate you have to take on faith.
+
+**Decision.** The gate reports its own numbers. A `Report the numbers` step reads `.lighthouseci/lhr-*.json`, takes the **median** per URL per metric (the same aggregation the assertions use), and writes a table of value / budget / **headroom %** to `$GITHUB_STEP_SUMMARY`. It never fails the job — the assertions gate, this reports — so a summary problem can never masquerade as a speed regression. Evidence now lands where the result is read, and no download is required to act on it.
+
+**The thresholds stay put this round, and that is a decision, not a deferral.** What the run establishes is that LCP / CLS / TBT are inside 4000 / 0.1 / 600 on all four URLs, and FCP and byte-weight inside their warns. What it does **not** establish is by how much. Tightening a lab threshold on a shared runner without knowing the current margin is how a gate becomes flaky, and a flaky gate gets ignored, which costs more than a loose one. The headroom column arrives on the next run; the numbers get set from it then.
+
+**The finding worth acting on is not a threshold.** Three warns fired on **all four URLs, identically across all three runs** — consistency that rules out runner noise:
+
+| Audit | Score | Reading |
+|---|---|---|
+| `unused-javascript` | **0** | The floor. Not "some waste" — the worst score the audit awards, on every page measured. |
+| `render-blocking-resources` | 0.5 | Something in the critical path is serialising the first paint. |
+| `uses-responsive-images` | 0.5 (0 on `/loneliness`) | Images shipped larger than they render. |
+
+`unused-javascript: 0` across `/`, `/pricing`, `/the-community` and `/loneliness` — four **marketing** pages, the ones a stranger meets first — says the client bundle those routes pull is largely dead weight to them. That is a payload-shape problem with a real fix (route-level splitting, auditing what the marketing shell drags in), and it is precisely the kind of thing a lab run is good at finding and bad at gating: it does not regress, it is simply always wrong, so an error-level assertion would fail every PR for a debt none of them created.
+
+**Consequences.** ⚠️ These three stay **warn**, deliberately. Promoting them to error would block unrelated work on pre-existing debt, which is the ratchet mistake ADR-928 exists to avoid. ⚠️ The bundle work is **recorded, not done** — it is a sizing exercise against the marketing routes, not a line change, and it wants its own pass. ⚠️ The artifact upload stays even though it is unreachable from here; it is reachable from a browser, and it holds the full traces the summary table cannot.
+
+The durable rule: **a gate that only speaks when it fails cannot tell you whether it is calibrated** — make it report its margins, or you are gating on a number nobody has ever seen.
+
+## ADR-935 — `selectable: false` has to bind every picker, not the one I edited (2026-08-04)
+
+**Status.** Accepted. Corrects the withdrawal shipped earlier the same day under the owner ruling *"Keep the midnight theme there for now but don't let users access it."* Supersedes the closing note of ADR-501 (the Spotlight theme picker), which says the picker "offers the two built-in skins (default, midnight)."
+
+**Context.** Withdrawing `midnight` added `SkinDef.selectable` and a derived `SELECTABLE_SKINS`, with the rule written into the registry's own doc comment: *"Every user-facing picker reads THIS, never SKINS."* I then pointed exactly one picker at it. Three surfaces could hand a member the midnight skin, and only the app theme switcher was changed:
+
+| Surface | Read | After the withdrawal |
+|---|---|---|
+| `/settings/appearance` switcher | `SELECTABLE_SKINS` | correctly withdrawn |
+| Spotlight appearance (`PROFILE_SKINS`) | `SKINS.map(...)` | **still offered midnight** |
+| Operator Space branding (`BUILTIN_SKINS`) | hardcoded `['default','midnight']` | **still assignable** |
+
+The Space one matters more than "operator-only" suggests: assigning a Space skin pushes that look to every member of the Space, so an operator picker is still a route by which members end up on a withdrawn skin.
+
+**The flag also broke the surface it did reach.** With one selectable skin left, the Palette grid rendered a single card badged **On** with nothing to switch to. A picker with one option is a control that cannot do anything, and it reads as broken rather than as "there is one look."
+
+**How it surfaced is the part worth recording.** No test caught it, and no gate did. The **help-autodoc bot** flagged `content/help/getting-started/your-settings.md` with *"Theme switcher UI changes; verify appearance section still matches current implementation."* Chasing a doc-drift note into the code is what found two live product defects. That is the third time this bot has earned its keep, and the second time it found something no gate was watching.
+
+**Decision.** `PROFILE_SKINS` maps `SELECTABLE_SKINS`. `BUILTIN_SKINS` derives from it. The Palette axis renders only when `SELECTABLE_SKINS.length > 1` **or** the member's current skin is not selectable — the second clause is the escape hatch, so anyone already on a withdrawn skin keeps a way off it instead of being stranded. Three tests in `lib/theme/skins.test.ts` now lock the contract in both directions: no unselectable skin appears in any picker, every selectable one does, and a withdrawn skin still **resolves** (the registry keeps it alive for rendering) while `resolveProfileSkin` refuses to hand it to a member.
+
+**Consequences.** Safe to land as a hard cut: production has **nobody on midnight** — 51 profiles on `default` and one null, Spaces on `dawn`/`default`. So no member is downgraded and no Space repaints. ⚠️ `midnight`'s CSS stays shipped and still renders for any stored value; this withdraws the *offer*, not the skin. ⚠️ The Palette axis is invisible in the product today, which is correct but means a second selectable skin makes a whole section reappear — worth a look when one lands.
+
+The durable rule: **a capability flag is only as good as its narrowest reader** — adding one is not done until every surface that could grant the thing reads it, and a test says so.

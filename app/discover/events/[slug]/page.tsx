@@ -4,10 +4,10 @@ import { notFound } from 'next/navigation'
 import { CalendarDays, MapPin, Lock } from 'lucide-react'
 import { getPublicEventBySlug, formatEventDateTime, hasEventEnded } from '@/lib/discover'
 import { getEventEnrichment } from '../_data'
-import { InlineBetaCapture } from '@/components/discover/inline-beta-capture'
+import { SignInCta } from '@/components/discover/cards'
 import { FrequencyArcs } from '@/components/marketing/vector-art'
 import { EventDetailTemplate } from '@/components/templates'
-import { SITE_NAME } from '@/lib/site'
+import { SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { seriesRobots, seriesSeoFactsBySlug, suppressPastNoindex } from '@/lib/events/series-seo'
@@ -170,19 +170,19 @@ export default async function EventPage({
           </>
         }
         // The side column is where the standard puts the RSVP card. Signed out, the equivalent ask
-        // is the invite: someone reading a single event is ready to show up, so offer it right here
-        // where intent peaks instead of bouncing them to /sign-in. Same double-opt-in funnel as the
-        // list pages, tagged for attribution and with copy that fits whether the event is upcoming
-        // or already passed.
+        // is the induction: someone reading a single event is ready to show up, so offer it right
+        // here where intent peaks instead of bouncing them to /sign-in. Copy fits whether the event
+        // is upcoming or already passed.
         interiorSide={
-          <InlineBetaCapture
-            source={hasEnded ? 'discover_event_detail_ended' : 'discover_event_detail'}
-            heading={hasEnded ? 'Catch the next one' : `Want to be at ${event.title}?`}
+          <SignInCta
+            title={hasEnded ? 'Catch the next one' : `Want to be at ${event.title}?`}
             body={
               hasEnded
-                ? 'This one has passed, but somewhere near you another circle is already deciding on the next. Join the beta to find it, and be one of the faces the next person walks in and recognizes.'
-                : "RSVP and you're expected: see who else is coming, get the exact venue, and let the host know to save you a seat. Join the beta to claim your spot."
+                ? 'This one has passed, but somewhere near you another circle is already deciding on the next. Find it, and be one of the faces the next person walks in and recognizes.'
+                : "RSVP and you're expected: see who else is coming, get the exact venue, and let the host know to save you a seat."
             }
+            action={BETA_CTA_LABEL}
+            href={BETA_CTA_HREF}
           />
         }
       />

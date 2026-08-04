@@ -8,7 +8,8 @@ import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { parseSpaceTheme } from '@/lib/theme/space-themes'
-import { getSpaceReviews } from '@/lib/spaces/content-data'
+import { getSpaceReviews, getSpaceFaqs } from '@/lib/spaces/content-data'
+import { SpaceFaqEditor } from '@/components/spaces/space-faq-editor'
 import { SpaceSettingsForm, type SpaceSettingsValues } from '../settings-form'
 import { SpaceInfoConnectForm } from '@/components/spaces/space-business-info-form'
 import { ProfileCompletenessCard } from '../profile-completeness-card'
@@ -105,6 +106,7 @@ export default async function SpaceBasicsPage({
   // in hand.
   const profileData = readProfileData(space.preferences)
   const reviews = await getSpaceReviews(space.id)
+  const faqs = await getSpaceFaqs(space.id)
 
   return (
     <FocusTemplate
@@ -145,6 +147,21 @@ export default async function SpaceBasicsPage({
         slug={space.slug}
         about={extras.about ?? ''}
         business={profileData}
+        readOnly={staffViewing || !canUseProfile}
+      />
+
+      {/* COMMON QUESTIONS (audit fix, same shape as Info & Connect above). createSpaceFaq,
+          updateSpaceFaq and deleteSpaceFaq shipped complete, gated and tenancy-scoped, and
+          NOTHING called them -- while the read path was fully live: the SpaceFAQ block renders
+          these rows on the public page and emits FAQPage JSON-LD from them, and 62 rows already
+          exist across 14 Spaces from the bulk importer. So an operator could see their FAQ
+          published and had no way to add, edit or remove a single question.
+          This page is where the repo had already decided it belongs: block-data-sources.ts:344
+          maps the `faq` block to moduleId `space.basics` with the CTA label "Add a question", so
+          that empty state has been linking here all along, to an editor that did not exist. */}
+      <SpaceFaqEditor
+        slug={space.slug}
+        initialFaqs={faqs}
         readOnly={staffViewing || !canUseProfile}
       />
     </FocusTemplate>

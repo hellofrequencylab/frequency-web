@@ -15,12 +15,12 @@ export type BetaAuditAction =
   | 'cancel'
   | 'record_test_send'
   | 'arm_phase'
-  // Admission waves (lib/beta/admission.ts) + the beta graduation (lib/beta/graduation.ts).
+  // The beta graduation (lib/beta/graduation.ts).
   | 'propose_wave'
   | 'admit_wave'
   | 'graduate_beta'
 
-export type BetaAuditTargetType = 'campaign' | 'admission_wave' | 'phase' | 'platform'
+export type BetaAuditTargetType = 'campaign' | 'phase' | 'platform'
 
 export interface LogBetaActionInput {
   actorProfileId: string | null

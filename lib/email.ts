@@ -858,95 +858,9 @@ export async function sendDispatchNotificationEmail(params: {
   })
 }
 
-// ── Beta confirm (double opt-in) ──────────────────────────────────────────────
-
-export async function sendBetaConfirmEmail(params: { to: string; confirmUrl: string }) {
-  const { to, confirmUrl } = params
-  await enqueueEmail({
-    to,
-    subject: 'Confirm your spot on the Frequency Beta',
-    html: betaConfirmHtml({ confirmUrl }),
-    text: betaConfirmText({ confirmUrl }),
-  })
-}
-
-function betaConfirmHtml({ confirmUrl }: { confirmUrl: string }): string {
-  return emailShell(`
-    <h1 style="${h1Style}">One quick step.</h1>
-    <p style="${pStyle}">
-      Thanks for wanting in. Confirm your email and you're on the list for the
-      Frequency community Beta. We're opening it to a small group at a time, and
-      we'll reach out as soon as a spot opens for you.
-    </p>
-    <p style="margin:0 0 28px;">
-      <a href="${confirmUrl}" style="${btnStyle}">Confirm my spot</a>
-    </p>
-    <p style="${pStyle}font-size:13px;color:#888;">
-      If the button doesn't work, paste this into your browser:<br>
-      <a href="${confirmUrl}" style="color:#888;">${confirmUrl}</a>
-    </p>
-    <hr style="${dividerStyle}">
-    <p style="${pStyle}font-size:13px;color:#8F8675;margin-bottom:0;">
-      Didn't request this? You can safely ignore this email and you won't hear
-      from us again.
-    </p>
-  `)
-}
-
-function betaConfirmText({ confirmUrl }: { confirmUrl: string }): string {
-  return `One quick step.
-
-Thanks for wanting in. Confirm your email to join the list for the Frequency community Beta:
-
-${confirmUrl}
-
-We're opening it to a small group at a time and we'll reach out as soon as a spot opens.
-
-Didn't request this? You can safely ignore this email.`
-}
-
-// ── Beta invite ("you're in") ─────────────────────────────────────────────────
-
-export async function sendBetaInviteEmail(params: {
-  to: string
-  signupUrl: string
-  displayName?: string | null
-}) {
-  const { to, signupUrl, displayName } = params
-  await enqueueEmail({
-    to,
-    subject: "You're in, welcome to the Frequency Beta",
-    html: betaInviteHtml({ signupUrl, displayName: displayName ?? null }),
-    text: betaInviteText({ signupUrl, displayName: displayName ?? null }),
-  })
-}
-
-function betaInviteHtml({ signupUrl, displayName }: { signupUrl: string; displayName: string | null }): string {
-  const hi = displayName ? `${displayName}, you're` : "You're"
-  return emailShell(`
-    <h1 style="${h1Style}">${hi} in.</h1>
-    <p style="${pStyle}">
-      A spot just opened in the Frequency community Beta, and it's yours. Create
-      your account, find a circle near you, and start showing up.
-    </p>
-    <p style="margin:0 0 28px;">
-      <a href="${signupUrl}" style="${btnStyle}">Create my account</a>
-    </p>
-    <p style="${pStyle}font-size:13px;color:#888;">
-      Or paste this into your browser:<br>
-      <a href="${signupUrl}" style="color:#888;">${signupUrl}</a>
-    </p>
-  `)
-}
-
-function betaInviteText({ signupUrl, displayName }: { signupUrl: string; displayName: string | null }): string {
-  const hi = displayName ? `${displayName}, you're in.` : "You're in."
-  return `${hi}
-
-A spot just opened in the Frequency community Beta, and it's yours. Create your account and start showing up:
-
-${signupUrl}`
-}
+// The beta waitlist's two emails lived here: a double-opt-in "confirm your spot" and an
+// "a spot just opened, you're in" invite. Both went away with the waitlist. The subscribe
+// opt-in below is a DIFFERENT funnel (newsletter consent) and is still live.
 
 // ── Subscribe opt-in (inbound double opt-in) ──────────────────────────────────
 // ONE transactional confirm email: a permission request, not marketing, so it sends

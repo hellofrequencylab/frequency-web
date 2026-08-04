@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Megaphone, Users, ShieldCheck, Lock } from 'lucide-react'
+import { Megaphone, ShieldCheck, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatusChip, Banner, type StatusTone } from '@/components/admin/status'
 import { isError } from '@/lib/action-result'
@@ -184,7 +184,6 @@ export function TaskStatusControl({
 
 const TYPE_META = {
   campaign: { Icon: Megaphone, noun: 'Campaign' },
-  admission_wave: { Icon: Users, noun: 'Admission wave' },
 } as const
 
 export function PhaseOutbound({

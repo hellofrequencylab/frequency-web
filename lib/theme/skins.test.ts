@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { SKINS, DEFAULT_SKIN, isSkinId, resolveSkin } from './skins'
+import { SKINS, DEFAULT_SKIN, isSkinId, resolveSkin, SELECTABLE_SKINS } from './skins'
 
 describe('skin registry (ADR-249/250, docs/SPACES.md)', () => {
   it('lists default (DAWN) first and registers it', () => {
@@ -53,4 +53,63 @@ describe('skin CSS contract (every skin id has its [data-skin] blocks)', () => {
       })
     })
   }
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Registered is not the same as offered.
+//
+// Midnight was taken out of members' hands on 2026-08-04 (owner call) WITHOUT being
+// deleted, because deleting it would strip CSS the four-render-state e2e matrix depends
+// on and orphan any `spaces.skin = 'midnight'` row already stored. These assertions pin
+// that separation, so a later cleanup cannot quietly turn "not offered" into "not there".
+// ─────────────────────────────────────────────────────────────────────────────
+describe('skin selectability is separate from skin existence', () => {
+  it('keeps midnight registered and resolvable while not offering it', () => {
+    expect(SKINS.some((s) => s.id === 'midnight')).toBe(true)
+    expect(resolveSkin('midnight')).toBe('midnight') // a stored value still resolves
+    expect(SELECTABLE_SKINS.some((s) => s.id === 'midnight')).toBe(false)
+  })
+
+  it('always offers at least one skin, and the default is always offered', () => {
+    expect(SELECTABLE_SKINS.length).toBeGreaterThan(0)
+    expect(SELECTABLE_SKINS.some((s) => s.id === DEFAULT_SKIN)).toBe(true)
+  })
+
+  it('offers only skins that are actually registered', () => {
+    for (const s of SELECTABLE_SKINS) expect(SKINS).toContain(s)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// THE PICKER CONTRACT. `selectable: false` is only worth anything if EVERY
+// user-facing picker honours it. It did not: the app theme switcher read
+// SELECTABLE_SKINS while PROFILE_SKINS still mapped the whole SKINS registry, so
+// `midnight` stayed one click away on the Spotlight appearance surface. These lock
+// the rule that made that possible, in both directions.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('the selectable contract binds every picker', () => {
+  it('offers no unselectable skin in the Spotlight picker', async () => {
+    const { PROFILE_SKINS } = await import('./profile-skins')
+    const unselectable = SKINS.filter((s) => !s.selectable).map((s) => s.id)
+    for (const id of unselectable) {
+      expect(PROFILE_SKINS.some((p) => p.id === id)).toBe(false)
+    }
+  })
+
+  it('offers every selectable skin in the Spotlight picker', async () => {
+    const { PROFILE_SKINS } = await import('./profile-skins')
+    for (const s of SELECTABLE_SKINS) {
+      expect(PROFILE_SKINS.some((p) => p.id === s.id)).toBe(true)
+    }
+  })
+
+  it('resolves a withdrawn skin down to the default rather than honouring it', async () => {
+    const { resolveProfileSkin } = await import('./profile-skins')
+    const withdrawn = SKINS.find((s) => !s.selectable)
+    if (!withdrawn) return
+    // It still RESOLVES as a skin id (the registry keeps it alive for rendering)...
+    expect(resolveSkin(withdrawn.id)).toBe(withdrawn.id)
+    // ...but the owner-aware choke point will not hand it to a member.
+    expect(resolveProfileSkin(withdrawn.id)).toBe(DEFAULT_SKIN)
+  })
 })

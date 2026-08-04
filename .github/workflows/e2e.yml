@@ -203,6 +203,55 @@ jobs:
             --collect.settings.extraHeaders="{\"x-vercel-protection-bypass\":\"${BYPASS}\"}" \
           || { echo "::warning title=Lighthouse::assertions failed -- see the job log and the uploaded .lighthouseci report"; exit 1; }
 
+      # Print the medians into the job summary. WHY THIS EXISTS: lighthouse-ci only prints
+      # assertions that FAIL, so a fully passing run says nothing about how close it came --
+      # and ADR-930 says these thresholds are guesses to be re-set from real data. The first
+      # green run proved the point: LCP/CLS/TBT all passed and the log carried not one number.
+      # The artifact holds them, but it is a 26MB zip on blob storage that an agent sandbox
+      # cannot reach, so "download the artifact" is not a route anyone can rely on. Putting the
+      # numbers in the summary makes every run self-reporting: the evidence lands where the
+      # result is read. Never fails the job -- it reports, the assertions gate.
+      - name: Report the numbers
+        if: ${{ always() && steps.preview.outputs.ready == 'true' }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const dir = ".lighthouseci";
+            if (!fs.existsSync(dir)) { console.log("no .lighthouseci dir"); process.exit(0); }
+            const METRICS = [
+              ["largest-contentful-paint", "LCP", "ms", 4000],
+              ["cumulative-layout-shift",  "CLS", "",   0.1],
+              ["total-blocking-time",      "TBT", "ms", 600],
+              ["first-contentful-paint",   "FCP", "ms", 2500],
+              ["total-byte-weight",        "Weight", "b", 3500000],
+            ];
+            const byUrl = new Map();
+            for (const f of fs.readdirSync(dir).filter((f) => f.startsWith("lhr-") && f.endsWith(".json"))) {
+              let lhr; try { lhr = JSON.parse(fs.readFileSync(`${dir}/${f}`, "utf8")); } catch { continue; }
+              const url = lhr.finalDisplayedUrl || lhr.requestedUrl || "?";
+              if (!byUrl.has(url)) byUrl.set(url, []);
+              byUrl.get(url).push(lhr);
+            }
+            const median = (xs) => { const s = [...xs].sort((a, b) => a - b); return s[Math.floor(s.length / 2)]; };
+            const out = ["| URL | metric | median | budget | headroom |", "|---|---|---|---|---|"];
+            for (const [url, runs] of byUrl) {
+              const path = (() => { try { return new URL(url).pathname; } catch { return url; } })();
+              for (const [id, label, unit, budget] of METRICS) {
+                const vals = runs.map((r) => r.audits?.[id]?.numericValue).filter((v) => typeof v === "number");
+                if (!vals.length) continue;
+                const m = median(vals);
+                const pct = Math.round((1 - m / budget) * 100);
+                const fmt = (v) => (unit === "b" ? `${(v / 1e6).toFixed(2)}MB` : unit === "ms" ? `${Math.round(v)}ms` : v.toFixed(3));
+                out.push(`| ${path} | ${label} | ${fmt(m)} | ${fmt(budget)} | ${pct}% |`);
+              }
+            }
+            const table = out.join("\n");
+            console.log(table);
+            if (process.env.GITHUB_STEP_SUMMARY) {
+              fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### Lighthouse medians\n\n${table}\n`);
+            }
+          '
+
       # The first run of this step uploaded NOTHING and still went green. LHCI writes to
       # `.lighthouseci/`, which is a HIDDEN directory, and upload-artifact@v4 defaults
       # `include-hidden-files: false` -- so it found no files, and `if-no-files-found: ignore`

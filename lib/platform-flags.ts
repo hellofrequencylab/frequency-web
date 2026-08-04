@@ -139,26 +139,6 @@ export const feedOpenFlag = cache(async (): Promise<boolean> => {
   }
 })
 
-// Beta invite-only switch (platform_flags.beta_invite_only) — the master gate on NEW-account creation
-// during the beta. When OFF (the default), signup is OPEN exactly as today. When ON, only an ADMITTED
-// beta contact or an already-existing member/staff may create an account (enforced in the passwordless
-// signup path: app/sign-in/actions.ts + app/auth/callback/route.ts). Existing members are NEVER blocked.
-// Defaults to FALSE on any read failure — FAIL OPEN, so a transient DB hiccup can never wall off signup
-// or lock anyone out. Cached per request.
-export const betaInviteOnly = cache(async (): Promise<boolean> => {
-  try {
-    const admin = createAdminClient()
-    const { data } = await admin
-      .from('platform_flags')
-      .select('value')
-      .eq('key', 'beta_invite_only')
-      .maybeSingle()
-    return data?.value ?? false
-  } catch {
-    return false
-  }
-})
-
 // Host-prompt switch (platform_flags.beta_host_prompts) — gates the Lone-Wolf ->
 // Local-Host graduation nudges on the member feed (the rank-gated "you're ready to
 // start a Circle" prompt AND the "a few people near you are into this" ignition).

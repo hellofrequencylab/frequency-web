@@ -6,6 +6,7 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { listThemes } from '@/lib/theme/server/admin-themes'
 import { isSpaceThemeId, DEFAULT_SPACE_THEME } from '@/lib/theme/space-themes'
+import { SELECTABLE_SKINS } from '@/lib/theme/skins'
 
 // Server actions for the per-Space branding surface (docs/SPACES.md, ADR-249/250). Janitor-
 // gated, mirroring the rest of the Spaces tenancy admin. The per-Space THEME is the existing
@@ -17,8 +18,12 @@ import { isSpaceThemeId, DEFAULT_SPACE_THEME } from '@/lib/theme/space-themes'
 
 const LIST_PATH = '/admin/spaces'
 
-// The built-in code skins (app/globals.css) that always resolve even with no DB theme row.
-const BUILTIN_SKINS = new Set(['default', 'midnight'])
+// The built-in code skins (app/globals.css) an operator may ASSIGN. Derived from
+// SELECTABLE_SKINS, not the full SKINS registry: assigning a Space skin pushes that look to
+// every member of the Space, so an operator-only picker is still a way for members to end up
+// on a skin marked unselectable. `midnight` is registered and still RESOLVES and RENDERS for
+// any row that already stores it -- it simply cannot be newly assigned.
+const BUILTIN_SKINS = new Set<string>(SELECTABLE_SKINS.map((s) => s.id))
 
 // A safe brand-accent color: hex (#rgb/#rrggbb/#rrggbbaa) or a strictly-numeric rgb/hsl
 // function. Mirrors lib/theme/validate.ts isSafeColor (which is server-only/not exported) so
@@ -53,7 +58,7 @@ async function allowedSkins(): Promise<Set<string>> {
 }
 
 export interface SpaceBrandingInput {
-  /** The assigned theme: a known active skin slug or a built-in ('default' | 'midnight'). */
+  /** The assigned theme: a known active skin slug or a selectable built-in. */
   skin: string
   brandName: string | null
   brandAccent: string | null

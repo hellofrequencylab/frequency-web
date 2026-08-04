@@ -1,6 +1,6 @@
 {
   "$comment": [
-    "Lighthouse CI — the synthetic speed gate on the PR's own Vercel preview (ADR-930).",
+    "Lighthouse CI \u2014 the synthetic speed gate on the PR's own Vercel preview (ADR-930).",
     "",
     "WHAT THIS IS NOT: it is not a measurement of the Core Web Vitals budgets in",
     "lib/analytics/vitals-budgets.ts. Those are FIELD p75 numbers from real visitors on real",
@@ -23,7 +23,22 @@
     "",
     "The URLs are the ONE-PER-SHAPE set, not everything: the home PhotoHero (the heaviest",
     "LCP on the site), a dense product page, a Puck-rendered template, and an SEO guide.",
-    "Adding every route would multiply runtime for very little extra signal."
+    "Adding every route would multiply runtime for very little extra signal.",
+    "",
+    "FIRST REAL READING (run 30926550859, 2026-08-04, 4 URLs x 3 runs on the PR preview):",
+    "all three ERROR assertions passed on every URL -- LCP, CLS and TBT were inside 4000 / 0.1 /",
+    "600, and so were the FCP and byte-weight warns. lighthouse-ci prints only what FAILS, so the",
+    "log carried no numbers to tighten from; the 'Report the numbers' step in e2e.yml was added",
+    "for exactly that reason and every run since prints the medians and the headroom.",
+    "",
+    "THREE WARNS FIRED ON ALL FOUR URLS, identically across all 3 runs:",
+    "  unused-javascript        0     (the floor -- worst possible score, on every page)",
+    "  render-blocking-resources 0.5",
+    "  uses-responsive-images   0.5   (0 on /loneliness)",
+    "These are warns on purpose: they describe payload shape, not a regression, and failing a PR",
+    "on them would block work that has nothing to do with them. They are real findings and are",
+    "recorded as such in ADR-934 -- unused-javascript at 0 across the whole marketing surface is",
+    "a bundle problem to fix deliberately, not a threshold to relax."
   ],
   "ci": {
     "collect": {
@@ -35,11 +50,41 @@
     },
     "assert": {
       "assertions": {
-        "largest-contentful-paint": ["error", { "maxNumericValue": 4000, "aggregationMethod": "median" }],
-        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1, "aggregationMethod": "median" }],
-        "total-blocking-time": ["error", { "maxNumericValue": 600, "aggregationMethod": "median" }],
-        "first-contentful-paint": ["warn", { "maxNumericValue": 2500, "aggregationMethod": "median" }],
-        "total-byte-weight": ["warn", { "maxNumericValue": 3500000, "aggregationMethod": "median" }],
+        "largest-contentful-paint": [
+          "error",
+          {
+            "maxNumericValue": 4000,
+            "aggregationMethod": "median"
+          }
+        ],
+        "cumulative-layout-shift": [
+          "error",
+          {
+            "maxNumericValue": 0.1,
+            "aggregationMethod": "median"
+          }
+        ],
+        "total-blocking-time": [
+          "error",
+          {
+            "maxNumericValue": 600,
+            "aggregationMethod": "median"
+          }
+        ],
+        "first-contentful-paint": [
+          "warn",
+          {
+            "maxNumericValue": 2500,
+            "aggregationMethod": "median"
+          }
+        ],
+        "total-byte-weight": [
+          "warn",
+          {
+            "maxNumericValue": 3500000,
+            "aggregationMethod": "median"
+          }
+        ],
         "uses-responsive-images": "warn",
         "unused-javascript": "warn",
         "render-blocking-resources": "warn"

@@ -996,6 +996,31 @@
   --radius-card:    var(--radius-card);
   --radius-pill:    var(--radius-pill);
 
+  /* ── THE RADIUS STEPS, at DAWN's values (ported 2026-08-04) ─────────────────
+     These were never defined, so every `rounded-sm|md|lg|xl|2xl` in the codebase —
+     about 4,400 of them — silently resolved to TAILWIND's defaults, which are not
+     DAWN's. The whole product has been rendering corners systematically tighter
+     than the reference it was designed against:
+
+         rounded-md    6px → 10px      rounded-xl    12px → 16px
+         rounded-lg    8px → 14px      rounded-2xl   16px → 24px
+
+     Defining them here is the one-line-per-step way to make radius consistent
+     site-wide, and it is why this is a token port rather than a 4,400-site codemod:
+     a sweep would have had to pick a value per site, and the value it would have
+     encoded is the wrong one.
+
+     The three ROLE tokens above stay the contract a skin retunes. These steps are
+     deliberately FIXED rather than skin-bridged: a skin should change corners by
+     moving the roles, not by redefining what `rounded-lg` means, or two skins stop
+     being able to share a component. */
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   14px;
+  --radius-xl:   16px;
+  --radius-2xl:  24px;
+  --radius-full: 9999px;
+
   /* Named size for the profile hero-stat skeleton tile. A `--spacing-*` key, so
      Tailwind v4 generates `h-hero-stat` (and `w-hero-stat`) — the profile hero
      stats skeleton + its loading fallback share this one height instead of a
@@ -1844,6 +1869,100 @@ h1, h2, h3, h4, h5, h6 {
     color-mix(in srgb, var(--color-border-strong) 90%, transparent) 18%,
     color-mix(in srgb, var(--color-primary) 55%, transparent) 50%,
     color-mix(in srgb, var(--color-border-strong) 90%, transparent) 82%, transparent);
+}
+
+/* ── THE TEXTURE LAYER (DAWN effects.css, ported 2026-08-04) ──────────────────
+   Five atmosphere effects that DAWN specifies and this codebase never had, plus
+   two small ones. They are not decoration: the marketing pages that were rebuilt
+   to the DAWN reference — about, the-lab, pricing, the-quest, circles, operators —
+   each call for them, and shipped flat without them. Between them they appear in
+   43 places across DAWN's own kit files.
+
+   Every one is a ::before / ::after on a positioned parent, pointer-events: none,
+   so none of them can intercept a click or change layout. Each is composited from
+   TOKENS (--color-ink, --color-primary, --color-on-ink) rather than fixed rgba, so
+   Midnight retunes them for free — which is most of the point of porting them
+   rather than hand-rolling a gradient per page. */
+
+/* scanlines — the fine horizontal rule pattern over an ink band. soft-light so it
+   reads as texture in the surface rather than as lines drawn on top of it. */
+.scanlines { position: relative; }
+.scanlines::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-on-ink) 5%, transparent) 0px,
+    color-mix(in srgb, var(--color-on-ink) 5%, transparent) 1px,
+    transparent 1px, transparent 4px
+  );
+  opacity: 0.55; mix-blend-mode: soft-light;
+}
+
+/* grain — film grain, as an inline SVG turbulence so it costs no request and
+   cannot 404. 5.5% opacity: present as tooth, invisible as pattern. */
+.grain { position: relative; }
+.grain::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* vignette — darkens the corners of a photographic band so overlaid copy holds
+   its contrast at the edges, where a scrim alone is thinnest. */
+.vignette { position: relative; }
+.vignette::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 78% 68% at 50% 46%, transparent 42%, color-mix(in srgb, var(--color-ink) 62%, transparent) 100%);
+}
+
+/* edge-light — a single amber hairline along the top edge, fading at both ends.
+   The seam DAWN puts between a dark beat and what precedes it. */
+.edge-light { position: relative; }
+.edge-light::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px; pointer-events: none;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-primary) 62%, transparent) 22%, color-mix(in srgb, var(--color-primary) 62%, transparent) 78%, transparent);
+}
+
+/* halo — a soft amber bloom behind an element. z-index 0 with inset -45%, so it
+   spills well past its box; the content it sits behind needs its own stacking. */
+.halo { position: relative; }
+.halo::before {
+  content: ''; position: absolute; inset: -45%; pointer-events: none; z-index: 0;
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--color-primary) 42%, transparent) 0%, transparent 68%);
+  filter: blur(14px);
+}
+
+/* slat-fade — dissolves the bottom of a slat band into the marketing canvas, so a
+   dark section ends by resolving rather than by stopping. */
+.slat-fade { position: relative; }
+.slat-fade::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, transparent 55%, var(--color-marketing-canvas) 100%);
+}
+
+/* amber-underline — a highlighter stroke through the lower third of a phrase.
+   A gradient rather than a border so it sits UNDER the descenders. */
+.amber-underline {
+  background: linear-gradient(180deg,
+    transparent 0 84%,
+    color-mix(in srgb, var(--color-primary) 62%, transparent) 84% 95%,
+    transparent 95%);
+  padding: 0 0.06em;
+}
+
+/* animate-glow — the slow amber pulse. Its `freq-glow` keyframes were already
+   ported; the class that uses them was not, so the animation existed and nothing
+   could reach it. */
+.animate-glow { animation: freq-glow 6s ease-in-out infinite; }
+
+/* DAWN names this `.animate-warmup`; this codebase shipped it as
+   `.animate-warmup-flash`. Aliased rather than renamed, so a DAWN screen pasted in
+   works unedited and the existing call sites keep working. */
+.animate-warmup { animation: warmup-flash 0.7s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-glow, .animate-warmup { animation: none; }
+  /* The static textures stay: they are surface, not motion, and removing them
+     would change the design rather than calm it. */
 }
 
 /* ── glass — frosted chrome over moving content: a sticky header, a floating dock.

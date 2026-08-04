@@ -10,9 +10,8 @@
 //     the isStaff(webRole) operator check the event Layout editor uses.
 //
 // Reads do NOT gate here (the /admin/beta layout re-asserts staffCan marketing;
-// the read functions in lib/beta/* are called only below that gate) — matching
-// lib/studio/beta.ts. Mutations self-gate through these helpers and return an
-// ActionResult on denial. Server-only.
+// the read functions in lib/beta/* are called only below that gate). Mutations
+// self-gate through these helpers and return an ActionResult on denial. Server-only.
 
 import { getCallerProfile } from '@/lib/auth'
 import { getStaffMember } from '@/lib/staff'

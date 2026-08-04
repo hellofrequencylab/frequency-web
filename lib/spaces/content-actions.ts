@@ -56,6 +56,9 @@ function revalidateLanding(slug: string) {
   revalidatePath(`/spaces/${slug}`)
   revalidatePath(`/spaces/${slug}/edit-page`)
   revalidatePath(`/spaces/${slug}/community`)
+  // The operator's OWN editor surface. Omitting it meant a write revalidated every public
+  // surface except the page the operator was standing on.
+  revalidatePath(`/spaces/${slug}/settings/basics`)
 }
 
 // ── Member posts on the Community feed (Phase 2b) ─────────────────────────────────────────────────
@@ -383,15 +386,32 @@ export async function createSpaceFaq(slug: string, input: FaqInput): Promise<Act
   const question = input.question.trim().slice(0, 500)
   const answer = input.answer.trim().slice(0, 5000)
   if (!question) return fail('Add a question first.')
+  // An answer is required, not optional. An empty one renders a blank accordion panel AND is
+  // silently dropped from the FAQPage JSON-LD (the block filters `!qa.a`), so the operator sees
+  // a broken row and search engines see nothing -- a failure that reports itself as success.
+  if (!answer) return fail('Add an answer too.')
+
+  // APPEND, do not default to 0. `Number.isFinite(undefined)` is false, so every FAQ an operator
+  // created would have landed at position 0 -- tied with the first imported row, since the
+  // importer seeds 0..n. Combined with the missing tiebreak on the read (fixed in
+  // content-data.ts), tied positions meant the public page reordered itself between requests.
+  let position: number
+  if (Number.isFinite(input.position)) {
+    position = Math.trunc(input.position as number)
+  } else {
+    const { data: last } = await db()
+      .from('space_faqs')
+      .select('position')
+      .eq('space_id', auth.spaceId)
+      .order('position', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    position = last ? Number((last as { position: number }).position) + 1 : 0
+  }
 
   const { data, error } = await db()
     .from('space_faqs')
-    .insert({
-      space_id: auth.spaceId,
-      question,
-      answer,
-      position: Number.isFinite(input.position) ? Math.trunc(input.position as number) : 0,
-    })
+    .insert({ space_id: auth.spaceId, question, answer, position })
     .select('id')
     .single()
   if (error || !data) return fail('Could not add that question. Try again.')
