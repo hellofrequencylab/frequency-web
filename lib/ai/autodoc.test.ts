@@ -3,6 +3,8 @@ import {
   buildAutodocMessages,
   parseAutodocResponse,
   fallbackItems,
+  withUnreviewed,
+  autodocMaxTokens,
   formatAdvisoryComment,
   AUTODOC_MARKER,
 } from './autodoc'
@@ -32,13 +34,42 @@ describe('parseAutodocResponse', () => {
   it('returns [] on non-JSON', () => {
     expect(parseAutodocResponse('no json here', articles)).toEqual([])
   })
+  it('salvages the finished objects from a reply cut short mid-array', () => {
+    const text = `[{"category":"getting-started","slug":"join-a-circle","needsUpdate":true,"note":"cap changed"},{"category":"the-quest","slug":"zaps-and`
+    const items = parseAutodocResponse(text, articles)
+    expect(items).toHaveLength(1)
+    expect(items[0].slug).toBe('join-a-circle')
+  })
+  it('is not fooled by braces inside strings', () => {
+    const text = `[{"category":"getting-started","slug":"join-a-circle","needsUpdate":false,"note":"see {this} \\" thing"}]`
+    expect(parseAutodocResponse(text, articles)).toHaveLength(1)
+  })
+})
+
+describe('autodocMaxTokens', () => {
+  it('scales with the article count so long lists are not truncated', () => {
+    expect(autodocMaxTokens(2)).toBe(800)
+    expect(autodocMaxTokens(46)).toBeGreaterThan(5000)
+    expect(autodocMaxTokens(500)).toBe(8000)
+  })
 })
 
 describe('fallbackItems', () => {
-  it('flags every affected article for manual review', () => {
+  it('lists every affected article without a per-row excuse', () => {
     const items = fallbackItems(articles)
     expect(items).toHaveLength(2)
-    expect(items.every((i) => i.needsUpdate)).toBe(true)
+    expect(items.every((i) => i.note === '')).toBe(true)
+  })
+})
+
+describe('withUnreviewed', () => {
+  it('adds an explicit unchecked row for articles the model skipped', () => {
+    const partial = [{ category: 'getting-started', slug: 'join-a-circle', needsUpdate: false, note: '' }]
+    const items = withUnreviewed(partial, articles)
+    expect(items).toHaveLength(2)
+    const missing = items.find((i) => i.slug === 'zaps-and-gems')!
+    expect(missing.needsUpdate).toBe(true)
+    expect(missing.note).toContain('Not reviewed')
   })
 })
 
@@ -58,5 +89,27 @@ describe('formatAdvisoryComment', () => {
   it('says nothing needs updating when nothing is flagged', () => {
     const c = formatAdvisoryComment([{ category: 'a', slug: 'b', needsUpdate: false, note: '' }], [])
     expect(c).toContain('No help articles look like they need an update')
+  })
+
+  it('leads with ONE outage banner when the review did not run, not a row per article', () => {
+    const c = formatAdvisoryComment(fallbackItems(articles), ['app/(main)/circles/page.tsx'], { kind: 'no-key' })
+    expect(c).toContain('⚠️ **The AI review did not run.**')
+    expect(c).toContain('ANTHROPIC_API_KEY')
+    // one statement of the outage, at the top
+    expect(c.match(/The AI review did not run/g)).toHaveLength(1)
+    // the list is a lookup, not a to-do list
+    expect(c).not.toContain('- [ ]')
+    expect(c).toContain('<details>')
+    expect(c).not.toContain('Vera reviewed the help articles')
+  })
+
+  it('names the failure when the model call threw', () => {
+    const c = formatAdvisoryComment(fallbackItems(articles), [], { kind: 'call-failed', detail: '401 invalid x-api-key' })
+    expect(c).toContain('401 invalid x-api-key')
+  })
+
+  it('names AI_DISABLED when AI is switched off on purpose', () => {
+    const c = formatAdvisoryComment(fallbackItems(articles), [], { kind: 'ai-disabled' })
+    expect(c).toContain('AI_DISABLED')
   })
 })

@@ -1,16 +1,16 @@
-# check:rls deny-all allowlist — tables that intentionally have RLS ENABLED but NO POLICY.
-#
-# RLS-on-no-policy = FAIL-CLOSED: the table is reachable ONLY by the service-role client
-# (which bypasses RLS); anon/authenticated get nothing. It is the correct posture for a table
-# no caller-role should ever touch directly — written/read via the admin client behind
-# app-layer authz (server actions, crons, webhooks). This mirrors Supabase's own advisor,
-# which rates `rls_enabled_no_policy` as INFO (safe), not a vulnerability.
-#
-# This file IS the documented posture. The guard (scripts/check-rls.mjs) fails a NEW table
-# that has RLS off (real exposure) OR RLS-on-no-policy and is NOT listed here — forcing a
-# conscious "is this deny-all on purpose?" decision at PR time. To intentionally add a
-# service-role-only table, add its name below. One table per line; # comments allowed.
 
+#
+#
+# (which bypasses RLS); anon/authenticated get nothing. It is the correct posture for a table
+# RLS-on-no-policy = FAIL-CLOSED: the table is reachable ONLY by the service-role client
+# This file IS the documented posture. The guard (scripts/check-rls.mjs) fails a NEW table
+# app-layer authz (server actions, crons, webhooks). This mirrors Supabase's own advisor,
+# check:rls deny-all allowlist — tables that intentionally have RLS ENABLED but NO POLICY.
+# conscious "is this deny-all on purpose?" decision at PR time. To intentionally add a
+# no caller-role should ever touch directly — written/read via the admin client behind
+# service-role-only table, add its name below. One table per line; # comments allowed.
+# that has RLS off (real exposure) OR RLS-on-no-policy and is NOT listed here — forcing a
+# which rates `rls_enabled_no_policy` as INFO (safe), not a vulnerability.
 agent_actions
 ai_help_queries
 ai_usage
@@ -24,19 +24,25 @@ beta_tasks
 business_intake
 challenge_qr_codes
 circle_transfer_offers
+claim_tokens
 content_ratings
 creator_tips
+element_settings
 email_events
 email_suppressions
+email_templates
 entry_campaigns
 entry_point_conversions
 entry_point_variants
 entry_template_settings
 event_blurb_cache
 event_embeddings
+event_host_transfers
+event_placement_requests
 financial_transactions
 founding_members
 help_chunks
+invite_links
 journey_drip_sends
 journey_enrollments
 journey_phase_events
@@ -53,11 +59,11 @@ nurture_enrollments
 nurture_sequences
 nurture_steps
 pages
-podcast_shows
 platform_flag_events
 platform_settings
 playbook_runs
 playbooks
+podcast_shows
 practice_slug_redirects
 pricing_feature_gates
 pricing_settings
@@ -74,18 +80,13 @@ resonance_embeddings
 resonance_matches
 segments
 space_availability_overrides
+space_collaborations
+space_follower_event_reminders_sent
 space_function_type_defaults
+space_venue_holds
 stripe_webhook_events
 team_members
 trust_scores
 trust_signals
-vera_config
 vera_autonomy_decisions
-event_placement_requests
-email_templates
-element_settings
-space_collaborations
-space_venue_holds
-space_follower_event_reminders_sent
-claim_tokens
-event_host_transfers
+vera_config

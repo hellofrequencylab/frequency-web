@@ -217,7 +217,7 @@ export default function WhatIsFrequencyPage() {
 
       <PullQuote tone="surface">
         Not a following to perform for.{' '}
-        <span className="text-primary">A few people who expect you on Thursday.</span>
+        <span className="text-primary-strong">A few people who expect you on Thursday.</span>
       </PullQuote>
 
       {/* How it works, at a glance. Three steps, then the taxonomy that carries
@@ -328,8 +328,8 @@ export default function WhatIsFrequencyPage() {
 
       <PullQuote tone="canvas">
         We don&apos;t want to be{' '}
-        <span className="text-primary">followed</span>. We want to be{' '}
-        <span className="text-primary">joined</span>.
+        <span className="text-primary-strong">followed</span>. We want to be{' '}
+        <span className="text-primary-strong">joined</span>.
       </PullQuote>
 
       {/* Why it exists — the mission, said plainly, once. */}
@@ -354,7 +354,7 @@ export default function WhatIsFrequencyPage() {
 
       <Statement tone="canvas">
         We&apos;re not building a following. We&apos;re building{' '}
-        <span className="text-primary">infrastructure</span>.
+        <span className="text-primary-strong">infrastructure</span>.
       </Statement>
 
       {/* The Community Collective: who it serves and how the money works. */}

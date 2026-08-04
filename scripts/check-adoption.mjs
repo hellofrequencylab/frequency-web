@@ -8,7 +8,7 @@
 //
 //   * a count that RISES above its frozen baseline FAILS CI — new code may not add debt,
 //   * a count that HOLDS or SHRINKS passes, and prints the delta as progress,
-//   * `--update` re-freezes every count from reality (run it at the end of a sweep, so the
+//   * `--update` re-freezes counts from reality (run it at the end of a sweep, so the
 //     baselines file reads as the scoreboard of what the sweeps actually bought).
 //
 // Each entry in scripts/adoption-baselines.json declares: a `key`, a human `description`, a
@@ -20,13 +20,49 @@
 // The per-file ratchet is right when each entry is a justified exception (an RLS bypass); a
 // count is right when the goal is monotone decline of an undifferentiated population.
 //
-// Usage: `node scripts/check-adoption.mjs [--update] [--key <key>]` (or `pnpm check:adoption`).
+// ---------------------------------------------------------------------------------------------
+// PROVENANCE — added 2026-08-04 after the ratchet laundered a raise (see below).
+// ---------------------------------------------------------------------------------------------
+// `baseline vs current` answers "did debt rise since the freeze?" but never "was the freeze
+// itself justified?". A blind `--update` writes whatever it measures, so it cannot tell a WIN
+// (684 shadow literals → 54, a codemod landed) from a RAISE (raw-button-bg 494 → 529) — and a
+// raise, once written, reads green forever. ADR-928 forbids exactly that: falls are written
+// down, rises are refused unless forced and explained.
+//
+// So every entry now carries `frozen: { at, value, direction, basis, reason }` plus a `history`
+// of every change, and three rules hold the record honest:
+//
+//   1. PROVENANCE INTEGRITY — `frozen.value` must equal `baseline`. Hand-editing a number
+//      without writing why now FAILS the gate instead of passing silently.
+//   2. BASIS FINGERPRINT — `frozen.basis` hashes the entry's measurement basis (mode +
+//      patterns + absent + include + exclude). Change the pattern or the scope and the number
+//      stops being comparable to the one it is checked against, so the gate FAILS and demands a
+//      re-freeze that records the basis change. This is the hole that let a narrowed pattern
+//      book an 809-site "shrink" nobody swept.
+//   3. ASYMMETRIC MERGE — `--update` writes falls automatically; a RISE is refused unless
+//      `--allow-raise --reason "<why>"`, and is then recorded as `direction: "raised"` and
+//      flagged ⚠️ on every subsequent run. A raised floor is debt the ratchet stopped guarding,
+//      and it stays visible and attributable for as long as it is raised.
+//
+// None of this loosens the gate: every rule adds a failure mode, none removes one.
+//
+// Usage: `node scripts/check-adoption.mjs [--key <key>]`
+//        `node scripts/check-adoption.mjs --update --reason "<why>" [--allow-raise]`
 
 import { readFileSync, readdirSync, existsSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 const BASELINES = join('scripts', 'adoption-baselines.json')
+
+/** How a baseline came to hold its value. `rebased` = the measurement basis changed under it. */
+export const DIRECTIONS = ['seed', 'lowered', 'raised', 'rebased']
+
+/** Directions that were NOT bought by a sweep — the gate names these on every run. */
+const UNEARNED = new Set(['raised', 'rebased'])
+
+const today = () => new Date().toISOString().slice(0, 10)
 
 // ---------------------------------------------------------------------------------------------
 // Scope matching (a small glob subset: `**`, `*`, `?`, `{a,b}` — enough for path scopes, and
@@ -100,11 +136,71 @@ export function countEntry(entry, files) {
   return { count, files: hit.sort() }
 }
 
+// ---------------------------------------------------------------------------------------------
+// Provenance
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Fingerprint an entry's MEASUREMENT BASIS — everything that decides what gets counted.
+ * Two numbers are only comparable when their bases match, so the baseline records the basis it
+ * was measured under and the gate refuses to compare across a change.
+ */
+export function basisFingerprint(entry) {
+  const canonical = JSON.stringify({
+    mode: entry.mode ?? 'matches',
+    patterns: entry.patterns ?? [],
+    absent: entry.absent ?? [],
+    include: entry.include ?? [],
+    exclude: entry.exclude ?? [],
+  })
+  return createHash('sha256').update(canonical).digest('hex').slice(0, 12)
+}
+
+/**
+ * Check that every baseline can account for itself. Returns human-readable problems; any
+ * problem fails the gate, because an unaccountable baseline is indistinguishable from a
+ * laundered one.
+ */
+export function auditProvenance(entries) {
+  const problems = []
+  for (const entry of entries) {
+    const f = entry.frozen
+    if (!f || typeof f !== 'object') {
+      problems.push(`${entry.key}: baseline ${entry.baseline} carries no \`frozen\` record — where did this number come from?`)
+      continue
+    }
+    if (f.value !== entry.baseline) {
+      problems.push(
+        `${entry.key}: baseline ${entry.baseline} ≠ frozen.value ${f.value} — the number was hand-edited without recording why.`,
+      )
+    }
+    if (!DIRECTIONS.includes(f.direction)) {
+      problems.push(`${entry.key}: frozen.direction "${f.direction}" is not one of ${DIRECTIONS.join(' / ')}.`)
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(f.at ?? '')) {
+      problems.push(`${entry.key}: frozen.at "${f.at}" is not an ISO date — a baseline must say WHEN it was frozen.`)
+    }
+    if (typeof f.reason !== 'string' || f.reason.trim().length < 12) {
+      problems.push(`${entry.key}: frozen.reason must say, in a sentence, what moved this number.`)
+    }
+    const basis = basisFingerprint(entry)
+    if (f.basis !== basis) {
+      problems.push(
+        `${entry.key}: the measurement basis changed since the baseline was frozen ` +
+          `(basis ${f.basis ?? '—'} → ${basis}). ${entry.baseline} was measured by a different question, so it is ` +
+          `not a floor for the current one. Re-freeze:  node scripts/check-adoption.mjs --update --key ${entry.key} --reason "<what changed>"`,
+      )
+    }
+  }
+  return problems
+}
+
 /** Evaluate every entry; returns one row per key (the scoreboard). */
 export function evaluate(entries, files) {
   return entries.map((entry) => {
     const { count, files: hits } = countEntry(entry, files)
     const delta = count - entry.baseline
+    const frozen = entry.frozen ?? null
     return {
       key: entry.key,
       description: entry.description,
@@ -112,24 +208,86 @@ export function evaluate(entries, files) {
       current: count,
       delta,
       status: delta > 0 ? 'risen' : delta < 0 ? 'shrunk' : 'held',
+      frozen,
+      // A floor nobody swept for: raised outright, or rebased onto a different measurement.
+      unearned: frozen ? UNEARNED.has(frozen.direction) : false,
       files: hits,
     }
   })
 }
 
-/** Render the scoreboard as a fixed-width table. */
+/** Render the scoreboard as a fixed-width table. Provenance rides alongside the numbers. */
 export function formatScoreboard(rows) {
-  const head = ['key', 'baseline', 'current', 'delta', '']
+  const head = ['key', 'baseline', 'current', 'delta', '', 'frozen', 'how']
   const body = rows.map((r) => [
     r.key,
     String(r.baseline),
     String(r.current),
     r.delta === 0 ? '—' : r.delta > 0 ? `+${r.delta}` : String(r.delta),
     r.status === 'risen' ? '🔴 rose' : r.status === 'shrunk' ? '✅ shrank' : '✅ held',
+    r.frozen?.at ?? '—',
+    r.frozen ? `${r.unearned ? '⚠️ ' : ''}${r.frozen.direction}` : '⚠️ no record',
   ])
   const widths = head.map((_, i) => Math.max(...[head, ...body].map((r) => r[i].length)))
-  const line = (cells) => '  ' + cells.map((c, i) => (i === 0 || i === 4 ? c.padEnd(widths[i]) : c.padStart(widths[i]))).join('  ').trimEnd()
+  const pad = (c, i) => (i === 0 || i >= 4 ? c.padEnd(widths[i]) : c.padStart(widths[i]))
+  const line = (cells) => '  ' + cells.map(pad).join('  ').trimEnd()
   return [line(head), line(widths.map((w) => '-'.repeat(w))), ...body.map(line)].join('\n')
+}
+
+/**
+ * Name every baseline that is NOT standing on retired debt. `baseline vs current` cannot see
+ * these — a raised floor reads "held" forever — so the gate says them out loud on every run,
+ * with the date, the movement and the reason attached.
+ */
+export function formatProvenanceNotes(rows) {
+  const flagged = rows.filter((r) => r.unearned)
+  if (flagged.length === 0) return ''
+  const out = [
+    `  ⚠️  ${flagged.length} baseline(s) were not bought by a sweep. A raised or rebased floor is debt the`,
+    '      ratchet stopped guarding, so it stays named here until a sweep brings the number back down:',
+  ]
+  for (const r of flagged) {
+    const last = r.frozen
+    out.push(`        • ${r.key} — ${last.direction} ${last.from === undefined ? '' : `${last.from} → ${last.value} `}on ${last.at}`)
+    out.push(`            ${last.reason}`)
+  }
+  return out.join('\n')
+}
+
+/**
+ * Merge measured counts into the config, ASYMMETRICALLY (ADR-928): falls are written down,
+ * rises are refused unless explicitly allowed AND explained. Mutates `config`; returns what
+ * happened so the caller can refuse to write.
+ */
+export function mergeBaselines(config, rows, { allowRaise = false, reason = '', at = today() } = {}) {
+  const raised = []
+  const changed = []
+  for (const row of rows) {
+    const entry = config.entries.find((e) => e.key === row.key)
+    if (!entry) continue
+    const basis = basisFingerprint(entry)
+    const basisMoved = entry.frozen?.basis !== undefined && entry.frozen.basis !== basis
+    if (row.current > entry.baseline) raised.push({ key: row.key, from: entry.baseline, to: row.current })
+    if (row.current === entry.baseline && !basisMoved && entry.frozen) continue
+    changed.push({ key: row.key, from: entry.baseline, to: row.current, basisMoved })
+  }
+  if (raised.length > 0 && !allowRaise) return { raised, changed: [], written: false }
+
+  for (const change of changed) {
+    const entry = config.entries.find((e) => e.key === change.key)
+    const direction = change.basisMoved
+      ? 'rebased'
+      : entry.frozen === undefined
+        ? 'seed'
+        : change.to > change.from
+          ? 'raised'
+          : 'lowered'
+    entry.history = [...(entry.history ?? []), { at, from: change.from, to: change.to, direction, reason }]
+    entry.baseline = change.to
+    entry.frozen = { at, value: change.to, direction, basis: basisFingerprint(entry), reason }
+    if (direction !== 'seed') entry.frozen.from = change.from
+  }
+  return { raised, changed, written: true }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -162,9 +320,11 @@ export function loadConfig(file = BASELINES) {
 // CLI
 // ---------------------------------------------------------------------------------------------
 
+const flag = (name) => (process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : null)
+
 function main() {
   const config = loadConfig()
-  const only = process.argv.includes('--key') ? process.argv[process.argv.indexOf('--key') + 1] : null
+  const only = flag('--key')
   const entries = only ? config.entries.filter((e) => e.key === only) : config.entries
   if (only && entries.length === 0) {
     console.error(`✗ no baseline entry with key "${only}". Keys: ${config.entries.map((e) => e.key).join(', ')}`)
@@ -174,14 +334,52 @@ function main() {
   const rows = evaluate(entries, corpus)
 
   if (process.argv.includes('--update')) {
-    for (const row of rows) {
-      const entry = config.entries.find((e) => e.key === row.key)
-      entry.baseline = row.current
+    const reason = flag('--reason')
+    if (!reason || reason.trim().length < 12) {
+      console.error(
+        '✗ --update needs --reason "<what moved these numbers>".\n' +
+          '  A baseline with no stated reason is a number nobody can audit later; that is how a\n' +
+          '  regression gets laundered into the floor. One sentence naming the sweep (or the basis\n' +
+          '  change) is enough — it is written into the entry and printed on every future run.',
+      )
+      process.exit(1)
+    }
+    const allowRaise = process.argv.includes('--allow-raise')
+    const result = mergeBaselines(config, rows, { allowRaise, reason })
+    if (!result.written) {
+      console.error(`\n✗ ${result.raised.length} debt class(es) would be RAISED, not lowered. Nothing written.\n`)
+      for (const r of result.raised) console.error(`    ${r.key}: ${r.from} → ${r.to}  (+${r.to - r.from})`)
+      console.error(
+        '\n  Re-freezing upward is not a re-freeze, it is a surrender: the new sites stop being debt\n' +
+          '  and the ratchet reads green forever. Retire them instead. If the rise is genuinely correct\n' +
+          '  (a class was redefined, code moved between scopes), say so and force it:\n' +
+          '    node scripts/check-adoption.mjs --update --allow-raise --reason "<why the rise is correct>"\n' +
+          '  The raise is then recorded with its date and reason, and flagged on every run until it falls.\n',
+      )
+      process.exit(1)
     }
     writeFileSync(BASELINES, `${JSON.stringify(config, null, 2)}\n`)
-    console.log(`✓ adoption baselines re-frozen (${rows.length} entr${rows.length === 1 ? 'y' : 'ies'}):\n`)
-    console.log(formatScoreboard(rows))
+    const refreshed = evaluate(entries, corpus)
+    console.log(`✓ adoption baselines re-frozen (${result.changed.length} entr${result.changed.length === 1 ? 'y' : 'ies'} changed):\n`)
+    console.log(formatScoreboard(refreshed))
+    const notes = formatProvenanceNotes(refreshed)
+    if (notes) console.log(`\n${notes}`)
     return
+  }
+
+  // A baseline that cannot account for itself fails BEFORE any count is compared to it: comparing
+  // against an unaccountable number is how the gate reported ten green classes while one of them
+  // was standing on a raise and another on a narrowed pattern.
+  const problems = auditProvenance(entries)
+  if (problems.length > 0) {
+    console.error(`\n✗ adoption ratchet: ${problems.length} baseline(s) cannot account for themselves.\n`)
+    for (const p of problems) console.error(`  • ${p}`)
+    console.error(
+      '\n  Every baseline carries `frozen: { at, value, direction, basis, reason }`. The gate compares\n' +
+        '  today against a number, so the number has to say when it was frozen, which way it moved, what\n' +
+        '  question it answered (the basis fingerprint), and why. Fix the record — do not delete the check.\n',
+    )
+    process.exit(1)
   }
 
   const risen = rows.filter((r) => r.status === 'risen')
@@ -192,8 +390,11 @@ function main() {
         (shrunk.length ? ` — ${shrunk.length} shrank (${shrunk.reduce((a, r) => a + r.delta, 0)} sites retired).` : '.'),
     )
     console.log(formatScoreboard(rows))
+    const notes = formatProvenanceNotes(rows)
+    if (notes) console.log(`\n${notes}`)
     if (shrunk.length) {
-      console.log('\n  A sweep landed. Re-freeze so the new floor holds:  node scripts/check-adoption.mjs --update')
+      console.log('\n  A sweep landed. Re-freeze so the new floor holds:')
+      console.log('    node scripts/check-adoption.mjs --update --reason "<which sweep retired them>"')
     }
     return
   }
@@ -211,8 +412,9 @@ function main() {
     '\n  Design debt is a one-way street: these counts may fall, never rise. Use the kit primitive or\n' +
       '  the role token instead of the literal (docs/UX-MATURITY-PLAN.md Lift 2, docs/PAGE-FRAMEWORK.md).\n' +
       '  If a rise is genuinely correct (a sweep moved code between scopes, a class was redefined), run\n' +
-      '    node scripts/check-adoption.mjs --update\n' +
-      '  in the SAME PR so the new number is a reviewable line in the diff.\n',
+      '    node scripts/check-adoption.mjs --update --allow-raise --reason "<why the rise is correct>"\n' +
+      '  in the SAME PR, so the new number is a reviewable line in the diff that carries its own date,\n' +
+      '  direction and reason — and stays flagged ⚠️ on every run until a sweep brings it back down.\n',
   )
   process.exit(1)
 }

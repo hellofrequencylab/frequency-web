@@ -119,7 +119,7 @@ export default async function ComparisonPage({
 
       <PullQuote tone="surface">
         The invite is the easy part.{' '}
-        <span className="text-primary">The standing room is the thing.</span>
+        <span className="text-primary-strong">The standing room is the thing.</span>
       </PullQuote>
 
       {/* The scannable contrast. One concept per row; honest about both sides. */}

@@ -125,7 +125,7 @@ export default function CalmDownFastPage() {
 
       <PullQuote tone="surface">
         Relaxing is not a decision.{' '}
-        <span className="text-primary">It is something you do with your body.</span>
+        <span className="text-primary-strong">It is something you do with your body.</span>
       </PullQuote>
 
       {/* One concept per section. Question H2 in the reader's words, answer first. */}
@@ -199,7 +199,7 @@ export default function CalmDownFastPage() {
 
       <Statement tone="canvas">
         You do not have to fix your whole nervous system today.{' '}
-        <span className="text-primary">You have to take one slow breath.</span>
+        <span className="text-primary-strong">You have to take one slow breath.</span>
       </Statement>
 
       {/* One concept per section: the phone-as-cause reader. Cross-links the feed cluster. */}

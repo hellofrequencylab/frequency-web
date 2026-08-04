@@ -102,3 +102,46 @@ both pending migrations (`20270204000000_member_practice_terms`,
 ledger under their exact repo versions. Verified: 8/8 + 4/4 columns present, 2/2 ledger
 rows. Repo ⇄ ledger drift for set (a) is now zero. The cosmetic repairs (4 duplicate
 real-clock ledger rows, 1 wrong name field on `20240118000000`) remain open.
+
+---
+
+## 2026-08-04 — `pages` re-keyed to `(space_id, slug)`
+
+| | |
+|---|---|
+| File | `supabase/migrations/20270209000000_pages_space_slug_unique.sql` |
+| Applied | ✅ 2026-08-04, project `azsqfeonabsbmemvddqd` |
+| Additive? | 🔴 **No** — it DROPS `pages_slug_key`. Applied on explicit owner instruction, not under the standing additive-only authorization. |
+| ADR | [ADR-927](../DECISIONS.md) |
+
+**Why it was needed.** The live DDL carried `pages_slug_key UNIQUE (slug)` beside a NON-unique
+`pages_space_slug_idx (space_id, slug)`. The migration that space-scoped the table
+(`20260710000000`) was an expand step that never took its contract step, while every reader and
+writer in the app queries a page as `(space_id, slug)`. At per-Space authoring un-gate, a second
+Space publishing `about` would either raise 23505 or have its `onConflict: 'slug'` upsert resolve
+against another Space's row and overwrite it.
+
+**Pre-flight, run immediately before applying:**
+
+| Check | Result |
+|---|---|
+| Duplicate `(space_id, slug)` pairs | 0 |
+| Rows with null `space_id` | 0 |
+| Total pages | 5 |
+| Unique constraints before | `pages_slug_key` |
+
+**Verified after applying:**
+
+```
+pages_space_id_slug_key   UNIQUE NULLS NOT DISTINCT (space_id, slug)   ✅ present
+pages_slug_key                                                          ✅ gone
+pages_space_slug_idx                                                    ✅ dropped (redundant)
+```
+
+⚠️ **Ledger version mismatch.** The repo file is stamped `20270209000000`; the applied row is
+`20260804042556`, because `apply_migration` assigns its own timestamp. The DDL is identical and
+the migration is idempotent, so a later `db push` is a no-op — but the two ledgers disagree on
+version, and anyone diffing by version rather than by name will see a phantom gap.
+
+⚠️ `space_id` remains NULLABLE. `NULLS NOT DISTINCT` holds the key honest in the meantime;
+a NOT NULL contract step is still owed.

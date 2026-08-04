@@ -676,7 +676,7 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/admin/nexuses': ADMIN_NEXUSES_MODULE_IDS,
   '/admin/moderation': ADMIN_MODERATION_MODULE_IDS,
   '/journeys': JOURNEYS_MODULE_IDS,
-  '/friends': FRIENDS_MODULE_IDS,
+  '/network/friends': FRIENDS_MODULE_IDS,
   '/crew/leaderboard': LEADERBOARD_MODULE_IDS,
   '/journal': JOURNAL_MODULE_IDS,
   '/library/review': LIBRARY_REVIEW_MODULE_IDS,

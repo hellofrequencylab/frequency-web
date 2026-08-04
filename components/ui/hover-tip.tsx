@@ -20,16 +20,19 @@ export function HoverTip({
    *  class order, and the tip would leak through `hidden` on mobile. */
   className?: string
 }) {
+  // Hover is never alone (docs/INTERACTION-STATES.md §2): the bubble also opens when the
+  // wrapped control takes KEYBOARD focus, so a tab-only member gets the same label a mouse
+  // gets. Without this the tip was pointer-only, and these controls are icon-only.
   const pos =
     side === 'top'
-      ? 'bottom-full mb-1.5 group-hover/tt:-translate-y-0 translate-y-1'
-      : 'top-full mt-1.5 group-hover/tt:translate-y-0 -translate-y-1'
+      ? 'bottom-full mb-1.5 translate-y-1 group-hover/tt:-translate-y-0 group-focus-within/tt:-translate-y-0'
+      : 'top-full mt-1.5 -translate-y-1 group-hover/tt:translate-y-0 group-focus-within/tt:translate-y-0'
   return (
     <span className={`group/tt relative ${className ?? 'inline-flex'}`}>
       {children}
       <span
         role="tooltip"
-        className={`pointer-events-none absolute left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-md bg-text px-2 py-1 text-2xs font-semibold text-on-primary opacity-0 shadow-lg transition-[opacity,transform] duration-100 ease-out group-hover/tt:opacity-100 ${pos}`}
+        className={`pointer-events-none absolute left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-md bg-text px-2 py-1 text-2xs font-semibold text-on-primary opacity-0 shadow-lg transition-[opacity,transform] duration-100 ease-out motion-reduce:transition-none group-hover/tt:opacity-100 group-focus-within/tt:opacity-100 ${pos}`}
       >
         {label}
       </span>

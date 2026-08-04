@@ -188,7 +188,7 @@ function LegacyTheQuest() {
 
       <Statement tone="surface">
         Not points to grind.{' '}
-        <span className="text-primary">A person to become.</span>
+        <span className="text-primary-strong">A person to become.</span>
       </Statement>
 
       {/* Zaps and Gems: the two currencies, in detail */}
@@ -296,7 +296,7 @@ function LegacyTheQuest() {
 
       <Statement tone="surface">
         You rise by{' '}
-        <span className="text-primary">finishing the work.</span>
+        <span className="text-primary-strong">finishing the work.</span>
       </Statement>
 
       {/* Quests: three Journeys per season */}

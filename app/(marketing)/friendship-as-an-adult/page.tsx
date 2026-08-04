@@ -201,7 +201,7 @@ export default function FriendshipPage() {
 
       <PullQuote tone="surface">
         You did not get worse at friendship.{' '}
-        <span className="text-primary">The easy ways to meet people disappeared.</span>
+        <span className="text-primary-strong">The easy ways to meet people disappeared.</span>
       </PullQuote>
 
       {/* One concept per section. Question H2 in the reader's words, answer first. */}
@@ -276,7 +276,7 @@ export default function FriendshipPage() {
 
       <Statement tone="canvas">
         The secret is not better small talk.{' '}
-        <span className="text-primary">It is the same room, more than once.</span>
+        <span className="text-primary-strong">It is the same room, more than once.</span>
       </Statement>
 
       {/* Absorbed from /find-like-minded-people: the reader who wants their people,
@@ -328,7 +328,7 @@ export default function FriendshipPage() {
 
       <Statement tone="surface">
         Your people are not hiding.{' '}
-        <span className="text-primary">They are in a room you have not been to twice.</span>
+        <span className="text-primary-strong">They are in a room you have not been to twice.</span>
       </Statement>
 
       {/* Absorbed from /meet-people-new-city: the reader starting over somewhere new. */}
@@ -419,7 +419,7 @@ export default function FriendshipPage() {
 
       <Statement tone="surface">
         You do not have to explain the silence.{' '}
-        <span className="text-primary">You have to send one warm line.</span>
+        <span className="text-primary-strong">You have to send one warm line.</span>
       </Statement>
 
       {/* One concept per section: the "too shy or too busy" reader. */}
@@ -512,7 +512,7 @@ export default function FriendshipPage() {
       <Statement tone="canvas">
         Get people together.
         <br />
-        Do things <span className="text-primary">on purpose.</span>
+        Do things <span className="text-primary-strong">on purpose.</span>
       </Statement>
 
       <BetaCTA

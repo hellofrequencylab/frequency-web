@@ -8,8 +8,13 @@ import { cn } from '@/lib/utils'
 // is the calm, neutral halo standardized in the sitewide focus sweep — never the
 // amber :focus-visible ring (this wins by specificity).
 
+// State set per docs/INTERACTION-STATES.md §2 (Field): rest · focus-visible · error · disabled.
+// ERROR is driven by `aria-invalid` on the control itself, so the a11y attribute and the look can
+// never drift apart: set `aria-invalid` when the value is bad and the danger border follows. ~9
+// call sites already set it and got nothing back visually; they light up from this one string.
+// DISABLED also takes `cursor-not-allowed`, so the state reads before a click, not after.
 export const fieldClasses =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 aria-[invalid=true]:border-danger aria-[invalid=true]:focus:border-danger aria-[invalid=true]:focus:ring-danger/30 disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-subtle'
 
 export const labelClasses = 'text-xs font-medium text-muted'
 
@@ -43,6 +48,7 @@ export function Label({ className, ...props }: LabelHTMLAttributes<HTMLLabelElem
 export function Field({
   label,
   hint,
+  error,
   className,
   labelClassName,
   children,
@@ -50,6 +56,12 @@ export function Field({
   label: ReactNode
   /** Optional helper text rendered under the control, inside the label. */
   hint?: ReactNode
+  /** What is wrong with the current value. Replaces the hint while it is set (two lines of
+   *  small print under one control is noise, and the error is the one that matters), and is
+   *  announced politely when it appears. Pair it with `aria-invalid` on the CONTROL — Field
+   *  wraps its child rather than cloning it, so it cannot set that attribute for you, and the
+   *  danger border in `fieldClasses` keys off `aria-invalid`, not off this prop. */
+  error?: ReactNode
   className?: string
   labelClassName?: string
   children: ReactNode
@@ -58,7 +70,10 @@ export function Field({
     <label className={cn('block', className)}>
       <span className={cn(labelClasses, 'mb-1 block', labelClassName)}>{label}</span>
       {children}
-      {hint ? <span className="mt-1 block text-xs text-subtle">{hint}</span> : null}
+      {hint && !error ? <span className="mt-1 block text-xs text-subtle">{hint}</span> : null}
+      <span aria-live="polite">
+        {error ? <span className="mt-1 block text-xs font-medium text-danger">{error}</span> : null}
+      </span>
     </label>
   )
 }

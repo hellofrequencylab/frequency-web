@@ -10,9 +10,14 @@ import { Search, X } from 'lucide-react'
 export function DirectorySearch({
   placeholder = 'Search by name…',
   paramKey = 'q',
+  disabled = false,
 }: {
   placeholder?: string
   paramKey?: string
+  /** Not available right now (an index still building, a directory the viewer cannot query
+   *  yet). A Field owes a disabled state per docs/INTERACTION-STATES.md §2; this one had none,
+   *  so callers had to hide the whole control or leave a live box that went nowhere. */
+  disabled?: boolean
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -48,14 +53,19 @@ export function DirectorySearch({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="w-full rounded-xl border border-border bg-surface py-2.5 pl-10 pr-9 text-sm text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none"
+        disabled={disabled}
+        className="w-full rounded-xl border border-border bg-surface py-2.5 pl-10 pr-9 text-sm text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
       />
       {value && (
         <button
           type="button"
           onClick={() => { setValue(''); push('') }}
           aria-label="Clear search"
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+          disabled={disabled}
+          // No `.press` here: the clear button is centered with `-translate-y-1/2`, and
+          // `.press` sets `transform` outright, so a press would drop it half its height.
+          // Pressed is expressed by the hover/active color step instead.
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text active:bg-border-strong/40 disabled:pointer-events-none disabled:opacity-50"
         >
           <X className="h-3.5 w-3.5" />
         </button>

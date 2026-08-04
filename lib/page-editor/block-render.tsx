@@ -27,6 +27,16 @@ import type { Config, Data, Metadata } from '@/lib/page-editor/types'
 //     transform + gets puck: { metadata }).
 //   • unknown item.type → skipped (null), never thrown; empty/missing doc → nothing.
 //
+// ONE DELIBERATE DIVERGENCE from Puck's rsc <Render>: `puck.isEditing`. Puck's rsc
+// render is a public-only path, so it can hardcode `false`; ours is ALSO the editor
+// canvas (DesktopEditor / MobileEditor / the mobile BlockList preview all render the
+// document through this component). `isEditing` is therefore a real prop, defaulting
+// to `false`, and every editor surface passes `isEditing`. Blocks read it as
+// `puck.isEditing` to show an authoring placeholder for a section that would render
+// nothing — a placeholder a visitor must never meet (ADR-927). It rides on the SAME
+// puck object at every depth, including inside slots, so a block behaves the same
+// nested in a SpaceLayout as it does at the top level.
+//
 // No hooks are used (Puck's rsc render leans on useMemo via useSlots; the memo is
 // pure so we inline it), which keeps BlockRender safe as a Server Component AND
 // inside client trees.
@@ -59,6 +69,15 @@ type RenderableData = {
   zones?: Record<string, Item[]>
 }
 
+// Everything the walk needs to render a block, threaded as ONE value so the render
+// channel (`puck`) can never disagree between depths. `isEditing` is TRUE only when an
+// editor canvas is rendering the tree; a public page always leaves it false.
+type RenderCtx = {
+  config: RenderableConfig
+  metadata: Metadata
+  isEditing: boolean
+}
+
 // ── Slot field transform (mirrors lib/data/default-slots + map-fields, sync,
 // recurseSlots=false — nested slots are resolved lazily per child by SlotItem). ──
 
@@ -77,10 +96,8 @@ function defaultSlots(props: AnyProps, fields: Fields): AnyProps {
 // them, so they're omitted — output is identical.)
 type SlotComponent = (dzProps?: { className?: string; style?: CSSProperties }) => ReactNode
 
-function makeSlot(content: Item[], config: RenderableConfig, metadata: Metadata): SlotComponent {
-  const Slot: SlotComponent = (dzProps) => (
-    <SlotRender {...dzProps} content={content} config={config} metadata={metadata} />
-  )
+function makeSlot(content: Item[], ctx: RenderCtx): SlotComponent {
+  const Slot: SlotComponent = (dzProps) => <SlotRender {...dzProps} content={content} ctx={ctx} />
   return Slot
 }
 
@@ -91,25 +108,22 @@ function walkField(
   fields: Fields,
   propKey: string,
   propPath: string,
-  config: RenderableConfig,
-  metadata: Metadata,
+  ctx: RenderCtx,
 ): unknown {
   const fieldType = fields[propKey]?.type
   if (fieldType === 'slot') {
     const content = (value ?? []) as Item[]
-    return makeSlot(content, config, metadata)
+    return makeSlot(content, ctx)
   }
   if (value && typeof value === 'object') {
     if (Array.isArray(value)) {
       const arrayFields = fields[propKey]?.type === 'array' ? fields[propKey]?.arrayFields : undefined
       if (!arrayFields) return value
-      return value.map((el, idx) =>
-        walkField(el, arrayFields, propKey, `${propPath}[${idx}]`, config, metadata),
-      )
+      return value.map((el, idx) => walkField(el, arrayFields, propKey, `${propPath}[${idx}]`, ctx))
     }
     if ('$$typeof' in (value as object)) return value // React element — leave intact
     const objectFields = fields[propKey]?.type === 'object' ? (fields[propKey]?.objectFields ?? {}) : fields
-    return walkObject(value as AnyProps, objectFields, (k) => `${propPath}.${k}`, config, metadata)
+    return walkObject(value as AnyProps, objectFields, (k) => `${propPath}.${k}`, ctx)
   }
   return value
 }
@@ -118,28 +132,23 @@ function walkObject(
   value: AnyProps,
   fields: Fields,
   getPropPath: (k: string) => string,
-  config: RenderableConfig,
-  metadata: Metadata,
+  ctx: RenderCtx,
 ): AnyProps {
   const out: AnyProps = {}
   for (const [k, v] of Object.entries(value)) {
-    out[k] = walkField(v, fields, k, getPropPath(k), config, metadata)
+    out[k] = walkField(v, fields, k, getPropPath(k), ctx)
   }
   return out
 }
 
 // Resolve a single item's props with its slot fields swapped for Slot components.
 // Mirrors useSlots' mergedProps = { ...item.props, ...mapFields(item).props }.
-function propsWithSlots(
-  item: { type?: string; props?: AnyProps },
-  config: RenderableConfig,
-  metadata: Metadata,
-): AnyProps {
+function propsWithSlots(item: { type?: string; props?: AnyProps }, ctx: RenderCtx): AnyProps {
   const itemType = item.type ?? 'root'
-  const componentConfig = itemType === 'root' ? config.root : config.components[itemType]
+  const componentConfig = itemType === 'root' ? ctx.config.root : ctx.config.components[itemType]
   const fields = componentConfig?.fields ?? {}
   const props = item.props ?? {}
-  const transformed = walkObject(defaultSlots(props, fields), fields, (k) => k, config, metadata)
+  const transformed = walkObject(defaultSlots(props, fields), fields, (k) => k, ctx)
   return { ...props, ...transformed }
 }
 
@@ -149,41 +158,43 @@ function SlotRender({
   className,
   style,
   content,
-  config,
-  metadata,
+  ctx,
 }: {
   className?: string
   style?: CSSProperties
   content: Item[]
-  config: RenderableConfig
-  metadata: Metadata
+  ctx: RenderCtx
 }) {
   return (
     <div className={className} style={style}>
       {content.map((item) => {
-        if (!config.components[item.type]) return null
-        return <SlotItem key={item.props.id as string} config={config} item={item} metadata={metadata} />
+        if (!ctx.config.components[item.type]) return null
+        return <SlotItem key={item.props.id as string} item={item} ctx={ctx} />
       })}
     </div>
   )
 }
 
 // One nested slot child: re-run the slot transform for its own props, then render
-// it with puck: { ...props.puck, metadata } (nested items carry metadata only —
-// no renderDropZone — exactly as Puck's SlotRender/Item does).
-function SlotItem({
-  config,
-  item,
-  metadata,
-}: {
-  config: RenderableConfig
-  item: Item
-  metadata: Metadata
-}) {
-  const component = config.components[item.type]!
-  const props = propsWithSlots(item, config, metadata)
+// it with puck: { ...props.puck, metadata, isEditing } (nested items carry the render
+// channel only — no renderDropZone — as Puck's SlotRender/Item does). `isEditing`
+// rides along so a block behaves identically inside a slot and at the top level;
+// without it a Space page arranged by a layout preset (which wraps blocks into a
+// SpaceLayout's slots) would lose every authoring placeholder.
+function SlotItem({ item, ctx }: { item: Item; ctx: RenderCtx }) {
+  const component = ctx.config.components[item.type]!
+  const props = propsWithSlots(item, ctx)
   const Component = component.render
-  return <Component {...props} puck={{ ...(props.puck as AnyProps | undefined), metadata: metadata || {} }} />
+  return (
+    <Component
+      {...props}
+      puck={{
+        ...(props.puck as AnyProps | undefined),
+        metadata: ctx.metadata || {},
+        isEditing: ctx.isEditing,
+      }}
+    />
+  )
 }
 
 // ── Content zone (mirrors components/ServerRender DropZoneRender) ──
@@ -192,16 +203,14 @@ function DropZoneRender({
   zone,
   data,
   areaId = rootAreaId,
-  config,
-  metadata = {},
+  ctx,
 }: {
   zone: string
   data: RenderableData
   areaId?: string
-  config: RenderableConfig
-  metadata?: Metadata
+  ctx: RenderCtx
 }) {
-  if (!data || !config) return null
+  if (!data || !ctx.config) return null
   let content: Item[] = data.content ?? []
   // Legacy pre-slot `zones` map: only consulted for a non-root area/zone.
   if (areaId !== rootAreaId && zone !== rootZone) {
@@ -211,26 +220,20 @@ function DropZoneRender({
   return (
     <Fragment>
       {content.map((item) => {
-        const component = config.components[item.type]
+        const component = ctx.config.components[item.type]
         const baseProps: AnyProps = {
           ...item.props,
           puck: {
             renderDropZone: ({ zone: z }: { zone: string }) => (
-              <DropZoneRender
-                zone={z}
-                data={data}
-                areaId={item.props.id as string}
-                config={config}
-                metadata={metadata}
-              />
+              <DropZoneRender zone={z} data={data} areaId={item.props.id as string} ctx={ctx} />
             ),
-            metadata,
+            metadata: ctx.metadata,
             dragRef: null,
-            isEditing: false,
+            isEditing: ctx.isEditing,
           },
         }
         if (!component) return null
-        const resolved = propsWithSlots({ type: item.type, props: baseProps }, config, metadata)
+        const resolved = propsWithSlots({ type: item.type, props: baseProps }, ctx)
         const Component = component.render
         return <Component key={item.props.id as string} {...resolved} />
       })}
@@ -246,44 +249,54 @@ export function BlockRender({
   config,
   data,
   metadata = {},
+  isEditing = false,
 }: {
   config: Config
   data: Data
   metadata?: Metadata
+  /** TRUE only on an EDITOR canvas (DesktopEditor / MobileEditor / the mobile block
+   *  preview). Blocks read it as `puck.isEditing` and use it to show an authoring
+   *  placeholder for a section that would otherwise render nothing. A public page must
+   *  never pass it: the placeholders are operator scaffolding, not visitor content. */
+  isEditing?: boolean
 }) {
   const cfg = config as unknown as RenderableConfig
   const doc = (data ?? {}) as RenderableData
   const root = (doc.root ?? {}) as AnyProps
   const rootProps = ('props' in root ? (root as { props?: AnyProps }).props : root) ?? {}
   const title = (rootProps.title as string) || ''
+  const ctx: RenderCtx = { config: cfg, metadata, isEditing }
 
   const pageProps: AnyProps = {
     ...rootProps,
     puck: {
       renderDropZone: ({ zone }: { zone: string }) => (
-        <DropZoneRender zone={zone} data={doc} config={cfg} metadata={metadata} />
+        <DropZoneRender zone={zone} data={doc} ctx={ctx} />
       ),
-      isEditing: false,
+      isEditing,
       dragRef: null,
       metadata,
     },
     title,
-    editMode: false,
+    // Puck's legacy root mirror of the same fact. Nothing in this repo reads it, but it
+    // tracks `isEditing` rather than sitting frozen at false, so it can't become the next
+    // stale flag a block trusts.
+    editMode: isEditing,
     id: 'puck-root',
   }
 
-  const resolvedRoot = propsWithSlots({ type: 'root', props: pageProps }, cfg, metadata)
+  const resolvedRoot = propsWithSlots({ type: 'root', props: pageProps }, ctx)
   const rootRender = cfg.root?.render
 
   if (rootRender) {
     const Root = rootRender
     return (
       <Root {...resolvedRoot}>
-        <DropZoneRender config={cfg} data={doc} zone={rootZone} metadata={metadata} />
+        <DropZoneRender data={doc} zone={rootZone} ctx={ctx} />
       </Root>
     )
   }
-  return <DropZoneRender config={cfg} data={doc} zone={rootZone} metadata={metadata} />
+  return <DropZoneRender data={doc} zone={rootZone} ctx={ctx} />
 }
 
 export default BlockRender

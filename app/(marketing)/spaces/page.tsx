@@ -156,7 +156,7 @@ function LegacySpaces() {
 
       <Statement tone="surface">
         Your community keeps its soul.{' '}
-        <span className="text-primary">You just stop doing it alone.</span>
+        <span className="text-primary-strong">You just stop doing it alone.</span>
       </Statement>
 
       {/* ── What you get ───────────────────────────────────────────────────── */}
@@ -228,7 +228,7 @@ function LegacySpaces() {
 
       <Statement tone="surface">
         Start free.{' '}
-        <span className="text-primary">Grow when you are ready.</span>
+        <span className="text-primary-strong">Grow when you are ready.</span>
       </Statement>
 
       {/* ── Guides for builders (Labs-track SEO cluster cross-link) ────────── */}

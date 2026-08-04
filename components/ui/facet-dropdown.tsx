@@ -18,6 +18,7 @@ export function FacetDropdown({
   options,
   searchable,
   align = 'left',
+  disabled = false,
 }: {
   label: string
   paramKey: string
@@ -25,6 +26,9 @@ export function FacetDropdown({
   /** Show the in-panel search box. Defaults on past ~8 options. */
   searchable?: boolean
   align?: 'left' | 'right'
+  /** Not filterable right now (no options yet, or a facet the viewer cannot use). A Field owes
+   *  a disabled state per docs/INTERACTION-STATES.md §2; this one had none. */
+  disabled?: boolean
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -78,7 +82,8 @@ export function FacetDropdown({
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors ${
+        disabled={disabled}
+        className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium press transition-[color,background-color,border-color,box-shadow,transform] motion-reduce:transition-none disabled:pointer-events-none disabled:opacity-50 ${
           active
             ? 'border-primary bg-primary-bg text-primary-strong'
             : 'border-border bg-surface text-muted hover:border-primary'
@@ -113,7 +118,7 @@ export function FacetDropdown({
             <button
               type="button"
               onClick={() => choose(null)}
-              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-surface-elevated ${
+              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs press transition-[color,background-color,box-shadow,transform] motion-reduce:transition-none hover:bg-surface-elevated ${
                 !active ? 'font-semibold text-primary-strong' : 'text-text'
               }`}
             >
@@ -127,7 +132,7 @@ export function FacetDropdown({
                   key={o.value}
                   type="button"
                   onClick={() => choose(o.value)}
-                  className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-surface-elevated ${
+                  className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs press transition-[color,background-color,box-shadow,transform] motion-reduce:transition-none hover:bg-surface-elevated ${
                     isSel ? 'font-semibold text-primary-strong' : 'text-text'
                   }`}
                 >

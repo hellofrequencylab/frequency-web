@@ -1,6 +1,38 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
+
+/** Does this href resolve to a real App Router page?
+ *
+ *  Walks app/ for a matching page.tsx, allowing for route groups -- `(marketing)` and friends
+ *  are directories that contribute NOTHING to the URL, so `/pricing` may live at
+ *  `app/(marketing)/pricing/page.tsx`. Dynamic segments (`[slug]`) match any one segment.
+ *  Anchors and query strings are stripped before matching. */
+function routeExists(href: string): boolean {
+  const path = href.split('#')[0].split('?')[0].replace(/\/$/, '')
+  const segments = path.split('/').filter(Boolean)
+  const roots = ['app']
+  const walk = (dir: string, rest: string[]): boolean => {
+    if (rest.length === 0) return existsSync(join(dir, 'page.tsx')) || existsSync(join(dir, 'route.ts'))
+    const [head, ...tail] = rest
+    // Exact segment, then any dynamic segment, then transparently through route groups.
+    if (existsSync(join(dir, head)) && walk(join(dir, head), tail)) return true
+    let entries: string[] = []
+    try {
+      entries = readdirSync(dir, { withFileTypes: true })
+        .filter((e) => e.isDirectory())
+        .map((e) => e.name)
+    } catch {
+      return false
+    }
+    for (const name of entries) {
+      if (name.startsWith('(') && walk(join(dir, name), rest)) return true
+      if (name.startsWith('[') && walk(join(dir, name), tail)) return true
+    }
+    return false
+  }
+  return roots.some((r) => walk(join(process.cwd(), r), segments))
+}
 
 // THE PRICING GRID (lib/pricing/pricing-grid.ts) — the guard that the public /pricing page can never
 // drift from what the plans actually grant. The point of these tests is NOT to restate the grid's
@@ -78,6 +110,10 @@ describe('offerings: every sellable tier is on the page', () => {
       expect(o.forWho.length).toBeGreaterThan(0)
       expect(o.tagline.length).toBeGreaterThan(0)
       expect(o.cta.href.startsWith('/')).toBe(true)
+      // startsWith('/') was the whole check, and it passed for '/join' -- a route that does
+      // not exist (app/join/ holds only [token]/), so the free plan's CTA 404'd on the public
+      // pricing page. Resolve against the real app/ tree instead of trusting the shape.
+      expect(routeExists(o.cta.href), `${o.id} CTA points at a non-existent route: ${o.cta.href}`).toBe(true)
       // Voice: no em dashes anywhere in the offering copy (CONTENT-VOICE hard rule).
       expect(`${o.tagline} ${o.forWho} ${o.billing} ${o.takeRate}`).not.toContain('—')
     }
