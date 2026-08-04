@@ -1,11 +1,16 @@
 import { notFound, redirect } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ChevronLeft, Users, Hash, Lock, LogIn, LogOut } from 'lucide-react'
+import { ChevronLeft, Users, Hash, LogIn, LogOut, MessageCircle, Radio } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
+import { isOnline } from '@/lib/presence'
+import { PresenceDot } from '@/components/presence/presence-dot'
 import { PageHeading } from '@/components/templates'
+import { Counter, CounterRow } from '@/components/ui/counter'
+import { GateNotice } from '@/components/ui/gate-notice'
 import { joinRoom, leaveRoom } from '../../rooms/actions'
 import { RoomThread } from '@/components/rooms/room-thread'
 import { RoomSearch } from '@/components/rooms/room-search'
@@ -45,7 +50,8 @@ export default async function RoomPage({
   // read-open) already returns nothing to a non-member, so reading optimistically leaks nothing — the
   // canRead gate below still decides what renders).
   type MemberProfile = { id: string; display_name: string; handle: string; avatar_url: string | null }
-  const [roomRes, membershipRes, memberRowsRes, rawMessagesRes] = await Promise.all([
+  const weekAgoIso = new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const [roomRes, membershipRes, memberRowsRes, rawMessagesRes, weekCountRes] = await Promise.all([
     supabase.from('rooms').select('id, name, description, visibility, member_count, created_at').eq('id', roomId).maybeSingle(),
     supabase.from('room_members').select('room_id, is_admin').eq('room_id', roomId).eq('profile_id', myProfileId).maybeSingle(),
     (supabase).rpc('visible_room_member_profiles', { _room_id: roomId }),
@@ -57,6 +63,14 @@ export default async function RoomPage({
       .eq('room_id', roomId)
       .order('created_at', { ascending: false })
       .limit(100),
+    // The room strip's "this week" count (DAWN room law: every number is a thing that
+    // happened). Head-only count, RLS-gated like the message read — a non-member gets 0,
+    // and the strip only shows the counter when the viewer can read the thread anyway.
+    supabase
+      .from('room_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('room_id', roomId)
+      .gte('created_at', weekAgoIso),
   ])
 
   // rooms_read: public/cluster-visibility OR member; a private room is hidden from
@@ -100,6 +114,33 @@ export default async function RoomPage({
 
   const memberProfileMap = new Map(members.map(m => [m.profile.id, m.profile]))
 
+  // Who is here NOW — the repo's existing presence mechanism (the ~90s last_seen_at
+  // heartbeat behind PresenceDot, lib/presence.ts), read the same way the /messages
+  // inbox reads it: admin client, because last_seen_at is public but region-scoped
+  // profile RLS would hide some rows. No new realtime infrastructure.
+  const memberIds = members.map(m => m.profile.id)
+  let onlineIds = new Set<string>()
+  if (memberIds.length > 0) {
+    const { data: seenRows } = await createAdminClient()
+      .from('profiles')
+      .select('id, last_seen_at')
+      .in('id', memberIds)
+    onlineIds = new Set(
+      ((seenRows ?? []) as { id: string; last_seen_at: string | null }[])
+        .filter(s => isOnline(s.last_seen_at))
+        .map(s => s.id),
+    )
+  }
+  const hereNowCount = onlineIds.size
+
+  // The roster reads "who is here" first: active members lead, then everyone else in
+  // join order (the RPC's order, preserved by the stable sort).
+  const sortedMembers = [...members].sort(
+    (a, b) => (onlineIds.has(b.profile.id) ? 1 : 0) - (onlineIds.has(a.profile.id) ? 1 : 0),
+  )
+
+  const weekCount = weekCountRes.count ?? 0
+
   // Recent messages — fetched in the first wave above (RLS-gated); rendered only when canRead
   // (a non-member previewing a public room sees the join panel instead).
   type RoomMessageRow = { id: string; room_id: string; author_id: string; body: string; created_at: string }
@@ -121,15 +162,12 @@ export default async function RoomPage({
     messages = rawMsgs.map(m => ({ ...m, author: memberProfileMap.get(m.author_id) ?? null }))
   }
 
-  // The room glyph (lock for private, hash otherwise) leads the compact takeover bar
-  // beside the shared PageHeading title.
+  // The room glyph leads the compact takeover bar beside the shared PageHeading title.
+  // Always the hash — a room never wears a padlock (GateNotice canon); the visibility
+  // badge beside the title already says "private" in words.
   const roomGlyph = (
     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg">
-      {r.visibility === 'private' ? (
-        <Lock className="h-4 w-4 text-primary-strong" />
-      ) : (
-        <Hash className="h-4 w-4 text-primary-strong" />
-      )}
+      <Hash className="h-4 w-4 text-primary-strong" />
     </span>
   )
 
@@ -160,7 +198,7 @@ export default async function RoomPage({
           MEMBER-DESIGN-SYSTEM §207), with the room identity title routed through the
           shared PageHeading grammar instead of a hand-rolled <h1>. */}
       {/* header-ok: conversation pane, not a page header — bespoke takeover chrome (§207); the title routes through PageHeading */}
-      <header className="flex shrink-0 items-center gap-3 border-b border-border bg-surface px-5 py-3">
+      <header className="flex shrink-0 items-center gap-3 bg-surface px-5 py-3">
         <Link
           href="/messages"
           className="md:hidden -ml-1 rounded-lg p-1.5 text-subtle hover:bg-surface-elevated hover:text-muted"
@@ -210,6 +248,20 @@ export default async function RoomPage({
         </div>
       </header>
 
+      {/* The room strip (DAWN room law): three counts so a live room reads differently
+          from a dead one before a single message is read. Every number is a thing that
+          happened — members joined, messages sent, people active now — never a
+          time-on-page. Closed below by the rule-amber chrome band, where the reference
+          separates the room's identity from its conversation. */}
+      <div className="shrink-0 bg-surface px-5 pb-2.5">
+        <CounterRow>
+          <Counter value={r.member_count} label="in the room" glyph={Users} />
+          {canRead && <Counter value={weekCount} label="messages this week" glyph={MessageCircle} />}
+          {hereNowCount > 0 && <Counter value={hereNowCount} label="active now" glyph={Radio} />}
+        </CounterRow>
+      </div>
+      <hr className="rule-amber shrink-0" />
+
       {/* Body. Three pane (messages + members on the right) */}
       <div className="flex-1 min-h-0 flex">
         {canRead ? (
@@ -220,18 +272,16 @@ export default async function RoomPage({
             canPost={canRead}
           />
         ) : (
-          // Non-member previewing a public room: messages are members-only, so
-          // show a join prompt rather than an empty thread.
+          // Non-member previewing a public room: messages are members-only. The gate is
+          // a GateNotice, never a padlock panel (DAWN room law) — say why the room is
+          // closed and what opens it, then offer the door.
           <div className="flex-1 min-w-0 flex items-center justify-center p-8">
-            <div className="text-center max-w-xs">
-              <div className="w-12 h-12 rounded-2xl bg-primary-bg flex items-center justify-center mx-auto mb-3">
-                <Lock className="w-5 h-5 text-primary-strong" />
-              </div>
-              <p className="text-sm font-semibold text-text mb-1">Join to see the conversation</p>
-              <p className="text-xs text-muted leading-relaxed mb-4">
-                This room&rsquo;s messages are visible to members. Join {r.name} to read and post.
-              </p>
-              <form action={joinRoom.bind(null, roomId)}>
+            <div className="w-full max-w-sm">
+              <GateNotice kind="gated" title="Join to read the room">
+                What gets said in {r.name} stays between its members. Join and the whole
+                conversation opens, along with the composer.
+              </GateNotice>
+              <form action={joinRoom.bind(null, roomId)} className="mt-4 flex justify-center">
                 <button
                   type="submit"
                   className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary hover:bg-primary-hover transition-colors"
@@ -243,29 +293,33 @@ export default async function RoomPage({
           </div>
         )}
 
-        {/* Members sidebar (desktop) */}
+        {/* Members sidebar (desktop) — "who is here" comes first: active members lead
+            the roster, each wearing the shared PresenceDot. */}
         <aside className="hidden lg:flex w-64 shrink-0 flex-col border-l border-border bg-surface/30 dark:bg-canvas/30">
           <div className="px-4 py-3 border-b border-border">
             <h3 className="text-2xs font-semibold uppercase tracking-wider text-subtle mb-2">
-              Members ({r.member_count})
+              In the room ({r.member_count})
             </h3>
             {isMember && <InviteToRoomButton roomId={roomId} />}
           </div>
           <ul className="flex-1 overflow-y-auto divide-y divide-border/50">
-            {members.map(m => {
+            {sortedMembers.map(m => {
               const p = m.profile!
               const isSelf = p.id === myProfileId
               return (
                 <li key={p.id}>
                   <div className="group flex items-center gap-2.5 px-4 py-2 hover:bg-surface-elevated/50 transition-colors">
                     <Link href={`/people/${p.handle}`} className="flex items-center gap-2.5 flex-1 min-w-0">
-                      {p.avatar_url ? (
-                        <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" style={avatarFocusStyle(p.avatar_url)} />
-                      ) : (
-                        <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center shrink-0 select-none">
-                          {getInitials(p.display_name)}
-                        </div>
-                      )}
+                      <span className="relative shrink-0">
+                        {p.avatar_url ? (
+                          <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover" style={avatarFocusStyle(p.avatar_url)} />
+                        ) : (
+                          <span className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center select-none">
+                            {getInitials(p.display_name)}
+                          </span>
+                        )}
+                        <PresenceDot online={onlineIds.has(p.id)} />
+                      </span>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-text truncate">{p.display_name}</p>
                         {m.is_admin && <p className="text-3xs text-primary-strong">Admin</p>}

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { redirect } from 'next/navigation'
-import { MessageSquare, Hash, Lock, Users } from 'lucide-react'
+import { MessageSquare, Hash, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isOnline } from '@/lib/presence'
@@ -43,8 +43,8 @@ type RoomRow = {
 }
 
 type ThreadItem =
-  | { kind: 'room'; id: string; lastActivity: string | null; room: RoomRow }
-  | { kind: 'dm'; id: string; lastActivity: string | null; conv: ConversationRow }
+  | { kind: 'room'; id: string; lastActivity: string | null; sortName: string; unread: number; room: RoomRow }
+  | { kind: 'dm'; id: string; lastActivity: string | null; sortName: string; unread: number; conv: ConversationRow }
 
 // Room creation = paid (Crew/Supporter TIER) or a steward (host+). Crew is the
 // paid tier, not a role (PB.1/ADR-207).
@@ -56,6 +56,17 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: 'all',   label: 'All' },
   { value: 'rooms', label: 'Rooms' },
   { value: 'dms',   label: 'DMs' },
+]
+
+// The sort control (DAWN message-board pass): the thread list answers to the reader,
+// not only to recency. Pure presentation — each option reorders the already-fetched
+// list in JS; "Unread first" leans on the per-thread unread counts the page already
+// loads for its badges.
+type Sort = 'latest' | 'unread' | 'az'
+const SORTS: { value: Sort; label: string }[] = [
+  { value: 'latest', label: 'Latest' },
+  { value: 'unread', label: 'Unread first' },
+  { value: 'az',     label: 'A to Z' },
 ]
 
 const ACTIVE_WINDOW_MS = 30 * 60 * 1000
@@ -75,11 +86,13 @@ export function generateMetadata() {
 export default async function MessagesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string }>
+  searchParams: Promise<{ filter?: string; sort?: string }>
 }) {
-  const { filter: filterParam } = await searchParams
+  const { filter: filterParam, sort: sortParam } = await searchParams
   const filter: Filter =
     filterParam === 'rooms' ? 'rooms' : filterParam === 'dms' ? 'dms' : 'all'
+  const sort: Sort =
+    sortParam === 'unread' ? 'unread' : sortParam === 'az' ? 'az' : 'latest'
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -258,17 +271,27 @@ export default async function MessagesPage({
       return new Date(bTime).getTime() - new Date(aTime).getTime()
     })
 
+  // Per-room unread map — feeds both the header badge total and the "Unread first"
+  // sort, from the one grouped RPC read.
+  const roomUnreadMap = new Map(
+    ((roomUnreadRes.data ?? []) as RoomUnread[]).map(r => [r.room_id, Number(r.unread_count)]),
+  )
+
   // ── Unified thread list ───────────────────────────────────────────
   const roomItems: ThreadItem[] = myRooms.map(r => ({
     kind: 'room' as const,
     id: r.id,
     lastActivity: r.last_message_at,
+    sortName: r.name,
+    unread: roomUnreadMap.get(r.id) ?? 0,
     room: r,
   }))
   const dmItems: ThreadItem[] = conversations.map(c => ({
     kind: 'dm' as const,
     id: c.id,
     lastActivity: c.lastMessage?.created_at ?? c.created_at,
+    sortName: c.name || (c.participants[0]?.display_name ?? ''),
+    unread: c.unreadCount,
     conv: c,
   }))
 
@@ -288,11 +311,20 @@ export default async function MessagesPage({
     .filter(it => !activeIds.has(`${it.kind}:${it.id}`))
     .filter(it => filter === 'all' || (filter === 'rooms' ? it.kind === 'room' : it.kind === 'dm'))
 
+  // The sort control, applied last. "Latest" keeps the activity order the list is
+  // already in; the other two re-order in place (stable sort, so ties keep the
+  // latest-activity order underneath).
+  const sortedItems = [...filteredItems]
+  if (sort === 'az') {
+    sortedItems.sort((a, b) => a.sortName.localeCompare(b.sortName))
+  } else if (sort === 'unread') {
+    sortedItems.sort((a, b) => (b.unread > 0 ? 1 : 0) - (a.unread > 0 ? 1 : 0))
+  }
+
   // Room unread — the grouped room_unread_counts RPC (messages from others since my last_read_at, per
   // joined room, computed server-side) summed into the header badge, so it reflects rooms + DMs, not
   // DMs alone. Replaces the old per-room N+1 count loop.
-  const roomUnread = ((roomUnreadRes.data ?? []) as RoomUnread[])
-    .reduce((sum, r) => sum + Number(r.unread_count), 0)
+  const roomUnread = [...roomUnreadMap.values()].reduce((sum, n) => sum + n, 0)
 
   const totalUnread =
     conversations.reduce((sum, c) => sum + c.unreadCount, 0) + roomUnread
@@ -301,18 +333,43 @@ export default async function MessagesPage({
   // stays dynamic; only the static title + description flow through resolvePageContent.
   const { title: pageTitle, description: pageDescription, ctaLabel, ctaHref } = pageContent
 
-  // Segmented filter — lives in the "Your threads" section header.
+  // Segmented filter + sort — both live in the "Your threads" section header, and
+  // each preserves the other's choice in the link.
+  const threadsHref = (f: Filter, s: Sort) => {
+    const q = new URLSearchParams()
+    if (f !== 'all') q.set('filter', f)
+    if (s !== 'latest') q.set('sort', s)
+    const qs = q.toString()
+    return qs ? `/messages?${qs}` : '/messages'
+  }
+
   const filterTabs = (
     <div className="flex items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
       {FILTERS.map(f => (
         <Link
           key={f.value}
-          href={f.value === 'all' ? '/messages' : `/messages?filter=${f.value}`}
+          href={threadsHref(f.value, sort)}
           className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
             filter === f.value ? 'bg-surface text-text shadow-sm' : 'text-muted hover:text-text'
           }`}
         >
           {f.label}
+        </Link>
+      ))}
+    </div>
+  )
+
+  const sortTabs = (
+    <div className="flex items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
+      {SORTS.map(s => (
+        <Link
+          key={s.value}
+          href={threadsHref(filter, s.value)}
+          className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+            sort === s.value ? 'bg-surface text-text shadow-sm' : 'text-muted hover:text-text'
+          }`}
+        >
+          {s.label}
         </Link>
       ))}
     </div>
@@ -366,10 +423,15 @@ export default async function MessagesPage({
         <section>
           <SectionHeader
             title="Your threads"
-            count={filteredItems.length > 0 ? filteredItems.length : undefined}
-            action={filterTabs}
+            count={sortedItems.length > 0 ? sortedItems.length : undefined}
+            action={
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {sortTabs}
+                {filterTabs}
+              </div>
+            }
           />
-          {filteredItems.length === 0 ? (
+          {sortedItems.length === 0 ? (
             <EmptyState
               icon={MessageSquare}
               title={filter === 'rooms' ? 'No rooms joined yet' : filter === 'dms' ? 'No direct conversations yet' : 'No threads yet'}
@@ -383,7 +445,7 @@ export default async function MessagesPage({
             />
           ) : (
             <div className="space-y-1">
-              {filteredItems.map(it =>
+              {sortedItems.map(it =>
                 it.kind === 'room'
                   ? <RoomRowItem key={`r-${it.id}`} room={it.room} />
                   : <DMRowItem key={`d-${it.id}`} conv={it.conv} myProfileId={myProfileId} onlineIds={onlineIds} />
@@ -459,10 +521,10 @@ function RoomRowItem({ room }: { room: RoomRow }) {
       href={`/messages/r/${room.id}`}
       className="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-surface-elevated transition-colors"
     >
+      {/* Always the hash — a room never wears a padlock (GateNotice canon); privacy is
+          said in words in the meta line instead. */}
       <div className="shrink-0 w-10 h-10 rounded-lg bg-primary-bg flex items-center justify-center">
-        {room.visibility === 'private'
-          ? <Lock className="w-4 h-4 text-primary-strong" />
-          : <Hash className="w-4 h-4 text-primary-strong" />}
+        <Hash className="w-4 h-4 text-primary-strong" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
@@ -474,6 +536,7 @@ function RoomRowItem({ room }: { room: RoomRow }) {
         <p className="text-xs text-subtle truncate">
           <Users className="w-3 h-3 inline mr-1 -mt-px" />
           {room.member_count} {room.member_count === 1 ? 'member' : 'members'}
+          {room.visibility === 'private' && <> &middot; Private</>}
           {room.description && <> &middot; {room.description}</>}
         </p>
       </div>

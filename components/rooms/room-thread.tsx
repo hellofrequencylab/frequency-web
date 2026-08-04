@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
-import { Send, Loader2 } from 'lucide-react'
+import { Send, Loader2, PenLine, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { sendRoomMessage, markRoomRead } from '@/app/(main)/messages/rooms/actions'
 import { getInitials } from '@/lib/utils'
@@ -17,6 +17,25 @@ export type RoomMessage = {
   body: string
   created_at: string
   author: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
+}
+
+// The composer distinguishes a question from a plan (DAWN message-board pass,
+// design_handoff/CHANGES.md). The kind is a WRITING AID, not a stored field: it
+// swaps the placeholder and the hint so a plan leaves with a time and a place in
+// it. The message posts through the same sendRoomMessage action either way.
+type ComposeKind = 'question' | 'plan'
+
+const KIND_COPY: Record<ComposeKind, { chip: string; placeholder: string; hint: string }> = {
+  question: {
+    chip: 'A question',
+    placeholder: 'Ask it plain. Somebody in here knows.',
+    hint: 'One clear question gets faster answers than a preamble.',
+  },
+  plan: {
+    chip: 'A plan',
+    placeholder: 'Where, when, and how many people can come.',
+    hint: 'A plan with a time and a place in it is easy to say yes to.',
+  },
 }
 
 function formatTime(iso: string) {
@@ -40,6 +59,10 @@ export function RoomThread({
 }) {
   const [messages, setMessages] = useState<RoomMessage[]>(initialMessages)
   const [body, setBody] = useState('')
+  // The composer starts CLOSED, as one line (DAWN room law): a big empty box asks
+  // everyone to perform; a prompt asks them to say something.
+  const [composerOpen, setComposerOpen] = useState(false)
+  const [kind, setKind] = useState<ComposeKind | null>(null)
   const [isPending, startTransition] = useTransition()
   const endRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
@@ -156,35 +179,88 @@ export function RoomThread({
         <div ref={endRef} />
       </div>
 
-      {/* Composer */}
+      {/* Composer — starts closed as one line; open, it knows a question from a plan. */}
       {canPost ? (
-        <form onSubmit={submit} className="px-5 py-3 border-t border-border bg-surface shrink-0">
-          <div className="flex items-end gap-2">
-            <textarea
-              value={body}
-              onChange={e => { setBody(e.target.value); notifyTyping() }}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  submit(e)
-                }
-              }}
-              placeholder="Message…"
-              rows={1}
-              disabled={isPending}
-              className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm placeholder-subtle outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 leading-relaxed max-h-32"
-              style={{ minHeight: '2.5rem' }}
-            />
+        !composerOpen ? (
+          <div className="px-5 py-3 border-t border-border bg-surface shrink-0">
             <button
-              type="submit"
-              disabled={!body.trim() || isPending}
-              className="rounded-lg bg-primary p-2.5 text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
-              aria-label="Send"
+              type="button"
+              onClick={() => setComposerOpen(true)}
+              className="flex w-full items-center gap-3 rounded-card border border-border bg-surface px-3.5 py-2.5 text-left transition-colors hover:border-border-strong"
             >
-              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              <span className="min-w-0 flex-1 truncate text-sm text-subtle">
+                Say something to the room. If it is a plan, put a time in it.
+              </span>
+              <PenLine className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
             </button>
           </div>
-        </form>
+        ) : (
+          <form onSubmit={submit} className="px-5 py-3 border-t border-border bg-surface shrink-0">
+            <div className="lift-1 rounded-card border border-border bg-surface p-3">
+              <div className="mb-2 flex items-center gap-1.5">
+                {(Object.keys(KIND_COPY) as ComposeKind[]).map(k => {
+                  const on = kind === k
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => setKind(on ? null : k)}
+                      className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                        on
+                          ? 'border-primary/40 bg-primary-bg text-primary-strong'
+                          : 'border-border text-muted hover:text-text'
+                      }`}
+                    >
+                      {KIND_COPY[k].chip}
+                    </button>
+                  )
+                })}
+                <span className="flex-1" />
+                <button
+                  type="button"
+                  onClick={() => setComposerOpen(false)}
+                  className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-muted"
+                  aria-label="Close composer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="flex items-end gap-2">
+                <textarea
+                  value={body}
+                  onChange={e => { setBody(e.target.value); notifyTyping() }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      submit(e)
+                    }
+                    if (e.key === 'Escape' && !body.trim()) {
+                      setComposerOpen(false)
+                    }
+                  }}
+                  placeholder={kind ? KIND_COPY[kind].placeholder : 'Say it to the room.'}
+                  rows={1}
+                  autoFocus
+                  disabled={isPending}
+                  className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm placeholder-subtle outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 leading-relaxed max-h-32"
+                  style={{ minHeight: '2.5rem' }}
+                />
+                <button
+                  type="submit"
+                  disabled={!body.trim() || isPending}
+                  className="rounded-lg bg-primary p-2.5 text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
+                  aria-label="Send"
+                >
+                  {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                </button>
+              </div>
+              {kind && (
+                <p className="mt-1.5 text-2xs text-subtle">{KIND_COPY[kind].hint}</p>
+              )}
+            </div>
+          </form>
+        )
       ) : (
         <div className="px-5 py-4 border-t border-border bg-surface/50 dark:bg-canvas/50 text-center">
           <p className="text-xs text-muted">Join this room to send messages.</p>
