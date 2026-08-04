@@ -106,7 +106,8 @@ export async function PlanSection({
       </div>
 
       {showPayouts && payout && (
-        <div className="mt-4 rounded-card border border-border bg-surface p-5 lift-1">
+        // The "Receive payments" menu seed (lib/nav/registry) deep-links here via /settings#payouts.
+        <div id="payouts" className="mt-4 scroll-mt-24 rounded-card border border-border bg-surface p-5 lift-1">
           <div className="flex items-center gap-2">
             <Wallet className="h-4 w-4 text-subtle" />
             <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Receive payments</p>

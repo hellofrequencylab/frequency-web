@@ -5,9 +5,10 @@
 // `render: 'link'` — a FEATURE WORKFLOW the bar deep-links into rather than inlining.
 //
 // Scope today:
-//   • PERSONAL "You" surfaces (global scope) whose only editor is a full /settings/* page — billing
+//   • PERSONAL "You" surfaces (global scope) whose only editor is a settings section — billing
 //     (a feature workflow) and Account and privacy (blocked-members + data export + account deletion,
-//     not a single reusable form). These carry `render: 'link'` and resolve to a STATIC /settings/* URL
+//     not a single reusable form). These carry `render: 'link'` and resolve to a STATIC URL — a
+//     /settings#<anchor> section of the one-page suite, or /settings/profile for the full editor
 //     (no entity id needed — a signed-in viewer edits their OWN account).
 //   • CORE-ENTITY COMMUNICATION MODULES (ADR-827): circle.crm / hub.crm / nexus.crm / event.crm are
 //     `render: 'link'` — event + circle resolve to their Manage hubs (the message center leads the
@@ -38,23 +39,24 @@ export function hrefForEntitySurface(appId: string, scope: EntitySurfaceScope | 
   // Personal "You" surfaces are a viewer's OWN account — their destination is scope-INDEPENDENT, so they
   // resolve on every page (the always-available menu, entity pages included), NOT only the global scope.
   switch (appId) {
-    // Personal feature-workflow link-outs — the viewer's own /settings/* page (a workflow, or a composite
-    // management page with no single inline form; see the module comments for why each links).
+    // Personal feature-workflow link-outs — the viewer's own settings section. The Settings suite is
+    // ONE page now (DAWN 2 screen pass): each section is a /settings#<anchor> target, so these resolve
+    // to the direct anchor rather than the old standalone route (which survives only as a redirect).
     case 'account.privacy':
-      return '/settings/account'
+      return '/settings#account' // the "Account and privacy" section (blocked members, data export, deletion)
     case 'account.billing':
-      return '/settings/billing'
-    // The personal surfaces that render INLINE list their /settings/* page too, so a future flip to
+      return '/settings#plan' // the "Plan and billing" section
+    // The personal surfaces that render INLINE list their destination too, so a future flip to
     // `link` (or an operator override) resolves without another edit here. Not exercised by the render
-    // branch while they are `inline`.
+    // branch while they are `inline`. Profile keeps its own full-page editor route.
     case 'account.profile':
       return '/settings/profile'
     case 'account.notifications':
-      return '/settings/notifications'
+      return '/settings#notifications'
     case 'account.connections':
-      return '/settings/connections'
+      return '/settings#connections'
     case 'account.appearance':
-      return '/settings/appearance'
+      return '/settings#appearance'
   }
 
   // Core-entity surfaces (event / hub / nexus) resolve to their OWNER MANAGE CONSOLE, keyed on the

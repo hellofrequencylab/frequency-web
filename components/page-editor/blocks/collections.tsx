@@ -179,7 +179,7 @@ export function FeatureGridBlock({
           return (
             <article key={i} className={`${cardBase} ${pad}`}>
               {IconComp && (
-                <div className="w-11 h-11 rounded-card bg-primary-bg text-primary-strong flex items-center justify-center mb-5">
+                <div className="w-11 h-11 rounded-2xl bg-primary-bg text-primary-strong flex items-center justify-center mb-5">
                   <IconComp className="w-5 h-5" aria-hidden />
                 </div>
               )}
@@ -367,6 +367,8 @@ export function ShowcaseBlock({
 }) {
   const marqueeTxts = (marqueeItems || []).map((m) => m.text || '').filter(Boolean)
 
+  // Genuinely ink-only: this block has no tone prop — the section always sets its own bg-slat
+  // (an ink surface), so the unconditional on-ink classes below are correct, not a missed ternary.
   return (
     <section className="relative bg-slat">
       <div className="light-strip absolute inset-x-0 top-0 z-10" />

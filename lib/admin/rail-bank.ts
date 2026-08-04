@@ -80,7 +80,9 @@ function baseBank(scope: AdminScope | null, viewer: BankViewer, slug: string | n
     case 'profile': {
       const out: BankLink[] = [
         { label: 'All settings', icon: Settings, href: '/settings' },
-        { label: 'Billing', icon: CreditCard, href: '/settings/billing' },
+        // Direct anchor into the one-page Settings suite (matches hrefForEntitySurface's
+        // account.billing, so a `placement: 'bank'` Plan-and-billing extra dedupes with it).
+        { label: 'Billing', icon: CreditCard, href: '/settings#plan' },
       ]
       if (viewer.isStaff) {
         out.push(

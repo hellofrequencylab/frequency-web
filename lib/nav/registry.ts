@@ -392,10 +392,11 @@ const PROFILE_LINK_SEEDS: readonly {
   { id: 'notifications', label: 'Notifications', href: '/settings/notifications', icon: 'BellRing', section: 'You' },
   // Membership
   { id: 'billing', label: 'Billing & Plans', href: '/settings/billing', icon: 'CreditCard', section: 'Membership' },
-  // Payouts lands on the billing page's payouts card. The `?tab=payouts` href keeps it
-  // DISTINCT from the Billing link above: menu identity is href (leafHrefs / the sync
-  // pass), so two seeds sharing '/settings/billing' would block auto-sync injection.
-  { id: 'payouts', label: 'Receive payments', href: '/settings/billing?tab=payouts', icon: 'Banknote', section: 'Membership', minAccess: 'host' },
+  // Payouts lands directly on the Connect payouts card (the #payouts anchor of the unified
+  // /settings page). The anchor href keeps it DISTINCT from the Billing link above: menu
+  // identity is href (leafHrefs / the sync pass), so two seeds sharing one href would block
+  // auto-sync injection. NOTE: app-shell's isPayoutsMenuItem matches this exact href.
+  { id: 'payouts', label: 'Receive payments', href: '/settings#payouts', icon: 'Banknote', section: 'Membership', minAccess: 'host' },
   // Commerce
   { id: 'orders', label: 'My orders', href: '/orders', icon: 'Receipt', section: 'Commerce', minAccess: 'member' },
   { id: 'storefront', label: 'My storefront', href: '/market/manage', icon: 'Store', section: 'Commerce', minAccess: 'host' },

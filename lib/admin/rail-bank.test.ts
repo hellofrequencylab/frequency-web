@@ -72,7 +72,7 @@ describe('bankForScope', () => {
   it('personal / global → All settings + Billing; operator links only for staff', () => {
     const member = bankForScope({ kind: 'global' })
     expect(member.length).toBeGreaterThanOrEqual(1)
-    expect(hrefs(member)).toEqual(['/settings', '/settings/billing'])
+    expect(hrefs(member)).toEqual(['/settings', '/settings#plan'])
 
     const staff = bankForScope({ kind: 'global' }, { isStaff: true })
     expect(hrefs(staff)).toContain('/admin')
@@ -86,24 +86,25 @@ describe('bankForScope', () => {
 
   it('personal / global bank absorbs the moved account surfaces (ADR-515 Phase 2)', () => {
     // Appearance / Notifications / Connections / Account and privacy are `placement: 'bank'` now, so the
-    // panel resolves each to its /settings/* href and merges it as an extra. The base Billing dedupes.
+    // panel resolves each to its /settings#<anchor> href (hrefForEntitySurface — the one-page Settings
+    // suite) and merges it as an extra. The base Billing dedupes.
     const icon = bankForScope({ kind: 'global' })[0].icon
     const extras: BankLink[] = [
-      { label: 'Appearance', icon, href: '/settings/appearance' },
-      { label: 'Notifications', icon, href: '/settings/notifications' },
-      { label: 'Connections and location', icon, href: '/settings/connections' },
-      { label: 'Account and privacy', icon, href: '/settings/account' },
-      { label: 'Plan and billing', icon, href: '/settings/billing' }, // dupes the base Billing link
+      { label: 'Appearance', icon, href: '/settings#appearance' },
+      { label: 'Notifications', icon, href: '/settings#notifications' },
+      { label: 'Connections and location', icon, href: '/settings#connections' },
+      { label: 'Account and privacy', icon, href: '/settings#account' },
+      { label: 'Plan and billing', icon, href: '/settings#plan' }, // dupes the base Billing link
     ]
     const bank = bankForScope({ kind: 'global' }, {}, extras)
     const h = hrefs(bank)
-    expect(h).toContain('/settings/appearance')
-    expect(h).toContain('/settings/notifications')
-    expect(h).toContain('/settings/connections')
-    expect(h).toContain('/settings/account')
+    expect(h).toContain('/settings#appearance')
+    expect(h).toContain('/settings#notifications')
+    expect(h).toContain('/settings#connections')
+    expect(h).toContain('/settings#account')
     // The base All settings + Billing stay, and the duplicate Billing extra collapses to one.
     expect(h).toContain('/settings')
-    expect(h.filter((x) => x === '/settings/billing')).toHaveLength(1)
+    expect(h.filter((x) => x === '/settings#plan')).toHaveLength(1)
   })
 
   it('hub / nexus / practice → their manage console (1 link)', () => {

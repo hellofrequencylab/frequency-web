@@ -6,25 +6,27 @@ import { ADMIN_MODULES } from './modules/registry'
 // destination for a core/personal editor App classified `render: 'link'` (ADR-514 Phase C/D).
 
 describe('hrefForEntitySurface', () => {
-  it('resolves the personal feature-workflow link-outs to their /settings/* page', () => {
-    expect(hrefForEntitySurface('account.privacy', { kind: 'global' })).toBe('/settings/account')
-    expect(hrefForEntitySurface('account.billing', { kind: 'global' })).toBe('/settings/billing')
+  it('resolves the personal feature-workflow link-outs to their /settings#<anchor> section', () => {
+    // The Settings suite is one page (DAWN 2): sections are direct anchors, not standalone routes.
+    expect(hrefForEntitySurface('account.privacy', { kind: 'global' })).toBe('/settings#account')
+    expect(hrefForEntitySurface('account.billing', { kind: 'global' })).toBe('/settings#plan')
   })
 
   it('resolves personal link-outs on ANY page scope (the "You" set shows everywhere, not just global)', () => {
     // On an entity page the page scope is the entity, but a personal destination is scope-independent, so
     // it must still resolve (else Billing / Account and privacy would vanish from the "You" section there).
-    expect(hrefForEntitySurface('account.billing', { kind: 'circle', id: 'sunrise-sit' })).toBe('/settings/billing')
-    expect(hrefForEntitySurface('account.privacy', { kind: 'event', id: 'x' })).toBe('/settings/account')
+    expect(hrefForEntitySurface('account.billing', { kind: 'circle', id: 'sunrise-sit' })).toBe('/settings#plan')
+    expect(hrefForEntitySurface('account.privacy', { kind: 'event', id: 'x' })).toBe('/settings#account')
   })
 
   it('maps the moved account surfaces so the bottom bank resolves their href (ADR-515 Phase 2)', () => {
     // Appearance / Notifications / Connections are `placement: 'bank'` now — the bank resolver reads their
-    // /settings/* href from here. Profile stays inline, but keeps a mapping so a future flip is a no-op.
+    // /settings#<anchor> href from here. Profile stays inline (and keeps its full-page editor route) but
+    // keeps a mapping so a future flip is a no-op.
     expect(hrefForEntitySurface('account.profile', { kind: 'global' })).toBe('/settings/profile')
-    expect(hrefForEntitySurface('account.notifications', { kind: 'global' })).toBe('/settings/notifications')
-    expect(hrefForEntitySurface('account.connections', { kind: 'global' })).toBe('/settings/connections')
-    expect(hrefForEntitySurface('account.appearance', { kind: 'global' })).toBe('/settings/appearance')
+    expect(hrefForEntitySurface('account.notifications', { kind: 'global' })).toBe('/settings#notifications')
+    expect(hrefForEntitySurface('account.connections', { kind: 'global' })).toBe('/settings#connections')
+    expect(hrefForEntitySurface('account.appearance', { kind: 'global' })).toBe('/settings#appearance')
   })
 
   it('EVERY personal module classified `render: "link"` resolves to a non-null href (no dead rows)', () => {

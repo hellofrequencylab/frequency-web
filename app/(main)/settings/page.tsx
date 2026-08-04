@@ -45,7 +45,10 @@ const SECTIONS = [
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ session_id?: string; upgraded?: string; payouts?: string; bundle?: string }>
+  // Stripe return URLs also append `upgraded=1` / `bundle=1` markers, but nothing reads them
+  // (the old billing page never did either — `session_id` alone drives the confirm), so they
+  // are deliberately not typed here.
+  searchParams: Promise<{ session_id?: string; payouts?: string }>
 }) {
   // The suite is a signed-in surface (the old billing page gated the same way).
   const myProfileId = await getMyProfileId()
@@ -129,7 +132,7 @@ export default async function SettingsPage({
 
       <SettingsSection id="plan" title="Plan and billing" intro="Your plan and payment.">
         {/* Anchor alias: old deep links said "billing". */}
-        <span id="billing" />
+        <span id="billing" className="scroll-mt-24" />
         <Suspense fallback={<SectionSkeleton rows={2} />}>
           <PlanSection sessionId={params.session_id} payouts={params.payouts} />
         </Suspense>
