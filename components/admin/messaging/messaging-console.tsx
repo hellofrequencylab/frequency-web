@@ -162,7 +162,7 @@ function TabButton({
     >
       {label}
       <span
-        className={`rounded-full px-1.5 py-0.5 text-2xs font-bold tabular-nums ${
+        className={`rounded-pill px-1.5 py-0.5 text-2xs font-bold tabular-nums ${
           active ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-muted'
         }`}
       >
@@ -375,7 +375,7 @@ function FilterChip({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors motion-reduce:transition-none',
+        'inline-flex items-center gap-1 rounded-pill border px-2.5 py-0.5 text-xs font-semibold transition-colors motion-reduce:transition-none',
         active
           ? 'border-primary-strong bg-primary-bg text-primary-strong'
           : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text',
@@ -467,7 +467,7 @@ export const FunnelCard = forwardRef<HTMLElement, {
         <div className="flex items-center gap-1.5">
           {f.stageKinds.map((_, i) => (
             <span key={i} className="flex items-center gap-1.5" aria-hidden>
-              <span className="h-2 w-2 rounded-full bg-primary/50" />
+              <span className="h-2 w-2 rounded-pill bg-primary/50" />
               {i < f.stageKinds.length - 1 && <span className="h-px w-3 bg-border" />}
             </span>
           ))}

@@ -527,7 +527,7 @@ export default async function ChannelPage({
                 </span>
               </span>
               {pillarName && (
-                <span className="inline-flex items-center rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
+                <span className="inline-flex items-center rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
                   {pillarName} Pillar
                 </span>
               )}
@@ -653,11 +653,11 @@ export default async function ChannelPage({
               <ModuleCard title={`About ${channel.name}`}>
                 <p className="text-sm text-muted leading-relaxed">{description}</p>
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                  <span className="rounded-full bg-surface-elevated px-2 py-0.5 font-medium text-muted">
+                  <span className="rounded-pill bg-surface-elevated px-2 py-0.5 font-medium text-muted">
                     {categoryLabel}
                   </span>
                   {pillarName && (
-                    <span className="rounded-full bg-surface-elevated px-2 py-0.5 font-medium text-muted">
+                    <span className="rounded-pill bg-surface-elevated px-2 py-0.5 font-medium text-muted">
                       {pillarName} Pillar
                     </span>
                   )}

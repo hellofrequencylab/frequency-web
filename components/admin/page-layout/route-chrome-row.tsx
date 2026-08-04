@@ -78,7 +78,7 @@ export function RouteChromeRow({
         <div className="flex flex-wrap items-center gap-2">
           <span className="truncate text-sm font-bold text-text">{label}</span>
           {isOverridden && (
-            <span className="shrink-0 rounded-full bg-broadcast-bg px-2 py-0.5 text-2xs font-semibold text-broadcast-strong">
+            <span className="shrink-0 rounded-pill bg-broadcast-bg px-2 py-0.5 text-2xs font-semibold text-broadcast-strong">
               Override
             </span>
           )}

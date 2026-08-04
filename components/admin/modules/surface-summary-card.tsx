@@ -117,16 +117,16 @@ export function SurfaceSummaryCard({
             {meter.nearLimit && (
               <Link
                 href={billingHref}
-                className="shrink-0 rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong hover:bg-primary-bg/70"
+                className="shrink-0 rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong hover:bg-primary-bg/70"
               >
                 See plans
               </Link>
             )}
           </div>
           {meter.allowance != null && (
-            <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-surface-elevated" aria-hidden>
+            <div className="mt-1 h-1 w-full overflow-hidden rounded-pill bg-surface-elevated" aria-hidden>
               <div
-                className={`h-full rounded-full ${meter.nearLimit ? 'bg-primary-strong' : 'bg-primary/60'}`}
+                className={`h-full rounded-pill ${meter.nearLimit ? 'bg-primary-strong' : 'bg-primary/60'}`}
                 style={{ width: `${Math.round(meter.ratio * 100)}%` }}
               />
             </div>

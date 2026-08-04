@@ -17,9 +17,9 @@ interface MemberHit {
 }
 
 function Avatar({ url, name }: { url: string | null; name: string | null }) {
-  if (url) return <Image src={avatarSrc(url)} alt="" width={32} height={32} className="h-8 w-8 rounded-full object-cover" style={avatarFocusStyle(url)} />
+  if (url) return <Image src={avatarSrc(url)} alt="" width={32} height={32} className="h-8 w-8 rounded-pill object-cover" style={avatarFocusStyle(url)} />
   return (
-    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-elevated text-xs font-semibold text-muted">
+    <span className="flex h-8 w-8 items-center justify-center rounded-pill bg-surface-elevated text-xs font-semibold text-muted">
       {getInitials(name ?? '?')}
     </span>
   )
@@ -133,7 +133,7 @@ export function LinkMemberCard({
           </div>
           {error && <p className="text-xs text-danger">{error}</p>}
           {hits.length > 0 && (
-            <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border">
+            <ul className="divide-y divide-border overflow-hidden rounded-card border border-border">
               {hits.map((h) => (
                 <li key={h.id} className="flex items-center gap-2.5 bg-surface p-2.5">
                   <Avatar url={h.avatarUrl} name={h.displayName} />

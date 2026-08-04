@@ -32,7 +32,7 @@ function PracticeMeta({ p }: { p: Practice }) {
   return (
     <div className="mt-1.5 flex flex-nowrap items-center gap-x-2 overflow-hidden text-xs">
       {p.category && (
-        <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 font-medium capitalize text-subtle">
+        <span className="shrink-0 rounded-pill bg-surface-elevated px-2 py-0.5 font-medium capitalize text-subtle">
           {p.category.replace(/-/g, ' ')}
         </span>
       )}

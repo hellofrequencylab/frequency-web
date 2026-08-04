@@ -128,7 +128,7 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
             <ul className="mt-2 grid gap-2 sm:grid-cols-2">
               {PREVIEW.map((p, i) => (
                 <li key={i} className="flex items-start gap-2 rounded-lg border border-border bg-surface px-3 py-2">
-                  <span className="shrink-0 rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">{p.tag}</span>
+                  <span className="shrink-0 rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">{p.tag}</span>
                   <span className="text-sm text-muted">{p.text}</span>
                 </li>
               ))}

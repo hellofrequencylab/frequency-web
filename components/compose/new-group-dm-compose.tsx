@@ -133,9 +133,9 @@ export function NewGroupDMCompose({
               {recipients.map(r => (
                 <span key={r.id} className="inline-flex items-center gap-1 rounded-md bg-primary-bg border border-primary-bg px-2 py-1 text-xs">
                   {r.avatar_url ? (
-                    <Image src={avatarSrc(r.avatar_url)} alt={r.display_name} width={16} height={16} className="w-4 h-4 rounded-full object-cover" style={avatarFocusStyle(r.avatar_url)} />
+                    <Image src={avatarSrc(r.avatar_url)} alt={r.display_name} width={16} height={16} className="w-4 h-4 rounded-pill object-cover" style={avatarFocusStyle(r.avatar_url)} />
                   ) : (
-                    <span className="w-4 h-4 rounded-full bg-primary-bg dark:bg-primary-bg text-primary-strong text-3xs font-bold flex items-center justify-center">
+                    <span className="w-4 h-4 rounded-pill bg-primary-bg dark:bg-primary-bg text-primary-strong text-3xs font-bold flex items-center justify-center">
                       {getInitials(r.display_name)}
                     </span>
                   )}
@@ -184,9 +184,9 @@ function ResultRow({
   return (
     <div className={`flex items-center gap-2.5 w-full px-3 py-2 ${isFriend ? 'hover:bg-surface-elevated transition-colors' : 'opacity-60'}`}>
       {result.avatar_url ? (
-        <Image src={avatarSrc(result.avatar_url)} alt={result.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" style={avatarFocusStyle(result.avatar_url)} />
+        <Image src={avatarSrc(result.avatar_url)} alt={result.display_name} width={28} height={28} className="w-7 h-7 rounded-pill object-cover shrink-0" style={avatarFocusStyle(result.avatar_url)} />
       ) : (
-        <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center shrink-0">
+        <div className="w-7 h-7 rounded-pill bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center shrink-0">
           {getInitials(result.display_name)}
         </div>
       )}

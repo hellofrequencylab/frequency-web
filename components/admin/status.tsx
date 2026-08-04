@@ -33,7 +33,7 @@ export function StatusChip({
 }) {
   const pad = size === 'sm' ? 'px-2 py-0.5 text-2xs' : 'px-2.5 py-0.5 text-xs'
   return (
-    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full font-semibold ${pad} ${TONE[tone]}`}>
+    <span className={`inline-flex shrink-0 items-center gap-1 rounded-pill font-semibold ${pad} ${TONE[tone]}`}>
       {children}
     </span>
   )
@@ -42,7 +42,7 @@ export function StatusChip({
 /** A count badge (neutral, tabular). */
 export function Badge({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-surface-elevated px-1.5 py-0.5 text-2xs font-bold tabular-nums text-muted">
+    <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-bold tabular-nums text-muted">
       {children}
     </span>
   )

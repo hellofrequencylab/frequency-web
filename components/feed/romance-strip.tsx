@@ -41,7 +41,7 @@ export async function RomanceStrip({ viewerProfileId }: { viewerProfileId: strin
       {/* Verified-to-appear (ADR-420): an unverified member can browse, but won't appear to
           others until they show up to an event. A calm nudge, not a wall. */}
       {!lane.viewerVerified && (
-        <div className="mb-3 flex items-start gap-2.5 rounded-xl border border-border bg-surface-elevated px-3.5 py-2.5">
+        <div className="mb-3 flex items-start gap-2.5 rounded-card border border-border bg-surface-elevated px-3.5 py-2.5">
           <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
           <p className="min-w-0 text-xs text-muted">
             You can browse here, but you&rsquo;ll only appear to others once you&rsquo;re verified.{' '}

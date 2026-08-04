@@ -44,7 +44,7 @@ const STATUS_TONE: Record<AppLibraryItem['status'], string> = {
 function SurfaceBadge({ surface }: { surface: AppSurfaceKind }) {
   const { label, Icon } = SURFACE_META[surface]
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
+    <span className="inline-flex items-center gap-1 rounded-pill border border-border bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
       <Icon className="h-3 w-3" aria-hidden /> {label}
     </span>
   )
@@ -149,7 +149,7 @@ function AppDrawer({ app, onClose }: { app: AppCard; onClose: () => void }) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-1 text-subtle hover:bg-surface-elevated"
+            className="rounded-pill p-1 text-subtle hover:bg-surface-elevated"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -168,7 +168,7 @@ function AppDrawer({ app, onClose }: { app: AppCard; onClose: () => void }) {
                 {app.title}
               </h3>
               <span
-                className={`shrink-0 rounded-full border px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide ${STATUS_TONE[app.status]}`}
+                className={`shrink-0 rounded-pill border px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide ${STATUS_TONE[app.status]}`}
               >
                 {app.status.replace('_', ' ')}
               </span>
@@ -190,7 +190,7 @@ function AppDrawer({ app, onClose }: { app: AppCard; onClose: () => void }) {
 
           {/* Gate. */}
           <Field label="Gate">
-            <span className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface-elevated px-2.5 py-1 text-sm text-text">
+            <span className="inline-flex items-center gap-1.5 rounded-card border border-border bg-surface-elevated px-2.5 py-1 text-sm text-text">
               {app.gate.system === 'none' ? (
                 <ShieldCheck className="h-4 w-4 text-signal-strong" aria-hidden />
               ) : (
@@ -207,7 +207,7 @@ function AppDrawer({ app, onClose }: { app: AppCard; onClose: () => void }) {
                 <Sliders className="h-4 w-4" aria-hidden /> No configurable fields.
               </p>
             ) : (
-              <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border">
+              <ul className="divide-y divide-border overflow-hidden rounded-card border border-border">
                 {app.config.map((f) => (
                   <li key={f.key} className="flex items-baseline justify-between gap-3 px-3 py-2">
                     <span className="min-w-0">

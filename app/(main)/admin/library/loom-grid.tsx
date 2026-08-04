@@ -167,7 +167,7 @@ export function LoomGrid({
         onClick={() => toggle(id)}
         aria-pressed={isSel}
         aria-label={isSel ? 'Deselect' : 'Select'}
-        className={`rounded-full bg-surface/90 lift-1 transition-opacity ${
+        className={`rounded-pill bg-surface/90 lift-1 transition-opacity ${
           isSel || sel.size > 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
         } ${className}`}
       >
@@ -337,14 +337,14 @@ function BulkBar({
   }
 
   const btn =
-    'inline-flex items-center gap-1.5 rounded-xl border border-border px-2.5 py-1.5 text-sm text-text hover:bg-surface-elevated disabled:opacity-50'
+    'inline-flex items-center gap-1.5 rounded-control border border-border px-2.5 py-1.5 text-sm text-text hover:bg-surface-elevated disabled:opacity-50'
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface-elevated/60 px-3 py-2">
       <button
         type="button"
         onClick={onToggleAll}
-        className="inline-flex items-center gap-2 rounded-xl px-2 py-1 text-sm font-medium text-text hover:bg-surface-elevated"
+        className="inline-flex items-center gap-2 rounded-control px-2 py-1 text-sm font-medium text-text hover:bg-surface-elevated"
       >
         {allSelected ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <Circle className="h-5 w-5 text-subtle" />}
         {allSelected ? 'Clear page' : 'Select page'}
@@ -362,7 +362,7 @@ function BulkBar({
               <FolderInput className="h-4 w-4" /> Add to collection
             </button>
             {menu && (
-              <div className="absolute right-0 z-20 mt-1 max-h-64 w-56 overflow-auto rounded-xl border border-border bg-surface p-1 shadow-pop">
+              <div className="absolute right-0 z-20 mt-1 max-h-64 w-56 overflow-auto rounded-card border border-border bg-surface p-1 shadow-pop">
                 {collections.length === 0 && (
                   <p className="px-3 py-2 text-xs text-subtle">No collections yet.</p>
                 )}
@@ -403,7 +403,7 @@ function BulkBar({
                 <Palette className="h-4 w-4" /> Train style
               </button>
               {styleMenu && (
-                <div className="absolute right-0 z-20 mt-1 w-64 rounded-xl border border-border bg-surface p-3 shadow-pop">
+                <div className="absolute right-0 z-20 mt-1 w-64 rounded-card border border-border bg-surface p-3 shadow-pop">
                   <p className="mb-2 text-xs text-subtle">
                     Teach a house look from these {n} image{n === 1 ? '' : 's'}. Pick it later in the studio to match a whole set.
                   </p>
@@ -415,7 +415,7 @@ function BulkBar({
                     placeholder="Style name (e.g. Warm icon set)"
                     className="mb-2 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm"
                   />
-                  <div className="mb-2 inline-flex rounded-xl border border-border p-0.5">
+                  <div className="mb-2 inline-flex rounded-card border border-border p-0.5">
                     {(['vector', 'raster'] as const).map((l) => (
                       <button
                         key={l}
@@ -697,7 +697,7 @@ function DetailDrawer({
       <div className="relative flex h-full w-full max-w-md flex-col overflow-y-auto bg-surface shadow-pop">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h2 className="font-display text-lg uppercase text-text">Asset</h2>
-          <button type="button" onClick={onClose} className="rounded-full p-1 text-subtle hover:bg-surface-elevated" aria-label="Close">
+          <button type="button" onClick={onClose} className="rounded-pill p-1 text-subtle hover:bg-surface-elevated" aria-label="Close">
             <X className="h-5 w-5" />
           </button>
         </div>

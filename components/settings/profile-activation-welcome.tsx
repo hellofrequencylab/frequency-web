@@ -59,7 +59,7 @@ export function ProfileActivationWelcome({
         {status.steps.map((s) => (
           <span
             key={s.key}
-            className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
+            className={`h-1.5 flex-1 rounded-pill transition-all duration-500 ${
               s.done ? 'bg-broadcast' : s.key === current.key ? 'bg-broadcast/40' : 'bg-broadcast-bg'
             }`}
           />

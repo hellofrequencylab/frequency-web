@@ -338,7 +338,7 @@ export function LoomPicker({
                 onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
                 onDragLeave={() => setDragging(false)}
                 onDrop={(e) => { e.preventDefault(); setDragging(false); void doUpload(Array.from(e.dataTransfer.files)) }}
-                className={`flex items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-3 text-sm transition-colors ${dragging ? 'border-primary bg-primary-bg/40 text-primary-strong' : 'border-border text-muted'}`}
+                className={`flex items-center justify-center gap-2 rounded-card border border-dashed px-4 py-3 text-sm transition-colors ${dragging ? 'border-primary bg-primary-bg/40 text-primary-strong' : 'border-border text-muted'}`}
               >
                 {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                 <span>
@@ -384,7 +384,7 @@ export function LoomPicker({
                           key={t}
                           type="button"
                           onClick={() => { setTag(t); setView('images') }}
-                          className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-primary/50 hover:text-text"
+                          className="inline-flex items-center gap-1 rounded-pill border border-border bg-surface px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-primary/50 hover:text-text"
                         >
                           <TagIcon className="h-3 w-3" /> {t}
                         </button>
@@ -396,7 +396,7 @@ export function LoomPicker({
                 <>
                   {tag && (
                     <div className="mb-2 flex items-center gap-2 text-xs text-muted">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 font-medium text-primary-strong">
+                      <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 font-medium text-primary-strong">
                         <TagIcon className="h-3 w-3" /> {tag}
                       </span>
                       <button type="button" onClick={() => setTag(null)} className="text-subtle hover:text-text">Clear</button>
@@ -427,17 +427,17 @@ export function LoomPicker({
                               onClick={() => pick(t.value)}
                               title={t.label}
                               aria-pressed={multiple ? on : undefined}
-                              className={`group relative block aspect-square w-full overflow-hidden rounded-xl border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 ${t.contain ? 'bg-surface' : 'bg-canvas'} ${on ? 'border-primary ring-2 ring-primary' : 'border-border hover:border-primary'}`}
+                              className={`group relative block aspect-square w-full overflow-hidden rounded-control border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 ${t.contain ? 'bg-surface' : 'bg-canvas'} ${on ? 'border-primary ring-2 ring-primary' : 'border-border hover:border-primary'}`}
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element -- Loom asset URL or an inline SVG data URL, not a configured next/image domain */}
                               <img src={t.src} alt={t.label} loading="lazy" className={`h-full w-full ${t.contain ? 'object-contain p-3' : 'object-cover'}`} />
                               {t.generated && (
-                                <span className="absolute left-1 top-1 inline-flex items-center gap-0.5 rounded-full bg-canvas/90 px-1.5 py-0.5 text-2xs font-semibold text-primary-strong lift-1">
+                                <span className="absolute left-1 top-1 inline-flex items-center gap-0.5 rounded-pill bg-canvas/90 px-1.5 py-0.5 text-2xs font-semibold text-primary-strong lift-1">
                                   <Sparkles className="h-2.5 w-2.5" /> AI
                                 </span>
                               )}
                               {on && (
-                                <span className="absolute right-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-on-primary lift-1">
+                                <span className="absolute right-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-pill bg-primary text-on-primary lift-1">
                                   <Check className="h-3 w-3" />
                                 </span>
                               )}

@@ -84,7 +84,7 @@ export function HostPersonCredit({
       ) : (
         <Link
           href={signInHref}
-          className="mt-3 block w-full rounded-xl border border-border px-3 py-2 text-center text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+          className="mt-3 block w-full rounded-control border border-border px-3 py-2 text-center text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
         >
           Sign in to message the host
         </Link>
@@ -100,11 +100,11 @@ export function HostPersonCredit({
                 alt={host.display_name}
                 width={64}
                 height={64}
-                className="h-16 w-16 rounded-full object-cover"
+                className="h-16 w-16 rounded-pill object-cover"
                 style={avatarFocusStyle(host.avatar_url)}
               />
             ) : (
-              <div className="flex h-16 w-16 select-none items-center justify-center rounded-full bg-primary-bg text-lg font-semibold text-primary-strong">
+              <div className="flex h-16 w-16 select-none items-center justify-center rounded-pill bg-primary-bg text-lg font-semibold text-primary-strong">
                 {getInitials(host.display_name)}
               </div>
             )}

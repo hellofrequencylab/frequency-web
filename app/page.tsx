@@ -336,18 +336,18 @@ function Splash({
       >
         <div className="flex flex-col items-center justify-center gap-4">
           {referrer && (
-            <div className="inline-flex items-center gap-2.5 rounded-full border border-on-ink/20 bg-on-ink/10 px-4 py-2 text-sm text-on-ink lift-1 backdrop-blur-sm">
+            <div className="inline-flex items-center gap-2.5 rounded-pill border border-on-ink/20 bg-on-ink/10 px-4 py-2 text-sm text-on-ink lift-1 backdrop-blur-sm">
               {referrer.avatarUrl ? (
                 <Image
                   src={avatarSrc(referrer.avatarUrl)}
                   alt=""
                   width={28}
                   height={28}
-                  className="h-7 w-7 rounded-full object-cover ring-2 ring-on-ink/30"
+                  className="h-7 w-7 rounded-pill object-cover ring-2 ring-on-ink/30"
                   style={avatarFocusStyle(referrer.avatarUrl)}
                 />
               ) : (
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-on-ink/20 text-xs font-bold">
+                <span className="flex h-7 w-7 items-center justify-center rounded-pill bg-on-ink/20 text-xs font-bold">
                   {getInitials(referrer.displayName)}
                 </span>
               )}
@@ -362,7 +362,7 @@ function Splash({
           {referrer?.vcardEnabled && (
             <a
               href={`/people/${referrer.handle}/vcard`}
-              className="inline-flex items-center gap-1.5 rounded-full border border-on-ink/20 bg-on-ink/5 px-3.5 py-1.5 text-sm font-semibold text-on-ink lift-1 backdrop-blur-sm transition-colors hover:bg-on-ink/15"
+              className="inline-flex items-center gap-1.5 rounded-pill border border-on-ink/20 bg-on-ink/5 px-3.5 py-1.5 text-sm font-semibold text-on-ink lift-1 backdrop-blur-sm transition-colors hover:bg-on-ink/15"
             >
               Save {referrer.displayName.trim().split(/\s+/)[0]}&rsquo;s contact
             </a>
@@ -853,11 +853,11 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
           alt={a.display_name}
           width={40}
           height={40}
-          className="w-10 h-10 rounded-full object-cover shrink-0"
+          className="w-10 h-10 rounded-pill object-cover shrink-0"
           style={avatarFocusStyle(a.avatar_url)}
         />
       ) : (
-        <div className="w-10 h-10 rounded-full bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+        <div className="w-10 h-10 rounded-pill bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">
           {initials}
         </div>
       )}
@@ -892,7 +892,7 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
         <p className="text-base text-text leading-relaxed line-clamp-3">{post.body}</p>
 
         {post.media_urls?.length > 0 && (
-          <div className="relative mt-3 h-72 w-full rounded-xl overflow-hidden border border-border">
+          <div className="relative mt-3 h-72 w-full rounded-card overflow-hidden border border-border">
             <Image
               src={post.media_urls[0]}
               alt={`Shared by ${a?.display_name ?? 'a Frequency member'}`}

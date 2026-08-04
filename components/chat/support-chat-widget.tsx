@@ -142,7 +142,7 @@ export function SupportChatWidget() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? 'Close contact panel' : 'Contact us'}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-on-primary shadow-pop transition-transform hover:scale-105"
+        className="flex h-14 w-14 items-center justify-center rounded-pill bg-primary text-on-primary shadow-pop transition-transform hover:scale-105"
       >
         {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
       </button>
@@ -324,9 +324,9 @@ function ChatSession({ session, viewerId, onBack }: { session: Session; viewerId
         {typingNames.length > 0 && (
           <div className="flex justify-start">
             <div className="inline-flex items-center gap-1 rounded-2xl bg-surface-elevated px-3 py-2">
-              <span className="size-1.5 animate-bounce rounded-full bg-muted [animation-delay:-0.2s]" />
-              <span className="size-1.5 animate-bounce rounded-full bg-muted [animation-delay:-0.1s]" />
-              <span className="size-1.5 animate-bounce rounded-full bg-muted" />
+              <span className="size-1.5 animate-bounce rounded-pill bg-muted [animation-delay:-0.2s]" />
+              <span className="size-1.5 animate-bounce rounded-pill bg-muted [animation-delay:-0.1s]" />
+              <span className="size-1.5 animate-bounce rounded-pill bg-muted" />
             </div>
           </div>
         )}

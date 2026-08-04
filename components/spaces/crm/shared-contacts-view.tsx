@@ -50,7 +50,7 @@ function LinkChip({ href, Icon, label }: { href: string; Icon: LucideIcon; label
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-primary/40 hover:text-primary-strong"
+      className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-primary/40 hover:text-primary-strong"
     >
       <Icon className="h-3.5 w-3.5" aria-hidden />
       {label}
@@ -81,11 +81,11 @@ function ContactCard({ contact }: { contact: SharedWithSpaceView }) {
             width={44}
             height={44}
             unoptimized
-            className="h-11 w-11 shrink-0 rounded-full object-cover"
+            className="h-11 w-11 shrink-0 rounded-pill object-cover"
             style={avatarFocusStyle(contact.avatarUrl)}
           />
         ) : (
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-bg text-sm font-semibold text-primary-strong">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-sm font-semibold text-primary-strong">
             {initial(contact.displayName)}
           </span>
         )}

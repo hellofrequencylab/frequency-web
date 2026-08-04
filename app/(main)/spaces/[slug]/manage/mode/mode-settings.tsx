@@ -119,7 +119,7 @@ export function ModeSettings({
           {view.modules.map((m) => (
             <div
               key={m.fn}
-              className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3"
+              className="flex items-center gap-3 rounded-card border border-border bg-surface p-3"
             >
               <span className="min-w-0 flex-1">
                 <span className="text-sm font-medium text-text">{m.label}</span>
@@ -144,7 +144,7 @@ export function ModeSettings({
             <span
               key={s.name}
               className={cn(
-                'rounded-full border px-3 py-1 text-xs font-medium',
+                'rounded-pill border px-3 py-1 text-xs font-medium',
                 s.kind === 'won'
                   ? 'border-success bg-success-bg text-success'
                   : s.kind === 'lost'
@@ -162,11 +162,11 @@ export function ModeSettings({
       <section>
         <SectionHeader title="The words you use" />
         <dl className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl border border-border bg-surface p-3">
+          <div className="rounded-card border border-border bg-surface p-3">
             <dt className="text-xs uppercase tracking-wide text-subtle">Your people</dt>
             <dd className="mt-1 text-sm font-medium text-text">{view.lexicon.people}</dd>
           </div>
-          <div className="rounded-xl border border-border bg-surface p-3">
+          <div className="rounded-card border border-border bg-surface p-3">
             <dt className="text-xs uppercase tracking-wide text-subtle">What you offer</dt>
             <dd className="mt-1 text-sm font-medium text-text">{view.lexicon.offerings}</dd>
           </div>
@@ -184,7 +184,7 @@ export function ModeSettings({
             {view.recommendedAddons.map((a) => (
               <span
                 key={a}
-                className="rounded-full border border-border bg-surface-elevated px-3 py-1 text-xs font-medium text-text"
+                className="rounded-pill border border-border bg-surface-elevated px-3 py-1 text-xs font-medium text-text"
               >
                 {ADDON_LABEL[a] ?? a}
               </span>
@@ -200,7 +200,7 @@ export function ModeSettings({
           <ul className="space-y-1.5">
             {view.nextBestActions.map((a) => (
               <li key={a.label} className="flex items-center gap-2 text-sm text-text">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
+                <span className="h-1.5 w-1.5 rounded-pill bg-primary" aria-hidden />
                 {a.label}
               </li>
             ))}

@@ -26,7 +26,7 @@ export function ReturnHome() {
     <div className="flex flex-col items-center gap-2">
       <button
         onClick={() => router.push('/')}
-        className="inline-flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+        className="inline-flex items-center gap-1.5 rounded-control border border-border px-4 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to home

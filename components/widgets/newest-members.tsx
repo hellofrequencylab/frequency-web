@@ -26,11 +26,11 @@ export async function NewestMembers() {
                 <img
                   src={avatarSrc(member.avatar_url)}
                   alt=""
-                  className="h-7 w-7 shrink-0 rounded-full object-cover"
+                  className="h-7 w-7 shrink-0 rounded-pill object-cover"
                   style={avatarFocusStyle(member.avatar_url)}
                 />
               ) : (
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-border text-2xs font-semibold uppercase text-muted">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-border text-2xs font-semibold uppercase text-muted">
                   {name.slice(0, 1)}
                 </span>
               )}

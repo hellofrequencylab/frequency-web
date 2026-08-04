@@ -43,7 +43,7 @@ const METHOD_OPTIONS = [
 ]
 
 const inputClass =
-  'w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary'
+  'w-full rounded-card border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary'
 
 function dateLabel(dateISO: string): string {
   return new Date(`${dateISO}T00:00:00Z`).toLocaleDateString('en-US', {

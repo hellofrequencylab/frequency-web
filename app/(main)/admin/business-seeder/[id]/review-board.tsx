@@ -228,7 +228,7 @@ export function ReviewBoard({
                 title={m.description}
                 aria-pressed={active}
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50',
+                  'inline-flex items-center gap-1.5 rounded-pill border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50',
                   active
                     ? 'border-primary bg-primary-bg text-primary-strong'
                     : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text',

@@ -411,7 +411,7 @@ export function MegaBar({
     )
 
     const cardBox =
-      'flex w-60 shrink-0 flex-col justify-between rounded-xl border border-border bg-surface-elevated p-4'
+      'flex w-60 shrink-0 flex-col justify-between rounded-card border border-border bg-surface-elevated p-4'
 
     if (mode === 'ghost') {
       return (

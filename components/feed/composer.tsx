@@ -11,7 +11,7 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { EmojiPicker } from './emoji-picker'
 import { ComposeLightbox } from './compose-lightbox'
-import { safeImageSrc } from '@/lib/safe-image-src'
+import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024 // 5 MB (post-prep; raw camera shots are converted + downscaled first)
 
@@ -493,7 +493,7 @@ export function Composer({
         {/* @mention autocomplete dropdown */}
         {suggestions.length > 0 && mentionQuery !== null && (
           <div
-            className="absolute left-0 top-full z-50 mt-1 w-64 rounded-xl border border-border bg-surface py-1 lift-3"
+            className="absolute left-0 top-full z-50 mt-1 w-64 rounded-card border border-border bg-surface py-1 lift-3"
             onMouseDown={e => e.preventDefault()}
           >
             {suggestions.map((p, i) => (
@@ -506,9 +506,9 @@ export function Composer({
                 }`}
               >
                 {p.avatar_url ? (
-                  <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={24} height={24} style={avatarFocusStyle(p.avatar_url)} className="h-6 w-6 shrink-0 rounded-full object-cover" />
+                  <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={24} height={24} style={avatarFocusStyle(p.avatar_url)} className="h-6 w-6 shrink-0 rounded-pill object-cover" />
                 ) : (
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-bg text-3xs font-bold text-primary-strong">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-3xs font-bold text-primary-strong">
                     {getInitials(p.display_name)}
                   </div>
                 )}
@@ -529,11 +529,11 @@ export function Composer({
               blob: src that the Next image optimizer can't (and shouldn't) touch,
               so a plain <img> is correct here. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={safeImageSrc(imagePreview) ?? undefined} alt="Upload preview" className="max-h-48 rounded-xl border border-border object-cover" />
+          <img src={safeUploadPreviewSrc(imagePreview) ?? undefined} alt="Upload preview" className="max-h-48 rounded-card border border-border object-cover" />
           <button
             type="button"
             onClick={removeImage}
-            className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
+            className="absolute right-1.5 top-1.5 rounded-pill bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
             aria-label="Remove image"
           >
             <X className="h-3.5 w-3.5" />
@@ -564,21 +564,21 @@ export function Composer({
             <button
               type="button"
               onClick={() => { setPhotoSheetOpen(false); cameraInputRef.current?.click() }}
-              className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+              className="flex w-full items-center gap-3 rounded-control px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
             >
               <Camera className="h-5 w-5 text-primary-strong" /> Take photo
             </button>
             <button
               type="button"
               onClick={() => { setPhotoSheetOpen(false); fileInputRef.current?.click() }}
-              className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+              className="flex w-full items-center gap-3 rounded-control px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
             >
               <ImagePlus className="h-5 w-5 text-primary-strong" /> Upload from library
             </button>
             <button
               type="button"
               onClick={() => setPhotoSheetOpen(false)}
-              className="flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated"
+              className="flex w-full items-center justify-center rounded-control px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated"
             >
               Cancel
             </button>

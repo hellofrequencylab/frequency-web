@@ -68,7 +68,7 @@ export async function SpaceStageList({
 function MemberRow({ row, boardHref }: { row: MemberListRow; boardHref: string }) {
   const inner = (
     <>
-      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${TONE_DOT[row.resonanceTier]}`} aria-hidden />
+      <span className={`h-2.5 w-2.5 shrink-0 rounded-pill ${TONE_DOT[row.resonanceTier]}`} aria-hidden />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-bold text-text">{row.name}</p>
         <p className="text-xs text-muted">

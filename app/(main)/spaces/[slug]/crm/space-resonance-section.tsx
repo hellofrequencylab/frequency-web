@@ -42,7 +42,7 @@ export async function SpaceResonanceSection({ spaceId }: { spaceId: string }) {
                 ) : (
                   <span className="font-semibold text-text">{s.match.name}</span>
                 )}
-                <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
+                <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
                   <Sparkles className="h-3 w-3" aria-hidden /> {matchStrengthLabel(s.match.score)}
                 </span>
               </div>

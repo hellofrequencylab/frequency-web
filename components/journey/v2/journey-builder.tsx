@@ -37,7 +37,7 @@ export interface JourneyDetailsData {
 function StatusPill({ status }: { status: string }) {
   const live = status === 'published' || status === 'approved'
   return (
-    <span className={`rounded-full px-1.5 py-0.5 text-2xs font-semibold ${live ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-muted'}`}>
+    <span className={`rounded-pill px-1.5 py-0.5 text-2xs font-semibold ${live ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-muted'}`}>
       {live ? 'Published' : 'Draft'}
     </span>
   )
@@ -318,7 +318,7 @@ export function JourneyBuilder({
               <IconAccentFace icon={icon} accent={accent} size="md" />
             )}
             {/* A camera badge cues that the logo is clickable (build item 1). */}
-            <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-surface text-subtle lift-1 group-hover/icn:text-text">
+            <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-pill border border-border bg-surface text-subtle lift-1 group-hover/icn:text-text">
               <Camera className="h-3 w-3" aria-hidden />
             </span>
           </button>
@@ -336,7 +336,7 @@ export function JourneyBuilder({
                       aria-pressed={on}
                       title={a.label}
                       onClick={() => { setAccent(a.key); meta({ accent: a.key }) }}
-                      className={`flex h-8 w-8 items-center justify-center rounded-full border transition-transform hover:scale-110 ${on ? 'border-text' : 'border-border'}`}
+                      className={`flex h-8 w-8 items-center justify-center rounded-pill border transition-transform hover:scale-110 ${on ? 'border-text' : 'border-border'}`}
                       style={{ backgroundColor: accentColor(a.key) }}
                     >
                       {on && <Check className="h-4 w-4 text-on-primary" aria-hidden />}

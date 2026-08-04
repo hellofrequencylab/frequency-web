@@ -78,7 +78,7 @@ export function NewRoomCompose({
                 type="button"
                 onClick={() => setOpen(false)}
                 disabled={isPending}
-                className="rounded-xl border border-border px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+                className="rounded-control border border-border px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
               >
                 Cancel
               </button>

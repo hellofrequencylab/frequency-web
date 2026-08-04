@@ -34,7 +34,7 @@ export function EditorShell({
 }) {
   const hasHeader = Boolean(title || eyebrow || actions)
   return (
-    <div className={`overflow-hidden rounded-3xl border border-border bg-surface lift-1 ${className}`}>
+    <div className={`overflow-hidden rounded-card border border-border bg-surface lift-1 ${className}`}>
       {hasHeader && (
         <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-4 sm:px-6">
           <div className="min-w-0">

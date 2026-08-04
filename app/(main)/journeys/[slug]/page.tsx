@@ -227,15 +227,15 @@ export default async function JourneyPlanPage({
             )}
             <span className="inline-flex flex-wrap items-center gap-1.5">
               {plan.official && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-xs font-semibold text-primary-strong">
+                <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-xs font-semibold text-primary-strong">
                   <Sparkles className="h-3 w-3" /> Official
                 </span>
               )}
-              <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
+              <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
                 <vis.Icon className="h-3 w-3" /> {vis.label}
               </span>
               {topPillar && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
+                <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
                   {topPillar.name}
                 </span>
               )}

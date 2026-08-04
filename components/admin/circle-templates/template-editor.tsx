@@ -203,7 +203,7 @@ export function TemplateEditor({ template }: { template: CircleTemplate }) {
               <span className="text-2xs font-semibold uppercase tracking-wide text-muted">
                 Drawn header (used when no image is set)
               </span>
-              <div className="relative h-24 w-full overflow-hidden rounded-xl border border-border">
+              <div className="relative h-24 w-full overflow-hidden rounded-card border border-border">
                 <TemplateHeaderArt slug={template.slug} primaryPillar={template.primaryPillar} />
               </div>
             </div>
@@ -325,7 +325,7 @@ export function TemplateEditor({ template }: { template: CircleTemplate }) {
         )}
         <div className="space-y-3">
           {callouts.map((c, i) => (
-            <div key={i} className="space-y-2 rounded-xl border border-border bg-surface-elevated/40 p-3">
+            <div key={i} className="space-y-2 rounded-card border border-border bg-surface-elevated/40 p-3">
               <div className="flex flex-wrap items-end gap-3">
                 <div className="space-y-1">
                   <Label htmlFor={`callout.${i}.anchor`}>Anchor</Label>

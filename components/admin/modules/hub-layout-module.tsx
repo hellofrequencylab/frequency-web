@@ -62,7 +62,7 @@ export function HubLayoutModule() {
 
       <Link
         href={`/hubs/${data.slug}/manage`}
-        className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-colors hover:border-border-strong hover:bg-surface-elevated"
+        className="flex items-center gap-3 rounded-control border border-border bg-surface px-4 py-3 transition-colors hover:border-border-strong hover:bg-surface-elevated"
       >
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-text">Manage console</span>

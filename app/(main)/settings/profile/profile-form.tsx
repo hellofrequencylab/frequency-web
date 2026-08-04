@@ -502,7 +502,7 @@ export function ProfileForm({
             <Sparkles className="h-3.5 w-3.5" /> Build your page (arrange your blocks)
           </Link>
 
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-3 py-2.5">
+          <div className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface px-3 py-2.5">
             <span className="text-sm text-text">{spotPublished ? 'Published' : 'Draft (only you can see it)'}</span>
             <button
               type="button"

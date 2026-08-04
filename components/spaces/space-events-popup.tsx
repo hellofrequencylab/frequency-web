@@ -75,7 +75,7 @@ export function SpaceEventsList({ items }: { items: SpaceEventsViewItem[] }) {
             <button
               type="button"
               onClick={() => open(e.id)}
-              className="flex w-full items-center gap-4 rounded-card border border-border/60 bg-surface/60 px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-primary-bg/20"
+              className="flex w-full items-center gap-4 rounded-control border border-border/60 bg-surface/60 px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-primary-bg/20"
             >
               <span className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-control bg-primary-bg">
                 <span className="text-3xs font-bold leading-none text-primary-strong">{month}</span>
@@ -219,7 +219,7 @@ function EventPopupBody({ item, onClose }: { item: SpaceEventsViewItem; onClose:
               <p className="text-xs text-muted">Your ticket is your spot. Checkout is on the event page.</p>
             </div>
           ) : join === null ? (
-            <div className="h-16 w-full max-w-sm animate-pulse rounded-xl bg-surface-elevated" aria-hidden />
+            <div className="h-16 w-full max-w-sm animate-pulse rounded-card bg-surface-elevated" aria-hidden />
           ) : !join.signedIn ? (
             <div className="space-y-2">
               <Link

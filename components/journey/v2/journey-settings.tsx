@@ -365,7 +365,7 @@ export function JourneySettings(props: JourneySettingsProps) {
             key={v}
             type="button"
             onClick={() => changeVisibility(v)}
-            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 transition-colors ${
+            className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-1 transition-colors ${
               visibility === v ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated'
             }`}
           >
@@ -373,7 +373,7 @@ export function JourneySettings(props: JourneySettingsProps) {
           </button>
         ))}
         {visibility === 'public' && status === 'pending' && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-warning-bg px-2.5 py-1 text-warning">In review</span>
+          <span className="inline-flex items-center gap-1 rounded-pill bg-warning-bg px-2.5 py-1 text-warning">In review</span>
         )}
         </div>
       </div>
@@ -391,7 +391,7 @@ export function JourneySettings(props: JourneySettingsProps) {
                 type="button"
                 onClick={() => { const next = difficulty === d ? '' : d; setDifficulty(next); attrs({ difficulty: next || null }) }}
                 aria-pressed={difficulty === d}
-                className={`rounded-full border px-2.5 py-1 text-xs font-medium capitalize transition-colors ${difficulty === d ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-canvas text-muted hover:text-text'}`}
+                className={`rounded-pill border px-2.5 py-1 text-xs font-medium capitalize transition-colors ${difficulty === d ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-canvas text-muted hover:text-text'}`}
               >
                 {d}
               </button>
@@ -512,7 +512,7 @@ function TouchpointForm({
   const t = touchpoint
   const format = t?.format ?? null
   return (
-    <div className="space-y-2.5 rounded-xl border border-border bg-canvas/40 p-3">
+    <div className="space-y-2.5 rounded-card border border-border bg-canvas/40 p-3">
       <div>
         <p className="text-sm font-semibold text-text">{title}</p>
         <p className="mt-0.5 text-2xs text-muted">{hint}</p>
@@ -527,7 +527,7 @@ function TouchpointForm({
               type="button"
               onClick={() => onCommit({ format: format === value ? null : value })}
               aria-pressed={format === value}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${format === value ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-canvas text-muted hover:text-text'}`}
+              className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-xs font-medium transition-colors ${format === value ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-canvas text-muted hover:text-text'}`}
             >
               <Icon className="h-3.5 w-3.5" /> {label}
             </button>
@@ -642,7 +642,7 @@ function VeraRankPanel({
 }) {
   if (reviewing && !review) {
     return (
-      <div className="flex items-center gap-2 rounded-xl border border-border bg-canvas px-4 py-3 text-sm text-muted">
+      <div className="flex items-center gap-2 rounded-card border border-border bg-canvas px-4 py-3 text-sm text-muted">
         <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary-strong" aria-hidden /> Vera is reading your
         Journey to see if it can count toward rank.
       </div>

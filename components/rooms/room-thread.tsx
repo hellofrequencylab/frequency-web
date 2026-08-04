@@ -151,9 +151,9 @@ export function RoomThread({
               <div key={m.id} className={`flex gap-3 ${showAuthor ? 'mt-3' : ''}`}>
                 {showAuthor && a ? (
                   a.avatar_url ? (
-                    <Image src={avatarSrc(a.avatar_url)} alt={a.display_name} width={36} height={36} className="w-9 h-9 rounded-full object-cover shrink-0" style={avatarFocusStyle(a.avatar_url)} />
+                    <Image src={avatarSrc(a.avatar_url)} alt={a.display_name} width={36} height={36} className="w-9 h-9 rounded-pill object-cover shrink-0" style={avatarFocusStyle(a.avatar_url)} />
                   ) : (
-                    <div className="w-9 h-9 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                    <div className="w-9 h-9 rounded-pill bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                       {getInitials(a.display_name)}
                     </div>
                   )
@@ -186,7 +186,7 @@ export function RoomThread({
             <button
               type="button"
               onClick={() => setComposerOpen(true)}
-              className="flex w-full items-center gap-3 rounded-card border border-border bg-surface px-3.5 py-2.5 text-left transition-colors hover:border-border-strong"
+              className="flex w-full items-center gap-3 rounded-control border border-border bg-surface px-3.5 py-2.5 text-left transition-colors hover:border-border-strong"
             >
               <span className="min-w-0 flex-1 truncate text-sm text-subtle">
                 Say something to the room. If it is a plan, put a time in it.
@@ -206,7 +206,7 @@ export function RoomThread({
                       type="button"
                       aria-pressed={on}
                       onClick={() => setKind(on ? null : k)}
-                      className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                      className={`rounded-pill border px-2.5 py-1 text-xs font-medium transition-colors ${
                         on
                           ? 'border-primary/40 bg-primary-bg text-primary-strong'
                           : 'border-border text-muted hover:text-text'

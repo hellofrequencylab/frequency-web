@@ -9,6 +9,7 @@ import { isError } from '@/lib/action-result'
 import { setMembershipTiers } from '@/lib/spaces/memberships-actions'
 import type { MembershipInterval, MembershipTier } from '@/lib/spaces/memberships'
 import { cn } from '@/lib/utils'
+import { IconButton } from '@/components/ui/icon-button'
 
 // OWNER TIER EDITOR (client). The Business owner defines one or more membership tiers (name, price,
 // interval, description, benefits, active), saved through the canEditProfile-gated setMembershipTiers
@@ -198,32 +199,30 @@ export function MembershipTierForm({
             <div className="flex items-start justify-between gap-3">
               <span className="text-xs font-semibold text-subtle">Tier {i + 1}</span>
               <div className="flex items-center gap-1">
-                <button
-                  type="button"
+                <IconButton
+                  variant="bordered"
+                  label="Move tier up"
                   onClick={() => move(i, -1)}
                   disabled={i === 0}
-                  aria-label="Move tier up"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-40"
                 >
                   <ArrowUp className="h-4 w-4" aria-hidden />
-                </button>
-                <button
-                  type="button"
+                </IconButton>
+                <IconButton
+                  variant="bordered"
+                  label="Move tier down"
                   onClick={() => move(i, 1)}
                   disabled={i === rows.length - 1}
-                  aria-label="Move tier down"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-40"
                 >
                   <ArrowDown className="h-4 w-4" aria-hidden />
-                </button>
-                <button
-                  type="button"
+                </IconButton>
+                <IconButton
+                  variant="bordered"
+                  tone="danger"
+                  label="Remove this tier"
                   onClick={() => removeRow(i)}
-                  aria-label="Remove this tier"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-danger/40 hover:text-danger"
                 >
                   <Trash2 className="h-4 w-4" aria-hidden />
-                </button>
+                </IconButton>
               </div>
             </div>
 

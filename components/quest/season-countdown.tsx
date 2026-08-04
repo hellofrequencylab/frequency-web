@@ -29,7 +29,7 @@ export function SeasonCountdown({ startMs, label }: { startMs: number; label: st
 
   return (
     <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-muted">
-      <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" aria-hidden />
+      <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-pill bg-primary/70" aria-hidden />
       Starts {label ?? 'soon'}
       {remaining !== null && <span className="tabular-nums text-muted">· {compact(remaining)}</span>}
     </span>

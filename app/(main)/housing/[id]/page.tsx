@@ -240,7 +240,7 @@ export default async function HousingDetailPage({
           <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Amenities</p>
           <ul className="flex flex-wrap gap-2">
             {detail.amenities.map((a) => (
-              <li key={a} className="rounded-full bg-surface-elevated px-2.5 py-0.5 text-xs font-medium text-text">
+              <li key={a} className="rounded-pill bg-surface-elevated px-2.5 py-0.5 text-xs font-medium text-text">
                 {amenityLabel(a)}
               </li>
             ))}
@@ -253,7 +253,7 @@ export default async function HousingDetailPage({
           <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Accessibility</p>
           <ul className="flex flex-wrap gap-2">
             {detail.accessibility.map((t) => (
-              <li key={t} className="rounded-full bg-surface-elevated px-2.5 py-0.5 text-xs font-medium text-text">
+              <li key={t} className="rounded-pill bg-surface-elevated px-2.5 py-0.5 text-xs font-medium text-text">
                 {accessibilityLabel(t)}
               </li>
             ))}
@@ -266,7 +266,7 @@ export default async function HousingDetailPage({
           <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Good to know</p>
           <ul className="flex flex-wrap gap-2">
             {rules.map((r) => (
-              <li key={r} className="rounded-full bg-primary-bg px-2.5 py-0.5 text-xs font-medium text-primary-strong">
+              <li key={r} className="rounded-pill bg-primary-bg px-2.5 py-0.5 text-xs font-medium text-primary-strong">
                 {r}
               </li>
             ))}

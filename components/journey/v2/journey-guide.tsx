@@ -78,7 +78,7 @@ export interface GuideAccess {
 }
 
 const FIELD =
-  'rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
+  'rounded-card border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
 const STEP_TYPE_LABELS: Record<string, string> = {
   practice: 'Practice',
@@ -262,7 +262,7 @@ export function JourneyGuide({
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
                       Recommended framework
-                      <span className="rounded-full bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong">Best start</span>
+                      <span className="rounded-pill bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong">Best start</span>
                     </span>
                     <span className="block text-xs leading-snug text-muted">
                       A welcome, weekly practices across the Pillars, an Expression Challenge each week, and a capstone.
@@ -275,7 +275,7 @@ export function JourneyGuide({
                     type="button"
                     onClick={() => applyTemplate(t.id)}
                     disabled={pending}
-                    className="flex w-full items-start gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated disabled:opacity-60"
+                    className="flex w-full items-start gap-3 rounded-control border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated disabled:opacity-60"
                   >
                     <span className="text-2xl leading-none" aria-hidden>{t.emoji}</span>
                     <span className="min-w-0 flex-1">
@@ -291,7 +291,7 @@ export function JourneyGuide({
                   type="button"
                   onClick={addPhase}
                   disabled={pending}
-                  className="flex w-full items-start gap-3 rounded-xl border border-dashed border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-surface-elevated disabled:opacity-60"
+                  className="flex w-full items-start gap-3 rounded-control border border-dashed border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-surface-elevated disabled:opacity-60"
                 >
                   <PenLine className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                   <span className="min-w-0 flex-1">
@@ -303,7 +303,7 @@ export function JourneyGuide({
             ) : (
               <div className="space-y-2.5">
                 {phases.map((p, i) => (
-                  <details key={p.id} className="group rounded-xl border border-border bg-surface" open={i === 0}>
+                  <details key={p.id} className="group rounded-card border border-border bg-surface" open={i === 0}>
                     <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3">
                       <Layers className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
                       <span className="min-w-0 flex-1">
@@ -321,7 +321,7 @@ export function JourneyGuide({
                         <ol className="space-y-1.5">
                           {p.steps.map((s) => (
                             <li key={s.id} className="flex items-center gap-2 text-sm text-text">
-                              <span className="rounded-full bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
+                              <span className="rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
                                 {STEP_TYPE_LABELS[s.type] ?? 'Step'}
                               </span>
                               <span className="min-w-0 truncate">{s.title || 'Untitled step'}</span>
@@ -395,7 +395,7 @@ export function JourneyGuide({
                         type="button"
                         onClick={() => setDrip(days)}
                         aria-pressed={drip === days}
-                        className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                        className={`rounded-pill border px-3 py-1.5 text-xs font-medium transition-colors ${
                           drip === days
                             ? 'border-primary/50 bg-primary-bg text-primary-strong'
                             : 'border-border bg-surface text-muted hover:text-text'
@@ -420,7 +420,7 @@ export function JourneyGuide({
                   <p className="mt-2 text-xs text-muted">{dripPreview(drip, phases.length)}</p>
                 </div>
               ) : (
-                <p className="rounded-xl border border-border bg-canvas px-3 py-2.5 text-xs text-muted">
+                <p className="rounded-card border border-border bg-canvas px-3 py-2.5 text-xs text-muted">
                   Phase drip comes with paid plans. For now every phase opens right away.{' '}
                   <Link href="/upgrade" className="font-medium text-primary-strong underline-offset-4 hover:underline">
                     See plans
@@ -433,7 +433,7 @@ export function JourneyGuide({
                   Once published, you can open cohort Runs from the Journey page so a group moves through it together.
                 </p>
               ) : (
-                <p className="rounded-xl border border-border bg-canvas px-3 py-2.5 text-xs text-muted">
+                <p className="rounded-card border border-border bg-canvas px-3 py-2.5 text-xs text-muted">
                   Cohort Runs, where a group starts together on a date, come with paid plans.{' '}
                   <Link href="/upgrade" className="font-medium text-primary-strong underline-offset-4 hover:underline">
                     See plans
@@ -448,7 +448,7 @@ export function JourneyGuide({
             <div className="space-y-5">
               <ul className="space-y-1.5">
                 {checks.map((c) => (
-                  <li key={c.key} className="flex items-start gap-2.5 rounded-xl border border-border bg-surface px-3.5 py-2.5">
+                  <li key={c.key} className="flex items-start gap-2.5 rounded-card border border-border bg-surface px-3.5 py-2.5">
                     {c.ok ? (
                       <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden />
                     ) : (
@@ -458,7 +458,7 @@ export function JourneyGuide({
                       <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
                         {c.label}
                         {!c.ok && !c.required && (
-                          <span className="rounded-full bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">Optional</span>
+                          <span className="rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">Optional</span>
                         )}
                       </span>
                       <span className="block text-xs leading-snug text-muted">{c.detail}</span>

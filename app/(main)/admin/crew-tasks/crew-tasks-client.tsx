@@ -32,9 +32,9 @@ function Toggle({ value, onChange, disabled }: { value: boolean; onChange: (v: b
       aria-checked={value}
       onClick={() => onChange(!value)}
       disabled={disabled}
-      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors disabled:opacity-50 ${value ? 'bg-primary' : 'bg-border-strong'}`}
+      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-pill border-2 border-transparent transition-colors disabled:opacity-50 ${value ? 'bg-primary' : 'bg-border-strong'}`}
     >
-      <span className={`inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform ${value ? 'translate-x-4' : 'translate-x-0'}`} />
+      <span className={`inline-block h-4 w-4 transform rounded-pill bg-surface shadow transition-transform ${value ? 'translate-x-4' : 'translate-x-0'}`} />
     </button>
   )
 }
@@ -166,9 +166,9 @@ function VerificationQueue({ items }: { items: PendingVerification[] }) {
         {items.map((c) => (
           <div key={c.id} className="flex items-center gap-3 rounded-2xl border border-warning bg-warning-bg/40 dark:bg-warning-bg/20 lift-1 px-4 py-3">
             {c.member?.avatar_url ? (
-              <Image src={avatarSrc(c.member.avatar_url)} alt={c.member.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" style={avatarFocusStyle(c.member.avatar_url)} />
+              <Image src={avatarSrc(c.member.avatar_url)} alt={c.member.display_name} width={28} height={28} className="w-7 h-7 rounded-pill object-cover shrink-0" style={avatarFocusStyle(c.member.avatar_url)} />
             ) : (
-              <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-pill bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0">
                 {getInitials(c.member?.display_name ?? '?')}
               </div>
             )}

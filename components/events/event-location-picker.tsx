@@ -19,7 +19,7 @@ export default function EventLocationPicker({
   lat,
   lng,
   onChange,
-  className = 'h-56 w-full overflow-hidden rounded-xl border border-border',
+  className = 'h-56 w-full overflow-hidden rounded-card border border-border',
 }: {
   /** Current pin latitude, or null when the event has no point yet. */
   lat: number | null

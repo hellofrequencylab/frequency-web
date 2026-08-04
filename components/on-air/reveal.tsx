@@ -120,7 +120,7 @@ function CelebrationBurst() {
       {dots.map((d, i) => (
         <span
           key={i}
-          className={`absolute left-1/2 top-1/2 block rounded-full ${
+          className={`absolute left-1/2 top-1/2 block rounded-pill ${
             d.tone === 'signal' ? 'bg-signal' : 'bg-primary'
           }`}
           style={{
@@ -266,7 +266,7 @@ export function Reveal({
           onClick={prev}
           disabled={panel === 0}
           aria-label="Previous card"
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-30"
+          className="flex h-8 w-8 items-center justify-center rounded-pill border border-border text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-30"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -274,7 +274,7 @@ export function Reveal({
           {[0, 1, 2, 3].map((i) => (
             <span
               key={i}
-              className={`h-1.5 rounded-full transition-all ${
+              className={`h-1.5 rounded-pill transition-all ${
                 i === panel ? 'w-5 bg-primary' : 'w-1.5 bg-border'
               }`}
             />
@@ -284,7 +284,7 @@ export function Reveal({
           type="button"
           onClick={next}
           aria-label={panel >= 3 ? 'Tune back in' : 'Next card'}
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+          className="flex h-8 w-8 items-center justify-center rounded-pill border border-border text-muted transition-colors hover:bg-surface-elevated hover:text-text"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -332,7 +332,7 @@ function RewardsPanel({ payload }: { payload: RevealPayload }) {
             {payload.bonuses.slice(0, shown).map((b, i) => (
               <div
                 key={`${b.label}-${i}`}
-                className="flex items-center justify-between rounded-xl border border-border bg-surface-elevated/60 px-3 py-2 text-sm"
+                className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/60 px-3 py-2 text-sm"
               >
                 <span className="font-medium text-text">{b.label}</span>
                 <span className="flex items-center gap-1 font-semibold tabular-nums text-primary-strong">
@@ -450,7 +450,7 @@ function StatsPanel({ payload }: { payload: RevealPayload }) {
         {rows.map(([k, v]) => (
           <div
             key={k}
-            className="flex items-center justify-between rounded-xl border border-border bg-surface-elevated/60 px-3 py-2 text-sm"
+            className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/60 px-3 py-2 text-sm"
           >
             <span className="truncate text-muted">{k}</span>
             <span className="ml-3 shrink-0 font-semibold tabular-nums text-text">{v}</span>

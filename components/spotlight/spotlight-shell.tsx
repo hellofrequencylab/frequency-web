@@ -83,11 +83,11 @@ export function SpotlightShell({
                 alt={name}
                 width={112}
                 height={112}
-                className="h-28 w-28 rounded-full object-cover ring-4 ring-canvas lift-1"
+                className="h-28 w-28 rounded-pill object-cover ring-4 ring-canvas lift-1"
                 style={avatarFocusStyle(profile.avatar_url)}
               />
             ) : (
-              <div className="flex h-28 w-28 items-center justify-center rounded-full bg-primary-bg text-3xl font-bold text-primary-strong ring-4 ring-canvas lift-1">
+              <div className="flex h-28 w-28 items-center justify-center rounded-pill bg-primary-bg text-3xl font-bold text-primary-strong ring-4 ring-canvas lift-1">
                 {getInitials(name)}
               </div>
             )}
@@ -100,10 +100,10 @@ export function SpotlightShell({
             <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
               {profile.community_role && (
                 <span
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-semibold text-text lift-1"
+                  className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface px-2.5 py-1 text-xs font-semibold text-text lift-1"
                   style={roleBadgeStyle(profile.community_role as RoleChipKey)}
                 >
-                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--rank)' }} aria-hidden />
+                  <span className="h-1.5 w-1.5 rounded-pill" style={{ background: 'var(--rank)' }} aria-hidden />
                   {ROLE_LABEL[profile.community_role as RoleChipKey] ?? profile.community_role}
                 </span>
               )}

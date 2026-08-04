@@ -27,7 +27,7 @@ import type { SpaceCommunityPost, SpaceUpdateComment, SpaceUpdateReactions } fro
 // the operator) may interact, enforced server-side. Semantic DAWN tokens only, voice canon (no em dashes).
 
 const inputCls =
-  'w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-primary'
+  'w-full rounded-card border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-primary'
 
 /** Push a chosen file through the Space's follower-gated community-image action and hand the shared
  *  Composer back the public URL (or null on failure, which the Composer surfaces). */
@@ -291,7 +291,7 @@ function PostCard({
       <header className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5">
           {pinned && (
-            <span className="inline-flex items-center gap-0.5 rounded-full bg-primary-bg px-1.5 py-0.5 text-2xs font-bold text-primary-strong">
+            <span className="inline-flex items-center gap-0.5 rounded-pill bg-primary-bg px-1.5 py-0.5 text-2xs font-bold text-primary-strong">
               <Pin className="h-3 w-3" aria-hidden /> Pinned
             </span>
           )}
@@ -340,7 +340,7 @@ function PostCard({
               aria-pressed={mine}
               aria-label={reactionLabel(r.key)}
               title={reactionLabel(r.key)}
-              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-sm transition-colors disabled:cursor-default ${
+              className={`inline-flex items-center gap-1 rounded-pill border px-2.5 py-1 text-sm transition-colors disabled:cursor-default ${
                 mine ? 'border-primary bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted'
               } ${canInteract && anchorId ? 'hover:border-border-strong' : ''}`}
             >

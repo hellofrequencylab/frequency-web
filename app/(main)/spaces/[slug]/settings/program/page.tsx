@@ -146,7 +146,7 @@ export default async function SpaceProgramPage({
                             View the Channel
                           </Link>
                         ) : (
-                          <span className="rounded-full border border-warning/60 px-3 py-1 text-xs font-medium text-warning">
+                          <span className="rounded-pill border border-warning/60 px-3 py-1 text-xs font-medium text-warning">
                             Paused
                           </span>
                         )

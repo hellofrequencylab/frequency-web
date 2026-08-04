@@ -110,7 +110,11 @@ export function StatCard({
     </>
   )
 
-  const cls = `block ${xs ? 'rounded-xl px-3 py-2' : 'rounded-2xl'} ${
+  // Both variants take the CARD role. They disagreed before -- the compact one was
+  // rounded-card and the default a literal rounded-2xl (24px) -- so one StatCard's
+  // corners moved with the Feel axis and its neighbour's did not. DAWN reserves 2xl for
+  // marketing feature cards; a StatCard is an in-app tile.
+  const cls = `block ${xs ? 'rounded-card px-3 py-2' : 'rounded-card'} ${
     sm ? 'px-4 py-3' : xs ? '' : 'px-3.5 py-2.5'
   } ${bordered ? 'border border-border bg-surface lift-1' : 'bg-surface-elevated/60'}`
   return href ? (

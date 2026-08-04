@@ -346,7 +346,7 @@ export function Stat({
 // as the single canonical indicator (retires pricing's `+` and home's copy).
 export function Faq({ q, children }: { q: string; children: React.ReactNode }) {
   return (
-    // rounded-card (was rounded-2xl, the same 1rem at :root): inside a Space subtree the page theme
+    // rounded-control (was rounded-2xl, the same 1rem at :root): inside a Space subtree the page theme
     // shapes the FAQ card (ADR-578); everywhere else the token resolves exactly as before.
     <details className="group rounded-card border border-border bg-surface px-6 py-5 lift-1 [&_summary]:list-none">
       <summary className="flex cursor-pointer items-center justify-between gap-4 text-left select-none">
@@ -469,7 +469,7 @@ export function OutcomePanel({
       {Icon && (
         <div
           aria-hidden
-          className={`mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full ${OUTCOME_TONES[tone]}`}
+          className={`mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-pill ${OUTCOME_TONES[tone]}`}
         >
           <Icon className="h-7 w-7" strokeWidth={2.5} />
         </div>
@@ -506,7 +506,7 @@ export function OutcomeSkeleton() {
   return (
     <section className="px-6 py-24 sm:py-32">
       <div className="mx-auto max-w-md animate-pulse text-center" aria-hidden>
-        <div className="mx-auto mb-6 h-14 w-14 rounded-full bg-surface-elevated" />
+        <div className="mx-auto mb-6 h-14 w-14 rounded-pill bg-surface-elevated" />
         <div className="mx-auto h-10 w-4/5 rounded-lg bg-surface-elevated sm:h-12" />
         <div className="mt-4 space-y-2">
           <div className="mx-auto h-5 w-full rounded bg-surface-elevated" />

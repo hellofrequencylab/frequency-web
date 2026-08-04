@@ -36,7 +36,7 @@ function Chip({ label, href, active }: { label: string; href: string; active: bo
     <Link
       href={href}
       scroll={false}
-      className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+      className={`rounded-pill px-3 py-1 text-xs font-medium transition-colors ${
         active ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-muted hover:text-text'
       }`}
     >
@@ -150,7 +150,7 @@ export async function PracticesLibrary() {
           <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-subtle">
             <span>Filtered:</span>
             {qParam && (
-              <Link href={href({ q: undefined, page: undefined })} className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 hover:text-text">
+              <Link href={href({ q: undefined, page: undefined })} className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 hover:text-text">
                 “{qParam}” <X className="h-3 w-3" />
               </Link>
             )}
@@ -217,12 +217,12 @@ export async function PracticesLibrary() {
                     badge={
                       <span className="flex items-center gap-1">
                         {p.is_template && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-warning-bg px-2 py-0.5 text-xs font-semibold text-warning">
+                          <span className="inline-flex items-center gap-1 rounded-pill bg-warning-bg px-2 py-0.5 text-xs font-semibold text-warning">
                             <Wand2 className="h-3 w-3" /> Template
                           </span>
                         )}
                         {!p.is_public && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-xs font-semibold text-danger">
+                          <span className="inline-flex items-center gap-1 rounded-pill bg-danger/10 px-2 py-0.5 text-xs font-semibold text-danger">
                             <EyeOff className="h-3 w-3" /> Hidden
                           </span>
                         )}

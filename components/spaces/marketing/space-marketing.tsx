@@ -49,7 +49,7 @@ function MarketingToolCard({ id, href }: { id: string; href: string }) {
     <li>
       <Link
         href={href}
-        className="group flex h-full items-start gap-3 rounded-xl border border-border bg-surface p-3.5 lift-1 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+        className="group flex h-full items-start gap-3 rounded-control border border-border bg-surface p-3.5 lift-1 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
       >
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
           <Icon className="h-4 w-4" aria-hidden />

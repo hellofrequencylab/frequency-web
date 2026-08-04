@@ -347,7 +347,7 @@ export default async function CirclePage({
                on-ink HERO_ACTION_CLASS.
             6. ADMIN: never on the cover — Edit/host tools read as a light row in the `band`
                below the hero (the Journey/Profile placement).
-            7. BAND: badge chips (rounded-full), then icon fact rows (key fact semibold, the
+            7. BAND: badge chips (rounded-pill), then icon fact rows (key fact semibold, the
                events subtitle idiom), then the capacity bar.
             8. BACK: DetailTemplate's `back` slot, above the band. Tabs stay in `tabs`. */}
       <DetailTemplate
@@ -421,16 +421,16 @@ export default async function CirclePage({
               </div>
             )}
 
-            {/* Status / mode chips — the rounded-full chip grammar the event + Journey bands use. */}
+            {/* Status / mode chips — the rounded-pill chip grammar the event + Journey bands use. */}
             <span className="inline-flex flex-wrap items-center gap-1.5">
-              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${statusPill.cls}`}>
+              <span className={`inline-flex items-center rounded-pill px-2 py-0.5 text-xs font-semibold ${statusPill.cls}`}>
                 {statusPill.label}
               </span>
-              <span className="inline-flex items-center rounded-full bg-signal-bg px-2 py-0.5 text-xs font-medium text-signal-strong">
+              <span className="inline-flex items-center rounded-pill bg-signal-bg px-2 py-0.5 text-xs font-medium text-signal-strong">
                 {typeLabel}
               </span>
               {nearCap && !full && (
-                <span className="inline-flex items-center rounded-full bg-warning-bg px-2 py-0.5 text-xs font-medium text-warning">
+                <span className="inline-flex items-center rounded-pill bg-warning-bg px-2 py-0.5 text-xs font-medium text-warning">
                   Almost full
                 </span>
               )}

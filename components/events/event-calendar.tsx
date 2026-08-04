@@ -128,7 +128,7 @@ export function EventCalendar({
   const today = useMemo(() => localToday(), [])
 
   return (
-    <div className="rounded-xl border border-border bg-surface">
+    <div className="rounded-card border border-border bg-surface">
       {/* Header: month label (grid) or "Upcoming" (list) + the view toggle, and month nav in grid view. */}
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
         <h2 className="text-lg font-semibold text-text">{view === 'grid' ? monthLabel(year, month1) : 'Upcoming'}</h2>
@@ -265,7 +265,7 @@ export function EventCalendar({
                   <div className="mb-1 flex justify-end">
                     <span
                       className={cn(
-                        'inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-medium',
+                        'inline-flex h-6 min-w-6 items-center justify-center rounded-pill px-1 text-xs font-medium',
                         isToday ? 'bg-primary text-on-primary' : cell.inMonth ? 'text-text' : 'text-subtle',
                       )}
                     >

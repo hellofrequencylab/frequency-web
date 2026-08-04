@@ -50,7 +50,7 @@ function CircleHubNav({ slug, section }: { slug: string; section: CircleHubSecti
             scroll={false}
             aria-current={on ? 'page' : undefined}
             className={
-              'rounded-full px-3 py-1.5 text-sm font-medium transition-colors ' +
+              'rounded-pill px-3 py-1.5 text-sm font-medium transition-colors ' +
               (on
                 ? 'bg-primary text-on-primary'
                 : 'border border-border text-muted hover:bg-surface-elevated hover:text-text')

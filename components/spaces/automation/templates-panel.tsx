@@ -70,7 +70,7 @@ export function TemplatesPanel({
                 <span className="text-sm font-semibold text-text">{t.title}</span>
               </div>
               <p className="flex-1 text-xs text-muted">{t.description}</p>
-              <span className="mt-3 inline-flex w-fit items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
+              <span className="mt-3 inline-flex w-fit items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
                 {t.triggerEvent ? 'Sends on join' : 'Manual start'}
               </span>
               <div className="mt-3">

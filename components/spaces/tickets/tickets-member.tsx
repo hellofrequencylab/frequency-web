@@ -72,7 +72,7 @@ export async function TicketsMember({
             >
               <div className="flex items-start justify-between gap-2">
                 <h3 className="text-base font-bold leading-tight text-text">{tier.name}</h3>
-                <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+                <span className="shrink-0 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
                   {tier.kind === 'free' ? 'Free entry' : 'RSVP'}
                 </span>
               </div>

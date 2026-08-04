@@ -358,9 +358,9 @@ export function DockChat({
                 <li key={c.id}>
                   <button type="button" onClick={() => openDm(c.id, title)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-elevated">
                     {peer?.avatar_url ? (
-                      <Image src={avatarSrc(peer.avatar_url)} alt="" width={36} height={36} className="h-9 w-9 rounded-full object-cover" style={avatarFocusStyle(peer.avatar_url)} />
+                      <Image src={avatarSrc(peer.avatar_url)} alt="" width={36} height={36} className="h-9 w-9 rounded-pill object-cover" style={avatarFocusStyle(peer.avatar_url)} />
                     ) : (
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-bg text-2xs font-bold text-primary-strong select-none">{getInitials(title)}</div>
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-2xs font-bold text-primary-strong select-none">{getInitials(title)}</div>
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
@@ -369,7 +369,7 @@ export function DockChat({
                       </div>
                       <span className="block truncate text-xs text-muted">{c.lastMessage?.body ?? 'No messages yet'}</span>
                     </div>
-                    {c.unread > 0 && <span className="ml-1 inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-2xs font-bold text-on-primary">{c.unread}</span>}
+                    {c.unread > 0 && <span className="ml-1 inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-pill bg-primary px-1.5 text-2xs font-bold text-on-primary">{c.unread}</span>}
                   </button>
                 </li>
               )
@@ -377,7 +377,7 @@ export function DockChat({
             {rooms.map((r) => (
               <li key={r.id}>
                 <button type="button" onClick={() => openRoom(r.id, r.name)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-elevated">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-subtle">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-subtle">
                     <Hash className="h-4 w-4" aria-hidden />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -387,7 +387,7 @@ export function DockChat({
                     </div>
                     <span className="block truncate text-xs text-muted capitalize">{r.visibility} room</span>
                   </div>
-                  {r.unread > 0 && <span className="ml-1 inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-2xs font-bold text-on-primary">{r.unread}</span>}
+                  {r.unread > 0 && <span className="ml-1 inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-pill bg-primary px-1.5 text-2xs font-bold text-on-primary">{r.unread}</span>}
                 </button>
               </li>
             ))}

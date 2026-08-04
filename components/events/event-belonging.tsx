@@ -111,7 +111,7 @@ function BelongingChip({ link }: { link: BelongingLink }) {
   return (
     <Link
       href={link.href}
-      className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-surface-elevated px-2.5 py-1 text-xs transition-colors hover:border-border-strong hover:bg-surface"
+      className="inline-flex max-w-full items-center gap-1.5 rounded-pill border border-border bg-surface-elevated px-2.5 py-1 text-xs transition-colors hover:border-border-strong hover:bg-surface"
     >
       <Icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
       <span className="text-muted">{link.label}</span>
@@ -127,7 +127,7 @@ function BelongingChip({ link }: { link: BelongingLink }) {
 export function EventBelongingSkeleton() {
   return (
     <div className="flex flex-wrap items-center gap-1.5" aria-hidden>
-      <Skeleton className="h-6 w-32 rounded-full" />
+      <Skeleton className="h-6 w-32 rounded-pill" />
     </div>
   )
 }

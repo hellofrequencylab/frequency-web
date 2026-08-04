@@ -35,7 +35,7 @@ function OrderCard({ order, dispute }: { order: CommerceOrder; dispute: Commerce
     <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="flex items-center justify-between gap-3">
         <span className="text-xs text-subtle">{when}</span>
-        <span className={`rounded-full px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide ${STATUS_TONE[order.status] ?? 'bg-surface-elevated text-muted'}`}>
+        <span className={`rounded-pill px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide ${STATUS_TONE[order.status] ?? 'bg-surface-elevated text-muted'}`}>
           {order.status}
         </span>
       </div>

@@ -104,7 +104,7 @@ export function HeaderImageField({
             type="button"
             onClick={() => setPickerOpen(true)}
             disabled={disabled}
-            className="rounded-lg bg-canvas/90 px-2.5 py-1 text-xs font-medium text-text lift-1 backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60 motion-reduce:transition-none"
+            className="rounded-control bg-canvas/90 px-2.5 py-1 text-xs font-medium text-text lift-1 backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60 motion-reduce:transition-none"
           >
             Replace
           </button>
@@ -113,7 +113,7 @@ export function HeaderImageField({
             onClick={() => onChange(null)}
             disabled={disabled}
             aria-label={`Remove ${label.toLowerCase()}`}
-            className="rounded-lg bg-canvas/90 p-1 text-subtle lift-1 backdrop-blur transition-colors hover:text-danger disabled:opacity-60 motion-reduce:transition-none"
+            className="rounded-control bg-canvas/90 p-1 text-subtle lift-1 backdrop-blur transition-colors hover:text-danger disabled:opacity-60 motion-reduce:transition-none"
           >
             <X className="h-4 w-4" />
           </button>

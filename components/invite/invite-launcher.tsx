@@ -80,14 +80,14 @@ export function InviteLauncher() {
           <p className="flex items-center gap-2 text-base font-bold text-text">
             <UserPlus className="h-5 w-5 text-primary-strong" /> Invite friends
           </p>
-          <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="rounded-full p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text">
+          <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="rounded-pill p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Reward banner */}
         <div className="mt-2 flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary-bg/40 p-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary shadow-pop">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-primary text-on-primary shadow-pop">
             <Zap className="h-5 w-5" />
           </span>
           <p className="text-sm leading-snug text-text">

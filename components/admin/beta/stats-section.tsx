@@ -264,7 +264,7 @@ function FunnelList({ steps }: { steps: BetaFunnelStep[] }) {
               <span className="text-sm font-medium text-text">
                 {s.label}
                 {s.scope === 'global' && (
-                  <span className="ml-2 rounded-full bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-muted">
+                  <span className="ml-2 rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-muted">
                     all members
                   </span>
                 )}

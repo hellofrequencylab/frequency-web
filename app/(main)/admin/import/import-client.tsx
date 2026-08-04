@@ -66,7 +66,7 @@ export function ImportClient() {
   return (
     <div className="space-y-5">
       {/* Safety banner — this surface never writes. */}
-      <div className="flex items-start gap-2 rounded-xl border border-border bg-surface-elevated/60 p-3 text-sm text-muted">
+      <div className="flex items-start gap-2 rounded-card border border-border bg-surface-elevated/60 p-3 text-sm text-muted">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <p>
           Dry run. Nothing here is saved or posted, and your photos stay in this browser. You are
@@ -76,7 +76,7 @@ export function ImportClient() {
       </div>
 
       {/* How to get the files. */}
-      <details className="rounded-xl border border-border bg-surface p-3 text-sm text-muted">
+      <details className="rounded-card border border-border bg-surface p-3 text-sm text-muted">
         <summary className="cursor-pointer font-medium text-text">How to export with photos</summary>
         <p className="mt-2">
           In WhatsApp, open the group, tap its name, and choose Export chat. Pick{' '}
@@ -168,7 +168,7 @@ function PreviewResult({
       </div>
 
       {aiSkipped && (
-        <p className="rounded-xl border border-border bg-surface-elevated/60 p-3 text-sm text-muted">
+        <p className="rounded-card border border-border bg-surface-elevated/60 p-3 text-sm text-muted">
           AI is off or over the daily budget, so this shows the parsed chat only. Turn AI on (or wait
           for the daily cap to reset) to classify events and listings.
         </p>
@@ -206,7 +206,7 @@ function ItemCard({ item, images }: { item: ClassifiedItem; images: ImageMap }) 
     <div className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-center gap-2">
         <Icon className="h-4 w-4 shrink-0 text-primary" />
-        <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium capitalize text-muted">
+        <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium capitalize text-muted">
           {item.category}
         </span>
         {item.confidence === 'low' && (

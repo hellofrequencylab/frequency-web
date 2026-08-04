@@ -30,7 +30,7 @@ export function ProfileAwards({ awards, firstName, isOwner }: { awards: ProfileA
               <span
                 key={a.slug}
                 title={a.description ?? a.name}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${tierStyle(a.tier)}`}
+                className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-xs font-medium ${tierStyle(a.tier)}`}
               >
                 <Award className="h-3.5 w-3.5" />
                 {a.name}
@@ -50,7 +50,7 @@ export function ProfileAwards({ awards, firstName, isOwner }: { awards: ProfileA
               <span
                 key={it.slug}
                 title={it.description ?? it.name}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-elevated px-2.5 py-1 text-xs font-medium text-text"
+                className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface-elevated px-2.5 py-1 text-xs font-medium text-text"
               >
                 {it.bought ? <ShoppingBag className="h-3.5 w-3.5 text-subtle" /> : <Gift className="h-3.5 w-3.5 text-subtle" />}
                 {it.name}

@@ -45,7 +45,7 @@ export function VariantManager({
 
   return (
     <div className="space-y-6">
-      <p className="rounded-xl bg-surface-elevated/50 px-4 py-2.5 text-xs text-muted">
+      <p className="rounded-card bg-surface-elevated/50 px-4 py-2.5 text-xs text-muted">
         <span className="font-semibold text-text">Control (default):</span> {control || '–'} · shown when no active variant wins the split.
       </p>
 
@@ -106,7 +106,7 @@ function VariantRow({ codeId, v, groups, isWinner }: { codeId: string; v: Varian
 
   if (editing) {
     return (
-      <div className="space-y-2 rounded-xl border border-border bg-canvas/40 p-3">
+      <div className="space-y-2 rounded-card border border-border bg-canvas/40 p-3">
         <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label" className={field} />
         <DestinationSelect value={target} onChange={setTarget} groups={groups} />
         <div className="flex items-center gap-2">

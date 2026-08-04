@@ -112,7 +112,7 @@ export function EventPeopleModule() {
               {stillPending.map((p) => (
                 <li
                   key={p.profileId}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface p-2.5"
+                  className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface p-2.5"
                 >
                   <span className="min-w-0 truncate text-sm text-text">
                     {p.displayName}

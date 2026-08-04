@@ -50,3 +50,22 @@ export function safeImageSrc(src: string | null | undefined): string | null {
 
   return null
 }
+
+// The narrow sibling, for the ONE case that recurs across the product: a local upload
+// preview. Three surfaces paint one (the Beta induction avatar, the onboarding avatar
+// step, the feed composer attachment) and until now each guarded it differently — one
+// used safeImageSrc, one an ad-hoc /^(?:blob:|https?:\/\/)/i regex, and one nothing at
+// all. Three guards for one shape is how the unguarded one happens.
+//
+// An upload preview is only ever a blob: URL from createObjectURL, or the http(s) URL
+// the file got after it uploaded. Nothing else is reachable, so nothing else is allowed:
+// no data:, no same-origin /path. That is deliberately STRICTER than safeImageSrc.
+// data: is excluded not because an <img> would run a data:image/svg+xml (it will not —
+// SVG loaded through <img> is script-disabled in every browser) but because a preview
+// has no reason to carry inline bytes, and a guard that permits what the caller cannot
+// produce is a guard with slack in it.
+export function safeUploadPreviewSrc(src: string | null | undefined): string | null {
+  const safe = safeImageSrc(src)
+  if (!safe) return null
+  return /^(?:blob:|https?:)/i.test(safe) ? safe : null
+}

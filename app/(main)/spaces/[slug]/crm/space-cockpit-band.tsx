@@ -24,7 +24,7 @@ const DOT = { success: 'bg-success', warning: 'bg-warning', danger: 'bg-danger',
 function toneLabel(label: string, tone: keyof typeof DOT) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className={`h-2 w-2 shrink-0 rounded-full ${DOT[tone]}`} aria-hidden />
+      <span className={`h-2 w-2 shrink-0 rounded-pill ${DOT[tone]}`} aria-hidden />
       {label}
     </span>
   )

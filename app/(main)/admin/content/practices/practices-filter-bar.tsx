@@ -51,7 +51,7 @@ export function PracticesFilterDisclosure({
           <SlidersHorizontal className="h-4 w-4 shrink-0 text-muted" aria-hidden />
           Filters
           {activeCount > 0 && (
-            <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-primary/10 px-1.5 py-0.5 text-2xs font-bold tabular-nums text-primary-strong">
+            <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-pill bg-primary/10 px-1.5 py-0.5 text-2xs font-bold tabular-nums text-primary-strong">
               {activeCount}
             </span>
           )}

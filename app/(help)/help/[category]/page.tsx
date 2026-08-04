@@ -41,7 +41,7 @@ export default async function HelpCategoryPage({ params }: Params) {
           { name: cat.title, path: `/help/${cat.slug}` },
         ])}
       />
-      <ul className="divide-y divide-border rounded-xl border border-border bg-surface-elevated">
+      <ul className="divide-y divide-border rounded-card border border-border bg-surface-elevated">
         {cat.articles.map((a) => (
           <li key={a.slug}>
             <Link href={helpHref(cat.slug, a.slug)} className="block px-5 py-4 hover:bg-surface">

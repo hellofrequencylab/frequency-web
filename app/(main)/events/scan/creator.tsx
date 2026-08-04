@@ -399,7 +399,7 @@ export function Creator({ userId }: { userId: string }) {
             <button
               type="button"
               onClick={retake}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-border-strong px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
             >
               <RefreshCw className="h-4 w-4" /> Retake
             </button>
@@ -448,7 +448,7 @@ export function Creator({ userId }: { userId: string }) {
           <button
             type="button"
             onClick={() => galleryRef.current?.click()}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-border-strong px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+            className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
           >
             <Upload className="h-4 w-4" /> Upload an image
           </button>
@@ -466,7 +466,7 @@ export function Creator({ userId }: { userId: string }) {
                 onClick={() => removeFile(i)}
                 aria-label={`Remove shot ${i + 1}`}
                 // KEEP the black/white pair: A scrim chip painted on a photo thumbnail, not on a themed surface, so the monochrome pair stays.
-                className="absolute right-1 top-1 rounded-full bg-black/55 p-0.5 text-white transition-colors hover:bg-black/70"
+                className="absolute right-1 top-1 rounded-pill bg-black/55 p-0.5 text-white transition-colors hover:bg-black/70"
               >
                 <X className="h-3 w-3" />
               </button>

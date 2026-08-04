@@ -101,7 +101,7 @@ export function AirwavesConsole({
   return (
     <div className="space-y-8">
       {canEdit && (
-        <nav className="flex gap-1 rounded-xl border border-border bg-surface p-1" role="tablist" aria-label="Airwaves sections">
+        <nav className="flex gap-1 rounded-card border border-border bg-surface p-1" role="tablist" aria-label="Airwaves sections">
           {(['recordings', 'shows'] as const).map((t) => (
             <button
               key={t}

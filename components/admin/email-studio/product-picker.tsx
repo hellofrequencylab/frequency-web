@@ -180,7 +180,7 @@ export function ProductCardEditor({
                     onClick={() => pickOwner(o)}
                     className="flex w-full items-center gap-2 rounded-lg border border-border bg-surface px-2 py-1.5 text-left transition-colors hover:border-primary"
                   >
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-subtle">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-subtle">
                       {o.kind === 'space' ? <Store className="h-3 w-3" aria-hidden /> : <User className="h-3 w-3" aria-hidden />}
                     </span>
                     <span className="min-w-0 flex-1">

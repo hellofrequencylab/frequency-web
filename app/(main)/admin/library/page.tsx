@@ -348,7 +348,7 @@ export default async function LoomStudioPage({
                     <Link
                       key={t.id}
                       href={`/admin/library?lane=splash&section=templates&q=${encodeURIComponent(t.title)}`}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-1.5 text-sm text-text hover:bg-surface-elevated"
+                      className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-sm text-text hover:bg-surface-elevated"
                     >
                       <span className="truncate">{t.title}</span>
                       <span className="shrink-0 text-2xs uppercase tracking-wide text-muted">{t.kind}</span>
@@ -376,11 +376,11 @@ export default async function LoomStudioPage({
                 {totalPages > 1 && (
                   <nav className="mt-8 flex flex-wrap items-center justify-center gap-1" aria-label="Pagination">
                     {currentPage > 1 ? (
-                      <Link href={pageHref(currentPage - 1)} className="rounded-xl border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated" aria-label="Previous page">
+                      <Link href={pageHref(currentPage - 1)} className="rounded-control border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated" aria-label="Previous page">
                         <ChevronLeft className="h-4 w-4" />
                       </Link>
                     ) : (
-                      <span className="rounded-xl border border-border px-3 py-1.5 text-sm text-subtle opacity-50">
+                      <span className="rounded-card border border-border px-3 py-1.5 text-sm text-subtle opacity-50">
                         <ChevronLeft className="h-4 w-4" />
                       </span>
                     )}
@@ -407,11 +407,11 @@ export default async function LoomStudioPage({
                     )}
 
                     {currentPage < totalPages ? (
-                      <Link href={pageHref(currentPage + 1)} className="rounded-xl border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated" aria-label="Next page">
+                      <Link href={pageHref(currentPage + 1)} className="rounded-control border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated" aria-label="Next page">
                         <ChevronRight className="h-4 w-4" />
                       </Link>
                     ) : (
-                      <span className="rounded-xl border border-border px-3 py-1.5 text-sm text-subtle opacity-50">
+                      <span className="rounded-card border border-border px-3 py-1.5 text-sm text-subtle opacity-50">
                         <ChevronRight className="h-4 w-4" />
                       </span>
                     )}

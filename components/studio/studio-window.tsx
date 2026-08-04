@@ -81,7 +81,7 @@ export function StudioWindow({
               type="button"
               onClick={onClose}
               aria-label={closeLabel}
-              className="rounded-full p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+              className="rounded-pill p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <X className="h-4 w-4" />
             </button>

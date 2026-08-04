@@ -67,7 +67,7 @@ export function SpacePracticeRow({ practice, slug }: { practice: RowPractice; sl
             <Link href={`/practices/${practice.id}/edit`} className="truncate text-base font-bold text-text hover:text-primary-strong">
               {practice.title}
             </Link>
-            <span className={`shrink-0 rounded-full px-2 py-0.5 text-2xs font-semibold ${badge.cls}`}>{badge.label}</span>
+            <span className={`shrink-0 rounded-pill px-2 py-0.5 text-2xs font-semibold ${badge.cls}`}>{badge.label}</span>
           </div>
           {practice.summary && <p className="mt-0.5 line-clamp-1 text-sm text-muted">{practice.summary}</p>}
         </div>

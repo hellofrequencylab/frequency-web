@@ -405,7 +405,7 @@ export function QuoteSection({
         </blockquote>
         <figcaption className={`flex items-center gap-4 ${centered ? 'flex-col' : ''}`}>
           {avatar && (
-            <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 border border-border">
+            <div className="relative w-12 h-12 rounded-pill overflow-hidden shrink-0 border border-border">
               <Image src={avatarSrc(avatar)} alt={attribution ?? ''} fill sizes="48px" className="object-cover" style={avatarFocusStyle(avatar)} />
             </div>
           )}

@@ -166,7 +166,7 @@ export function ChoresOverlay({
             type="button"
             onClick={close}
             aria-label="Close"
-            className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+            className="absolute right-3 top-3 z-10 rounded-pill p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
           >
             <X className="h-4 w-4" />
           </button>
@@ -174,7 +174,7 @@ export function ChoresOverlay({
           {reward ? (
             /* ── Beat 2: she pays up ─────────────────────────────────────────── */
             <div className="flex flex-col items-center px-7 pb-7 pt-9 text-center">
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-broadcast-bg text-broadcast-strong">
+              <span className="flex h-14 w-14 items-center justify-center rounded-pill bg-broadcast-bg text-broadcast-strong">
                 <PartyPopper className="h-6 w-6" aria-hidden />
               </span>
               <h2 id="chores-title" className="mt-4 text-2xl font-bold text-text">There. Lived-in.</h2>
@@ -183,7 +183,7 @@ export function ChoresOverlay({
                 {nextAction ? ' One more nudge and I’ll leave you be.' : ' Off you go. Go meet your people.'}
               </p>
               {claimed && (
-                <p className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-signal-bg px-3 py-1.5 text-sm font-bold text-signal">
+                <p className="mt-4 inline-flex items-center gap-1.5 rounded-pill bg-signal-bg px-3 py-1.5 text-sm font-bold text-signal">
                   <Gem className="h-4 w-4" aria-hidden /> +{claimed.amount} Gems
                 </p>
               )}
@@ -208,7 +208,7 @@ export function ChoresOverlay({
           ) : coach ? (
             /* ── Beat 3: the coach — one next move, warmly ───────────────────── */
             <div className="flex flex-col items-center px-7 pb-7 pt-9 text-center">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-broadcast-bg px-3 py-1 text-2xs font-semibold uppercase tracking-wide text-broadcast-strong">
+              <span className="inline-flex items-center gap-1.5 rounded-pill bg-broadcast-bg px-3 py-1 text-2xs font-semibold uppercase tracking-wide text-broadcast-strong">
                 <Sparkles className="h-3.5 w-3.5" aria-hidden /> Vera
               </span>
               <span className="mt-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-broadcast-bg text-broadcast-strong">
@@ -216,7 +216,7 @@ export function ChoresOverlay({
               </span>
               <h2 id="chores-title" className="mt-4 text-2xl font-bold leading-tight text-text">{nextAction!.headline}</h2>
               <p className="mt-2 max-w-sm text-pretty text-sm leading-relaxed text-muted">{nextAction!.blurb}</p>
-              <p className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-signal-bg px-3 py-1.5 text-xs font-semibold text-signal">
+              <p className="mt-4 inline-flex items-center gap-1.5 rounded-pill bg-signal-bg px-3 py-1.5 text-xs font-semibold text-signal">
                 <Gem className="h-3.5 w-3.5" aria-hidden /> Every step earns Gems and brings your people closer
               </p>
               <Link
@@ -239,7 +239,7 @@ export function ChoresOverlay({
             /* ── Beat 1: chores first ────────────────────────────────────────── */
             <div className="flex flex-1 flex-col overflow-hidden">
               <div className="shrink-0 border-b border-border px-6 pb-4 pt-7">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-broadcast-bg px-3 py-1 text-xs font-semibold uppercase tracking-wide text-broadcast-strong">
+                <span className="inline-flex items-center gap-1.5 rounded-pill bg-broadcast-bg px-3 py-1 text-xs font-semibold uppercase tracking-wide text-broadcast-strong">
                   <Sparkles className="h-3.5 w-3.5" aria-hidden /> Vera
                 </span>
                 <h2 id="chores-title" className="mt-3 text-xl font-bold leading-tight text-text">Chores first.</h2>
@@ -264,7 +264,7 @@ export function ChoresOverlay({
                 {chores.chores.map((c) => (
                   c.done ? (
                     <div key={c.key} className="flex items-center gap-3 rounded-xl px-3 py-2.5">
-                      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-broadcast text-on-broadcast">
+                      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-broadcast text-on-broadcast">
                         <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
                       </span>
                       <span className="flex-1 text-sm text-subtle line-through decoration-broadcast/40">{c.label}</span>
@@ -274,10 +274,10 @@ export function ChoresOverlay({
                       key={c.key}
                       href={c.href}
                       onClick={close}
-                      className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5 transition-colors hover:border-broadcast hover:bg-broadcast-bg/30"
+                      className="group flex items-center gap-3 rounded-control border border-border bg-surface px-3 py-2.5 transition-colors hover:border-broadcast hover:bg-broadcast-bg/30"
                     >
-                      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-broadcast-bg text-broadcast-strong">
-                        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-pill border border-broadcast-bg text-broadcast-strong">
+                        <span className="h-1.5 w-1.5 rounded-pill bg-current" />
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block text-sm font-semibold text-text">{c.label}</span>

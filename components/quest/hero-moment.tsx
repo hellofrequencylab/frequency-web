@@ -168,7 +168,7 @@ function DismissButton({ onClose }: { onClose: () => void }) {
       type="button"
       onClick={onClose}
       aria-label="Dismiss"
-      className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full text-subtle transition-colors hover:bg-surface-elevated hover:text-text motion-reduce:transition-none"
+      className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-pill text-subtle transition-colors hover:bg-surface-elevated hover:text-text motion-reduce:transition-none"
     >
       <X className="h-4 w-4" />
     </button>
@@ -219,11 +219,11 @@ function FinishMoment({
 
           {/* The facts: a Trophy, the +Zaps purse, and the rank now held. */}
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-xs font-semibold text-text shadow-2xs">
+            <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface px-2.5 py-1 text-xs font-semibold text-text shadow-2xs">
               <Trophy className="h-3.5 w-3.5 text-rank-gold" aria-hidden />
               Trophy earned
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-xs font-semibold text-text shadow-2xs">
+            <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface px-2.5 py-1 text-xs font-semibold text-text shadow-2xs">
               <Zap className="h-3.5 w-3.5 text-primary" aria-hidden />
               +{zaps} Zaps
             </span>
@@ -311,11 +311,11 @@ function SeasonCompleteMoment({
 
         {/* The facts kept: a Trophy and the Master crest. */}
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-xs font-semibold text-text shadow-2xs">
+          <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface px-2.5 py-1 text-xs font-semibold text-text shadow-2xs">
             <Trophy className="h-3.5 w-3.5 text-rank-gold" aria-hidden />
             Trophy earned
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-xs font-semibold text-text shadow-2xs">
+          <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface px-2.5 py-1 text-xs font-semibold text-text shadow-2xs">
             <Zap className="h-3.5 w-3.5 text-primary" aria-hidden />
             +{zaps} Zaps
           </span>

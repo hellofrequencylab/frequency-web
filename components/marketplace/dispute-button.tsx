@@ -76,7 +76,7 @@ export function DisputeButton({
   }
 
   return (
-    <div className="w-full space-y-2 rounded-xl border border-border bg-surface-elevated/40 p-3">
+    <div className="w-full space-y-2 rounded-card border border-border bg-surface-elevated/40 p-3">
       <p className="text-xs font-semibold text-text">What went wrong?</p>
       <div className="flex flex-wrap gap-1.5">
         {REASONS.map((r) => (
@@ -84,7 +84,7 @@ export function DisputeButton({
             key={r}
             type="button"
             onClick={() => setReason(r)}
-            className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
+            className={`rounded-pill border px-2.5 py-1 text-xs transition-colors ${
               reason === r
                 ? 'border-primary bg-primary-bg text-primary-strong'
                 : 'border-border text-muted hover:bg-surface-elevated hover:text-text'

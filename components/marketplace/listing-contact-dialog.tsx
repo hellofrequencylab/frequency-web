@@ -123,7 +123,7 @@ export function ListingContactDialog({
           {sent ? (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-success/15 text-success">
+                <span className="flex h-8 w-8 items-center justify-center rounded-pill bg-success/15 text-success">
                   <Check className="h-4 w-4" aria-hidden />
                 </span>
                 <h2 className="text-base font-semibold text-text">Message sent</h2>

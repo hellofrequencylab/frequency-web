@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 function EventCardSkeleton() {
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <div className="flex gap-4">
         {/* Date block */}
         <div className="shrink-0 w-12 flex flex-col items-center gap-1">
@@ -13,8 +13,8 @@ function EventCardSkeleton() {
           <Skeleton className="h-4 w-48" />
           <Skeleton className="h-3 w-36" />
           <div className="flex gap-2 pt-1">
-            <Skeleton className="h-3 w-20 rounded-full" />
-            <Skeleton className="h-3 w-16 rounded-full" />
+            <Skeleton className="h-3 w-20 rounded-pill" />
+            <Skeleton className="h-3 w-16 rounded-pill" />
           </div>
         </div>
         <Skeleton className="h-8 w-16 rounded-lg shrink-0" />

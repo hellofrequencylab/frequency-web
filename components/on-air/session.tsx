@@ -1336,7 +1336,7 @@ export function OnAirSession({
         {/* Sequenced run (P6): a progress chip; when more practices remain, closing this reveal
             rolls into the next one. */}
         {queuePosition && (
-          <div className="mx-auto mb-3 w-full max-w-sm rounded-full bg-surface-elevated px-3 py-1.5 text-center text-xs font-medium text-muted">
+          <div className="mx-auto mb-3 w-full max-w-sm rounded-pill bg-surface-elevated px-3 py-1.5 text-center text-xs font-medium text-muted">
             Practice {queuePosition.index + 1} of {queuePosition.total}
             {hasNext ? ' · closing this starts the next' : ' · last one'}
           </div>
@@ -1480,7 +1480,7 @@ export function OnAirSession({
                       type="button"
                       onClick={() => setShowInstructions(true)}
                       aria-label={`How to do ${pattern.name}`}
-                      className="flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
+                      className="flex items-center gap-1 rounded-pill px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
                     >
                       <Info className="h-3.5 w-3.5" aria-hidden /> Details
                     </button>
@@ -1503,7 +1503,7 @@ export function OnAirSession({
                     maxLength={2000}
                     placeholder="Jot a line or two. Or do not. Up to you."
                     aria-label="Session note"
-                    className="w-full max-w-xs resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+                    className="w-full max-w-xs resize-none rounded-control border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
                   />
                 )}
               </>
@@ -1519,7 +1519,7 @@ export function OnAirSession({
               <button
                 type="button"
                 onClick={restoreCues}
-                className="rounded-full border border-primary/50 bg-primary-bg/40 px-3 py-1.5 text-xs font-medium text-primary-strong transition-colors hover:bg-primary-bg/60"
+                className="rounded-pill border border-primary/50 bg-primary-bg/40 px-3 py-1.5 text-xs font-medium text-primary-strong transition-colors hover:bg-primary-bg/60"
               >
                 Tap to restore sound
               </button>
@@ -1556,14 +1556,14 @@ export function OnAirSession({
               if (ended) { void finish(false); return }
               togglePause()
             }}
-            className="min-w-44 rounded-full bg-primary px-10 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+            className="min-w-44 rounded-pill bg-primary px-10 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
           >
             {preroll !== null ? 'Begin now' : ended ? 'Finish' : paused ? 'Resume' : 'Pause'}
           </button>
           <button
             type="button"
             onClick={() => void finish(!ended)}
-            className="rounded-full px-4 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
+            className="rounded-pill px-4 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
           >
             Close &amp; Log Session
           </button>
@@ -1572,7 +1572,7 @@ export function OnAirSession({
           <button
             type="button"
             onClick={leave}
-            className="rounded-full px-4 py-1 text-2xs font-medium text-muted transition-colors hover:text-danger"
+            className="rounded-pill px-4 py-1 text-2xs font-medium text-muted transition-colors hover:text-danger"
           >
             Cancel · don&rsquo;t log
           </button>
@@ -1614,7 +1614,7 @@ export function OnAirSession({
               type="button"
               onClick={leave}
               aria-label="Close"
-              className="absolute -right-2 -top-1 rounded-full p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+              className="absolute -right-2 -top-1 rounded-pill p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <X className="h-4 w-4" />
             </button>
@@ -1691,7 +1691,7 @@ export function OnAirSession({
               maxLength={2000}
               placeholder="What happened? A line is plenty. Optional."
               aria-label="Note"
-              className="mt-2 w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+              className="mt-2 w-full resize-none rounded-control border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
             />
           </div>
         )}
@@ -1734,13 +1734,13 @@ export function OnAirSession({
                 type="button"
                 onClick={() => setShowInstructions(true)}
                 aria-label={`How to do ${pattern.name}`}
-                className="flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
+                className="flex shrink-0 items-center gap-1 rounded-pill px-1.5 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
               >
                 <Info className="h-3.5 w-3.5" aria-hidden /> Details
               </button>
             </div>
             {patternSlug === 'custom' && (
-              <div className="mt-2.5 space-y-2.5 rounded-xl border border-border px-3.5 py-2.5">
+              <div className="mt-2.5 space-y-2.5 rounded-card border border-border px-3.5 py-2.5">
                 <PhaseSlider label="Breathe in" min={CUSTOM_PHASE_MIN} value={customIn} onChange={setCustomIn} />
                 <PhaseSlider label="Hold" min={0} value={customHold} onChange={setCustomHold} />
                 <PhaseSlider label="Let go" min={CUSTOM_PHASE_MIN} value={customOut} onChange={setCustomOut} />
@@ -1753,7 +1753,7 @@ export function OnAirSession({
           // The author pinned the length: lock the minutes to the practice's duration; no editor.
           <div>
             <Label>Minutes</Label>
-            <div className="mt-2 flex items-center justify-between rounded-xl border border-border bg-surface-elevated/40 px-3.5 py-2.5">
+            <div className="mt-2 flex items-center justify-between rounded-card border border-border bg-surface-elevated/40 px-3.5 py-2.5">
               <span className="text-sm font-semibold tabular-nums text-text">{minutes}m</span>
               <span className="text-2xs text-muted">Set by the practice</span>
             </div>
@@ -1784,7 +1784,7 @@ export function OnAirSession({
               ))}
             </div>
             {/* The stepper: any length, one minute at a time (1–120). Its own row, like Walk. */}
-            <div className="mt-2 flex items-center justify-between rounded-xl border border-border px-1.5">
+            <div className="mt-2 flex items-center justify-between rounded-card border border-border px-1.5">
               <button
                 type="button"
                 onClick={() => setMinutes((m) => clampMinutes(m - 1))}
@@ -1865,7 +1865,7 @@ export function OnAirSession({
               </div>
               <p className="mt-1.5 text-2xs text-muted">The lead-in before the session starts. The same timer counts this down, then runs your session.</p>
             </div>
-            <div className="mt-3 space-y-3 rounded-xl border border-border px-3.5 py-3">
+            <div className="mt-3 space-y-3 rounded-card border border-border px-3.5 py-3">
                 {/* Ambient — a soft background loop, independent of the bell; sits at the TOP of the
                     settings box, above Voice (owner). A tap auditions it; the choice loops for the sit. */}
                 <div>
@@ -2039,7 +2039,7 @@ export function OnAirSession({
           {/* The journey-week chip: when a Journey's current leg drives this list, say so. The leg
               replaces the member's own practices by design; the chip makes that a visible mode. */}
           {journeyLegs.length > 0 && (
-            <p className="mb-1.5 inline-flex max-w-full items-center gap-1.5 rounded-full border border-primary/30 bg-primary-bg/20 px-2.5 py-0.5 text-2xs font-semibold text-primary-strong">
+            <p className="mb-1.5 inline-flex max-w-full items-center gap-1.5 rounded-pill border border-primary/30 bg-primary-bg/20 px-2.5 py-0.5 text-2xs font-semibold text-primary-strong">
               <span className="truncate">
                 {journeyLegs[0].week != null
                   ? `Week ${journeyLegs[0].week} of ${journeyLegs[0].weeks} · ${journeyLegs[0].title}`
@@ -2096,7 +2096,7 @@ export function OnAirSession({
               type="button"
               onClick={() => beginResolved(true)}
               disabled={!runPracticeId}
-              className="flex flex-1 items-center justify-center rounded-xl border border-border bg-surface px-4 py-3.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+              className="flex flex-1 items-center justify-center rounded-control border border-border bg-surface px-4 py-3.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
             >
               New Practice
             </button>
@@ -2156,7 +2156,7 @@ function InstructionsPopup({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute right-3 top-3 rounded-full p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+          className="absolute right-3 top-3 rounded-pill p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
         >
           <X className="h-4 w-4" />
         </button>

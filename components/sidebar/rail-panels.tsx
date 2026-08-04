@@ -206,14 +206,14 @@ export async function MembersPanel({ profileId, circleIds }: { profileId: string
             >
               <div className="relative shrink-0">
                 {m.profile.avatar_url ? (
-                  <Image src={avatarSrc(m.profile.avatar_url)} alt={m.profile.display_name} width={32} height={32} style={avatarFocusStyle(m.profile.avatar_url)} className="w-8 h-8 rounded-full object-cover" />
+                  <Image src={avatarSrc(m.profile.avatar_url)} alt={m.profile.display_name} width={32} height={32} style={avatarFocusStyle(m.profile.avatar_url)} className="w-8 h-8 rounded-pill object-cover" />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-border-strong flex items-center justify-center text-xs font-bold text-muted dark:text-subtle select-none">
+                  <div className="w-8 h-8 rounded-pill bg-border-strong flex items-center justify-center text-xs font-bold text-muted dark:text-subtle select-none">
                     {getInitials(m.profile.display_name ?? '')}
                   </div>
                 )}
                 {online && (
-                  <span aria-label="Online now" className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success ring-2 ring-surface" />
+                  <span aria-label="Online now" className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-pill bg-success ring-2 ring-surface" />
                 )}
               </div>
               <span className="text-sm font-medium text-text truncate flex-1">{m.profile.display_name}</span>
@@ -293,9 +293,9 @@ export async function LeaderboardPanel() {
           >
             <span className={`text-sm font-bold w-4 shrink-0 tabular-nums ${rankColors[i]}`}>{i + 1}</span>
             {member.avatar_url ? (
-              <Image src={avatarSrc(member.avatar_url)} alt={member.display_name} width={32} height={32} style={avatarFocusStyle(member.avatar_url)} className="w-8 h-8 rounded-full object-cover shrink-0" />
+              <Image src={avatarSrc(member.avatar_url)} alt={member.display_name} width={32} height={32} style={avatarFocusStyle(member.avatar_url)} className="w-8 h-8 rounded-pill object-cover shrink-0" />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-border-strong flex items-center justify-center text-xs font-bold text-muted shrink-0">
+              <div className="w-8 h-8 rounded-pill bg-border-strong flex items-center justify-center text-xs font-bold text-muted shrink-0">
                 {getInitials(member.display_name ?? '')}
               </div>
             )}
@@ -373,7 +373,7 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
               href={s.href}
               className="group flex items-center gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5 transition-colors hover:border-broadcast/50 hover:bg-broadcast-bg/20"
             >
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-broadcast-bg ring-1 ring-broadcast/40" />
+              <span className="h-1.5 w-1.5 shrink-0 rounded-pill bg-broadcast-bg ring-1 ring-broadcast/40" />
               <span className="min-w-0 flex-1 truncate text-xs font-medium text-text">{s.label}</span>
               <ArrowRight className="h-3 w-3 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5" />
             </Link>
@@ -406,13 +406,13 @@ export async function WhoOnlinePanel({ profileId }: { profileId: string }) {
         {people.slice(0, 10).map((p) => (
           <Link key={p.id} href={`/people/${p.handle}`} title={p.display_name} className="relative shrink-0">
             {p.avatar_url ? (
-              <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={32} height={32} style={avatarFocusStyle(p.avatar_url)} className="h-8 w-8 rounded-full object-cover" />
+              <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={32} height={32} style={avatarFocusStyle(p.avatar_url)} className="h-8 w-8 rounded-pill object-cover" />
             ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-border-strong text-2xs font-bold text-muted">
+              <div className="flex h-8 w-8 items-center justify-center rounded-pill bg-border-strong text-2xs font-bold text-muted">
                 {getInitials(p.display_name ?? '')}
               </div>
             )}
-            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-surface" aria-hidden />
+            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-pill bg-success ring-2 ring-surface" aria-hidden />
           </Link>
         ))}
       </div>
@@ -589,14 +589,14 @@ export async function ActiveNowPanel({ profileId }: { profileId: string }) {
             >
               <div className="relative shrink-0">
                 {p.avatar_url ? (
-                  <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={32} height={32} style={avatarFocusStyle(p.avatar_url)} className="h-8 w-8 rounded-full object-cover" />
+                  <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={32} height={32} style={avatarFocusStyle(p.avatar_url)} className="h-8 w-8 rounded-pill object-cover" />
                 ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-border-strong text-xs font-bold text-muted dark:text-subtle select-none">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-pill bg-border-strong text-xs font-bold text-muted dark:text-subtle select-none">
                     {getInitials(p.display_name ?? '')}
                   </div>
                 )}
                 {online && (
-                  <span aria-label="Online now" className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-surface" />
+                  <span aria-label="Online now" className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-pill bg-success ring-2 ring-surface" />
                 )}
               </div>
               <div className="min-w-0 flex-1">
@@ -666,5 +666,5 @@ export async function PulsePanel() {
 
 // A quiet skeleton while a panel streams in (its own Suspense boundary).
 export function PanelSkeleton() {
-  return <div className="h-32 rounded-xl border border-border bg-surface animate-pulse" />
+  return <div className="h-32 rounded-card border border-border bg-surface animate-pulse" />
 }

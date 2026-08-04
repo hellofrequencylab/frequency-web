@@ -42,7 +42,7 @@ export function UnderlineTabs({
             {t.label}
             {t.count !== undefined && (
               <span
-                className={`rounded-full px-1.5 py-0.5 text-2xs font-bold tabular-nums ${
+                className={`rounded-pill px-1.5 py-0.5 text-2xs font-bold tabular-nums ${
                   active ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-muted'
                 }`}
               >

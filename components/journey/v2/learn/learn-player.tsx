@@ -83,7 +83,7 @@ function KnowledgeCheck({ config }: { config: CheckConfig }) {
   const [picked, setPicked] = useState<number | null>(null)
   const correct = picked !== null && picked === config.answer
   return (
-    <div className="mt-5 max-w-prose space-y-3 rounded-xl border border-border bg-surface-elevated/40 p-4">
+    <div className="mt-5 max-w-prose space-y-3 rounded-card border border-border bg-surface-elevated/40 p-4">
       <p className="text-sm font-semibold text-text">{config.question}</p>
       <div className="space-y-2">
         {config.options.map((opt, i) => {
@@ -103,7 +103,7 @@ function KnowledgeCheck({ config }: { config: CheckConfig }) {
               disabled={correct}
               className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${state}`}
             >
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-current text-2xs font-bold">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-pill border border-current text-2xs font-bold">
                 {String.fromCharCode(65 + i)}
               </span>
               <span className="min-w-0 flex-1">{opt}</span>
@@ -276,7 +276,7 @@ export function LearnPlayer({
       {milestone && <TrophyCelebration milestone={milestone} onDismiss={() => setMilestone(null)} />}
 
       {/* Progress header — never-empty bar (endowed-progress effect, docs/JOURNEYS-DESIGN.md §1). */}
-      <div className="rounded-xl border border-border bg-surface p-4">
+      <div className="rounded-card border border-border bg-surface p-4">
         <div className="mb-2 flex items-center justify-between text-sm">
           <span className="font-semibold text-text">Your progress</span>
           <span className="tabular-nums text-muted">{tree.doneRequired} of {tree.totalRequired} done</span>
@@ -295,7 +295,7 @@ export function LearnPlayer({
         type="button"
         onClick={() => setMobileToc((v) => !v)}
         aria-expanded={mobileToc}
-        className="flex w-full items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-medium text-text lg:hidden"
+        className="flex w-full items-center gap-2 rounded-control border border-border bg-surface px-3 py-2.5 text-sm font-medium text-text lg:hidden"
       >
         <List className="h-4 w-4 text-subtle" />
         Contents
@@ -311,7 +311,7 @@ export function LearnPlayer({
             const lock = phaseLock.get(p.id)
             const locked = lock?.locked ?? false
             return (
-              <div key={p.id} className="overflow-hidden rounded-xl border border-border bg-surface">
+              <div key={p.id} className="overflow-hidden rounded-card border border-border bg-surface">
                 <button
                   type="button"
                   onClick={() => togglePhase(p.id)}
@@ -386,7 +386,7 @@ export function LearnPlayer({
                                     active ? 'bg-primary-bg font-medium text-primary-strong' : 'text-text hover:bg-surface-elevated'
                                   }`}
                                 >
-                                  <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${l.done ? 'border-success bg-success text-on-success' : active ? 'border-primary' : 'border-border'}`}>
+                                  <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-pill border ${l.done ? 'border-success bg-success text-on-success' : active ? 'border-primary' : 'border-border'}`}>
                                     {l.done && <Check className="h-2.5 w-2.5" />}
                                   </span>
                                   <span className="min-w-0 flex-1 truncate">{l.title}</span>
@@ -394,7 +394,7 @@ export function LearnPlayer({
                                     <Anchor className="h-3 w-3 shrink-0 text-primary-strong" aria-label="Daily anchor" />
                                   )}
                                   {pillar && (
-                                    <span className="shrink-0 rounded-full bg-surface-elevated px-1.5 py-0.5 text-3xs font-medium text-muted">
+                                    <span className="shrink-0 rounded-pill bg-surface-elevated px-1.5 py-0.5 text-3xs font-medium text-muted">
                                       {pillar}
                                     </span>
                                   )}
@@ -443,7 +443,7 @@ export function LearnPlayer({
             <>
               {/* The week's focus — orients the follower before the step. */}
               {phaseFocus && (
-                <div className="mb-4 flex items-start gap-2 rounded-xl border border-border bg-surface-elevated/40 p-3">
+                <div className="mb-4 flex items-start gap-2 rounded-card border border-border bg-surface-elevated/40 p-3">
                   <Compass className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
                   <p className="text-sm leading-relaxed text-muted">
                     <span className="font-semibold text-text">This week:</span> {phaseFocus}
@@ -457,12 +457,12 @@ export function LearnPlayer({
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <h2 className="text-xl font-bold text-text">{lesson.title}</h2>
                 {selectedId === anchorLessonId && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
+                  <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
                     <Anchor className="h-3 w-3" aria-hidden /> Daily anchor
                   </span>
                 )}
                 {selectedPillar && (
-                  <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">{selectedPillar}</span>
+                  <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">{selectedPillar}</span>
                 )}
               </div>
               {selectedId === anchorLessonId && (
@@ -472,13 +472,13 @@ export function LearnPlayer({
               {/* Extra-credit badge: a bonus task, above and beyond, that pays Zaps once on
                   completion. Optional, never gates finishing the Journey. */}
               {lesson.extraCredit && (
-                <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-signal/30 bg-signal-bg/50 px-2.5 py-1 text-xs font-semibold text-signal-strong">
+                <div className="mt-2 inline-flex items-center gap-1.5 rounded-pill border border-signal/30 bg-signal-bg/50 px-2.5 py-1 text-xs font-semibold text-signal-strong">
                   <Award className="h-3.5 w-3.5" aria-hidden /> Extra credit{lesson.bonusZaps > 0 ? ` · +${lesson.bonusZaps} Zaps` : ''}
                 </div>
               )}
 
               {video && (
-                <div className="mt-4 aspect-video overflow-hidden rounded-xl bg-black">
+                <div className="mt-4 aspect-video overflow-hidden rounded-card bg-black">
                   {video.provider === 'file' ? (
                     <video src={video.url} controls className="h-full w-full" />
                   ) : (

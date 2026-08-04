@@ -59,7 +59,7 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
   return (
     <div className="rounded-2xl border border-border bg-surface-elevated px-5 py-4">
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-primary-strong">
           <HeartHandshake className="h-5 w-5" />
         </div>
         <div className="min-w-0">
@@ -82,7 +82,7 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
               setPersonA(e.target.value)
               setDone(false)
             }}
-            className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+            className="w-full rounded-control border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
           >
             <option value="">Choose someone…</option>
             {optionsA.map((f) => (
@@ -103,7 +103,7 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
               setPersonB(e.target.value)
               setDone(false)
             }}
-            className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+            className="w-full rounded-control border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
           >
             <option value="">Choose someone…</option>
             {optionsB.map((f) => (
@@ -128,7 +128,7 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
           rows={2}
           maxLength={500}
           placeholder="A line on what they have in common. It’ll be shown to them."
-          className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-muted focus:border-primary focus:outline-none"
+          className="w-full resize-none rounded-control border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-muted focus:border-primary focus:outline-none"
         />
       </label>
 

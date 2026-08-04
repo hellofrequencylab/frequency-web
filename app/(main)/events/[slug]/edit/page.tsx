@@ -184,7 +184,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
 
       {/* Duplicate event — clone this event into a fresh, prefilled draft so a one-off can be
           repeated quickly. The create page re-checks the same edit capability on the source. */}
-      <div className="mt-6 rounded-xl border border-border bg-surface-elevated/40 p-4">
+      <div className="mt-6 rounded-card border border-border bg-surface-elevated/40 p-4">
         <p className="text-sm font-semibold text-text">Duplicate this event</p>
         <p className="mt-0.5 text-xs text-muted">
           Start a new event prefilled from this one. The date defaults to today so you can set the next one.

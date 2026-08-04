@@ -59,7 +59,7 @@ export function ShareButton({
     <button
       type="button"
       onClick={onShare}
-      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-control border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
     >
       {copied ? (
         <Check className="h-4 w-4 text-success" aria-hidden />

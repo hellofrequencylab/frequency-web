@@ -107,7 +107,7 @@ export function SpaceImagePopup({
 
         <div className="space-y-4 p-5">
           {/* Preview */}
-          <div className="overflow-hidden rounded-xl border border-border bg-surface-elevated/30">
+          <div className="overflow-hidden rounded-card border border-border bg-surface-elevated/30">
             {/* Renders only a TRUSTED previewSrc (saved image or uploaded server URL), never the raw typed
                 value. The allowlist guard stays as defense in depth. */}
             {SAFE_IMAGE_URL.test(previewSrc.trim()) ? (

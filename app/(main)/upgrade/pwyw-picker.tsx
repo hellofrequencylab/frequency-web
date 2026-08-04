@@ -112,7 +112,7 @@ export function PwywPicker({
 
       <label className="block">
         <span className="text-xs font-medium text-muted">Another amount</span>
-        <div className="mt-1 flex items-center gap-2 rounded-xl border border-border px-3 py-2 focus-within:border-primary">
+        <div className="mt-1 flex items-center gap-2 rounded-card border border-border px-3 py-2 focus-within:border-primary">
           <span className="text-sm text-muted">$</span>
           <input
             inputMode="decimal"

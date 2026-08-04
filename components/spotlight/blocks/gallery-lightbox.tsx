@@ -71,7 +71,7 @@ export function GalleryLightbox({
             type="button"
             onClick={() => show(i)}
             aria-label={item.alt || `View image ${i + 1} of ${count}`}
-            className="group relative aspect-square overflow-hidden rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-border-strong/40"
+            className="group relative aspect-square overflow-hidden rounded-control border border-border focus:outline-none focus:ring-2 focus:ring-border-strong/40"
             style={cardStyle}
           >
             <Image
@@ -100,7 +100,7 @@ export function GalleryLightbox({
             type="button"
             onClick={close}
             aria-label="Close"
-            className="absolute right-4 top-4 rounded-full bg-surface/80 p-2 text-text lift-1 transition-colors hover:bg-surface focus:outline-none focus:ring-2 focus:ring-border-strong/40"
+            className="absolute right-4 top-4 rounded-pill bg-surface/80 p-2 text-text lift-1 transition-colors hover:bg-surface focus:outline-none focus:ring-2 focus:ring-border-strong/40"
           >
             <X className="h-5 w-5" />
           </button>
@@ -110,7 +110,7 @@ export function GalleryLightbox({
               type="button"
               onClick={(e) => { e.stopPropagation(); show(open - 1) }}
               aria-label="Previous image"
-              className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-surface/80 p-2 text-text lift-1 transition-colors hover:bg-surface focus:outline-none focus:ring-2 focus:ring-border-strong/40 sm:left-6"
+              className="absolute left-3 top-1/2 -translate-y-1/2 rounded-pill bg-surface/80 p-2 text-text lift-1 transition-colors hover:bg-surface focus:outline-none focus:ring-2 focus:ring-border-strong/40 sm:left-6"
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
@@ -136,14 +136,14 @@ export function GalleryLightbox({
               type="button"
               onClick={(e) => { e.stopPropagation(); show(open + 1) }}
               aria-label="Next image"
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-surface/80 p-2 text-text lift-1 transition-colors hover:bg-surface focus:outline-none focus:ring-2 focus:ring-border-strong/40 sm:right-6"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-pill bg-surface/80 p-2 text-text lift-1 transition-colors hover:bg-surface focus:outline-none focus:ring-2 focus:ring-border-strong/40 sm:right-6"
             >
               <ChevronRight className="h-6 w-6" />
             </button>
           )}
 
           {count > 1 && (
-            <span className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-surface/80 px-3 py-1 text-xs font-medium text-text lift-1">
+            <span className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-pill bg-surface/80 px-3 py-1 text-xs font-medium text-text lift-1">
               {open + 1} / {count}
             </span>
           )}

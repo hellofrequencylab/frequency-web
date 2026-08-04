@@ -8,13 +8,13 @@ function LibraryCardSkeleton() {
   return (
     <div className="flex flex-col rounded-2xl border border-border bg-surface p-5 lift-1">
       <div className="flex items-center justify-between gap-2">
-        <Skeleton className="h-5 w-20 rounded-full" />
+        <Skeleton className="h-5 w-20 rounded-pill" />
         <Skeleton className="h-4 w-8" />
       </div>
       <Skeleton className="mt-3 h-5 w-44" />
       <Skeleton className="mt-2 h-4 w-full max-w-xs" />
       <div className="mt-3 flex items-center gap-2">
-        <Skeleton className="h-5 w-5 rounded-full" />
+        <Skeleton className="h-5 w-5 rounded-pill" />
         <Skeleton className="h-3 w-24" />
       </div>
       <div className="mt-6 flex items-center justify-between gap-2">

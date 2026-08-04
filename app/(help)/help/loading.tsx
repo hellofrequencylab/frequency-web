@@ -4,7 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 // two-column grid of category cards.
 function CategoryCardSkeleton() {
   return (
-    <div className="rounded-xl border border-border bg-surface-elevated p-5">
+    <div className="rounded-card border border-border bg-surface-elevated p-5">
       <Skeleton className="h-6 w-40" />
       <Skeleton className="mt-2 h-4 w-56 max-w-full" />
       <div className="mt-4 space-y-2">

@@ -98,7 +98,7 @@ function InfoStat({ label, value, href, icon: Icon }: { label: string; value: st
   return (
     <Link
       href={href}
-      className="flex items-center justify-between rounded-xl px-3 py-2.5 transition-colors hover:bg-surface-elevated"
+      className="flex items-center justify-between rounded-control px-3 py-2.5 transition-colors hover:bg-surface-elevated"
     >
       <span className="flex items-center gap-2.5 text-sm font-medium text-muted">
         <Icon className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
@@ -115,14 +115,14 @@ function AttentionRow({ item }: { item: AttentionDef & { count: number; risk: bo
   return (
     <Link
       href={item.href}
-      className="flex items-center justify-between rounded-xl px-3 py-2.5 transition-colors hover:bg-surface-elevated"
+      className="flex items-center justify-between rounded-control px-3 py-2.5 transition-colors hover:bg-surface-elevated"
     >
       <span className="flex items-center gap-2.5 text-sm font-medium text-muted">
         <item.Icon className={`h-4 w-4 shrink-0 ${item.risk ? 'text-danger' : 'text-warning'}`} aria-hidden />
         {item.label}
       </span>
       <span
-        className={`inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-2 py-0.5 text-xs font-bold tabular-nums ${
+        className={`inline-flex min-w-[1.5rem] items-center justify-center rounded-pill px-2 py-0.5 text-xs font-bold tabular-nums ${
           item.risk ? 'bg-danger-bg text-danger' : 'bg-warning-bg text-warning'
         }`}
       >
@@ -190,7 +190,7 @@ export async function AdminInfoRail({
             <Link
               key={m.id}
               href={`/people/${m.handle}`}
-              className="flex items-center justify-between rounded-xl px-3 py-2 transition-colors hover:bg-surface-elevated"
+              className="flex items-center justify-between rounded-control px-3 py-2 transition-colors hover:bg-surface-elevated"
             >
               <span className="min-w-0 truncate text-sm font-medium text-text">{m.display_name}</span>
               <span className="shrink-0 pl-2 text-xs text-subtle">

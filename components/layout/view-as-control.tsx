@@ -112,7 +112,7 @@ export function ViewAsControl({
             bottom: anchor.bottom,
             width: Math.max(anchor.width, 208),
           }}
-          className="z-[60] rounded-xl border border-border bg-surface-elevated lift-3 py-1"
+          className="z-[60] rounded-card border border-border bg-surface-elevated lift-3 py-1"
         >
           <p className="px-3 py-1.5 text-3xs font-semibold uppercase tracking-wider text-muted">
             View the app as
@@ -141,7 +141,7 @@ export function ViewAsControl({
             onClick={() => choose('visitor')}
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-text hover:bg-surface transition-colors"
           >
-            <span className="rounded-full bg-surface px-2 py-0.5 text-3xs font-semibold leading-tight text-muted">
+            <span className="rounded-pill bg-surface px-2 py-0.5 text-3xs font-semibold leading-tight text-muted">
               Visitor
             </span>
             <span className="text-xs text-subtle">logged out</span>

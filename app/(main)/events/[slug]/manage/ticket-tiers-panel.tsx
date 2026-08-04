@@ -113,7 +113,7 @@ export function TicketTiersPanel({
             ) : (
               <div
                 key={t.id}
-                className={`flex items-start justify-between gap-3 rounded-xl border border-border px-3.5 py-2.5 ${
+                className={`flex items-start justify-between gap-3 rounded-card border border-border px-3.5 py-2.5 ${
                   t.active ? '' : 'opacity-60'
                 }`}
               >
@@ -236,7 +236,7 @@ function TierForm({
   return (
     <form
       onSubmit={handle}
-      className="space-y-3 rounded-xl border border-border-strong bg-surface-elevated p-4"
+      className="space-y-3 rounded-card border border-border-strong bg-surface-elevated p-4"
     >
       <div>
         <label className={lbl}>Tier name *</label>

@@ -126,7 +126,7 @@ export function FunctionGrid({ spaceId, rows }: { spaceId: string; rows: Functio
                       {r.planGated && (
                         <span
                           title="Plan feature. The operator switch here grants it regardless of plan."
-                          className="inline-flex items-center rounded-full bg-surface-elevated px-1.5 py-0.5 text-xs font-semibold text-muted"
+                          className="inline-flex items-center rounded-pill bg-surface-elevated px-1.5 py-0.5 text-xs font-semibold text-muted"
                         >
                           Plan
                         </span>
@@ -134,7 +134,7 @@ export function FunctionGrid({ spaceId, rows }: { spaceId: string; rows: Functio
                       {isCustom && (
                         <span
                           title={`Default: ${ROLE_LABEL[r.defaultMinRole]}`}
-                          className="inline-flex items-center gap-0.5 rounded-full bg-primary-bg px-1.5 py-0.5 text-xs font-semibold text-primary-strong"
+                          className="inline-flex items-center gap-0.5 rounded-pill bg-primary-bg px-1.5 py-0.5 text-xs font-semibold text-primary-strong"
                         >
                           <RotateCcw className="h-2.5 w-2.5" /> custom
                         </span>

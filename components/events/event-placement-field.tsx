@@ -73,11 +73,11 @@ export function EventPlacementField({ eventId, slug }: { eventId: string; slug: 
   }
 
   if (!view) {
-    return <div className="h-24 animate-pulse rounded-xl border border-border bg-surface-elevated/50" />
+    return <div className="h-24 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
   }
 
   return (
-    <div className="space-y-2 rounded-xl border border-border bg-surface-elevated/40 p-3">
+    <div className="space-y-2 rounded-card border border-border bg-surface-elevated/40 p-3">
       {/* VENUE, not "where does this event live" (ADR-911). The old wording sat directly above the
           "Hosted by" control, and because setEventHostEntity wrote BOTH columns the two really were
           one thing — so two labels described one axis and neither was true. This is placement only:
@@ -320,7 +320,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
             className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
           />
           {hits.length > 0 && (
-            <div className="mt-1 overflow-hidden rounded-xl border border-border bg-surface py-1 lift-3">
+            <div className="mt-1 overflow-hidden rounded-card border border-border bg-surface py-1 lift-3">
               {hits.map((p) => (
                 <button
                   key={p.id}
@@ -329,9 +329,9 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
                   className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-elevated"
                 >
                   {p.avatar_url ? (
-                    <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-full object-cover" style={avatarFocusStyle(p.avatar_url)} />
+                    <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(p.avatar_url)} />
                   ) : (
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-bg text-3xs font-bold text-primary-strong">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-3xs font-bold text-primary-strong">
                       {getInitials(p.display_name)}
                     </div>
                   )}
@@ -450,7 +450,7 @@ function ScopeSearch({
       {/* Results render IN FLOW (not an absolute overlay) — the module's @container wrapper clips a
           `top-full` dropdown, so an in-flow list is the reliable pattern (see cohost-manager). */}
       {hasResults && (
-        <div className="mt-1 overflow-hidden rounded-xl border border-border bg-surface lift-3">
+        <div className="mt-1 overflow-hidden rounded-card border border-border bg-surface lift-3">
           {spaces.length > 0 && <ResultGroup label="Spaces" type="space" hits={spaces} pending={pending} onPick={onPick} />}
           {circles.length > 0 && <ResultGroup label="Circles" type="circle" hits={circles} pending={pending} onPick={onPick} />}
         </div>

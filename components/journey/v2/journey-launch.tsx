@@ -57,7 +57,7 @@ export interface LaunchAccessView {
 }
 
 const FIELD =
-  'w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
+  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
 /** "Tue, Aug 4 at 9:00 AM" in the reader's own zone. Falls back to the raw value if unparseable. */
 function sendAtLabel(iso: string): string {
@@ -204,18 +204,18 @@ export function JourneyLaunch({
           return (
             <details
               key={d.key}
-              className="group rounded-xl border border-border bg-surface"
+              className="group rounded-card border border-border bg-surface"
               open={i === 0 && !done}
             >
               <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-2xs font-semibold text-muted">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-2xs font-semibold text-muted">
                   {i + 1}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
                     {d.name}
                     {done && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-success-bg px-1.5 py-0.5 text-2xs font-semibold text-success">
+                      <span className="inline-flex items-center gap-1 rounded-pill bg-success-bg px-1.5 py-0.5 text-2xs font-semibold text-success">
                         <Check className="h-3 w-3" aria-hidden /> Scheduled
                       </span>
                     )}
@@ -286,13 +286,13 @@ export function JourneyLaunch({
         })}
 
         {!canSchedule && (
-          <p className="rounded-xl border border-border bg-canvas px-3 py-2.5 text-xs text-muted">
+          <p className="rounded-card border border-border bg-canvas px-3 py-2.5 text-xs text-muted">
             {LAUNCH_NEEDS_SPACE_MESSAGE}
           </p>
         )}
 
         {access.upsell && (
-          <p className="rounded-xl border border-border bg-canvas px-3 py-2.5 text-xs text-muted">
+          <p className="rounded-card border border-border bg-canvas px-3 py-2.5 text-xs text-muted">
             {access.upsell}{' '}
             <Link href="/upgrade" className="font-medium text-primary-strong underline-offset-4 hover:underline">
               See plans
@@ -303,7 +303,7 @@ export function JourneyLaunch({
 
       {/* ── Build the funnel ──────────────────────────────────────────────────── */}
       {access.canBuildFunnel && (
-        <section className="rounded-xl border border-border bg-surface px-4 py-3">
+        <section className="rounded-card border border-border bg-surface px-4 py-3">
           <div className="flex items-start gap-3">
             <Network className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
             <div className="min-w-0 flex-1">

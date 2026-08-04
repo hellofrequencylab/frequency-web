@@ -68,7 +68,7 @@ export function ChannelHeaderControls({
   }
 
   return (
-    <div className="space-y-3 rounded-xl border border-border bg-surface-elevated/40 p-3">
+    <div className="space-y-3 rounded-card border border-border bg-surface-elevated/40 p-3">
       <span className={labelClasses}>Header</span>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">

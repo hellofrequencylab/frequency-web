@@ -33,7 +33,7 @@ export function DispatchBody({ body }: { body: string }) {
           ),
           li: ({ children }) => (
             <li className="text-base text-text leading-relaxed flex gap-2">
-              <span className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full bg-primary" aria-hidden />
+              <span className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-pill bg-primary" aria-hidden />
               <span>{children}</span>
             </li>
           ),

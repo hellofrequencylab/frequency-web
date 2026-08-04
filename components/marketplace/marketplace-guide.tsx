@@ -28,7 +28,7 @@ export function MarketplaceGuide() {
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {SURFACES.map((s) => (
           <li key={s.name} className="flex items-start gap-3">
-            <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-surface-elevated text-primary-strong">
+            <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-control bg-surface-elevated text-primary-strong">
               <s.icon className="h-5 w-5" aria-hidden />
             </span>
             <div className="min-w-0">

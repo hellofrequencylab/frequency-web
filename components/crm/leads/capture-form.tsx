@@ -70,7 +70,7 @@ export function CaptureForm({
   if (status === 'done' && result) {
     return (
       <div className="text-center" role="status">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-success-bg text-success">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-pill bg-success-bg text-success">
           <Check className="h-6 w-6" strokeWidth={2.5} aria-hidden />
         </div>
         <h3 className="text-2xl font-bold text-text">{result.heading ?? "You're all set."}</h3>
@@ -87,7 +87,7 @@ export function CaptureForm({
           </a>
         )}
         {result.card && (
-          <div className="mt-5 rounded-xl border border-border bg-canvas p-5 text-left">
+          <div className="mt-5 rounded-card border border-border bg-canvas p-5 text-left">
             <p className="text-base font-bold text-text">{result.card.name}</p>
             {result.card.lines.map((line, i) => (
               <p key={i} className="mt-1 text-sm text-muted">
@@ -124,7 +124,7 @@ export function CaptureForm({
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoComplete="name"
-            className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
+            className="w-full rounded-control border border-border bg-surface px-4 py-3 text-base text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
             placeholder={namePlaceholder}
           />
         </div>
@@ -141,7 +141,7 @@ export function CaptureForm({
             autoComplete="email"
             aria-describedby={error ? 'cap-error' : undefined}
             aria-invalid={error ? true : undefined}
-            className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
+            className="w-full rounded-control border border-border bg-surface px-4 py-3 text-base text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
             placeholder="you@email.com"
           />
         </div>
@@ -156,7 +156,7 @@ export function CaptureForm({
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               autoComplete="tel"
-              className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
+              className="w-full rounded-control border border-border bg-surface px-4 py-3 text-base text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
               placeholder="(555) 555-0134"
             />
           </div>

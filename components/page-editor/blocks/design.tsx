@@ -473,12 +473,12 @@ export function CardGridBlock({
                   </div>
                 )}
                 {role === 'feature' && !card.image && !card.stat?.value && card.icon && (
-                  <span className="flex h-11 w-11 items-center justify-center rounded-card bg-primary-bg text-xl leading-none text-primary-strong" aria-hidden>
+                  <span className="flex h-11 w-11 items-center justify-center rounded-control bg-primary-bg text-xl leading-none text-primary-strong" aria-hidden>
                     {card.icon}
                   </span>
                 )}
                 {role === 'step' && (
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-bg font-display text-lg text-primary-strong" aria-hidden>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-pill bg-primary-bg font-display text-lg text-primary-strong" aria-hidden>
                     {i + 1}
                   </span>
                 )}

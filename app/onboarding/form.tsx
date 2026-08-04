@@ -189,14 +189,14 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
         <img
           src={avatarPreview}
           alt="Avatar preview"
-          className={`${dim} rounded-full object-cover shrink-0 ring-2 ring-primary-bg`}
+          className={`${dim} rounded-pill object-cover shrink-0 ring-2 ring-primary-bg`}
         />
       )
     }
     const initials = getInitials(displayName || userEmail)
     return (
       <div
-        className={`${dim} rounded-full bg-primary-bg text-primary-strong font-semibold flex items-center justify-center shrink-0`}
+        className={`${dim} rounded-pill bg-primary-bg text-primary-strong font-semibold flex items-center justify-center shrink-0`}
       >
         {initials || '?'}
       </div>
@@ -204,7 +204,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
   }
 
   const inputBase =
-    'w-full rounded-xl border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/25'
+    'w-full rounded-card border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/25'
 
   // ── Steps ─────────────────────────────────────────────────────────────────
 
@@ -402,7 +402,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                     Region <span className="text-danger">*</span>
                   </label>
                   {regions.length === 0 ? (
-                    <p className="rounded-xl border border-dashed border-border bg-surface/50 px-4 py-6 text-center text-sm text-subtle">
+                    <p className="rounded-card border border-dashed border-border bg-surface/50 px-4 py-6 text-center text-sm text-subtle">
                       No regions available yet. Check back soon.
                     </p>
                   ) : (

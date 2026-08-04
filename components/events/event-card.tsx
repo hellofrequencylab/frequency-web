@@ -40,14 +40,14 @@ function WarmBadge({ capacity, going }: { capacity: number | null; going: number
   const spotsLeft = Math.max(0, capacity - going)
   if (spotsLeft === 0) {
     return (
-      <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+      <span className="shrink-0 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
         Waitlist
       </span>
     )
   }
   if (spotsLeft <= capacity * 0.2) {
     return (
-      <span className="shrink-0 rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
+      <span className="shrink-0 rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
         Filling up
       </span>
     )
@@ -104,11 +104,11 @@ export function EventCard({
   // Standalone public events carry a calm `Public` provenance chip + the
   // organizer name; circle events carry the {Circle} pill (ADR-254).
   const provenance = event.is_public_standalone ? (
-    <span className="flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 font-medium text-muted">
+    <span className="flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 font-medium text-muted">
       <Globe className="h-3 w-3" />Public
     </span>
   ) : circleName ? (
-    <span className="rounded-full bg-primary-bg px-2 py-0.5 font-medium text-primary-strong">
+    <span className="rounded-pill bg-primary-bg px-2 py-0.5 font-medium text-primary-strong">
       {circleName}
     </span>
   ) : null

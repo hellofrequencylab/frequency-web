@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { safeImageSrc } from './safe-image-src'
+import { safeImageSrc, safeUploadPreviewSrc } from './safe-image-src'
 
 // Locks the <img src> allowlist. The dangerous cases are the point: a src that arrives from a
 // DB column or a Puck field must not be able to carry a script-bearing scheme through.
@@ -43,5 +43,35 @@ describe('safeImageSrc', () => {
 
   it('trims, so a padded value is not rejected for whitespace alone', () => {
     expect(safeImageSrc('  https://cdn.example.com/a.jpg  ')).toBe('https://cdn.example.com/a.jpg')
+  })
+})
+
+// The narrow sibling used by the three upload-preview sinks (Beta induction avatar,
+// onboarding avatar step, feed composer attachment). Its whole job is to be TIGHTER than
+// safeImageSrc, so the tests that matter are the ones where the two disagree.
+
+describe('safeUploadPreviewSrc', () => {
+  it('allows the only two shapes an upload preview can actually be', () => {
+    // createObjectURL output, and the http(s) URL the file gets once it has uploaded.
+    expect(safeUploadPreviewSrc('blob:https://app.local/9f2c-1')).toBe('blob:https://app.local/9f2c-1')
+    expect(safeUploadPreviewSrc('https://cdn.example.com/a.jpg')).toBe('https://cdn.example.com/a.jpg')
+  })
+
+  it('is stricter than safeImageSrc on the shapes a preview cannot produce', () => {
+    // Both of these are legitimate for a general <img src> and safeImageSrc allows them.
+    // A preview has no route to either, so permitting them would be slack in the guard.
+    expect(safeImageSrc('data:image/png;base64,iVBORw0KGgo=')).not.toBeNull()
+    expect(safeUploadPreviewSrc('data:image/png;base64,iVBORw0KGgo=')).toBeNull()
+
+    expect(safeImageSrc('/logo.png')).not.toBeNull()
+    expect(safeUploadPreviewSrc('/logo.png')).toBeNull()
+  })
+
+  it('inherits every rejection the base allowlist makes', () => {
+    expect(safeUploadPreviewSrc('javascript:alert(1)')).toBeNull()
+    expect(safeUploadPreviewSrc('blob:null/9f2c-1')).toBeNull()
+    expect(safeUploadPreviewSrc(null)).toBeNull()
+    expect(safeUploadPreviewSrc(undefined)).toBeNull()
+    expect(safeUploadPreviewSrc('')).toBeNull()
   })
 })

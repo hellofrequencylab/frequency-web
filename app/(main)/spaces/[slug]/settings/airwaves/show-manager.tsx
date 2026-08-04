@@ -375,7 +375,7 @@ export function ShowManager({
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="truncate text-sm font-bold text-text">{show.title}</span>
                       <span
-                        className={`rounded-full px-2 py-0.5 text-3xs font-semibold uppercase tracking-wide ${
+                        className={`rounded-pill px-2 py-0.5 text-3xs font-semibold uppercase tracking-wide ${
                           show.status === 'published'
                             ? 'bg-success-bg text-success'
                             : 'bg-surface-elevated text-muted'
@@ -412,7 +412,7 @@ export function ShowManager({
 
                 {/* Feed link + submission helper — only meaningful once the show is published. */}
                 {show.status === 'published' ? (
-                  <div className="space-y-1.5 rounded-xl border border-border bg-canvas p-3">
+                  <div className="space-y-1.5 rounded-card border border-border bg-canvas p-3">
                     <div className="flex items-center gap-2">
                       <Radio className="h-3.5 w-3.5 shrink-0 text-primary-strong" aria-hidden />
                       <code className="min-w-0 flex-1 truncate text-2xs text-muted">{feedUrlFor(show)}</code>
@@ -496,7 +496,7 @@ function EpisodePanel({
   onSetVisibility: (recordingId: string, visibility: RecordingVisibility, publishedAt: string | null) => void
 }) {
   return (
-    <div className="space-y-4 rounded-xl border border-border bg-canvas p-3">
+    <div className="space-y-4 rounded-card border border-border bg-canvas p-3">
       <div className="space-y-2">
         <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Episodes</p>
         {eps.length === 0 ? (
@@ -760,7 +760,7 @@ function ShowFormDialog({
             </label>
           </div>
 
-          <div className="space-y-3 rounded-xl border border-border bg-surface p-3">
+          <div className="space-y-3 rounded-card border border-border bg-surface p-3">
             <p className="text-2xs text-muted">
               Apple and Spotify verify a show by emailing its owner. Use an address you can check.
             </p>

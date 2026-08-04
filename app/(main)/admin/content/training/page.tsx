@@ -112,7 +112,7 @@ export default async function AdminContentTrainingPage() {
                 <ol className="divide-y divide-border/50 overflow-hidden rounded-2xl border border-border bg-surface">
                   {def.steps.map((s, i) => (
                     <li key={s.href} className="flex items-center gap-3 px-4 py-3">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-xs font-semibold tabular-nums text-muted">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-xs font-semibold tabular-nums text-muted">
                         {i + 1}
                       </span>
                       <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">
@@ -147,7 +147,7 @@ export default async function AdminContentTrainingPage() {
                       <Link
                         key={s.href}
                         href={s.href}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                        className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface px-3 py-1 text-xs font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
                       >
                         <Tag className="h-3 w-3 text-subtle" />
                         {s.label}

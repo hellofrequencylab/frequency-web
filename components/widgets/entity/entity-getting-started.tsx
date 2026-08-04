@@ -73,9 +73,9 @@ export async function EntityGettingStarted() {
         {coming.map((item) => (
           <li
             key={item}
-            className="flex items-center gap-2 rounded-xl bg-surface-elevated/60 px-3 py-2 text-sm text-text"
+            className="flex items-center gap-2 rounded-card bg-surface-elevated/60 px-3 py-2 text-sm text-text"
           >
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
+            <span className="h-1.5 w-1.5 shrink-0 rounded-pill bg-primary" aria-hidden />
             {item}
           </li>
         ))}

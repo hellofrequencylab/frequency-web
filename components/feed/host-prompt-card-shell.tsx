@@ -45,7 +45,7 @@ export function HostPromptCardShell({
         type="button"
         aria-label="Not now"
         onClick={dismiss}
-        className="absolute right-3 top-3 rounded-full p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
+        className="absolute right-3 top-3 rounded-pill p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
       >
         <X className="h-3.5 w-3.5" />
       </button>

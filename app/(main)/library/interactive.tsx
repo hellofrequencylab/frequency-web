@@ -29,7 +29,7 @@ export function RateButton({ type, id, count, rated }: { type: ContentType; id: 
         })
       }
       aria-pressed={on}
-      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
+      className={`inline-flex items-center gap-1 rounded-pill border px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
         on ? 'border-primary bg-primary-bg text-primary-strong' : 'border-border text-muted hover:text-text'
       }`}
       title={on ? 'Remove your rating' : 'Rate this'}
@@ -79,7 +79,7 @@ export function CreateMenu() {
         <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div role="menu" aria-label="Create" className="absolute right-0 top-full z-50 mt-1 w-44 rounded-xl border border-border bg-surface p-1 shadow-pop">
+        <div role="menu" aria-label="Create" className="absolute right-0 top-full z-50 mt-1 w-44 rounded-card border border-border bg-surface p-1 shadow-pop">
           <Link href="/practices/new" role="menuitem" className={item} onClick={() => setOpen(false)}>
             <Dumbbell className="h-4 w-4 text-primary-strong" /> Practice
           </Link>

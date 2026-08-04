@@ -73,7 +73,7 @@ export function EventsSort({ options, defaultValue = 'date' }: { options: SortOp
         <div
           role="listbox"
           aria-label="Sort events"
-          className="absolute right-0 top-full z-50 mt-1 w-52 rounded-xl border border-border bg-surface p-1 shadow-pop"
+          className="absolute right-0 top-full z-50 mt-1 w-52 rounded-card border border-border bg-surface p-1 shadow-pop"
         >
           {options.map((o) => {
             const isSel = o.value === current

@@ -101,7 +101,7 @@ export function ThemeRowActions({
 
       {confirming ? (
         <span className="inline-flex items-center gap-1">
-          <IconButton label={pending ? 'Deleting' : 'Confirm delete'} danger disabled={pending} onClick={remove}>
+          <IconButton label={pending ? 'Deleting' : 'Confirm delete'} tone="danger" disabled={pending} onClick={remove}>
             <Check className="h-4 w-4" aria-hidden />
           </IconButton>
           <IconButton label="Cancel" disabled={pending} onClick={() => setConfirming(false)}>
@@ -109,7 +109,7 @@ export function ThemeRowActions({
           </IconButton>
         </span>
       ) : (
-        <IconButton label="Delete" danger disabled={pending} onClick={() => setConfirming(true)}>
+        <IconButton label="Delete" tone="danger" disabled={pending} onClick={() => setConfirming(true)}>
           <Trash2 className="h-4 w-4" aria-hidden />
         </IconButton>
       )}

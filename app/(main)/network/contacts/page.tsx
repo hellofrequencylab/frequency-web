@@ -128,7 +128,7 @@ export default async function ConnectionsPage({
             {googleImportEnabled && (
               <Link
                 href="/api/integrations/google/start"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-border-strong bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated sm:px-3.5 sm:py-2"
+                className="inline-flex items-center gap-1.5 rounded-control border border-border-strong bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated sm:px-3.5 sm:py-2"
               >
                 <Download className="h-4 w-4" /> Import from Google
               </Link>
@@ -205,9 +205,9 @@ export default async function ConnectionsPage({
                     // which only allowlists the PUBLIC storage path and would otherwise reject
                     // these (broken avatars) — and re-optimize a new token every request. Matches
                     // the plain <img> used for the card front/back/logo on the detail page.
-                    <Image src={avatarSrc(c.avatarUrl)} alt="" width={44} height={44} unoptimized className="h-11 w-11 rounded-full object-cover" style={avatarFocusStyle(c.avatarUrl)} />
+                    <Image src={avatarSrc(c.avatarUrl)} alt="" width={44} height={44} unoptimized className="h-11 w-11 rounded-pill object-cover" style={avatarFocusStyle(c.avatarUrl)} />
                   ) : (
-                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-elevated text-sm font-semibold text-muted">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-pill bg-surface-elevated text-sm font-semibold text-muted">
                       {getInitials(c.displayName ?? '?')}
                     </span>
                   )
@@ -227,18 +227,18 @@ export default async function ConnectionsPage({
                 meta={
                   <>
                     {c.linkedProfileId && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-success-bg px-2 py-0.5 font-medium text-success">
+                      <span className="inline-flex items-center gap-1 rounded-pill bg-success-bg px-2 py-0.5 font-medium text-success">
                         <UserRoundCheck className="h-3 w-3" /> On Frequency
                       </span>
                     )}
                     {/* Promoted into the shared marketing contacts DB (linked_contact_id), ADR-742. */}
                     {c.linkedContactId && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-success-bg px-2 py-0.5 font-medium text-success">
+                      <span className="inline-flex items-center gap-1 rounded-pill bg-success-bg px-2 py-0.5 font-medium text-success">
                         <ShieldCheck className="h-3 w-3" /> In contacts
                       </span>
                     )}
                     {c.tags.slice(0, 3).map((t) => (
-                      <span key={t} className="rounded-full bg-primary-bg px-2 py-0.5 font-medium text-primary-strong">{t}</span>
+                      <span key={t} className="rounded-pill bg-primary-bg px-2 py-0.5 font-medium text-primary-strong">{t}</span>
                     ))}
                     {c.tags.length > 3 && <span>+{c.tags.length - 3}</span>}
                     {c.city && (c.title || c.company) && (

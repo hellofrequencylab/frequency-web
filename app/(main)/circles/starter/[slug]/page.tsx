@@ -65,10 +65,10 @@ export default async function StarterCirclePreview({
       badges={
         <span className="flex items-center gap-1.5">
           <StarterBadge />
-          <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
+          <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
             {PILLAR_LABELS[t.primaryPillar]}
           </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
+          <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
             <MapPin className="h-3 w-3" aria-hidden /> In person
           </span>
         </span>
@@ -141,7 +141,7 @@ export default async function StarterCirclePreview({
           <section className="mt-8">
             <SectionHeader title="How we keep it good" />
             {t.sizeLabel && (
-              <p className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-surface-elevated px-3 py-1 text-sm text-muted">
+              <p className="mb-3 inline-flex items-center gap-1.5 rounded-pill bg-surface-elevated px-3 py-1 text-sm text-muted">
                 <Users className="h-3.5 w-3.5" aria-hidden /> {t.sizeLabel}
               </p>
             )}
@@ -172,7 +172,7 @@ function RhythmRow({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-border bg-surface p-4">
+    <div className="flex items-start gap-3 rounded-card border border-border bg-surface p-4">
       <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-elevated text-primary-strong">
         {icon}
       </span>

@@ -244,7 +244,7 @@ function BoardSkeleton() {
       {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="flex min-h-[3.25rem] items-center gap-3 rounded-2xl bg-surface-elevated/40 px-3 py-2">
           <Skeleton className="h-4 w-4 shrink-0" />
-          <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+          <Skeleton className="h-9 w-9 shrink-0 rounded-pill" />
           <div className="flex-1 space-y-1.5">
             <Skeleton className="h-3.5 w-32" />
             <Skeleton className="h-3 w-16" />
@@ -395,9 +395,9 @@ async function EntryPointsBoard({ profileId }: { profileId: string }) {
                 >
                   <span className="w-6 shrink-0 text-center text-sm font-semibold tabular-nums text-subtle">{i + 1}</span>
                   {entry.avatarUrl ? (
-                    <Image src={avatarSrc(entry.avatarUrl)} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-full object-cover" style={avatarFocusStyle(entry.avatarUrl)} />
+                    <Image src={avatarSrc(entry.avatarUrl)} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(entry.avatarUrl)} />
                   ) : (
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-bg text-xs font-bold text-primary-strong" aria-hidden>
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-xs font-bold text-primary-strong" aria-hidden>
                       {getInitials(entry.displayName)}
                     </span>
                   )}

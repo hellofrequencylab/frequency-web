@@ -1150,6 +1150,15 @@
    `--tap-min` (set per data-generation; large at the spacious + kids ends, smaller in
    the dense middle, never below the 24px AA floor). Opt-in so it can't shift existing
    layouts; consume on buttons/links/controls that want the per-generation floor. */
+/* Touch default. A fine pointer resolves ~1px; a fingertip is ~9mm, and every platform
+   floor (44 Apple / 48dp Material) reflects that. This raises only the :root DEFAULT, so a
+   generation that states its own --tap-min still wins on source order -- `bold`'s 26px dip
+   is a deliberate density choice, not an oversight to be overridden. One place, and every
+   `tap-target` consumer inherits it. */
+@media (pointer: coarse) {
+  :root { --tap-min: 44px; }
+}
+
 @utility tap-target {
   min-block-size:  var(--tap-min, 32px);
   min-inline-size: var(--tap-min, 32px);

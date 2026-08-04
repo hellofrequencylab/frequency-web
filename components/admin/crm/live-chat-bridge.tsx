@@ -38,7 +38,7 @@ export function LiveChatBridge({ chatRef, token }: { chatRef: string; token: str
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-2 border-t border-border px-3 py-1.5">
         <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-primary-strong">
-          <span className="size-1.5 animate-pulse rounded-full bg-primary" /> Live chat
+          <span className="size-1.5 animate-pulse rounded-pill bg-primary" /> Live chat
         </span>
         {typingNames.length > 0 && <span className="text-2xs text-muted">visitor is typing…</span>}
       </div>

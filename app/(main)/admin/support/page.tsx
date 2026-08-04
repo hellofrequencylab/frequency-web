@@ -57,7 +57,7 @@ export default async function AdminSupportPage({
                 key={f.key}
                 href={`/admin/support?status=${f.key}`}
                 aria-current={active ? 'true' : undefined}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors motion-reduce:transition-none ${
+                className={`inline-flex items-center gap-1.5 rounded-pill px-3 py-1 text-xs font-semibold transition-colors motion-reduce:transition-none ${
                   active ? 'bg-primary text-on-primary' : 'border border-border bg-surface text-muted hover:bg-surface-elevated'
                 }`}
               >

@@ -107,7 +107,7 @@ export function CircleLocationSearch({
           onFocus={() => results.length > 0 && setOpen(true)}
           placeholder="Search a city to find circles nearby…"
           aria-label="Search a city to find circles nearby"
-          className="w-full rounded-xl border border-border bg-surface py-2.5 pl-9 pr-9 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30"
+          className="w-full rounded-control border border-border bg-surface py-2.5 pl-9 pr-9 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30"
         />
         {(loading || q) && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -122,7 +122,7 @@ export function CircleLocationSearch({
         )}
 
         {open && results.length > 0 && (
-          <ul className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-border bg-surface lift-3">
+          <ul className="absolute z-20 mt-1 w-full overflow-hidden rounded-card border border-border bg-surface lift-3">
             {results.map((r) => (
               <li key={r.label}>
                 <button
@@ -145,7 +145,7 @@ export function CircleLocationSearch({
           type="button"
           onClick={useMyLocation}
           disabled={locating}
-          className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm font-medium text-text transition-colors hover:border-primary hover:text-primary-strong disabled:opacity-60"
+          className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-3.5 py-2.5 text-sm font-medium text-text transition-colors hover:border-primary hover:text-primary-strong disabled:opacity-60"
         >
           {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
           Use my location
@@ -159,7 +159,7 @@ export function CircleLocationSearch({
           <button
             type="button"
             onClick={clear}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary-bg px-3 py-1.5 text-xs font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-pill bg-primary-bg px-3 py-1.5 text-xs font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70"
           >
             Near {activePlace}
             <X className="h-3 w-3" />

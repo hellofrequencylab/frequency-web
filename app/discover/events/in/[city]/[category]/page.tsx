@@ -143,7 +143,7 @@ export default async function CityCategoryHubPage({ params }: Params) {
                 <Link
                   key={s.category.slug}
                   href={`/discover/events/in/${s.citySlug}/${s.category.slug}`}
-                  className="rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium text-text transition-colors hover:border-border-strong"
+                  className="rounded-pill border border-border bg-surface px-4 py-2 text-sm font-medium text-text transition-colors hover:border-border-strong"
                 >
                   {s.category.label} ({s.events.length})
                 </Link>

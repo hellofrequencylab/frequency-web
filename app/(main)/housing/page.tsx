@@ -233,7 +233,7 @@ export default async function HousingPage({
                   {AMENITIES.map((a) => (
                     <label
                       key={a.slug}
-                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary-bg has-[:checked]:text-primary-strong"
+                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-pill border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary-bg has-[:checked]:text-primary-strong"
                     >
                       <input
                         type="checkbox"

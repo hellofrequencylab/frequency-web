@@ -14,7 +14,7 @@ export default function ContactDetailLoading() {
       {/* Identity band: avatar + name + role/company subtitle */}
       <div className="pb-4">
         <div className="flex items-center gap-3">
-          <Skeleton className="h-12 w-12 shrink-0 rounded-full" />
+          <Skeleton className="h-12 w-12 shrink-0 rounded-pill" />
           <div className="min-w-0 flex-1 space-y-2">
             <Skeleton className="h-6 w-40" />
             <Skeleton className="h-4 w-56" />

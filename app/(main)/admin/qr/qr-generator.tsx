@@ -60,7 +60,7 @@ export function QrGenerator({
         <div className="space-y-5 bg-surface p-5">
           <div
             // // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
-            className="mx-auto aspect-square w-full max-w-[200px] rounded-xl border border-border bg-white p-2 lift-1 [&>svg]:h-full [&>svg]:w-full"
+            className="mx-auto aspect-square w-full max-w-[200px] rounded-card border border-border bg-white p-2 lift-1 [&>svg]:h-full [&>svg]:w-full"
             dangerouslySetInnerHTML={{ __html: svg }}
           />
 
@@ -72,7 +72,7 @@ export function QrGenerator({
                   key={p.key}
                   type="button"
                   onClick={() => setStyle({ ...p.style })}
-                  className="rounded-full border border-border px-2.5 py-1 text-2xs font-medium text-muted transition-colors hover:border-primary hover:bg-primary-bg hover:text-primary-strong"
+                  className="rounded-pill border border-border px-2.5 py-1 text-2xs font-medium text-muted transition-colors hover:border-primary hover:bg-primary-bg hover:text-primary-strong"
                 >
                   {p.label}
                 </button>

@@ -62,7 +62,7 @@ export function WalkthroughLightbox({
           type="button"
           onClick={close}
           aria-label="Close"
-          className="absolute -top-2 -right-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-muted lift-3 transition-colors hover:text-text"
+          className="absolute -top-2 -right-2 z-10 flex h-9 w-9 items-center justify-center rounded-pill border border-border bg-surface text-muted lift-3 transition-colors hover:text-text"
         >
           <X className="h-4 w-4" aria-hidden />
         </button>
@@ -75,7 +75,7 @@ export function WalkthroughLightbox({
             {steps.map((s, i) => (
               <span
                 key={s.id}
-                className={`h-1.5 rounded-full transition-all ${
+                className={`h-1.5 rounded-pill transition-all ${
                   i === index ? 'w-5 bg-surface' : 'w-1.5 bg-surface/40'
                 }`}
               />
@@ -103,7 +103,7 @@ export function WalkthroughLightbox({
               type="button"
               onClick={finish}
               disabled={pending}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-surface px-5 py-2 text-sm font-semibold text-text lift-3 transition-colors hover:bg-surface-elevated disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-control bg-surface px-5 py-2 text-sm font-semibold text-text lift-3 transition-colors hover:bg-surface-elevated disabled:opacity-60"
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Check className="h-4 w-4" aria-hidden />}
               Finish
@@ -112,7 +112,7 @@ export function WalkthroughLightbox({
             <button
               type="button"
               onClick={next}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-surface px-5 py-2 text-sm font-semibold text-text lift-3 transition-colors hover:bg-surface-elevated"
+              className="inline-flex items-center gap-1.5 rounded-control bg-surface px-5 py-2 text-sm font-semibold text-text lift-3 transition-colors hover:bg-surface-elevated"
             >
               Next <ArrowRight className="h-4 w-4" aria-hidden />
             </button>

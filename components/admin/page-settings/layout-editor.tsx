@@ -249,7 +249,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
       <p className="text-2xs text-muted">{active.hint}</p>
 
       {loading ? (
-        <div className="h-56 animate-pulse rounded-xl border border-border bg-surface-elevated/50" />
+        <div className="h-56 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
       ) : (
         <>
           {/* Template: pick the interior shape by clicking its mock-up (not a name). Each tile

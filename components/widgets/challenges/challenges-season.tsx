@@ -197,8 +197,8 @@ export async function ChallengesSeason() {
                               <span>{challenge.current} / {challenge.target}</span>
                               <span>{progressPct}%</span>
                             </div>
-                            <div className="h-1.5 overflow-hidden rounded-full bg-surface-elevated">
-                              <div className={`h-full rounded-full transition-all ${diff.bar}`} style={{ width: `${progressPct}%` }} />
+                            <div className="h-1.5 overflow-hidden rounded-pill bg-surface-elevated">
+                              <div className={`h-full rounded-pill transition-all ${diff.bar}`} style={{ width: `${progressPct}%` }} />
                             </div>
                           </div>
                         )}

@@ -2,13 +2,13 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 function PostSkeleton() {
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <div className="flex gap-3">
-        <Skeleton className="w-9 h-9 rounded-full shrink-0" />
+        <Skeleton className="w-9 h-9 rounded-pill shrink-0" />
         <div className="flex-1 space-y-2 min-w-0">
           <div className="flex items-center gap-2">
             <Skeleton className="h-3.5 w-28" />
-            <Skeleton className="h-3.5 w-12 rounded-full" />
+            <Skeleton className="h-3.5 w-12 rounded-pill" />
           </div>
           <Skeleton className="h-3 w-full" />
           <Skeleton className="h-3 w-4/5" />

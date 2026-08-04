@@ -64,7 +64,7 @@ import { COMMON_TIME_ZONES } from './event-shared-fields-module'
 const EventLocationPicker = dynamic(() => import('@/components/events/event-location-picker'), {
   ssr: false,
   loading: () => (
-    <div className="h-56 w-full animate-pulse rounded-xl border border-border bg-surface-elevated" />
+    <div className="h-56 w-full animate-pulse rounded-card border border-border bg-surface-elevated" />
   ),
 })
 
@@ -320,9 +320,9 @@ export function EventSettingsModule() {
           {/* Scanned-poster shortcut: when this event was captured from a poster and has no photos yet,
               one tap makes the original flyer the header. It becomes a normal reorderable tile after. */}
           {posterUrl && galleryPaths.length === 0 && (
-            <div className="space-y-2 rounded-xl border border-border bg-surface-elevated/40 p-3">
+            <div className="space-y-2 rounded-card border border-border bg-surface-elevated/40 p-3">
               <div className="flex items-start gap-3">
-                <div className="relative shrink-0 overflow-hidden rounded-xl border border-border">
+                <div className="relative shrink-0 overflow-hidden rounded-card border border-border">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={posterUrl} alt={data.title} className="h-24 w-24 object-cover" />
                 </div>
@@ -555,7 +555,7 @@ export function EventSettingsModule() {
         )}
 
         {/* RSVP WINDOW — when people can RSVP. */}
-        <div className="space-y-3 rounded-xl border border-border bg-surface-elevated/40 p-3">
+        <div className="space-y-3 rounded-card border border-border bg-surface-elevated/40 p-3">
           <span className={fieldLabel}>
             RSVP window <span className="font-normal text-subtle">(when people can RSVP)</span>
           </span>
@@ -578,7 +578,7 @@ export function EventSettingsModule() {
             clears (as before). */}
         {mode !== 'online' && (
           <div className="space-y-3">
-            <div className="space-y-3 rounded-xl border border-border bg-surface-elevated/40 p-3">
+            <div className="space-y-3 rounded-card border border-border bg-surface-elevated/40 p-3">
               <span className={fieldLabel}>Location</span>
 
               {/* Venue name — the host's own label for the place (e.g. "Torus Co."), set by hand and

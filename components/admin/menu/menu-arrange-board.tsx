@@ -136,7 +136,7 @@ export function MenuArrangeBoard({
               href={`/admin/menu/arrange?surface=${s.key}`}
               aria-current={on ? 'page' : undefined}
               className={
-                'rounded-full px-3 py-1.5 text-sm font-medium transition-colors ' +
+                'rounded-pill px-3 py-1.5 text-sm font-medium transition-colors ' +
                 (on ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:bg-surface-elevated hover:text-text')
               }
             >
@@ -197,7 +197,7 @@ export function MenuArrangeBoard({
                       </div>
                       {hiddenCount > 0 && (
                         <span
-                          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-warning"
+                          className="inline-flex shrink-0 items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-warning"
                           title={`${hiddenCount} hidden page${hiddenCount > 1 ? 's' : ''} in this group`}
                         >
                           <EyeOff className="h-3 w-3" aria-hidden />

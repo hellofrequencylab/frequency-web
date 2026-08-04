@@ -219,7 +219,7 @@ export function StageEditor({
               onDrop={() => onDrop(stage.id)}
               onDragEnd={() => setDragId(null)}
               className={cn(
-                'flex flex-wrap items-center gap-2 rounded-xl border border-border bg-canvas p-2 sm:flex-nowrap',
+                'flex flex-wrap items-center gap-2 rounded-card border border-border bg-canvas p-2 sm:flex-nowrap',
                 dragId === stage.id && 'opacity-60',
               )}
             >
@@ -296,7 +296,7 @@ export function StageEditor({
       </ul>
 
       {/* Add a stage */}
-      <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-border p-2 sm:flex-nowrap">
+      <div className="mt-3 flex flex-wrap items-center gap-2 rounded-card border border-dashed border-border p-2 sm:flex-nowrap">
         <input
           type="text"
           value={newName}

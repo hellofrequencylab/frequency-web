@@ -75,7 +75,7 @@ export function ReseedSpaceSearch() {
       )}
 
       {results.length > 0 && (
-        <ul className="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border">
+        <ul className="mt-3 divide-y divide-border overflow-hidden rounded-card border border-border">
           {results.map((s) => (
             <li key={s.id} className="flex items-center justify-between gap-3 bg-surface px-3 py-2">
               <div className="min-w-0">

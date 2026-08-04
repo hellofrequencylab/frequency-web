@@ -610,7 +610,7 @@ function ImagesEditor({
                 type="button"
                 onClick={() => removeAt(i)}
                 aria-label="Remove image"
-                className="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white opacity-0 transition-opacity hover:bg-black/80 focus:opacity-100 group-hover:opacity-100"
+                className="absolute right-1 top-1 rounded-pill bg-black/60 p-0.5 text-white opacity-0 transition-opacity hover:bg-black/80 focus:opacity-100 group-hover:opacity-100"
               >
                 <X className="h-3.5 w-3.5" />
               </button>

@@ -15,7 +15,6 @@ import { parseVcard } from '@/lib/vcard'
 import { addNote, touchLastContacted } from './store'
 import type { MetContext } from './types'
 
-type NetworkContactInsert = Database['public']['Tables']['network_contacts']['Insert']
 type NetworkContactUpdate = Database['public']['Tables']['network_contacts']['Update']
 
 const db = () => createAdminClient()

@@ -571,7 +571,7 @@ function GatingReadout({ gating }: { gating: PricingConsoleData['gating'] }) {
     ? `${graceDay(gating.graceUntil)}${gating.graceOpen ? '' : ' (passed)'}`
     : 'None set'
   return (
-    <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border border-border bg-surface-elevated px-4 py-3">
+    <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-card border border-border bg-surface-elevated px-4 py-3">
       <span className="inline-flex items-center gap-2 text-sm text-text">
         <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Billing</span>
         <StatusChip tone={gating.billingLive ? 'success' : 'neutral'}>

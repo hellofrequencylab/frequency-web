@@ -22,7 +22,7 @@ type ScopeHit = { id: string; name: string; slug: string; image_url: string | nu
  *  as a person. The badge does the disambiguation; person-named Spaces are eligible. */
 function SpaceTypeBadge({ label }: { label: string }) {
   return (
-    <span className="shrink-0 rounded-full border border-border bg-surface-elevated px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-muted">
+    <span className="shrink-0 rounded-pill border border-border bg-surface-elevated px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-muted">
       {label}
     </span>
   )
@@ -93,11 +93,11 @@ export function EventShareField({ eventId, slug }: { eventId: string; slug: stri
   }
 
   if (!shares) {
-    return <div className="h-24 animate-pulse rounded-xl border border-border bg-surface-elevated/50" />
+    return <div className="h-24 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
   }
 
   return (
-    <div className="space-y-2 rounded-xl border border-border bg-surface-elevated/40 p-3">
+    <div className="space-y-2 rounded-card border border-border bg-surface-elevated/40 p-3">
       <span className={labelClasses}>
         Collaborators{' '}
         <span className="font-normal text-subtle">(share this event with another Space)</span>
@@ -272,7 +272,7 @@ function SpaceSearch({ pending, onPick }: { pending: boolean; onPick: (spaceId: 
       {/* Results render IN FLOW (not an absolute overlay) — the module's @container wrapper clips a
           `top-full` dropdown (same pattern as the placement field). */}
       {spaces.length > 0 && (
-        <div className="mt-1 overflow-hidden rounded-xl border border-border bg-surface py-1 lift-3">
+        <div className="mt-1 overflow-hidden rounded-card border border-border bg-surface py-1 lift-3">
           {spaces.map((h) => (
             <button
               key={h.id}

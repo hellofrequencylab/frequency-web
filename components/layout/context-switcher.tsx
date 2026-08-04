@@ -140,7 +140,7 @@ export function ContextSwitcher({
               ...(anchor.top != null ? { top: anchor.top } : { bottom: anchor.bottom }),
               width: Math.max(anchor.width, 208),
             }}
-            className="z-[60] rounded-xl border border-border bg-surface-elevated py-1 lift-3"
+            className="z-[60] rounded-card border border-border bg-surface-elevated py-1 lift-3"
           >
             <p className="px-3 py-1.5 text-3xs font-semibold uppercase tracking-wider text-muted">
               You&apos;re in

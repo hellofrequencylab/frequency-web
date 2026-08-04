@@ -77,7 +77,7 @@ function ImageSlot({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="group relative flex w-full items-center justify-center overflow-hidden rounded-xl border text-sm font-medium"
+        className="group relative flex w-full items-center justify-center overflow-hidden rounded-control border text-sm font-medium"
         style={{ borderColor: C.border, color: C.subtle, background: C.surfaceElevated, minHeight: url ? undefined : 128 }}
       >
         {url ? (

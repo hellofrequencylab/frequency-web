@@ -108,7 +108,7 @@ export async function SequenceLaneView({ q = '', editId = '' }: { q?: string; ed
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="truncate text-sm font-semibold text-text">{item.title || 'Untitled flow'}</span>
                         <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          className={`rounded-pill px-2 py-0.5 text-xs font-medium ${
                             live ? 'bg-primary text-on-primary' : 'border border-border text-muted'
                           }`}
                         >

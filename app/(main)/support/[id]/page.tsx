@@ -25,7 +25,7 @@ export default async function SupportTicketPage({ params }: { params: Promise<{ 
         title={ticket.subject}
         subtitle={`${TYPE_LABELS[ticket.type]} · #${ticket.ref} · opened ${relativeTime(ticket.createdAt)}`}
         badges={
-          <span className={`rounded-full px-2 py-0.5 text-2xs font-semibold ${statusChipClass(ticket.status)}`}>
+          <span className={`rounded-pill px-2 py-0.5 text-2xs font-semibold ${statusChipClass(ticket.status)}`}>
             {STATUS_LABELS[ticket.status]}
           </span>
         }

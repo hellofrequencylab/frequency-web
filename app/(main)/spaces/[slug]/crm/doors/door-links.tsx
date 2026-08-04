@@ -64,7 +64,7 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
+        className="w-full rounded-control border border-border bg-surface px-4 py-2.5 text-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
       />
     </div>
   )
@@ -93,7 +93,7 @@ function LinkResultRow({ url, error }: { url: string | null; error: string | nul
   }
   if (!url) return null
   return (
-    <div className="mt-4 flex items-center gap-2 rounded-xl border border-border bg-canvas p-3">
+    <div className="mt-4 flex items-center gap-2 rounded-card border border-border bg-canvas p-3">
       <input
         readOnly
         value={url}
@@ -203,7 +203,7 @@ function EventMaker({ slug }: { slug: string }) {
               id="event-tier"
               value={tier}
               onChange={(e) => setTier(e.target.value)}
-              className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-text outline-none focus:border-border-strong"
+              className="w-full rounded-control border border-border bg-surface px-4 py-2.5 text-sm text-text outline-none focus:border-border-strong"
             >
               <option value="attended">Attended</option>
               <option value="rsvp">RSVP</option>

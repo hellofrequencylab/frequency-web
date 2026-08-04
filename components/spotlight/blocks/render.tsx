@@ -41,7 +41,7 @@ export interface SpotlightStatsContext {
 
 function StatPill({ icon: Icon, value, label, cardStyle }: { icon: typeof Flame; value: string; label: string; cardStyle?: CSSProperties }) {
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2" style={cardStyle}>
+    <div className="flex items-center gap-2 rounded-card border border-border bg-surface px-3 py-2" style={cardStyle}>
       <Icon className="h-4 w-4 text-primary-strong" aria-hidden />
       <span className="text-sm font-semibold text-text tabular-nums">{value}</span>
       <span className="text-xs text-muted">{label}</span>
@@ -91,7 +91,7 @@ function TopFriendsView({ title, friends, cardStyle, headingFont }: {
             <Link
               key={f.profileId}
               href={`/people/${f.handle}`}
-              className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-2 text-center transition-colors hover:bg-surface-elevated"
+              className="flex flex-col items-center gap-1.5 rounded-control border border-border bg-surface p-2 text-center transition-colors hover:bg-surface-elevated"
               style={cardStyle}
             >
               {f.avatarUrl ? (
@@ -100,11 +100,11 @@ function TopFriendsView({ title, friends, cardStyle, headingFont }: {
                   alt={name}
                   width={64}
                   height={64}
-                  className="h-14 w-14 rounded-full object-cover"
+                  className="h-14 w-14 rounded-pill object-cover"
                   style={avatarFocusStyle(f.avatarUrl)}
                 />
               ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-bg text-sm font-bold text-primary-strong">
+                <div className="flex h-14 w-14 items-center justify-center rounded-pill bg-primary-bg text-sm font-bold text-primary-strong">
                   {getInitials(name)}
                 </div>
               )}

@@ -46,7 +46,7 @@ export default async function GiftPage({ params }: { params: Promise<{ slug: str
       }
     >
       <div className="text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-primary-bg text-primary-strong">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center overflow-hidden rounded-pill bg-primary-bg text-primary-strong">
           {owner.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={avatarSrc(owner.avatar_url)} alt="" className="h-full w-full object-cover" style={avatarFocusStyle(owner.avatar_url)} />

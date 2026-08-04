@@ -196,9 +196,9 @@ export function LivePostsBlock({ heading, live, pad, vis = '' }: { heading?: str
                 <div className="p-5">
                   <div className="flex items-start gap-3 mb-3">
                     {a?.avatar_url ? (
-                      <Image src={avatarSrc(a.avatar_url)} alt={a.display_name} width={40} height={40} className="w-10 h-10 rounded-full object-cover shrink-0" style={avatarFocusStyle(a.avatar_url)} />
+                      <Image src={avatarSrc(a.avatar_url)} alt={a.display_name} width={40} height={40} className="w-10 h-10 rounded-pill object-cover shrink-0" style={avatarFocusStyle(a.avatar_url)} />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                      <div className="w-10 h-10 rounded-pill bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                         {initials}
                       </div>
                     )}

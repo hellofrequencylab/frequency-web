@@ -14,7 +14,7 @@ import type { ProductReviewsData } from '@/lib/commerce/reviews'
 // tokens only, voice canon (no em dashes).
 
 const inputCls =
-  'w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-primary'
+  'w-full rounded-card border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-primary'
 
 /** A read-only row of 5 stars filled to `value` (rounded). */
 export function Stars({ value, className = 'h-4 w-4' }: { value: number; className?: string }) {

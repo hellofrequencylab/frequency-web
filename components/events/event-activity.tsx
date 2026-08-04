@@ -308,13 +308,13 @@ export function EventActivity({
                 width={160}
                 height={160}
                 unoptimized
-                className="max-h-40 w-auto rounded-xl border border-border object-cover"
+                className="max-h-40 w-auto rounded-card border border-border object-cover"
               />
               <button
                 type="button"
                 onClick={() => (gifUrl ? clearGif() : clearImage())}
                 aria-label={gifUrl ? 'Remove GIF' : 'Remove image'}
-                className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
+                className="absolute right-1.5 top-1.5 rounded-pill bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -448,9 +448,9 @@ export function EventActivity({
             return (
               <li key={post.id} className="flex gap-3">
                 {a?.avatarUrl ? (
-                  <Image src={avatarSrc(a.avatarUrl)} alt={a.displayName} width={32} height={32} className="h-8 w-8 shrink-0 rounded-full object-cover" style={avatarFocusStyle(a.avatarUrl)} />
+                  <Image src={avatarSrc(a.avatarUrl)} alt={a.displayName} width={32} height={32} className="h-8 w-8 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(a.avatarUrl)} />
                 ) : (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-bg text-2xs font-bold text-primary-strong select-none">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-2xs font-bold text-primary-strong select-none">
                     {a ? getInitials(a.displayName) : '?'}
                   </div>
                 )}
@@ -469,13 +469,13 @@ export function EventActivity({
                         <span className="text-sm font-semibold text-text">A member</span>
                       )}
                       {post.isDispatch && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-3xs font-semibold text-primary-strong">
+                        <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-3xs font-semibold text-primary-strong">
                           <Radio className="h-3 w-3" />
                           Event Dispatch
                         </span>
                       )}
                       {isRsvp && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-success-bg px-2 py-0.5 text-3xs font-semibold text-success">
+                        <span className="inline-flex items-center gap-1 rounded-pill bg-success-bg px-2 py-0.5 text-3xs font-semibold text-success">
                           <Check className="h-3 w-3" />
                           RSVP&rsquo;d
                         </span>
@@ -499,7 +499,7 @@ export function EventActivity({
                       width={480}
                       height={360}
                       unoptimized
-                      className="mt-2 max-h-72 w-auto rounded-xl border border-border object-cover"
+                      className="mt-2 max-h-72 w-auto rounded-card border border-border object-cover"
                     />
                   )}
                   {/* Boops — tap a face to react. Real persisted counts; only on
@@ -571,7 +571,7 @@ function BoopBar({
             aria-pressed={isMine}
             aria-label={isMine ? `Remove your ${kind} boop` : `Boop with ${kind}`}
             title={disabled ? 'Sign in to boop' : undefined}
-            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`inline-flex items-center gap-1 rounded-pill border px-2 py-0.5 text-2xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
               isMine
                 ? 'border-primary bg-primary-bg text-primary-strong hover:bg-primary-bg/70'
                 : 'border-border text-muted hover:border-border-strong hover:text-text'
@@ -585,7 +585,7 @@ function BoopBar({
 
       {/* Add-a-boop: the face picker, or the trigger when closed. */}
       {open ? (
-        <div className="inline-flex items-center gap-0.5 rounded-full border border-border bg-surface px-1 py-0.5">
+        <div className="inline-flex items-center gap-0.5 rounded-pill border border-border bg-surface px-1 py-0.5">
           {BOOPS.map((kind) => (
             <button
               key={kind}
@@ -593,7 +593,7 @@ function BoopBar({
               onClick={() => toggle(kind)}
               disabled={disabled || pending}
               aria-label={`Boop with ${kind}`}
-              className="rounded-full px-1.5 py-0.5 text-base leading-none transition-transform hover:scale-125 disabled:opacity-50"
+              className="rounded-pill px-1.5 py-0.5 text-base leading-none transition-transform hover:scale-125 disabled:opacity-50"
             >
               {kind}
             </button>
@@ -606,7 +606,7 @@ function BoopBar({
           disabled={disabled || pending}
           title={disabled ? 'Sign in to boop' : undefined}
           aria-label="Add a boop"
-          className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:border-border-strong hover:text-muted disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded-pill border border-border px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:border-border-strong hover:text-muted disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Smile className="h-3.5 w-3.5" />
           {hasAny ? '' : 'Boop'}

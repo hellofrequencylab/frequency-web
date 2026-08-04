@@ -70,7 +70,7 @@ export async function SpaceCrmSnapshot({ slug }: { slug: string }) {
 
       {/* A short list of the most recent contacts (name + one line). Not the full roster. */}
       {contacts.length > 0 && (
-        <ul className="divide-y divide-border rounded-xl bg-surface-elevated/40">
+        <ul className="divide-y divide-border rounded-card bg-surface-elevated/40">
           {contacts.map((c) => (
             <li key={c.id} className="px-3 py-2">
               <p className="truncate text-sm font-medium text-text">

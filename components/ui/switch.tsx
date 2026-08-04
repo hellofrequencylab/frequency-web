@@ -42,7 +42,7 @@ export function Switch({
       className={cn(
         // State set per docs/INTERACTION-STATES.md §2 (Action control): rest · hover · pressed
         // (`.press`) · focus-visible · optimistic-pending · disabled.
-        'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border border-transparent press transition-[background-color,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-default motion-reduce:transition-none',
+        'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-pill border border-transparent press transition-[background-color,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-default motion-reduce:transition-none',
         checked ? 'bg-primary' : 'bg-border-strong',
         // Hover is gated in TS rather than by a `disabled:` variant because :hover still
         // matches a disabled <button> — an inert switch must not light up under the pointer.
@@ -55,7 +55,7 @@ export function Switch({
       <span
         aria-hidden
         className={cn(
-          'pointer-events-none inline-block h-5 w-5 rounded-full bg-surface shadow-sm transition-transform motion-reduce:transition-none',
+          'pointer-events-none inline-block h-5 w-5 rounded-pill bg-surface shadow-sm transition-transform motion-reduce:transition-none',
           checked ? 'translate-x-5' : 'translate-x-0.5',
         )}
       />

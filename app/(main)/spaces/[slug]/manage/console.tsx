@@ -151,7 +151,7 @@ function AccessBadge({ level }: { level: AccessLevel }) {
   const meta = ACCESS_META[level]
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-full border px-1.5 py-0.5 text-2xs font-semibold ${meta.className}`}
+      className={`inline-flex shrink-0 items-center rounded-pill border px-1.5 py-0.5 text-2xs font-semibold ${meta.className}`}
       title={meta.gloss}
     >
       {meta.label}
@@ -220,7 +220,7 @@ function SectionRow({
         </span>
         {suggested && (
           <span
-            className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong"
+            className="inline-flex shrink-0 items-center gap-1 rounded-pill bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong"
             title="Suggested for your mode"
           >
             <Sparkles className="h-3 w-3" aria-hidden />
@@ -300,7 +300,7 @@ function HubNav({
             scroll={false}
             aria-current={on ? 'page' : undefined}
             className={
-              'rounded-full px-3 py-1.5 text-sm font-medium transition-colors ' +
+              'rounded-pill px-3 py-1.5 text-sm font-medium transition-colors ' +
               (on
                 ? 'bg-primary text-on-primary'
                 : 'border border-border text-muted hover:bg-surface-elevated hover:text-text')
@@ -450,7 +450,7 @@ export function SpaceSettingsSurface({
           Module Manager was only reachable by typing /manage/modules by hand from the in-place console. */}
       <Link
         href={`/spaces/${slug}/manage/modules`}
-        className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-3 lift-1 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+        className="group flex items-center gap-3 rounded-control border border-border bg-surface px-3.5 py-3 lift-1 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
           <SlidersHorizontal className="h-4 w-4" aria-hidden />
@@ -470,7 +470,7 @@ export function SpaceSettingsSurface({
           change what their space emphasizes. */}
       <Link
         href={`/spaces/${slug}/manage/mode`}
-        className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-3 lift-1 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+        className="group flex items-center gap-3 rounded-control border border-border bg-surface px-3.5 py-3 lift-1 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
           <Compass className="h-4 w-4" aria-hidden />

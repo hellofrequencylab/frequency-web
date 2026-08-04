@@ -166,7 +166,7 @@ export function StreakHero({
                 title={`${m.label} · ${m.day} days · +${m.zaps} Zaps`}
               >
                 <span
-                  className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-2xs font-bold ${
+                  className={`inline-flex h-7 w-7 items-center justify-center rounded-pill text-2xs font-bold ${
                     hit
                       ? 'bg-primary text-on-primary'
                       : isNext

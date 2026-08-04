@@ -87,7 +87,7 @@ export function SpotlightAssetField({
         }}
       />
       {previewSrc ? (
-        <div className={`relative ${aspect} w-full overflow-hidden rounded-xl border border-border`}>
+        <div className={`relative ${aspect} w-full overflow-hidden rounded-card border border-border`}>
           {/* eslint-disable-next-line @next/next/no-img-element -- member-uploaded asset preview in the editor, not a build-time asset */}
           <img src={previewSrc} alt="" className="h-full w-full object-cover" />
           <div className="absolute right-2 top-2 flex gap-1.5">
@@ -115,7 +115,7 @@ export function SpotlightAssetField({
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={busy}
-          className={`flex ${aspect} w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-surface/60 px-3 text-center text-sm font-medium text-muted transition-colors hover:border-border-strong hover:bg-surface disabled:opacity-60`}
+          className={`flex ${aspect} w-full flex-col items-center justify-center gap-1.5 rounded-control border border-dashed border-border bg-surface/60 px-3 text-center text-sm font-medium text-muted transition-colors hover:border-border-strong hover:bg-surface disabled:opacity-60`}
         >
           <Upload className="h-5 w-5" aria-hidden />
           {busy ? 'Uploading…' : 'Upload image'}

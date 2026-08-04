@@ -354,7 +354,7 @@ export function ValueBandBlock({
                 className="sheen rounded-card border border-on-ink/10 bg-on-ink/5 p-6"
               >
                 <div className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary/20 text-primary">
                     <Icon className="h-5 w-5" aria-hidden />
                   </span>
                   <h3 className="text-lg font-bold text-on-ink">{item.title}</h3>
@@ -561,7 +561,7 @@ export function PhotoCardRowBlock({
                 />
                 <span
                   aria-hidden
-                  className="absolute -bottom-4 left-5 flex h-9 w-9 items-center justify-center rounded-full bg-primary font-display text-sm text-on-primary"
+                  className="absolute -bottom-4 left-5 flex h-9 w-9 items-center justify-center rounded-pill bg-primary font-display text-sm text-on-primary"
                 >
                   {card.label || String(i + 1).padStart(2, '0')}
                 </span>
@@ -730,7 +730,7 @@ function PlanCta({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
     return (
       <Link
         href={href}
-        className="text-emboss mt-5 inline-flex w-full items-center justify-center gap-2 rounded-card bg-primary px-8 py-3.5 text-base font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover"
+        className="text-emboss mt-5 inline-flex w-full items-center justify-center gap-2 rounded-control bg-primary px-8 py-3.5 text-base font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover"
       >
         {plan.ctaLabel}
       </Link>
@@ -739,7 +739,7 @@ function PlanCta({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
   return (
     <Link
       href={href}
-      className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-card px-8 py-3.5 text-base font-bold transition-colors ${
+      className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-control px-8 py-3.5 text-base font-bold transition-colors ${
         ink
           ? 'border border-on-ink/20 bg-on-ink/10 text-on-ink hover:bg-on-ink/15'
           : 'border border-border bg-surface text-text hover:bg-surface-elevated'
@@ -842,7 +842,7 @@ function PlanStrip({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
         <div className="shrink-0">
           <Link
             href={safeHref(plan.ctaHref) ?? '#'}
-            className={`inline-flex items-center justify-center gap-2 rounded-card px-8 py-3.5 text-base font-bold transition-colors ${
+            className={`inline-flex items-center justify-center gap-2 rounded-control px-8 py-3.5 text-base font-bold transition-colors ${
               ink
                 ? 'border border-on-ink/20 bg-on-ink/10 text-on-ink hover:bg-on-ink/15'
                 : 'border border-border bg-surface text-text hover:bg-surface-elevated'

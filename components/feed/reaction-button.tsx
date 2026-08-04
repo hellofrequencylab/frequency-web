@@ -105,8 +105,8 @@ export function ReactionCounts({ base, toggle, failed, compact = false }: Reacti
   const active = REACTIONS.filter((r) => (base.get(r.key)?.count ?? 0) > 0)
   if (active.length === 0) return null
   const pill = compact
-    ? 'flex items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs font-medium transition-colors'
-    : 'flex items-center gap-1 rounded-full px-1.5 py-0.5 text-xs font-medium transition-colors'
+    ? 'flex items-center gap-1 rounded-pill px-1.5 py-0.5 text-2xs font-medium transition-colors'
+    : 'flex items-center gap-1 rounded-pill px-1.5 py-0.5 text-xs font-medium transition-colors'
   return (
     <div className="flex flex-wrap items-center gap-0.5">
       {active.map((r) => {
@@ -156,7 +156,7 @@ export function ReactionInlinePicker({ base, toggle, pending, quickCount = 5 }: 
 
   const quick = REACTIONS.slice(0, quickCount)
   const emojiBtn = (mine: boolean | undefined) =>
-    `flex h-7 w-7 items-center justify-center rounded-full text-base transition-transform hover:scale-110 hover:bg-surface-elevated ${
+    `flex h-7 w-7 items-center justify-center rounded-pill text-base transition-transform hover:scale-110 hover:bg-surface-elevated ${
       mine ? 'bg-primary-bg/60' : ''
     }`
 
@@ -182,7 +182,7 @@ export function ReactionInlinePicker({ base, toggle, pending, quickCount = 5 }: 
           aria-label="More reactions"
           aria-expanded={pickerOpen}
           disabled={pending}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-subtle transition-colors hover:bg-surface-elevated hover:text-muted"
+          className="flex h-7 w-7 items-center justify-center rounded-pill text-subtle transition-colors hover:bg-surface-elevated hover:text-muted"
         >
           <SmilePlus className="h-4 w-4" />
         </button>

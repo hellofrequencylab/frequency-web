@@ -15,7 +15,7 @@ export function MeetupSafetyNote({ acknowledged }: { acknowledged: boolean }) {
   if (dismissed) return null
 
   return (
-    <div className="flex items-start gap-2.5 rounded-xl border border-border bg-surface-elevated px-3.5 py-2.5">
+    <div className="flex items-start gap-2.5 rounded-card border border-border bg-surface-elevated px-3.5 py-2.5">
       <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
       <p className="min-w-0 text-xs text-muted">
         Meeting someone new? The easiest way is at a circle or a public event, where you&rsquo;re never
@@ -33,7 +33,7 @@ export function MeetupSafetyNote({ acknowledged }: { acknowledged: boolean }) {
             await acknowledgeMeetupSafetyAction()
           })
         }}
-        className="shrink-0 rounded-full p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
+        className="shrink-0 rounded-pill p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
       >
         <X className="h-3.5 w-3.5" />
       </button>

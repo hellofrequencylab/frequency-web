@@ -57,11 +57,11 @@ type Lead = { name: string; email: string; handle: string }
 
 // Shared warm-light field style (matches the induction's inputs).
 const FIELD =
-  'w-full rounded-xl border border-border bg-canvas px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none'
+  'w-full rounded-card border border-border bg-canvas px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none'
 const PRIMARY_BTN =
   'inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50'
 const GHOST_BTN =
-  'inline-flex items-center justify-center rounded-xl border border-border px-5 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-50'
+  'inline-flex items-center justify-center rounded-control border border-border px-5 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-50'
 
 export default function FeatureFunnel({
   sequence,
@@ -299,7 +299,7 @@ function DemoStep({
 
   const coaching = (
     <div className="text-center md:text-left">
-      <span className="mb-3 inline-block animate-wiggle rounded-full bg-primary px-3 py-1 text-2xs font-bold uppercase tracking-[0.3em] text-on-primary shadow-sm shadow-primary/25">
+      <span className="mb-3 inline-block animate-wiggle rounded-pill bg-primary px-3 py-1 text-2xs font-bold uppercase tracking-[0.3em] text-on-primary shadow-sm shadow-primary/25">
         Beta Launch
       </span>
       <p className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-primary">Free breathwork timer</p>
@@ -446,7 +446,7 @@ function RewardStep({
       {/* Claim the @username. */}
       <div className="mx-auto mt-5 max-w-sm text-left">
         <label className="mb-1 block text-xs font-semibold text-subtle">Your @username</label>
-        <div className="flex items-center gap-2 rounded-xl border border-border bg-canvas px-3 focus-within:border-border-strong">
+        <div className="flex items-center gap-2 rounded-card border border-border bg-canvas px-3 focus-within:border-border-strong">
           <span className="text-base text-subtle">@</span>
           <input
             type="text"
@@ -584,10 +584,10 @@ function JoinStep({
     <div className="mx-auto max-w-lg text-center">
       <p className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-primary">You are invited</p>
       <div className="mb-4 flex items-center justify-center gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-3 py-1 text-sm font-semibold text-primary-strong">
+        <span className="inline-flex items-center gap-1.5 rounded-pill bg-primary-bg px-3 py-1 text-sm font-semibold text-primary-strong">
           <span aria-hidden>🔥</span> Day 1
         </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-broadcast-bg px-3 py-1 text-sm font-semibold text-broadcast-strong">
+        <span className="inline-flex items-center gap-1.5 rounded-pill bg-broadcast-bg px-3 py-1 text-sm font-semibold text-broadcast-strong">
           <span aria-hidden>⚡</span> {zaps} Zaps
         </span>
       </div>
@@ -602,7 +602,7 @@ function JoinStep({
       {/* Photo + prefilled details */}
       <div className="mx-auto mt-6 max-w-sm text-left">
         <div className="mb-3 flex items-center gap-3">
-          <label className="group relative flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-border bg-primary-bg text-primary-strong">
+          <label className="group relative flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-pill border border-border bg-primary-bg text-primary-strong">
             {avatar ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={avatar} alt="" className="h-full w-full object-cover" />

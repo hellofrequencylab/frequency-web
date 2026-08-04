@@ -62,7 +62,7 @@ export function BoardControls({
     <div className="flex flex-wrap items-center gap-2">
       {/* Scope segmented control */}
       <div
-        className="flex gap-1 rounded-xl bg-surface-elevated/60 p-1"
+        className="flex gap-1 rounded-card bg-surface-elevated/60 p-1"
         role="tablist"
         aria-label="Leaderboard scope"
       >
@@ -86,7 +86,7 @@ export function BoardControls({
 
       {/* Track segmented control */}
       <div
-        className="flex gap-1 rounded-xl bg-surface-elevated/60 p-1"
+        className="flex gap-1 rounded-card bg-surface-elevated/60 p-1"
         role="tablist"
         aria-label="Leaderboard track"
       >

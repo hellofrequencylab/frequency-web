@@ -91,7 +91,7 @@ export function ResearchProgress({
               <li key={stage.key} className="flex items-start gap-3">
                 <span
                   className={cn(
-                    'mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors',
+                    'mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-pill border transition-colors',
                     done && 'border-success bg-success-bg text-success',
                     active && 'border-primary bg-primary-bg text-primary-strong',
                     !done && !active && 'border-border bg-surface-elevated text-subtle',

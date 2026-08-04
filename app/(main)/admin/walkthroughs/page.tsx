@@ -45,7 +45,7 @@ function WalkthroughCard({ w }: { w: Walkthrough }) {
             {w.name || 'Untitled walkthrough'}
           </Link>
           <span
-            className={`inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-semibold ${
+            className={`inline-flex items-center rounded-pill px-2 py-0.5 text-2xs font-semibold ${
               w.active ? 'bg-success-bg text-success' : 'bg-surface-elevated text-subtle'
             }`}
           >
@@ -54,7 +54,7 @@ function WalkthroughCard({ w }: { w: Walkthrough }) {
         </div>
         {w.description && <p className="mt-1 line-clamp-1 text-sm text-muted">{w.description}</p>}
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-subtle">
-          <span className="inline-flex items-center rounded-full bg-broadcast-bg px-2 py-0.5 font-medium text-broadcast-strong">
+          <span className="inline-flex items-center rounded-pill bg-broadcast-bg px-2 py-0.5 font-medium text-broadcast-strong">
             {TRIGGER_CHIP[w.trigger]}
           </span>
           {w.audience && <span>Target: {w.audience}</span>}

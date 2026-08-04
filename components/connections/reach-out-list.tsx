@@ -40,7 +40,7 @@ export function ReachOutList({ reminders }: { reminders: ReminderWithContact[] }
       <div className="mb-3 flex items-center gap-1.5">
         <CalendarClock className="h-4 w-4 text-primary-strong" />
         <h2 className="text-sm font-semibold tracking-tight text-text">Reach out</h2>
-        <span className="rounded-full bg-surface-elevated px-1.5 py-0.5 text-2xs font-bold tabular-nums text-muted">
+        <span className="rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-bold tabular-nums text-muted">
           {items.length}
         </span>
       </div>
@@ -70,16 +70,16 @@ function ReachOutRow({ reminder, onDone }: { reminder: ReminderWithContact; onDo
   }
 
   return (
-    <li className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface p-3">
+    <li className="flex flex-wrap items-center gap-3 rounded-card border border-border bg-surface p-3">
       <Link
         href={`/connections/${reminder.contactId}`}
         className="flex min-w-0 flex-1 items-center gap-3 outline-none"
       >
         {reminder.contactAvatarUrl ? (
           // Private `network-contacts` signed URL — skip the optimizer (see page.tsx note).
-          <Image src={avatarSrc(reminder.contactAvatarUrl)} alt="" width={36} height={36} unoptimized className="h-9 w-9 rounded-full object-cover" style={avatarFocusStyle(reminder.contactAvatarUrl)} />
+          <Image src={avatarSrc(reminder.contactAvatarUrl)} alt="" width={36} height={36} unoptimized className="h-9 w-9 rounded-pill object-cover" style={avatarFocusStyle(reminder.contactAvatarUrl)} />
         ) : (
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-elevated text-xs font-semibold text-muted">
+          <span className="flex h-9 w-9 items-center justify-center rounded-pill bg-surface-elevated text-xs font-semibold text-muted">
             {getInitials(name)}
           </span>
         )}

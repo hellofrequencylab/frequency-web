@@ -65,7 +65,7 @@ export function LifecycleFunnelPanel({
               )}
               <Link
                 href={`${drillBase}?stage=${step.stage}`}
-                className="group flex items-center gap-3 rounded-xl px-2 py-1.5 transition-colors hover:bg-surface-elevated/60"
+                className="group flex items-center gap-3 rounded-control px-2 py-1.5 transition-colors hover:bg-surface-elevated/60"
               >
                 <span className="w-20 shrink-0 text-sm font-medium text-text">{step.label}</span>
                 <span className="relative h-6 flex-1 overflow-hidden rounded-md bg-surface-elevated">
@@ -89,7 +89,7 @@ export function LifecycleFunnelPanel({
           <Link
             key={step.key}
             href={`${drillBase}?stage=${step.stage}`}
-            className="group flex items-center justify-between rounded-xl bg-surface-elevated/60 px-3 py-2 transition-colors hover:bg-surface-elevated"
+            className="group flex items-center justify-between rounded-control bg-surface-elevated/60 px-3 py-2 transition-colors hover:bg-surface-elevated"
           >
             <span className="text-sm font-medium text-muted">{step.label}</span>
             <span className="inline-flex items-center gap-1.5 text-sm font-bold tabular-nums text-text">

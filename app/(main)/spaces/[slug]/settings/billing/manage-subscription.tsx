@@ -37,7 +37,7 @@ export function ManageSubscriptionButton({ slug }: { slug: string }) {
           type="button"
           onClick={manage}
           disabled={pending}
-          className="flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+          className="flex items-center justify-center gap-2 rounded-control border border-border px-4 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <CreditCard className="h-4 w-4" aria-hidden />}
           {pending ? 'Opening' : 'Manage subscription'}

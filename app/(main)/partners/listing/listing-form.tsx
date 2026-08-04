@@ -55,14 +55,14 @@ export function ListingForm({ initial }: { initial: Partial<Record<keyof Listing
               onChange={(e) => set(f.key, e.target.value)}
               rows={4}
               placeholder={f.placeholder}
-              className="w-full resize-none rounded-xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text placeholder:text-subtle outline-none focus:border-primary"
+              className="w-full resize-none rounded-control border border-border bg-surface-elevated px-4 py-3 text-sm text-text placeholder:text-subtle outline-none focus:border-primary"
             />
           ) : (
             <input
               value={form[f.key]}
               onChange={(e) => set(f.key, e.target.value)}
               placeholder={f.placeholder}
-              className="w-full rounded-xl border border-border bg-surface-elevated px-4 py-2.5 text-sm text-text placeholder:text-subtle outline-none focus:border-primary"
+              className="w-full rounded-control border border-border bg-surface-elevated px-4 py-2.5 text-sm text-text placeholder:text-subtle outline-none focus:border-primary"
             />
           )}
         </label>

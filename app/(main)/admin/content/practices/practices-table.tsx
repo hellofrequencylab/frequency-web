@@ -118,12 +118,12 @@ function MasterSwitch({
       onClick={() => onToggle(!on)}
       title={`Turn ${label} ${on ? 'off' : 'on'} for all ${count} in view`}
       aria-label={`All ${label} ${on ? 'off' : 'on'}`}
-      className={`relative mx-auto mt-1 block h-3.5 w-7 rounded-full transition-colors disabled:opacity-50 motion-reduce:transition-none ${
+      className={`relative mx-auto mt-1 block h-3.5 w-7 rounded-pill transition-colors disabled:opacity-50 motion-reduce:transition-none ${
         on ? 'bg-primary' : 'bg-border-strong'
       }`}
     >
       <span
-        className={`absolute top-0.5 h-2.5 w-2.5 rounded-full bg-surface shadow transition-all motion-reduce:transition-none ${
+        className={`absolute top-0.5 h-2.5 w-2.5 rounded-pill bg-surface shadow transition-all motion-reduce:transition-none ${
           on ? 'left-4' : 'left-0.5'
         }`}
       />

@@ -88,7 +88,7 @@ export function AdminPageDock({
         aria-expanded={open}
         className="flex w-full items-center gap-2.5 rounded-lg px-2 py-3 text-left transition-colors hover:bg-surface-elevated"
       >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-muted">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-muted">
           <SlidersHorizontal className="h-[18px] w-[18px]" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
@@ -159,7 +159,7 @@ function SectionSorter({ scope }: { scope: DashScope }) {
               dragId.current = null
               save(order)
             }}
-            className="flex cursor-grab items-center gap-2 rounded-xl border border-border bg-surface px-2.5 py-2 text-sm font-medium text-text active:cursor-grabbing"
+            className="flex cursor-grab items-center gap-2 rounded-card border border-border bg-surface px-2.5 py-2 text-sm font-medium text-text active:cursor-grabbing"
           >
             <GripVertical className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
             {labelOf(id)}

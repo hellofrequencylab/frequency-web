@@ -224,9 +224,9 @@ function MemberRow({
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-elevated transition-colors text-left"
       >
         {m.avatar_url ? (
-          <Image src={avatarSrc(m.avatar_url)} alt={m.display_name} width={36} height={36} className="w-9 h-9 rounded-full object-cover shrink-0" style={avatarFocusStyle(m.avatar_url)} />
+          <Image src={avatarSrc(m.avatar_url)} alt={m.display_name} width={36} height={36} className="w-9 h-9 rounded-pill object-cover shrink-0" style={avatarFocusStyle(m.avatar_url)} />
         ) : (
-          <div className="w-9 h-9 rounded-full bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-pill bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0">
             {initials}
           </div>
         )}
@@ -287,7 +287,7 @@ function MemberRow({
 
           {/* Edit profile form */}
           {editMode ? (
-            <form action={handleProfileSave} className="space-y-3 mb-4 rounded-xl border border-border p-3 bg-surface">
+            <form action={handleProfileSave} className="space-y-3 mb-4 rounded-card border border-border p-3 bg-surface">
               <div>
                 <label className="text-sm font-bold text-text">Display name</label>
                 <input name="display_name" defaultValue={m.display_name} className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs" />

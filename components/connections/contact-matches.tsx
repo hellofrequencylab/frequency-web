@@ -43,10 +43,10 @@ export function ContactMatches({ suggestions }: { suggestions: ContactMatchSugge
 
 function Avatar({ url, name }: { url: string | null; name: string | null }) {
   if (url) {
-    return <Image src={avatarSrc(url)} alt="" width={36} height={36} className="h-9 w-9 rounded-full object-cover" style={avatarFocusStyle(url)} />
+    return <Image src={avatarSrc(url)} alt="" width={36} height={36} className="h-9 w-9 rounded-pill object-cover" style={avatarFocusStyle(url)} />
   }
   return (
-    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-elevated text-xs font-semibold text-muted">
+    <span className="flex h-9 w-9 items-center justify-center rounded-pill bg-surface-elevated text-xs font-semibold text-muted">
       {getInitials(name ?? '?')}
     </span>
   )
@@ -79,7 +79,7 @@ function MatchRow({
   }
 
   return (
-    <li className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface p-3">
+    <li className="flex flex-wrap items-center gap-3 rounded-card border border-border bg-surface p-3">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <Avatar url={contact.avatarUrl} name={contact.displayName} />
         <div className="min-w-0">

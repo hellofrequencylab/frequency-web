@@ -64,7 +64,7 @@ export function GhostLink({
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Close"
-            className="absolute right-3 top-3 rounded-full p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+            className="absolute right-3 top-3 rounded-pill p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
           >
             <X className="h-4 w-4" />
           </button>

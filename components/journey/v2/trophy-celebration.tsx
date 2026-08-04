@@ -26,7 +26,7 @@ function Burst() {
       {sparks.map((_, i) => (
         <span
           key={i}
-          className="absolute left-1/2 top-1/2 h-2 w-2 rounded-full bg-primary motion-reduce:hidden"
+          className="absolute left-1/2 top-1/2 h-2 w-2 rounded-pill bg-primary motion-reduce:hidden"
           style={{
             transform: `rotate(${(360 / sparks.length) * i}deg) translateY(-120px)`,
             opacity: 0.7,
@@ -86,7 +86,7 @@ export function TrophyCelebration({ milestone, onDismiss }: { milestone: TrophyM
           <X className="h-4 w-4" />
         </button>
 
-        <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary-bg text-primary-strong animate-[cue-pop_0.5s_cubic-bezier(0.34,1.56,0.64,1)]">
+        <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-pill bg-primary-bg text-primary-strong animate-[cue-pop_0.5s_cubic-bezier(0.34,1.56,0.64,1)]">
           <Trophy className="h-10 w-10" strokeWidth={1.75} />
         </div>
 
@@ -99,7 +99,7 @@ export function TrophyCelebration({ milestone, onDismiss }: { milestone: TrophyM
         </p>
 
         {milestone.gems != null && milestone.gems > 0 && (
-          <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-signal-bg px-4 py-2 text-sm font-bold text-signal-strong">
+          <div className="mt-5 inline-flex items-center gap-2 rounded-pill bg-signal-bg px-4 py-2 text-sm font-bold text-signal-strong">
             <Gem className="h-4 w-4" /> +{milestone.gems} Gems
           </div>
         )}
@@ -110,7 +110,7 @@ export function TrophyCelebration({ milestone, onDismiss }: { milestone: TrophyM
           {isJourney && milestone.certificate && (
             <button
               onClick={() => window.print()}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+              className="inline-flex items-center justify-center gap-1.5 rounded-control border border-border px-4 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
             >
               <Printer className="h-4 w-4" /> Print
             </button>

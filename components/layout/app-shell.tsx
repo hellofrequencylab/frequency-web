@@ -469,10 +469,10 @@ function ProfileCard({
               width={44}
               height={44}
               style={avatarFocusStyle(profile.avatar_url)}
-              className="w-11 h-11 rounded-full object-cover"
+              className="w-11 h-11 rounded-pill object-cover"
             />
           ) : (
-            <div className="w-11 h-11 rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center select-none">
+            <div className="w-11 h-11 rounded-pill bg-primary text-on-primary text-sm font-bold flex items-center justify-center select-none">
               {getInitials(profile.display_name)}
             </div>
           )}
@@ -484,7 +484,7 @@ function ProfileCard({
             </p>
           </Link>
           {previewVisitor ? (
-            <span className="mt-1 inline-block rounded-full bg-surface-elevated px-2 py-0.5 text-3xs font-semibold leading-tight text-muted">
+            <span className="mt-1 inline-block rounded-pill bg-surface-elevated px-2 py-0.5 text-3xs font-semibold leading-tight text-muted">
               Visitor
             </span>
           ) : (
@@ -634,14 +634,14 @@ function AccountDropdown({
         onClick={() => setOpen((v) => !v)}
         aria-label="Account menu"
         aria-expanded={open}
-        className="flex items-center justify-center w-8 h-8 rounded-full bg-surface-elevated text-muted text-2xs font-semibold ring-1 ring-border hover:text-text hover:ring-border-strong transition-colors select-none shrink-0"
+        className="flex items-center justify-center w-8 h-8 rounded-pill bg-surface-elevated text-muted text-2xs font-semibold ring-1 ring-border hover:text-text hover:ring-border-strong transition-colors select-none shrink-0"
       >
         {getInitials(profile.display_name)}
       </button>
 
       {open && (
         // The SYSTEM dock's popover (three-docks law): opens from the top-right corner
-        // toward the interior. rounded-card + shadow-menu (downward-only depth, so it
+        // toward the interior. rounded-control + shadow-menu (downward-only depth, so it
         // reads as sliding out from under the chrome band, not floating over it).
         <div className="absolute right-0 top-full mt-2 w-60 rounded-card border border-border bg-surface shadow-menu py-1 z-50 max-h-[80vh] overflow-y-auto">
 
@@ -1081,8 +1081,6 @@ function MobileLeftDrawer({
   onClose,
   role,
   identityRole,
-  realRole,
-  previewVisitor = false,
   operatorContext,
   availableContexts = [],
   profile,
@@ -1097,17 +1095,12 @@ function MobileLeftDrawer({
   sections = NAV_SECTIONS,
   menuDriven = false,
   mobileStats,
-  dock,
 }: {
   open: boolean
   onClose: () => void
   role: CommunityRole | null
   /** The viewer's actual community role — drives the identity badge (not gated). */
   identityRole: CommunityRole
-  /** True DB role (ignores any view-as override) — gates the janitor View-as control. */
-  realRole: CommunityRole
-  /** Janitor previewing as a logged-out visitor — flows into View-as. */
-  previewVisitor?: boolean
   /** Operator-identity context (framing) — powers the mobile context switcher. */
   operatorContext?: OperatorContext
   /** Contexts the caller may switch into (server-derived). */
@@ -1129,11 +1122,6 @@ function MobileLeftDrawer({
   /** The game-stats block (MobileGameStats). The drawer's bottom cluster is the < 768 home of
    *  the score; from md it is the bottom-right Vault tab (`dock`). Exactly one per viewport. */
   mobileStats?: React.ReactNode
-  /** The bottom-right Vault tab (three-docks law, owner ruling 2026-08-04). Rendered as a
-   *  SIBLING of the shell, not inside the rail column: that column is lg:flex and the tab must
-   *  exist from md. Gated on showSidebar, the same flag that keeps it off /admin, where the
-   *  operator page dock owns these exact coordinates. */
-  dock?: React.ReactNode
 }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -1192,10 +1180,10 @@ function MobileLeftDrawer({
                 width={40}
                 height={40}
                 style={avatarFocusStyle(profile.avatar_url)}
-                className="h-10 w-10 rounded-full object-cover shrink-0"
+                className="h-10 w-10 rounded-pill object-cover shrink-0"
               />
             ) : (
-              <div className="h-10 w-10 rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center select-none shrink-0">
+              <div className="h-10 w-10 rounded-pill bg-primary text-on-primary text-sm font-bold flex items-center justify-center select-none shrink-0">
                 {getInitials(profile.display_name)}
               </div>
             )}
@@ -1357,8 +1345,8 @@ function MobileTabBar({
               line); the arch above drops to match, keeping the even 12px margin. */}
           <span aria-hidden className="h-[26px] w-[22px]" />
           {/* The fully-rounded white catch the bolt sits in — a floating disc, not a bar bump. */}
-          <span aria-hidden className="absolute left-1/2 top-0 h-14 w-14 -translate-x-1/2 -translate-y-[22px] rounded-full border border-border bg-surface" />
-          <span className="absolute left-1/2 top-0 flex h-12 w-12 -translate-x-1/2 -translate-y-[18px] items-center justify-center rounded-full bg-primary shadow-pop">
+          <span aria-hidden className="absolute left-1/2 top-0 h-14 w-14 -translate-x-1/2 -translate-y-[22px] rounded-pill border border-border bg-surface" />
+          <span className="absolute left-1/2 top-0 flex h-12 w-12 -translate-x-1/2 -translate-y-[18px] items-center justify-center rounded-pill bg-primary shadow-pop">
             {/* the catch behind the glyph — a soft shadow under the bolt (flips with
                 the glyph so the carve always reads) */}
             <Zap
@@ -1402,7 +1390,7 @@ function MindlessLaunch() {
         type="button"
         onClick={() => open()}
         aria-label="Mindless. Open the practice timer"
-        className="flex items-center gap-1.5 h-8 sm:h-9 px-2 sm:px-2.5 rounded-full text-muted hover:text-primary-strong hover:bg-surface-elevated transition-colors"
+        className="flex items-center gap-1.5 h-8 sm:h-9 px-2 sm:px-2.5 rounded-pill text-muted hover:text-primary-strong hover:bg-surface-elevated transition-colors"
       >
         {/* Pure-outline lotus (no fill) so it carries the same weight as the lucide icons beside it. */}
         <LotusIcon filled={false} className="w-5 h-5" />
@@ -1835,7 +1823,7 @@ export default function AppShell({
             type="button"
             onClick={() => setSearchOpen(true)}
             title="Search (⌘K)"
-            className="hidden sm:flex items-center gap-2 rounded-full border border-border bg-surface-elevated/70 pl-3 pr-2 py-1.5 text-sm text-muted hover:text-text hover:border-border-strong hover:bg-surface-elevated transition-colors"
+            className="hidden sm:flex items-center gap-2 rounded-pill border border-border bg-surface-elevated/70 pl-3 pr-2 py-1.5 text-sm text-muted hover:text-text hover:border-border-strong hover:bg-surface-elevated transition-colors"
           >
             <Search className="w-4 h-4" />
             <span>Search</span>
@@ -1850,7 +1838,7 @@ export default function AppShell({
             onClick={() => setSearchOpen(true)}
             aria-label="Search"
             title="Search"
-            className="sm:hidden flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+            className="sm:hidden flex items-center justify-center w-8 h-8 rounded-pill text-muted hover:text-text hover:bg-surface-elevated transition-colors"
           >
             <Search className="w-5 h-5" />
           </button>
@@ -1868,7 +1856,7 @@ export default function AppShell({
               <Link
                 href="/network/friends"
                 aria-label="Friends"
-                className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+                className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-pill text-muted hover:text-text hover:bg-surface-elevated transition-colors"
               >
                 <Users className="w-5 h-5" />
               </Link>
@@ -1882,11 +1870,11 @@ export default function AppShell({
                 <Link
                   href="/admin/support"
                   aria-label={`Bug Alert: ${openSupportTickets} open support ${openSupportTickets === 1 ? 'ticket' : 'tickets'}. Open the support queue`}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-danger px-3 py-1.5 text-sm font-bold text-on-danger shadow-sm ring-1 ring-danger/40 transition-transform hover:scale-105 motion-safe:animate-pulse"
+                  className="inline-flex items-center gap-1.5 rounded-pill bg-danger px-3 py-1.5 text-sm font-bold text-on-danger shadow-sm ring-1 ring-danger/40 transition-transform hover:scale-105 motion-safe:animate-pulse"
                 >
                   <Bug className="h-4 w-4" />
                   <span className="hidden sm:inline">Bug</span>
-                  <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-on-primary/20 px-1.5 text-xs leading-5">
+                  <span className="inline-flex min-w-5 items-center justify-center rounded-pill bg-on-primary/20 px-1.5 text-xs leading-5">
                     {openSupportTickets}
                   </span>
                 </Link>
@@ -2050,7 +2038,7 @@ export default function AppShell({
                           onClick={toggleRail}
                           title={`${label} — open the rail`}
                           aria-label={`${label} — open the rail`}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-elevated hover:text-text"
                         >
                           <Icon className="h-5 w-5" aria-hidden />
                         </button>
@@ -2157,8 +2145,6 @@ export default function AppShell({
           onClose={() => setDrawerOpen(false)}
           role={gateRole}
           identityRole={role}
-          realRole={effectiveRealRole}
-          previewVisitor={previewVisitor}
           operatorContext={operatorContext}
           availableContexts={availableContexts}
           profile={profile}
@@ -2173,7 +2159,6 @@ export default function AppShell({
           sections={navSections}
           menuDriven={menuDriven}
           mobileStats={mobileStats}
-          dock={dock}
         />
       )}
 

@@ -13,7 +13,7 @@ export default function SearchLoading() {
       <div className="space-y-3">
         {[...Array(5)].map((_, i) => (
           <div key={i} className="flex items-center gap-3 py-2.5">
-            <Skeleton className="w-9 h-9 rounded-full shrink-0" />
+            <Skeleton className="w-9 h-9 rounded-pill shrink-0" />
             <div className="flex-1">
               <Skeleton className="h-4 w-32 mb-1.5" />
               <Skeleton className="h-3 w-20" />

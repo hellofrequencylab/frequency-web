@@ -30,7 +30,7 @@ function JourneyRow({ j, quests }: { j: RankedJourney; quests: { id: string; nam
   const author = j.author?.display_name ?? j.author?.handle ?? 'Unknown'
 
   return (
-    <li className="rounded-xl border border-line bg-surface px-3 py-2.5">
+    <li className="rounded-card border border-line bg-surface px-3 py-2.5">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         {/* Identity — the flexible column; truncates rather than pushing the row wide */}
         <div className="flex min-w-[12rem] flex-1 flex-col gap-0.5">

@@ -425,7 +425,7 @@ export function ImportWizard({
       <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium">
         {steps.map((s, i) => (
           <li key={s.key} className="flex items-center gap-2">
-            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-2xs ${i <= stepIndex ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-muted'}`}>{i + 1}</span>
+            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-pill text-2xs ${i <= stepIndex ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-muted'}`}>{i + 1}</span>
             <span className={i <= stepIndex ? 'text-text' : 'text-subtle'}>{s.label}</span>
             {i < steps.length - 1 && <span className="text-subtle">/</span>}
           </li>
@@ -500,7 +500,7 @@ export function ImportWizard({
           {queue.length > 0 && (
             <ul className="space-y-2">
               {queue.map((q) => (
-                <li key={q.id} className="flex items-start gap-3 rounded-xl border border-border bg-surface p-3">
+                <li key={q.id} className="flex items-start gap-3 rounded-card border border-border bg-surface p-3">
                   <FileText className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-text">{q.name}</p>
@@ -541,7 +541,7 @@ export function ImportWizard({
             </div>
           )}
 
-          <div className="rounded-xl border border-border bg-surface-elevated/40 p-4">
+          <div className="rounded-card border border-border bg-surface-elevated/40 p-4">
             <button
               type="button"
               onClick={() => setShowPaste((v) => !v)}
@@ -583,7 +583,7 @@ export function ImportWizard({
               <option key={f.key} value={f.label} />
             ))}
           </datalist>
-          <div className="rounded-xl border border-border bg-surface-elevated/40 p-4">
+          <div className="rounded-card border border-border bg-surface-elevated/40 p-4">
             <p className="text-sm font-semibold text-text">Match your columns to contact fields</p>
             <p className="mt-1 text-xs text-muted">
               We guessed a match for each column. A confident match is applied for you; check the rest. Anything left as a
@@ -601,7 +601,7 @@ export function ImportWizard({
             </button>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-border">
+          <div className="overflow-x-auto rounded-card border border-border">
             <table className="w-full min-w-[32rem] text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface-elevated/40 text-left text-xs text-muted">
@@ -675,7 +675,7 @@ export function ImportWizard({
 
       {step === 'preview' && validation && (
         <div className="space-y-4">
-          <div className="rounded-xl border border-border bg-surface-elevated/40 p-4">
+          <div className="rounded-card border border-border bg-surface-elevated/40 p-4">
             <p className="text-sm font-semibold text-text">Here is what will happen</p>
             <p className="mt-1 text-xs text-muted">Nothing is saved yet. This is a dry run of your file against the contacts you already have.</p>
           </div>
@@ -694,7 +694,7 @@ export function ImportWizard({
                   key={k}
                   type="button"
                   onClick={() => setMergeStrategy(k)}
-                  className={`rounded-xl border p-3 text-left text-xs transition-colors ${mergeStrategy === k ? 'border-primary bg-primary-bg' : 'border-border hover:bg-surface-elevated'}`}
+                  className={`rounded-control border p-3 text-left text-xs transition-colors ${mergeStrategy === k ? 'border-primary bg-primary-bg' : 'border-border hover:bg-surface-elevated'}`}
                 >
                   <span className="block font-semibold text-text">{MERGE_LABEL[k].label}</span>
                   <span className="mt-0.5 block text-subtle">{MERGE_LABEL[k].help}</span>
@@ -724,7 +724,7 @@ export function ImportWizard({
                 </span>
               </div>
               <p className="text-xs text-muted">Flagged rows still import where they can. We just could not use one field. Rows to double-check import as is.</p>
-              <div className="max-h-96 overflow-auto rounded-xl border border-border">
+              <div className="max-h-96 overflow-auto rounded-card border border-border">
                 <table className="w-full min-w-[34rem] text-sm">
                   <thead className="sticky top-0">
                     <tr className="border-b border-border bg-surface-elevated text-left text-xs text-muted">
@@ -790,7 +790,7 @@ export function ImportWizard({
                   type="button"
                   onClick={undo}
                   disabled={busy}
-                  className="inline-flex items-center gap-2 rounded-xl border border-border-strong px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+                  className="inline-flex items-center gap-2 rounded-control border border-border-strong px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
                 >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />} Undo this import
                 </button>
@@ -798,7 +798,7 @@ export function ImportWizard({
               <button
                 type="button"
                 onClick={() => { setStep('upload'); setSource(null); setImportId(null); setMapping([]); setValidation(null); setResult(null); setUndone(false); setBanner(null); setFilename(''); setPasted(''); setShowPaste(false); setQueue([]); }}
-                className="inline-flex items-center gap-2 rounded-xl border border-border-strong px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                className="inline-flex items-center gap-2 rounded-control border border-border-strong px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
               >
                 <UploadCloud className="h-4 w-4" /> Import another file
               </button>
@@ -854,7 +854,7 @@ function rowDetail(r: PreviewRow): string {
 
 function Stat({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
-    <div className="rounded-xl border border-border bg-surface p-4 text-center">
+    <div className="rounded-card border border-border bg-surface p-4 text-center">
       <p className={`text-2xl font-semibold ${tone}`}>{value}</p>
       <p className="mt-0.5 text-xs text-muted">{label}</p>
     </div>

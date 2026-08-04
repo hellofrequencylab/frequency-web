@@ -67,7 +67,7 @@ export function RailCardEditor({
   }
 
   return (
-    <li className="rounded-xl border border-border bg-canvas/40">
+    <li className="rounded-card border border-border bg-canvas/40">
       <div className="flex items-center gap-2 px-2.5 py-2">
         <button
           type="button"
@@ -84,7 +84,7 @@ export function RailCardEditor({
             {card.title || 'Untitled card'}
           </span>
         </button>
-        <span className="shrink-0 rounded-full bg-surface-elevated px-1.5 py-0.5 text-xs font-semibold capitalize text-muted">
+        <span className="shrink-0 rounded-pill bg-surface-elevated px-1.5 py-0.5 text-xs font-semibold capitalize text-muted">
           {card.side}
         </span>
         <OnOffToggle

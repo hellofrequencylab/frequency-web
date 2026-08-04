@@ -178,7 +178,7 @@ export function VeraLightbox({
           type="button"
           onClick={close}
           aria-label="Close"
-          className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+          className="absolute right-3 top-3 z-10 rounded-pill p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
         >
           <X className="h-4 w-4" />
         </button>
@@ -187,7 +187,7 @@ export function VeraLightbox({
           /* ── Beat 1: the personalized deck ───────────────────────────────── */
           <div key={slide} className="relative flex flex-1 flex-col overflow-y-auto px-7 pb-7 pt-8 text-center motion-safe:animate-[slideUp_0.3s_ease-out]">
             <WelcomeArt art={current.art} className="mx-auto mb-5 h-28 sm:h-32" />
-            <span className="mx-auto inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary-strong">
+            <span className="mx-auto inline-flex items-center gap-1.5 rounded-pill bg-primary-bg px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary-strong">
               <Sparkles className="h-3.5 w-3.5" /> {current.eyebrow}
             </span>
             <h2 id="vera-lightbox-title" className="mt-4 text-balance text-2xl font-bold leading-tight text-text sm:text-3xl">
@@ -200,7 +200,7 @@ export function VeraLightbox({
               {slides.map((s, i) => (
                 <span
                   key={s.title}
-                  className={`h-1.5 rounded-full transition-all ${i === slide ? 'w-6 bg-primary' : 'w-1.5 bg-border-strong'}`}
+                  className={`h-1.5 rounded-pill transition-all ${i === slide ? 'w-6 bg-primary' : 'w-1.5 bg-border-strong'}`}
                 />
               ))}
             </div>
@@ -218,7 +218,7 @@ export function VeraLightbox({
               <button
                 type="button"
                 onClick={() => (lastSlide ? setPhase('chat') : setSlide((s) => s + 1))}
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-2 rounded-control bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
               >
                 {lastSlide ? 'Meet Vera' : 'Next'} <ArrowRight className="h-4 w-4" />
               </button>
@@ -232,7 +232,7 @@ export function VeraLightbox({
           /* ── Beat 2: Vera's chat (seeded continuance) ─────────────────────── */
           <div className="flex flex-1 flex-col overflow-hidden">
             <div className="flex shrink-0 items-center gap-2.5 border-b border-border px-6 py-4">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
+              <span className="flex h-9 w-9 items-center justify-center rounded-pill bg-primary-bg text-primary-strong">
                 <Sparkles className="h-4 w-4" />
               </span>
               <div className="min-w-0">
@@ -260,7 +260,7 @@ export function VeraLightbox({
               {pending && <p className="text-xs text-subtle">Vera is thinking…</p>}
 
               {proposals.map((p, i) => (
-                <div key={i} className="rounded-xl border border-border bg-surface-elevated p-3">
+                <div key={i} className="rounded-card border border-border bg-surface-elevated p-3">
                   <p className="text-xs text-muted">{proposalLabel(p)}</p>
                   <div className="mt-2 flex gap-2">
                     <button type="button" onClick={() => allow(p)} className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-1.5 text-xs font-semibold text-success hover:opacity-80">
@@ -279,7 +279,7 @@ export function VeraLightbox({
               {!done && suggestions.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {suggestions.map((s) => (
-                    <button key={s} type="button" onClick={() => turn(s)} disabled={pending} className="rounded-full border border-border bg-surface px-3 py-1 text-xs text-text transition-colors hover:bg-surface-elevated disabled:opacity-50">
+                    <button key={s} type="button" onClick={() => turn(s)} disabled={pending} className="rounded-pill border border-border bg-surface px-3 py-1 text-xs text-text transition-colors hover:bg-surface-elevated disabled:opacity-50">
                       {s}
                     </button>
                   ))}
@@ -293,7 +293,7 @@ export function VeraLightbox({
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') send() }}
                     placeholder="Say something to Vera…"
-                    className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+                    className="w-full rounded-control border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
                   />
                   <button type="button" onClick={send} disabled={pending || !input.trim()} aria-label="Send message" className="rounded-xl bg-primary p-2 text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50">
                     <Send className="h-4 w-4" aria-hidden />

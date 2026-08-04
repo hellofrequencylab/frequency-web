@@ -174,7 +174,7 @@ export function PageShareKit({
         </p>
         <div
           aria-label="QR code for this page"
-          className="mx-auto aspect-square w-40 rounded-xl border border-border bg-white p-2 lift-1 [&>svg]:h-full [&>svg]:w-full"
+          className="mx-auto aspect-square w-40 rounded-card border border-border bg-white p-2 lift-1 [&>svg]:h-full [&>svg]:w-full"
           dangerouslySetInnerHTML={{ __html: svg }}
         />
       </div>

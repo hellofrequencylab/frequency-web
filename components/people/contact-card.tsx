@@ -52,18 +52,18 @@ export function ContactCard({
             width={72}
             height={72}
             sizes="72px"
-            className="h-18 w-18 rounded-full object-cover ring-2 ring-surface-elevated"
+            className="h-18 w-18 rounded-pill object-cover ring-2 ring-surface-elevated"
             style={avatarFocusStyle(avatarUrl)}
           />
         ) : (
-          <div className="flex h-18 w-18 items-center justify-center rounded-full bg-primary-bg text-xl font-semibold text-primary-strong select-none ring-2 ring-surface-elevated">
+          <div className="flex h-18 w-18 items-center justify-center rounded-pill bg-primary-bg text-xl font-semibold text-primary-strong select-none ring-2 ring-surface-elevated">
             {getInitials(displayName)}
           </div>
         )}
         {online && (
           <span
             aria-label="Online now"
-            className="absolute bottom-0.5 right-0.5 h-3 w-3 rounded-full bg-success ring-2 ring-surface"
+            className="absolute bottom-0.5 right-0.5 h-3 w-3 rounded-pill bg-success ring-2 ring-surface"
           />
         )}
       </div>
@@ -75,7 +75,7 @@ export function ContactCard({
       <p className="mt-0.5 truncate text-xs text-subtle">@{handle}</p>
 
       {showBand && (
-        <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
+        <span className="mt-2 inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
           <MapPin className="h-2.5 w-2.5 shrink-0" />
           {BAND_LABEL[band]}
         </span>

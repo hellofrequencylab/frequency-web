@@ -112,7 +112,7 @@ export interface RawPost {
 /** The context half's thumbnail: the scope's own image when it has one, else a
  *  small typed icon (people get initials) so the destination reads at a glance. */
 function ScopeThumb({ scope }: { scope: PostScopeContext }) {
-  const shape = scope.type === 'wall' ? 'rounded-full' : 'rounded'
+  const shape = scope.type === 'wall' ? 'rounded-pill' : 'rounded'
   if (scope.image_url) {
     return (
       <Image
@@ -127,7 +127,7 @@ function ScopeThumb({ scope }: { scope: PostScopeContext }) {
   }
   if (scope.type === 'wall') {
     return (
-      <span className="flex h-4 w-4 shrink-0 select-none items-center justify-center rounded-full bg-primary-bg text-3xs font-bold text-primary-strong">
+      <span className="flex h-4 w-4 shrink-0 select-none items-center justify-center rounded-pill bg-primary-bg text-3xs font-bold text-primary-strong">
         {getInitials(scope.name)}
       </span>
     )
@@ -223,10 +223,10 @@ export function PostCard({
                 width={36}
                 height={36}
                 style={avatarFocusStyle(author.avatar_url)}
-                className="h-9 w-9 rounded-full object-cover"
+                className="h-9 w-9 rounded-pill object-cover"
               />
             ) : (
-              <div className="flex h-9 w-9 select-none items-center justify-center rounded-full bg-primary-bg text-xs font-semibold text-primary-strong">
+              <div className="flex h-9 w-9 select-none items-center justify-center rounded-pill bg-primary-bg text-xs font-semibold text-primary-strong">
                 {getInitials(author.display_name)}
               </div>
             )}
@@ -286,7 +286,7 @@ export function PostCard({
 
         {/* Post image — inset media, no second frame around it. */}
         {post.media_urls?.length > 0 && (
-          <div className="relative mb-2.5 h-96 w-full overflow-hidden rounded-xl">
+          <div className="relative mb-2.5 h-96 w-full overflow-hidden rounded-card">
             <Image
               src={post.media_urls[0]}
               alt="Post attachment"

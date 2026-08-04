@@ -102,7 +102,7 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
               <Sparkles className="h-3 w-3" />
               Ready to start
             </span>
-            <span className="rounded-full bg-surface-elevated px-2 py-0.5 font-medium capitalize text-subtle">
+            <span className="rounded-pill bg-surface-elevated px-2 py-0.5 font-medium capitalize text-subtle">
               In person
             </span>
           </>
@@ -112,7 +112,7 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
               <Users className="h-3 w-3" />
               {hasCap ? `${circle.member_count} of ${cap}` : memberLabel}
             </span>
-            <span className="rounded-full bg-surface-elevated px-2 py-0.5 font-medium capitalize text-subtle">
+            <span className="rounded-pill bg-surface-elevated px-2 py-0.5 font-medium capitalize text-subtle">
               {circle.type === 'in-person' ? 'In person' : 'Online'}
             </span>
             {hasCap &&

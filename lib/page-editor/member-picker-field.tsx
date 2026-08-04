@@ -137,7 +137,7 @@ function MemberPickerField({
       </div>
 
       {slug && q.trim().length >= 2 && (
-        <div className="rounded-xl border border-border bg-surface p-1">
+        <div className="rounded-card border border-border bg-surface p-1">
           {searching ? (
             <p className="px-2 py-4 text-center text-xs text-subtle">Searching…</p>
           ) : results.length === 0 ? (
@@ -184,11 +184,11 @@ function Avatar({ member }: { member: MemberPick }) {
   if (member.avatarUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- directory avatar preview in the editor, not a build-time asset
-      <img src={avatarSrc(member.avatarUrl)} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" style={avatarFocusStyle(member.avatarUrl)} />
+      <img src={avatarSrc(member.avatarUrl)} alt="" className="h-7 w-7 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(member.avatarUrl)} />
     )
   }
   return (
-    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-2xs font-bold text-subtle">
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-2xs font-bold text-subtle">
       {getInitials(member.displayName)}
     </span>
   )

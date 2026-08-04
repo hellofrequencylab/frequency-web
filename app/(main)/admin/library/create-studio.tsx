@@ -213,7 +213,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                 onClick={() => pickType(t)}
                 aria-pressed={active}
                 title={disabled ? 'Needs the Image Studio (set RECRAFT_API_KEY)' : TYPES[t].hint}
-                className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors disabled:opacity-40 ${
+                className={`rounded-pill border px-3 py-1.5 text-sm font-semibold transition-colors disabled:opacity-40 ${
                   active
                     ? 'border-primary bg-primary text-on-primary'
                     : 'border-border text-muted hover:bg-surface-elevated'
@@ -291,7 +291,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                 <select
                   value={count}
                   onChange={(e) => setCount(Number(e.target.value))}
-                  className="rounded-xl border border-border bg-surface px-2 py-1 text-sm"
+                  className="rounded-control border border-border bg-surface px-2 py-1 text-sm"
                 >
                   {[1, 2, 3, 4].map((n) => (
                     <option key={n} value={n}>
@@ -306,7 +306,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                   <select
                     value={styleId}
                     onChange={(e) => setStyleId(e.target.value)}
-                    className="rounded-xl border border-border bg-surface px-2 py-1 text-sm"
+                    className="rounded-control border border-border bg-surface px-2 py-1 text-sm"
                   >
                     <option value="">Base</option>
                     {laneStyles.map((s) => (
@@ -348,8 +348,8 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
             <div
               className={
                 cfg.veraMode === 'icon'
-                  ? 'flex h-28 w-full items-center justify-center overflow-hidden rounded-xl bg-surface-elevated text-text [&>svg]:h-16 [&>svg]:w-16 sm:w-40'
-                  : 'flex h-28 w-full items-center justify-center overflow-hidden rounded-xl bg-surface-elevated text-text [&>svg]:h-full [&>svg]:w-auto [&>svg]:max-w-full sm:w-56'
+                  ? 'flex h-28 w-full items-center justify-center overflow-hidden rounded-card bg-surface-elevated text-text [&>svg]:h-16 [&>svg]:w-16 sm:w-40'
+                  : 'flex h-28 w-full items-center justify-center overflow-hidden rounded-card bg-surface-elevated text-text [&>svg]:h-full [&>svg]:w-auto [&>svg]:max-w-full sm:w-56'
               }
               // Sanitized server-side and re-validated above before this render.
               dangerouslySetInnerHTML={{ __html: safeSvg }}

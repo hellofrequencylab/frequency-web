@@ -118,7 +118,7 @@ export function ContactsRosterClient({
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name or email"
               aria-label="Search by name or email"
-              className="w-full rounded-xl border border-border bg-surface py-2.5 pl-10 pr-9 text-sm text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none"
+              className="w-full rounded-control border border-border bg-surface py-2.5 pl-10 pr-9 text-sm text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none"
             />
             {text && (
               <button
@@ -136,7 +136,7 @@ export function ContactsRosterClient({
             <div
               role="group"
               aria-label="Sort contacts"
-              className="inline-flex shrink-0 flex-wrap items-center gap-0.5 rounded-xl border border-border bg-surface p-0.5"
+              className="inline-flex shrink-0 flex-wrap items-center gap-0.5 rounded-card border border-border bg-surface p-0.5"
             >
               {sortOptions.map((o) => {
                 const active = o.key === sortKey
@@ -265,11 +265,11 @@ function ContactRow({ row }: { row: ContactRosterRow }) {
             alt=""
             width={36}
             height={36}
-            className="h-9 w-9 rounded-full object-cover"
+            className="h-9 w-9 rounded-pill object-cover"
             style={avatarFocusStyle(row.avatarUrl)}
           />
         ) : (
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-bg text-xs font-semibold text-primary-strong select-none">
+          <div className="flex h-9 w-9 items-center justify-center rounded-pill bg-primary-bg text-xs font-semibold text-primary-strong select-none">
             {getInitials(row.displayName)}
           </div>
         )}
@@ -315,7 +315,7 @@ function ContactRow({ row }: { row: ContactRosterRow }) {
           )}
           {row.activeThisWeek && (
             <span className="inline-flex items-center gap-1 font-medium text-success">
-              <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden />
+              <span className="h-1.5 w-1.5 rounded-pill bg-success" aria-hidden />
               Active this week
             </span>
           )}
@@ -408,7 +408,7 @@ function RelationshipEditor({
               onClick={() => remove(k)}
               disabled={pending}
               aria-label={`Remove ${label} relationship`}
-              className="-mr-0.5 ml-0.5 rounded-full p-0.5 transition-colors hover:bg-text/10 disabled:opacity-50"
+              className="-mr-0.5 ml-0.5 rounded-pill p-0.5 transition-colors hover:bg-text/10 disabled:opacity-50"
             >
               <X className="h-2.5 w-2.5" aria-hidden />
             </button>
@@ -426,7 +426,7 @@ function RelationshipEditor({
               const value = e.target.value
               if (isAssignableKind(value)) add(value)
             }}
-            className="rounded-full border border-dashed border-border bg-surface px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:border-primary hover:text-primary focus:outline-none disabled:opacity-50"
+            className="rounded-pill border border-dashed border-border bg-surface px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:border-primary hover:text-primary focus:outline-none disabled:opacity-50"
           >
             <option value="">+ Add relationship</option>
             {available.map((k) => (

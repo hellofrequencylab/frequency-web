@@ -73,7 +73,7 @@ export function FeatureLockedNotice({
   const action = !canManageMembers ? (
     <Link
       href={spaceManageHref(type, slug)}
-      className="inline-flex items-center gap-1.5 rounded-xl bg-surface-elevated px-4 py-2 text-sm font-semibold text-muted hover:bg-surface-elevated/70"
+      className="inline-flex items-center gap-1.5 rounded-control bg-surface-elevated px-4 py-2 text-sm font-semibold text-muted hover:bg-surface-elevated/70"
     >
       Back to manage {brandName}
     </Link>

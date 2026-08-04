@@ -71,7 +71,7 @@ export default async function SpaceShopConsolePage({
       width="wide"
     >
       {readOnly && (
-        <p className="rounded-xl border border-border bg-surface-elevated/50 px-3 py-2 text-xs text-subtle">
+        <p className="rounded-card border border-border bg-surface-elevated/50 px-3 py-2 text-xs text-subtle">
           You are viewing this space as staff. Changes are turned off.
         </p>
       )}

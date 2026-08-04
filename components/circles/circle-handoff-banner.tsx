@@ -51,7 +51,7 @@ export function CircleHandoffBanner({ circleId }: { circleId: string }) {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-surface-elevated/60 p-4">
+    <div className="rounded-card border border-border bg-surface-elevated/60 p-4">
       <div className="flex items-start gap-3">
         <Gift className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
         <div className="min-w-0 flex-1">

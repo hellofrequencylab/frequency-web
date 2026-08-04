@@ -41,7 +41,7 @@ function FitChips({ chips }: { chips: string[] }) {
       {chips.map((c) => (
         <span
           key={c}
-          className="rounded-full border border-border bg-surface-elevated px-2 py-0.5 text-xs text-subtle"
+          className="rounded-pill border border-border bg-surface-elevated px-2 py-0.5 text-xs text-subtle"
         >
           {c}
         </span>

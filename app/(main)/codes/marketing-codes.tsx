@@ -112,7 +112,7 @@ function MarketingRow({ card, targets }: { card: MarketingCard; targets: Marketi
   }
 
   return (
-    <div className="rounded-xl border border-border bg-canvas/40 p-3">
+    <div className="rounded-card border border-border bg-canvas/40 p-3">
       <div className="flex gap-3">
         <div
           // // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.

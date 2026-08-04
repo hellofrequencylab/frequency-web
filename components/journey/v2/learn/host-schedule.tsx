@@ -45,7 +45,7 @@ export function HostSchedule({
 }) {
   if (!phases.length) return null
   return (
-    <details className="mb-4 rounded-xl border border-border bg-surface">
+    <details className="mb-4 rounded-card border border-border bg-surface">
       <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-text">
         Host tools: schedule this Run&rsquo;s meetups
       </summary>

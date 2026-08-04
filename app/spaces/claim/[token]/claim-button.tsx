@@ -29,7 +29,7 @@ export function ClaimSpaceButton({ token, size = 'md' }: { token: string; size?:
         type="button"
         onClick={handleClaim}
         disabled={pending}
-        className={`inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover disabled:opacity-40 ${
+        className={`inline-flex w-full items-center justify-center gap-2 rounded-control bg-primary font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover disabled:opacity-40 ${
           lg ? 'px-8 py-4 text-base' : 'px-5 py-2.5 text-sm'
         }`}
       >

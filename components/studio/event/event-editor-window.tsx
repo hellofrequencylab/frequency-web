@@ -27,7 +27,7 @@ export function EventEditorWindow({ backHref, children }: { backHref: string; ch
             type="button"
             onClick={() => router.push(backHref)}
             aria-label="Close"
-            className="ml-auto shrink-0 rounded-full p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+            className="ml-auto shrink-0 rounded-pill p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
           >
             <X className="h-4 w-4" />
           </button>

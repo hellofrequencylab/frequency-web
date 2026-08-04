@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
-  Zap, Gem, Flame, X, Target, Sparkles, CheckCircle2, ArrowRight, Lock, ChevronUp,
+  Zap, Gem, Flame, Target, Sparkles, CheckCircle2, ArrowRight, Lock, ChevronUp,
 } from 'lucide-react'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { ProgressTrack } from '@/components/ui/progress-track'
@@ -123,7 +123,7 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
         aria-label="The Vault. Your Zaps, Gems, streak and rank"
         className="flex h-10 w-full items-center gap-2 rounded-lg px-1.5 transition-colors hover:bg-surface-elevated"
       >
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-primary">
           <Zap className="h-3.5 w-3.5 fill-current text-on-primary" />
         </span>
         <span className="text-sm font-semibold tabular-nums text-text">{zaps.toLocaleString()}</span>
@@ -200,7 +200,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
         <SectionLabel>Streak</SectionLabel>
         <div className="flex flex-1 gap-1">
           {last7.map((on, i) => (
-            <div key={i} className={`h-1.5 flex-1 rounded-full ${on ? 'bg-primary' : 'bg-surface-elevated'}`} />
+            <div key={i} className={`h-1.5 flex-1 rounded-pill ${on ? 'bg-primary' : 'bg-surface-elevated'}`} />
           ))}
         </div>
       </div>
@@ -230,7 +230,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
             <SectionLabel>Journey</SectionLabel>
             <Link href="/crew" className="text-2xs font-semibold text-primary-strong hover:text-primary-hover">View →</Link>
           </div>
-          <div className="rounded-xl bg-surface-elevated px-3 py-2.5">
+          <div className="rounded-card bg-surface-elevated px-3 py-2.5">
             <div className="flex items-center gap-1.5">
               <Target className="w-3.5 h-3.5 text-signal-strong shrink-0" />
               <span className="truncate text-xs font-semibold text-text">{arc.chain}</span>
@@ -260,7 +260,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
       {/* Full dashboard */}
       <Link
         href="/crew"
-        className="flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold text-primary-strong hover:bg-surface-elevated transition-colors"
+        className="flex items-center justify-center gap-1.5 rounded-control py-2 text-xs font-semibold text-primary-strong hover:bg-surface-elevated transition-colors"
       >
         <Sparkles className="w-3.5 h-3.5" />
         Open full dashboard

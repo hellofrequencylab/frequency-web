@@ -13,7 +13,7 @@ export function SupporterBadge({ className = '', compact = false }: { className?
   return (
     <span
       title="Supporter. Chips in beyond membership to keep Frequency running."
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full border border-signal/30 bg-signal-bg/60 px-2 py-0.5 text-3xs font-semibold uppercase tracking-wide text-signal-strong ${className}`}
+      className={`inline-flex shrink-0 items-center gap-1 rounded-pill border border-signal/30 bg-signal-bg/60 px-2 py-0.5 text-3xs font-semibold uppercase tracking-wide text-signal-strong ${className}`}
     >
       <Heart className="h-2.5 w-2.5 fill-signal-strong text-signal-strong" aria-hidden />
       {!compact && 'Supporter'}

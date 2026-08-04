@@ -164,11 +164,11 @@ export function PostPreview({ post, isAuthed = false }: { post: PublicPost; isAu
       alt={post.author_display_name ?? 'Member'}
       width={40}
       height={40}
-      className="w-10 h-10 rounded-full object-cover shrink-0"
+      className="w-10 h-10 rounded-pill object-cover shrink-0"
       style={avatarFocusStyle(post.author_avatar_url)}
     />
   ) : (
-    <div className="w-10 h-10 rounded-full bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+    <div className="w-10 h-10 rounded-pill bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">
       {initials}
     </div>
   )
@@ -200,7 +200,7 @@ export function PostPreview({ post, isAuthed = false }: { post: PublicPost; isAu
       )}
       <p className="text-sm text-text leading-relaxed line-clamp-3 mb-3">{post.body}</p>
       {post.media_urls && post.media_urls.length > 0 && (
-        <div className="relative h-72 w-full rounded-xl overflow-hidden border border-border">
+        <div className="relative h-72 w-full rounded-card overflow-hidden border border-border">
           <Image
             src={post.media_urls[0]}
             alt="Post attachment"

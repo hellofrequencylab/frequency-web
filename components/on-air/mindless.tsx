@@ -515,7 +515,7 @@ function MindlessShell({
               type="button"
               onClick={onClose}
               aria-label="Close Mindless"
-              className="rounded-full p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+              className="rounded-pill p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <X className="h-4 w-4" />
             </button>

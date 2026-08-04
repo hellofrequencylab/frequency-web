@@ -78,7 +78,7 @@ export default async function SpaceCalendarPage({ params }: { params: Promise<{ 
       <EventCalendar events={events} initialYear={initialYear} initialMonth1={initialMonth1} />
 
       {events.length === 0 && (
-        <p className="rounded-xl border border-dashed border-border bg-surface px-4 py-6 text-center text-sm text-muted">
+        <p className="rounded-card border border-dashed border-border bg-surface px-4 py-6 text-center text-sm text-muted">
           No upcoming events yet. Check back soon, or subscribe to be notified when {brandName} adds one.
         </p>
       )}

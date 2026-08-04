@@ -24,7 +24,7 @@ function OrbitChip({ orbit }: { orbit: Orbit }) {
         ? 'bg-surface-elevated text-muted'
         : 'bg-surface-elevated text-subtle'
   return (
-    <span className={`rounded-full px-2 py-0.5 text-2xs font-medium ${tone}`}>
+    <span className={`rounded-pill px-2 py-0.5 text-2xs font-medium ${tone}`}>
       {ORBIT_LABEL[orbit]}
     </span>
   )

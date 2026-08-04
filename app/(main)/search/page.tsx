@@ -229,7 +229,7 @@ export default async function SearchPage({
               placeholder="Search people, posts, events…"
               autoFocus
               autoComplete="off"
-              className="w-full rounded-xl border border-border bg-surface pl-9 pr-4 py-2.5 text-sm text-text placeholder:text-subtle focus:border-border-strong dark:focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30"
+              className="w-full rounded-control border border-border bg-surface pl-9 pr-4 py-2.5 text-sm text-text placeholder:text-subtle focus:border-border-strong dark:focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30"
             />
             {/* Preserve tab across searches */}
             <input type="hidden" name="tab" value={tab} />
@@ -327,9 +327,9 @@ export default async function SearchPage({
                     href={a ? `/people/${a.handle}` : '/feed'}
                     anchor={
                       a?.avatar_url ? (
-                        <Image src={avatarSrc(a.avatar_url)} alt="" width={44} height={44} className="h-11 w-11 rounded-full object-cover" style={avatarFocusStyle(a.avatar_url)} />
+                        <Image src={avatarSrc(a.avatar_url)} alt="" width={44} height={44} className="h-11 w-11 rounded-pill object-cover" style={avatarFocusStyle(a.avatar_url)} />
                       ) : (
-                        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-bg text-sm font-semibold text-primary-strong select-none">
+                        <span className="flex h-11 w-11 items-center justify-center rounded-pill bg-primary-bg text-sm font-semibold text-primary-strong select-none">
                           {a ? getInitials(a.display_name) : '?'}
                         </span>
                       )

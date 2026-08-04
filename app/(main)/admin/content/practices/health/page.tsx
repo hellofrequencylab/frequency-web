@@ -282,7 +282,7 @@ function PerformerList({
 
 function SlaBucket({ label, sub, value, tone }: { label: string; sub: string; value: number; tone: string }) {
   return (
-    <div className="rounded-xl bg-surface-elevated/60 px-2 py-3">
+    <div className="rounded-card bg-surface-elevated/60 px-2 py-3">
       <p className={`text-xl font-extrabold tabular-nums ${tone}`}>{value}</p>
       <p className="mt-0.5 text-xs font-medium text-muted">{label}</p>
       <p className="text-2xs text-muted">{sub}</p>

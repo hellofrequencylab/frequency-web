@@ -124,7 +124,7 @@ function ImageSlot({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`group relative flex w-full items-center justify-center overflow-hidden rounded-xl border border-border bg-surface-elevated text-sm font-medium text-subtle ${
+        className={`group relative flex w-full items-center justify-center overflow-hidden rounded-control border border-border bg-surface-elevated text-sm font-medium text-subtle ${
           fill ? 'h-full' : ''
         } ${className ?? ''}`}
         style={{ minHeight: url ? undefined : 128 }}
@@ -305,7 +305,7 @@ function ItemsTextCanvas({
             key={`${sig}-${i}`}
             selected={selectedIndex === i}
             onSelect={() => onSelectItem(i)}
-            className="rounded-xl border border-border p-3 hover:border-border-strong"
+            className="rounded-card border border-border p-3 hover:border-border-strong"
           >
             {image && (
               <div className="overflow-hidden rounded-lg border border-border">

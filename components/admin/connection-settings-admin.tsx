@@ -255,12 +255,12 @@ function Toggle({
         aria-label={label}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 ${
+        className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-pill transition-colors disabled:opacity-60 ${
           checked ? 'bg-primary' : 'border border-border-strong bg-surface-elevated'
         }`}
       >
         <span
-          className={`inline-block h-5 w-5 transform rounded-full bg-surface shadow transition-transform ${
+          className={`inline-block h-5 w-5 transform rounded-pill bg-surface shadow transition-transform ${
             checked ? 'translate-x-6' : 'translate-x-1'
           }`}
         />

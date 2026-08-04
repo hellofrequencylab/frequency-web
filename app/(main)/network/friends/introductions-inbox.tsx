@@ -19,14 +19,14 @@ function Avatar({ person, size = 36 }: { person: IntroPerson; size?: number }) {
         alt={person.displayName}
         width={size}
         height={size}
-        className="rounded-full object-cover ring-2 ring-surface-elevated"
+        className="rounded-pill object-cover ring-2 ring-surface-elevated"
         style={{ height: size, width: size, ...avatarFocusStyle(person.avatarUrl) }}
       />
     )
   }
   return (
     <span
-      className="flex items-center justify-center rounded-full bg-primary-bg text-2xs font-semibold text-primary-strong ring-2 ring-surface-elevated select-none"
+      className="flex items-center justify-center rounded-pill bg-primary-bg text-2xs font-semibold text-primary-strong ring-2 ring-surface-elevated select-none"
       style={{ height: size, width: size }}
     >
       {getInitials(person.displayName)}
@@ -52,20 +52,20 @@ function Pair({ a, b }: { a: IntroPerson; b: IntroPerson }) {
 function StatusChip({ intro, rewardGems }: { intro: IntroductionMade; rewardGems: number }) {
   if (intro.status === 'connected') {
     return (
-      <span className="shrink-0 rounded-full bg-success-bg px-2.5 py-1 text-2xs font-semibold text-success">
+      <span className="shrink-0 rounded-pill bg-success-bg px-2.5 py-1 text-2xs font-semibold text-success">
         Connected ✓
       </span>
     )
   }
   if (intro.status === 'declined') {
     return (
-      <span className="shrink-0 rounded-full bg-surface px-2.5 py-1 text-2xs font-medium text-muted">
+      <span className="shrink-0 rounded-pill bg-surface px-2.5 py-1 text-2xs font-medium text-muted">
         Didn’t take
       </span>
     )
   }
   return (
-    <span className="shrink-0 rounded-full bg-surface px-2.5 py-1 text-2xs font-medium text-muted">
+    <span className="shrink-0 rounded-pill bg-surface px-2.5 py-1 text-2xs font-medium text-muted">
       Waiting for them to connect · +{rewardGems} gems when they do
     </span>
   )

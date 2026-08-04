@@ -112,7 +112,7 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+      className={`rounded-pill px-3 py-1 text-xs font-medium transition-colors ${
         active
           ? 'bg-primary text-on-primary'
           : 'bg-surface-elevated text-muted hover:text-text'

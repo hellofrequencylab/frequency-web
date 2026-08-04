@@ -73,7 +73,7 @@ export default async function MyDraftsPage() {
                     // Signed URLs are short-lived; plain img, same as the other
                     // private-bucket previews.
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={url} alt="" className="h-12 w-12 rounded-xl border border-border object-cover" />
+                    <img src={url} alt="" className="h-12 w-12 rounded-control border border-border object-cover" />
                   ) : (
                     <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
                       <CalendarDays className="h-5 w-5" />
@@ -82,7 +82,7 @@ export default async function MyDraftsPage() {
                 }
                 title={d.title ?? 'Untitled event'}
                 badge={
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-2xs font-semibold ${status.cls}`}>
+                  <span className={`shrink-0 rounded-pill px-2 py-0.5 text-2xs font-semibold ${status.cls}`}>
                     {status.label}
                   </span>
                 }

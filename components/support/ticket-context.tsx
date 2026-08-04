@@ -38,7 +38,7 @@ export function TicketContext({
       )}
 
       {screenshotUrl && (
-        <a href={screenshotUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-xl border border-border">
+        <a href={screenshotUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-control border border-border">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={screenshotUrl} alt="Reported screenshot" className="max-h-80 w-full object-contain bg-surface-elevated" />
         </a>

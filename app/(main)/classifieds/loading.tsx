@@ -10,7 +10,7 @@ function ListingCardSkeleton() {
       <Skeleton className="h-36 w-full rounded-none" />
       <div className="flex flex-1 flex-col p-4">
         <div className="flex items-center justify-between gap-2">
-          <Skeleton className="h-4 w-16 rounded-full" />
+          <Skeleton className="h-4 w-16 rounded-pill" />
           <Skeleton className="h-4 w-12" />
         </div>
         <Skeleton className="mt-2 h-4 w-36" />
@@ -40,7 +40,7 @@ export default function MarketLoading() {
 
       {/* Near-me control */}
       <div className="mb-4 mt-4">
-        <Skeleton className="h-8 w-28 rounded-full" />
+        <Skeleton className="h-8 w-28 rounded-pill" />
       </div>
 
       {/* Listing grid */}

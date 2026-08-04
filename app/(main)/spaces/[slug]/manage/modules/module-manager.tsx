@@ -252,16 +252,16 @@ export function ModuleManager({
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-sm font-semibold text-text">{row.label}</span>
-                          <span className="inline-flex items-center rounded-full bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-muted">
+                          <span className="inline-flex items-center rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-muted">
                             {TIER_LABEL[row.tier]}
                           </span>
                           {isHidden && (
-                            <span className="inline-flex items-center rounded-full bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-muted">
+                            <span className="inline-flex items-center rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-muted">
                               Hidden
                             </span>
                           )}
                           {row.advanced && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong">
+                            <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong">
                               <Sparkles className="h-3 w-3" aria-hidden />
                               {isActivated ? 'Advanced' : 'Advanced, off'}
                             </span>

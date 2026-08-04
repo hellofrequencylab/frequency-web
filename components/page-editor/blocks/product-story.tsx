@@ -70,7 +70,7 @@ function MockFrame({ ink, children, className = '' }: { ink?: boolean; children:
 
 // One small Pillar dot used across the season + loop art.
 function PillarDot({ className }: { className: string }) {
-  return <span className={`inline-block w-2.5 h-2.5 rounded-full ${className}`} aria-hidden />
+  return <span className={`inline-block w-2.5 h-2.5 rounded-pill ${className}`} aria-hidden />
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -170,11 +170,11 @@ export function SeasonTimelineBlock({
                 {/* The Expression Challenge capstone node that closes the leg. */}
                 <div className={`mt-4 pt-4 border-t ${ink ? 'border-on-ink/10' : 'border-border'}`}>
                   <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-3xs font-bold uppercase tracking-wider ring-1 ${
+                    className={`inline-flex items-center gap-1.5 rounded-pill px-3 py-1 text-3xs font-bold uppercase tracking-wider ring-1 ${
                       ink ? 'bg-on-ink/10 text-on-ink ring-on-ink/15' : `bg-primary-bg/60 text-primary-strong ${a.ring}`
                     }`}
                   >
-                    <span className={`w-1.5 h-1.5 rounded-full ${a.dot}`} aria-hidden /> {capstoneLabel}
+                    <span className={`w-1.5 h-1.5 rounded-pill ${a.dot}`} aria-hidden /> {capstoneLabel}
                   </span>
                 </div>
               </li>
@@ -362,7 +362,7 @@ export function RolesPathBlock({
             >
               <div className="flex items-center gap-2 mb-2">
                 <span
-                  className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-black ${
+                  className={`flex items-center justify-center w-7 h-7 rounded-pill text-xs font-black ${
                     ink ? 'bg-primary/20 text-primary' : 'bg-primary-bg text-primary-strong'
                   }`}
                 >

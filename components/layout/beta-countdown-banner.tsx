@@ -33,7 +33,7 @@ export async function BetaCountdownBanner() {
         <span className="font-semibold">Summer of Frequency</span> runs through {dateLabel}.{' '}
         <span className="text-muted">Free the whole way, your Opening Beta price stays locked.</span>
       </p>
-      <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary-strong tabular-nums">
+      <span className="shrink-0 rounded-pill bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary-strong tabular-nums">
         {countLabel}
       </span>
     </div>

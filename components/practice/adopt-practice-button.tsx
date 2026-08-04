@@ -153,7 +153,7 @@ export function AdoptPracticeButton({
           role="dialog"
           aria-label="Your practice list is full"
           style={{ position: 'fixed', top: panel.top, left: panel.left, width: PANEL_W }}
-          className="z-50 rounded-xl border border-border bg-surface-elevated p-3 lift-3"
+          className="z-50 rounded-card border border-border bg-surface-elevated p-3 lift-3"
         >
           <p className="flex items-center gap-1.5 text-xs font-semibold text-text">
             <ArrowLeftRight className="h-3.5 w-3.5 text-primary-strong" aria-hidden />
@@ -197,7 +197,7 @@ export function AdoptPracticeButton({
           role="dialog"
           aria-label="How long will you take it on for?"
           style={{ position: 'fixed', top: panel.top, left: panel.left, width: PANEL_W }}
-          className="z-50 rounded-xl border border-border bg-surface-elevated p-3 lift-3"
+          className="z-50 rounded-card border border-border bg-surface-elevated p-3 lift-3"
         >
           <p className="text-xs font-semibold text-text">How long will you take it on for?</p>
           <div className="mt-2 grid grid-cols-2 gap-1.5">

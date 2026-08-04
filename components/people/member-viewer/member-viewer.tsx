@@ -334,7 +334,7 @@ export function MemberViewer({
                 onChange={(e) => setSearchText(e.target.value)}
                 placeholder={search.placeholder ?? 'Search members'}
                 aria-label={search.placeholder ?? 'Search members'}
-                className="w-full rounded-xl border border-border bg-surface py-2.5 pl-10 pr-9 text-sm text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none"
+                className="w-full rounded-control border border-border bg-surface py-2.5 pl-10 pr-9 text-sm text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none"
               />
               {text && (
                 <button
@@ -353,7 +353,7 @@ export function MemberViewer({
             <div
               role="group"
               aria-label="Sort members"
-              className="inline-flex shrink-0 flex-wrap items-center gap-0.5 rounded-xl border border-border bg-surface p-0.5"
+              className="inline-flex shrink-0 flex-wrap items-center gap-0.5 rounded-card border border-border bg-surface p-0.5"
             >
               {options.map((o) => {
                 const active = o.key === sortKey
@@ -593,7 +593,7 @@ function MemberTags({ member }: { member: MemberSummary }) {
       {roleLabel && (
         <span
           className={cn(
-            'inline-flex items-center rounded-full border px-1.5 py-0.5 text-3xs font-semibold leading-none',
+            'inline-flex items-center rounded-pill border px-1.5 py-0.5 text-3xs font-semibold leading-none',
             tagToneClass(roleTone!),
           )}
         >
@@ -603,7 +603,7 @@ function MemberTags({ member }: { member: MemberSummary }) {
       {member.isBusiness && (
         <span
           className={cn(
-            'inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-3xs font-semibold leading-none',
+            'inline-flex items-center gap-0.5 rounded-pill border px-1.5 py-0.5 text-3xs font-semibold leading-none',
             tagToneClass('primary'),
           )}
         >
@@ -625,7 +625,7 @@ function MemberMeta({ member }: { member: MemberSummary }) {
   if (member.activeThisWeek) {
     items.push(
       <span key="active" className="inline-flex items-center gap-1 font-medium text-success">
-        <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden />
+        <span className="h-1.5 w-1.5 rounded-pill bg-success" aria-hidden />
         Active this week
       </span>,
     )
@@ -680,12 +680,12 @@ function ListRow({
               width={rich ? 36 : 32}
               height={rich ? 36 : 32}
               style={avatarFocusStyle(member.avatarUrl)}
-              className={cn('rounded-full object-cover', rich ? 'h-9 w-9' : 'h-8 w-8')}
+              className={cn('rounded-pill object-cover', rich ? 'h-9 w-9' : 'h-8 w-8')}
             />
           ) : (
             <div
               className={cn(
-                'flex items-center justify-center rounded-full bg-primary-bg text-xs font-semibold text-primary-strong select-none',
+                'flex items-center justify-center rounded-pill bg-primary-bg text-xs font-semibold text-primary-strong select-none',
                 rich ? 'h-9 w-9' : 'h-8 w-8',
               )}
             >
@@ -695,7 +695,7 @@ function ListRow({
           {member.online && (
             <span
               aria-label="Online now"
-              className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-surface"
+              className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-pill bg-success ring-2 ring-surface"
             />
           )}
         </div>
@@ -720,7 +720,7 @@ function DetailSkeleton() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center gap-4">
-        <Skeleton className="h-16 w-16 rounded-full" />
+        <Skeleton className="h-16 w-16 rounded-pill" />
         <div className="flex-1 space-y-2">
           <Skeleton className="h-5 w-40" />
           <Skeleton className="h-3 w-24" />

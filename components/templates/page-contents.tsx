@@ -24,7 +24,7 @@ export type PageContentsSection = { id: string; label: string; count?: number }
 export type PageContentsLink = { href: string; label: string; count?: number; active: boolean }
 
 const CHIP = (on: boolean) =>
-  `flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+  `flex shrink-0 items-center gap-1.5 rounded-pill px-3 py-1.5 text-sm font-medium transition-colors ${
     on ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-muted hover:text-text'
   }`
 

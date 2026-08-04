@@ -31,20 +31,20 @@ export function ReferralLinkCard({ url }: { url: string | null }) {
       </p>
       {url ? (
         <div className="mt-3 flex items-center gap-2">
-          <code className="min-w-0 flex-1 truncate rounded-xl bg-surface-elevated/60 px-3 py-2 text-sm text-text">
+          <code className="min-w-0 flex-1 truncate rounded-card bg-surface-elevated/60 px-3 py-2 text-sm text-text">
             {url}
           </code>
           <button
             type="button"
             onClick={copy}
-            className="press inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-sm font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover motion-reduce:transition-none"
+            className="press inline-flex shrink-0 items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-sm font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover motion-reduce:transition-none"
           >
             {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
             {copied ? 'Copied' : 'Copy'}
           </button>
         </div>
       ) : (
-        <p className="mt-3 rounded-xl bg-surface-elevated/60 px-3 py-2 text-sm text-muted">
+        <p className="mt-3 rounded-card bg-surface-elevated/60 px-3 py-2 text-sm text-muted">
           Finish setting up your profile to get your invite link.
         </p>
       )}

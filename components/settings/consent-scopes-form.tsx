@@ -85,12 +85,12 @@ export function ConsentScopesForm({ initial }: { initial: ConsentScopeState }) {
                 aria-checked={checked}
                 aria-label={label}
                 className={`
-                  relative inline-flex items-center justify-center w-10 h-6 rounded-full transition-colors shrink-0
+                  relative inline-flex items-center justify-center w-10 h-6 rounded-pill transition-colors shrink-0
                   ${checked ? 'bg-primary' : 'bg-border hover:bg-border-strong'}
                 `}
               >
                 <span
-                  className={`inline-block w-4 h-4 bg-surface rounded-full shadow transform transition-transform ${checked ? 'translate-x-2' : '-translate-x-2'}`}
+                  className={`inline-block w-4 h-4 bg-surface rounded-pill shadow transform transition-transform ${checked ? 'translate-x-2' : '-translate-x-2'}`}
                 />
               </button>
             </div>

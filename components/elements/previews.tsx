@@ -50,7 +50,7 @@ const HEADER_PRESETS: HeaderPreset[] = [
     key: 'profile', name: 'Profile', type: 'Identity', variant: 'identity', size: 'short', overlayStyle: 'none',
     eyebrow: <span className="rounded bg-on-ink/15 px-1.5 py-0.5 text-2xs text-on-ink">Janitor</span>,
     title: 'Daniel Tyack', subtitle: '@danieltyack',
-    leading: <span className="flex h-9 w-9 items-center justify-center rounded-full bg-on-ink/15 text-on-ink ring-2 ring-on-ink/30"><User className="h-5 w-5" /></span>,
+    leading: <span className="flex h-9 w-9 items-center justify-center rounded-pill bg-on-ink/15 text-on-ink ring-2 ring-on-ink/30"><User className="h-5 w-5" /></span>,
     features: ['Round avatar', 'Role badge', 'No overlay', 'QR & Share'],
   },
   {
@@ -105,11 +105,11 @@ function HeaderPreview() {
               title={p.title}
               subtitle={p.subtitle}
               leading={p.leading}
-              search={p.search ? <div className="rounded-full bg-canvas/90 px-3 py-1.5 text-xs text-muted">Search…</div> : undefined}
+              search={p.search ? <div className="rounded-pill bg-canvas/90 px-3 py-1.5 text-xs text-muted">Search…</div> : undefined}
             />
             <div className="flex flex-wrap gap-1">
               {p.features.map((f) => (
-                <span key={f} className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">{f}</span>
+                <span key={f} className="rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">{f}</span>
               ))}
             </div>
           </div>
@@ -166,7 +166,7 @@ export function ElementPreview({ elementKey }: { elementKey: ElementKey }) {
   const body = previewFor(elementKey)
   if (!body) return null
   return (
-    <div className="mt-4 rounded-xl border border-border bg-surface-elevated/40 p-3">
+    <div className="mt-4 rounded-card border border-border bg-surface-elevated/40 p-3">
       <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Preview</p>
       {body}
     </div>

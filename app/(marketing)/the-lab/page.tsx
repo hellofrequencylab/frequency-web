@@ -328,7 +328,7 @@ function Room({
         <SiteImage src={img} alt={alt} aspect="16/10" sizes="(min-width: 640px) 22rem, 100vw" />
         <span
           aria-hidden
-          className="absolute -bottom-4 left-5 flex h-9 w-9 items-center justify-center rounded-full bg-primary font-display text-sm text-on-primary"
+          className="absolute -bottom-4 left-5 flex h-9 w-9 items-center justify-center rounded-pill bg-primary font-display text-sm text-on-primary"
         >
           {n}
         </span>

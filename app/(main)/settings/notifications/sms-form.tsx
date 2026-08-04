@@ -95,7 +95,7 @@ export function SmsForm({
         <MessageSquare className="w-4 h-4 text-muted" />
         <span className="text-sm font-semibold text-text">Text messages</span>
         {!smsProvisioned && (
-          <span className="ml-auto rounded-full bg-surface px-2 py-0.5 text-xs font-medium text-muted">
+          <span className="ml-auto rounded-pill bg-surface px-2 py-0.5 text-xs font-medium text-muted">
             Coming soon
           </span>
         )}
@@ -191,7 +191,7 @@ export function SmsForm({
             </div>
 
             {/* Category toggles */}
-            <div className="divide-y divide-border rounded-xl border border-border">
+            <div className="divide-y divide-border rounded-card border border-border">
               {SMS_CATEGORIES.map(({ key, label, description }) => (
                 <div key={key} className="flex items-center justify-between px-3 py-3">
                   <div className="min-w-0">
@@ -203,12 +203,12 @@ export function SmsForm({
                     onClick={() => toggleCategory(key)}
                     aria-label={`Text ${label}`}
                     aria-pressed={prefs[key]}
-                    className={`relative inline-flex h-6 w-10 items-center justify-center rounded-full transition-colors ${
+                    className={`relative inline-flex h-6 w-10 items-center justify-center rounded-pill transition-colors ${
                       prefs[key] ? 'bg-primary' : 'bg-border hover:bg-border-strong'
                     }`}
                   >
                     <span
-                      className={`inline-block h-4 w-4 rounded-full bg-surface shadow transition-transform ${
+                      className={`inline-block h-4 w-4 rounded-pill bg-surface shadow transition-transform ${
                         prefs[key] ? 'translate-x-2' : '-translate-x-2'
                       }`}
                     />
@@ -218,7 +218,7 @@ export function SmsForm({
             </div>
 
             {/* Quiet hours */}
-            <div className="rounded-xl border border-border px-3 py-3">
+            <div className="rounded-card border border-border px-3 py-3">
               <p className="text-sm font-medium text-text">Quiet hours</p>
               <p className="text-xs text-muted mt-0.5">
                 We only text between these hours, your local time. The widest window is 8am to 9pm.

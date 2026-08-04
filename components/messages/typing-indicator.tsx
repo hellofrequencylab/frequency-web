@@ -27,7 +27,7 @@ export function TypingIndicator({ names }: { names: string[] }) {
 function Dot({ delay }: { delay: string }) {
   return (
     <span
-      className="inline-block h-1 w-1 rounded-full bg-subtle animate-bounce"
+      className="inline-block h-1 w-1 rounded-pill bg-subtle animate-bounce"
       style={{ animationDelay: delay, animationDuration: '1s' }}
     />
   )

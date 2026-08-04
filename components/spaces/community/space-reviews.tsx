@@ -21,7 +21,7 @@ import { ProgressTrack } from '@/components/ui/progress-track'
 // voice canon (no em or en dashes).
 
 const inputCls =
-  'w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-primary'
+  'w-full rounded-card border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-primary'
 
 type SortKey = 'recent' | 'highest' | 'lowest'
 
@@ -56,14 +56,14 @@ function Avatar({ name, avatarUrl, size = 36 }: { name: string; avatarUrl: strin
         width={size}
         height={size}
         unoptimized
-        className="shrink-0 rounded-full object-cover"
+        className="shrink-0 rounded-pill object-cover"
         style={{ width: size, height: size, ...avatarFocusStyle(avatarUrl) }}
       />
     )
   }
   return (
     <span
-      className="grid shrink-0 place-items-center rounded-full bg-primary-bg text-sm font-semibold text-primary-strong"
+      className="grid shrink-0 place-items-center rounded-pill bg-primary-bg text-sm font-semibold text-primary-strong"
       style={{ width: size, height: size }}
       aria-hidden
     >
@@ -77,7 +77,7 @@ function Avatar({ name, avatarUrl, size = 36 }: { name: string; avatarUrl: strin
 function MemberBadge() {
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong"
+      className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong"
       title="A Frequency member"
     >
       <BadgeCheck className="h-3 w-3" aria-hidden />
@@ -350,7 +350,7 @@ function ResponseBlock({
   return (
     <div className="space-y-2">
       {response && !editing && (
-        <div className="rounded-xl border border-border bg-surface-elevated/60 p-3">
+        <div className="rounded-card border border-border bg-surface-elevated/60 p-3">
           <div className="flex items-center gap-2">
             <Avatar name={spaceName} avatarUrl={response.author?.avatarUrl ?? spaceLogoUrl} size={24} />
             <span className="text-xs font-semibold text-text">Response from {spaceName}</span>
@@ -393,7 +393,7 @@ function ResponseBlock({
       )}
 
       {canRespond && editing && (
-        <div className="space-y-2 rounded-xl border border-border bg-surface-elevated/60 p-3">
+        <div className="space-y-2 rounded-card border border-border bg-surface-elevated/60 p-3">
           <p className="text-xs font-semibold text-text">Response from {spaceName}</p>
           <textarea
             value={draft}

@@ -20,7 +20,7 @@ import { CATEGORY_OPTIONS } from '@/lib/events/options'
 const EventLocationPicker = dynamic(() => import('@/components/events/event-location-picker'), {
   ssr: false,
   loading: () => (
-    <div className="aspect-video w-full animate-pulse rounded-xl border border-border bg-surface-elevated" />
+    <div className="aspect-video w-full animate-pulse rounded-card border border-border bg-surface-elevated" />
   ),
 })
 
@@ -419,7 +419,7 @@ export function EventForm({
   return (
     <form onSubmit={submit} className="space-y-8">
       {/* Instructional header — set the tone: fill in what you have, refine the rest later. */}
-      <div className="rounded-xl border border-border bg-surface-elevated/40 p-4">
+      <div className="rounded-card border border-border bg-surface-elevated/40 p-4">
         <h1 className="text-base font-semibold text-text">
           {isEdit ? 'Edit your event' : 'Set up your event'}
         </h1>
@@ -477,7 +477,7 @@ export function EventForm({
         />
 
         {/* Gallery — tucked inside a disclosure so it stays out of the way until wanted. */}
-        <details className="group rounded-xl border border-border bg-surface-elevated/40">
+        <details className="group rounded-card border border-border bg-surface-elevated/40">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-medium text-text [&::-webkit-details-marker]:hidden">
             <span>
               More photos{' '}
@@ -671,7 +671,7 @@ export function EventForm({
             {/* "Address" heads a GROUP of controls (the typeahead plus street/city/state/zip), not a
                 single one, so it names the group rather than pointing `htmlFor` at one of them. */}
             <div
-              className="space-y-3 rounded-xl border border-border bg-surface-elevated/40 p-4"
+              className="space-y-3 rounded-card border border-border bg-surface-elevated/40 p-4"
               role="group"
               aria-labelledby="event-address-label"
             >

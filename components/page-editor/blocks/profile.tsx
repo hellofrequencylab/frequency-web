@@ -259,7 +259,7 @@ function IdentityLockup({
             </h1>
             {identity.typeLabel && (
               <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-2xs font-semibold ${
+                className={`inline-flex items-center gap-1.5 rounded-pill px-2.5 py-0.5 text-2xs font-semibold ${
                   overlay ? 'bg-on-ink/15 text-on-ink' : 'bg-primary-bg text-primary-strong'
                 }`}
               >
@@ -909,7 +909,7 @@ export function SpaceOfferingsBlock({
                   )}
                   {price && (
                     <span
-                      className={`shrink-0 rounded-full px-2.5 py-1 text-sm font-semibold ${
+                      className={`shrink-0 rounded-pill px-2.5 py-1 text-sm font-semibold ${
                         ink ? 'bg-on-ink/10 text-on-ink' : 'bg-primary-bg text-primary-strong'
                       }`}
                     >
@@ -1042,10 +1042,10 @@ type TeamCard = {
 function TeamAvatar({ card }: { card: TeamCard }) {
   if (card.avatar) {
     // eslint-disable-next-line @next/next/no-img-element -- member/operator avatar URL, resolved at render
-    return <img src={avatarSrc(card.avatar)} alt="" className="mx-auto h-16 w-16 rounded-full object-cover" style={avatarFocusStyle(card.avatar)} />
+    return <img src={avatarSrc(card.avatar)} alt="" className="mx-auto h-16 w-16 rounded-pill object-cover" style={avatarFocusStyle(card.avatar)} />
   }
   return (
-    <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-surface-elevated text-lg font-bold text-subtle">
+    <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-pill bg-surface-elevated text-lg font-bold text-subtle">
       {getInitials(card.name)}
     </span>
   )

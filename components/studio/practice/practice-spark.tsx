@@ -27,7 +27,7 @@ const MINDLESS_LABEL: Record<string, string> = {
 // "Build it myself" creates a blank draft and opens the editor straight away.
 
 const FIELD =
-  'w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
+  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
 const CADENCE_CHOICES: { key: PracticeCadenceHint; label: string }[] = [
   { key: 'daily', label: 'Daily' },
@@ -197,7 +197,7 @@ export function PracticeSpark() {
                 <div className="flex flex-wrap items-center gap-2">
                   {CADENCE_CHOICES.map((c) => (
                     <button key={c.key} type="button" onClick={() => setCadence(c.key)} aria-pressed={cadence === c.key}
-                      className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${cadence === c.key ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}>
+                      className={`rounded-pill border px-3.5 py-1.5 text-sm font-medium transition-colors ${cadence === c.key ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}>
                       {c.label}
                     </button>
                   ))}
@@ -208,7 +208,7 @@ export function PracticeSpark() {
                 <div className="grid grid-cols-2 gap-2">
                   {([['light', 'Light', 'Five minutes or less'], ['medium', 'Medium', 'Ten to twenty minutes']] as const).map(([key, lbl, hint]) => (
                     <button key={key} type="button" onClick={() => setPace(key)} aria-pressed={pace === key}
-                      className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${pace === key ? 'border-primary/50 bg-primary-bg' : 'border-border bg-surface hover:bg-surface-elevated'}`}>
+                      className={`rounded-control border px-3 py-2.5 text-left transition-colors ${pace === key ? 'border-primary/50 bg-primary-bg' : 'border-border bg-surface hover:bg-surface-elevated'}`}>
                       <span className="block text-sm font-semibold text-text">{lbl}</span>
                       <span className="block text-xs text-muted">{hint}</span>
                     </button>
@@ -222,7 +222,7 @@ export function PracticeSpark() {
           {onReview && (
             <div className="space-y-3">
               {pending && !title ? (
-                <p className="flex items-center gap-2 rounded-xl border border-border bg-canvas px-4 py-3 text-sm text-muted">
+                <p className="flex items-center gap-2 rounded-card border border-border bg-canvas px-4 py-3 text-sm text-muted">
                   <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary-strong" aria-hidden /> Vera is shaping your Practice…
                 </p>
               ) : (
@@ -252,7 +252,7 @@ export function PracticeSpark() {
                           type="button"
                           onClick={() => setPillars((prev) => (prev.includes(p.key) ? prev.filter((x) => x !== p.key) : [...prev, p.key]))}
                           aria-pressed={pillars.includes(p.key)}
-                          className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${pillars.includes(p.key) ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}
+                          className={`rounded-pill border px-3 py-1 text-xs font-medium transition-colors ${pillars.includes(p.key) ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}
                         >
                           {p.label}
                         </button>
@@ -261,7 +261,7 @@ export function PracticeSpark() {
                     <p className="mt-1.5 text-2xs text-muted">Pick one or more Pillars. You can change them, the cadence, and everything else in the next step.</p>
                   </div>
                   {timer && (
-                    <div className="rounded-xl border border-border bg-canvas px-3.5 py-2.5">
+                    <div className="rounded-card border border-border bg-canvas px-3.5 py-2.5">
                       <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">How it&apos;s done</span>
                       <p className="mt-0.5 text-sm font-medium text-text">
                         {timerPreview({

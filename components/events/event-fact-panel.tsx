@@ -128,20 +128,20 @@ export function EventFactPanel({
                   alt={g.displayName}
                   width={28}
                   height={28}
-                  className="h-7 w-7 rounded-full object-cover ring-2 ring-surface"
+                  className="h-7 w-7 rounded-pill object-cover ring-2 ring-surface"
                   style={avatarFocusStyle(g.avatarUrl)}
                 />
               ) : (
                 <div
                   key={g.id}
-                  className="flex h-7 w-7 select-none items-center justify-center rounded-full bg-primary-bg text-2xs font-semibold text-primary-strong ring-2 ring-surface"
+                  className="flex h-7 w-7 select-none items-center justify-center rounded-pill bg-primary-bg text-2xs font-semibold text-primary-strong ring-2 ring-surface"
                 >
                   {getInitials(g.displayName)}
                 </div>
               ),
             )}
             {overflow > 0 && (
-              <div className="flex h-7 w-7 select-none items-center justify-center rounded-full bg-surface-elevated text-2xs font-semibold text-muted ring-2 ring-surface">
+              <div className="flex h-7 w-7 select-none items-center justify-center rounded-pill bg-surface-elevated text-2xs font-semibold text-muted ring-2 ring-surface">
                 +{overflow}
               </div>
             )}
@@ -163,11 +163,11 @@ export function EventFactPanel({
                         alt={g.displayName}
                         width={24}
                         height={24}
-                        className="h-6 w-6 shrink-0 rounded-full object-cover"
+                        className="h-6 w-6 shrink-0 rounded-pill object-cover"
                         style={avatarFocusStyle(g.avatarUrl)}
                       />
                     ) : (
-                      <div className="flex h-6 w-6 shrink-0 select-none items-center justify-center rounded-full bg-primary-bg text-3xs font-semibold text-primary-strong">
+                      <div className="flex h-6 w-6 shrink-0 select-none items-center justify-center rounded-pill bg-primary-bg text-3xs font-semibold text-primary-strong">
                         {getInitials(g.displayName)}
                       </div>
                     )}

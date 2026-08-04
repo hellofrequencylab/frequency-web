@@ -28,7 +28,7 @@ export function SubscribeForm() {
   if (status === 'done') {
     return (
       <div className="rounded-2xl border border-border bg-surface p-8 text-center lift-1" role="status">
-        <div className="mx-auto w-12 h-12 rounded-full bg-success-bg text-success flex items-center justify-center mb-4">
+        <div className="mx-auto w-12 h-12 rounded-pill bg-success-bg text-success flex items-center justify-center mb-4">
           <Check className="w-6 h-6" strokeWidth={2.5} aria-hidden />
         </div>
         <h3 className="font-display uppercase text-text text-3xl mb-2">Check your inbox</h3>
@@ -54,7 +54,7 @@ export function SubscribeForm() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoComplete="given-name"
-            className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle focus:border-border-strong outline-none transition-colors"
+            className="w-full rounded-control border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle focus:border-border-strong outline-none transition-colors"
             placeholder="Alex"
           />
         </div>
@@ -71,7 +71,7 @@ export function SubscribeForm() {
             autoComplete="email"
             aria-describedby={error ? 'subscribe-error' : undefined}
             aria-invalid={error ? true : undefined}
-            className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle focus:border-border-strong outline-none transition-colors"
+            className="w-full rounded-control border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle focus:border-border-strong outline-none transition-colors"
             placeholder="you@email.com"
           />
         </div>

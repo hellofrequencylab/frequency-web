@@ -20,7 +20,7 @@ function OrderRow({ o }: { o: CommerceOrder }) {
   const when = new Date(o.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
   const refundable = o.status === 'paid' || o.status === 'fulfilled'
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-3">
       <div className="min-w-0">
         <p className="truncate text-sm text-text">
           {o.items.map((it) => `${it.title}${it.qty > 1 ? ` ×${it.qty}` : ''}`).join(', ') || 'Order'}

@@ -29,7 +29,7 @@ export default async function HelpHomePage() {
         {categories.map((cat) => (
           <section
             key={cat.slug}
-            className="rounded-xl border border-border bg-surface-elevated p-5"
+            className="rounded-card border border-border bg-surface-elevated p-5"
           >
             <Link href={`/help/${cat.slug}`} className="block">
               <h2 className="font-display text-xl text-text">{cat.title}</h2>

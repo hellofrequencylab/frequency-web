@@ -9,6 +9,7 @@ import { isError } from '@/lib/action-result'
 import { setSpaceServiceTypes } from '@/lib/spaces/booking-actions'
 import type { ServiceType, ServiceTypeInput, BookingQuestion } from '@/lib/spaces/booking'
 import { cn } from '@/lib/utils'
+import { IconButton } from '@/components/ui/icon-button'
 
 // OWNER SERVICE TYPES EDITOR (client, P1, ADR-605). The Practitioner defines the reusable bookable
 // offerings members pick from ("30 minute intro", "60 minute session"): a name, a duration, and an
@@ -227,14 +228,14 @@ export function BookingServiceTypesForm({
                     />
                     Required
                   </label>
-                  <button
-                    type="button"
+                  <IconButton
+                    variant="bordered"
+                    tone="danger"
+                    label="Remove this question"
                     onClick={() => removeQuestion(i, j)}
-                    aria-label="Remove this question"
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-danger/40 hover:text-danger"
                   >
                     <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                  </button>
+                  </IconButton>
                 </div>
               ))}
               <button

@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 function StatCardSkeleton() {
   return (
-    <div className="rounded-xl border border-border bg-surface p-4 space-y-2">
+    <div className="rounded-card border border-border bg-surface p-4 space-y-2">
       <Skeleton className="h-3 w-20" />
       <Skeleton className="h-7 w-14" />
     </div>
@@ -52,7 +52,7 @@ export default function AdminLoading() {
         <Skeleton className="h-4 w-20" />
         <div className="grid gap-2 grid-cols-2 sm:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="rounded-xl border border-border bg-surface p-4 space-y-2">
+            <div key={i} className="rounded-card border border-border bg-surface p-4 space-y-2">
               <Skeleton className="h-5 w-5 rounded-md" />
               <Skeleton className="h-3.5 w-24" />
               <Skeleton className="h-3 w-32" />

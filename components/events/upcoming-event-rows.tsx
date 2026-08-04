@@ -56,7 +56,7 @@ export function UpcomingEventRows({ events }: { events: UpcomingEventRow[] }) {
         <Link
           key={event.id}
           href={`/events/${event.slug}`}
-          className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-3 hover:border-primary-bg dark:hover:border-primary hover:bg-primary-bg/30 dark:hover:bg-primary-bg transition-colors"
+          className="flex items-center gap-3 rounded-control border border-border bg-surface px-3 py-3 hover:border-primary-bg dark:hover:border-primary hover:bg-primary-bg/30 dark:hover:bg-primary-bg transition-colors"
         >
           <DateChip iso={event.starts_at} />
           <div className="flex-1 min-w-0">

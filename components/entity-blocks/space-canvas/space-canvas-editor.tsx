@@ -204,7 +204,7 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
         </div>
 
         {store.rows.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border px-3 py-6 text-center text-xs text-muted">
+          <p className="rounded-card border border-dashed border-border px-3 py-6 text-center text-xs text-muted">
             This page has no sections yet. Add one below.
           </p>
         ) : (
@@ -214,7 +214,7 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
             style={{ transform: railOffset ? `translateY(${railOffset}px)` : undefined }}
           >
             {store.rows.map((row, ri) => (
-              <li key={row.id} className="rounded-xl border border-border bg-surface">
+              <li key={row.id} className="rounded-card border border-border bg-surface">
                 {/* Section header: reorder, layout picker, remove. */}
                 <div className="flex items-center gap-1 border-b border-border px-2 py-1.5">
                   <span className="min-w-0 flex-1 truncate text-2xs font-semibold uppercase tracking-wide text-muted">
@@ -310,7 +310,7 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
         <button
           type="button"
           onClick={onAddSection}
-          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2.5 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
+          className="flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-border py-2.5 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
         >
           <Plus className="h-4 w-4" aria-hidden /> Add section
         </button>

@@ -101,7 +101,7 @@ export default async function PublicPracticePage({
         {practice.tags.length > 0 && (
           <div className="mb-10 flex flex-wrap gap-2">
             {practice.tags.map((t) => (
-              <span key={t.slug} className="rounded-full bg-surface-elevated px-2.5 py-1 text-xs text-subtle">
+              <span key={t.slug} className="rounded-pill bg-surface-elevated px-2.5 py-1 text-xs text-subtle">
                 {t.label}
               </span>
             ))}

@@ -63,7 +63,7 @@ function ScreenPanel({ screen }: { screen: PracticeScreenResult }) {
   ]
   const anything = groups.some((g) => g.notes.length > 0)
   return (
-    <div className="mt-2 rounded-xl border border-border bg-surface-elevated/60 p-3">
+    <div className="mt-2 rounded-card border border-border bg-surface-elevated/60 p-3">
       <div className="flex items-center gap-2">
         <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
         <span className="text-xs font-semibold text-text">Vera read</span>
@@ -168,7 +168,7 @@ function ReviewRowItem({
             {row.possibleDuplicateOf && (
               <Link
                 href={`/practices/${row.possibleDuplicateOf.id}`}
-                className="inline-flex items-center gap-1 rounded-full bg-warning-bg px-2 py-0.5 text-2xs font-semibold text-warning transition-opacity hover:opacity-80"
+                className="inline-flex items-center gap-1 rounded-pill bg-warning-bg px-2 py-0.5 text-2xs font-semibold text-warning transition-opacity hover:opacity-80"
                 title="A near-identical practice already exists"
               >
                 <CopyCheck className="h-3 w-3" aria-hidden />

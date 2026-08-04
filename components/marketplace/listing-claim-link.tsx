@@ -31,7 +31,7 @@ export function ListingClaimLink({ claimShareUrl }: { claimShareUrl: string }) {
       <button
         type="button"
         onClick={copy}
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
       >
         {copied ? <Check className="h-4 w-4 text-success" /> : <Link2 className="h-4 w-4" />}
         {copied ? 'Copied' : 'Copy claim link'}

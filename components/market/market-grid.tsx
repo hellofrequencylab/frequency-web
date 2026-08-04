@@ -53,7 +53,7 @@ function Card({ l, distance }: { l: GridListing; distance: number | null }) {
         )}
         {/* Ink scrim at the top so the chip reads over any photo. */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-ink/45 to-transparent" aria-hidden />
-        <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-surface/90 px-2.5 py-0.5 text-2xs font-semibold uppercase tracking-wide text-text lift-1 backdrop-blur-sm">
+        <span className="absolute left-3 top-3 inline-flex items-center rounded-pill bg-surface/90 px-2.5 py-0.5 text-2xs font-semibold uppercase tracking-wide text-text lift-1 backdrop-blur-sm">
           {kindLabel}
         </span>
       </div>
@@ -134,7 +134,7 @@ export function MarketGrid({
           type="button"
           onClick={nearMe}
           disabled={locating}
-          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60 motion-reduce:transition-none ${coords ? 'bg-primary text-on-primary' : 'border border-border text-text hover:bg-surface-elevated'}`}
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-pill px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60 motion-reduce:transition-none ${coords ? 'bg-primary text-on-primary' : 'border border-border text-text hover:bg-surface-elevated'}`}
         >
           {locating ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Navigation className="h-4 w-4" aria-hidden />}
           {coords ? 'Sorted by distance' : 'Near me'}

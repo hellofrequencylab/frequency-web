@@ -10,7 +10,7 @@ export function StarterBadge({ className = '' }: { className?: string }) {
   return (
     <span
       title="A Starter Circle. Claim it to make it your own."
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/30 bg-primary-bg/60 px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-primary-strong ${className}`}
+      className={`inline-flex shrink-0 items-center gap-1 rounded-pill border border-primary/30 bg-primary-bg/60 px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-primary-strong ${className}`}
     >
       <Sparkles className="h-2.5 w-2.5 text-primary-strong" aria-hidden />
       Starter

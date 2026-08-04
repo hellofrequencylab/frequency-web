@@ -58,7 +58,7 @@ export function ShowEpisodes({ episodes }: { episodes: ShowEpisodeItem[] }) {
                 onClick={() => setActiveId(active ? null : ep.id)}
                 aria-pressed={active}
                 aria-label={active ? `Close ${ep.title}` : `Play ${ep.title}`}
-                className="press mt-0.5 grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+                className="press mt-0.5 grid h-11 w-11 shrink-0 place-items-center rounded-pill bg-primary text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
               >
                 {active ? <X className="h-5 w-5" aria-hidden /> : <Play className="h-5 w-5" aria-hidden />}
               </button>

@@ -83,7 +83,7 @@ export function DangerZone({
       </p>
 
       {/* 1 · Purge an area */}
-      <div className="rounded-xl border border-border bg-surface p-4">
+      <div className="rounded-card border border-border bg-surface p-4">
         <div className="mb-2 flex items-center gap-2">
           <MapPin className="h-4 w-4 text-danger" />
           <p className="text-sm font-semibold text-text">Purge an area</p>
@@ -119,7 +119,7 @@ export function DangerZone({
 
       {/* 2 · Delete specific circles */}
       {circles.length > 0 && (
-        <div className="rounded-xl border border-border bg-surface p-4">
+        <div className="rounded-card border border-border bg-surface p-4">
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm font-semibold text-text">Delete specific circles</p>
             <button
@@ -153,7 +153,7 @@ export function DangerZone({
       )}
 
       {/* 3 · Decay pass (preview is always safe; Run confirms) */}
-      <div className="rounded-xl border border-border bg-surface p-4">
+      <div className="rounded-card border border-border bg-surface p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-start gap-2">
             <Wind className="mt-0.5 h-4 w-4 shrink-0 text-primary" />

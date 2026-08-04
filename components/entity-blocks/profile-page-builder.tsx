@@ -704,7 +704,7 @@ export function EntityPageBuilder({
       {maxColumns === 1 && (
         <div className="space-y-3">
           {memberBlocks.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border px-3 py-6 text-center text-xs text-muted">
+            <p className="rounded-card border border-dashed border-border px-3 py-6 text-center text-xs text-muted">
               No blocks on your page yet. Add one below.
             </p>
           ) : (
@@ -759,7 +759,7 @@ export function EntityPageBuilder({
                     <button
                       type="button"
                       onClick={() => onAddMemberBlock(id)}
-                      className="flex items-center gap-1 rounded-full border border-dashed border-border bg-surface px-2.5 py-1 text-2xs font-semibold text-text transition-colors hover:border-primary hover:text-primary-strong"
+                      className="flex items-center gap-1 rounded-pill border border-dashed border-border bg-surface px-2.5 py-1 text-2xs font-semibold text-text transition-colors hover:border-primary hover:text-primary-strong"
                     >
                       <Plus className="h-3.5 w-3.5" aria-hidden /> {label(id)}
                     </button>
@@ -780,7 +780,7 @@ export function EntityPageBuilder({
       <button
         type="button"
         onClick={() => onAddRow()}
-        className="mb-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2.5 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
+        className="mb-2 flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-border py-2.5 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
       >
         <Plus className="h-4 w-4" aria-hidden /> Add row
       </button>
@@ -1326,7 +1326,7 @@ function BlocksTray({
         <span className="flex items-center gap-1.5 text-xs font-semibold text-text">
           {open ? <ChevronDown className="h-3.5 w-3.5" aria-hidden /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden />}
           Blocks (not shown)
-          <span className="rounded-full bg-surface px-1.5 py-0.5 text-3xs font-semibold text-muted">{bench.length}</span>
+          <span className="rounded-pill bg-surface px-1.5 py-0.5 text-3xs font-semibold text-muted">{bench.length}</span>
         </span>
       </button>
       {open && (
@@ -1337,7 +1337,7 @@ function BlocksTray({
             <div className="flex flex-wrap gap-1.5">
               {bench.map((id) => (
                 <div key={id} className="relative">
-                  <div className="flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-1">
+                  <div className="flex items-center gap-1 rounded-pill border border-border bg-surface px-2 py-1">
                     <button
                       type="button"
                       draggable
@@ -1386,7 +1386,7 @@ function BlocksTray({
 // ── Small primitives ──
 function Menu({ children }: { children: React.ReactNode }) {
   return (
-    <div className="absolute right-0 z-20 mt-1 min-w-44 rounded-xl border border-border bg-surface p-1 lift-3">
+    <div className="absolute right-0 z-20 mt-1 min-w-44 rounded-card border border-border bg-surface p-1 lift-3">
       {children}
     </div>
   )

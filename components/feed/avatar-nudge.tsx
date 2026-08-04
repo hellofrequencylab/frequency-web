@@ -54,7 +54,7 @@ export function AvatarNudge() {
           }
           setClosed(true)
         }}
-        className="shrink-0 rounded-full p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
+        className="shrink-0 rounded-pill p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
       >
         <X className="h-3.5 w-3.5" />
       </button>

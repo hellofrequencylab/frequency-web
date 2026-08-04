@@ -21,7 +21,7 @@ const pct = (n: number): string => `${Math.round(n * 100)}%`
 
 function Stat({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
   return (
-    <div className="rounded-xl bg-surface-elevated/60 px-3 py-2">
+    <div className="rounded-card bg-surface-elevated/60 px-3 py-2">
       <p className="text-base font-extrabold leading-none tabular-nums text-text">{value}</p>
       <p className="mt-1 text-2xs font-medium text-muted">{label}</p>
       {hint && <p className="mt-0.5 text-2xs text-muted">{hint}</p>}
@@ -118,7 +118,7 @@ export function CampaignAnalyticsExpansion({ campaignId }: { campaignId: string 
       )}
 
       {/* Vera open-rate analysis (on demand, one gated AI call) */}
-      <div className="rounded-xl border border-border bg-surface p-3">
+      <div className="rounded-card border border-border bg-surface p-3">
         <div className="flex items-center justify-between gap-2">
           <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-text">
             <Sparkles className="h-3.5 w-3.5 text-primary-strong" aria-hidden /> Vera on your open rate

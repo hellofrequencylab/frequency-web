@@ -60,7 +60,7 @@ function TicketRow({ ticket }: { ticket: SupportTicket }) {
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className={`rounded-full px-2 py-0.5 text-2xs font-semibold ${statusChipClass(ticket.status)}`}>
+          <span className={`rounded-pill px-2 py-0.5 text-2xs font-semibold ${statusChipClass(ticket.status)}`}>
             {STATUS_LABELS[ticket.status]}
           </span>
           <span className="text-2xs font-medium text-muted">{TYPE_LABELS[ticket.type]} · #{ticket.ref}</span>

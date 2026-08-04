@@ -122,7 +122,7 @@ export function TeaserGate({
           this gate is mounted on. */}
       {!gated && ready && (
         <div className="pointer-events-none fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom)+0.75rem)] md:bottom-6 left-1/2 z-40 -translate-x-1/2">
-          <div className="flex items-center gap-2 rounded-full border border-primary/30 bg-surface/95 px-4 py-2 text-sm font-semibold text-primary-strong lift-3 backdrop-blur">
+          <div className="flex items-center gap-2 rounded-pill border border-primary/30 bg-surface/95 px-4 py-2 text-sm font-semibold text-primary-strong lift-3 backdrop-blur">
             <Sparkles className="h-4 w-4" />
             <span>Preview · {remaining}s</span>
           </div>
@@ -161,7 +161,7 @@ export function TeaserGate({
         <button
           type="button"
           onClick={() => setDismissed(false)}
-          className="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom)+0.75rem)] md:bottom-6 left-1/2 z-40 -translate-x-1/2 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-on-primary lift-3 transition-colors hover:bg-primary-hover"
+          className="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom)+0.75rem)] md:bottom-6 left-1/2 z-40 -translate-x-1/2 inline-flex items-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-sm font-bold text-on-primary lift-3 transition-colors hover:bg-primary-hover"
         >
           <Lock className="h-4 w-4" />
           Upgrade to join in

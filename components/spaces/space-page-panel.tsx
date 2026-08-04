@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { Button, buttonClasses } from '@/components/ui/button'
 import { SectionHeader } from '@/components/ui/section-header'
+import { IconButton } from '@/components/ui/icon-button'
 import { cn } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
 import type { ProfilePage } from '@/lib/spaces/profile-pages'
@@ -179,7 +180,7 @@ export function SpacePagePanel({
               </div>
               {comingSoon && (
                 <p
-                  className="mt-3 rounded-xl border border-border bg-surface-elevated/60 px-3 py-2 text-sm font-medium text-text"
+                  className="mt-3 rounded-card border border-border bg-surface-elevated/60 px-3 py-2 text-sm font-medium text-text"
                   role="status"
                 >
                   Coming soon. Standalone websites are on the way. For now your profile is your public page.
@@ -230,7 +231,7 @@ function PageRow({
   return (
     <li
       className={cn(
-        'flex items-center gap-3 rounded-xl border bg-surface p-3 lift-1 transition-colors',
+        'flex items-center gap-3 rounded-card border bg-surface p-3 lift-1 transition-colors',
         active ? 'border-primary ring-1 ring-primary' : 'border-border',
       )}
     >
@@ -251,7 +252,7 @@ function PageRow({
             aria-label={`Rename ${page.label}`}
             className="min-w-0 flex-1 rounded-lg border border-border bg-canvas px-2 py-1 text-sm font-medium text-text"
           />
-          <IconButton label="Save name" disabled={pending} onClick={saveRename}>
+          <IconButton variant="bordered" label="Save name" disabled={pending} onClick={saveRename}>
             <Check className="h-4 w-4" aria-hidden />
           </IconButton>
         </form>
@@ -265,7 +266,7 @@ function PageRow({
         >
           <span className="block truncate text-sm font-semibold text-text">{page.label}</span>
           {page.system && (
-            <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+            <span className="shrink-0 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
               Main
             </span>
           )}
@@ -275,12 +276,13 @@ function PageRow({
 
       {!readOnly && !editing && (
         <div className="flex shrink-0 items-center gap-1">
-          <IconButton label={`Rename ${page.label}`} disabled={pending} onClick={() => setEditing(true)}>
+          <IconButton variant="bordered" label={`Rename ${page.label}`} disabled={pending} onClick={() => setEditing(true)}>
             <Pencil className="h-4 w-4" aria-hidden />
           </IconButton>
           {!page.system && (
             <>
               <IconButton
+                variant="bordered"
                 label={`Move ${page.label} up`}
                 disabled={pending || isFirstCustom}
                 onClick={() => onMove(-1)}
@@ -288,6 +290,7 @@ function PageRow({
                 <ArrowUp className="h-4 w-4" aria-hidden />
               </IconButton>
               <IconButton
+                variant="bordered"
                 label={`Move ${page.label} down`}
                 disabled={pending || isLastCustom}
                 onClick={() => onMove(1)}
@@ -295,6 +298,8 @@ function PageRow({
                 <ArrowDown className="h-4 w-4" aria-hidden />
               </IconButton>
               <IconButton
+                variant="bordered"
+                tone="danger"
                 label={`Delete ${page.label}`}
                 disabled={pending}
                 onClick={() => {
@@ -340,7 +345,7 @@ function AddPageRow({
 
   if (atCap) {
     return (
-      <p className="mt-3 rounded-xl border border-border bg-surface p-3 text-xs text-muted">
+      <p className="mt-3 rounded-card border border-border bg-surface p-3 text-xs text-muted">
         You have reached the limit of {maxPages} pages. Delete a page to add another.
       </p>
     )
@@ -376,7 +381,7 @@ function AddPageRow({
  *  billing settings where the plan is chosen. */
 function AddPagesUpsell({ slug }: { slug: string }) {
   return (
-    <div className="mt-3 rounded-xl border border-border bg-surface p-4">
+    <div className="mt-3 rounded-card border border-border bg-surface p-4">
       <p className="flex items-center gap-2 text-sm font-semibold text-text">
         <Globe className="h-4 w-4 text-primary" aria-hidden />
         Add more pages with your own website
@@ -396,28 +401,3 @@ function AddPagesUpsell({ slug }: { slug: string }) {
   )
 }
 
-/** A compact square icon button for the row controls (reorder / show-hide / rename / delete). */
-function IconButton({
-  label,
-  disabled,
-  onClick,
-  children,
-}: {
-  label: string
-  disabled: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      title={label}
-      aria-label={label}
-      disabled={disabled}
-      onClick={onClick}
-      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-border-strong hover:text-text disabled:cursor-default disabled:opacity-40 motion-reduce:transition-none"
-    >
-      {children}
-    </button>
-  )
-}

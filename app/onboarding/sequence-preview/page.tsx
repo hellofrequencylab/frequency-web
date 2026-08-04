@@ -81,8 +81,8 @@ export default async function SequencePreviewPage({
                   href={href}
                   className={
                     active
-                      ? 'rounded-full bg-primary px-3 py-1 text-xs font-medium text-on-primary'
-                      : 'rounded-full border border-border px-3 py-1 text-xs text-ink hover:bg-surface-elevated'
+                      ? 'rounded-pill bg-primary px-3 py-1 text-xs font-medium text-on-primary'
+                      : 'rounded-pill border border-border px-3 py-1 text-xs text-ink hover:bg-surface-elevated'
                   }
                   aria-current={active ? 'true' : undefined}
                 >

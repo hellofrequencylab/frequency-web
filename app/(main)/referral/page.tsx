@@ -141,11 +141,11 @@ function LeaderRow({ row, isMe }: { row: ContestLeaderboardRow; isMe: boolean })
           alt={row.displayName}
           width={36}
           height={36}
-          className="h-9 w-9 shrink-0 rounded-full object-cover"
+          className="h-9 w-9 shrink-0 rounded-pill object-cover"
           style={avatarFocusStyle(row.avatarUrl)}
         />
       ) : (
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-bg text-xs font-semibold text-primary-strong">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-xs font-semibold text-primary-strong">
           {initials(row.displayName)}
         </span>
       )}

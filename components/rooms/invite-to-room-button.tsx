@@ -112,9 +112,9 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
                   }`}
                 >
                   {r.avatar_url ? (
-                    <Image src={avatarSrc(r.avatar_url)} alt={r.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" style={avatarFocusStyle(r.avatar_url)} />
+                    <Image src={avatarSrc(r.avatar_url)} alt={r.display_name} width={28} height={28} className="w-7 h-7 rounded-pill object-cover shrink-0" style={avatarFocusStyle(r.avatar_url)} />
                   ) : (
-                    <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center shrink-0">
+                    <div className="w-7 h-7 rounded-pill bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center shrink-0">
                       {getInitials(r.display_name)}
                     </div>
                   )}

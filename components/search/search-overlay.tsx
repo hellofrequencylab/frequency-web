@@ -284,9 +284,9 @@ function ResultRow({
           <span className="text-sm font-bold leading-tight">{new Date(dateIso).getDate()}</span>
         </span>
       ) : avatar ? (
-        <Image src={avatarSrc(avatar)} alt="" width={40} height={40} style={avatarFocusStyle(avatar)} className="h-10 w-10 shrink-0 rounded-full object-cover" />
+        <Image src={avatarSrc(avatar)} alt="" width={40} height={40} style={avatarFocusStyle(avatar)} className="h-10 w-10 shrink-0 rounded-pill object-cover" />
       ) : (
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-bg text-sm font-semibold text-primary-strong select-none">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-sm font-semibold text-primary-strong select-none">
           {getInitials(fallback ?? '?')}
         </span>
       )}

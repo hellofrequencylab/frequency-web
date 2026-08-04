@@ -35,6 +35,7 @@ import { DonateRender } from '@/components/onboarding/renders/donate-render'
 import { TicketsRender } from '@/components/onboarding/renders/tickets-render'
 import { CrmRender } from '@/components/onboarding/renders/crm-render'
 import { WizardProgress, wizardPrimaryClass } from '@/components/templates'
+import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
 
@@ -482,13 +483,19 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   }
 
   function renderAvatar() {
-    if (avatarPreview) {
+    // The preview is a blob: URL this component minted itself, so it was never actually
+    // reachable by an attacker — but it was the one upload-preview sink in the product
+    // with NO guard on it, while the other two had one each. Same allowlist as those now;
+    // a rejected URL falls through to initials, which is the honest failure for an image.
+    // NOT named `preview` — that is the component's own prop, meaning preview MODE.
+    const previewSrc = safeUploadPreviewSrc(avatarPreview)
+    if (previewSrc) {
       // eslint-disable-next-line @next/next/no-img-element
-      return <img src={avatarPreview} alt="Avatar preview" className="h-24 w-24 rounded-full object-cover shrink-0 ring-2 ring-primary" />
+      return <img src={previewSrc} alt="Avatar preview" className="h-24 w-24 rounded-pill object-cover shrink-0 ring-2 ring-primary" />
     }
     const initials = getInitials(displayName || userEmail)
     return (
-      <div className="h-24 w-24 rounded-full bg-primary-bg text-3xl text-primary-strong font-semibold flex items-center justify-center shrink-0">
+      <div className="h-24 w-24 rounded-pill bg-primary-bg text-3xl text-primary-strong font-semibold flex items-center justify-center shrink-0">
         {initials || '?'}
       </div>
     )
@@ -496,7 +503,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
 
   // ── Styles (warm light throughout) ───────────────────────────────────────────
   const inputInset =
-    'w-full rounded-xl border border-border bg-canvas px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus-visible:shadow-none'
+    'w-full rounded-card border border-border bg-canvas px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus-visible:shadow-none'
   const fieldLabel = 'mb-1.5 block text-left text-xs font-semibold uppercase tracking-wider text-subtle'
   const backLink = 'text-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline'
   // Primary action — the shared Wizard button (app register), used across the beats.
@@ -513,7 +520,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       {/* Preview-only badge (subtle; public /preview route; ADR-068). */}
       {preview && (
         <div className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center">
-          <span className="rounded-full bg-ink/5 px-3 py-1 text-2xs font-medium text-muted backdrop-blur-sm">
+          <span className="rounded-pill bg-ink/5 px-3 py-1 text-2xs font-medium text-muted backdrop-blur-sm">
             Preview · nothing is saved
           </span>
         </div>
@@ -524,7 +531,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       {preview && previewDone && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6">
           <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-7 text-center lift-3">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary-bg text-2xl text-primary-strong">✓</div>
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-pill bg-primary-bg text-2xl text-primary-strong">✓</div>
             <h2 className="mt-4 text-xl font-bold text-text">Welcome in.</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted">
               In the real induction this writes your profile and drops you into the feed to make your
@@ -537,7 +544,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                 setReelIndex(0)
                 setOaths({ unfinished: false, report: false, build: false })
               }}
-              className="mt-5 w-full rounded-full border border-border px-6 py-3 text-sm font-semibold text-muted transition-colors hover:text-text"
+              className="mt-5 w-full rounded-pill border border-border px-6 py-3 text-sm font-semibold text-muted transition-colors hover:text-text"
             >
               Run it again
             </button>
@@ -548,7 +555,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       {/* Stage: one centered column — logo, content, progress — with tight, consistent gaps. */}
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-12">
         <div className="flex shrink-0 flex-col items-center">
-          <span className="animate-wiggle inline-block rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-[0.35em] text-on-primary shadow-sm shadow-primary/25">
+          <span className="animate-wiggle inline-block rounded-pill bg-primary px-3 py-1 text-xs font-bold uppercase tracking-[0.35em] text-on-primary shadow-sm shadow-primary/25">
             Welcome
           </span>
           <span className="brandmark-link mt-5 block">
@@ -558,12 +565,12 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
           {/* Scanned in via a member's QR code → a warm "Invited by {name}" chip with
               their photo, so the welcome reads personal from the first beat. */}
           {inviter && (
-            <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-border bg-surface py-1.5 pl-1.5 pr-3.5 lift-1">
+            <div className="mt-5 inline-flex items-center gap-2 rounded-pill border border-border bg-surface py-1.5 pl-1.5 pr-3.5 lift-1">
               {inviter.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarSrc(inviter.avatarUrl)} alt="" className="h-7 w-7 rounded-full object-cover" style={avatarFocusStyle(inviter.avatarUrl)} />
+                <img src={avatarSrc(inviter.avatarUrl)} alt="" className="h-7 w-7 rounded-pill object-cover" style={avatarFocusStyle(inviter.avatarUrl)} />
               ) : (
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-bg text-2xs font-bold text-primary-strong" aria-hidden>
+                <span className="flex h-7 w-7 items-center justify-center rounded-pill bg-primary-bg text-2xs font-bold text-primary-strong" aria-hidden>
                   {getInitials(inviter.displayName) || '?'}
                 </span>
               )}
@@ -653,7 +660,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                               <span className="mt-0.5 block text-sm text-muted">{f.blurb}</span>
                             </span>
                             {active && (
-                              <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-on-primary" aria-hidden>
+                              <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-pill bg-primary text-on-primary" aria-hidden>
                                 <svg viewBox="0 0 20 20" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3"><path d="M4 10l4 4 8-9" strokeLinecap="round" strokeLinejoin="round" /></svg>
                               </span>
                             )}
@@ -689,7 +696,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                             </span>
                             {/* Multi-select checkmark — reads clearly as "more than one is fine". */}
                             {active && (
-                              <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-on-primary" aria-hidden>
+                              <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-pill bg-primary text-on-primary" aria-hidden>
                                 <svg viewBox="0 0 20 20" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3"><path d="M4 10l4 4 8-9" strokeLinecap="round" strokeLinejoin="round" /></svg>
                               </span>
                             )}
@@ -779,7 +786,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                             key={i}
                             aria-label={`Show ${s.title}`}
                             onClick={() => setReelIndex(i)}
-                            className={`h-2 rounded-full transition-all ${i === reelIndex ? 'w-6 bg-primary' : 'w-2 bg-border-strong hover:bg-primary/60'}`}
+                            className={`h-2 rounded-pill transition-all ${i === reelIndex ? 'w-6 bg-primary' : 'w-2 bg-border-strong hover:bg-primary/60'}`}
                           />
                         ))}
                       </div>
@@ -881,7 +888,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                         />
                         {location && <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-success" aria-hidden>✓</span>}
                         {locOpen && locResults.length > 0 && (
-                          <ul id="induction-city-list" role="listbox" aria-label="City suggestions" className="absolute z-20 mt-2 max-h-56 w-full overflow-auto rounded-xl border border-border bg-surface lift-3">
+                          <ul id="induction-city-list" role="listbox" aria-label="City suggestions" className="absolute z-20 mt-2 max-h-56 w-full overflow-auto rounded-card border border-border bg-surface lift-3">
                             {locResults.map((r) => (
                               <li key={`${r.label}-${r.lat}`} role="option" aria-selected={location === r.label}>
                                 <button
@@ -907,7 +914,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                   {/* right: avatar over the copy, button under */}
                   <div className="flex w-full max-w-xs flex-col items-center gap-4 text-center md:items-start md:text-left">
                     <button type="button" onClick={() => fileInputRef.current?.click()} className="group">
-                      <div className="rounded-full ring-4 ring-surface lift-1">{renderAvatar()}</div>
+                      <div className="rounded-pill ring-4 ring-surface lift-1">{renderAvatar()}</div>
                       <span className="mt-2 block text-center text-xs font-semibold text-primary group-hover:underline">
                         {avatarPreview ? 'Change photo' : 'Add a photo'}
                       </span>
@@ -935,7 +942,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                 <div className="mt-7 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* portrait profile card with blank slots */}
                   <div className="w-full max-w-72 shrink-0 rounded-3xl border border-border bg-surface p-7 text-center lift-1">
-                    <div className="mx-auto w-fit rounded-full ring-4 ring-surface">{renderAvatar()}</div>
+                    <div className="mx-auto w-fit rounded-pill ring-4 ring-surface">{renderAvatar()}</div>
                     <p className="mt-4 text-xl font-semibold text-text">{displayName || <span className="text-subtle">Your name</span>}</p>
                     <p className="text-sm text-muted">@{handle || 'handle'}</p>
                     <div className="mt-4 space-y-2 border-t border-border pt-4 text-left text-sm">
@@ -967,7 +974,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                 <div className="mt-7 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* portrait profile card — everything they just built */}
                   <div className="w-full max-w-72 shrink-0 rounded-3xl border border-border bg-surface p-7 text-center lift-1">
-                    <div className="mx-auto w-fit rounded-full ring-4 ring-surface">{renderAvatar()}</div>
+                    <div className="mx-auto w-fit rounded-pill ring-4 ring-surface">{renderAvatar()}</div>
                     <p className="mt-4 text-xl font-semibold text-text">{displayName || <span className="text-subtle">Your name</span>}</p>
                     <p className="text-sm text-muted">@{handle || 'handle'}</p>
                     <div className="mt-4 space-y-2 border-t border-border pt-4 text-left text-sm">

@@ -68,7 +68,7 @@ export function MenuSurfacePicker({
             >
               {s.label}
               {defaults[s.key] && (
-                <span className="rounded-full bg-surface-elevated px-1.5 py-0.5 text-xs font-semibold text-subtle">
+                <span className="rounded-pill bg-surface-elevated px-1.5 py-0.5 text-xs font-semibold text-subtle">
                   Default
                 </span>
               )}

@@ -26,7 +26,7 @@ export function ModuleCard({
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-sm font-bold tracking-tight text-text">{title}</h3>
           {badge && (
-            <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
+            <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
               {badge}
             </span>
           )}
@@ -43,7 +43,7 @@ export function ModuleCard({
           {title}
         </h3>
         {badge && (
-          <span className="text-xs px-2 py-0.5 rounded-full bg-surface-elevated text-muted font-medium">
+          <span className="text-xs px-2 py-0.5 rounded-pill bg-surface-elevated text-muted font-medium">
             {badge}
           </span>
         )}

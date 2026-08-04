@@ -58,13 +58,13 @@ function SpaceAnchor({ logoUrl }: { logoUrl: string | null }) {
       <img
         src={logoUrl}
         alt=""
-        className="h-11 w-11 rounded-xl border border-border bg-surface object-contain"
+        className="h-11 w-11 rounded-control border border-border bg-surface object-contain"
       />
     )
   }
   return (
     <span
-      className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-elevated text-subtle"
+      className="flex h-11 w-11 items-center justify-center rounded-control bg-surface-elevated text-subtle"
       aria-hidden
     >
       <Building2 className="h-5 w-5" />
@@ -85,7 +85,7 @@ function OperatedSpaceCard({ space }: { space: OperatedSpace }) {
       anchor={<SpaceAnchor logoUrl={space.logoUrl} />}
       title={space.name}
       badge={
-        <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+        <span className="shrink-0 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
           {spaceTypeLabel(space.type)}
         </span>
       }

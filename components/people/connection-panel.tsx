@@ -51,7 +51,7 @@ export async function ConnectionPanel({
           <p className="flex items-center gap-1.5 text-sm font-bold text-text">
             <Sparkles className="h-4 w-4 text-primary" /> How you’re connected
           </p>
-          <span className="rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
+          <span className="rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
             {ORBIT_LABEL[tie.orbit]}
           </span>
         </div>

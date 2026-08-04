@@ -193,7 +193,7 @@ export function LinkGenerator() {
             <QrCode className="h-3.5 w-3.5" /> Preview
           </p>
           {/* KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface. */}
-          <div className="mt-3 flex items-center justify-center rounded-xl border border-border bg-white p-4">
+          <div className="mt-3 flex items-center justify-center rounded-card border border-border bg-white p-4">
             {previewSvg ? (
               <div className="h-[200px] w-[200px]" dangerouslySetInnerHTML={{ __html: previewSvg }} />
             ) : (

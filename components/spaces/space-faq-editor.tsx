@@ -226,7 +226,7 @@ export function SpaceFaqEditor({
                       </Button>
                       <IconButton
                         label="Remove this question"
-                        danger
+                        tone="danger"
                         onClick={() => remove(i)}
                         disabled={busy}
                       >

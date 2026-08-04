@@ -8,7 +8,7 @@ function BoardRowSkeleton() {
   return (
     <div className="flex min-h-[3.25rem] items-center gap-3 rounded-2xl bg-surface-elevated/40 px-3 py-2">
       <Skeleton className="h-4 w-4 shrink-0" />
-      <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+      <Skeleton className="h-9 w-9 shrink-0 rounded-pill" />
       <div className="flex-1 space-y-1.5">
         <Skeleton className="h-3.5 w-32" />
         <Skeleton className="h-3 w-16" />

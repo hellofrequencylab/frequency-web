@@ -47,7 +47,7 @@ function ListingInfoLine({ view }: { view: ListingDetailView }) {
         {relativeTime(view.createdAt)}
       </span>
       {view.status && (
-        <span className="inline-flex items-center rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+        <span className="inline-flex items-center rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-muted">
           {view.status}
         </span>
       )}
@@ -223,7 +223,7 @@ export function ListingDetailTemplate({
               {editHref && (
                 <Link
                   href={editHref}
-                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
                 >
                   <Pencil className="h-4 w-4" aria-hidden /> Edit listing
                 </Link>

@@ -51,17 +51,17 @@ export function PersonCard({
               width={44}
               height={44}
               style={avatarFocusStyle(avatarUrl)}
-              className="h-11 w-11 rounded-full object-cover"
+              className="h-11 w-11 rounded-pill object-cover"
             />
           ) : (
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-bg text-sm font-semibold text-primary-strong select-none">
+            <div className="flex h-11 w-11 items-center justify-center rounded-pill bg-primary-bg text-sm font-semibold text-primary-strong select-none">
               {getInitials(displayName)}
             </div>
           )}
           {online && (
             <span
               aria-label="Online now"
-              className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-surface"
+              className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-pill bg-success ring-2 ring-surface"
             />
           )}
         </div>

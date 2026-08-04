@@ -132,7 +132,7 @@ export function StatChip({
       : 'bg-surface-elevated text-muted'
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-2xs font-medium ${cls}`}
+      className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-2xs font-medium ${cls}`}
     >
       <Icon className="h-3 w-3 shrink-0" aria-hidden /> {children}
     </span>
@@ -239,7 +239,7 @@ export function PathBlock({
                 <details className="group" {...(i === 0 ? { open: true } : {})}>
                   <summary className="flex cursor-pointer list-none items-center gap-3 p-4 [&::-webkit-details-marker]:hidden">
                     <span
-                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums"
+                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-pill text-xs font-bold tabular-nums"
                       style={{ backgroundColor: accentTint(accent, 16), color: accentColor(accent) }}
                     >
                       {i + 1}
@@ -268,7 +268,7 @@ export function PathBlock({
                           {cadence}
                         </span>
                         {i === 0 && (
-                          <span className="rounded-full bg-success-bg px-1.5 py-0.5 font-semibold text-success">
+                          <span className="rounded-pill bg-success-bg px-1.5 py-0.5 font-semibold text-success">
                             Free preview
                           </span>
                         )}
@@ -282,7 +282,7 @@ export function PathBlock({
                   <ul className="space-y-1 border-t border-border px-4 pb-4 pt-3">
                     {lessons.map((l) => (
                       <li key={l.id} className="flex items-center gap-2 text-sm">
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-border-strong" />
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-pill bg-border-strong" />
                         <span className="min-w-0 truncate text-text">{l.title}</span>
                         {l.estMinutes ? (
                           <span className="ml-auto shrink-0 text-2xs tabular-nums text-muted">
@@ -320,7 +320,7 @@ export function PillarBalanceBlock({
           return (
             <span
               key={pl.slug}
-              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+              className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-xs font-medium ${
                 n > 0 ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-subtle'
               }`}
             >
@@ -357,9 +357,9 @@ export function InstructorBlock({
         className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 lift-1 transition-colors hover:border-border-strong"
       >
         {author.avatarUrl ? (
-          <Image src={avatarSrc(author.avatarUrl)} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-full object-cover" style={avatarFocusStyle(author.avatarUrl)} />
+          <Image src={avatarSrc(author.avatarUrl)} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(author.avatarUrl)} />
         ) : (
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-sm font-bold text-muted">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-sm font-bold text-muted">
             {author.displayName.slice(0, 1).toUpperCase()}
           </span>
         )}
@@ -567,9 +567,9 @@ export function AtAGlanceCard({
                 ? `Phase ${phaseAt} of ${phasesTotal}`
                 : `Phase 1 of ${phasesTotal}`}
             </p>
-            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated">
+            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-pill bg-surface-elevated">
               <div
-                className="h-full rounded-full bg-primary transition-[width] motion-reduce:transition-none"
+                className="h-full rounded-pill bg-primary transition-[width] motion-reduce:transition-none"
                 style={{
                   width: `${Math.round(((progress?.phasesComplete ?? 0) / Math.max(phasesTotal, 1)) * 100)}%`,
                 }}

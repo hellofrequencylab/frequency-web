@@ -312,9 +312,9 @@ export default async function RoomPage({
                     <Link href={`/people/${p.handle}`} className="flex items-center gap-2.5 flex-1 min-w-0">
                       <span className="relative shrink-0">
                         {p.avatar_url ? (
-                          <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover" style={avatarFocusStyle(p.avatar_url)} />
+                          <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={28} height={28} className="w-7 h-7 rounded-pill object-cover" style={avatarFocusStyle(p.avatar_url)} />
                         ) : (
-                          <span className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center select-none">
+                          <span className="w-7 h-7 rounded-pill bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center select-none">
                             {getInitials(p.display_name)}
                           </span>
                         )}

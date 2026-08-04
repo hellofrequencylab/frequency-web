@@ -42,7 +42,7 @@ export function EmptyState({
   return (
     <div className={`rounded-card border bg-surface/50 px-6 py-12 text-center ${v.frame}`}>
       <span
-        className={`mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-card ${v.chip}`}
+        className={`mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-control ${v.chip}`}
         aria-hidden
       >
         <Glyph className="h-6 w-6" />

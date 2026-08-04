@@ -27,7 +27,7 @@ const SCAN_BUCKET = 'network-contacts'
 // cleanly when Vera is off.
 
 const FIELD =
-  'w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
+  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
 type Group = { id: string; name: string; kind?: 'circle' | 'space' }
 /** A Journey the manual form may link the event to. Passed straight through — the Spark's wizard
@@ -265,7 +265,7 @@ export function EventSpark({
               />
 
               {thumbUrl ? (
-                <div className="flex items-center gap-3 rounded-xl border border-border bg-surface p-2.5">
+                <div className="flex items-center gap-3 rounded-card border border-border bg-surface p-2.5">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={thumbUrl} alt="" className="h-14 w-14 shrink-0 rounded-lg border border-border object-cover" />
                   <span className="min-w-0 flex-1 text-xs text-muted">
@@ -357,7 +357,7 @@ export function EventSpark({
                 <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Description</span>
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className={FIELD} placeholder="What it is and who it's for." />
               </label>
-              <div className="space-y-1.5 rounded-xl border border-border bg-canvas px-3 py-3 text-sm text-muted">
+              <div className="space-y-1.5 rounded-card border border-border bg-canvas px-3 py-3 text-sm text-muted">
                 <p className="flex items-center gap-2">
                   <CalendarDays className="h-4 w-4 shrink-0 text-subtle" />
                   {draft.startsAt ? formatWhen(draft.startsAt) : 'Add a date in the editor'}

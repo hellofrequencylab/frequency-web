@@ -113,13 +113,13 @@ export function RecapAlbum({
                 width={192}
                 height={192}
                 unoptimized
-                className="max-h-48 w-auto rounded-xl border border-border object-cover"
+                className="max-h-48 w-auto rounded-card border border-border object-cover"
               />
               <button
                 type="button"
                 onClick={clearImage}
                 aria-label="Remove image"
-                className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
+                className="absolute right-1.5 top-1.5 rounded-pill bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -129,7 +129,7 @@ export function RecapAlbum({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={pending}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border px-4 py-6 text-sm font-medium text-muted transition-colors hover:border-primary-bg hover:text-primary-strong disabled:opacity-40"
+              className="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-border px-4 py-6 text-sm font-medium text-muted transition-colors hover:border-primary-bg hover:text-primary-strong disabled:opacity-40"
             >
               <ImagePlus className="h-4 w-4" />
               Add a photo
@@ -171,7 +171,7 @@ export function RecapAlbum({
           {photos.map((photo) => {
             const canDelete = canModerate || (myProfileId != null && photo.profileId === myProfileId)
             return (
-              <li key={photo.id} className="group relative overflow-hidden rounded-xl border border-border bg-surface">
+              <li key={photo.id} className="group relative overflow-hidden rounded-card border border-border bg-surface">
                 <Image
                   src={photo.imageUrl}
                   alt={photo.caption ?? 'Recap photo'}
@@ -202,7 +202,7 @@ function DeleteMediaButton({ mediaId, slug }: { mediaId: string; slug: string })
       onClick={() => startTransition(() => deleteEventMedia(mediaId, slug))}
       disabled={pending}
       aria-label="Remove photo"
-      className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1.5 text-white opacity-0 transition-opacity hover:bg-black/80 focus:opacity-100 group-hover:opacity-100 disabled:opacity-40"
+      className="absolute right-1.5 top-1.5 rounded-pill bg-black/60 p-1.5 text-white opacity-0 transition-opacity hover:bg-black/80 focus:opacity-100 group-hover:opacity-100 disabled:opacity-40"
     >
       <Trash2 className="h-3.5 w-3.5" />
     </button>

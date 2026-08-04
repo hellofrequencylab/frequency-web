@@ -38,7 +38,7 @@ export function OutreachCard({ claimToken, slug, sentTo }: { claimToken: string;
           : 'Send them this note. When they claim the event they become its host, and you get the credit for putting it on the map.'}
       </p>
 
-      <div className="mt-3 rounded-xl border border-border bg-surface p-3">
+      <div className="mt-3 rounded-card border border-border bg-surface p-3">
         <p className="break-words text-sm text-text">{message}</p>
       </div>
 

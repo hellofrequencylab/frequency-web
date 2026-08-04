@@ -49,14 +49,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 5468,
+      "baseline": 3841,
       "frozen": {
         "at": "2026-08-04",
-        "value": 5468,
+        "value": 3841,
         "direction": "lowered",
         "basis": "d2a53ce6b015",
-        "reason": "Sweep, same basis as the addendum audit. The step half of the census reproduces the audit exactly (rounded-(sm|md|lg|xl|2xl|3xl) = 4,474, unchanged); the entire −75 is rounded-full (1,069 → 994), retired by the ProgressTrack sweep and the card passes.",
-        "from": 5543
+        "reason": "The icon-tile pass: 10 decorative tiles off rounded-card onto rounded-control, plus 15 hand-rolled icon squares retired into the kit's new IconButton bordered variant. Takes literal-radius to 3841, below the 3851 it stood at before the two spinners raised it, so that raise is paid back.",
+        "from": 3853
       },
       "history": [
         {
@@ -65,6 +65,34 @@
           "to": 5468,
           "direction": "lowered",
           "reason": "Sweep, same basis as the addendum audit. The step half of the census reproduces the audit exactly (rounded-(sm|md|lg|xl|2xl|3xl) = 4,474, unchanged); the entire −75 is rounded-full (1,069 → 994), retired by the ProgressTrack sweep and the card passes."
+        },
+        {
+          "at": "2026-08-04",
+          "from": 5468,
+          "to": 5413,
+          "direction": "lowered",
+          "reason": "Kit primitives sweep: every components/ui/*.tsx className moved from literal rounded-* to the role tokens (rounded-card / rounded-control / rounded-pill). These are the primitives every other component composes, so the roles now propagate instead of stopping at the call site."
+        },
+        {
+          "at": "2026-08-04",
+          "from": 5413,
+          "to": 3851,
+          "direction": "lowered",
+          "reason": "Radius adoption sweep: rounded-full -> rounded-pill site-wide (value-identical, --radius-pill is 9999px in all five scopes), plus rounded-xl -> rounded-card on lines that PROVE the element is a card (border/bg-surface/lift present, button/input absent). Kit primitives hand-mapped. literal-radius 5413 -> 3851."
+        },
+        {
+          "at": "2026-08-04",
+          "from": 3851,
+          "to": 3853,
+          "direction": "raised",
+          "reason": "The two loading spinners moved back from rounded-pill to rounded-full. --radius-pill is runtime-editable in Theme Studio (feel: 'length', so an operator can set it to 4px and it validates); --radius-full is a fixed literal, deliberately not var-bridged, precisely so a circle stays a circle. A spinner MUST stay circular, so rounded-full is correct there and the +2 is the price of that correctness."
+        },
+        {
+          "at": "2026-08-04",
+          "from": 3853,
+          "to": 3841,
+          "direction": "lowered",
+          "reason": "The icon-tile pass: 10 decorative tiles off rounded-card onto rounded-control, plus 15 hand-rolled icon squares retired into the kit's new IconButton bordered variant. Takes literal-radius to 3841, below the 3851 it stood at before the two spinners raised it, so that raise is paid back."
         }
       ]
     },
@@ -190,14 +218,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 530,
+      "baseline": 529,
       "frozen": {
         "at": "2026-08-04",
-        "value": 530,
-        "direction": "raised",
+        "value": 529,
+        "direction": "lowered",
         "basis": "b0d275f91676",
-        "reason": "Instrument artifact, not new debt. Both classes are proximity-window metrics and both rose +1 while the wave added ZERO matching sites: no file gained a text-2xs/3xs line (verified per-file against the diff), and raw-button-bg's new hit is Switch's hover:bg-primary-hover -- the CORRECT hover token, whose substring matches the bg-primary pattern. Reformatting alone moves raw-button-bg 529->564, so +1 is inside the noise floor. Stays flagged so Lift 2b replaces both patterns with element-scoped forms.",
-        "from": 529
+        "reason": "Kit primitives sweep: every components/ui/*.tsx className moved from literal rounded-* to the role tokens (rounded-card / rounded-control / rounded-pill). These are the primitives every other component composes, so the roles now propagate instead of stopping at the call site.",
+        "from": 530
       },
       "history": [
         {
@@ -213,6 +241,13 @@
           "to": 530,
           "direction": "raised",
           "reason": "Instrument artifact, not new debt. Both classes are proximity-window metrics and both rose +1 while the wave added ZERO matching sites: no file gained a text-2xs/3xs line (verified per-file against the diff), and raw-button-bg's new hit is Switch's hover:bg-primary-hover -- the CORRECT hover token, whose substring matches the bg-primary pattern. Reformatting alone moves raw-button-bg 529->564, so +1 is inside the noise floor. Stays flagged so Lift 2b replaces both patterns with element-scoped forms."
+        },
+        {
+          "at": "2026-08-04",
+          "from": 530,
+          "to": 529,
+          "direction": "lowered",
+          "reason": "Kit primitives sweep: every components/ui/*.tsx className moved from literal rounded-* to the role tokens (rounded-card / rounded-control / rounded-pill). These are the primitives every other component composes, so the roles now propagate instead of stopping at the call site."
         }
       ]
     },
@@ -232,14 +267,14 @@
         "components/ui/meter.tsx",
         "components/ui/streak-meter.tsx"
       ],
-      "baseline": 14,
+      "baseline": 0,
       "frozen": {
         "at": "2026-08-04",
-        "value": 14,
+        "value": 0,
         "direction": "lowered",
         "basis": "2bd84505bf93",
-        "reason": "Sweep, same basis as the addendum audit. ProgressTrack went from 0 adopters to 36 importers and 38 hand-rolled bars retired (52 → 14).",
-        "from": 52
+        "reason": "Radius adoption sweep: rounded-full -> rounded-pill site-wide (value-identical, --radius-pill is 9999px in all five scopes), plus rounded-xl -> rounded-card on lines that PROVE the element is a card (border/bg-surface/lift present, button/input absent). Kit primitives hand-mapped. literal-radius 5413 -> 3851.",
+        "from": 14
       },
       "history": [
         {
@@ -248,6 +283,13 @@
           "to": 14,
           "direction": "lowered",
           "reason": "Sweep, same basis as the addendum audit. ProgressTrack went from 0 adopters to 36 importers and 38 hand-rolled bars retired (52 → 14)."
+        },
+        {
+          "at": "2026-08-04",
+          "from": 14,
+          "to": 0,
+          "direction": "lowered",
+          "reason": "Radius adoption sweep: rounded-full -> rounded-pill site-wide (value-identical, --radius-pill is 9999px in all five scopes), plus rounded-xl -> rounded-card on lines that PROVE the element is a card (border/bg-surface/lift present, button/input absent). Kit primitives hand-mapped. literal-radius 5413 -> 3851."
         }
       ]
     },

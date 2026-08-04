@@ -131,11 +131,11 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
                   alt={report.reporter.display_name}
                   width={32}
                   height={32}
-                  className="w-8 h-8 rounded-full object-cover shrink-0"
+                  className="w-8 h-8 rounded-pill object-cover shrink-0"
                   style={avatarFocusStyle(report.reporter.avatar_url)}
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                <div className="w-8 h-8 rounded-pill bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                   {getInitials(report.reporter.display_name)}
                 </div>
               )}
@@ -166,7 +166,7 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
                 {reasonInfo.label}
               </span>
               {report.target_type === 'member' && (report.priorReports ?? 0) > 1 && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-danger-bg text-danger font-medium flex items-center gap-1">
+                <span className="text-xs px-2 py-0.5 rounded-pill bg-danger-bg text-danger font-medium flex items-center gap-1">
                   <Flag className="w-3 h-3" />
                   {report.priorReports} prior report{(report.priorReports ?? 0) === 1 ? '' : 's'}
                 </span>

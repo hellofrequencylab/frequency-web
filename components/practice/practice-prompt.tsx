@@ -61,7 +61,7 @@ export function PracticePrompt({
     return (
       <div className="mb-6 rounded-xl border border-primary-bg bg-primary-bg/30 px-3 py-1.5">
         <div className="flex items-center gap-2.5">
-          <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong lift-1">
+          <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-surface text-primary-strong lift-1">
             <Flame className="h-3.5 w-3.5" />
           </span>
           <p className="min-w-0 truncate text-xs font-bold text-text">
@@ -90,7 +90,7 @@ export function PracticePrompt({
       {/* Streak header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong lift-1">
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-pill bg-surface text-primary-strong lift-1">
             <Flame className="h-4 w-4" />
           </span>
           <div className="min-w-0">
@@ -133,7 +133,7 @@ export function PracticePrompt({
               return (
                 <div key={m.day} className="flex flex-col items-center gap-1" title={`${m.label} · ${m.day} days`}>
                   <span
-                    className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-3xs font-bold transition-colors ${
+                    className={`inline-flex h-6 w-6 items-center justify-center rounded-pill text-3xs font-bold transition-colors ${
                       hit
                         ? 'bg-primary text-on-primary'
                         : isNext

@@ -227,7 +227,7 @@ function FeaturesBlock({ props }: { props: Record<string, unknown> }): ReactNode
           )
           const rowCls = 'flex items-start gap-3'
           return it.link ? (
-            <a key={i} href={it.link} className={`${rowCls} rounded-xl transition-colors hover:bg-surface-elevated`}>
+            <a key={i} href={it.link} className={`${rowCls} rounded-control transition-colors hover:bg-surface-elevated`}>
               {inner}
             </a>
           ) : (
@@ -266,7 +266,7 @@ function FeaturesBlock({ props }: { props: Record<string, unknown> }): ReactNode
           // rounded-card (was a rounded-2xl literal): the Space page theme shapes these cards
           // (ADR-578); the [data-space-theme] baseline pin keeps `bold` at exactly today's 1rem.
           return it.link ? (
-            <a key={i} href={it.link} className="block rounded-card border border-border bg-surface p-6 text-center transition-colors hover:border-primary">
+            <a key={i} href={it.link} className="block rounded-control border border-border bg-surface p-6 text-center transition-colors hover:border-primary">
               {stat}
             </a>
           ) : (
@@ -454,7 +454,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
             <li key={`${it.url}-${i}`}>
               <a
                 href={it.url}
-                className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3 text-sm font-semibold text-text transition-colors hover:border-primary hover:text-primary-strong"
+                className="flex items-center justify-between rounded-control border border-border bg-surface px-4 py-3 text-sm font-semibold text-text transition-colors hover:border-primary hover:text-primary-strong"
               >
                 {it.label || it.url}
               </a>

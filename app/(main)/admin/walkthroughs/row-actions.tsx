@@ -108,12 +108,12 @@ export function WalkthroughRowActions({ id, active }: { id: string; active: bool
         aria-label={active ? 'Switch off' : 'Switch on'}
         disabled={pending}
         onClick={toggle}
-        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+        className={`relative h-6 w-11 shrink-0 rounded-pill transition-colors disabled:opacity-50 ${
           active ? 'bg-success' : 'bg-surface-elevated'
         }`}
       >
         <span
-          className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow transition-transform ${
+          className={`absolute top-0.5 h-5 w-5 rounded-pill bg-surface shadow transition-transform ${
             active ? 'translate-x-[22px]' : 'translate-x-0.5'
           }`}
         />
@@ -128,7 +128,7 @@ export function WalkthroughRowActions({ id, active }: { id: string; active: bool
 
       {confirming ? (
         <span className="inline-flex items-center gap-1">
-          <IconButton label={pending ? 'Deleting' : 'Confirm delete'} danger disabled={pending} onClick={remove}>
+          <IconButton label={pending ? 'Deleting' : 'Confirm delete'} tone="danger" disabled={pending} onClick={remove}>
             <Check className="h-4 w-4" aria-hidden />
           </IconButton>
           <IconButton label="Cancel" disabled={pending} onClick={() => setConfirming(false)}>
@@ -136,7 +136,7 @@ export function WalkthroughRowActions({ id, active }: { id: string; active: bool
           </IconButton>
         </span>
       ) : (
-        <IconButton label="Delete" danger disabled={pending} onClick={() => setConfirming(true)}>
+        <IconButton label="Delete" tone="danger" disabled={pending} onClick={() => setConfirming(true)}>
           <Trash2 className="h-4 w-4" aria-hidden />
         </IconButton>
       )}

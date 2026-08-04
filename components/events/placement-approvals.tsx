@@ -32,7 +32,7 @@ export async function PlacementApprovals({
         {requests.map((r) => (
           <li
             key={r.id}
-            className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface-elevated/40 px-3 py-2.5"
+            className="flex flex-wrap items-center gap-3 rounded-card border border-border bg-surface-elevated/40 px-3 py-2.5"
           >
             <div className="min-w-0 flex-1">
               <Link href={`/events/${r.eventSlug}`} className="truncate text-sm font-medium text-text hover:underline">

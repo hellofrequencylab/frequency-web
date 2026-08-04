@@ -64,7 +64,7 @@ export function WalkthroughSlide({ step }: { step: WalkthroughStep }) {
   const a = ACCENT_CLASSES[step.accent]
 
   const eyebrow = (
-    <span className={`inline-flex items-center gap-1.5 rounded-full ${a.soft} px-3 py-1 text-2xs font-semibold uppercase tracking-wide ${a.text}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-pill ${a.soft} px-3 py-1 text-2xs font-semibold uppercase tracking-wide ${a.text}`}>
       <Sparkles className="h-3.5 w-3.5" aria-hidden /> Walkthrough
     </span>
   )
@@ -79,7 +79,7 @@ export function WalkthroughSlide({ step }: { step: WalkthroughStep }) {
     </span>
   ) : null
   const zaps = step.zaps ? (
-    <p className={`mt-4 inline-flex items-center gap-1.5 rounded-full ${a.soft} px-3 py-1.5 text-xs font-semibold ${a.text}`}>
+    <p className={`mt-4 inline-flex items-center gap-1.5 rounded-pill ${a.soft} px-3 py-1.5 text-xs font-semibold ${a.text}`}>
       <Gem className="h-3.5 w-3.5" aria-hidden /> +{step.zaps} Zaps
     </p>
   ) : null

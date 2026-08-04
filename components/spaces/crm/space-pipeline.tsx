@@ -83,7 +83,7 @@ export async function SpacePipeline({
               >
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
-                    <span className={`h-2 w-2 shrink-0 rounded-full ${stageDotClass(stage.kind)}`} />
+                    <span className={`h-2 w-2 shrink-0 rounded-pill ${stageDotClass(stage.kind)}`} />
                     <p className="truncate text-sm font-semibold text-text">{stage.name}</p>
                     <span className="shrink-0 text-xs tabular-nums text-subtle">{items.length}</span>
                   </div>
@@ -97,7 +97,7 @@ export async function SpacePipeline({
                     return (
                       <div
                         key={deal.id}
-                        className="rounded-xl border border-border bg-surface p-3 lift-1"
+                        className="rounded-card border border-border bg-surface p-3 lift-1"
                       >
                         <p className="line-clamp-2 text-sm font-semibold text-text">{deal.title}</p>
                         {who && <p className="mt-0.5 truncate text-xs text-muted">{who}</p>}
@@ -108,7 +108,7 @@ export async function SpacePipeline({
                     )
                   })}
                   {items.length === 0 && (
-                    <p className="rounded-xl border border-dashed border-border px-3 py-6 text-center text-xs text-subtle">
+                    <p className="rounded-card border border-dashed border-border px-3 py-6 text-center text-xs text-subtle">
                       No deals
                     </p>
                   )}

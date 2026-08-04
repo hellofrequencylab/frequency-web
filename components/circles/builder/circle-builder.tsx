@@ -266,7 +266,7 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
                       setPrimaryPillar(next)
                       saveIfChanged('primaryPillar', next, draft.primaryPillar)
                     }}
-                    className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                    className={`rounded-pill border px-3.5 py-1.5 text-sm font-medium transition-colors ${
                       primaryPillar === p
                         ? 'border-primary/50 bg-primary-bg text-primary-strong'
                         : 'border-border bg-surface text-muted hover:text-text'

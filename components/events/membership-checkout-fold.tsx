@@ -69,7 +69,7 @@ export function MembershipCheckoutFold({
       </button>
 
       {open && (
-        <div className="space-y-4 rounded-xl border border-primary/40 bg-surface-elevated/40 p-4">
+        <div className="space-y-4 rounded-card border border-primary/40 bg-surface-elevated/40 p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-sm font-bold text-text">Join {spaceName}</p>

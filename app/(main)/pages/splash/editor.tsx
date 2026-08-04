@@ -451,7 +451,7 @@ export function SplashCopyEditor({
                 </p>
               </div>
               {slide2.map((row, i) => (
-                <div key={i} className="space-y-3 rounded-xl border border-border bg-surface-elevated p-3">
+                <div key={i} className="space-y-3 rounded-card border border-border bg-surface-elevated p-3">
                   <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Feature {i + 1}</p>
                   <div>
                     <label className={LABEL} htmlFor={`slide2-title-${i}`}>Title</label>
@@ -500,7 +500,7 @@ export function SplashCopyEditor({
               {slide3.map((row, i) => {
                 const artValue = row.art.kind === 'image' ? 'image' : row.art.render
                 return (
-                  <div key={i} className="space-y-3 rounded-xl border border-border bg-surface-elevated p-3">
+                  <div key={i} className="space-y-3 rounded-card border border-border bg-surface-elevated p-3">
                     <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Core feature {i + 1}</p>
                     <div>
                       <label className={LABEL} htmlFor={`slide3-title-${i}`}>Title</label>
@@ -654,7 +654,7 @@ export function SplashCopyEditor({
                 type="button"
                 aria-pressed={previewBeat === b.beatIndex}
                 onClick={() => setPreviewBeat(b.beatIndex)}
-                className={`rounded-full px-2.5 py-1 text-2xs font-semibold transition-colors ${
+                className={`rounded-pill px-2.5 py-1 text-2xs font-semibold transition-colors ${
                   previewBeat === b.beatIndex
                     ? 'bg-primary text-on-primary'
                     : 'border border-border bg-surface text-subtle hover:bg-surface-elevated'

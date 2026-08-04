@@ -420,7 +420,7 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
             {/* Event badge: a lucide icon + "Event" chip in DAWN success tokens, so an
                 Event Dispatch reads as event-flavoured on the broadcast rail. */}
             {isEvent && (
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-success-bg px-1.5 py-px text-3xs font-black uppercase tracking-wide text-success">
+              <span className="inline-flex items-center gap-0.5 rounded-pill bg-success-bg px-1.5 py-px text-3xs font-black uppercase tracking-wide text-success">
                 <CalendarClock className="w-2.5 h-2.5" /> Event
               </span>
             )}
