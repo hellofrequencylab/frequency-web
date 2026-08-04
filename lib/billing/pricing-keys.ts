@@ -372,9 +372,22 @@ export interface CatalogItem {
 /** Yearly amount from a monthly one: TWO MONTHS FREE (10x monthly), the single source of the annual
  *  math (PRICING-LADDER-PLAN §1a). PURE. Floors to whole cents (monthly amounts are whole cents, so
  *  10x is exact, but the floor keeps it robust to any future fractional input). */
+/** Months free on an annual plan. THE number, exported so the sentence a member reads and the
+ *  amount Stripe charges are computed from one constant.
+ *
+ *  They were not. `annualDiscountNote` read the operator knob `annual_discount.months_free`
+ *  (settable at /admin/pricing) while this function hardcoded 10x. They agreed only because the
+ *  default happened to be 2 -- so the first operator to run a "3 months free" promo would have
+ *  published that sentence on every plan card and in the pricing FAQ while checkout kept billing
+ *  ten months. A member quoted 25% off and charged 16.7%. */
+export const ANNUAL_MONTHS_FREE: number = 2
+
+/** Yearly amount from a monthly one: ANNUAL_MONTHS_FREE months free, the single source of the
+ *  annual math (PRICING-LADDER-PLAN §1a). PURE. Floors to whole cents (monthly amounts are whole
+ *  cents, so the multiple is exact, but the floor keeps it robust to any future fractional input). */
 export function yearlyFromMonthly(monthlyCents: number): number {
   if (!Number.isFinite(monthlyCents) || monthlyCents <= 0) return 0
-  return Math.floor(monthlyCents * 10)
+  return Math.floor(monthlyCents * (12 - ANNUAL_MONTHS_FREE))
 }
 
 /** The MONTHLY rate a yearly amount represents: the exact inverse of yearlyFromMonthly (two months

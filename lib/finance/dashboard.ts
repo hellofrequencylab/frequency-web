@@ -43,12 +43,38 @@ export async function getFinanceSummary(recentLimit = 25): Promise<FinanceSummar
   const { data: entRows } = await db.from('entities').select('id, key, name, kind')
   const ents = new Map((entRows ?? []).map((e) => [e.id, e]))
 
-  const { data: txns } = await db
-    .from('financial_transactions')
-    .select('id, entity_id, revenue_type, amount_cents, currency, occurred_at, source_table')
-    .order('occurred_at', { ascending: false })
-
-  const rows = txns ?? []
+  // PAGINATED, and it has to be. supabase/config.toml sets `max_rows = 1000`, and PostgREST
+  // enforces that silently -- no error, no flag, no partial-content signal. An unbounded select
+  // therefore returns the newest 1,000 rows and every figure computed below (grand total, the
+  // Foundation-vs-Labs split, byType, txnCount) is a truncated sum that LOOKS like a real one.
+  // The ledger has live writers (tickets, tips, supporter, checkout), so this was a matter of
+  // time rather than an if: transaction 1,001 would have quietly shrunk lifetime revenue and
+  // pinned txnCount at exactly 1000 forever.
+  // Ordered by id, not occurred_at: the cursor must be unique and stable, and two transactions
+  // can share a timestamp.
+  type TxnRow = {
+    id: string
+    entity_id: string
+    revenue_type: string
+    amount_cents: number
+    currency: string
+    occurred_at: string
+    source_table: string
+  }
+  const PAGE = 1000
+  const rows: TxnRow[] = []
+  for (let page = 0; ; page += 1) {
+    const { data, error } = await db
+      .from('financial_transactions')
+      .select('id, entity_id, revenue_type, amount_cents, currency, occurred_at, source_table')
+      .order('id', { ascending: true })
+      .range(page * PAGE, page * PAGE + PAGE - 1)
+    if (error) throw new Error(`finance dashboard read failed: ${error.message}`)
+    const batch = (data ?? []) as TxnRow[]
+    rows.push(...batch)
+    if (batch.length < PAGE) break
+  }
+  rows.sort((a, b) => (a.occurred_at < b.occurred_at ? 1 : a.occurred_at > b.occurred_at ? -1 : 0))
 
   // Seed every known entity so Foundation + Labs always show (the partition is the point).
   const byEntity = new Map<string, EntityFinance>()
