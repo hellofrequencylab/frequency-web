@@ -3,7 +3,8 @@
 #
 # TWO ENTRY POINTS:
 #   1. workflow_dispatch — the maintainer path. Point it at any URL; optionally run the
-#      @visual compare, or CAPTURE baselines on the runner (update_baselines). Unchanged.
+#      @visual compare, or CAPTURE baselines on the runner (update_baselines for the pixel
+#      snapshots, update_a11y for the accessibility ratchet's frozen counts).
 #   2. pull_request      — the automatic COMPARE gate (UX maturity plan, Lift 6c). Runs on
 #      PRs that can move pixels (globals.css / components/** / lib/page-editor/**), resolves
 #      the PR's own Vercel preview through the deployments API, and runs smoke + a11y +
@@ -32,6 +33,11 @@ on:
         type: boolean
       update_baselines:
         description: 'CAPTURE fresh @visual baselines against base_url and upload them as an artifact (commit them from the artifact; agent sandboxes cannot reach deploy URLs)'
+        required: false
+        default: false
+        type: boolean
+      update_a11y:
+        description: 'CAPTURE the @a11y ratchet baselines against base_url and commit them (falls are written down; a RISE fails the job rather than being laundered into the baseline)'
         required: false
         default: false
         type: boolean
@@ -137,6 +143,61 @@ jobs:
           name: visual-baselines
           path: test/e2e/__screenshots__/
           retention-days: 7
+
+  # The a11y ratchet's seed/re-freeze path (ADR-928). Same shape as update-baselines and for
+  # the same reason: the numbers must come from a real deployment, and only the runner holds
+  # the bypass secret that gets past Deployment Protection.
+  update-a11y:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.update_a11y }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      # PW_A11Y_UPDATE makes every @a11y test RECORD its violation count instead of asserting
+      # against the baseline, so the capture cannot fail on the debt it is there to measure.
+      - name: Capture a11y counts
+        env:
+          PW_BASE_URL: ${{ inputs.base_url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          PW_A11Y_UPDATE: '1'
+        run: pnpm test:e2e:a11y
+      # Merge is asymmetric and exits non-zero on a rise, so a regression cannot be quietly
+      # absorbed by re-running this job. No always() here for exactly that reason.
+      - name: Merge into the ratchet
+        run: pnpm a11y:baselines
+      - name: Commit baselines to the branch
+        run: |
+          git config user.email noreply@anthropic.com
+          git config user.name Claude
+          git add test/e2e/a11y-baselines.json
+          if git diff --cached --quiet; then
+            echo "No baseline changes to commit."
+          else
+            git commit -m "a11y baselines: capture against ${{ inputs.base_url }} (runner-committed)"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+      - name: Upload capture + report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-capture
+          path: |
+            test/e2e/a11y-baselines.json
+            test/e2e/.a11y-observed.jsonl
+            playwright-report/
+          retention-days: 7
+          include-hidden-files: true
 
   visual:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_visual }}

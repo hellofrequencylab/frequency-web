@@ -15,7 +15,10 @@
 //
 // Usage:
 //   PW_A11Y_UPDATE=1 pnpm exec playwright test --grep @a11y      # capture
-//   node scripts/a11y-baselines.mjs                              # merge (add --force to raise)
+//   node scripts/a11y-baselines.mjs                              # merge
+//
+// Flags: --force  accept a RISE (say why in the commit)
+//        --prune  retire entries this run did not observe (only after a COMPLETE run)
 
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -24,6 +27,7 @@ const OBSERVED = join('test', 'e2e', '.a11y-observed.jsonl')
 const BASELINES = join('test', 'e2e', 'a11y-baselines.json')
 
 const force = process.argv.includes('--force')
+const prune = process.argv.includes('--prune')
 
 if (!existsSync(OBSERVED)) {
   console.error(
@@ -74,10 +78,12 @@ for (const [context, total] of [...observed].sort(([a], [b]) => a.localeCompare(
   }
 }
 
-// Drop contexts that no longer exist, so a retired surface cannot hide debt forever.
-for (const context of Object.keys(doc.surfaces)) {
-  if (!observed.has(context)) delete doc.surfaces[context]
-}
+// Contexts in the file that this run did not observe. They are NOT dropped by default:
+// a capture that died halfway through would otherwise delete every context it never reached,
+// quietly erasing debt and re-freezing those surfaces at zero on the next run. Retiring a
+// surface is a deliberate act, so it takes --prune.
+const unobserved = Object.keys(doc.surfaces).filter((context) => !observed.has(context))
+if (prune) for (const context of unobserved) delete doc.surfaces[context]
 
 if (rose.length > 0 && !force) {
   console.error(`✗ ${rose.length} context(s) REGRESSED. Baselines not raised:`)
@@ -91,6 +97,13 @@ unlinkSync(OBSERVED)
 
 const clean = [...observed.values()].filter((n) => n === 0).length
 console.log(`✓ a11y baselines merged: ${observed.size} context(s), ${clean} already clean.`)
+if (unobserved.length > 0) {
+  console.log(
+    prune
+      ? `    − retired ${unobserved.length} context(s) this run did not visit.`
+      : `    · kept ${unobserved.length} context(s) this run did not visit (--prune to retire them).`,
+  )
+}
 for (const [context, total] of added) console.log(`    + ${context}: ${total}`)
 for (const [context, from, to] of fell) console.log(`    ↓ ${context}: ${from} → ${to} (improved)`)
 if (rose.length > 0) for (const [context, from, to] of rose) console.log(`    ↑ ${context}: ${from} → ${to} (FORCED)`)
