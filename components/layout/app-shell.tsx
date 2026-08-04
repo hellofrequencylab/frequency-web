@@ -641,7 +641,7 @@ function AccountDropdown({
 
       {open && (
         // The SYSTEM dock's popover (three-docks law): opens from the top-right corner
-        // toward the interior. rounded-card + shadow-menu (downward-only depth, so it
+        // toward the interior. rounded-control + shadow-menu (downward-only depth, so it
         // reads as sliding out from under the chrome band, not floating over it).
         <div className="absolute right-0 top-full mt-2 w-60 rounded-card border border-border bg-surface shadow-menu py-1 z-50 max-h-[80vh] overflow-y-auto">
 
@@ -2050,7 +2050,7 @@ export default function AppShell({
                           onClick={toggleRail}
                           title={`${label} — open the rail`}
                           aria-label={`${label} — open the rail`}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-card text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-elevated hover:text-text"
                         >
                           <Icon className="h-5 w-5" aria-hidden />
                         </button>

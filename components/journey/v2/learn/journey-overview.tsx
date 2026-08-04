@@ -227,7 +227,7 @@ function TouchpointDetails({
         (event ? (
           <Link
             href={`/events/${event.slug}`}
-            className={`flex items-center gap-2 rounded-card border border-border bg-surface-elevated/40 px-3 py-2.5 text-sm transition-colors hover:border-primary ${
+            className={`flex items-center gap-2 rounded-control border border-border bg-surface-elevated/40 px-3 py-2.5 text-sm transition-colors hover:border-primary ${
               rows.length > 0 ? 'mt-3' : ''
             }`}
           >

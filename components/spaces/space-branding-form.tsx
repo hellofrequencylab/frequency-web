@@ -334,7 +334,7 @@ export function SpaceBrandingForm({
           button on all-white), CLOSED by default. Folds open to reveal buttons, shade, and the header button.
           Height lives beside the profile image now (item 4). Each control autosaves on pick / blur. */}
       <details className="group rounded-card border border-border bg-surface-elevated">
-        <summary className="flex cursor-pointer list-none items-center gap-2.5 rounded-card px-4 py-3 text-sm font-semibold text-text outline-none transition-colors hover:border-border-strong hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary/50 [&::-webkit-details-marker]:hidden">
+        <summary className="flex cursor-pointer list-none items-center gap-2.5 rounded-control px-4 py-3 text-sm font-semibold text-text outline-none transition-colors hover:border-border-strong hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary/50 [&::-webkit-details-marker]:hidden">
           <PanelTop className="h-4 w-4 shrink-0 text-primary" aria-hidden />
           <span className="flex-1">Header style</span>
           <span className="text-2xs font-medium text-muted group-open:hidden">Edit</span>
@@ -553,7 +553,7 @@ export function SpaceBrandingForm({
           (closed by default, matching Header): the presets stay tucked away until the operator opens it. The
           accent colour is set separately below. Optimistic buttons, each saves the moment it is picked. */}
       <details className="group rounded-card border border-border bg-surface-elevated">
-        <summary className="flex cursor-pointer list-none items-center gap-2.5 rounded-card px-4 py-3 text-sm font-semibold text-text outline-none transition-colors hover:border-border-strong hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary/50 [&::-webkit-details-marker]:hidden">
+        <summary className="flex cursor-pointer list-none items-center gap-2.5 rounded-control px-4 py-3 text-sm font-semibold text-text outline-none transition-colors hover:border-border-strong hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary/50 [&::-webkit-details-marker]:hidden">
           <Type className="h-4 w-4 shrink-0 text-primary" aria-hidden />
           <span className="flex-1">Page style</span>
           <span className="text-2xs font-medium text-muted group-open:hidden">Edit</span>

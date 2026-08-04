@@ -537,7 +537,7 @@ function CardImage({ url, label }: { url: string; label: string }) {
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="group relative block overflow-hidden rounded-card border border-border bg-surface-elevated"
+      className="group relative block overflow-hidden rounded-control border border-border bg-surface-elevated"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={url} alt={`${label} of the card`} className="w-full object-contain" />

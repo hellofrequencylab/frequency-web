@@ -107,7 +107,7 @@ export function CircleLocationSearch({
           onFocus={() => results.length > 0 && setOpen(true)}
           placeholder="Search a city to find circles nearby…"
           aria-label="Search a city to find circles nearby"
-          className="w-full rounded-card border border-border bg-surface py-2.5 pl-9 pr-9 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30"
+          className="w-full rounded-control border border-border bg-surface py-2.5 pl-9 pr-9 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30"
         />
         {(loading || q) && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2">

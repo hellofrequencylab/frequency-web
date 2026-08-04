@@ -582,7 +582,7 @@ export function TiersBlock({
                 ) : (
                   <Link
                     href={safeHref(tier.ctaHref) ?? '#'}
-                    className={`inline-flex w-full items-center justify-center gap-2 rounded-card px-6 py-3.5 text-base font-bold transition-colors ${
+                    className={`inline-flex w-full items-center justify-center gap-2 rounded-control px-6 py-3.5 text-base font-bold transition-colors ${
                       tier.ctaStyle === 'primary'
                         ? 'bg-primary text-on-primary hover:bg-primary-hover shadow-pop'
                         : 'border border-border-strong text-text hover:bg-surface-elevated'

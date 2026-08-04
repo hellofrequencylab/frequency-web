@@ -91,7 +91,7 @@ function TopFriendsView({ title, friends, cardStyle, headingFont }: {
             <Link
               key={f.profileId}
               href={`/people/${f.handle}`}
-              className="flex flex-col items-center gap-1.5 rounded-card border border-border bg-surface p-2 text-center transition-colors hover:bg-surface-elevated"
+              className="flex flex-col items-center gap-1.5 rounded-control border border-border bg-surface p-2 text-center transition-colors hover:bg-surface-elevated"
               style={cardStyle}
             >
               {f.avatarUrl ? (

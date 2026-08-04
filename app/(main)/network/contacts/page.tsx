@@ -128,7 +128,7 @@ export default async function ConnectionsPage({
             {googleImportEnabled && (
               <Link
                 href="/api/integrations/google/start"
-                className="inline-flex items-center gap-1.5 rounded-card border border-border-strong bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated sm:px-3.5 sm:py-2"
+                className="inline-flex items-center gap-1.5 rounded-control border border-border-strong bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated sm:px-3.5 sm:py-2"
               >
                 <Download className="h-4 w-4" /> Import from Google
               </Link>

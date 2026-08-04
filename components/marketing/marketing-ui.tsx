@@ -346,7 +346,7 @@ export function Stat({
 // as the single canonical indicator (retires pricing's `+` and home's copy).
 export function Faq({ q, children }: { q: string; children: React.ReactNode }) {
   return (
-    // rounded-card (was rounded-2xl, the same 1rem at :root): inside a Space subtree the page theme
+    // rounded-control (was rounded-2xl, the same 1rem at :root): inside a Space subtree the page theme
     // shapes the FAQ card (ADR-578); everywhere else the token resolves exactly as before.
     <details className="group rounded-card border border-border bg-surface px-6 py-5 lift-1 [&_summary]:list-none">
       <summary className="flex cursor-pointer items-center justify-between gap-4 text-left select-none">

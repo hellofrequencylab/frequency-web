@@ -168,7 +168,7 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
             onKeyDown={(e) => { if (e.key === 'Enter') send() }}
             placeholder="Say something to Vera…"
             aria-label="Message Vera"
-            className="w-full rounded-card border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+            className="w-full rounded-control border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
           />
           <button type="button" onClick={send} disabled={pending || !input.trim()} aria-label="Send" className="rounded-xl bg-primary p-2 text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50">
             <Send className="h-4 w-4" />

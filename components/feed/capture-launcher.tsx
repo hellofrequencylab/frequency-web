@@ -209,7 +209,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             <Link
               href="/journal"
               onClick={tapTile('journal')}
-              className="mt-4 flex shrink-0 items-center justify-center gap-1.5 rounded-card px-3 py-2.5 text-xs font-semibold text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+              className="mt-4 flex shrink-0 items-center justify-center gap-1.5 rounded-control px-3 py-2.5 text-xs font-semibold text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <BookOpen className="h-3.5 w-3.5" aria-hidden /> View your log
             </Link>

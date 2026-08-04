@@ -694,7 +694,7 @@ export function ImportWizard({
                   key={k}
                   type="button"
                   onClick={() => setMergeStrategy(k)}
-                  className={`rounded-card border p-3 text-left text-xs transition-colors ${mergeStrategy === k ? 'border-primary bg-primary-bg' : 'border-border hover:bg-surface-elevated'}`}
+                  className={`rounded-control border p-3 text-left text-xs transition-colors ${mergeStrategy === k ? 'border-primary bg-primary-bg' : 'border-border hover:bg-surface-elevated'}`}
                 >
                   <span className="block font-semibold text-text">{MERGE_LABEL[k].label}</span>
                   <span className="mt-0.5 block text-subtle">{MERGE_LABEL[k].help}</span>
@@ -798,7 +798,7 @@ export function ImportWizard({
               <button
                 type="button"
                 onClick={() => { setStep('upload'); setSource(null); setImportId(null); setMapping([]); setValidation(null); setResult(null); setUndone(false); setBanner(null); setFilename(''); setPasted(''); setShowPaste(false); setQueue([]); }}
-                className="inline-flex items-center gap-2 rounded-card border border-border-strong px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                className="inline-flex items-center gap-2 rounded-control border border-border-strong px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
               >
                 <UploadCloud className="h-4 w-4" /> Import another file
               </button>

@@ -210,7 +210,7 @@ export function ReportDialog({
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder={type === 'bug' ? 'e.g. Capture button does nothing on the feed' : 'A short summary'}
                 maxLength={160}
-                className="w-full rounded-card border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+                className="w-full rounded-control border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
               />
             </label>
 
@@ -221,7 +221,7 @@ export function ReportDialog({
                 onChange={(e) => setBody(e.target.value)}
                 rows={4}
                 placeholder="What you were doing, what you expected, and what happened instead."
-                className="w-full resize-none rounded-card border border-border bg-surface px-3 py-2 text-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+                className="w-full resize-none rounded-control border border-border bg-surface px-3 py-2 text-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
               />
             </label>
 
@@ -240,7 +240,7 @@ export function ReportDialog({
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
-                  className="flex w-full items-center justify-center gap-2 rounded-card border border-dashed border-border bg-surface px-3 py-4 text-xs font-medium text-muted transition-colors hover:border-primary hover:text-text"
+                  className="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-border bg-surface px-3 py-4 text-xs font-medium text-muted transition-colors hover:border-primary hover:text-text"
                 >
                   <ImagePlus className="h-4 w-4" /> Paste a screenshot, or tap to attach
                 </button>

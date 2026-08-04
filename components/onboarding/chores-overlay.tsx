@@ -274,7 +274,7 @@ export function ChoresOverlay({
                       key={c.key}
                       href={c.href}
                       onClick={close}
-                      className="group flex items-center gap-3 rounded-card border border-border bg-surface px-3 py-2.5 transition-colors hover:border-broadcast hover:bg-broadcast-bg/30"
+                      className="group flex items-center gap-3 rounded-control border border-border bg-surface px-3 py-2.5 transition-colors hover:border-broadcast hover:bg-broadcast-bg/30"
                     >
                       <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-pill border border-broadcast-bg text-broadcast-strong">
                         <span className="h-1.5 w-1.5 rounded-pill bg-current" />

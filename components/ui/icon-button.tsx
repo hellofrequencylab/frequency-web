@@ -30,7 +30,7 @@ import { cn } from '@/lib/utils'
 // byte-identical. `[@media(pointer:coarse)]` rather than a breakpoint: a 1024px tablet is
 // still a thumb, and a 390px window on a laptop is still a mouse.
 const iconControl =
-  'inline-flex h-8 w-8 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11 items-center justify-center rounded-control text-subtle press transition-[color,background-color,box-shadow,transform] motion-reduce:transition-none hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50'
+  'tap-target inline-flex h-8 w-8 items-center justify-center rounded-control text-subtle press transition-[color,background-color,box-shadow,transform] motion-reduce:transition-none hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50'
 
 function tone(danger?: boolean) {
   return danger ? 'hover:text-danger' : 'hover:text-muted'

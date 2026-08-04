@@ -399,7 +399,7 @@ export function Creator({ userId }: { userId: string }) {
             <button
               type="button"
               onClick={retake}
-              className="inline-flex items-center gap-1.5 rounded-card border border-border-strong px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
             >
               <RefreshCw className="h-4 w-4" /> Retake
             </button>
@@ -448,7 +448,7 @@ export function Creator({ userId }: { userId: string }) {
           <button
             type="button"
             onClick={() => galleryRef.current?.click()}
-            className="inline-flex items-center gap-1.5 rounded-card border border-border-strong px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+            className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
           >
             <Upload className="h-4 w-4" /> Upload an image
           </button>

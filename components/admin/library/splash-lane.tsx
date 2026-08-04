@@ -197,7 +197,7 @@ export function SplashLane({
                   )}
                   <Link
                     href={l.editHref}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-card border border-border-strong px-2.5 py-1 text-xs font-semibold text-text hover:bg-surface"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-control border border-border-strong px-2.5 py-1 text-xs font-semibold text-text hover:bg-surface"
                     title={l.editLabel}
                   >
                     <PencilLine className="h-3.5 w-3.5" aria-hidden /> Edit
@@ -306,7 +306,7 @@ function TemplateDrawer({ template, onClose }: { template: SplashTemplateCard; o
           <Field label="Compose">
             <Link
               href={template.composeHref}
-              className="inline-flex items-center gap-1.5 rounded-card border border-border-strong px-3 py-1.5 text-sm font-semibold text-text hover:bg-surface-elevated"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-1.5 text-sm font-semibold text-text hover:bg-surface-elevated"
             >
               {template.composeLabel}
               <ExternalLink className="h-3.5 w-3.5 text-subtle" aria-hidden />
@@ -372,7 +372,7 @@ function LiveSplashDrawer({ splash, onClose }: { splash: LiveSplashCard; onClose
           <Field label="Edit">
             <Link
               href={splash.editHref}
-              className="inline-flex items-center gap-1.5 rounded-card border border-border-strong px-3 py-1.5 text-sm font-semibold text-text hover:bg-surface-elevated"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-1.5 text-sm font-semibold text-text hover:bg-surface-elevated"
               title={splash.editLabel}
             >
               <PencilLine className="h-3.5 w-3.5" aria-hidden /> {splash.editLabel}

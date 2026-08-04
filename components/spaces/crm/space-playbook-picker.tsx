@@ -108,14 +108,14 @@ export function SpacePlaybookPicker({
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="Subject"
-              className="w-full rounded-card border border-border bg-canvas px-3 py-2 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="w-full rounded-control border border-border bg-canvas px-3 py-2 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             />
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
               placeholder="Write the note in your own words. You approve before it sends."
               rows={4}
-              className="w-full rounded-card border border-border bg-canvas px-3 py-2 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="w-full rounded-control border border-border bg-canvas px-3 py-2 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             />
           </div>
         )}

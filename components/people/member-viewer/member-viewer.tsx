@@ -334,7 +334,7 @@ export function MemberViewer({
                 onChange={(e) => setSearchText(e.target.value)}
                 placeholder={search.placeholder ?? 'Search members'}
                 aria-label={search.placeholder ?? 'Search members'}
-                className="w-full rounded-card border border-border bg-surface py-2.5 pl-10 pr-9 text-sm text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none"
+                className="w-full rounded-control border border-border bg-surface py-2.5 pl-10 pr-9 text-sm text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none"
               />
               {text && (
                 <button

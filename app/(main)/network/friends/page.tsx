@@ -63,7 +63,7 @@ export default async function FriendsPage() {
             {/* Messages lives here on mobile (the header keeps one Friends icon). */}
             <Link
               href="/messages"
-              className="inline-flex items-center gap-1.5 rounded-card border border-border bg-surface px-3.5 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3.5 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong"
             >
               <MessageSquare className="h-4 w-4" /> Messages
             </Link>

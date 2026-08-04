@@ -124,7 +124,7 @@ export function CaptureForm({
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoComplete="name"
-            className="w-full rounded-card border border-border bg-surface px-4 py-3 text-base text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
+            className="w-full rounded-control border border-border bg-surface px-4 py-3 text-base text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
             placeholder={namePlaceholder}
           />
         </div>
@@ -141,7 +141,7 @@ export function CaptureForm({
             autoComplete="email"
             aria-describedby={error ? 'cap-error' : undefined}
             aria-invalid={error ? true : undefined}
-            className="w-full rounded-card border border-border bg-surface px-4 py-3 text-base text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
+            className="w-full rounded-control border border-border bg-surface px-4 py-3 text-base text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
             placeholder="you@email.com"
           />
         </div>
@@ -156,7 +156,7 @@ export function CaptureForm({
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               autoComplete="tel"
-              className="w-full rounded-card border border-border bg-surface px-4 py-3 text-base text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
+              className="w-full rounded-control border border-border bg-surface px-4 py-3 text-base text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
               placeholder="(555) 555-0134"
             />
           </div>

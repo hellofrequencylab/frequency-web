@@ -427,7 +427,7 @@ export function LoomPicker({
                               onClick={() => pick(t.value)}
                               title={t.label}
                               aria-pressed={multiple ? on : undefined}
-                              className={`group relative block aspect-square w-full overflow-hidden rounded-card border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 ${t.contain ? 'bg-surface' : 'bg-canvas'} ${on ? 'border-primary ring-2 ring-primary' : 'border-border hover:border-primary'}`}
+                              className={`group relative block aspect-square w-full overflow-hidden rounded-control border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 ${t.contain ? 'bg-surface' : 'bg-canvas'} ${on ? 'border-primary ring-2 ring-primary' : 'border-border hover:border-primary'}`}
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element -- Loom asset URL or an inline SVG data URL, not a configured next/image domain */}
                               <img src={t.src} alt={t.label} loading="lazy" className={`h-full w-full ${t.contain ? 'object-contain p-3' : 'object-cover'}`} />

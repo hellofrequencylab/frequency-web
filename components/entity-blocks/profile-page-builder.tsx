@@ -780,7 +780,7 @@ export function EntityPageBuilder({
       <button
         type="button"
         onClick={() => onAddRow()}
-        className="mb-2 flex w-full items-center justify-center gap-1.5 rounded-card border border-dashed border-border py-2.5 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
+        className="mb-2 flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-border py-2.5 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
       >
         <Plus className="h-4 w-4" aria-hidden /> Add row
       </button>

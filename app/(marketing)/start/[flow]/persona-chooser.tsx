@@ -115,7 +115,7 @@ export function PersonaChooser({
               placeholder="you@example.com"
               autoComplete="email"
               aria-label="Email address"
-              className="mt-6 w-full rounded-card border border-border bg-marketing-canvas px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none"
+              className="mt-6 w-full rounded-control border border-border bg-marketing-canvas px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none"
             />
           )}
 

@@ -85,7 +85,7 @@ export function PracticeSettingsModule() {
       {/* The deep/guided surface is one tap from the single Edit entry (ADR-450). */}
       <Link
         href={`/practices/${data.id}/edit`}
-        className="flex items-center gap-3 rounded-card border border-border bg-surface px-4 py-3 transition-colors hover:border-border-strong hover:bg-surface-elevated"
+        className="flex items-center gap-3 rounded-control border border-border bg-surface px-4 py-3 transition-colors hover:border-border-strong hover:bg-surface-elevated"
       >
         <Wand2 className="h-5 w-5 shrink-0 text-primary-strong" />
         <span className="min-w-0 flex-1">

@@ -75,7 +75,7 @@ export default async function SignInPage({
           {nextValue && <input type="hidden" name="next" value={nextValue} />}
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-3 rounded-card border border-border-strong bg-surface px-4 py-3 text-sm font-medium text-text lift-1 transition-colors hover:bg-surface-elevated"
+            className="flex w-full items-center justify-center gap-3 rounded-control border border-border-strong bg-surface px-4 py-3 text-sm font-medium text-text lift-1 transition-colors hover:bg-surface-elevated"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />

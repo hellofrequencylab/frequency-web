@@ -739,7 +739,7 @@ function PlanCta({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
   return (
     <Link
       href={href}
-      className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-card px-8 py-3.5 text-base font-bold transition-colors ${
+      className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-control px-8 py-3.5 text-base font-bold transition-colors ${
         ink
           ? 'border border-on-ink/20 bg-on-ink/10 text-on-ink hover:bg-on-ink/15'
           : 'border border-border bg-surface text-text hover:bg-surface-elevated'
@@ -842,7 +842,7 @@ function PlanStrip({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
         <div className="shrink-0">
           <Link
             href={safeHref(plan.ctaHref) ?? '#'}
-            className={`inline-flex items-center justify-center gap-2 rounded-card px-8 py-3.5 text-base font-bold transition-colors ${
+            className={`inline-flex items-center justify-center gap-2 rounded-control px-8 py-3.5 text-base font-bold transition-colors ${
               ink
                 ? 'border border-on-ink/20 bg-on-ink/10 text-on-ink hover:bg-on-ink/15'
                 : 'border border-border bg-surface text-text hover:bg-surface-elevated'

@@ -64,7 +64,7 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-card border border-border bg-surface px-4 py-2.5 text-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
+        className="w-full rounded-control border border-border bg-surface px-4 py-2.5 text-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
       />
     </div>
   )
@@ -203,7 +203,7 @@ function EventMaker({ slug }: { slug: string }) {
               id="event-tier"
               value={tier}
               onChange={(e) => setTier(e.target.value)}
-              className="w-full rounded-card border border-border bg-surface px-4 py-2.5 text-sm text-text outline-none focus:border-border-strong"
+              className="w-full rounded-control border border-border bg-surface px-4 py-2.5 text-sm text-text outline-none focus:border-border-strong"
             >
               <option value="attended">Attended</option>
               <option value="rsvp">RSVP</option>

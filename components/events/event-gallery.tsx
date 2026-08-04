@@ -49,7 +49,7 @@ export function EventGallery({ images }: { images: string[] }) {
               type="button"
               onClick={() => show(i)}
               aria-label={`View photo ${i + 1} of ${count}`}
-              className="group relative block aspect-square w-full overflow-hidden rounded-card border border-border bg-surface-elevated focus:outline-none focus:ring-2 focus:ring-border-strong/40"
+              className="group relative block aspect-square w-full overflow-hidden rounded-control border border-border bg-surface-elevated focus:outline-none focus:ring-2 focus:ring-border-strong/40"
             >
               {/* Unoptimized: images come from Supabase Storage, outside the configured
                   next/image domains (same as the event cover + recap album). */}

@@ -260,7 +260,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
       {/* Full dashboard */}
       <Link
         href="/crew"
-        className="flex items-center justify-center gap-1.5 rounded-card py-2 text-xs font-semibold text-primary-strong hover:bg-surface-elevated transition-colors"
+        className="flex items-center justify-center gap-1.5 rounded-control py-2 text-xs font-semibold text-primary-strong hover:bg-surface-elevated transition-colors"
       >
         <Sparkles className="w-3.5 h-3.5" />
         Open full dashboard

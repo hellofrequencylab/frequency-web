@@ -54,7 +54,7 @@ export function SubscribeForm() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoComplete="given-name"
-            className="w-full rounded-card border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle focus:border-border-strong outline-none transition-colors"
+            className="w-full rounded-control border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle focus:border-border-strong outline-none transition-colors"
             placeholder="Alex"
           />
         </div>
@@ -71,7 +71,7 @@ export function SubscribeForm() {
             autoComplete="email"
             aria-describedby={error ? 'subscribe-error' : undefined}
             aria-invalid={error ? true : undefined}
-            className="w-full rounded-card border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle focus:border-border-strong outline-none transition-colors"
+            className="w-full rounded-control border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle focus:border-border-strong outline-none transition-colors"
             placeholder="you@email.com"
           />
         </div>

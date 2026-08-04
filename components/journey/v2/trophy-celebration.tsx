@@ -110,7 +110,7 @@ export function TrophyCelebration({ milestone, onDismiss }: { milestone: TrophyM
           {isJourney && milestone.certificate && (
             <button
               onClick={() => window.print()}
-              className="inline-flex items-center justify-center gap-1.5 rounded-card border border-border px-4 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+              className="inline-flex items-center justify-center gap-1.5 rounded-control border border-border px-4 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
             >
               <Printer className="h-4 w-4" /> Print
             </button>

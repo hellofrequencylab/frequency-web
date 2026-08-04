@@ -614,21 +614,21 @@ export function Creator({ userId }: { userId: string }) {
                 <button
                   type="button"
                   onClick={() => { const s = pickSide; setPickSide(null); (s === 'back' ? backCamRef : frontCamRef).current?.click() }}
-                  className="flex w-full items-center gap-3 rounded-card px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  className="flex w-full items-center gap-3 rounded-control px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
                 >
                   <Camera className="h-5 w-5 text-primary-strong" /> Take photo
                 </button>
                 <button
                   type="button"
                   onClick={() => { const s = pickSide; setPickSide(null); (s === 'back' ? backRef : frontRef).current?.click() }}
-                  className="flex w-full items-center gap-3 rounded-card px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  className="flex w-full items-center gap-3 rounded-control px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
                 >
                   <Upload className="h-5 w-5 text-primary-strong" /> Choose from library
                 </button>
                 <button
                   type="button"
                   onClick={() => setPickSide(null)}
-                  className="flex w-full items-center justify-center rounded-card px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated"
+                  className="flex w-full items-center justify-center rounded-control px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated"
                 >
                   Cancel
                 </button>
@@ -778,7 +778,7 @@ export function Creator({ userId }: { userId: string }) {
 
           {/* One-time intro invite — shown only when there's an email */}
           {form.email.trim() && (
-            <label className="flex items-start gap-2.5 rounded-card border border-border bg-surface-elevated/40 p-3 text-sm">
+            <label className="flex items-start gap-2.5 rounded-control border border-border bg-surface-elevated/40 p-3 text-sm">
               <input
                 type="checkbox"
                 checked={sendInvite}
@@ -822,7 +822,7 @@ function CardSlot({
       <button
         type="button"
         onClick={onPick}
-        className="flex aspect-[8/5] w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-card border border-border-strong bg-surface-elevated/40 text-center transition-colors hover:bg-surface-elevated"
+        className="flex aspect-[8/5] w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-control border border-border-strong bg-surface-elevated/40 text-center transition-colors hover:bg-surface-elevated"
       >
         {thumb ? (
           // eslint-disable-next-line @next/next/no-img-element

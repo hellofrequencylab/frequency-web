@@ -1503,7 +1503,7 @@ export function OnAirSession({
                     maxLength={2000}
                     placeholder="Jot a line or two. Or do not. Up to you."
                     aria-label="Session note"
-                    className="w-full max-w-xs resize-none rounded-card border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+                    className="w-full max-w-xs resize-none rounded-control border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
                   />
                 )}
               </>
@@ -1691,7 +1691,7 @@ export function OnAirSession({
               maxLength={2000}
               placeholder="What happened? A line is plenty. Optional."
               aria-label="Note"
-              className="mt-2 w-full resize-none rounded-card border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+              className="mt-2 w-full resize-none rounded-control border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
             />
           </div>
         )}

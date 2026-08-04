@@ -348,7 +348,7 @@ export default async function LoomStudioPage({
                     <Link
                       key={t.id}
                       href={`/admin/library?lane=splash&section=templates&q=${encodeURIComponent(t.title)}`}
-                      className="inline-flex items-center gap-1.5 rounded-card border border-border bg-surface px-3 py-1.5 text-sm text-text hover:bg-surface-elevated"
+                      className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-sm text-text hover:bg-surface-elevated"
                     >
                       <span className="truncate">{t.title}</span>
                       <span className="shrink-0 text-2xs uppercase tracking-wide text-muted">{t.kind}</span>

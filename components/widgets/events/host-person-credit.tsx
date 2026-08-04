@@ -84,7 +84,7 @@ export function HostPersonCredit({
       ) : (
         <Link
           href={signInHref}
-          className="mt-3 block w-full rounded-card border border-border px-3 py-2 text-center text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+          className="mt-3 block w-full rounded-control border border-border px-3 py-2 text-center text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
         >
           Sign in to message the host
         </Link>

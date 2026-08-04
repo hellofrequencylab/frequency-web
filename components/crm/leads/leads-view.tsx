@@ -119,7 +119,7 @@ function LeadRow({ lead, boardHref }: { lead: SpaceLead; boardHref: string }) {
     <li>
       <Link
         href={`${boardHref}?contact=${lead.contactId}`}
-        className="flex items-center gap-3 rounded-card border border-border/60 bg-surface p-3 transition-colors hover:border-primary/40"
+        className="flex items-center gap-3 rounded-control border border-border/60 bg-surface p-3 transition-colors hover:border-primary/40"
       >
         <m.Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
         <div className="min-w-0 flex-1">

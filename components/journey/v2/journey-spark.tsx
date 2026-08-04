@@ -386,7 +386,7 @@ export function JourneySpark({
                 <div className="grid grid-cols-2 gap-2">
                   {([['light', 'Light', 'A few minutes'], ['medium', 'Medium', 'Ten to twenty minutes']] as const).map(([key, lbl, hint]) => (
                     <button key={key} type="button" onClick={() => setPace(key)} aria-pressed={pace === key}
-                      className={`rounded-card border px-3 py-2.5 text-left transition-colors ${pace === key ? 'border-primary/50 bg-primary-bg' : 'border-border bg-surface hover:bg-surface-elevated'}`}>
+                      className={`rounded-control border px-3 py-2.5 text-left transition-colors ${pace === key ? 'border-primary/50 bg-primary-bg' : 'border-border bg-surface hover:bg-surface-elevated'}`}>
                       <span className="block text-sm font-semibold text-text">{lbl}</span>
                       <span className="block text-xs text-muted">{hint}</span>
                     </button>

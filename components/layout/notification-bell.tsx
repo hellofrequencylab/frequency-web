@@ -132,7 +132,7 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
           <div className="max-h-96 overflow-y-auto divide-y divide-border">
             {!loaded && (
               <div className="py-8 text-center">
-                <div className="w-5 h-5 border-2 border-primary-bg border-t-primary rounded-pill animate-spin mx-auto" />
+                <div className="w-5 h-5 border-2 border-primary-bg border-t-primary rounded-full animate-spin mx-auto" />
               </div>
             )}
 

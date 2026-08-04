@@ -71,7 +71,7 @@ export function GalleryLightbox({
             type="button"
             onClick={() => show(i)}
             aria-label={item.alt || `View image ${i + 1} of ${count}`}
-            className="group relative aspect-square overflow-hidden rounded-card border border-border focus:outline-none focus:ring-2 focus:ring-border-strong/40"
+            className="group relative aspect-square overflow-hidden rounded-control border border-border focus:outline-none focus:ring-2 focus:ring-border-strong/40"
             style={cardStyle}
           >
             <Image

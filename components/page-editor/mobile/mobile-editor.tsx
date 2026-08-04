@@ -481,7 +481,7 @@ export function MobileEditor({
                       key={b.type}
                       type="button"
                       onClick={() => handleAdd(b.type)}
-                      className="flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-card border border-border bg-surface px-2 py-2 text-center text-xs font-medium text-text hover:bg-surface-elevated"
+                      className="flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-control border border-border bg-surface px-2 py-2 text-center text-xs font-medium text-text hover:bg-surface-elevated"
                     >
                       <span className="line-clamp-2">{b.label}</span>
                     </button>

@@ -130,7 +130,7 @@ function LinkTreeView({ items, tint }: { items: LinkRow[]; tint?: BlockTint }) {
           href={item.url}
           target="_blank"
           rel="noopener noreferrer nofollow"
-          className="block rounded-card border border-border-strong bg-surface px-4 py-3 text-center text-sm font-semibold text-text shadow-sm transition-colors hover:bg-surface-elevated"
+          className="block rounded-control border border-border-strong bg-surface px-4 py-3 text-center text-sm font-semibold text-text shadow-sm transition-colors hover:bg-surface-elevated"
           style={tintStyle(tint)}
         >
           {item.label?.trim() || item.url}
@@ -300,7 +300,7 @@ function TopFriendsView({ title, meta }: { title?: string; meta: SpotlightRender
             <Link
               key={f.profileId}
               href={`/people/${f.handle}`}
-              className="flex flex-col items-center gap-1.5 rounded-card border border-border bg-surface p-2 text-center transition-colors hover:bg-surface-elevated"
+              className="flex flex-col items-center gap-1.5 rounded-control border border-border bg-surface p-2 text-center transition-colors hover:bg-surface-elevated"
             >
               {f.avatarUrl ? (
                 <Image src={avatarSrc(f.avatarUrl)} alt={name} width={64} height={64} className="h-14 w-14 rounded-pill object-cover" style={avatarFocusStyle(f.avatarUrl)} />

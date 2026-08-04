@@ -450,7 +450,7 @@ export function SpaceSettingsSurface({
           Module Manager was only reachable by typing /manage/modules by hand from the in-place console. */}
       <Link
         href={`/spaces/${slug}/manage/modules`}
-        className="group flex items-center gap-3 rounded-card border border-border bg-surface px-3.5 py-3 lift-1 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+        className="group flex items-center gap-3 rounded-control border border-border bg-surface px-3.5 py-3 lift-1 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
           <SlidersHorizontal className="h-4 w-4" aria-hidden />
@@ -470,7 +470,7 @@ export function SpaceSettingsSurface({
           change what their space emphasizes. */}
       <Link
         href={`/spaces/${slug}/manage/mode`}
-        className="group flex items-center gap-3 rounded-card border border-border bg-surface px-3.5 py-3 lift-1 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+        className="group flex items-center gap-3 rounded-control border border-border bg-surface px-3.5 py-3 lift-1 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
           <Compass className="h-4 w-4" aria-hidden />

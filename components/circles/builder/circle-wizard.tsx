@@ -165,7 +165,7 @@ export function CircleWizard() {
             <div className="space-y-2.5">
               <Link
                 href="/circles/templates"
-                className="flex w-full items-start gap-3 rounded-card border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated"
+                className="flex w-full items-start gap-3 rounded-control border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated"
               >
                 <LayoutTemplate className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                 <span className="min-w-0">
@@ -179,7 +179,7 @@ export function CircleWizard() {
               <button
                 type="button"
                 onClick={() => setMode('upload')}
-                className="flex w-full items-start gap-3 rounded-card border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated"
+                className="flex w-full items-start gap-3 rounded-control border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated"
               >
                 <Upload className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                 <span className="min-w-0">
@@ -193,7 +193,7 @@ export function CircleWizard() {
               <button
                 type="button"
                 onClick={() => setMode('questions')}
-                className="flex w-full items-start gap-3 rounded-card border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated"
+                className="flex w-full items-start gap-3 rounded-control border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated"
               >
                 <MessageCircleQuestion className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                 <span className="min-w-0">

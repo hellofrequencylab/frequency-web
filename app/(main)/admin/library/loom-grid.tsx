@@ -344,7 +344,7 @@ function BulkBar({
       <button
         type="button"
         onClick={onToggleAll}
-        className="inline-flex items-center gap-2 rounded-card px-2 py-1 text-sm font-medium text-text hover:bg-surface-elevated"
+        className="inline-flex items-center gap-2 rounded-control px-2 py-1 text-sm font-medium text-text hover:bg-surface-elevated"
       >
         {allSelected ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <Circle className="h-5 w-5 text-subtle" />}
         {allSelected ? 'Clear page' : 'Select page'}

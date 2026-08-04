@@ -82,7 +82,7 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
               setPersonA(e.target.value)
               setDone(false)
             }}
-            className="w-full rounded-card border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+            className="w-full rounded-control border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
           >
             <option value="">Choose someone…</option>
             {optionsA.map((f) => (
@@ -103,7 +103,7 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
               setPersonB(e.target.value)
               setDone(false)
             }}
-            className="w-full rounded-card border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+            className="w-full rounded-control border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
           >
             <option value="">Choose someone…</option>
             {optionsB.map((f) => (
@@ -128,7 +128,7 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
           rows={2}
           maxLength={500}
           placeholder="A line on what they have in common. It’ll be shown to them."
-          className="w-full resize-none rounded-card border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-muted focus:border-primary focus:outline-none"
+          className="w-full resize-none rounded-control border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-muted focus:border-primary focus:outline-none"
         />
       </label>
 

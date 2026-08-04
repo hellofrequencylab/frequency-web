@@ -36,7 +36,7 @@ export default async function SpaceCollaboratorsProfilePage({ params }: { params
             <Link
               key={v.id}
               href={`/spaces/${v.partner.slug}`}
-              className="flex items-center gap-3 rounded-card border border-border bg-surface p-4 transition-colors hover:bg-surface-elevated"
+              className="flex items-center gap-3 rounded-control border border-border bg-surface p-4 transition-colors hover:bg-surface-elevated"
             >
               {v.partner.logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- operator-supplied space logo, not a build asset

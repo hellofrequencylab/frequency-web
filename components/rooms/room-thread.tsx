@@ -186,7 +186,7 @@ export function RoomThread({
             <button
               type="button"
               onClick={() => setComposerOpen(true)}
-              className="flex w-full items-center gap-3 rounded-card border border-border bg-surface px-3.5 py-2.5 text-left transition-colors hover:border-border-strong"
+              className="flex w-full items-center gap-3 rounded-control border border-border bg-surface px-3.5 py-2.5 text-left transition-colors hover:border-border-strong"
             >
               <span className="min-w-0 flex-1 truncate text-sm text-subtle">
                 Say something to the room. If it is a plan, put a time in it.

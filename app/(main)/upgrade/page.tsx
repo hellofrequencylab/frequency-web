@@ -216,7 +216,7 @@ export default async function UpgradePage({
           ) : isCrew ? (
             <Link
               href="/settings/billing"
-              className="flex w-full items-center justify-center gap-2 rounded-card border border-border px-4 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+              className="flex w-full items-center justify-center gap-2 rounded-control border border-border px-4 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
             >
               Manage your membership <ArrowRight className="h-4 w-4" />
             </Link>

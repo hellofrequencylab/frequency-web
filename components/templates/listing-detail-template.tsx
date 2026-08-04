@@ -223,7 +223,7 @@ export function ListingDetailTemplate({
               {editHref && (
                 <Link
                   href={editHref}
-                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-card border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
                 >
                   <Pencil className="h-4 w-4" aria-hidden /> Edit listing
                 </Link>

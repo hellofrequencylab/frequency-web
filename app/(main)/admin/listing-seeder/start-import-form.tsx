@@ -236,7 +236,7 @@ export function StartImportForm() {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="flex aspect-square flex-col items-center justify-center gap-1 rounded-card border border-dashed border-border text-2xs text-muted transition-colors hover:border-border-strong hover:text-text"
+          className="flex aspect-square flex-col items-center justify-center gap-1 rounded-control border border-dashed border-border text-2xs text-muted transition-colors hover:border-border-strong hover:text-text"
         >
           <ImagePlus className="h-5 w-5" aria-hidden />
           Add

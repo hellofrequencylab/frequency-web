@@ -736,7 +736,7 @@ export function ItemForm({
           Market for cross-space browse. Per item, so you choose listing by listing. */}
       <label
         htmlFor={`market-${mode}-${product?.id ?? 'new'}`}
-        className="flex cursor-pointer items-start gap-3 rounded-card border border-border/70 p-3"
+        className="flex cursor-pointer items-start gap-3 rounded-control border border-border/70 p-3"
       >
         <input
           id={`market-${mode}-${product?.id ?? 'new'}`}

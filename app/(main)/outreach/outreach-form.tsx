@@ -36,7 +36,7 @@ export function OutreachForm({ scope }: { scope: string }) {
         rows={4}
         maxLength={2000}
         placeholder={`Write a note to everyone in your ${scope}…`}
-        className="w-full resize-none rounded-card border border-border bg-surface-elevated px-4 py-3 text-sm text-text placeholder:text-subtle outline-none focus:border-primary"
+        className="w-full resize-none rounded-control border border-border bg-surface-elevated px-4 py-3 text-sm text-text placeholder:text-subtle outline-none focus:border-primary"
       />
       <div className="mt-3 flex items-center justify-between gap-3">
         <p className="text-xs text-subtle">Sends through the same email + push spine as Dispatch.</p>

@@ -95,7 +95,7 @@ export function IconGrid({
           onClick={() => onPick(key)}
           aria-label={label}
           title={label}
-          className={`flex ${cell} items-center justify-center rounded-card transition-transform hover:scale-110 ${value === key ? 'text-primary-strong ring-2 ring-primary' : 'text-muted hover:bg-surface-elevated hover:text-text'}`}
+          className={`flex ${cell} items-center justify-center rounded-control transition-transform hover:scale-110 ${value === key ? 'text-primary-strong ring-2 ring-primary' : 'text-muted hover:bg-surface-elevated hover:text-text'}`}
         >
           <Icon className={glyph} />
         </button>

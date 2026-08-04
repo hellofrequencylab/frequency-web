@@ -295,7 +295,7 @@ export function LearnPlayer({
         type="button"
         onClick={() => setMobileToc((v) => !v)}
         aria-expanded={mobileToc}
-        className="flex w-full items-center gap-2 rounded-card border border-border bg-surface px-3 py-2.5 text-sm font-medium text-text lg:hidden"
+        className="flex w-full items-center gap-2 rounded-control border border-border bg-surface px-3 py-2.5 text-sm font-medium text-text lg:hidden"
       >
         <List className="h-4 w-4 text-subtle" />
         Contents

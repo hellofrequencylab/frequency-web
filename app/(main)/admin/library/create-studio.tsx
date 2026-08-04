@@ -291,7 +291,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                 <select
                   value={count}
                   onChange={(e) => setCount(Number(e.target.value))}
-                  className="rounded-card border border-border bg-surface px-2 py-1 text-sm"
+                  className="rounded-control border border-border bg-surface px-2 py-1 text-sm"
                 >
                   {[1, 2, 3, 4].map((n) => (
                     <option key={n} value={n}>
@@ -306,7 +306,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                   <select
                     value={styleId}
                     onChange={(e) => setStyleId(e.target.value)}
-                    className="rounded-card border border-border bg-surface px-2 py-1 text-sm"
+                    className="rounded-control border border-border bg-surface px-2 py-1 text-sm"
                   >
                     <option value="">Base</option>
                     {laneStyles.map((s) => (

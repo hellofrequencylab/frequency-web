@@ -32,7 +32,7 @@ export function OnlineMembersCard({ members }: { members: OnlineMember[] }) {
             <li key={m.id}>
               <Link
                 href={`/people/${m.handle}`}
-                className="flex items-center gap-2.5 rounded-card px-2 py-1.5 transition-colors hover:bg-surface-elevated"
+                className="flex items-center gap-2.5 rounded-control px-2 py-1.5 transition-colors hover:bg-surface-elevated"
               >
                 <span className="relative shrink-0">
                   {m.avatarUrl ? (
