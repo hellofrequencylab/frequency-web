@@ -55,7 +55,7 @@ export default async function SignInPage({
           </div>
           <button
             type="submit"
-            className="w-full rounded-card bg-primary px-4 py-3 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+            className="w-full rounded-control bg-primary px-4 py-3 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
           >
             Send magic link
           </button>

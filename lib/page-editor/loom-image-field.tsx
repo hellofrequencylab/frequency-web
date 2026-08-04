@@ -140,7 +140,7 @@ function LoomImageField({
             type="button"
             onClick={() => setPicking((p) => !p)}
             disabled={busy || !slug}
-            className={`flex ${aspect} flex-1 flex-col items-center justify-center gap-1.5 rounded-card border border-dashed border-border bg-surface/60 px-3 text-center text-sm font-medium text-muted transition-colors hover:border-border-strong hover:bg-surface disabled:opacity-50`}
+            className={`flex ${aspect} flex-1 flex-col items-center justify-center gap-1.5 rounded-control border border-dashed border-border bg-surface/60 px-3 text-center text-sm font-medium text-muted transition-colors hover:border-border-strong hover:bg-surface disabled:opacity-50`}
           >
             <ImageIcon className="h-5 w-5" aria-hidden />
             Pick from the Loom

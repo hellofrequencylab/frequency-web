@@ -295,7 +295,7 @@ export function MessageThread({
             placeholder="Message…"
             rows={1}
             disabled={isPending}
-            className="flex-1 resize-none text-sm text-text placeholder-subtle outline-none leading-relaxed bg-surface rounded-card px-3 py-2.5 max-h-32 disabled:opacity-60"
+            className="flex-1 resize-none text-sm text-text placeholder-subtle outline-none leading-relaxed bg-surface rounded-control px-3 py-2.5 max-h-32 disabled:opacity-60"
             style={{ minHeight: '42px' }}
           />
           <button

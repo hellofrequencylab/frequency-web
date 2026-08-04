@@ -1928,7 +1928,7 @@ export default async function EventDetailPage({
               ) : (
                 <Link
                   href={`/onboarding/beta?seq=event-experience-hosts-copy&next=${encodeURIComponent(`/events/${event.slug}?claim=${extra.claim_token}`)}`}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-card bg-primary px-8 py-4 text-base font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-control bg-primary px-8 py-4 text-base font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
                 >
                   <Zap className="h-5 w-5" aria-hidden /> Claim This Event
                 </Link>

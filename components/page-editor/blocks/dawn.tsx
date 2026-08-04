@@ -730,7 +730,7 @@ function PlanCta({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
     return (
       <Link
         href={href}
-        className="text-emboss mt-5 inline-flex w-full items-center justify-center gap-2 rounded-card bg-primary px-8 py-3.5 text-base font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover"
+        className="text-emboss mt-5 inline-flex w-full items-center justify-center gap-2 rounded-control bg-primary px-8 py-3.5 text-base font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover"
       >
         {plan.ctaLabel}
       </Link>

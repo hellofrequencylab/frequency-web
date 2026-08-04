@@ -7,7 +7,7 @@ import { isError } from '@/lib/action-result'
 import { setListingStatusAction, deleteListingAction } from '@/app/(main)/classifieds/actions'
 import type { ListingStatus } from '@/lib/marketplace'
 
-const BTN = 'inline-flex items-center gap-1.5 rounded-card border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50'
+const BTN = 'inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50'
 
 export function ListingOwnerControls({
   id,

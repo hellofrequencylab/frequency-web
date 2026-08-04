@@ -228,7 +228,7 @@ export function ImageUpload({
           type="button"
           onClick={openSource}
           disabled={disabled || busy}
-          className="flex h-32 w-full flex-col items-center justify-center gap-1.5 rounded-card border border-dashed border-border text-sm text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-60"
+          className="flex h-32 w-full flex-col items-center justify-center gap-1.5 rounded-control border border-dashed border-border text-sm text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-60"
         >
           {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
           {busy ? 'Uploading…' : useLoom ? 'Choose or upload a photo' : 'Upload a photo'}

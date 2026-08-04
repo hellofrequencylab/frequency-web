@@ -175,7 +175,7 @@ function ClaimBarContent({ token, signedIn }: { token: string; signedIn: boolean
           <div className="space-y-1.5">
             <Link
               href={`/sign-in?next=/spaces/claim/${token}`}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-card bg-primary px-8 py-4 text-base font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-control bg-primary px-8 py-4 text-base font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
             >
               <Zap className="h-5 w-5" aria-hidden /> Claim this business
             </Link>

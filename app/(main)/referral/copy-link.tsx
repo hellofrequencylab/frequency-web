@@ -37,7 +37,7 @@ export function ReferralLinkCard({ url }: { url: string | null }) {
           <button
             type="button"
             onClick={copy}
-            className="press inline-flex shrink-0 items-center gap-1.5 rounded-card bg-primary px-3.5 py-2 text-sm font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover motion-reduce:transition-none"
+            className="press inline-flex shrink-0 items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-sm font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover motion-reduce:transition-none"
           >
             {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
             {copied ? 'Copied' : 'Copy'}

@@ -790,7 +790,7 @@ export function ImportWizard({
                   type="button"
                   onClick={undo}
                   disabled={busy}
-                  className="inline-flex items-center gap-2 rounded-card border border-border-strong px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+                  className="inline-flex items-center gap-2 rounded-control border border-border-strong px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
                 >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />} Undo this import
                 </button>

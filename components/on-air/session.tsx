@@ -2096,7 +2096,7 @@ export function OnAirSession({
               type="button"
               onClick={() => beginResolved(true)}
               disabled={!runPracticeId}
-              className="flex flex-1 items-center justify-center rounded-card border border-border bg-surface px-4 py-3.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+              className="flex flex-1 items-center justify-center rounded-control border border-border bg-surface px-4 py-3.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
             >
               New Practice
             </button>

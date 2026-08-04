@@ -103,7 +103,7 @@ export function WalkthroughLightbox({
               type="button"
               onClick={finish}
               disabled={pending}
-              className="inline-flex items-center gap-1.5 rounded-card bg-surface px-5 py-2 text-sm font-semibold text-text lift-3 transition-colors hover:bg-surface-elevated disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-control bg-surface px-5 py-2 text-sm font-semibold text-text lift-3 transition-colors hover:bg-surface-elevated disabled:opacity-60"
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Check className="h-4 w-4" aria-hidden />}
               Finish

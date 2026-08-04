@@ -61,7 +61,7 @@ const FIELD =
 const PRIMARY_BTN =
   'inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50'
 const GHOST_BTN =
-  'inline-flex items-center justify-center rounded-card border border-border px-5 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-50'
+  'inline-flex items-center justify-center rounded-control border border-border px-5 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-50'
 
 export default function FeatureFunnel({
   sequence,

@@ -208,7 +208,7 @@ export function CircleWizard() {
                 type="button"
                 onClick={scratch}
                 disabled={pending}
-                className="flex w-full items-start gap-3 rounded-card border border-dashed border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-surface-elevated disabled:opacity-60"
+                className="flex w-full items-start gap-3 rounded-control border border-dashed border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-surface-elevated disabled:opacity-60"
               >
                 {pending ? (
                   <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-primary-strong" aria-hidden />

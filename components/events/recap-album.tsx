@@ -129,7 +129,7 @@ export function RecapAlbum({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={pending}
-              className="flex w-full items-center justify-center gap-2 rounded-card border border-dashed border-border px-4 py-6 text-sm font-medium text-muted transition-colors hover:border-primary-bg hover:text-primary-strong disabled:opacity-40"
+              className="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-border px-4 py-6 text-sm font-medium text-muted transition-colors hover:border-primary-bg hover:text-primary-strong disabled:opacity-40"
             >
               <ImagePlus className="h-4 w-4" />
               Add a photo

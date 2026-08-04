@@ -119,7 +119,7 @@ function CardRow({ card, onDone }: { card: TodayCard; onDone: (contactId: string
             type="button"
             disabled={pending}
             onClick={() => setTweaking((t) => !t)}
-            className="inline-flex items-center gap-1.5 rounded-card border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
           >
             <Pencil className="h-4 w-4" />
             Tweak
@@ -129,7 +129,7 @@ function CardRow({ card, onDone }: { card: TodayCard; onDone: (contactId: string
           type="button"
           disabled={pending}
           onClick={notNow}
-          className="inline-flex items-center gap-1.5 rounded-card border border-border px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
         >
           <X className="h-4 w-4" />
           Not now

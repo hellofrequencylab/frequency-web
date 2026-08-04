@@ -145,7 +145,7 @@ export function CircleLocationSearch({
           type="button"
           onClick={useMyLocation}
           disabled={locating}
-          className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-card border border-border bg-surface px-3.5 py-2.5 text-sm font-medium text-text transition-colors hover:border-primary hover:text-primary-strong disabled:opacity-60"
+          className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-3.5 py-2.5 text-sm font-medium text-text transition-colors hover:border-primary hover:text-primary-strong disabled:opacity-60"
         >
           {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
           Use my location

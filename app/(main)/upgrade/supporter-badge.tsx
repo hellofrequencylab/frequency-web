@@ -60,7 +60,7 @@ export function SupporterBadge({
             disabled={pending}
             className={
               on
-                ? 'mt-3 flex w-full items-center justify-center gap-2 rounded-card border border-border px-4 py-2.5 text-sm font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-60'
+                ? 'mt-3 flex w-full items-center justify-center gap-2 rounded-control border border-border px-4 py-2.5 text-sm font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-60'
                 : 'mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-signal/40 bg-signal-bg/40 px-4 py-2.5 text-sm font-bold text-signal-strong transition-colors hover:bg-signal-bg/60 disabled:opacity-60'
             }
           >

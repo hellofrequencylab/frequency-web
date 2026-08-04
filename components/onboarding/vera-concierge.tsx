@@ -78,7 +78,7 @@ export function VeraConcierge() {
       <button
         type="button"
         onClick={() => { setStarted(true); turn('') }}
-        className="inline-flex items-center gap-2 rounded-card bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+        className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
       >
         <Sparkles className="h-4 w-4" />
         Talk to Vera

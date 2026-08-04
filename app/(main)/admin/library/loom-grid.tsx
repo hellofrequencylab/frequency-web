@@ -337,7 +337,7 @@ function BulkBar({
   }
 
   const btn =
-    'inline-flex items-center gap-1.5 rounded-card border border-border px-2.5 py-1.5 text-sm text-text hover:bg-surface-elevated disabled:opacity-50'
+    'inline-flex items-center gap-1.5 rounded-control border border-border px-2.5 py-1.5 text-sm text-text hover:bg-surface-elevated disabled:opacity-50'
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface-elevated/60 px-3 py-2">

@@ -376,7 +376,7 @@ export default async function LoomStudioPage({
                 {totalPages > 1 && (
                   <nav className="mt-8 flex flex-wrap items-center justify-center gap-1" aria-label="Pagination">
                     {currentPage > 1 ? (
-                      <Link href={pageHref(currentPage - 1)} className="rounded-card border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated" aria-label="Previous page">
+                      <Link href={pageHref(currentPage - 1)} className="rounded-control border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated" aria-label="Previous page">
                         <ChevronLeft className="h-4 w-4" />
                       </Link>
                     ) : (
@@ -407,7 +407,7 @@ export default async function LoomStudioPage({
                     )}
 
                     {currentPage < totalPages ? (
-                      <Link href={pageHref(currentPage + 1)} className="rounded-card border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated" aria-label="Next page">
+                      <Link href={pageHref(currentPage + 1)} className="rounded-control border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated" aria-label="Next page">
                         <ChevronRight className="h-4 w-4" />
                       </Link>
                     ) : (

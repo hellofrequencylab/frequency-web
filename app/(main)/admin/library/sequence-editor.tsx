@@ -484,7 +484,7 @@ export function SequenceEditor({
                     type="button"
                     onClick={() => rollback(v.id)}
                     disabled={pending}
-                    className="inline-flex items-center gap-1.5 rounded-card border border-border px-3 py-1.5 text-xs font-medium text-text hover:bg-surface-elevated disabled:opacity-60"
+                    className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-xs font-medium text-text hover:bg-surface-elevated disabled:opacity-60"
                   >
                     <RotateCcw className="h-3.5 w-3.5" aria-hidden />
                     Restore

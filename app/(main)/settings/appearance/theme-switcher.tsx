@@ -86,7 +86,7 @@ function SkinCard({
       onClick={onSelect}
       disabled={pending}
       aria-pressed={active}
-      className={`press w-full overflow-hidden rounded-card border bg-surface text-left transition-colors disabled:opacity-60 ${
+      className={`press w-full overflow-hidden rounded-control border bg-surface text-left transition-colors disabled:opacity-60 ${
         active ? 'border-primary/40 lift-1' : 'border-border hover:border-border-strong'
       }`}
     >

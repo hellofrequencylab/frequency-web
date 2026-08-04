@@ -275,7 +275,7 @@ export function JourneyGuide({
                     type="button"
                     onClick={() => applyTemplate(t.id)}
                     disabled={pending}
-                    className="flex w-full items-start gap-3 rounded-card border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated disabled:opacity-60"
+                    className="flex w-full items-start gap-3 rounded-control border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated disabled:opacity-60"
                   >
                     <span className="text-2xl leading-none" aria-hidden>{t.emoji}</span>
                     <span className="min-w-0 flex-1">
@@ -291,7 +291,7 @@ export function JourneyGuide({
                   type="button"
                   onClick={addPhase}
                   disabled={pending}
-                  className="flex w-full items-start gap-3 rounded-card border border-dashed border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-surface-elevated disabled:opacity-60"
+                  className="flex w-full items-start gap-3 rounded-control border border-dashed border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-surface-elevated disabled:opacity-60"
                 >
                   <PenLine className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                   <span className="min-w-0 flex-1">

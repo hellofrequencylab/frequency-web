@@ -91,7 +91,7 @@ export function RecommendationCard({ rec }: { rec: StudioRec }) {
               <button
                 onClick={() => setConfirming(false)}
                 disabled={isPending}
-                className="rounded-card border border-border px-3 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60 motion-reduce:transition-none"
+                className="rounded-control border border-border px-3 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60 motion-reduce:transition-none"
               >
                 Cancel
               </button>

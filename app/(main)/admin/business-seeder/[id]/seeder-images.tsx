@@ -291,7 +291,7 @@ export function SeederImages({
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={busy}
-          className="flex aspect-square flex-col items-center justify-center gap-1 rounded-card border border-dashed border-border text-2xs text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-60"
+          className="flex aspect-square flex-col items-center justify-center gap-1 rounded-control border border-dashed border-border text-2xs text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-60"
         >
           {busy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Plus className="h-5 w-5" aria-hidden />}
           {busy ? (progress ? `${progress.done}/${progress.total}` : 'Uploading…') : 'Add'}

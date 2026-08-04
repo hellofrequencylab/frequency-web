@@ -344,7 +344,7 @@ export function MultiImageUpload({
             type="button"
             onClick={() => (loom ? setLoomOpen(true) : inputRef.current?.click())}
             disabled={disabled || busy}
-            className="flex aspect-square flex-col items-center justify-center gap-1 rounded-card border border-dashed border-border text-2xs text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-60"
+            className="flex aspect-square flex-col items-center justify-center gap-1 rounded-control border border-dashed border-border text-2xs text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-60"
           >
             {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
             {busy ? 'Uploading…' : loom ? 'Choose' : 'Add'}
