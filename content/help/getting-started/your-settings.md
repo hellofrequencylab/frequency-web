@@ -3,19 +3,22 @@ title: Your settings
 description: Where to update your profile, preferences, and account.
 category: getting-started
 order: 12
-updated: 2026-08-03
+updated: 2026-08-04
 audience: member
 featureKeys: [settings, notifications]
 status: published
 ---
 
-Settings is where you tune your account and how Frequency reaches you.
+Settings is where you tune your account and how Frequency reaches you. It's all
+one page now: pick a section with the chips at the top, or just scroll.
 
 ## What you'll find there
 
+- **Appearance**: pick your look. Light or dark, and the skin (the overall palette) if more than one is available.
+
 - **Profile**: your display name, handle, photo, **header image** (the banner across the top of your profile), bio, and region. This is what other members see.
 - **Connections & Location**: control how you're found by people nearby (see below).
-- **Notifications**: choose what you're told about and how (in-app, email, push), pick how often, and mute a single Circle or Space. See [Notifications](/help/getting-started/notifications) and "Choosing what reaches you" below.
+- **Notifications**: choose what you're told about and how (in-app, email, push, and text where enabled), pick how often, and mute a single Circle or Space. See [Notifications](/help/getting-started/notifications) and "Choosing what reaches you" below.
 - **Account**: sign-in and account-level controls.
 - **Billing**: for membership. During the beta this is a placeholder; everything is free (see [Membership & the Vault](/help/membership/the-vault)).
 
