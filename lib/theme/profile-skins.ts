@@ -4,7 +4,7 @@
 // owner-aware choke point every Spotlight render site uses, so adding earned/cosmetic
 // skins later (gated by `requiredItem`) is additive — no render site changes.
 
-import { SKINS, resolveSkin, type SkinId } from './skins'
+import { SELECTABLE_SKINS, resolveSkin, type SkinId } from './skins'
 
 export interface ProfileSkin {
   id: SkinId
@@ -15,8 +15,14 @@ export interface ProfileSkin {
   requiredItem?: string
 }
 
-/** Skins offered in the Spotlight theme picker, in display order. */
-export const PROFILE_SKINS: readonly ProfileSkin[] = SKINS.map((s) => ({
+/** Skins offered in the Spotlight theme picker, in display order.
+ *
+ *  Reads SELECTABLE_SKINS, not SKINS. This is a user-facing picker, and the skins registry
+ *  contract (lib/theme/skins.ts) says every one of those reads the selectable set -- SKINS is
+ *  the full registry and stays the authority for RESOLUTION and RENDERING only. Mapping SKINS
+ *  here offered `midnight` in the Spotlight picker while the app theme switcher had already
+ *  stopped offering it, which is the exact split the `selectable` flag exists to prevent. */
+export const PROFILE_SKINS: readonly ProfileSkin[] = SELECTABLE_SKINS.map((s) => ({
   id: s.id,
   label: s.label,
   description: s.description,

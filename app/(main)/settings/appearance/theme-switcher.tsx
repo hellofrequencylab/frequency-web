@@ -143,24 +143,35 @@ export function ThemeSwitcher({
     startTransition(() => setThemeOccasion(id))
   }
 
+  // Only offer the Palette axis when there is a choice to make. With one selectable skin the
+  // grid rendered a single card badged "On" and nothing to switch to -- a control that cannot
+  // do anything, which reads as broken rather than as "there is one look". The second clause
+  // is the escape hatch: if the member's CURRENT skin is not selectable (they were on it
+  // before it was withdrawn), keep the picker up so they can move off it. Hiding it in that
+  // case would strand them on a skin with no way out.
+  const currentIsSelectable = SELECTABLE_SKINS.some((s) => s.id === skin)
+  const showPalette = SELECTABLE_SKINS.length > 1 || !currentIsSelectable
+
   return (
     <section>
-      <div className="mb-6">
-        <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">Palette</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {SELECTABLE_SKINS.map((s) => (
-            <SkinCard
-              key={s.id}
-              active={skin === s.id}
-              pending={isPending}
-              skinId={s.id}
-              label={s.label}
-              description={s.id === DEFAULT_SKIN ? `${s.description} The standard look.` : s.description}
-              onSelect={() => chooseSkin(s.id)}
-            />
-          ))}
+      {showPalette && (
+        <div className="mb-6">
+          <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">Palette</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {SELECTABLE_SKINS.map((s) => (
+              <SkinCard
+                key={s.id}
+                active={skin === s.id}
+                pending={isPending}
+                skinId={s.id}
+                label={s.label}
+                description={s.id === DEFAULT_SKIN ? `${s.description} The standard look.` : s.description}
+                onSelect={() => chooseSkin(s.id)}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <AxisCard label="Feel">
         {GENERATIONS.map((g) => (

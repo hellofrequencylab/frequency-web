@@ -17115,3 +17115,27 @@ The durable rule: **when a queue is removed, the thing in front of it has to bec
 **Consequences.** ⚠️ These three stay **warn**, deliberately. Promoting them to error would block unrelated work on pre-existing debt, which is the ratchet mistake ADR-928 exists to avoid. ⚠️ The bundle work is **recorded, not done** — it is a sizing exercise against the marketing routes, not a line change, and it wants its own pass. ⚠️ The artifact upload stays even though it is unreachable from here; it is reachable from a browser, and it holds the full traces the summary table cannot.
 
 The durable rule: **a gate that only speaks when it fails cannot tell you whether it is calibrated** — make it report its margins, or you are gating on a number nobody has ever seen.
+
+## ADR-935 — `selectable: false` has to bind every picker, not the one I edited (2026-08-04)
+
+**Status.** Accepted. Corrects the withdrawal shipped earlier the same day under the owner ruling *"Keep the midnight theme there for now but don't let users access it."* Supersedes the closing note of ADR-501 (the Spotlight theme picker), which says the picker "offers the two built-in skins (default, midnight)."
+
+**Context.** Withdrawing `midnight` added `SkinDef.selectable` and a derived `SELECTABLE_SKINS`, with the rule written into the registry's own doc comment: *"Every user-facing picker reads THIS, never SKINS."* I then pointed exactly one picker at it. Three surfaces could hand a member the midnight skin, and only the app theme switcher was changed:
+
+| Surface | Read | After the withdrawal |
+|---|---|---|
+| `/settings/appearance` switcher | `SELECTABLE_SKINS` | correctly withdrawn |
+| Spotlight appearance (`PROFILE_SKINS`) | `SKINS.map(...)` | **still offered midnight** |
+| Operator Space branding (`BUILTIN_SKINS`) | hardcoded `['default','midnight']` | **still assignable** |
+
+The Space one matters more than "operator-only" suggests: assigning a Space skin pushes that look to every member of the Space, so an operator picker is still a route by which members end up on a withdrawn skin.
+
+**The flag also broke the surface it did reach.** With one selectable skin left, the Palette grid rendered a single card badged **On** with nothing to switch to. A picker with one option is a control that cannot do anything, and it reads as broken rather than as "there is one look."
+
+**How it surfaced is the part worth recording.** No test caught it, and no gate did. The **help-autodoc bot** flagged `content/help/getting-started/your-settings.md` with *"Theme switcher UI changes; verify appearance section still matches current implementation."* Chasing a doc-drift note into the code is what found two live product defects. That is the third time this bot has earned its keep, and the second time it found something no gate was watching.
+
+**Decision.** `PROFILE_SKINS` maps `SELECTABLE_SKINS`. `BUILTIN_SKINS` derives from it. The Palette axis renders only when `SELECTABLE_SKINS.length > 1` **or** the member's current skin is not selectable — the second clause is the escape hatch, so anyone already on a withdrawn skin keeps a way off it instead of being stranded. Three tests in `lib/theme/skins.test.ts` now lock the contract in both directions: no unselectable skin appears in any picker, every selectable one does, and a withdrawn skin still **resolves** (the registry keeps it alive for rendering) while `resolveProfileSkin` refuses to hand it to a member.
+
+**Consequences.** Safe to land as a hard cut: production has **nobody on midnight** — 51 profiles on `default` and one null, Spaces on `dawn`/`default`. So no member is downgraded and no Space repaints. ⚠️ `midnight`'s CSS stays shipped and still renders for any stored value; this withdraws the *offer*, not the skin. ⚠️ The Palette axis is invisible in the product today, which is correct but means a second selectable skin makes a whole section reappear — worth a look when one lands.
+
+The durable rule: **a capability flag is only as good as its narrowest reader** — adding one is not done until every surface that could grant the thing reads it, and a test says so.

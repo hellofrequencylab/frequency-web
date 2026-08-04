@@ -17,7 +17,7 @@ one page now: pick a section with the chips at the top, or just scroll.
 Settings is one page. Each area below is a section you can scroll to, in this order:
 
 - **Profile**: your display name, handle, photo, **header image** (the banner across the top of your profile), bio, and region. This is what other members see.
-- **Appearance**: pick your look. Light or dark, and the skin (the overall palette) if more than one is available.
+- **Appearance**: pick your look. Light or dark, the **Feel** (how dense or roomy things sit), and a **Seasonal accent** you can pin on or switch off. If more than one palette is available, you can pick that too.
 - **Notifications**: choose what you're told about and how (in-app, email, push, and text where enabled), pick how often, and mute a single Circle or Space. See [Notifications](/help/getting-started/notifications) and "Choosing what reaches you" below.
 - **Connections and location**: control how you're found by people nearby (see below).
 - **Account and privacy**: sign-in, account-level controls, and your privacy choices.
