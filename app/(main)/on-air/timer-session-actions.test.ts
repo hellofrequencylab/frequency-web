@@ -179,7 +179,9 @@ describe('getActiveTimerSession — self-scoped read + record reconstruction', (
   })
 
   it('reconstructs a LiveSessionRecord whose startedAt is parsed from the stored wall clock', async () => {
-    const startedMs = 1_700_000_000_000
+    // Anchored to NOW, not a fixed epoch: getActiveTimerSession gained a staleness gate, so a
+    // hardcoded 2023 timestamp now (correctly) reads as an orphan and returns null.
+    const startedMs = Date.now() - 60_000
     selectRow = {
       profile_id: 'me-0000-4000-a000-00000000self',
       practice_id: 'p3',
@@ -204,8 +206,8 @@ describe('getActiveTimerSession — self-scoped read + record reconstruction', (
   })
 
   it('carries the pause moment through for a paused run', async () => {
-    const startedMs = 1_700_000_000_000
-    const pausedMs = 1_700_000_030_000
+    const startedMs = Date.now() - 90_000
+    const pausedMs = Date.now() - 60_000
     selectRow = {
       profile_id: 'me-0000-4000-a000-00000000self',
       practice_id: 'p3',
@@ -219,6 +221,60 @@ describe('getActiveTimerSession — self-scoped read + record reconstruction', (
     if ('error' in result) throw new Error('unexpected fail')
     expect(result.data!.pausedAt).toBe(pausedMs)
     expect(result.data!.secondsTarget).toBeNull()
+  })
+
+  // ── THE STALENESS GATE ──────────────────────────────────────────────────────────────
+  // A row is written the moment Start is tapped, ARMED and paused, before the warm-up hands
+  // over. If the tab dies in that window -- routine on a phone -- the row is orphaned, and
+  // MindlessProvider force-opens the overlay from it on EVERY authed mount: a dead 00:00
+  // "Resume" in the wrong engine, with no toggle back. Observed in production 2026-08-04.
+  it('discards an ARMED row (started_at == paused_at) that never began', async () => {
+    const t = Date.now() - 10 * 60_000 // 10 min: a warm-up hands over in seconds
+    selectRow = {
+      profile_id: 'me-0000-4000-a000-00000000self',
+      practice_id: 'p3',
+      mode: 'movement',
+      setup: { resumeFromSec: 0, payload: {} },
+      started_at: new Date(t).toISOString(),
+      paused_at: new Date(t).toISOString(),
+      seconds_target: null,
+    }
+    const result = await getActiveTimerSession()
+    expect('error' in result).toBe(false)
+    if (!('error' in result)) expect(result.data).toBeNull()
+  })
+
+  it('keeps a FRESH armed row, so a real warm-up still resumes', async () => {
+    const t = Date.now() - 3_000
+    selectRow = {
+      profile_id: 'me-0000-4000-a000-00000000self',
+      practice_id: 'p3',
+      mode: 'movement',
+      setup: { resumeFromSec: 0, payload: {} },
+      started_at: new Date(t).toISOString(),
+      paused_at: new Date(t).toISOString(),
+      seconds_target: null,
+    }
+    const result = await getActiveTimerSession()
+    if ('error' in result) throw new Error('unexpected fail')
+    expect(result.data).not.toBeNull()
+  })
+
+  it('discards a genuinely paused run once it passes the 6h cache window', async () => {
+    const started = Date.now() - 8 * 60 * 60_000
+    const paused = started + 60_000
+    selectRow = {
+      profile_id: 'me-0000-4000-a000-00000000self',
+      practice_id: 'p3',
+      mode: 'mindless',
+      setup: { resumeFromSec: 0, payload: {} },
+      started_at: new Date(started).toISOString(),
+      paused_at: new Date(paused).toISOString(),
+      seconds_target: null,
+    }
+    const result = await getActiveTimerSession()
+    expect('error' in result).toBe(false)
+    if (!('error' in result)) expect(result.data).toBeNull()
   })
 
   it('fails when not signed in (never returns another member row)', async () => {

@@ -131,7 +131,7 @@ function PosterSheet({ svg, title, url }: { svg: string; title: string; url: str
     <div className="flex min-h-[1000px] flex-col items-center justify-center gap-8 rounded-xl border border-border bg-white px-10 py-16 text-center print:min-h-screen print:rounded-none print:border-0">
       <p className="text-sm font-semibold uppercase tracking-[0.25em] text-muted">Scan to join</p>
       <h1 className="text-4xl font-bold text-text">{title}</h1>
-      <div className="h-[460px] w-[460px] [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />
+      <div className="h-[460px] w-[460px] max-w-full [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />
       <p className="text-lg text-muted">{prettyUrl(url)}</p>
     </div>
   )

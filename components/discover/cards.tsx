@@ -26,7 +26,7 @@ export function ChannelCard({
   return (
     <Link href={`/discover/topics/${channel.slug}`} className="group block h-full">
       <Card tone="feature" className="h-full hover:border-border-strong transition-colors flex flex-col">
-        <h3 className="text-base font-bold text-text mb-2 group-hover:text-primary-strong transition-colors">
+        <h3 className="break-words text-base font-bold text-text mb-2 group-hover:text-primary-strong transition-colors">
           {channel.name}
         </h3>
         {channel.description && (
@@ -51,7 +51,11 @@ export function CircleCard({ circle, isAuthed = false }: { circle: PublicCircle;
     <Link href={communityHref(`/circles/${circle.slug}`, isAuthed)} className="group block h-full">
       <Card tone="feature" className="h-full p-5 hover:border-border-strong transition-colors flex flex-col">
       <div className="flex items-start justify-between gap-3 mb-2">
-        <h3 className="text-base font-bold text-text group-hover:text-primary-strong transition-colors">
+        {/* min-w-0 + break-words: a flex child cannot shrink below its min-content width, and
+            /discover renders OUTSIDE the app shell, which is the only thing in this codebase
+            carrying overflow-x-clip. Without these a single long, hyphen-free name scrolls the
+            page sideways. Names here are member-supplied, so the input is unbounded. */}
+        <h3 className="min-w-0 break-words text-base font-bold text-text group-hover:text-primary-strong transition-colors">
           {circle.name}
         </h3>
         {circle.status === 'forming' && (
@@ -127,7 +131,7 @@ export function JourneyCard({ journey }: { journey: JourneyPlan }) {
               <MapIcon className="w-4 h-4" />
             </span>
           )}
-          <h3 className="text-base font-bold text-text group-hover:text-primary-strong transition-colors">
+          <h3 className="min-w-0 break-words text-base font-bold text-text group-hover:text-primary-strong transition-colors">
             {journey.title}
           </h3>
         </div>

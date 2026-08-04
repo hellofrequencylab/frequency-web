@@ -7,9 +7,12 @@ import type { Vertical } from './registry'
 // anchored position (`after: 'events'`), so the area sits in its exact spot in the Community
 // section. The Classifieds UI (lib/marketplace.ts, route /classifieds) still owns the pages.
 //
-// NAV (ADR-868): this vertical's rail row is now the member commerce UMBRELLA, "Marketplace"
-// (founder decision reviving the word ADR-596 retired — umbrella only; the surfaces keep their
-// names). One row replaces the old Classifieds + Market pair; its /marketplace href is a server
+// NAV (ADR-868, label superseded by ADR-937): this vertical's rail row is the member commerce
+// UMBRELLA. ADR-868 revived the word "Marketplace" for it, which ADR-596 had retired; the naming
+// canon (docs/NAMING.md) never followed, so the rail said one thing and the canon said another.
+// Owner ruling 2026-08-04: the canon wins. The row is **Market**; Classifieds keeps its own name
+// for the peer board. Only the LABEL moved -- the key, the href and the redirect are untouched.
+// One row replaces the old Classifieds + Market pair; its /marketplace href is a server
 // redirect that remembers the member's last commerce surface (classifieds | market, cookie
 // `commerce_last`) and defaults to Classifieds. The `maker` vertical no longer contributes a row.
 export const market: Vertical = {
@@ -21,7 +24,7 @@ export const market: Vertical = {
       area: {
         key: 'market',
         href: '/marketplace',
-        label: 'Marketplace',
+        label: 'Market',
         section: 'Community',
         defaultAccess: 'visitor',
         surface: 'market',

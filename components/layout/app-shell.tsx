@@ -1166,7 +1166,11 @@ function MobileLeftDrawer({
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="h-14 shrink-0 flex items-center px-4 border-b border-border">
+        {/* pt from the top inset, not just h-14: the app runs viewport-fit=cover, so without it
+            this wordmark row renders UNDER the notch in the iOS PWA. The drawer's foot already
+            pads by the bottom inset below; the head was the half nobody did. Every peer overlay
+            (marketing-mobile-menu, search-overlay, loom-picker, capture-launcher) does this. */}
+        <div className="shrink-0 flex items-center px-4 border-b border-border h-14 box-content pt-[env(safe-area-inset-top)]">
           <Link href="/feed" onClick={onClose} className="flex items-center">
             <Image src="/frequency-logo.png" alt="Frequency" width={963} height={170} className="h-7 w-auto dark:invert" />
           </Link>

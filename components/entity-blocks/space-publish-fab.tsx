@@ -189,7 +189,7 @@ export function SpacePublishFab({
   // MINIMIZED: a compact pill to bring the bar back after Save draft / Publish, still docked bottom-center.
   if (!open) {
     return (
-      <div className="fixed inset-x-0 bottom-0 z-[70] flex justify-center pb-4">
+      <div className="fixed inset-x-0 bottom-0 z-[70] flex justify-center pb-[max(1rem,env(safe-area-inset-bottom))]">
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -205,7 +205,7 @@ export function SpacePublishFab({
   return (
     <div
       // Docked to the viewport bottom, spanning the full width OVER the admin rail (z above the rail's z-50).
-      className="fixed inset-x-0 bottom-0 z-[70] border-t border-border bg-surface/95 shadow-pop backdrop-blur"
+      className="fixed inset-x-0 bottom-0 z-[70] border-t border-border bg-surface/95 shadow-pop backdrop-blur pb-[env(safe-area-inset-bottom)]"
       // Pad the interactive cluster clear of the admin rail (its live width, 0 when closed / on mobile).
       style={{ paddingRight: 'var(--admin-rail-w, 0px)' }}
     >
