@@ -3,6 +3,70 @@
 > The durable record of the full-repo meta scan: what shipped, and what is still open with the
 > exact fix. Update it as items close. Newest pass first; earlier passes are kept below.
 
+## 2026-08-04 scan (security · wiring · correctness, run against the live project)
+
+**The pattern worth naming.** Four separate gates were found checking the *shape* of a value
+rather than its truth: `check:menu` matched catalogs by variable NAME, `check:authz` matches
+guard-token PRESENCE anywhere in a file, `check:adoption` compared against whatever number was
+last written down, and the pricing CTA test asserted `href.startsWith('/')` for a route that
+did not exist. Each was green while the thing it guarded was broken. When adding a gate, ask
+what would satisfy it *without* satisfying its intent.
+
+### Shipped this pass
+
+| Area | What was wrong |
+|---|---|
+| 🔴 **Security** | `invite_links` had one policy, `USING (true)`, to all roles. **Every invite token on the platform was readable with the anon key** (which ships in the browser bundle), including revoked ones -- the policy did not filter `is_active` despite its name. 0 rows live, so a policy defect on a credential table, not a breach. Dropped; table is now fail-closed. |
+| 🔴 **Security** | `menus` + `app_overrides`: the `page_settings` shape (space-scoped, `USING (true)`). Scoped by `space_id`; global rows still readable. |
+| 🔴 **Wiring** | `/pricing` free-plan CTA pointed at `/join` -- **not a route**. `app/join/` holds only `[token]/`. Fixed to `BETA_CTA_HREF`; the test now resolves hrefs against the real `app/` tree. |
+| 🔴 **Wiring** | Friends layout module keyed `/friends` while its page is `/network/friends` -- registered, component-bound, unarrangeable. Re-keyed; 0 stored layouts affected. |
+| 🔴 **Correctness** | `puck.isEditing` hardcoded false made **every new Space show visitors a dashed "Highlights / Your live counts show on the live page" box** on its public landing. |
+| 🔴 **Correctness** | Live marketing blocks deleted whole sections, and published `0 Members / 0 Circles` as measured, on any RPC failure; ISR froze either for an hour. |
+| 🔴 **Correctness** | `pages.slug` globally UNIQUE vs `(space_id, slug)` in code. Migration applied to prod. |
+| ⚠️ **A11y** | `/pricing`'s 21 explained exactly: 21 `text-success` cells on the canvas band at 4.05:1. Fixed. 54 amber-as-text sites swapped; 19 correctly left on ink. |
+| ⚠️ **Gates** | `check:menu` rebuilt shape-based over the AST (renaming a variable is no longer an exit); `check:adoption` gained provenance + basis fingerprinting; a11y ratchet seeded from a real capture. |
+
+### The owner's placement question, answered
+
+**246 of 284 registry rows are placeable (87%)** -- but through three pickers that cannot see
+each other (layout engine 127 · entity grid 31 · Puck 88). Through `APPS`, the catalog built to
+unify them: **0 of 351**. `App.surfaces.page` is a literal `{}` with zero production readers and
+`appsForScope(..., 'page')` is never called. ADR-927 §3 is unchanged and remains the blocking
+project.
+
+### Open, engineering
+
+| Item | Sev |
+|---|---|
+| **Space FAQ dead-ended with 62 live rows across 14 spaces** -- `createSpaceFaq`/`update`/`delete` have zero callers, no editing UI exists, `faq` is absent from `CORE_PROFILE_BLOCK_IDS`. Operators can neither edit nor delete importer-created data. | 🔴 |
+| **12 layout modules can never render** -- 4 community blocks under `'*'` (never reached), 8 `entity-*` under `'/spaces/*'` (no page mounts it). | 🔴 |
+| `check:authz` **cannot see `app/api/**` at all** -- 54 routes, 15 bypassing RLS. All 15 hand-audited clean today; nothing catches a bad one tomorrow. | ⚠️ |
+| `check:authz` is file-level, not function-level; `check:admin-client` counts imports, not soundness (738 files bypass RLS). | ⚠️ |
+| `check:contrast` cannot model alpha -- no pair puts a status tone on `canvas`/`marketing-canvas`; `success` measures 4.05-4.40 there, unmeasured. | ⚠️ |
+| **axe returns incomplete, not violation**, for `background-image`, pseudo-elements >25%, and `opacity: 0`. Every ink band's contrast debt and everything below the fold inside a `Reveal` is unmeasured. **219 is a floor, not a census.** | ⚠️ |
+| Puck picker unscoped (a marketing page can take all 19 Space profile blocks); `lockedAppsForScope` can never return a row; `/onboarding/vera` unreachable with a permanently-zero funnel step; 4 `MODULE_ROUTES` are redirect-only stubs. | ⚠️ |
+| `pages.space_id` still NULLABLE (NOT NULL contract step owed); migration ledger version drift; stale `as unknown as` casts on now-typed tables. | ℹ️ |
+
+### Owner-gated
+
+`ANTHROPIC_API_KEY` secret · **seed the beta account + `PW_STORAGE_STATE` (44 of 84 a11y tests
+and the whole member-shell visual suite do not run -- the signed-in product is unmeasured, not
+clean)** · flip visual/adoption/contrast to required · recruit 5 test users · `app_instances`
+migrate-or-retire · rail-bank migration (changes which quick links each scope shows) · event
+Layout staff gate · `accentize()` amber (~26 elements, design-visible) · dismiss 3 CodeQL
+false positives.
+
+### Verified clean
+
+Zero unguarded mutations in app code · all four webhooks verify signatures with replay windows ·
+cron auth fail-closed and timing-safe · tenancy walls correctly RESTRICTIVE (AND, not OR) · zero
+tables where anon/authenticated write unconditionally · no hardcoded secrets · CSP enforced with
+a tight `connect-src` · `LAYOUT_MODULES` ↔ `registry.tsx` a perfect 157↔157 bijection · all 103
+studio hrefs, 33 Space deep-links, 42 admin modules resolve · only 2 broken href literals in the
+whole tree (one fixed, one inert).
+
+---
+
 ## 2026-07-27 scan (14 dimensions, 92 findings: 19 high / 49 medium / 24 low)
 
 Fourteen read-only dimension sweeps (orphans, unplugged routes, half-wired features, security,
