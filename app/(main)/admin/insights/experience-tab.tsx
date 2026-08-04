@@ -132,6 +132,15 @@ function FunnelSteps({ funnel }: { funnel: JourneyFunnel }) {
 function FunnelStepRow({ step }: { step: JourneyFunnelStep }) {
   const measured = step.coverage !== 'unimplemented'
   const width = step.ofStartPct ?? (step.linkedToPrevious ? 0 : 100)
+  // A strictly sequential walk zeroes every step below an empty one, which is correct but
+  // easy to misread as a cliff. Say which kind of zero this is: no emitter at all, or an
+  // emitter that has simply not fired yet at beta volume.
+  const zeroReason =
+    step.coverage === 'unimplemented'
+      ? 'Not measured'
+      : step.coverage === 'emitted' && step.subjects === 0
+        ? 'No rows yet'
+        : null
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -155,9 +164,9 @@ function FunnelStepRow({ step }: { step: JourneyFunnelStep }) {
               : 'members'
           : ''}
       </p>
-      {!measured && (
-        <StatusChip tone="warning" size="sm">
-          Not measured
+      {zeroReason && (
+        <StatusChip tone={step.coverage === 'unimplemented' ? 'warning' : 'neutral'} size="sm">
+          {zeroReason}
         </StatusChip>
       )}
     </div>
