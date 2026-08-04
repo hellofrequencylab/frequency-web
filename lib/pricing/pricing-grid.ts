@@ -30,6 +30,7 @@
 // feelings, and no claim the config does not back. Labels come from the naming canon (docs/NAMING.md):
 // Member, Crew, Space, Business, Collective, Non Profit, Independent.
 
+import { BETA_CTA_HREF } from '@/lib/site'
 import { catalogItem, type CatalogItemKey } from '@/lib/billing/pricing-keys'
 import { ENTITLEMENT_LABEL, deriveTier, isPaid, type EntitlementTier } from '@/lib/core/entitlement'
 import type { ResolvedCatalogItem } from './catalog-config'
@@ -236,7 +237,10 @@ export function memberOfferings(input: PricingGridInput): Offering[] {
       takeRate: rateLine(memberBps),
       networkRateBps: memberBps,
       featured: false,
-      cta: { label: 'Join free', href: '/join' },
+      // /join is NOT a route. app/join/ contains only [token]/, the invite-redemption page,
+      // so this CTA 404'd for every visitor who clicked the free plan on /pricing. The free
+      // member's real front door is the beta induction, which is what BETA_CTA_HREF names.
+      cta: { label: 'Join free', href: BETA_CTA_HREF },
     },
     {
       id: 'crew',

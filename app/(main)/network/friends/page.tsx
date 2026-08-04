@@ -184,7 +184,7 @@ async function PeopleMode({
           Settings ▾ → Page → Layout, and new assignable sections drop in here without a page edit.
           The bucket lists above stay hand-composed because they read the `mode` search param a
           nested module never receives. */}
-      <PageModules route="/friends" />
+      <PageModules route="/network/friends" />
     </div>
   )
 }

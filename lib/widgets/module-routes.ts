@@ -29,7 +29,10 @@ export const MODULE_ROUTES: readonly string[] = [
   '/admin/nexuses',
   '/admin/moderation',
   '/journeys',
-  '/friends',
+  // The page that renders <PageModules> lives at /network/friends. Keyed as '/friends'
+  // this list never matched it, so isModuleRoute() was false on the one page that mounts
+  // the block and the Layout panel never appeared. /friends itself is a bare redirect().
+  '/network/friends',
   '/journal',
   '/library/review',
   '/practices',
