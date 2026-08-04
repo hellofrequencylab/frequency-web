@@ -22,10 +22,15 @@ on:
     # Same paths-filter shape db-tests.yml uses: only PRs that can actually change
     # rendering pay for a preview-backed run.
     paths:
-      - 'app/globals.css'
+      # 'app/**', not just app/globals.css. The filter used to list the stylesheet alone,
+      # so a PR editing a PAGE never triggered this job -- including /pricing, the very
+      # surface whose a11y debt this suite measured going 21 -> 0. The gate audits eight
+      # routes under app/ and could not see a change to any of them.
+      - 'app/**'
       - 'components/**'
       - 'lib/page-editor/**'
       - 'test/e2e/**'
+      - 'lighthouserc.json'
       - 'playwright.config.ts'
       - '.github/workflows/e2e.yml'
 

@@ -67,8 +67,18 @@ const added = []
 for (const [context, total] of [...observed].sort(([a], [b]) => a.localeCompare(b))) {
   const current = doc.surfaces[context]
   if (current === undefined) {
-    if (total > 0) added.push([context, total])
-    doc.surfaces[context] = total
+    // A NEW context used to be written at whatever debt it happened to carry, exit 0 --
+    // which quietly contradicted the suite's own rule that "a new surface joins at zero
+    // tolerance" ($defaultMax). That made the rise-guard below reachable only by contexts
+    // that already existed: any amount of debt could enter the file simply by arriving
+    // under a name nobody had frozen yet. A new context above the default is now a RISE
+    // and takes the same --force as any other.
+    if (total > (doc.$defaultMax ?? 0)) {
+      added.push([context, total])
+      if (force) doc.surfaces[context] = total
+    } else {
+      doc.surfaces[context] = total
+    }
   } else if (total < current) {
     fell.push([context, current, total])
     doc.surfaces[context] = total
@@ -85,10 +95,25 @@ for (const [context, total] of [...observed].sort(([a], [b]) => a.localeCompare(
 const unobserved = Object.keys(doc.surfaces).filter((context) => !observed.has(context))
 if (prune) for (const context of unobserved) delete doc.surfaces[context]
 
-if (rose.length > 0 && !force) {
-  console.error(`✗ ${rose.length} context(s) REGRESSED. Baselines not raised:`)
-  for (const [context, from, to] of rose) console.error(`    ${context}: ${from} → ${to}`)
-  console.error('\n  Fix the regression, or re-run with --force and say why in the commit.')
+if ((rose.length > 0 || added.length > 0) && !force) {
+  if (rose.length > 0) {
+    console.error(`✗ ${rose.length} context(s) REGRESSED. Baselines not raised:`)
+    for (const [context, from, to] of rose) console.error(`    ${context}: ${from} → ${to}`)
+  }
+  if (added.length > 0) {
+    console.error(
+      `✗ ${added.length} NEW context(s) carry debt above $defaultMax ${doc.$defaultMax ?? 0}.` +
+        ' Not seeded:',
+    )
+    for (const [context, total] of added) console.error(`    ${context}: ${total}`)
+    console.error(
+      '\n  A new surface joins at zero tolerance. Either fix it before adding it, or seed the\n' +
+        '  debt deliberately with --force and say why in the commit.',
+    )
+  }
+  if (rose.length > 0) {
+    console.error('\n  Fix the regression, or re-run with --force and say why in the commit.')
+  }
   process.exit(1)
 }
 

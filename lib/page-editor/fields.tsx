@@ -337,6 +337,19 @@ export function densityClasses(value?: DensityValue): { gap: string; pad: string
 // This mirrors `Quote`/`SectionHeading` in components/marketing/marketing-ui.tsx,
 // which resolve the same pair off their own `tone` prop. Callers inside Puck
 // blocks should pass `isInk(tone)` from ./kit rather than re-deriving it.
+//
+// KNOWN HOLE, and it is honest to state it here rather than in a plan doc: `tone: 'none'`
+// (Transparent) cannot answer this question. `isInk('none')` is false, so the accent takes
+// the LIGHT shade -- but 'none' exists precisely so a block can sit inside a Container that
+// paints the band, and that Container may be ink. A Transparent block inside an ink
+// Container therefore renders #9A5E12 on slat, about 1.6:1.
+//
+// This is not a regression introduced by the flag: with `tone: 'none'` the whole block
+// already resolves light (`text-text`, `text-muted`), so the accent word is the least of
+// what is wrong on that combination. But the claim "every call site was resolved by reading
+// its enclosing band" is not true for 'none', because for 'none' the band is not knowable
+// from the tone at all. Closing it means propagating the parent's tone through context, or
+// dropping 'none' from blocks that render text -- a block-model change, not a token swap.
 export function accentize(text?: string, accent?: string, ink = false): React.ReactNode {
   if (!text) return null
   if (!accent || !text.includes(accent)) return text

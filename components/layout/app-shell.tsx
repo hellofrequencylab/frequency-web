@@ -1963,6 +1963,19 @@ export default function AppShell({
                 <nav className="flex-1 py-3 space-y-1">
                   <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} operatesSpaces={operatesSpaces} sections={navSections} menuDriven={menuDriven} />
                 </nav>
+                {/* Your score, TABLET BAND ONLY (768-1023px).
+                    The drawer that carries the counts is `md:hidden` and the right rail's Your
+                    Quest panel is `lg:flex`, so between those two breakpoints the member's Zaps,
+                    Gems and streak had nowhere to render at all. This is the third home, and it
+                    is `lg:hidden` precisely so the law above holds: offered once per viewport,
+                    never twice. Same node the drawer renders, so the numbers cannot disagree.
+                    Capped + internally scrollable for the same reason the drawer caps it: a short
+                    tablet window must not let the score crush the nav above it. */}
+                {mobileStats && (
+                  <div className="hidden lg:hidden md:block max-h-[40dvh] overflow-y-auto border-t border-border px-3 py-3">
+                    {mobileStats}
+                  </div>
+                )}
                 {/* Bottom-left profile card — the account dock at the rail's FOOT (three-docks
                     law): the admin canvas corner-tab skin (rounded top, hairline, canvas-tinted
                     blur), sticky to the column bottom. Mirrors components/admin/
