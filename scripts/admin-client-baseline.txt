@@ -173,6 +173,7 @@ app/(main)/library/actions.ts
 app/(main)/market/service-actions.ts
 app/(main)/messages/actions.ts
 app/(main)/messages/page.tsx
+app/(main)/messages/r/[roomId]/page.tsx
 app/(main)/messages/rooms/actions.ts
 app/(main)/n/[nodeId]/page.tsx
 app/(main)/network/page.tsx
@@ -197,7 +198,7 @@ app/(main)/practices/[id]/manage/page.tsx
 app/(main)/practices/admin-actions.ts
 app/(main)/search/page.tsx
 app/(main)/settings/billing/actions.ts
-app/(main)/settings/billing/page.tsx
+app/(main)/settings/billing/section.tsx
 app/(main)/settings/connections/match-actions.ts
 app/(main)/settings/notifications/sms-actions.ts
 app/(main)/settings/profile/actions.ts
