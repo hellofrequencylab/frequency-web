@@ -82,6 +82,23 @@ debt can only shrink — the admin-client-baseline pattern, generalized.
 grep-class pattern, a file scope, and a frozen count. Fails CI when a count RISES;
 `--update` shrinks baselines after a sweep. One harness, every debt class.
 
+*Provenance (added 2026-08-04, after the first `--update` silently raised one baseline —
+see the addendum reconciliation).* A ratchet that only compares `baseline vs current` cannot
+tell you whether the baseline was ever justified, so every entry now carries
+`frozen: { at, value, from, direction, basis, reason }` and a `history`, and three rules
+hold the record honest — none of which loosens the gate:
+
+| Rule | What it catches |
+|---|---|
+| `frozen.value` must equal `baseline` | a number hand-edited with no reason attached |
+| `frozen.basis` fingerprints mode + patterns + `absent` + include/exclude | a pattern or scope change that makes the old number answer a different question — the gate FAILS rather than compare across it |
+| `--update` needs `--reason`, and refuses a rise without `--allow-raise` | a regression re-frozen into the floor (ADR-928's asymmetric merge, applied here) |
+
+`direction` is `seed` · `lowered` (a sweep retired sites) · `raised` (debt grew and the ratchet
+stopped guarding it) · `rebased` (the basis moved, so no sweep gets the credit). `raised` and
+`rebased` floors are printed with their date and reason on **every** run until a sweep brings
+them back down, so an unearned baseline can never read plain green again.
+
 **2b. The sweeps, in payoff order (each M, mechanical):**
 | Sweep | From → to | Baseline key |
 |---|---|---|
@@ -366,28 +383,67 @@ held by a gate rather than a memory.
 
 ### Frozen ratchet baselines (Lift 2's `check:adoption` seeds — measured, reproducible)
 
-| Baseline key | Count | Pattern basis |
-|---|---|---|
-| `literal-radius` | **5,543** (4,474 steps + 1,069 full; token adoption 1.9%) | `rounded-(sm|md|lg|xl|2xl|3xl|full)\b` |
-| `shadow-literals` | **684** (535 are `shadow-sm`) vs 33 lift-* adopters | `\bshadow-(sm|md|lg|xl|2xl)\b` |
-| `white-black-literals` | **382** (`app/page.tsx` alone: 29) | `-white\b|white/\d+|-black\b` |
-| `subtle-tiny-type` | **832** genuine sub-AA pairings (2xs/3xs) | `text-subtle` within 80 chars of `text-(2xs|3xs)` |
-| `raw-button-bg` | **494** (the docs' "~18" was wrong by 27×; corrected here) | `<button` + `bg-primary` within 500 chars |
-| `adhoc-progress` | **52** in 42 files; ProgressTrack adopters: **0** | `rounded-full…style={{ width:` |
-| `bespoke-cards` / `bespoke-rows` | **35** / **15** files (EntityCard 42 / RowCard 3 importers) | `*-card.tsx` / `*row*.tsx` |
-| `handrolled-tabs` | **3** genuine strips + 4 pill consoles (owner-ruled) | `border-b-2` selected-tab |
+> **Reconciled 2026-08-04 (second pass).** The audit column is the verification round's census.
+> The live column is `scripts/adoption-baselines.json`, which is what CI actually enforces. They
+> disagreed on four rows and the gate could not see it, because `baseline vs current` says
+> nothing about whether the baseline itself was ever justified. Each row now carries its
+> provenance in the JSON (`frozen: { at, value, from, direction, basis, reason }`), and the gate
+> prints it on every run. **Verdicts below are what the numbers can support, not what we hoped.**
+
+| Baseline key | Audit | Live baseline | Verdict | Pattern basis |
+|---|---|---|---|---|
+| `literal-radius` | 5,543 | **5,468** | ✅ swept (−75) | `rounded-(sm|md|lg|xl|2xl|3xl|full)\b` |
+| `shadow-literals` | 684 | **54** | ✅ swept (−630) | `\bshadow-(sm|md|lg|xl|2xl)\b` |
+| `white-black-literals` | 382 | **297** | ⚠️ −66 swept, −19 scope carve-out | `-white\b|white/\d+|-black\b`, minus `lib/og/**` + OG/Twitter images |
+| `subtle-tiny-type` | 832 | **23** | 🔴 basis change, no sweep shipped | `text-subtle` within 80 chars of `text-(2xs|3xs)`, **same line** |
+| `raw-button-bg` | 494 | **529** | ⚠️ raise recorded; artifact, not 35 new buttons | `<button` + `bg-primary` within 500 chars |
+| `adhoc-progress` | 52 | **14** | ✅ swept (−38) | `rounded-full…style={{ width:` |
+| `bespoke-cards` / `bespoke-rows` | 35 / 15 | **23** / **14** | ✅ −11 / −1 swept, −1 card is scope | `*-card.tsx` / `*row*.tsx` |
+| `handrolled-tabs` | 3 | **3** | ✅ reproduces exactly | `border-b-2` selected-tab |
+| `raw-px-arbitrary` | ~150 (est.) | **139** | ✅ new class, seeded from measurement | sizing/spacing `-[Npx]`, icon/OG/print allowlisted |
+
+**Why the corpus is the same corpus.** Three independent controls reproduce the audit to the
+unit, which is what rules out "the app grew": the step half of the radius census (`rounded-sm`
+… `rounded-3xl`) is **4,474 then and now**; `handrolled-tabs` is 3 then and now; and eight of the
+ten primitive adopter counts (EmptyState 244 · SectionHeader 141 · EntityCard 42 · RowCard 3 ·
+StreakMeter 0 · Meter 1 · Counter 2 · GateNotice 3) are identical. The two that moved are the
+sweeps: ProgressTrack 0 → 36 importers, and `lift-*` 33 → 657.
+
+**`raw-button-bg` 494 → 529 is an instrument artifact, not a regression.** The addendum's stated
+basis reproduces at **529 today under both ripgrep (`-U --multiline-dotall`) and the harness**, so
+the pattern was implemented faithfully; and 494 is not reachable by any tried variation of scope
+(`app`/`components`/`lib`, UI-primitive exclusions, whole-repo), window, engine, or match
+semantics — it corresponds to a **413-character** window, not 500. What the number actually is: a
+non-overlapping 500-char proximity window over arbitrary JSX. It is not a count of buttons (1,922
+`<button` in scope; 541 have `bg-primary` within 500 chars; 249 carry it in their own opening
+tag), and it reads formatting as much as markup — **collapsing indentation alone moves it 529 →
+564**. A ±35 gap is inside this instrument's noise. Held at 529, flagged `raised` in the JSON, and
+Lift 2b should replace the pattern with the opening-tag form (a re-`--update` under a new basis
+fingerprint, recorded as `rebased`).
+
+**`subtle-tiny-type` 832 → 23 is the same failure pointing the other way — a shrink nobody
+earned.** The AA sweep has not shipped (it is item 3 below). The audit's stated basis yields
+**23** same-line element pairings today (43 if the window may cross newlines, 14 in one
+direction); 832 belongs to the file-level co-occurrence populations (1,318 `text-2xs`/`3xs`
+occurrences living in files that also use `text-subtle`). The two numbers count different things
+by an order of magnitude. The live 23 is the honest element-level figure; the 809-site "win" was
+never real and no credit is claimed for it.
 
 ### The corrected sweep order (payoff per effort — supersedes the earlier P3-first framing)
 
-1. **shadow → lift codemod** (S): one mechanical rename flips the app's depth language from
-   4.6% to near-total adoption; zero box-model risk. The single biggest visual win on the board.
-2. **white/black literal pass** (M): the only *bug* class — hardcoded monochromes ignore theme
-   generations (invisible text on light generations). 382 sites, five directories hold 110.
-3. **subtle+tiny AA rule** (M): "text-subtle may not pair with 2xs/3xs" as a check + sweep of
-   832 sites concentrated in events/admin/spaces/feed. Changes perceived craft of every list.
-4. **ProgressTrack adoption** (S): a shipped primitive earning nothing; 52 bars retire it.
-5. **Radius roles** (L): biggest number, worst ratio (per-site role judgment, few-px deltas) —
-   ratchet-and-hold at 5,543, spend adoption inside screen passes rather than as its own wave.
+1. ✅ **shadow → lift codemod** (S) — **shipped.** Literal `shadow-*` 684 → 54 against `lift-*`
+   adopters 33 → 657. The single biggest visual win on the board, as forecast.
+2. ✅ **white/black literal pass** (M) — **shipped, partially.** The only *bug* class: hardcoded
+   monochromes ignore theme generations (invisible text on light generations). 382 → 297, of
+   which 66 sites were retired and 19 were carved out of scope as raster OG/print surfaces where
+   a literal monochrome is correct.
+3. ⏳ **subtle+tiny AA rule** (M): "text-subtle may not pair with 2xs/3xs" as a check + sweep.
+   **The real population is 23 element-level pairings, not 832** (see above) — a far smaller job
+   than planned, and the AA *rule* is now the valuable half, not the sweep.
+4. ✅ **ProgressTrack adoption** (S) — **shipped.** 52 → 14 bars; the primitive went from 0
+   adopters to 36 importers.
+5. ⏳ **Radius roles** (L): biggest number, worst ratio (per-site role judgment, few-px deltas) —
+   ratchet-and-hold at **5,468**, spend adoption inside screen passes rather than as its own wave.
 
 ### Gate corrections (found by the round, all cheap)
 

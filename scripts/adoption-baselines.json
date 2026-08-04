@@ -1,13 +1,29 @@
 {
   "_readme": [
     "Frozen adoption-debt baselines for scripts/check-adoption.mjs (Lift 2a of docs/UX-MATURITY-PLAN.md).",
-    "A count may HOLD or SHRINK; a rise fails CI. Re-freeze after a sweep with `node scripts/check-adoption.mjs --update`",
-    "so this file reads as the scoreboard of what the sweeps bought. Numbers seeded 2026-08-04 by",
-    "re-measuring the verification round's census (UX-MATURITY-PLAN addendum) with this harness, at the",
-    "START of the wave, so the wave's own sweeps show up as a delta rather than as a silent zero.",
+    "A count may HOLD or SHRINK; a rise fails CI. Re-freeze after a sweep with",
+    "`node scripts/check-adoption.mjs --update --reason \"<which sweep retired them>\"`, so this file reads",
+    "as the scoreboard of what the sweeps bought.",
     "Each entry: key · description · patterns (ripgrep-class, JS RegExp source, matched with the `g` flag) ·",
     "optional `absent` patterns that disqualify a file · include/exclude globs over the POSIX repo-relative",
-    "path · mode (`matches` counts occurrences, `files` counts qualifying files) · baseline."
+    "path · mode (`matches` counts occurrences, `files` counts qualifying files) · baseline · `frozen`.",
+    "",
+    "PROVENANCE (`frozen` + `history`, added 2026-08-04). `baseline vs current` cannot tell you whether the",
+    "baseline itself was ever justified, and the first `--update` proved it: run blind at the END of the",
+    "wave, it wrote every measured number down — the sweeps' wins AND a 494 → 529 raise on raw-button-bg —",
+    "and every class then reported green. (The earlier note here claimed these numbers were seeded at the",
+    "START of the wave; they were not. Every class read exactly `held`, which only happens when the freeze",
+    "and the measurement are the same run.) So each baseline now says where it came from:",
+    "  · frozen.at        — the date this number was frozen",
+    "  · frozen.value     — must equal `baseline`; a hand edit without a reason now FAILS the gate",
+    "  · frozen.from      — the number it replaced",
+    "  · frozen.direction — seed | lowered (a sweep retired sites) | raised (debt grew, and the ratchet",
+    "                       stopped guarding it) | rebased (the measurement basis changed, so the old",
+    "                       number was answering a different question and no credit is owed)",
+    "  · frozen.basis     — fingerprint of mode + patterns + absent + include + exclude. Change any of",
+    "                       them and the gate FAILS rather than compare across incomparable numbers.",
+    "  · frozen.reason    — one sentence, printed on every run",
+    "`raised` and `rebased` are flagged ⚠️ on every run until a sweep brings the number back down."
   ],
   "roots": [
     "app",
@@ -33,7 +49,24 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 5468
+      "baseline": 5468,
+      "frozen": {
+        "at": "2026-08-04",
+        "value": 5468,
+        "direction": "lowered",
+        "basis": "d2a53ce6b015",
+        "reason": "Sweep, same basis as the addendum audit. The step half of the census reproduces the audit exactly (rounded-(sm|md|lg|xl|2xl|3xl) = 4,474, unchanged); the entire −75 is rounded-full (1,069 → 994), retired by the ProgressTrack sweep and the card passes.",
+        "from": 5543
+      },
+      "history": [
+        {
+          "at": "2026-08-04",
+          "from": 5543,
+          "to": 5468,
+          "direction": "lowered",
+          "reason": "Sweep, same basis as the addendum audit. The step half of the census reproduces the audit exactly (rounded-(sm|md|lg|xl|2xl|3xl) = 4,474, unchanged); the entire −75 is rounded-full (1,069 → 994), retired by the ProgressTrack sweep and the card passes."
+        }
+      ]
     },
     {
       "key": "shadow-literals",
@@ -48,7 +81,24 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 54
+      "baseline": 54,
+      "frozen": {
+        "at": "2026-08-04",
+        "value": 54,
+        "direction": "lowered",
+        "basis": "58c79f8e3c36",
+        "reason": "Sweep, same basis as the addendum audit. The shadow→lift codemod landed: literal shadow-* fell 684 → 54 while lift-* adopters rose 33 → 657, so the −630 is matched by +624 adoptions.",
+        "from": 684
+      },
+      "history": [
+        {
+          "at": "2026-08-04",
+          "from": 684,
+          "to": 54,
+          "direction": "lowered",
+          "reason": "Sweep, same basis as the addendum audit. The shadow→lift codemod landed: literal shadow-* fell 684 → 54 while lift-* adopters rose 33 → 657, so the −630 is matched by +624 adoptions."
+        }
+      ]
     },
     {
       "key": "white-black-literals",
@@ -66,7 +116,24 @@
         "app/**/opengraph-image.tsx",
         "app/**/twitter-image.tsx"
       ],
-      "baseline": 297
+      "baseline": 297,
+      "frozen": {
+        "at": "2026-08-04",
+        "value": 297,
+        "direction": "rebased",
+        "basis": "28c39307be59",
+        "reason": "Part sweep, part scope change, so not comparable to the audit's 382. On the audit's basis the count is 316 today (66 sites genuinely retired); the remaining −19 comes from three exclusion globs the audit did not have (lib/og/**, opengraph-image.tsx, twitter-image.tsx), where a literal monochrome is correct because the surface is a raster.",
+        "from": 382
+      },
+      "history": [
+        {
+          "at": "2026-08-04",
+          "from": 382,
+          "to": 297,
+          "direction": "rebased",
+          "reason": "Part sweep, part scope change, so not comparable to the audit's 382. On the audit's basis the count is 316 today (66 sites genuinely retired); the remaining −19 comes from three exclusion globs the audit did not have (lib/og/**, opengraph-image.tsx, twitter-image.tsx), where a literal monochrome is correct because the surface is a raster."
+        }
+      ]
     },
     {
       "key": "subtle-tiny-type",
@@ -82,7 +149,31 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 23
+      "baseline": 24,
+      "frozen": {
+        "at": "2026-08-04",
+        "value": 24,
+        "direction": "raised",
+        "basis": "434c0b2eb5b5",
+        "reason": "Instrument artifact, not new debt. Both classes are proximity-window metrics and both rose +1 while the wave added ZERO matching sites: no file gained a text-2xs/3xs line (verified per-file against the diff), and raw-button-bg's new hit is Switch's hover:bg-primary-hover -- the CORRECT hover token, whose substring matches the bg-primary pattern. Reformatting alone moves raw-button-bg 529->564, so +1 is inside the noise floor. Stays flagged so Lift 2b replaces both patterns with element-scoped forms.",
+        "from": 23
+      },
+      "history": [
+        {
+          "at": "2026-08-04",
+          "from": 832,
+          "to": 23,
+          "direction": "rebased",
+          "reason": "Basis change, NOT a sweep — the AA pairing pass is still queued (addendum sweep #3). The audit's 832 is not reproducible from its own stated basis: text-subtle within 80 chars of text-2xs/3xs yields 23 same-line element pairings (43 if the window may cross newlines). 832 sits with the file-level co-occurrence populations (1,318 tiny-type occurrences in files that also use text-subtle), so it counted files' worth of tiny type, not element pairings. No credit is owed for the 809-site 'shrink'."
+        },
+        {
+          "at": "2026-08-04",
+          "from": 23,
+          "to": 24,
+          "direction": "raised",
+          "reason": "Instrument artifact, not new debt. Both classes are proximity-window metrics and both rose +1 while the wave added ZERO matching sites: no file gained a text-2xs/3xs line (verified per-file against the diff), and raw-button-bg's new hit is Switch's hover:bg-primary-hover -- the CORRECT hover token, whose substring matches the bg-primary pattern. Reformatting alone moves raw-button-bg 529->564, so +1 is inside the noise floor. Stays flagged so Lift 2b replaces both patterns with element-scoped forms."
+        }
+      ]
     },
     {
       "key": "raw-button-bg",
@@ -99,7 +190,31 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 529
+      "baseline": 530,
+      "frozen": {
+        "at": "2026-08-04",
+        "value": 530,
+        "direction": "raised",
+        "basis": "b0d275f91676",
+        "reason": "Instrument artifact, not new debt. Both classes are proximity-window metrics and both rose +1 while the wave added ZERO matching sites: no file gained a text-2xs/3xs line (verified per-file against the diff), and raw-button-bg's new hit is Switch's hover:bg-primary-hover -- the CORRECT hover token, whose substring matches the bg-primary pattern. Reformatting alone moves raw-button-bg 529->564, so +1 is inside the noise floor. Stays flagged so Lift 2b replaces both patterns with element-scoped forms.",
+        "from": 529
+      },
+      "history": [
+        {
+          "at": "2026-08-04",
+          "from": 494,
+          "to": 529,
+          "direction": "raised",
+          "reason": "RAISE, and an instrument artifact rather than 35 new buttons — recorded rather than hidden. The addendum's stated basis reproduces at 529 today under BOTH ripgrep (-U --multiline-dotall) and this harness, and 494 is not reachable by any tried variation of scope, window, engine or match semantics (it corresponds to a 413-character window, not 500). The corpus is demonstrably the one the audit measured: 8 of 10 primitive adopter counts and the rounded-(sm..3xl) census (4,474) reproduce exactly. This metric is a 500-char proximity window over arbitrary JSX, so it reads formatting as much as buttons — collapsing indentation alone moves it 529 → 564. Held at 529 until a basis that counts buttons replaces it (bg-primary inside the opening tag: 249)."
+        },
+        {
+          "at": "2026-08-04",
+          "from": 529,
+          "to": 530,
+          "direction": "raised",
+          "reason": "Instrument artifact, not new debt. Both classes are proximity-window metrics and both rose +1 while the wave added ZERO matching sites: no file gained a text-2xs/3xs line (verified per-file against the diff), and raw-button-bg's new hit is Switch's hover:bg-primary-hover -- the CORRECT hover token, whose substring matches the bg-primary pattern. Reformatting alone moves raw-button-bg 529->564, so +1 is inside the noise floor. Stays flagged so Lift 2b replaces both patterns with element-scoped forms."
+        }
+      ]
     },
     {
       "key": "adhoc-progress",
@@ -117,7 +232,24 @@
         "components/ui/meter.tsx",
         "components/ui/streak-meter.tsx"
       ],
-      "baseline": 14
+      "baseline": 14,
+      "frozen": {
+        "at": "2026-08-04",
+        "value": 14,
+        "direction": "lowered",
+        "basis": "2bd84505bf93",
+        "reason": "Sweep, same basis as the addendum audit. ProgressTrack went from 0 adopters to 36 importers and 38 hand-rolled bars retired (52 → 14).",
+        "from": 52
+      },
+      "history": [
+        {
+          "at": "2026-08-04",
+          "from": 52,
+          "to": 14,
+          "direction": "lowered",
+          "reason": "Sweep, same basis as the addendum audit. ProgressTrack went from 0 adopters to 36 importers and 38 hand-rolled bars retired (52 → 14)."
+        }
+      ]
     },
     {
       "key": "bespoke-cards",
@@ -137,7 +269,24 @@
         "components/ui/*.tsx",
         "**/*.{test,spec}.tsx"
       ],
-      "baseline": 23
+      "baseline": 23,
+      "frozen": {
+        "at": "2026-08-04",
+        "value": 23,
+        "direction": "rebased",
+        "basis": "ccc7af5ed089",
+        "reason": "Mostly sweep, but the basis widened, so treat the −12 as −11 earned. 11 files adopted the kit; 1 more left the population because this entry excludes components/ui/*.tsx, and the `absent` set widened from EntityCard/RowCard to four primitives (inert today, wider than the audit's basis from here on).",
+        "from": 35
+      },
+      "history": [
+        {
+          "at": "2026-08-04",
+          "from": 35,
+          "to": 23,
+          "direction": "rebased",
+          "reason": "Mostly sweep, but the basis widened, so treat the −12 as −11 earned. 11 files adopted the kit; 1 more left the population because this entry excludes components/ui/*.tsx, and the `absent` set widened from EntityCard/RowCard to four primitives (inert today, wider than the audit's basis from here on)."
+        }
+      ]
     },
     {
       "key": "bespoke-rows",
@@ -156,7 +305,24 @@
         "components/cards/*.tsx",
         "**/*.{test,spec}.tsx"
       ],
-      "baseline": 14
+      "baseline": 14,
+      "frozen": {
+        "at": "2026-08-04",
+        "value": 14,
+        "direction": "lowered",
+        "basis": "aceb2b231b26",
+        "reason": "One file left the population (15 → 14). RowCard importers are unchanged at 3, matching the audit exactly, so this was not an adoption — it is a file that no longer renders bespoke markup. The added components/cards/*.tsx exclusion is currently inert (0 files).",
+        "from": 15
+      },
+      "history": [
+        {
+          "at": "2026-08-04",
+          "from": 15,
+          "to": 14,
+          "direction": "lowered",
+          "reason": "One file left the population (15 → 14). RowCard importers are unchanged at 3, matching the audit exactly, so this was not an adoption — it is a file that no longer renders bespoke markup. The added components/cards/*.tsx exclusion is currently inert (0 files)."
+        }
+      ]
     },
     {
       "key": "handrolled-tabs",
@@ -172,7 +338,14 @@
         "**/underline-tabs.tsx",
         "**/*.{test,spec}.tsx"
       ],
-      "baseline": 3
+      "baseline": 3,
+      "frozen": {
+        "at": "2026-08-04",
+        "value": 3,
+        "direction": "seed",
+        "basis": "45d2238b2ca3",
+        "reason": "Seeded from the addendum audit and reproduces exactly: 3 genuine underline strips (the 4 pill consoles are owner-ruled out of the class)."
+      }
     },
     {
       "key": "raw-px-arbitrary",
@@ -193,7 +366,14 @@
         "components/ui/icon.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 139
+      "baseline": 139,
+      "frozen": {
+        "at": "2026-08-04",
+        "value": 139,
+        "direction": "seed",
+        "basis": "7195d06831ce",
+        "reason": "New class, added by the addendum's gate-corrections pass, which estimated ~150 in-app instances. Seeded at the measured 139 under the icon/OG/print allowlist described above."
+      }
     }
   ]
 }

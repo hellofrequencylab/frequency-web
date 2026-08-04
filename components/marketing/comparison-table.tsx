@@ -125,8 +125,17 @@ export function ComparisonTable({
       )}
 
       {/* Desktop: the real table, scrolling inside its OWN container so wide content never makes
-          the page body scroll sideways. */}
-      <div className="hidden overflow-x-auto rounded-2xl border border-border lg:block">
+          the page body scroll sideways.
+
+          🔴 `bg-surface` IS LOAD-BEARING, not decoration. The table paints no background of its own,
+          so on a `canvas` band (the value ledger) every cell inherited `--color-marketing-canvas`,
+          and `--color-success` — the "Included" tick — measures 4.05:1 there (3.80:1 on Midnight)
+          against the 4.5 body minimum. The identical cell on a `surface` band (the plan matrix, and
+          the `by-column` phone stack below, which already carries `bg-surface`) measures 4.67:1 and
+          passes. The token gate cannot see this: it validates `success on surface`, and no pair in
+          its table puts a status tone on the canvas. So the table declares the surface it was
+          measured against instead of inheriting whichever band it lands on. */}
+      <div className="hidden overflow-x-auto rounded-2xl border border-border bg-surface lg:block">
         <table className="w-full text-left">
           <caption className="sr-only">{caption}</caption>
           <thead>
@@ -273,7 +282,9 @@ function MobileByRow({
   return (
     <div className="space-y-6 lg:hidden">
       {groups.map((group) => (
-        <div key={group.key} className="overflow-hidden rounded-2xl border border-border">
+        // `bg-surface` for the same reason the desktop table carries it: a `yes` cell's
+        // `text-success` clears 4.5:1 on the surface tone and misses it on the canvas tone.
+        <div key={group.key} className="overflow-hidden rounded-2xl border border-border bg-surface">
           <p className="border-b border-border bg-surface-elevated px-4 py-3 font-display uppercase text-text">
             {group.label}
           </p>

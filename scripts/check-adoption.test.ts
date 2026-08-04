@@ -1,10 +1,34 @@
 import { describe, it, expect } from 'vitest'
-import { globToRegExp, inScope, evaluate, formatScoreboard, loadConfig } from './check-adoption.mjs'
+import {
+  globToRegExp,
+  inScope,
+  evaluate,
+  formatScoreboard,
+  formatProvenanceNotes,
+  basisFingerprint,
+  auditProvenance,
+  mergeBaselines,
+  loadConfig,
+} from './check-adoption.mjs'
 
 // Locks the adoption-debt RATCHET harness (Lift 2a, docs/UX-MATURITY-PLAN.md). countEntry/evaluate are
 // the pure functions the CLI runs; feeding them fixture corpora keeps the gate honest without touching
 // the filesystem (mirrors scripts/check-elements.test.ts). The real baselines file is also asserted to
 // be well-formed, because a silently-broken pattern would make a ratchet read green forever.
+//
+// The PROVENANCE half (2026-08-04) locks the other failure mode, the one `baseline vs current` is blind
+// to: a baseline that was never justified. A blind `--update` once raised raw-button-bg 494 → 529 and
+// every class then read green. These tests assert the three rules that make that impossible to repeat —
+// a baseline must account for itself, a basis change invalidates the comparison, and a rise is refused
+// unless it is explicitly allowed and explained.
+
+const frozen = (value: number, over: Record<string, unknown> = {}) => ({
+  at: '2026-08-04',
+  value,
+  direction: 'seed',
+  reason: 'seeded from the verification census',
+  ...over,
+})
 
 const entry = {
   key: 'literal-radius',
@@ -98,6 +122,120 @@ describe('check-adoption — the ratchet', () => {
   })
 })
 
+describe('check-adoption — provenance: a baseline must account for itself', () => {
+  const good = { ...entry, frozen: frozen(2, { basis: basisFingerprint(entry) }) }
+
+  it('passes an entry whose frozen record matches its baseline and its basis', () => {
+    expect(auditProvenance([good])).toEqual([])
+  })
+
+  it('FAILS a baseline with no provenance at all', () => {
+    expect(auditProvenance([entry]).join()).toMatch(/no `frozen` record/)
+  })
+
+  it('FAILS a baseline hand-edited away from its frozen value (the laundering move)', () => {
+    const tampered = { ...good, baseline: 999 }
+    expect(auditProvenance([tampered]).join()).toMatch(/hand-edited without recording why/)
+  })
+
+  it('FAILS a raise or rebase whose reason is missing or a shrug', () => {
+    const bare = { ...good, frozen: { ...good.frozen, direction: 'raised', reason: 'x' } }
+    expect(auditProvenance([bare]).join()).toMatch(/reason must say/)
+  })
+
+  it('FAILS when the measurement basis moved under the number, because the two are not comparable', () => {
+    // Narrowing the pattern is exactly how an 809-site "shrink" got booked with no sweep behind it.
+    const narrowed = { ...good, patterns: ['\\brounded-full\\b'] }
+    expect(auditProvenance([narrowed]).join()).toMatch(/measurement basis changed/)
+  })
+
+  it('fingerprints the basis over every field that decides what is counted — and nothing else', () => {
+    const base = basisFingerprint(entry)
+    expect(basisFingerprint({ ...entry, description: 'reworded', baseline: 41 })).toBe(base)
+    expect(basisFingerprint({ ...entry, patterns: ['\\brounded-full\\b'] })).not.toBe(base)
+    expect(basisFingerprint({ ...entry, include: ['app/**/*.tsx'] })).not.toBe(base)
+    expect(basisFingerprint({ ...entry, exclude: [] })).not.toBe(base)
+    expect(basisFingerprint({ ...entry, absent: ['\\bEntityCard\\b'] })).not.toBe(base)
+    expect(basisFingerprint({ ...entry, mode: 'files' })).not.toBe(base)
+  })
+})
+
+describe('check-adoption — provenance: the merge is asymmetric', () => {
+  const config = () => ({
+    entries: [{ ...entry, frozen: frozen(2, { basis: basisFingerprint(entry) }) }],
+  })
+
+  it('writes a FALL down, records why, and appends to the history', () => {
+    const cfg = config()
+    const rows = evaluate(cfg.entries, corpus(['components/a.tsx', 'rounded-lg']))
+    const result = mergeBaselines(cfg, rows, { allowRaise: false, reason: 'the radius codemod landed', at: '2026-09-01' })
+    expect(result.written).toBe(true)
+    expect(cfg.entries[0].baseline).toBe(1)
+    expect(cfg.entries[0].frozen).toMatchObject({ at: '2026-09-01', value: 1, from: 2, direction: 'lowered' })
+    expect(cfg.entries[0].history).toHaveLength(1)
+  })
+
+  it('REFUSES a rise and writes nothing, so a regression cannot be re-frozen into the floor', () => {
+    const cfg = config()
+    const rows = evaluate(cfg.entries, corpus(['components/a.tsx', 'rounded-lg rounded-md rounded-full']))
+    const result = mergeBaselines(cfg, rows, { allowRaise: false, reason: 'ran update after a sweep' })
+    expect(result.written).toBe(false)
+    expect(result.raised).toEqual([{ key: 'literal-radius', from: 2, to: 3 }])
+    expect(cfg.entries[0].baseline).toBe(2)
+    expect(cfg.entries[0].history).toBeUndefined()
+  })
+
+  it('accepts a FORCED rise, but brands it `raised` with its date and reason forever after', () => {
+    const cfg = config()
+    const rows = evaluate(cfg.entries, corpus(['components/a.tsx', 'rounded-lg rounded-md rounded-full']))
+    const result = mergeBaselines(cfg, rows, { allowRaise: true, reason: 'the class was redefined', at: '2026-09-01' })
+    expect(result.written).toBe(true)
+    expect(cfg.entries[0].baseline).toBe(3)
+    expect(cfg.entries[0].frozen).toMatchObject({ direction: 'raised', from: 2, value: 3, reason: 'the class was redefined' })
+  })
+
+  it('re-freezing after a basis change is recorded as `rebased`, so no sweep gets the credit', () => {
+    const cfg = config()
+    cfg.entries[0].patterns = ['\\brounded-full\\b'] // narrowed → the old number answered another question
+    const rows = evaluate(cfg.entries, corpus(['components/a.tsx', 'rounded-lg rounded-full']))
+    const result = mergeBaselines(cfg, rows, { allowRaise: false, reason: 'pattern narrowed to the full radius only', at: '2026-09-01' })
+    expect(result.written).toBe(true)
+    expect(cfg.entries[0].frozen.direction).toBe('rebased')
+    expect(cfg.entries[0].frozen.basis).toBe(basisFingerprint(cfg.entries[0]))
+  })
+
+  it('leaves an unchanged, still-comparable entry completely alone (no provenance churn)', () => {
+    const cfg = config()
+    const rows = evaluate(cfg.entries, corpus(['components/a.tsx', 'rounded-lg rounded-full']))
+    const result = mergeBaselines(cfg, rows, { allowRaise: false, reason: 'nothing moved this run' })
+    expect(result.changed).toEqual([])
+    expect(cfg.entries[0].frozen.at).toBe('2026-08-04')
+  })
+})
+
+describe('check-adoption — provenance: a raised floor stays visible', () => {
+  it('flags a class that reads "held" but is standing on a raise, and prints why', () => {
+    const raised = {
+      ...entry,
+      baseline: 2,
+      frozen: frozen(2, { direction: 'raised', from: 1, basis: basisFingerprint(entry), reason: 'measured on a different corpus' }),
+    }
+    const rows = evaluate([raised], corpus(['components/a.tsx', 'rounded-lg rounded-full']))
+    expect(rows[0].status).toBe('held')
+    expect(rows[0].unearned).toBe(true)
+    expect(formatScoreboard(rows)).toContain('raised')
+    const notes = formatProvenanceNotes(rows)
+    expect(notes).toContain('literal-radius')
+    expect(notes).toContain('1 → 2')
+    expect(notes).toContain('measured on a different corpus')
+  })
+
+  it('says nothing when every baseline was bought by a sweep', () => {
+    const swept = { ...entry, frozen: frozen(2, { direction: 'lowered', from: 9, basis: basisFingerprint(entry) }) }
+    expect(formatProvenanceNotes(evaluate([swept], corpus(['components/a.tsx', 'rounded-lg rounded-full'])))).toBe('')
+  })
+})
+
 describe('check-adoption — the shipped baselines file', () => {
   const config = loadConfig()
 
@@ -126,5 +264,20 @@ describe('check-adoption — the shipped baselines file', () => {
   it('has unique keys (a duplicate would silently shadow a debt class)', () => {
     const keys = config.entries.map((e: { key: string }) => e.key)
     expect(new Set(keys).size).toBe(keys.length)
+  })
+
+  it('can account for every shipped baseline — date, direction, basis and reason', () => {
+    expect(auditProvenance(config.entries)).toEqual([])
+  })
+
+  it('states out loud which shipped baselines were not bought by a sweep', () => {
+    // Not an assertion about how many there SHOULD be — an assertion that the file cannot hold a
+    // raised or rebased floor without saying so in a sentence a reviewer can check.
+    for (const e of config.entries) {
+      if (e.frozen.direction === 'raised' || e.frozen.direction === 'rebased') {
+        expect(e.frozen.reason.length, `${e.key}: an unearned floor needs its evidence written down`).toBeGreaterThan(80)
+        expect(e.frozen.from, `${e.key}: an unearned floor must say what number it replaced`).toEqual(expect.any(Number))
+      }
+    }
   })
 })
