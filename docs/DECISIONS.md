@@ -16637,6 +16637,33 @@ One bug found by the tests written for this and worth recording, because the sha
 
 The durable rule: **when two columns mean different things, the names, the writes and the reads must all keep them apart — a vague resolver name is how a money axis and a placement axis become one field nobody can tell apart.**
 
+## ADR-913 — Frequency charges once for the introduction: relationship attribution replaces cookies, and a tip carries no fee (2026-07-30)
+
+**Status.** Accepted, owner rulings 2026-07-30. **Parts 1-4 stand; part 5 was reversed the next day by [ADR-914](#adr-914)**, which says so itself. Makes the differential take-rate of ADR-811 §A the live charging path; supersedes ADR-786's "tips stay flat" and ADR-552's flat paying-state trio on that path.
+
+🔴 **Written retroactively on 2026-08-04, reconstructed — not remembered.** The decision shipped in commit `1b5e8783` (PR #1999) and was cited into 33 code sites and 13 docs the same day; the ledger entry was skipped, and the ADRs that PR *did* write (914-917, 919) came from later commits, so nobody noticed. Every clause below traces to that commit's own message or the code comments it left. Confirmed absent from every commit on every ref before writing this. `scripts/check-adr.mjs` counts headings and guards duplicates, so it cannot see a cited-but-missing number.
+
+**Context.** The take-rate ladder existed and almost never fired. `classifyOrderSource` decided "did the network source this sale?" from two cookies and defaulted to `self` on any miss — and cookies clear, expire, and do not survive a phone-to-laptop switch, so nearly every sale billed 0% by accident rather than by rule. A cookie also cannot answer the question a host eventually asks: *why did you charge me for that sale?* Tips had no source classification at all, so a tip from the recipient's own follower was charged where the identical person buying a ticket was not. And `/admin/pricing` wrote four flat fields over the whole `take_rate` blob, silently wiping the `network_bps` vector charging reads — an operator was editing numbers that never reached a charge.
+
+**Decision.** **Frequency charges once for the introduction. After that they are your people, free.**
+
+1. **The differential network vector is the live model.** Every fee path resolves `take_rate.network_bps` through `lib/billing/fees.ts`. The flat ADR-552 fields remain only so a pre-vector blob resolves to a number; nothing on the charging path may be wired to them again.
+2. **Attribution is relationship-first.** `lib/commerce/seller-audience.ts` answers "is this buyer already the seller's own audience?" from six signals — the buyer is the seller, follows the Space, is an active member, is in its CRM, is on the seller's contact list, or has bought before. Any one is enough, and the answer is 0% on every tier. The check sits **above** the entry point and the cookies.
+3. **A settled purchase records the buyer as a contact.** Nothing turned a purchase into a contact before, so a repeat buyer looked like a stranger forever. This write is what makes "charge once" true rather than aspirational.
+4. **A tip carries no platform fee, on any tier.** Zero, not "the self rate": a tip has no order source to classify and never will. Passed as an explicit zero fee so the destination-charge shape stays identical across channels.
+5. **The seller wall moves off event creation onto the price field.** ⚠️ **Reversed by ADR-914 — recorded for the history.** Creation was Crew-gated in the UI while the server never gated it. What survives is only that **event creation is not a paid feature**.
+
+**The fail-safe direction is "their audience", everywhere.** Any read failure or missing id resolves to 0%. Under-collecting on an error is recoverable; charging a fee we publicly promised not to charge is not.
+
+**Alternatives considered.** *Keep cookies, add relationship as a tiebreak* (rejected — a cookie is a guess, a relationship is a row with a timestamp, and the guess cannot survive an audit). *Let the entry point outrank the relationship, so a third party referring an existing follower still earns network credit* (rejected, and the cost is knowingly paid: it would mean charging a host for someone they already had, which is the one thing the promise forbids). *Charge tips the "self" rate* (rejected — it implies a classification that does not exist).
+
+**Consequences.** ⚠️ Inert until money moves: `billingLive()` gates the checkouts. ⚠️ The relationship check adds a read to checkout, placed after the self-scan so it short-circuits before any IO. ⚠️ `recordBuyerAsContact` is Space-scoped because `contacts` is keyed on `space_id`; a Crew-hosted event has no Space CRM, and that case stays covered for pricing by `prior_purchase`. ⚠️ It check-then-inserts rather than upserting (no unique constraint on `(space_id, profile_id)`), so a race can duplicate a row — a tidiness issue, never a money one, since the check only asks whether any row exists.
+
+Two bugs the new tests caught, recorded because both shapes recur: the `entryPoint` branch ran **before** the relationship check while the comment above it claimed the opposite order; and the contact write selected `email` from `profiles`, a column that does not exist, which PostgREST answers by nulling the whole row.
+
+The durable rule: **charge for the introduction, never for the relationship — and prove which one it was from a row, not a cookie.**
+
+
 ## ADR-914
 
 **Selling is not a tier. The rate is the ladder.** (2026-07-30, owner ruling; supersedes ADR-913's seller gate)
@@ -16729,6 +16756,29 @@ That correction removes the urgency and keeps every requirement. Two rules ship 
 The durable rule: **a cap with no grandfather is a promise broken retroactively, and the safest grandfather is the one that cannot go stale — computed from what the customer holds right now, not from a snapshot somebody has to remember to take.**
 
 ---
+
+## ADR-918 — A janitor edits the words; the numbers stay derived (2026-07-30)
+
+**Status.** Accepted. Owner directive: *"make sure pricing is wired into any CMS elements."* Completes [ADR-916](#adr-916) on the CMS side; extended to the DAWN two-band layout by [ADR-926](#adr-926). Strategy and the fallback-chain table live in [`VALUE-LADDER.md`](VALUE-LADDER.md) Appendix C.
+
+🔴 **Written retroactively on 2026-08-04.** Shipped in commit `540c7af2` (PR #1999), cited into 10 code sites, ledger entry skipped. Unlike ADR-913 this needed almost no reconstruction: Appendix C is already an authoritative statement of the decision, stamped *"Settled 2026-07-30 (ADR-918)"*.
+
+**Context.** ADR-916 had just collapsed nine structures that each held their own copy of the prices, six of which could disagree, onto one derived source. The CMS was outside that fix. The Puck `Tiers` block stores `price`, `strikePrice`, `cadence` and `priceNote` as free text, and Publish writes that text into a jsonb document — so the first Publish of a pricing page froze every figure, and an `/admin/pricing` rate edit would move the generated page while the published one quoted last quarter's numbers. Re-forking the source on the next Publish would have put it somewhere strictly worse than a constant in a file, because **a row in a database is not greppable and no test can read it**.
+
+**Decision.** **A janitor edits the WORDS. The NUMBERS stay derived.**
+
+1. **Binding, not typing.** A tier card carries `livePriceKey`, an offering id. When it resolves, price, struck anchor, cadence and rate come from the same config checkout bills on. The typed fields stay, and are the right choice for genuinely editorial cards — an add-on, or "Space Memberships: Owner-set" — which have no offering behind them.
+2. **Pricing rides the shared `LiveData`,** not a `/pricing`-only prop: any of the eight CMS pages can carry a `Tiers` block, and a binding that worked on one route would be a trap for whoever adds the second.
+3. **Both failure paths lean editorial.** An unresolved key falls back to typed text rather than blanking the card, and `getLivePricing` returns `{}` rather than throwing, because it runs during static generation where a throw takes the whole route down at build time.
+4. **The seed template is where the invariant is enforced,** because it is the one part of the chain that lives in git. `live-pricing.test.ts` asserts every card naming a real offering carries a key, and every key resolves.
+5. **`/pricing` gets two fallback rungs where the other seven get three.** Its coded page is the DERIVED one; its template is a static snapshot, so slotting the template in as a middle rung would mean any deploy where nobody has published silently downgrades live figures to a snapshot. Both chains say *published words beat the best available default*; they disagree only about which default is best, and that is a decision rather than an inconsistency to "fix" later.
+
+**Alternatives considered.** *Delete the typed fields and make binding mandatory* (rejected — editorial cards have nowhere to put a figure, and it removes the fail-safe). *Blank an unresolved card* (rejected — a visibly empty card is a worse failure than a slightly stale one, and the stale one self-corrects on redeploy). *Let `getLivePricing` throw so a misconfiguration is loud* (rejected — see 3). *Rewrite the stored document on every rate change* (rejected — it makes an operator's saved page a moving target and puts a pricing job on a content path).
+
+**Consequences.** ⚠️ The published document is still a database row nothing in CI can read, so the guarantee is only as strong as the seed template plus the fallback. A janitor who deletes a `livePriceKey` gets typed text back with no error — the intended fail-safe, and also how this can silently regress. ⚠️ The `pricing` template is deliberately not regenerated on later DAWN passes (ADR-926): a full Publish would freeze figures.
+
+The durable rule: **a CMS may own the words and never the numbers — the moment Publish can write a figure into a document, the figure has forked, and it has forked somewhere nothing can grep.**
+
 
 ## ADR-919 — Crew is pay what you want, so it has no price to lock (2026-07-30)
 
@@ -16950,6 +17000,26 @@ The thresholds sit **deliberately above** the field budgets in `lib/analytics/vi
 
 The durable rule: **a signal you cannot compute honestly should be omitted, not faked — a crawler that learns to distrust your `lastmod` distrusts all of it, including the entries you got right.**
 
+**Correction, 2026-08-04 (same day).** The first real run of this gate uploaded **nothing**, and
+went green doing it. LHCI writes to `.lighthouseci/`, a hidden directory, and
+`actions/upload-artifact@v4` defaults `include-hidden-files: false`; `if-no-files-found: ignore`
+then swallowed the miss. The job log carried both halves three lines apart — *"Dumping 12 reports
+to disk"* followed by *"No files were found with the provided path"*. So the one artifact that
+would let anyone re-set these thresholds from data never left the runner, in a gate whose own ADR
+says the thresholds are guesses that must be re-set from data. Fixed with `include-hidden-files:
+true` and `if-no-files-found: error`, because a second silent loss must be loud.
+
+Worth stating plainly, since this ADR and ADR-931 were written the same day about exactly this
+failure mode: the check that shipped to catch green-ticks-with-nothing-behind-them was itself one.
+
+What the first run DID report, from the log rather than the artifact: every error-level assertion
+(LCP, CLS, TBT) passed, and three warnings fired on `/the-community` and `/loneliness` —
+`unused-javascript` scored **0 across all three runs**, `render-blocking-resources` 0.5, and
+`uses-responsive-images` 0 to 0.5. The unused-JS zero is real signal and the first speed finding
+this gate has produced. The millisecond values behind the passing assertions remain unknown until
+a run uploads its report, so whether the thresholds are too loose is still an open question and
+must not be answered by guessing again.
+
 ## ADR-931 — Three gates did not hold the property they advertised, and one "completed" task was never started (2026-08-04)
 
 **Status.** Accepted. Outcome of a seven-agent read-only verification sweep over all 33 completed tasks.
@@ -16977,3 +17047,23 @@ The admin-client baseline is rebased once, 738 → 746, with the reason in the c
 ⚠️ **Several findings are recorded, not fixed**, because they are owner decisions or larger than a gate fix: the three-docks law was reversed by owner call on 2026-08-04 with no ADR and 14 comments still asserting it; `GameStatsDockClient` has zero mount sites; the marketing→Puck conversion map has no artifact and 18 live routes are uncovered; `DawnHowToSteps` is built, registered, tested and used nowhere; `/the-quest` and `/the-community` emit duplicate Article and FAQPage nodes; ADR-913 and ADR-918 are cited about twenty times in shipped code and do not exist in the ledger; the `invite_links` credential-leak fix has no ADR.
 
 The durable rule: **a gate that passes proves only what it actually measures — so the first question about any green check is not "did it pass" but "what would have had to be true for it to fail."**
+
+## ADR-932 — The Vault comes back to the corner as a tab, not a pill (2026-08-04)
+
+**Status.** Accepted. Owner ruling: *"3 Docs is right with the bottom right tab."* Reverses the rollback recorded in `components/sidebar/right-sidebar.tsx:150-157` (2026-08-04, same day), and completes the three-docks law ADR-925 named.
+
+**Context.** The bottom-right Vault dock shipped as a floating chip, and was pulled the same day because it *"competed with the chat launcher for the same corner."* Reviving it needed the real cause, and the geometry says the obvious one is wrong: at ≥1024, where the chip actually rendered, the chip occupied `[80,118]` from the bottom and the chat pill `[24,68]` — **12px of clearance, no overlap on either axis.** Three other things were true instead.
+
+The chat **panel** — not the pill — is `md:bottom-6 md:right-6 md:h-[600px] md:w-[24rem]`, i.e. `y[24,624] × x[24,408]` at z-50. The chip's rectangle sits **wholly inside** it. Opening chat erased the score, and no gap in that lane would have helped. Second, two right-aligned floating click-to-open affordances 12px apart read as one control cluster regardless of pixel separation. Third, a 146px chip could carry 2 of 5 numbers, which is the owner's other recorded complaint: *"a score you have to click to see is a score you stop reading."*
+
+**Decision.** The Vault renders as a **canvas corner tab flush to `bottom-0 right-3`, `w-72`, from `md` up** — deliberately the same object, skin and coordinates as the operator page dock at `app/(main)/admin/layout.tsx:85`. DAWN's docks card states the law as *"Bottom right | The Vault (member) **or** this page (operator)"*, and mounting both at identical coordinates makes that **or** true in geometry rather than in z-index arbitration: `showSidebar` is false on `/admin` (`railFor` → `'none'`), so exactly one can ever mount. The head carries **zaps · gems · streak · rank at rest**; the panel reveals *inside* the tab (`grid-rows-[0fr]` → `[1fr]`) so the bottom edge stays pinned and the corner never lifts.
+
+Three consequential moves fall out of the arithmetic, and each is load-bearing rather than cosmetic. The chat pill leaves the corner for `top-1/2` of the right edge — which its own source already calls *"a tab tucked flush into the screen margin, not a floating pill"* — and that incidentally fixes the left twin's 12px overlap with the left rail and 10px with the mobile tab bar. The toast lanes move to `md:bottom-24`: **80px would sit 1px inside a 69px tab**, and 96px clears it by 27. And the chat panel moves to `md:bottom-[4.75rem]` (69 + 7), without which it would swallow the tab exactly as it swallowed the chip.
+
+**Score once per viewport,** which is the part that was quietly broken in two directions. Below 768 the drawer cluster; from 768 up the tab. The tablet band block added earlier today is deleted — it existed only because the drawer stopped at `md` and the rail started at `lg`, and the tab now spans that gap — and `VaultPanel` is deleted from the rail, because a conditional "render only where the tab is suppressed" has an empty true-set. The old split keyed the two homes off **different flags** (`showLeftRail` vs `showSidebar`), so `/crew` rendered the score twice at 768–1023 while `/admin` rendered it there and not at ≥1024. `isQuestSurface` now gates both.
+
+**Alternatives considered.** *One vertical lane with defined slot heights* (rejected — it is what shipped; the open chat panel still blankets the lane, and the contract's own SLOT 2 assigned toasts and the Vault's expanded panel the identical y-origin of 128px). *Rail-attached at lg, floating below* (rejected — it contradicts the ruling, and the band with no rail to attach to is exactly the band that had no home). *Merge the score and the chat launcher into one cluster* (rejected — it breaks the law itself: bottom-right is *your score*, chat is a system affordance, and `/admin` has no chat pill at all).
+
+**Consequences.** ⚠️ The tab covers the last 69px of the content column at page bottom from `md` up — the operator dock already accepts exactly this. ⚠️ The Space publish bar (`z-[70]`, full-width `bottom-0`) covers the tab on owner-edit surfaces, the same accepted exception the old contract granted the settings drawer. ⚠️ **Playwright visual baselines will move on every signed-in capture**, and the a11y ratchet shifts by one interactive element per page; both need a deliberate re-capture, not a `--update` reflex. ⚠️ Below 768 the tab does not render at all: a 288px tab cannot coexist with a seven-slot tab bar and a centred raised action, so the drawer stays the phone home.
+
+The durable rule: **two floating objects in one corner compete no matter how far apart you push them — the fix is to stop one of them from floating.**

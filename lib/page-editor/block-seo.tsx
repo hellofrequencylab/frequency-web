@@ -42,6 +42,7 @@ export function BlockDocJsonLd({
   description,
   published,
   updated,
+  image,
 }: {
   data: Data
   /** The route's canonical path — becomes the Article url / @id. */
@@ -52,9 +53,30 @@ export function BlockDocJsonLd({
   description?: string
   published?: string | null
   updated?: string | null
+  /** Article image(s). `articleSchema` has always accepted these; this component did not pass
+   *  them, so every Puck-rendered page published an Article with NO image node — while the
+   *  coded pages it replaces feed a deliberate multi-image array as the CONTENT-VOICE §8b
+   *  multimodal AIO signal (one of them passes five). Converting a coded page to Puck without
+   *  this silently drops that signal on exactly the pages that most need it. When omitted, the
+   *  first image found in the document is used, so a converted page keeps an image by default
+   *  rather than by remembering. */
+  image?: string | string[]
 }) {
   const headline = (title ?? firstProp(data, ['title', 'heading', 'text'])).trim()
   const desc = (description ?? firstProp(data, ['subtitle', 'lead', 'body', 'text'])).trim().slice(0, 300)
   if (!headline || !desc) return null
-  return <JsonLd data={articleSchema({ title: headline, description: desc, path, published, updated })} />
+  const resolved = image ?? firstProp(data, ['image', 'photo', 'cover', 'src']).trim() ?? ''
+  const img = Array.isArray(resolved) ? resolved : resolved ? [resolved] : undefined
+  return (
+    <JsonLd
+      data={articleSchema({
+        title: headline,
+        description: desc,
+        path,
+        published,
+        updated,
+        ...(img && img.length > 0 ? { image: img } : {}),
+      })}
+    />
+  )
 }

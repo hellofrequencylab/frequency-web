@@ -67,7 +67,7 @@ export function ZapToastContainer() {
     // cleared and the pill is higher on mobile.
     // The old lg:bottom-32 reserved 128px for GameStatsDockClient, which has had zero mount
     // sites since the Vault moved back into the rail.
-    <div className="pointer-events-none fixed bottom-32 right-4 z-50 flex flex-col gap-2 items-end md:bottom-20">
+    <div className="pointer-events-none fixed bottom-32 right-4 z-50 flex flex-col gap-2 items-end md:bottom-24">
       {toasts.map((t) => (
         <ZapToastCard key={t.key} reward={t.reward} onDismiss={() => dismiss(t.key)} />
       ))}

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
-  Zap, Gem, Flame, X, Target, Sparkles, CheckCircle2, ArrowRight, Lock,
+  Zap, Gem, Flame, X, Target, Sparkles, CheckCircle2, ArrowRight, Lock, ChevronUp,
 } from 'lucide-react'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { ProgressTrack } from '@/components/ui/progress-track'
@@ -28,16 +28,48 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-// ── The Vault dock (three-docks law, DAWN 2026-08-03) ─────────────────────────
-// Bottom right is the member's score: Zaps, Gems, the streak and the season. The
-// dock is a collapsed floating chip (Zaps · streak) that expands upward into the
-// full progress panel — the SAME GameStatsPanel as before, relocated from the
-// right rail's foot. The streak chip that used to sit in the top bar lives here
-// now (the top bar is the system, and the system does not keep score). Rendered
-// from the right rail's slot, so its visibility follows the page-chrome map
-// (rail 'none' surfaces get no Vault dock) with no path-sniffing.
+// ── The Vault: the bottom-right dock (three-docks law) ────────────────────────
+//
+// Bottom right is the member's score. It returns as a CANVAS CORNER TAB flush to the bottom
+// edge -- deliberately the same object, at the same coordinates, as the operator page dock
+// (app/(main)/admin/layout.tsx:85). DAWN's docks card states the law as "Bottom right | The
+// Vault (member) OR this page (operator)", and mounting both at `bottom-0 right-3 w-72` makes
+// that OR true in geometry rather than in z-index arbitration: `showSidebar` is false on
+// /admin (railFor -> 'none'), so exactly one of them can ever render.
+//
+// WHY A TAB AND NOT THE FLOATING CHIP THAT WAS ROLLED BACK. The chip and the chat pill never
+// actually overlapped -- there was 12px of clearance at lg. Three other things were true:
+//   1. The chat PANEL (24rem x 600px at md:bottom-6 md:right-6) wholly contained the chip, so
+//      opening chat erased the score. A bigger gap in the same lane would not have helped.
+//   2. Two floating, right-aligned, click-to-open pills 12px apart read as ONE cluster. That is
+//      what "competed with the chat launcher for the same corner" meant.
+//   3. A 146px chip could only carry 2 of 5 numbers, which is the owner's other complaint:
+//      "a score you have to click to see is a score you stop reading."
+// A 288px tab head carries zaps, gems, streak AND rank at rest, and being flush to the edge it
+// is no longer a floating object competing with another floating object.
+//
+// THE BOTTOM-RIGHT CONTRACT, from the edge up. Every number is stated, because the last
+// version of this comment asserted a lane the arithmetic did not support.
+//
+//   >= 768 (the tab renders):
+//     SLOT 0 - the Vault tab: bottom-0 right-3, z-40, w-72. Occupies [0, 69] vertically:
+//              1px border-t + 4px pt-1 + 64px head (h-10 crest + py-3).
+//     SLOT 1 - toasts: right-4, z-50, md:bottom-24 = 96px. NOT bottom-20: 80px would sit 1px
+//              INSIDE a 69px tab. 96 clears it by 27.
+//     SLOT 2 - the chat edge pill: moved off the corner entirely to top-1/2 of the right edge.
+//              It is a tab tucked into the margin by its own definition, not a corner object.
+//     The chat PANEL moves to md:bottom-[4.75rem] = 76px (69 + 7 gap) so it stops covering the
+//     tab. That line is load-bearing, not cosmetic.
+//
+//   < 768 (the tab does NOT render):
+//     The bottom edge belongs to the tab bar: [0, 56 + env(safe-area-inset-bottom)], up to 90px
+//     on a home-indicator phone, plus the raised Zap catch whose top reaches 112px. Toasts sit
+//     at bottom-32 = 128px, clearing the catch by 16. A 288px tab cannot coexist with a 7-slot
+//     tab bar and a centred raised action, so the score's < 768 home stays the drawer cluster.
+//
+// SCORE ONCE PER VIEWPORT: < 768 the drawer cluster; >= 768 this tab. Nothing else renders it.
 export function GameStatsDockClient({ data }: { data: DockData }) {
-  const { zaps, streak } = data
+  const { zaps, gems, streak, rank } = data
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -58,60 +90,38 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
     }
   }, [open])
 
+  const rankStyle = rank ? seasonRankStyle(rank) : null
+
   return (
-    // ── THE BOTTOM-RIGHT STACKING CONTRACT (one rule for every fixed element) ──
-    // Slots, from the corner up (desktop):
-    //   SLOT 0 · corner  — the chat edge pill (components/layout/edge-pill.tsx):
-    //            right-0, md:bottom-6 (1.5rem), h-11 (2.75rem), z-40. It is the
-    //            system-wide affordance and KEEPS the corner.
-    //   SLOT 1 · dock    — THIS chip: right-4, bottom-20 (5rem = pill offset
-    //            1.5rem + pill height 2.75rem + 0.75rem gap), z-30. lg+ only (the
-    //            rail column is hidden < lg, so the mobile tab bar is never in
-    //            play). The expanded panel opens UPWARD from the chip (it renders
-    //            before the chip in-flow, growing away from the corner).
-    //   SLOT 2 · toasts  — transient toasts (zap-toast.tsx, achievement-toast.tsx):
-    //            right-4, lg:bottom-32 (8rem = dock offset 5rem + chip ~2.375rem +
-    //            gap), md:bottom-20 where no dock renders, z-50. Transient, so they
-    //            may outrank everything below the drawers.
-    // z tiers: page content < dock chip (z-30) < edge pill (z-40) < panels/toasts/
-    // operator settings drawer (z-50; the drawer covering the chip while open is
-    // accepted). A NEW fixed bottom-right element must take the next slot up, never
-    // an existing offset.
-    <div ref={rootRef} className="fixed bottom-20 right-4 z-30 flex flex-col items-end print:hidden">
-      {/* Expanded panel — grows from the chip toward the interior, scrolls inside. */}
-      {open && (
-        <div
-          role="dialog"
-          aria-label="The Vault"
-          className="mb-2.5 flex max-h-[72vh] w-80 flex-col overflow-hidden rounded-card border border-border bg-surface lift-2"
-        >
-          {/* Head — the chrome band: the dock's frame, not its content. */}
-          <div className="flex items-center gap-2 border-b border-chrome-border bg-chrome px-4 py-2.5">
-            <Gem className="h-4 w-4 shrink-0 text-primary-strong" />
-            <p className="flex-1 text-2xs font-semibold uppercase tracking-widest text-muted">The Vault</p>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Close the Vault"
-              className="flex h-6 w-6 items-center justify-center rounded-md text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="overflow-y-auto px-4 py-3.5">
+    <div
+      ref={rootRef}
+      className="pointer-events-auto fixed bottom-0 right-3 z-40 hidden w-72 rounded-t-2xl border-x border-t border-border/70 bg-[var(--color-canvas)]/95 px-2 pt-1 backdrop-blur-sm md:block print:hidden"
+    >
+      {/* The panel reveals INSIDE the tab (grid-rows 0fr -> 1fr) rather than as a sibling above
+          it, so the tab's bottom edge stays pinned to 0 and the corner never lifts off. */}
+      <div
+        className={`grid overflow-hidden transition-[grid-template-rows] duration-200 ease-out ${
+          open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+        }`}
+      >
+        <div className="min-h-0">
+          <div
+            role="region"
+            aria-label="The Vault"
+            className="max-h-[70dvh] overflow-y-auto px-2 pb-2 pt-2"
+          >
             <GameStatsPanel data={data} showSummary />
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Collapsed chip — Zaps and the streak at a glance, one tap to open. */}
+      {/* Tab head — all five numbers at rest. This is the readability the chip could not give. */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        aria-label="The Vault. Your Zaps, Gems and streak"
-        title="The Vault"
-        className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-elevated py-1.5 pl-1.5 pr-3 lift-2"
+        aria-label="The Vault. Your Zaps, Gems, streak and rank"
+        className="flex h-10 w-full items-center gap-2 rounded-lg px-1.5 transition-colors hover:bg-surface-elevated"
       >
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary">
           <Zap className="h-3.5 w-3.5 fill-current text-on-primary" />
@@ -119,9 +129,22 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
         <span className="text-sm font-semibold tabular-nums text-text">{zaps.toLocaleString()}</span>
         <span aria-hidden className="h-4 w-px bg-border" />
         <span className="inline-flex items-center gap-1 text-sm tabular-nums text-muted">
+          <Gem className="h-3.5 w-3.5 text-primary-strong" />
+          {gems.toLocaleString()}
+        </span>
+        <span aria-hidden className="h-4 w-px bg-border" />
+        <span className="inline-flex items-center gap-1 text-sm tabular-nums text-muted">
           <Flame className="h-3.5 w-3.5 text-primary-strong" />
           {streak}
         </span>
+        {rankStyle && (
+          <span className={`ml-auto rounded-pill px-2 py-0.5 text-3xs font-bold uppercase tracking-widest ${rankStyle}`}>
+            {rank ? RANK_LABELS[rank] : ''}
+          </span>
+        )}
+        <ChevronUp
+          className={`h-4 w-4 shrink-0 text-subtle transition-transform ${open ? 'rotate-180' : ''} ${rankStyle ? '' : 'ml-auto'}`}
+        />
       </button>
     </div>
   )

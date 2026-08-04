@@ -9,6 +9,7 @@
 // Voice: plain, no em dashes (CONTENT-VOICE §10). Labels come from the naming canon (Crew, Business,
 // Non Profit).
 
+import { ANNUAL_MONTHS_FREE } from '@/lib/billing/pricing-keys'
 import type { PricingDefaults, TierPrice } from './settings'
 import { SPACE_PLAN_LABEL, type SpacePlan } from './plans'
 import { yearlyFromMonthly } from '@/lib/billing/pricing-keys'
@@ -128,7 +129,13 @@ export function spacePlanRows(values: PricingDefaults, betaActive: boolean): Pri
 /** The plain yearly-billing line for the operator-set annual discount, e.g. "Yearly is two months free."
  *  PURE. Reads the months-free knob so a change to the discount reflows the sentence. */
 export function annualDiscountNote(values: PricingDefaults): string {
-  const months = values.annual_discount.months_free
+  // Reads the BILLING constant, not values.annual_discount.months_free. The knob is settable at
+  // /admin/pricing but nothing on the charging path consumes it: yearlyFromMonthly owns the
+  // annual math. Quoting from the knob meant a promo could change every price card and the FAQ
+  // without changing a single invoice. `values` stays in the signature because the other notes in
+  // this module take it and callers pass one object; the parameter is intentionally unused here.
+  void values
+  const months = ANNUAL_MONTHS_FREE
   if (months <= 0) return 'Monthly or yearly.'
   return `Yearly is ${months === 2 ? 'two' : months === 1 ? 'one' : String(months)} month${months === 1 ? '' : 's'} free.`
 }

@@ -22,6 +22,7 @@ import { Illustration, type IllustrationName } from '@/components/marketing/illu
 import { Reveal, Parallax, CountUp, ScrollCue } from '@/components/marketing/motion'
 import { JsonLd } from '@/components/json-ld'
 import { faqSchema } from '@/lib/jsonld'
+import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
 import { getInitials, relativeTime, eventDateBadge, formatEventDate } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HREF, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE } from '@/lib/site'
@@ -212,6 +213,18 @@ export default async function RootPage() {
   if (data) {
     return (
       <>
+        {/* The home page shipped ZERO structured data. The only JsonLd in this file sits
+            inside the coded Splash below, and that body never renders: `data` is non-null
+            whenever a template exists, and templates.test.ts asserts the 'home' template is
+            always renderable. So the highest-value page on the site published no Article, no
+            breadcrumb and no FAQPage at all.
+            Breadcrumb is derived from the route; the Article comes from the rendered document
+            via BlockDocJsonLd. The FAQPage is deliberately NOT lifted up here: the home
+            template carries no Accordion, so HOME_FAQ describes copy this rung does not show,
+            and asserting it would publish answers no visitor can read (/pricing:309-313).
+            No breadcrumb either: this IS the root, so the list would be empty, and an empty
+            BreadcrumbList is worse than none. */}
+        <BlockDocJsonLd data={data} path="/" />
         <MarketingHeader overHero isAuth={!!user} headerMenu={headerMenu} menuTimings={menuTimings} ctaLabel="Join the beta" />
         <main id="main">
           <BlockRender config={config} data={data} />

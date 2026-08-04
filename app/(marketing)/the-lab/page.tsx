@@ -128,11 +128,14 @@ export default async function TheLabPage() {
   const live = data ? await getLiveData(createAdminClient()).catch(() => null) : null
   return (
     <>
-      <JsonLd
-        data={breadcrumbSchema([{ name: 'The Lab', path: '/the-lab' }])}
-      />
-      <JsonLd data={faqSchema(THE_LAB_FAQ)} />
-      {data && <BlockDocJsonLd data={data} path="/the-lab" />}
+      <JsonLd data={breadcrumbSchema([{ name: 'The Lab', path: '/the-lab' }])} />
+      {data ? (
+        // No FAQPage on this rung: the template contains no Accordion, so THE_LAB_FAQ
+        // describes copy that is not rendered. Scoped to the legacy body, which does.
+        <BlockDocJsonLd data={data} path="/the-lab" />
+      ) : (
+        <JsonLd data={faqSchema(THE_LAB_FAQ)} />
+      )}
       {data ? <BlockRender config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheLab />}
     </>
   )

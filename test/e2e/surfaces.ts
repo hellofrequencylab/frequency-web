@@ -114,6 +114,11 @@ const EDITABLE_PAGES_FALLBACK: readonly string[] = [
  *  EDITABLE_PAGES). Keep this short: it is the only hand-maintained part of the list. */
 const EXTRA_PUBLIC_PATHS: readonly string[] = ['/discover']
 
+/** Fallback for protectedPathPrefixes() when proxy.ts cannot be read, mirroring the
+ *  EDITABLE_PAGES_FALLBACK pattern above. Kept deliberately SHORT: only the prefixes that
+ *  actually intersect the public surface list matter here. */
+const PROTECTED_PREFIX_FALLBACK: readonly string[] = ['/circles']
+
 function repoFile(relative: string): string | null {
   // Playwright runs from the package root, but be forgiving about the cwd.
   const cwd = process.cwd()
@@ -159,10 +164,54 @@ function slugFor(path: string): string {
   return path.replace(/^\//, '').replace(/\/$/, '').replace(/\//g, '-') || 'home'
 }
 
-/** Every anonymous-reachable surface the visual + a11y suites cover. */
+/**
+ * The auth-walled path prefixes, READ FROM proxy.ts AT RUN TIME.
+ *
+ * Same disk-parse idiom as editablePagePaths() above, and for the same reason: proxy.ts
+ * imports next/server and the Supabase SSR client at module load, which a test process has
+ * no business booting. Parsing keeps ONE source of truth — the proxy decides what is
+ * walled, and this registry follows it rather than keeping a second list that drifts.
+ */
+function protectedPathPrefixes(): readonly string[] {
+  const file = repoFile('proxy.ts')
+  if (!file) return PROTECTED_PREFIX_FALLBACK
+
+  const source = readFileSync(file, 'utf8')
+  const block = source.match(/const PROTECTED_PATHS\s*=\s*\[([\s\S]*?)\]/)
+  const body = block?.[1]
+  if (!body) return PROTECTED_PREFIX_FALLBACK
+
+  const paths: string[] = []
+  for (const match of body.matchAll(/['"](\/[^'"]*)['"]/g)) {
+    const value = match[1]
+    if (value && !paths.includes(value)) paths.push(value)
+  }
+  return paths.length > 0 ? paths : PROTECTED_PREFIX_FALLBACK
+}
+
+/**
+ * Every ANONYMOUS-REACHABLE surface the visual + a11y suites cover.
+ *
+ * The filter is the point. `/circles` sits in EDITABLE_PAGES (so it arrived here as an
+ * editor-backed marketing route) AND in proxy.ts's PROTECTED_PATHS (so an anonymous
+ * visitor is redirected to /sign-in before the page renders). It therefore contributed 5
+ * a11y contexts and 8 visual tests that could never produce a measurement — they skipped
+ * on every run, forever, and were counted as part of a "44 of 84 tests do not run" figure
+ * that was blamed entirely on the missing beta storage state. Only 12 of those 44 were.
+ *
+ * A page cannot be both editor-backed-and-public and auth-walled. Rather than special-case
+ * the slug, the registry now asks the proxy: if anon cannot reach it, it is not an anon
+ * surface. When /circles is opened to visitors, deleting its PROTECTED_PATHS entry brings
+ * its 13 tests back automatically, with no edit here.
+ */
 export function publicSurfaces(): readonly Surface[] {
+  const walled = protectedPathPrefixes()
+  const isWalled = (path: string) =>
+    walled.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))
+
   const paths: string[] = []
   for (const path of [...editablePagePaths(), ...EXTRA_PUBLIC_PATHS]) {
+    if (isWalled(path)) continue
     if (!paths.includes(path)) paths.push(path)
   }
   return paths.map((path) => ({ path, slug: slugFor(path), audience: 'anon' as const }))

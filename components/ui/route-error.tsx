@@ -1,5 +1,6 @@
 'use client'
 
+import * as Sentry from '@sentry/nextjs'
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -27,7 +28,12 @@ export function RouteError({
   minH?: string
 }) {
   useEffect(() => {
+    // console.error alone meant a client-side throw was invisible to on-call: server
+    // renders are covered by instrumentation.ts onRequestError, but a component that
+    // throws during interaction or hydration produced no event, no alert, no digest.
+    // This and app/error.tsx were the only two boundaries not reporting.
     console.error(error)
+    Sentry.captureException(error)
   }, [error])
 
   return (

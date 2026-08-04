@@ -126,31 +126,85 @@ function salvageObjects(text: string): unknown[] {
  *  articles — and a truncated array used to parse to nothing, sending the whole
  *  comment to fallback. Scale with the list, with a ceiling so cost stays bounded. */
 export function autodocMaxTokens(articleCount: number): number {
-  return Math.min(8000, Math.max(800, 200 + articleCount * 120))
+  // 240/article, floor 1200, and the reason is measured rather than guessed: a 14-article run
+  // on 2026-08-04 came back with 9 of 14 "cut short" under the old 120/article budget, which
+  // gave that run 1,880 tokens. One verdict object is ~30 tokens of keys plus a note capped at
+  // 200 characters (~50 tokens), so ~80 is the floor for the DATA alone -- and a reply that
+  // opens with a sentence of preamble, or writes fuller notes on a diff that touches a lot,
+  // spends the rest of that margin before it reaches the array.
+  //
+  // Truncation here is not silent (withUnreviewed lists what went unchecked, which is the right
+  // behaviour and is how this was caught) but a checklist that says "not reviewed" nine times is
+  // a checklist nobody reads. Doubling the per-article allowance costs output tokens only on
+  // large runs and buys the difference between an advisory and a shrug.
+  return Math.min(8000, Math.max(1200, 300 + articleCount * 240))
 }
 
 /** Parse the model's JSON array, keeping only items that match a known article.
  *  Falls back to object-by-object salvage when the array itself won't parse. */
 export function parseAutodocResponse(text: string, articles: AutodocArticle[]): AutodocItem[] {
-  const start = text.indexOf('[')
-  const end = text.lastIndexOf(']')
-  let raw: unknown
-  if (start !== -1 && end > start) {
-    try {
-      raw = JSON.parse(text.slice(start, end + 1))
-    } catch {
-      raw = undefined
+  const known = new Set(articles.map((a) => `${a.category}/${a.slug}`))
+
+  // IDENTIFY AN ARTICLE FROM WHATEVER SHAPE THE MODEL USED.
+  // The strict reading — require `category` and `slug` as separate exact fields — is why a
+  // reply that WAS a review still produced "nothing in the reply could be read as a review":
+  // one unasked-for shape (a `path`, a slug carrying its own category, a trailing `.md`) drops
+  // every row, and the comment then reports a total outage. The prompt still asks for the
+  // strict shape; this only stops a near-miss from being scored as a zero.
+  const identify = (r: Record<string, unknown>): string | null => {
+    const direct = `${String(r?.category ?? '')}/${String(r?.slug ?? '')}`
+    if (known.has(direct)) return direct
+    // A single path-ish field, in any of the forms a model reasonably picks.
+    for (const key of ['path', 'file', 'article', 'slug']) {
+      const v = String(r?.[key] ?? '').trim()
+      if (!v) continue
+      const cleaned = v
+        .replace(/^\.?\/?(?:content\/)?(?:help\/)?/, '')
+        .replace(/\.md$/, '')
+        .replace(/^\/+|\/+$/g, '')
+      if (known.has(cleaned)) return cleaned
+      // Last resort: match on the final segment when it is unambiguous.
+      const tail = cleaned.split('/').pop() ?? ''
+      const hits = [...known].filter((k) => k.endsWith(`/${tail}`))
+      if (tail && hits.length === 1) return hits[0]!
+    }
+    return null
+  }
+
+  // Try every plausible JSON array in the reply, not just the first '[' to the last ']'.
+  // Prose like "Here are the results [see notes]:" ahead of the payload made that single span
+  // unparseable, and the salvage pass then ran on the same bad slice.
+  const candidates: unknown[] = []
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/)
+  for (const body of [fenced?.[1], text]) {
+    if (!body) continue
+    let from = body.indexOf('[')
+    while (from !== -1) {
+      const to = body.lastIndexOf(']')
+      if (to > from) {
+        try {
+          const parsed: unknown = JSON.parse(body.slice(from, to + 1))
+          if (Array.isArray(parsed)) { candidates.push(parsed); break }
+        } catch { /* try the next opening bracket */ }
+      }
+      from = body.indexOf('[', from + 1)
     }
   }
-  if (!Array.isArray(raw)) raw = salvageObjects(start === -1 ? text : text.slice(start))
+  let raw: unknown = candidates.find((c) => Array.isArray(c) && (c as unknown[]).length > 0)
+  if (!Array.isArray(raw)) raw = salvageObjects(text)
   if (!Array.isArray(raw) || raw.length === 0) return []
-  const known = new Set(articles.map((a) => `${a.category}/${a.slug}`))
+
   const out: AutodocItem[] = []
   for (const r of raw as Record<string, unknown>[]) {
-    const category = String(r?.category ?? '')
-    const slug = String(r?.slug ?? '')
-    if (!known.has(`${category}/${slug}`)) continue
-    out.push({ category, slug, needsUpdate: Boolean(r?.needsUpdate), note: String(r?.note ?? '').slice(0, 200) })
+    const key = identify(r ?? {})
+    if (!key) continue
+    const [category, ...rest] = key.split('/')
+    out.push({
+      category: category ?? '',
+      slug: rest.join('/'),
+      needsUpdate: Boolean(r?.needsUpdate ?? r?.needs_update ?? r?.update),
+      note: String(r?.note ?? r?.reason ?? '').slice(0, 200),
+    })
   }
   return out
 }

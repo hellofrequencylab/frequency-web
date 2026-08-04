@@ -30,6 +30,7 @@ import { getLiveData } from '@/lib/page-editor/live-data'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
+import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
 
 export const revalidate = 3600
 
@@ -58,6 +59,9 @@ export default async function SpacesPage() {
   return (
     <>
       <JsonLd data={breadcrumbSchema([{ name: 'Spaces', path: '/spaces' }])} />
+      {/* This route published NO Article schema on either rung -- the only Puck-backed
+          marketing page with that gap. Not a duplicate, an omission. */}
+      {data && <BlockDocJsonLd data={data} path="/spaces" />}
       {data ? <BlockRender config={config} data={data} metadata={live ? { live } : {}} /> : <LegacySpaces />}
     </>
   )

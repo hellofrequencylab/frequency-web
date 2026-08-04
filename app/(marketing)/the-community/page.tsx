@@ -125,24 +125,28 @@ export default async function TheCommunityPage() {
   const live = data ? await getLiveData(createAdminClient()).catch(() => null) : null
   return (
     <>
-      <JsonLd
-        data={[
-          // Article schema so answer engines treat the pillar explainer as a
-          // citable source for "how Frequency's community works" (GE11-4).
-          articleSchema({
-            title: 'The Community',
-            description:
-              'How Frequency organizes community: four Pillars to find your practice, Channels to find your people, and Circles, small standing local groups that meet in person and grow on their own.',
-            path: '/the-community',
-            image: '/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg',
-          }),
-          breadcrumbSchema([{ name: 'The Community', path: '/the-community' }]),
-          // FAQPage so answer engines can lift the plain definitions of Circle,
-          // Channel, and the Pillars directly (GE11-4). Matches the copy below.
-          faqSchema(COMMUNITY_FAQ.map(({ q, a }) => ({ q, a }))),
-        ]}
-      />
-      {data && <BlockDocJsonLd data={data} path="/the-community" />}
+      {/* Derived on both rungs; editorial scoped to its own rung (see /pricing:280-313). */}
+      <JsonLd data={breadcrumbSchema([{ name: 'The Community', path: '/the-community' }])} />
+      {data ? (
+        // BlockDocJsonLd carries the Article. The FAQPage is deliberately NOT emitted here:
+        // this template contains no Accordion, so the Q&A copy the schema described is not
+        // on the page at all. Asserting answers a visitor cannot read is the exact thing
+        // /pricing:309-313 refuses to do.
+        <BlockDocJsonLd data={data} path="/the-community" />
+      ) : (
+        <JsonLd
+          data={[
+            articleSchema({
+              title: 'The Community',
+              description:
+                'How Frequency organizes community: four Pillars to find your practice, Channels to find your people, and Circles, small standing local groups that meet in person and grow on their own.',
+              path: '/the-community',
+              image: '/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg',
+            }),
+            faqSchema(COMMUNITY_FAQ.map(({ q, a }) => ({ q, a }))),
+          ]}
+        />
+      )}
       {data ? <BlockRender config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheCommunity />}
     </>
   )

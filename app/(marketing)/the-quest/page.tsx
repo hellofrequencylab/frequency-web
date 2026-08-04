@@ -120,24 +120,30 @@ export default async function TheQuestPage() {
   const live = data ? await getLiveData(createAdminClient()).catch(() => null) : null
   return (
     <>
-      <JsonLd
-        data={[
-          // Article schema so answer engines can cite the explainer of how the
-          // game works (Zaps, Gems, season ranks, Journeys) (GE11-4).
-          articleSchema({
-            title: 'The Quest',
-            description:
-              'How The Quest works: a light, in-person game where you earn Zaps for showing up in real life and Gems online, climb the season ranks, and run Journeys of small daily Practices, solo or with your Circle.',
-            path: '/the-quest',
-            image: '/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg',
-          }),
-          breadcrumbSchema([{ name: 'The Quest', path: '/the-quest' }]),
-          // FAQPage so answer engines can lift how the game works, Zaps vs Gems,
-          // and the ranks directly (GE11-4). Matches the FAQ copy below.
-          faqSchema(QUEST_FAQ.map(({ q, a }) => ({ q, a }))),
-        ]}
-      />
-      {data && <BlockDocJsonLd data={data} path="/the-quest" />}
+      {/* Breadcrumb is DERIVED from the route, not from copy, so it is emitted on both
+          rungs. Everything editorial is scoped to the rung that actually renders it —
+          the pattern /pricing established and documented at pricing/page.tsx:280-313. */}
+      <JsonLd data={breadcrumbSchema([{ name: 'The Quest', path: '/the-quest' }])} />
+      {data ? (
+        // The published/template body carries its OWN schema: BlockDocJsonLd emits the
+        // Article, and the template's Accordion block emits the FAQPage. Emitting the
+        // page-level copies here too shipped BOTH nodes twice on every render, because
+        // `data` is never null (templates.test.ts asserts the template is renderable).
+        <BlockDocJsonLd data={data} path="/the-quest" />
+      ) : (
+        <JsonLd
+          data={[
+            articleSchema({
+              title: 'The Quest',
+              description:
+                'How The Quest works: a light, in-person game where you earn Zaps for showing up in real life and Gems online, climb the season ranks, and run Journeys of small daily Practices, solo or with your Circle.',
+              path: '/the-quest',
+              image: '/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg',
+            }),
+            faqSchema(QUEST_FAQ.map(({ q, a }) => ({ q, a }))),
+          ]}
+        />
+      )}
       {data ? <BlockRender config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheQuest />}
     </>
   )

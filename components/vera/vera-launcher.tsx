@@ -224,7 +224,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
           // announce the rest of the page as unavailable when it is not.
           aria-modal="false"
           aria-label="Messages, Vera and help"
-          className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-[68dvh] max-h-[640px] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-border bg-surface pb-[env(safe-area-inset-bottom)] shadow-pop outline-none print:hidden md:inset-x-auto md:bottom-6 md:right-6 md:h-[600px] md:w-[24rem] md:rounded-2xl md:pb-0 motion-safe:animate-[slideUp_0.25s_ease-out]"
+          className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-[68dvh] max-h-[640px] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-border bg-surface pb-[env(safe-area-inset-bottom)] shadow-pop outline-none print:hidden md:inset-x-auto md:bottom-[4.75rem] md:right-6 md:h-[600px] md:w-[24rem] md:rounded-2xl md:pb-0 motion-safe:animate-[slideUp_0.25s_ease-out]"
         >
             {/* Header — reflects the active view; the Help section gets a Back affordance. */}
             <div className="flex shrink-0 items-center gap-2.5 border-b border-border px-4 py-3">
