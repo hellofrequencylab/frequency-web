@@ -8,6 +8,7 @@ import {
   objectPositionToXY,
   xyToObjectPosition,
 } from '@/lib/images/focal-point'
+import { safeImageSrc } from '@/lib/safe-image-src'
 
 // ImageFocalPicker — a reusable control for choosing WHERE a cropped image sits in its frame.
 // Cropped surfaces (hero/cover banners, cards) render with `object-cover`, which crops to center
@@ -211,7 +212,7 @@ export function ImageFocalPicker({
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={imageUrl}
+          src={safeImageSrc(imageUrl) ?? undefined}
           alt={alt}
           draggable={false}
           style={{ objectPosition }}

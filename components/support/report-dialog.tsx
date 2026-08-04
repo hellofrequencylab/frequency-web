@@ -13,6 +13,7 @@ import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shr
 import { TYPE_LABELS, type SupportContext, type TicketType } from '@/lib/support/types'
 import type { HelpCitation } from '@/lib/ai/help-rag'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
+import { safeImageSrc } from '@/lib/safe-image-src'
 
 const TYPE_META: { key: TicketType; icon: typeof Bug }[] = [
   { key: 'bug', icon: Bug },
@@ -230,7 +231,7 @@ export function ReportDialog({
               {shot ? (
                 <div className="relative overflow-hidden rounded-xl border border-border">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={shot.url} alt="Attached screenshot" className="max-h-48 w-full object-contain bg-surface-elevated" />
+                  <img src={safeImageSrc(shot.url) ?? undefined} alt="Attached screenshot" className="max-h-48 w-full object-contain bg-surface-elevated" />
                   <button type="button" onClick={() => setShot(null)} aria-label="Remove screenshot" className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white transition-colors hover:bg-black/80">
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
