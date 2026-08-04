@@ -22,8 +22,10 @@ on:
         default: false
         type: boolean
 
+# contents: write is needed ONLY by the update-baselines job's commit step (manual
+# dispatch, maintainer-triggered). The smoke/visual compare jobs never write.
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: e2e-${{ github.ref }}
@@ -77,9 +79,24 @@ jobs:
         env:
           PW_BASE_URL: ${{ inputs.base_url }}
         run: pnpm test:e2e:update
-      - name: Upload baselines
-        # always(): a single flaky surface must not discard the other captures — the
-        # job stays red on real failures, but the partial artifact still ships.
+      - name: Commit baselines to the branch
+        # The runner commits the captures directly: artifact downloads redirect to a
+        # storage host the agent sandbox's network policy blocks, so an artifact-only
+        # hand-off dead-ends. always(): a single flaky surface must not discard the
+        # other captures — the job stays red on real failures, but partials still land.
+        if: always()
+        run: |
+          git config user.email noreply@anthropic.com
+          git config user.name Claude
+          git add test/e2e/__screenshots__/
+          if git diff --cached --quiet; then
+            echo "No baseline changes to commit."
+          else
+            git commit -m "Visual baselines: capture against ${{ inputs.base_url }} (runner-committed)"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+      - name: Upload baselines (debug copy)
         if: always()
         uses: actions/upload-artifact@v4
         with:
