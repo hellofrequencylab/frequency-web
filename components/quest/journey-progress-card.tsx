@@ -71,9 +71,12 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
 
   const daysDone = Math.min(distinctDays, daysRequired)
   const daysLeft = Math.max(0, daysRequired - daysDone)
-  // Goal-gradient fill: a true credit of the days done, with a sliver showing even at
-  // day 0 so it reads as a started ladder, never an empty "0%" bar.
-  const pct = daysRequired > 0 ? Math.max(daysDone > 0 ? 8 : 4, Math.round((daysDone / daysRequired) * 100)) : 4
+  // Goal-gradient fill lives on the bar itself now (ProgressTrack value/max + minVisible),
+  // which also restores the real aria scale: valuemax is the 14 days, not a percentage.
+  // BEHAVIOUR NOTE: the hand-rolled bar this replaced also showed a 4% sliver at day ZERO
+  // so an untouched Journey read as "started". The primitive renders a true zero empty, and
+  // that is the honest reading, so day 0 is now an empty track. One logged day still shows
+  // a visible sliver rather than a hairline.
   const daysMet = daysDone >= daysRequired
   // The capstone surfaces once the practice-day bar is near or at done (within 2 days),
   // so the member meets the final step right when it becomes reachable.
@@ -116,10 +119,13 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
         </div>
       ) : (
         <>
-          {/* The 14-distinct-days bar — credit days done, never frame it as 0%. */}
+          {/* The 14-distinct-days bar — credit days done: one logged day always shows a
+              visible sliver rather than a rounding-induced hairline (minVisible). A true
+              zero renders empty, which is the primitive's law and the honest reading. */}
           <ProgressTrack
             value={daysDone}
             max={daysRequired}
+            minVisible={8}
             label={`${daysDone} of ${daysRequired} practice days logged`}
             size="lg"
             animate
