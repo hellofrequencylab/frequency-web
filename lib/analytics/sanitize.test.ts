@@ -19,13 +19,24 @@ describe('sanitizeProps', () => {
     expect(sanitizeProps({ s: 'x'.repeat(900) }).s).toHaveLength(500)
   })
 
-  it('drops machinery keys rather than writing them', () => {
-    // Not a live pollution hole -- assigning a string to __proto__ does not replace the
-    // prototype -- but the write silently did nothing and the key vanished, which corrupts
-    // the row. Now it is dropped on purpose.
+  it('only writes keys that match the identifier allowlist', () => {
+    // Machinery keys fall out as a side effect of the allowlist, not as a special case.
     const out = sanitizeProps(JSON.parse('{"__proto__":"x","constructor":"y","ok":"z"}'))
     expect(out).toEqual({ ok: 'z' })
     expect(Object.getPrototypeOf(out)).toBe(Object.prototype)
+  })
+
+  it('accepts the key shapes real callers actually pass', () => {
+    // Taken from live call sites: track('circle.joined', { circleId }), observe('dwell',
+    // { ms, path }), track('profile.completed', { hasAvatar }). If the allowlist ever
+    // rejects one of these it is too tight and analytics silently loses a column.
+    const real = { circleId: 'c1', practiceId: 'p1', hasAvatar: true, path: '/x', pct: 50, ms: 12, medium: 'qr' }
+    expect(sanitizeProps(real)).toEqual(real)
+  })
+
+  it('rejects keys that no caller of ours would produce', () => {
+    const out = sanitizeProps({ 'a b': 1, '9lives': 2, '': 3, ['x'.repeat(60)]: 4, ok: 5 })
+    expect(out).toEqual({ ok: 5 })
   })
 
   it('treats non-objects as an empty bag', () => {

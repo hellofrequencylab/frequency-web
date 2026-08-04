@@ -29,9 +29,33 @@
  * before it sends, and the /api/observe sink sanitises again on what arrives, because
  * the client half is attacker-controlled.
  */
-/** Keys that address an object's own machinery rather than its data. The prop bag is built
- *  from attacker-influenced key names, so these are dropped before any write. */
-const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
+/**
+ * An acceptable prop KEY: a short identifier, letters/digits/underscore/dot, starting with
+ * a letter.
+ *
+ * An allowlist rather than a denylist of `__proto__` / `constructor` / `prototype`, and the
+ * difference matters. A denylist answers "is this one of the three bad names I thought of",
+ * which is a question that goes stale; this answers "is this a name our own code would ever
+ * produce", which does not. Every real caller passes a plain identifier -- `circleId`,
+ * `practiceId`, `hasAvatar`, `path`, `pct`, `medium` -- so nothing legitimate is lost, and
+ * the ledger stops being able to accumulate junk keys from a client we do not control.
+ *
+ * Deliberately the same discipline as `isValidKind` in ./interaction-events.ts, which bounds
+ * the open KIND taxonomy the same way. Case-insensitive here because prop keys are camelCase
+ * while kind slugs are lowercase.
+ */
+const SAFE_PROP_KEY = /^[A-Za-z][A-Za-z0-9_.]{0,39}$/
+
+/**
+ * ...and the two machinery names that the pattern above does NOT catch.
+ *
+ * `__proto__` fails SAFE_PROP_KEY on its own (it starts with an underscore), but
+ * `constructor` and `prototype` are perfectly ordinary identifiers and sail straight
+ * through. An earlier version of this file claimed the allowlist covered all three "as a
+ * side effect"; the test for it disagreed, which is the entire reason that test exists.
+ * Both checks, because neither is sufficient alone.
+ */
+const MACHINERY_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
 
 export function sanitizeProps(
   input: unknown,
@@ -43,12 +67,10 @@ export function sanitizeProps(
   let n = 0
   for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
     if (n >= maxKeys) break
-    // Skip machinery keys. Assigning a STRING to `__proto__` does not actually replace the
-    // prototype, so this was never a live pollution hole -- but the write silently did
-    // nothing and the key vanished from the output, which quietly corrupts an analytics
-    // row. Dropping it explicitly makes the behaviour intentional instead of incidental,
-    // and closes the shape before some future caller passes an object through.
-    if (UNSAFE_KEYS.has(k)) continue
+    // The key is attacker-influenced, so it is checked before it is ever used to write.
+    // Shape first (bounds the ledger to identifiers), then the machinery names the shape
+    // rule cannot see -- `constructor` and `prototype` are valid identifiers.
+    if (!SAFE_PROP_KEY.test(k) || MACHINERY_KEYS.has(k)) continue
     if (typeof v === 'number' || typeof v === 'boolean') {
       out[k] = v
       n++

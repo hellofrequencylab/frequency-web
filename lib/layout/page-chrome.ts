@@ -44,9 +44,12 @@ const FULL_TAKEOVER_PREFIXES = [
 
 // FOCUS surfaces — centered, no-rail single-task flows that compose <FocusTemplate>
 // (a form, a single decision). They keep the global LEFT menu but drop the member
-// RIGHT rail so the form reads centered. Growth OS Engine 3 (ADR-456): the apply
-// flows (/apply, /apply/<track>) and the seeker waitlist (/waitlist) are such flows.
-const FOCUS_NONE_PREFIXES: readonly string[] = ['/apply', '/waitlist']
+// RIGHT rail so the form reads centered.
+//
+// Empty since the Growth OS Engine 3 surfaces (/apply, /apply/<track>, /waitlist) were
+// retired: they were its only entries. Kept rather than deleted because the mechanism is
+// the contract — the next Focus flow adds one prefix here instead of editing the shell.
+const FOCUS_NONE_PREFIXES: readonly string[] = []
 
 // SCOPED — entity-detail sections that render their OWN in-body scope rail
 // (the double-rail trap is avoided by suppressing the global rail).

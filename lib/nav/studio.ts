@@ -263,9 +263,6 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'referrals', href: '/admin/referrals', label: 'Referrals', desc: 'The personal-code referral funnel: signups, activations, and top referrers.', icon: 'Share2', min: 'host', staffDomain: 'marketing',
     world: 'growth', worldLabel: 'Referrals', worldOrder: 2,
     adminGroups: [{ domain: 'acquisition', section: 'Entry points' }], adminNav: { section: 'growth', heading: 'Acquisition' } },
-  { id: 'growth-applications', href: '/admin/growth/applications', label: 'Applications', desc: 'The dual-track review queue: builders apply to host, operators bring an offering, and seekers wait for a Circle near them.', icon: 'ClipboardList', min: 'host', staffDomain: 'members',
-    world: 'growth', worldLabel: 'Applications', worldOrder: 3,
-    adminGroups: [{ domain: 'acquisition', section: 'Waitlist & Applications' }], adminNav: { section: 'growth', heading: 'Acquisition' } },
   { id: 'onboarding-controls', href: '/admin/onboarding-controls', label: 'Onboarding & referral controls', desc: 'Turn Next Steps prompts, popups, and referrals on or off.', icon: 'ToggleRight', min: 'janitor',
     world: 'growth', worldLabel: 'Onboarding', worldOrder: 4,
     adminGroups: [{ domain: 'acquisition', section: 'Onboarding' }], adminNav: { section: 'operations', heading: 'Configuration' } },
@@ -542,7 +539,6 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
     primary: false, related: ['crm', 'marketing', 'community'],
     links: [
       { leaf: 'entry-points' }, { leaf: 'library', section: 'Assets' }, { leaf: 'qr' }, { leaf: 'referrals' },
-      { leaf: 'growth-applications' },
       { leaf: 'onboarding-splash' }, { leaf: 'onboarding-sequences' }, { leaf: 'walkthroughs' }, { leaf: 'onboarding-controls' },
       { leaf: 'keystone-density' },
     ],
@@ -642,7 +638,7 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
   {
     href: '/admin/growth', label: 'Growth', min: 'host', staffDomain: 'marketing',
     groups: [
-      { heading: 'Acquisition', leaves: [{ leaf: 'growth-applications' }, { leaf: 'referrals' }] },
+      { heading: 'Acquisition', leaves: [{ leaf: 'referrals' }] },
       { heading: 'Marketing', leaves: [{ leaf: 'marketing-analytics', label: 'Analytics' }, { leaf: 'beta-command', label: 'Beta Command' }] },
     ],
   },
