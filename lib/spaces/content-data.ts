@@ -612,7 +612,17 @@ export async function getSpaceFaqs(spaceId: string): Promise<SpaceFaqItem[]> {
       .eq('space_id', spaceId)
       .order('position', { ascending: true })
       .limit(FAQS_CAP)
-    return (data ?? []).map((r) => ({
+    // Deterministic tiebreak, applied here rather than as a second .order() because the untyped
+    // client's chain does not expose one. `position` is NOT unique -- the importer seeds 0..n per
+    // space and operator-created rows can collide -- and on a tie Postgres may return any order,
+    // so without this the public FAQ list could reshuffle between requests. `id` is the tiebreak
+    // (stable, unique, and already selected); the list is capped, so sorting in JS is free.
+    const rows = [...(data ?? [])].sort((a, b) => {
+      const pa = Number(a.position) || 0
+      const pb = Number(b.position) || 0
+      return pa !== pb ? pa - pb : str(a.id).localeCompare(str(b.id))
+    })
+    return rows.map((r) => ({
       id: str(r.id),
       question: str(r.question),
       answer: str(r.answer),
