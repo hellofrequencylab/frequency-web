@@ -192,7 +192,7 @@ export function ImageUpload({
       </span>
 
       {previewSrc ? (
-        <div className="relative overflow-hidden rounded-xl border border-border">
+        <div className="relative overflow-hidden rounded-card border border-border">
           {/* Unoptimized: covers come from user-controlled hosts + Supabase Storage, not the
               configured next/image domains. */}
           <Image
@@ -208,7 +208,7 @@ export function ImageUpload({
               type="button"
               onClick={openSource}
               disabled={disabled || busy}
-              className="rounded-lg bg-canvas/90 px-2.5 py-1 text-xs font-medium text-text lift-1 backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60"
+              className="rounded-control bg-canvas/90 px-2.5 py-1 text-xs font-medium text-text lift-1 backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60"
             >
               {busy ? 'Uploading…' : 'Replace'}
             </button>
@@ -217,7 +217,7 @@ export function ImageUpload({
               onClick={() => onChange(null)}
               disabled={disabled || busy}
               aria-label="Remove image"
-              className="rounded-lg bg-canvas/90 p-1 text-subtle lift-1 backdrop-blur transition-colors hover:text-danger disabled:opacity-60"
+              className="rounded-control bg-canvas/90 p-1 text-subtle lift-1 backdrop-blur transition-colors hover:text-danger disabled:opacity-60"
             >
               <X className="h-4 w-4" />
             </button>
@@ -228,7 +228,7 @@ export function ImageUpload({
           type="button"
           onClick={openSource}
           disabled={disabled || busy}
-          className="flex h-32 w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border text-sm text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-60"
+          className="flex h-32 w-full flex-col items-center justify-center gap-1.5 rounded-card border border-dashed border-border text-sm text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-60"
         >
           {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
           {busy ? 'Uploading…' : useLoom ? 'Choose or upload a photo' : 'Upload a photo'}
@@ -253,7 +253,7 @@ export function ImageUpload({
           onChange={(e) => onChange(e.target.value.trim() || null)}
           disabled={disabled || busy}
           placeholder="or paste an image URL"
-          className="w-full rounded-lg border border-border bg-canvas px-3 py-1.5 text-xs text-text outline-none focus:border-primary placeholder:text-subtle disabled:opacity-60"
+          className="w-full rounded-control border border-border bg-canvas px-3 py-1.5 text-xs text-text outline-none focus:border-primary placeholder:text-subtle disabled:opacity-60"
         />
       )}
 

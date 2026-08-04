@@ -49,14 +49,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 5468,
+      "baseline": 5413,
       "frozen": {
         "at": "2026-08-04",
-        "value": 5468,
+        "value": 5413,
         "direction": "lowered",
         "basis": "d2a53ce6b015",
-        "reason": "Sweep, same basis as the addendum audit. The step half of the census reproduces the audit exactly (rounded-(sm|md|lg|xl|2xl|3xl) = 4,474, unchanged); the entire −75 is rounded-full (1,069 → 994), retired by the ProgressTrack sweep and the card passes.",
-        "from": 5543
+        "reason": "Kit primitives sweep: every components/ui/*.tsx className moved from literal rounded-* to the role tokens (rounded-card / rounded-control / rounded-pill). These are the primitives every other component composes, so the roles now propagate instead of stopping at the call site.",
+        "from": 5468
       },
       "history": [
         {
@@ -65,6 +65,13 @@
           "to": 5468,
           "direction": "lowered",
           "reason": "Sweep, same basis as the addendum audit. The step half of the census reproduces the audit exactly (rounded-(sm|md|lg|xl|2xl|3xl) = 4,474, unchanged); the entire −75 is rounded-full (1,069 → 994), retired by the ProgressTrack sweep and the card passes."
+        },
+        {
+          "at": "2026-08-04",
+          "from": 5468,
+          "to": 5413,
+          "direction": "lowered",
+          "reason": "Kit primitives sweep: every components/ui/*.tsx className moved from literal rounded-* to the role tokens (rounded-card / rounded-control / rounded-pill). These are the primitives every other component composes, so the roles now propagate instead of stopping at the call site."
         }
       ]
     },
@@ -190,14 +197,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 530,
+      "baseline": 529,
       "frozen": {
         "at": "2026-08-04",
-        "value": 530,
-        "direction": "raised",
+        "value": 529,
+        "direction": "lowered",
         "basis": "b0d275f91676",
-        "reason": "Instrument artifact, not new debt. Both classes are proximity-window metrics and both rose +1 while the wave added ZERO matching sites: no file gained a text-2xs/3xs line (verified per-file against the diff), and raw-button-bg's new hit is Switch's hover:bg-primary-hover -- the CORRECT hover token, whose substring matches the bg-primary pattern. Reformatting alone moves raw-button-bg 529->564, so +1 is inside the noise floor. Stays flagged so Lift 2b replaces both patterns with element-scoped forms.",
-        "from": 529
+        "reason": "Kit primitives sweep: every components/ui/*.tsx className moved from literal rounded-* to the role tokens (rounded-card / rounded-control / rounded-pill). These are the primitives every other component composes, so the roles now propagate instead of stopping at the call site.",
+        "from": 530
       },
       "history": [
         {
@@ -213,6 +220,13 @@
           "to": 530,
           "direction": "raised",
           "reason": "Instrument artifact, not new debt. Both classes are proximity-window metrics and both rose +1 while the wave added ZERO matching sites: no file gained a text-2xs/3xs line (verified per-file against the diff), and raw-button-bg's new hit is Switch's hover:bg-primary-hover -- the CORRECT hover token, whose substring matches the bg-primary pattern. Reformatting alone moves raw-button-bg 529->564, so +1 is inside the noise floor. Stays flagged so Lift 2b replaces both patterns with element-scoped forms."
+        },
+        {
+          "at": "2026-08-04",
+          "from": 530,
+          "to": 529,
+          "direction": "lowered",
+          "reason": "Kit primitives sweep: every components/ui/*.tsx className moved from literal rounded-* to the role tokens (rounded-card / rounded-control / rounded-pill). These are the primitives every other component composes, so the roles now propagate instead of stopping at the call site."
         }
       ]
     },

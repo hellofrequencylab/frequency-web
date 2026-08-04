@@ -9,7 +9,7 @@ export function FeaturedBadge({ className = '' }: { className?: string }) {
   return (
     <span
       title="Featured by the Frequency team."
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full border border-signal/30 bg-signal-bg/60 px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-signal-strong ${className}`}
+      className={`inline-flex shrink-0 items-center gap-1 rounded-pill border border-signal/30 bg-signal-bg/60 px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-signal-strong ${className}`}
     >
       <Star className="h-2.5 w-2.5 fill-signal-strong text-signal-strong" aria-hidden />
       Featured

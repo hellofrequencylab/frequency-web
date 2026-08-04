@@ -10,7 +10,7 @@ export function UnclaimedBadge({ className = '' }: { className?: string }) {
   return (
     <span
       title="Seeded by Frequency. Live until the original poster claims it."
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/30 bg-primary-bg/60 px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-primary-strong ${className}`}
+      className={`inline-flex shrink-0 items-center gap-1 rounded-pill border border-primary/30 bg-primary-bg/60 px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-primary-strong ${className}`}
     >
       <Sprout className="h-2.5 w-2.5 text-primary-strong" aria-hidden />
       Unclaimed

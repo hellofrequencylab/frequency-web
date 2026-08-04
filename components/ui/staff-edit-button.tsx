@@ -20,7 +20,7 @@ export async function StaffEditButton({
   return (
     <Link
       href={href}
-      className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text press transition-[color,border-color,box-shadow,transform] motion-reduce:transition-none hover:border-primary hover:text-primary-strong"
+      className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-4 py-2 text-sm font-medium text-text press transition-[color,border-color,box-shadow,transform] motion-reduce:transition-none hover:border-primary hover:text-primary-strong"
     >
       <Pencil className="h-4 w-4" /> {label}
     </Link>

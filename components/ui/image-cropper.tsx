@@ -305,14 +305,14 @@ export function ImageCropper({
   return (
     <div className="space-y-4">
       {error ? (
-        <div className="flex min-h-[160px] flex-col items-center justify-center gap-3 rounded-xl border border-border bg-surface-elevated p-6 text-center">
+        <div className="flex min-h-[160px] flex-col items-center justify-center gap-3 rounded-card border border-border bg-surface-elevated p-6 text-center">
           <p className="text-sm text-muted">That image could not be loaded for cropping.</p>
           <Button type="button" variant="secondary" size="sm" onClick={onCancel}>
             Close
           </Button>
         </div>
       ) : !display || !rect ? (
-        <div className="flex min-h-[160px] items-center justify-center rounded-xl border border-border bg-surface-elevated p-6">
+        <div className="flex min-h-[160px] items-center justify-center rounded-card border border-border bg-surface-elevated p-6">
           <p className="text-sm text-muted">Loading image...</p>
         </div>
       ) : (
@@ -320,7 +320,7 @@ export function ImageCropper({
           <div className="flex justify-center">
             <div
               ref={frameRef}
-              className="relative select-none overflow-hidden rounded-xl border border-border bg-surface-elevated"
+              className="relative select-none overflow-hidden rounded-card border border-border bg-surface-elevated"
               style={{ width: display.w, height: display.h, touchAction: 'none' }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -373,7 +373,7 @@ export function ImageCropper({
                       key={handle}
                       onPointerDown={(e) => beginDrag(e, { kind: 'resize', handle })}
                       className={cn(
-                        'absolute h-3 w-3 rounded-full border-2 border-white bg-primary shadow ring-1 ring-black/30',
+                        'absolute h-3 w-3 rounded-pill border-2 border-white bg-primary shadow ring-1 ring-black/30',
                         pos[handle],
                       )}
                     />

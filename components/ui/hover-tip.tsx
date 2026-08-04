@@ -32,7 +32,7 @@ export function HoverTip({
       {children}
       <span
         role="tooltip"
-        className={`pointer-events-none absolute left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-md bg-text px-2 py-1 text-2xs font-semibold text-on-primary opacity-0 shadow-lg transition-[opacity,transform] duration-100 ease-out motion-reduce:transition-none group-hover/tt:opacity-100 group-focus-within/tt:opacity-100 ${pos}`}
+        className={`pointer-events-none absolute left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-control bg-text px-2 py-1 text-2xs font-semibold text-on-primary opacity-0 shadow-lg transition-[opacity,transform] duration-100 ease-out motion-reduce:transition-none group-hover/tt:opacity-100 group-focus-within/tt:opacity-100 ${pos}`}
       >
         {label}
       </span>

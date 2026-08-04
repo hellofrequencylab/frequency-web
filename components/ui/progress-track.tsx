@@ -1,5 +1,5 @@
 // ProgressTrack — the one generic progress bar (DAWN 2026-08-03 §5). The audit
-// found ~50 ad-hoc `rounded-full` + inline-width bars across quest/streak/
+// found ~50 ad-hoc `rounded-pill` + inline-width bars across quest/streak/
 // journey/vault/operator surfaces and no shared primitive; this is the
 // replacement.
 //

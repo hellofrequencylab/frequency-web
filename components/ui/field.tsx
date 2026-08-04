@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 // call sites already set it and got nothing back visually; they light up from this one string.
 // DISABLED also takes `cursor-not-allowed`, so the state reads before a click, not after.
 export const fieldClasses =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 aria-[invalid=true]:border-danger aria-[invalid=true]:focus:border-danger aria-[invalid=true]:focus:ring-danger/30 disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-subtle'
+  'w-full rounded-control border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 aria-[invalid=true]:border-danger aria-[invalid=true]:focus:border-danger aria-[invalid=true]:focus:ring-danger/30 disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-subtle'
 
 export const labelClasses = 'text-xs font-medium text-muted'
 
