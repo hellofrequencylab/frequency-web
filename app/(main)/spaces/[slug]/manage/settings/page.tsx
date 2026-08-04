@@ -12,10 +12,14 @@ import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { FocusTemplate } from '@/components/templates'
 import { SpaceSettingsSurface } from '../console'
 
-// PROFILE & SETTINGS — the header-level configuration surface for a Space (ADR-785). Everything that is
-// SETUP rather than daily operation: the space's identity / brand / page theme / visibility (the basics
-// form), its Team and roles, Reviews, Plan & usage, and the Danger zone. Reached from the "Profile &
-// Settings" button in the /manage hub header, NOT one of the four browse categories.
+// PROFILE & SETTINGS — the configuration surface for a Space. Everything that is SETUP rather than
+// daily operation: the space's identity / brand / page theme / visibility (the basics form), its Team
+// and roles, Reviews, Plan & usage, and the Danger zone.
+//
+// TWO WAYS IN, ONE SURFACE. ADR-785 made this header-only ("NOT one of the four browse categories");
+// ADR-788 reversed that and gave it a real hub tab, because burying Plan & Billing behind a header
+// button costs a hop exactly when money or access is involved. This standalone route survives and
+// renders the SAME SpaceSettingsSurface the tab does, so there is one definition and no forked copy.
 //
 // SECURITY: a Server Component, gated exactly like the hub — resolveSpaceManageAccess (manager or staff
 // preview), notFound() otherwise, and every sub-surface re-gates its own writes.

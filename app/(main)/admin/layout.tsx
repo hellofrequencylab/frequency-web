@@ -51,8 +51,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         {/* Center — the admin chrome block: the flat sub-nav link row + the Ask-Vera/search command
             bar, in ONE sticky band that stays visible on scroll. */}
         <main className="min-w-0 flex-1">
-          {/* The admin chrome block (§6a): the sub-nav text-link row on TOP and the Ask-Vera/search
-              bar below live in ONE opaque sticky container, so page content scrolls cleanly UNDERNEATH
+          {/* The admin chrome block (§6a): the Ask-Vera/search bar and the sub-nav text-link row live
+              in ONE opaque sticky container (search on top since ADR-790 swapped the two — the comment
+              here used to describe the old order), so page content scrolls cleanly UNDERNEATH
               the whole band like header chrome — nothing bleeds through the padding (the old bug was a
               transparent gap above the input). bg-[var(--color-canvas)] at FULL opacity spans the whole
               band height; a hairline border-b reads the scroll seam as chrome. The old shell-rendered

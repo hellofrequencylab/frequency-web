@@ -6023,7 +6023,7 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 ## ADR-196: `journey_plans` is the single Journey spine
 
 **Status:** Accepted · corroborated by `lib/journey-plans.ts`, `supabase/migrations/20260609103000_seed_official_seasonal_journeys.sql`, `…104000_retire_quest_chains_engine.sql`
-(ADR-188–195 unused — these Journey ADRs were numbered to match the code/migration comments written alongside them.)
+(Numbers 188 through 195 are deliberately unused: these Journey ADRs were numbered to match the code/migration comments written alongside them. Written without the `ADR-` prefix on purpose, so the citation scanner does not read a numbering note as a reference to a decision that will never exist.)
 **Context:** Two Journey-shaped systems coexisted — `journey_plans` (the member library, ADR-087/152) and the dormant `quest_chains/steps/progress` engine, which still held auto-seeded pillar-journey placeholders. Two systems means two progress engines and duplicated official content.
 **Decision:** `journey_plans` is the one spine. Official seasonal Journeys are `journey_plans` rows with `official=true` + `quest_id`. The 4 Domain Journeys are seeded as `journey_plans` (`official-<season>-<domain>`); the `quest_chains` engine is dropped (migration **staged, not applied** — `app/(main)/admin/quests/*` still reads those tables and must be retired with it + `database.types.ts` regenerated).
 **Consequences:** One data model, one progress engine (`getActiveJourneyProgress`). See [docs/JOURNEYS.md](JOURNEYS.md) §2/§13.
@@ -9266,6 +9266,25 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 - **Migrations are applied to prod** (`20260828000000`, verified on `azsqfeonabsbmemvddqd`). The foundation + server layer are shipped and committed on the branch.
 - **UI is in flight, not merged.** The admin workspace surfaces (review queue v2, "Needs attention" panel, merge UI, tag governance), a table-overlap rework, the "System" then "Frequency" house-practices rename, and the conversion of the page body into layout-editor block areas (`PageModules`, per [ADR-270](DECISIONS.md)/[272](DECISIONS.md)) are still in flight. Treat them as ⏳, not ✅, until merged.
 - **Trust ordering is dormant.** The submitter-trust order is correct code over inert data until Phase 3 routes flows to emit trust signals; do not read the current queue order as evidence the trust signal works.
+
+## ADR-447: Practice library Phase 3 "Grow" — the remix engine, built on Phase 1's lineage columns
+
+**Status:** Accepted (2026-06-29, PR #1214). Implements [ADR-438](DECISIONS.md) Phase 3. Spec: [PRACTICE-LIBRARY.md](PRACTICE-LIBRARY.md) §6. Sequence is fixed: Scale (ADR-445) → Clean (ADR-446) → **Grow** → Autopilot; this is **Grow**. Written 2026-08-04 from the shipped code and `BUILD-LIST.md` §Phase 3 — it shipped without its record, and `lib/practices/lineage.ts` has been citing this number since.
+
+**Context.** Phase 1 laid two indexed columns on `practices` and left them empty on purpose: `remixed_from` (the direct parent) and `root_practice_id` (the lineage ROOT). ADR-445 said outright they would be "populated by Phase 3 fork/claim". Phase 2 then wired a submitter-trust join into `listReviewQueue` and recorded it as deliberately inert — "no flow EMITS trust signals yet, so the join is a no-op tiebreaker today… wired now so the ordering does not change when Phase 3 starts routing flows to emit trust." Two phases had therefore built the sockets for this one.
+
+**Decision.** Ship the remix engine against those columns, as four surfaces:
+
+1. **Lineage reads** (`lib/practices/lineage.ts`): `getPracticeLineage` / `mostRemixed` / `topRemixContributors`, plus the `practice-detail-lineage` surface.
+2. **Remix prompts**: `remix-practice-button` → `forkPractice`, which populates **both** columns.
+3. **Operator levers** (`components/widgets/practices/admin/remix-levers`): mark remix seeds, view lineage depth, spotlight prolific remixers.
+4. **Contributor recognition** (`components/widgets/practices/admin/contributor-recognition`).
+
+**The load-bearing choice is the denormalised root.** `root_practice_id` is redundant with a walk up `remixed_from`, and that redundancy is the point: a whole remix tree is **one indexed scan** rather than a recursive CTE. `forkPractice` sets both, and `merge_practices` (Phase 2's re-point-never-delete RPC) re-points both, so the two writers that can move a practice in the graph both maintain it.
+
+**Counts are DERIVED, not stored.** There is no `forked_count` column, matching the existing `adopters` treatment. At library scale a `GROUP BY` is cheap; a materialised count is a Phase-4 optimisation if it ever gets hot, and it is tracked as such rather than pre-built.
+
+**Consequences.** Phase 2's trust ordering stops being dormant once these flows emit signals — that was the dependency ADR-446 parked, and this is what un-parks it. ⚠️ Lineage reads reach the columns through the untyped admin handle (ADR-246) until the generated types are regenerated, the same pattern as the rest of the practice server layer. ⚠️ Deriving counts means a lineage-heavy admin view pays a `GROUP BY` per render; acceptable now, and the trigger for Phase 4 is a measured hot query, not a hunch.
 
 ## ADR-449: H1-1 — typed exclusive-arc for the polymorphic scope FKs (EXPAND phase)
 
@@ -13791,6 +13810,20 @@ graduation hooks belong to other agents. `contacts` + `beta_*` stay untyped (unt
 
 **Consequences.** No migration. The Marketing tab no longer bounces to the old system; the legacy composing tabs are gone from the menus with their pages intact for the roll-in; the old less-safe direct `status:'sent'` broadcast path is no longer a menu destination (the gated pipeline is the only surfaced send). `pnpm check:menu` + nav tests must pass with the six leaves removed. The roll-in of funnels/automations/nurture and the audience-picker expansion are tracked here as the next phases.
 
+## ADR-624: Contacts uniqueness becomes per-space
+
+**Status:** Accepted · ✅ APPLIED + LIVE (verified against prod 2026-07-25). Migration `20261164000000_contact_tenancy_per_space.sql`. Full spec, invariants and per-call-site rescope table: [CONTACT-TENANCY.md](CONTACT-TENANCY.md). Written 2026-08-04 from that doc and the migration — the decision shipped and was documented in its own file, but never took a slot in this ledger, while **25 live sites across `lib/crm`, `lib/comms`, `lib/spaces`, `lib/connections`, `lib/dashboard`, `lib/ai/vera` and three server actions cite the number**.
+
+**Context.** White-label Spaces are separate CRMs. The same person can be a contact of two of them, with independent `consent_state`, `meta` and lifecycle in each. A global unique index on `lower(email)` makes that impossible: the second Space's insert becomes a silent no-op under `on conflict do nothing`, so the same email simply cannot live in two Spaces. `space_id` was already on `contacts` (backfilled `20260713010000`, stamped by the `contacts_default_space_id` trigger from `20260714010000`), so the tenancy axis existed and was populated — only **uniqueness** was still global.
+
+**Decision.** Replace `contacts_email_lower_idx` (unique on `lower(email)`) with `contacts_space_email_lower_idx` (unique on `(space_id, lower(email))`). Keep a **non-unique** functional index on `lower(email)` for the few space-agnostic scans. Rewrite `sync_contact_from_profile()` to insert against the **root** space and conflict on `(space_id, lower(email))`. This mirrors the shape `email_suppressions` already had.
+
+**Three invariants the migration is built to hold.** The member's platform record is the **root** contact, and the profile link targets it. Global suppression stays platform-wide: `email_suppressions` does not read `contacts` and is untouched, so a STOP still silences every Space. And no data is lost — a pre-flight `DO` block raises rather than proceeding if any `(space_id, lower(email))` duplicate group exists.
+
+**Alternatives considered.** *A partial unique index `where space_id = root`* (rejected — leaves tenant Spaces with no uniqueness guard at all). *A composite on `(space_id, email)` without `lower()`* (rejected — breaks the case-insensitive dedupe every call site relies on).
+
+**Consequences.** ⚠️ **An unscoped `contacts` lookup by email is now a multi-row hazard.** That single consequence is what the 25 citations are actually about: every read must be space-scoped, or scoped to root when it wants the member's platform record. Several are `.limit(1)` + fail-open precisely because an unscoped `maybeSingle()` would throw. ⚠️ One address legitimately produces several rows, so any count or roll-up spanning Spaces needs a deliberate union (the "F7b/F7c stitch" in `lib/ai/vera/today.ts` and `lib/dashboard/scores.ts`). ⚠️ A consent change that must be global (STOP) is an **intentional** cross-space update and is marked as such in `lib/crm/contact-consent.ts`. Later tightened by `20261215000000_contacts_read_operator_only.sql`, which made `contacts_space_read` operator-only.
+
 ## ADR-625: Resonance CRM relationship model — a contact holds a SET of relationships (derived + assignable), classified on read, extensible without a migration
 
 **Status:** Accepted (2026-07-16) · FOUNDATION layer only (surfaces come later) · touches `lib/crm/relationships.ts`, `lib/crm/classification.ts`, `app/(main)/admin/crm/member-summaries.ts`, `lib/people/member-viewer.ts` (+ `lib/crm/relationships.test.ts`, `lib/crm/classification.test.ts`) · migration `supabase/migrations/20261167000000_contact_relationships.sql` (WRITTEN, not yet applied).
@@ -14112,6 +14145,18 @@ graduation hooks belong to other agents. `contacts` + `beta_*` stay untyped (unt
 
 **Consequences.** No migration. The space Resonance tab now reads identically to the admin Resonance CRM, scoped + gated to the space. The CRM board (`/crm`, People/Pipeline/Cockpit/Import) is unchanged and still linked. Security: the inline detail is tenancy-checked, so a space owner sees only their own space's members. Full suite green (5678), tsc + eslint + guards clean. (Mobile responsiveness across the hub + site is a separate follow-up sweep.)
 
+## ADR-788: Profile & Settings becomes a real hub tab, reversing ADR-785 §4
+
+**Status:** Accepted. Reverses [ADR-785](DECISIONS.md) §4 and the alternative ADR-785 explicitly rejected. Written 2026-08-04 from the shipped code — cited by `lib/admin/modules/space-hub.ts` and twice in its test, but never recorded, so ADR-785 §4 has been the only ledger entry on the subject while stating the opposite of what ships.
+
+**Context.** ADR-785 scoped the Space Manage hub to **four** browse categories and put configuration in the header: *"Profile & Settings is a header-level surface… reached from a button in the hub header — NOT a browse tab."* Its Alternatives paragraph rejected precisely this change: *"A fifth 'Profile & Settings' tab (rejected — the owner scoped exactly four browse categories; settings is configuration, not daily operation, so it lives in the header)."*
+
+That reasoning is sound about *daily operation* and wrong about *reach*. It buried **Plan & Billing**, **Team** and **Reviews** behind a header button — a control an operator hits when money or access is involved, which is exactly when a second hop is most expensive.
+
+**Decision.** `Profile & Settings` becomes a real entry in `SPACE_HUB_SECTIONS`, trailing the browse tabs rather than leading them, so the ordering still says "this is configuration, not daily operation" while the reach is one tap. `SpaceHubSection` is now six keys; `asHubSection` accepts `'settings'` as a `?section=` value; the tab body renders the **same** `SpaceSettingsSurface` the standalone route uses, so there is one definition of the settings surface and no forked copy.
+
+**Consequences.** The standalone `/manage/settings` route survives and still works — this adds a way in, it does not remove one. ⚠️ Two in-code comments still describe the ADR-785 world and are now counter-evidence to their own callers: `app/(main)/spaces/[slug]/manage/settings/page.tsx` and the `SpaceSettingsSurface` note in `console.tsx` both say "header-level… NOT one of the four browse categories". Corrected in the same change that wrote this record. ⚠️ ADR-785 §4 and its Alternatives paragraph are now **stale where they are strongest** — a superseded decision that reads as current is worse than one that reads as old, which is the whole reason this entry exists.
+
 ## ADR-789: The Space Resonance tab IS the Resonance CRM (exact admin composition, scoped)
 
 **Status:** Accepted (2026-07-18) · Corrects ADR-785/787 · NO migration. Adds `components/spaces/crm/{space-crm-stats,space-resonance-crm}.tsx`; the Resonance hub tab now renders the full CRM surface instead of feature cards.
@@ -14121,6 +14166,20 @@ graduation hooks belong to other agents. `contacts` + `beta_*` stay untyped (unt
 **Decision.** The Resonance tab renders `SpaceResonanceCrm` — the SAME composition as the admin CRM page, scoped to the space: the "Resonance CRM" header + "Pick a member to see everything about them, inline" + `ImportContactsButton target={{ kind: 'space', spaceId }}`, then `SpaceCrmHealthStatRow` (Members / Active this week / At risk / Resonance Health, the same cards + tones, read from `getSpaceHealth(spaceId)` instead of `getPlatformHealth`), then the `MemberViewer` master-detail (via `loadMemberSummaries({ spaceId })` + the tenancy-gated `loadSpaceMemberDetail`). The hub feature-card grid + access legend no longer render on Resonance.
 
 **Consequences.** No migration. The space Resonance tab reads pixel-for-composition identical to the admin Resonance CRM, every function the same component, scoped + gated to the space. Follow-ups still open (owner directive): move the admin CRM tab menu under its search bar; replicate the admin Marketing console on the space Marketing tab with a classifieds-style client-side pill sub-nav (Email / Email design / Email style / QR codes / Scans / Automation) and the "New email" popup composer (upgraded editor). Full suite green, tsc + eslint + guards clean.
+
+## ADR-790: The admin search bar moves ABOVE the world sub-nav
+
+**Status:** Accepted (2026-07-19). Owner directive, recorded in [ADR-789](DECISIONS.md) Consequences as an open follow-up: *"move the admin CRM tab menu under its search bar"*. [ADR-791](DECISIONS.md)'s Status line vouches for it by name — *"ADR-790 was the admin search-above-menu swap"* — which is the only reason the number resolves at all. Written 2026-08-04 from `app/(main)/admin/layout.tsx`.
+
+**Context.** ADR-789's Consequences left two owner follow-ups open. This is the first; ADR-791 (the Space Marketing tab as the scoped CRM Marketing page) is the second, and it shipped with its record while this one did not.
+
+The admin chrome had absorbed the world sub-nav into a single sticky opaque band so page content scrolls cleanly underneath it — the fix for an older bug where a transparent gap above the input let content bleed through. Within that band the sub-nav row sat on top and the search bar below it.
+
+**Decision.** Swap them: `AdminSearchBar` renders first, `AdminSubNav` second, both still inside the one sticky band pinned under the 3.5rem header at every breakpoint. Every world — the Resonance CRM most of all — now reads **"search, then the tab menu under it."**
+
+The band itself is unchanged. This is an ordering decision inside existing chrome, not a re-layout, which is why it is a small entry: the expensive part (one opaque sticky container, no bleed-through) was ADR-789's.
+
+**Consequences.** ⚠️ The container's own rationale comment still describes the pre-swap order — "the sub-nav text-link row on TOP and the Ask-Vera/search bar below" — eight lines above the ADR-790 comment that contradicts it, and above JSX that contradicts both. Corrected in the same change that wrote this record. The lesson generalises: a swap that touches two adjacent lines is exactly the kind of change whose *comments* go stale, because nobody re-reads the paragraph above the diff.
 
 ## ADR-791: The Space Marketing tab IS the CRM Marketing page (scoped) behind a no-reload pill sub-nav
 
@@ -14895,6 +14954,22 @@ Production was missing ten repo migrations (20261192 operator seat CHECK through
 **Alternatives.** Reusing `visibility` with a new `listed_public` value — rejected: it conflates two questions and every existing visibility check would need to learn the new member. A dedicated column with a partial index — reasonable, and the right move IF opt-outs become common or the table grows enough that post-filtering a capped read costs something; recorded here as the upgrade path rather than paid for up front. Putting free events into the Market Tickets rail — rejected on the naming canon: a **Ticket** is specifically a projection of a *ticketed* event and is Business-Spaces-only (NAMING.md). The Marketplace **Events** surface is where all events belong, and it already carried both paid and free.
 
 **Consequences.** Every public event is now genuinely eligible for the browse surfaces, including circle-hosted ones, and hosts have a control that does exactly one thing. The most visible behavior change is finding 1: public circle events that were previously invisible outside their circle will start appearing in browse. That is the host's stated setting finally taking effect, but it IS a visible change for existing data, so it is called out here rather than buried.
+
+## ADR-845: Circle handoff is an OFFER, and tile covers carry a generic focal point
+
+**Status:** Accepted (2026-07-26, PR #1957, commit `74efab5`). Builds the deferral [ADR-843](DECISIONS.md) left open. That commit message ends *"ADR-845 to follow with the rail work"* — the rail work landed, the ADR did not, and 12 live sites have cited the number since. Written 2026-08-04 from the commit message, `lib/circles/handoff.ts` and migration `20261230000000_circle_transfer_offers.sql`.
+
+**Context.** Moving a Circle between places the same actor already runs is immediate (`lib/circles/transfer.ts`): both sides are theirs, so there is nobody to ask. Giving a Circle to **another person** is different in kind, because a Circle carries members. A unilateral write would hand somebody a room full of people they did not agree to hold.
+
+**Decision — handoff is an offer, not a transfer.** `circle_transfer_offers` holds a pending row that changes **nothing** until the recipient accepts. On acceptance the move runs through the **same ownership write** the immediate transfer uses, so there is exactly one definition of what belonging to a person means. The pure gate (`OfferGateFacts` → `OfferDecision`) is split from the IO, matching the sibling gates ADR-841/842/843.
+
+**Both race guards live in Postgres, not in app logic.** A unique **partial** index on `(circle_id) where status = 'pending'` means a double-submit, or two stewards acting at once, collide instead of creating two acceptable offers — and the `23505` surfaces as the honest *"already offered"*. Answering claims the row filtered on `status = 'pending'`, so two clicks cannot both proceed to the ownership write. Partial rather than plain, so answered offers stay as history while a second live offer remains impossible.
+
+**Access model:** RLS enabled with **no** client policies — service-role only, like `journey_drip_sends`. Both sides are read and written through gated server actions, never from the client; `scripts/rls-deny-all.txt` records the posture deliberately.
+
+**Decision — the cover focal point is generic.** `ProductCover` rendered a hard `object-cover` crop with no focal point, so a tall poster lost its middle on every marketplace tile while the event's own hero framed it correctly. It now takes an optional `focus` (a CSS `object-position`), and **`MarketItem` carries `coverFocus` generically rather than as an event-specific field**. The ticketed-event projection supplies the host's chosen crop today; a shop listing can supply one later **without the tile learning what kind of thing it is drawing**. Unset crops centered, byte-identical to before.
+
+**Consequences.** A Circle can sit in a pending offer indefinitely; nothing expires it, and nothing needs to, because a pending offer grants no capability. ⚠️ Two features ship under one number because one commit carried both — the handoff is the substantial half; the focal point is a small generic seam recorded here rather than lost. ⚠️ The generic `coverFocus` has exactly one producer today, which is the point: the second one costs a field, not a component change.
 
 ## ADR-846 — A Space menu is twelve boxes, and a box earns a stat only when it has one honest number (2026-07-27)
 
@@ -17139,3 +17214,38 @@ The Space one matters more than "operator-only" suggests: assigning a Space skin
 **Consequences.** Safe to land as a hard cut: production has **nobody on midnight** — 51 profiles on `default` and one null, Spaces on `dawn`/`default`. So no member is downgraded and no Space repaints. ⚠️ `midnight`'s CSS stays shipped and still renders for any stored value; this withdraws the *offer*, not the skin. ⚠️ The Palette axis is invisible in the product today, which is correct but means a second selectable skin makes a whole section reappear — worth a look when one lands.
 
 The durable rule: **a capability flag is only as good as its narrowest reader** — adding one is not done until every surface that could grant the thing reads it, and a test says so.
+
+## ADR-936 — The speed gate's thresholds come from measurement, and it stops serialising behind Playwright (2026-08-04)
+
+**Status.** Accepted. Completes ADR-930, which shipped the Lighthouse gate with thresholds it openly called guesses, and ADR-934, which made the gate report its own numbers so the guesses could be replaced.
+
+**Context.** It took four attempts to read four numbers. The artifact holding them is a 26MB zip on `blob.core.windows.net`, a host this environment's egress policy denies; the production apex is denied too, so re-measuring locally was not a route either; and `lighthouse-ci` prints only assertions that FAIL, so three fully green runs reported nothing at all. Three more runs were cancelled by my own pushes before reaching the reporting step. The numbers finally landed via the `Report the numbers` step of ADR-934, in the job summary, where reading them costs nothing.
+
+**The measured baseline** (run 30934494633, 4 URLs × 3 runs, medians):
+
+| URL | LCP | CLS | TBT | FCP | Weight |
+|---|---|---|---|---|---|
+| `/` | 878ms | 0.000 | 9ms | 408ms | 1.23MB |
+| `/pricing` | 941ms | 0.032 | 1ms | 404ms | 1.21MB |
+| `/the-community` | 916ms | 0.032 | 2ms | 459ms | 1.15MB |
+| `/loneliness` | 950ms | 0.032 | 0ms | 419ms | 1.18MB |
+
+**The guesses were not slightly loose, they were decorative.** LCP 4000 against a 950ms worst case is 4.2× headroom. **TBT 600 against a 9ms worst case is sixty-six times.** A gate with 66× headroom cannot fail; a gate that cannot fail is decoration, and the green tick it prints is exactly the "nothing behind it" signal this whole wave existed to remove.
+
+**Decision — thresholds set from the data, bounded by the field budgets.** LCP **4000 → 2500**, TBT **600 → 300**, FCP warn **2500 → 1000**, byte-weight warn **3.5MB → 2MB**. CLS **holds at 0.1**.
+
+The floor on LCP is not conservatism, it is the config's own rule: lab thresholds sit ABOVE the field budgets (`lib/analytics/vitals-budgets.ts` marketing LCP **2000ms**), because a lab gate stricter than the field target would fail PRs for pages that are fine for real visitors. 2500 is the tightest value that keeps that rule. CLS holds for the same reason plus one more: 0.1 *is* both the field budget and the industry good/needs-improvement boundary. It gets no paired tighter warn, because lighthouse-ci takes **one assertion per audit id** — a 0.05 warn would replace the 0.1 error, not sit beneath it. TBT has no field twin (INP cannot be produced in a lab), so it is bounded by the lab convention instead: 300ms is Lighthouse's own needs-improvement line, still 33× the worst observed.
+
+**Decision — the speed gate gets its own job.** It was steps 11–13 of `pr-compare`, which put ~13 minutes of Lighthouse (4 URLs × 3 runs = 12 full audits) *after* ~11 minutes of Playwright: **~25 minutes of wall clock on every PR touching `app/` or `components/`**. The two share no dependency; both need only the resolved preview URL. Run side by side, the slower sets the clock and the same work lands in ~15 minutes.
+
+It resolves the preview **itself** rather than consuming a job output from `pr-compare`. That duplicates 1–2 minutes of polling and buys total isolation: `pr-compare` keeps the exact shape it had, so the visual/a11y gate cannot be broken by a change made purely to speed up the speed gate. Given that this workflow's failure mode is a **silent skip** — a green tick with nothing behind it, the thing `e2e.yml`'s own header warns about — two minutes is a cheap premium.
+
+**Alternatives considered.** *`numberOfRuns` 3 → 1* (rejected: saves ~8.5 minutes and reintroduces precisely the single-run noise the median exists to absorb). *Four URLs → two* (rejected: that is real coverage, and the one-per-shape set is already the minimum). *A three-job chain with a shared `preview` job* (rejected: it re-plumbs `pr-compare`'s `if:` conditions, and the downside of getting that wrong is the silent skip).
+
+**Consequences.** ⚠️ PRs now show **two** e2e checks, not one. The "exactly ONE check" rule in `e2e.yml`'s header was written against permanently-*skipped* rows teaching people to ignore the word; both jobs here always run, so the rule's purpose survives its letter. Both headers were corrected in the same change rather than left to drift. ⚠️ The new thresholds have not yet caught anything — the first PR to trip one is the real test. ⚠️ `unused-javascript` still scores **0** on all four URLs and stays a warn (ADR-934); tightening thresholds does not touch it, and it remains the one genuinely actionable speed finding.
+
+The durable rule: **a threshold nobody has measured against is a guess wearing a number** — and 66× headroom is how you discover the guess was never a gate.
+
+**Postscript, same day: the job split shipped broken, and nothing local caught it.** The lift copied the `Install Chromium` step's `name` and `if` but clipped its `run` line. A step with neither `run` nor `uses` invalidates the **whole file**, and GitHub says so almost silently: the run is named after the *file path* (`.github/workflows/e2e.yml`, not `e2e`), fails instantly, and the e2e gate simply disappears from the PR's check list. `yaml.safe_load` accepted it, both jobs enumerated correctly, every `if:` resolved — the local checks I ran were all real and all blind to it.
+
+That is the session's own failure mode landing on the session: a gate that vanishes while the tick stays green. So the fix is not only the missing line. `scripts/check-workflows.mjs` (`pnpm check:workflows`, wired into `ci.yml`) now asserts two things a YAML parser structurally cannot see — **every step has `run` or `uses`**, and **no duplicate keys** (parsers silently keep the last; GitHub rejects the file). It was verified by reintroducing the exact defect and confirming a non-zero exit, not by trusting that it worked.

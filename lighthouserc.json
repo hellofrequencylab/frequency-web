@@ -1,18 +1,17 @@
 {
   "$comment": [
-    "Lighthouse CI \u2014 the synthetic speed gate on the PR's own Vercel preview (ADR-930).",
+    "Lighthouse CI \u2014 the synthetic speed gate on the PR's own Vercel preview (ADR-930, tuned ADR-936).",
     "",
     "WHAT THIS IS NOT: it is not a measurement of the Core Web Vitals budgets in",
     "lib/analytics/vitals-budgets.ts. Those are FIELD p75 numbers from real visitors on real",
     "devices, scored by the vitals_p75 RPC. This is a LAB run on a shared GitHub runner",
     "against a cold preview deployment. The two are different instruments and gating field",
-    "budgets on lab numbers would be a category error -- a shared runner under load can miss",
-    "a 2.0s LCP on a page that is comfortably fast for every real visitor.",
+    "budgets on lab numbers would be a category error.",
     "",
-    "WHAT IT IS: a regression smoke alarm. The thresholds sit deliberately ABOVE the field",
-    "budgets so that passing here means 'nothing collapsed', not 'we met the budget'. A PR",
-    "that doubles the JS on a marketing page or drops a render-blocking font trips it; a PR",
-    "that costs 80ms does not, and should not, because the run cannot resolve 80ms.",
+    "WHAT IT IS: a regression smoke alarm. Every threshold below sits ABOVE the marketing field",
+    "budget (LCP 2000ms / CLS 0.1), so passing here means 'nothing collapsed', not 'we met the",
+    "budget'. A PR that doubles the JS on a marketing page or drops a render-blocking font trips",
+    "it; a PR that costs 80ms does not, and should not, because the run cannot resolve 80ms.",
     "",
     "INP IS ABSENT ON PURPOSE. It needs a real interaction from a real person, so Lighthouse",
     "cannot produce one. Total Blocking Time is the lab stand-in and is asserted instead.",
@@ -23,22 +22,42 @@
     "",
     "The URLs are the ONE-PER-SHAPE set, not everything: the home PhotoHero (the heaviest",
     "LCP on the site), a dense product page, a Puck-rendered template, and an SEO guide.",
-    "Adding every route would multiply runtime for very little extra signal.",
     "",
-    "FIRST REAL READING (run 30926550859, 2026-08-04, 4 URLs x 3 runs on the PR preview):",
-    "all three ERROR assertions passed on every URL -- LCP, CLS and TBT were inside 4000 / 0.1 /",
-    "600, and so were the FCP and byte-weight warns. lighthouse-ci prints only what FAILS, so the",
-    "log carried no numbers to tighten from; the 'Report the numbers' step in e2e.yml was added",
-    "for exactly that reason and every run since prints the medians and the headroom.",
+    "\u2500\u2500 THE MEASURED BASELINE (run 30934494633, 2026-08-04, 4 URLs x 3 runs, medians) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
     "",
-    "THREE WARNS FIRED ON ALL FOUR URLS, identically across all 3 runs:",
+    "  URL              LCP     CLS     TBT    FCP     Weight",
+    "  /                878ms   0.000    9ms   408ms   1.23MB",
+    "  /pricing         941ms   0.032    1ms   404ms   1.21MB",
+    "  /the-community   916ms   0.032    2ms   459ms   1.15MB",
+    "  /loneliness      950ms   0.032    0ms   419ms   1.18MB",
+    "",
+    "ADR-930 shipped the first thresholds as admitted guesses (LCP 4000 / CLS 0.1 / TBT 600)",
+    "and said to re-set them from real data. This is that re-set. The guesses were far looser",
+    "than the site: LCP had 4.2x headroom and TBT had SIXTY-SIX times. A gate with 66x headroom",
+    "cannot fail, and a gate that cannot fail is decoration.",
+    "",
+    "How each number below was chosen, and why not tighter:",
+    "  LCP 2500  \u2014 worst median 950ms. Cannot go below 2000: that is the marketing FIELD budget,",
+    "              and a lab gate stricter than the field target would fail PRs for pages that",
+    "              are fine for real visitors. 2500 is the tightest value that keeps the rule.",
+    "  CLS 0.10  \u2014 worst median 0.032, but 0.1 IS the field budget and the industry good/needs-",
+    "              improvement boundary, so it is held rather than tightened. No second, tighter",
+    "              WARN is paired with it: lighthouse-ci takes ONE assertion per audit id, so a",
+    "              0.05 warn would REPLACE this error, not sit under it.",
+    "              bounded by the lab convention instead: 300ms is Lighthouse's own needs-",
+    "              improvement line. Still 33x the worst observed.",
+    "  FCP 1000  \u2014 worst median 459ms. Warn, not error: FCP is a diagnostic for a failing LCP,",
+    "              not a goal (vitals-budgets.ts says so), so it should inform, never block.",
+    "  Weight 2MB\u2014 worst median 1.23MB. Warn. Deliberately not 1.5MB: a legitimate hero image",
+    "              swap can move 300KB, and that is not a regression.",
+    "",
+    "THREE WARNS FIRE ON ALL FOUR URLS, identically across all 3 runs:",
     "  unused-javascript        0     (the floor -- worst possible score, on every page)",
     "  render-blocking-resources 0.5",
     "  uses-responsive-images   0.5   (0 on /loneliness)",
-    "These are warns on purpose: they describe payload shape, not a regression, and failing a PR",
-    "on them would block work that has nothing to do with them. They are real findings and are",
-    "recorded as such in ADR-934 -- unused-javascript at 0 across the whole marketing surface is",
-    "a bundle problem to fix deliberately, not a threshold to relax."
+    "They stay warns on purpose: they describe payload SHAPE, not a regression. They do not get",
+    "worse PR to PR, they are simply always wrong, so an error assertion would fail every PR for",
+    "debt none of them created. Recorded as real work in ADR-934, not laundered into a budget."
   ],
   "ci": {
     "collect": {
@@ -53,7 +72,7 @@
         "largest-contentful-paint": [
           "error",
           {
-            "maxNumericValue": 4000,
+            "maxNumericValue": 2500,
             "aggregationMethod": "median"
           }
         ],
@@ -67,21 +86,21 @@
         "total-blocking-time": [
           "error",
           {
-            "maxNumericValue": 600,
+            "maxNumericValue": 300,
             "aggregationMethod": "median"
           }
         ],
         "first-contentful-paint": [
           "warn",
           {
-            "maxNumericValue": 2500,
+            "maxNumericValue": 1000,
             "aggregationMethod": "median"
           }
         ],
         "total-byte-weight": [
           "warn",
           {
-            "maxNumericValue": 3500000,
+            "maxNumericValue": 2000000,
             "aggregationMethod": "median"
           }
         ],

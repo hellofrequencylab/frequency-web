@@ -19,6 +19,7 @@
     "check:canon": "node scripts/check-canon.mjs",
     "check:headers": "node scripts/check-headers.mjs",
     "check:menu": "node scripts/check-menu.mjs",
+    "check:workflows": "node scripts/check-workflows.mjs",
     "check:migrations": "node scripts/check-migrations.mjs",
     "check:elements": "node scripts/check-elements.mjs",
     "check:tokens": "node scripts/check-tokens.mjs",

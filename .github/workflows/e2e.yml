@@ -3,9 +3,13 @@
 # Runs on PRs that can move pixels, resolves the PR's own Vercel preview through the
 # deployments API, then runs smoke + @a11y and the @visual compare against it.
 #
-# This workflow contributes exactly ONE check to a PR. The maintainer-triggered jobs
-# (manual smoke, visual, baseline capture) live in e2e-manual.yml so they cannot show up
-# here as permanently-"skipped" rows — see that file's header for why that mattered.
+# This workflow contributes exactly TWO checks to a PR: `pr-compare` (smoke + a11y +
+# visual) and `lighthouse` (synthetic speed). It was one until 2026-08-04, when the speed
+# gate moved into its own job so it stops serialising behind Playwright — ~25 minutes of
+# wall clock became ~15 (ADR-936). Both always run; neither is ever a permanently-"skipped"
+# row, which is the thing the one-check rule actually existed to prevent. The
+# maintainer-triggered jobs (manual smoke, visual, baseline capture) still live in
+# e2e-manual.yml so they cannot show up here — see that file's header for why that mattered.
 #
 # The gate SKIPS ITSELF (green, with a notice) unless VERCEL_AUTOMATION_BYPASS_SECRET is
 # set. Without that secret Vercel's Deployment Protection serves its auth interstitial to
@@ -155,7 +159,6 @@ jobs:
       # Smoke + @a11y: no baseline dependency, so this half of the gate is trustworthy the
       # moment the bypass secret exists.
       - name: Smoke + a11y suite
-        id: functional
         if: steps.preview.outputs.ready == 'true'
         env:
           PW_BASE_URL: ${{ steps.preview.outputs.url }}
@@ -171,18 +174,135 @@ jobs:
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm test:e2e:visual
 
-      # ── Synthetic speed gate (ADR-930) ────────────────────────────────────────
-      # Reuses the preview URL and bypass secret this job already resolved rather than
-      # re-implementing 60 lines of deployment polling in a second workflow.
-      #
-      # always(), for the same reason the visual compare uses it: a functional failure
-      # above must not hide a performance regression here.
-      #
-      # This gate answers "did anything collapse", NOT "did we meet the Core Web Vitals
-      # budget". Those budgets (lib/analytics/vitals-budgets.ts) are field p75 from real
-      # devices; this is a lab run on a shared runner against a cold deployment. The
-      # thresholds in lighthouserc.json therefore sit well above the field budgets, and a
-      # green tick here is not evidence the budget is met. See the ADR before tightening.
+      # The synthetic speed gate used to run here as steps 11-13. It is its own parallel
+      # job now (ADR-936) -- see `lighthouse:` below.
+
+      - name: Upload report + diffs
+        if: ${{ failure() && steps.preview.outputs.ready == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-pr-compare
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  # ── The speed gate, in its OWN job so it stops serialising behind Playwright ──────────
+  #
+  # It used to be steps 11-13 of pr-compare. That put ~13 minutes of Lighthouse (4 URLs x 3
+  # runs = 12 full audits) AFTER ~11 minutes of Playwright, for a ~25-minute wall clock on
+  # every PR that touches app/ or components/. The two have no dependency on each other:
+  # both need only the resolved preview URL. Run side by side and the slower one sets the
+  # clock, so the same work lands in ~15 minutes.
+  #
+  # It resolves the preview ITSELF rather than taking it from pr-compare as a job output.
+  # That duplicates ~1-2 minutes of polling, and buys total isolation: pr-compare keeps the
+  # exact shape it had, so the visual/a11y gate cannot be broken by a change made purely to
+  # speed up the speed gate. Given that this workflow's failure mode is a SILENT SKIP -- a
+  # green tick with nothing behind it, which is the thing e2e.yml's own header warns about
+  # -- that trade is worth two minutes.
+  #
+  # Same skip-green semantics as pr-compare: no bypass secret or no successful deployment
+  # means nothing was tested, said out loud in a notice, never a red X.
+  lighthouse:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: read
+      statuses: read
+    steps:
+      - name: Gate on the Vercel bypass secret
+        id: gate
+        env:
+          BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BYPASS}" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Visual/a11y compare skipped::VERCEL_AUTOMATION_BYPASS_SECRET is not set, so every preview route would serve Vercel's Deployment Protection interstitial instead of the app. Nothing was tested."
+            {
+              echo "### e2e compare skipped"
+              echo
+              echo "\`VERCEL_AUTOMATION_BYPASS_SECRET\` is not configured for this repository."
+              echo
+              echo "Vercel Deployment Protection serves an auth interstitial to Playwright, so the"
+              echo "suite would compare baselines against the wall rather than the app. Skipping is"
+              echo "the honest result; a red X here would mean nothing about this PR."
+              echo
+              echo "**To enable:** Vercel → project → Settings → Deployment Protection →"
+              echo "*Protection Bypass for Automation* → generate, then add the value as the GitHub"
+              echo "Actions secret \`VERCEL_AUTOMATION_BYPASS_SECRET\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve the PR's Vercel preview URL
+        id: preview
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          # Vercel records each build as a GitHub Deployment on the head SHA and reports the
+          # live URL as `environment_url` on the deployment's `success` status. Poll for it:
+          # the PR event fires before the build finishes.
+          url=""
+          for attempt in $(seq 1 30); do
+            for dep in $(gh api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" --jq '.[].id' || true); do
+              candidate=$(gh api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" \
+                --jq 'map(select(.state=="success") | .environment_url // empty) | first // empty' || true)
+              if [ -n "${candidate}" ]; then
+                url="${candidate}"
+                break
+              fi
+            done
+            if [ -n "${url}" ]; then
+              break
+            fi
+            echo "No successful deployment for ${SHA} yet (attempt ${attempt}/30); waiting 20s."
+            sleep 20
+          done
+
+          if [ -z "${url}" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Visual/a11y compare skipped::No successful Vercel deployment for ${SHA} after 10 minutes. Nothing was tested (the Vercel check reports build failures on its own)."
+            {
+              echo "### e2e compare skipped"
+              echo
+              echo "No successful Vercel deployment was found for \`${SHA}\` within 10 minutes."
+              echo "Build failures are reported by Vercel's own check; this job stays quiet rather"
+              echo "than duplicating that signal as a false visual-regression failure."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "url=${url}" >> "$GITHUB_OUTPUT"
+            echo "Resolved preview: ${url}"
+            echo "### e2e compare target" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "\`${url}\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.preview.outputs.ready == 'true'
+      - uses: pnpm/action-setup@v6
+        if: steps.preview.outputs.ready == 'true'
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v7
+        if: steps.preview.outputs.ready == 'true'
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Install
+        if: steps.preview.outputs.ready == 'true'
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        if: steps.preview.outputs.ready == 'true'
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Lighthouse (synthetic speed)
         if: ${{ always() && steps.preview.outputs.ready == 'true' }}
         env:
@@ -269,13 +389,3 @@ jobs:
           include-hidden-files: true
           retention-days: 7
           if-no-files-found: error
-
-      - name: Upload report + diffs
-        if: ${{ failure() && steps.preview.outputs.ready == 'true' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report-pr-compare
-          path: |
-            playwright-report/
-            test-results/
-          retention-days: 7

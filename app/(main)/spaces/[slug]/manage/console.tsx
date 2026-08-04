@@ -424,9 +424,10 @@ export function SpaceManageConsole({
   )
 }
 
-/** The header-level PROFILE & SETTINGS surface (ADR-785): the space's identity/brand/visibility shell plus
- *  Team, Reviews, Plan & usage, and the Danger zone — everything that is configuration rather than daily
- *  operation. Rendered by the Profile & Settings route, not the browse hub. */
+/** The PROFILE & SETTINGS surface: the space's identity/brand/visibility shell plus Team, Reviews,
+ *  Plan & usage, and the Danger zone — everything that is configuration rather than daily operation.
+ *  Rendered by BOTH the standalone /manage/settings route and the hub's own settings tab (ADR-788
+ *  reversed ADR-785's header-only placement), which is why it lives here rather than in either. */
 export function SpaceSettingsSurface({
   slug,
   modules,

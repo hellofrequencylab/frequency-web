@@ -72,7 +72,7 @@ export function MenuGroupsEditor({
       ? (menu.rootItems.find((i) => isPinnedRailItem(i.id)) ?? {
           id: PINNED_PROFILE_ID,
           label: 'Profile',
-          href: '/profile',
+          href: '/settings/profile',
           position: 1,
           colSpan: 1,
           mode: 'active' as const,
