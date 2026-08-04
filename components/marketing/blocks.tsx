@@ -33,26 +33,51 @@ function hasRole(role: string | null | undefined): role is CommunityRole {
   return !!role && role in ROLE_RANK
 }
 
+// A live block must keep the page's SHAPE when its data is unavailable.
+// `getLiveData` (lib/page-editor/live-data.ts) fires its RPCs in one Promise.all and
+// fails open to `null`, and the marketing routes cache with ISR (`revalidate = 3600`),
+// so a block that returned `null` on an empty list could freeze a whole section out of
+// a public page for an hour on one transient RPC error. The blocks below render this
+// note instead. It never invents posts, events, or counts.
+function LiveDataNote({ text }: { text: string }) {
+  return (
+    <p className="rounded-card border border-border bg-surface px-5 py-8 text-center text-base text-subtle">
+      {text}
+    </p>
+  )
+}
+
 // ── Live data blocks ──────────────────────────────────────────────────────────
 export function LiveStatsBlock({ eyebrow, heading, live, pad, vis = '' }: { eyebrow?: string; heading?: string; live?: LiveData; pad?: string; vis?: string }) {
-  const stats = [
-    { value: live?.memberCount ?? 0, label: 'Members' },
-    { value: live?.circleCount ?? 0, label: 'Circles' },
-    { value: live?.upcomingEvents.length ?? 0, label: 'Events soon' },
-  ]
+  // `?? 0` used to run for the whole block, which meant a failed data call published
+  // "0 Members / 0 Circles" to a public page as though it were measured, and ISR froze
+  // that for an hour. A wrong number is worse than a missing one: the reader cannot tell
+  // it is wrong. So the counts render only when the call actually delivered. A real zero
+  // still renders as 0 — that is data, not absence.
+  const stats = live
+    ? [
+        { value: live.memberCount, label: 'Members' },
+        { value: live.circleCount, label: 'Circles' },
+        { value: live.upcomingEvents.length, label: 'Events soon' },
+      ]
+    : null
   return (
     <section className={`bg-surface px-6 ${pad ?? 'py-24 sm:py-28'} ${vis}`}>
       <div className="max-w-3xl mx-auto text-center">
         {eyebrow && <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">{eyebrow}</p>}
         {heading && <h2 className="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)] mb-12">{heading}</h2>}
-        <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
-          {stats.map((s) => (
-            <div key={s.label}>
-              <p className="font-display text-6xl sm:text-7xl text-text">{s.value.toLocaleString()}</p>
-              <p className="text-xs text-subtle mt-3 uppercase tracking-widest font-bold">{s.label}</p>
-            </div>
-          ))}
-        </div>
+        {stats ? (
+          <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
+            {stats.map((s) => (
+              <div key={s.label}>
+                <p className="font-display text-6xl sm:text-7xl text-text">{s.value.toLocaleString()}</p>
+                <p className="text-xs text-subtle mt-3 uppercase tracking-widest font-bold">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <LiveDataNote text="These numbers are taking a moment to load." />
+        )}
       </div>
     </section>
   )
@@ -60,10 +85,15 @@ export function LiveStatsBlock({ eyebrow, heading, live, pad, vis = '' }: { eyeb
 
 export function LiveEventsBlock({ live, pad, vis = '' }: { live?: LiveData; pad?: string; vis?: string }) {
   const events = live?.upcomingEvents ?? []
-  if (!events.length) return null
+  // This block is nothing BUT the list: it carries no heading of its own, so when the
+  // live data resolved and there genuinely are no upcoming events, hiding it is the
+  // honest render. When `live` is absent the call never delivered, and vanishing would
+  // silently delete the section from a cached page, so the note holds the slot instead.
+  if (!events.length && live) return null
   return (
     <section className={`bg-marketing-canvas px-6 ${pad ?? 'py-20'} ${vis}`}>
       <div className="max-w-2xl mx-auto space-y-3">
+        {!events.length && <LiveDataNote text="Events are taking a moment to load." />}
         {events.map((event) => {
           const d = new Date(event.starts_at)
           const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
@@ -95,7 +125,22 @@ export function LiveEventsBlock({ live, pad, vis = '' }: { live?: LiveData; pad?
 
 export function LivePostsBlock({ heading, live, pad, vis = '' }: { heading?: string; live?: LiveData; pad?: string; vis?: string }) {
   const posts = live?.posts ?? []
-  if (!posts.length) return null
+  // Never drop the section. The heading is authored copy that belongs to the page, so
+  // it renders either way; only the body swaps for a note. `live` present with an empty
+  // list is the closest signal we have to "genuinely nothing to show", so it gets the
+  // plainer line; `live` missing means the call never delivered.
+  if (!posts.length) {
+    return (
+      <section className={`bg-marketing-canvas px-6 ${pad ?? 'py-20 sm:py-24'} ${vis}`}>
+        <div className="max-w-2xl mx-auto">
+          {heading && <h2 className="text-center font-display uppercase text-text text-3xl sm:text-4xl mb-10 text-balance">{heading}</h2>}
+          <LiveDataNote
+            text={live ? 'No posts to show right now. Check back soon.' : 'Posts are taking a moment to load.'}
+          />
+        </div>
+      </section>
+    )
+  }
   return (
     <section className={`bg-marketing-canvas px-6 ${pad ?? 'py-20 sm:py-24'} ${vis}`}>
       <div className="max-w-2xl mx-auto">
