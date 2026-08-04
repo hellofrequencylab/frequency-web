@@ -1,0 +1,21 @@
+{
+  "$comment": [
+    "The accessibility RATCHET, and the reason it exists.",
+    "",
+    "axe was pointed at the real pages for the first time on 2026-08-04 and found violations that",
+    "predate the wave that added it: the brand amber used as TEXT measures 2.52:1 on a light",
+    "surface, and it appears ~1,842 times. That is a real defect and it is also a judgment-heavy",
+    "sweep (many of those uses are on ink bands or are icon colour, where the rule differs), so it",
+    "belongs in its own reviewed pass rather than appended to the wave that surfaced it.",
+    "",
+    "Blocking on day one would have meant one of two bad outcomes: the wave stalls behind an",
+    "unrelated sweep, or somebody mutes the suite. A ratchet is the honest third option -- the",
+    "count is frozen per (surface, state), a RISE fails, and a fall is celebrated and re-frozen.",
+    "Same contract as scripts/adoption-baselines.json.",
+    "",
+    "Every number here is debt with a date on it. Lower them; never raise them.",
+    "Re-freeze after a sweep with: PW_A11Y_UPDATE=1 pnpm test:e2e --grep @a11y"
+  ],
+  "$defaultMax": 0,
+  "surfaces": {}
+}

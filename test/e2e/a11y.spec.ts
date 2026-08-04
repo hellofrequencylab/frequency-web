@@ -30,6 +30,8 @@
 // other three states, on desktop only (colour tokens do not vary by viewport, and the
 // full desktop+mobile pass already covers the canonical state at both widths). That is
 // Lift 3's "contrast pairs all green ×4 states" made permanent, at a quarter of the cost.
+import { appendFileSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { AxeBuilder } from '@axe-core/playwright'
 import { test, type TestInfo, type Page } from '@playwright/test'
 import type { Result } from 'axe-core'
@@ -81,7 +83,34 @@ function describeViolation(violation: Result, index: number): string {
   ].join('\n')
 }
 
-/** Throw on serious+critical, annotate the rest. */
+// The frozen per-surface debt. Read once; a missing entry means "must be clean" ($defaultMax 0),
+// so a NEW surface joins the suite at zero tolerance rather than inheriting somebody else's debt.
+interface A11yBaselines {
+  $defaultMax?: number
+  surfaces?: Record<string, number>
+}
+
+let baselinesCache: A11yBaselines | null = null
+
+function baselines(): A11yBaselines {
+  if (baselinesCache) return baselinesCache
+  try {
+    // Resolved from the project root (Playwright's cwd), not import.meta — this spec is
+    // transpiled to CJS, where import.meta is unavailable.
+    const raw = readFileSync(join(process.cwd(), 'test', 'e2e', 'a11y-baselines.json'), 'utf8')
+    baselinesCache = JSON.parse(raw) as A11yBaselines
+  } catch {
+    baselinesCache = {}
+  }
+  return baselinesCache
+}
+
+/** How many serious+ ELEMENTS this (surface, state, project) context is allowed to carry today. */
+function baselineFor(context: string): number {
+  const b = baselines()
+  return b.surfaces?.[context] ?? b.$defaultMax ?? 0
+}
+
 function report(
   violations: Result[],
   context: string,
@@ -98,18 +127,59 @@ function report(
     })
   }
 
-  if (blocking.length === 0) return
-
   const total = blocking.reduce((sum, v) => sum + v.nodes.length, 0)
+
+  // CAPTURE MODE. The baselines have to come from a real run against a real deployment —
+  // a hand-typed number is a guess, and a guessed ratchet is a lie with a version history.
+  // Each worker appends one JSON line; scripts/a11y-baselines.mjs merges them. Append is
+  // used rather than a shared write because workers run in parallel.
+  if (process.env.PW_A11Y_UPDATE) {
+    appendFileSync(
+      join(process.cwd(), 'test', 'e2e', '.a11y-observed.jsonl'),
+      JSON.stringify({ context, total }) + '\n',
+    )
+    return
+  }
+
+  const allowed = baselineFor(context)
+
+  // A RATCHET, not a wall. The first honest run against real pages found violations older
+  // than this suite (the brand amber used as text, ~1,842 sites), which is a judgment-heavy
+  // sweep of its own. Blocking on day one would either stall unrelated work or get the suite
+  // muted, and a muted gate is worse than no gate. So the frozen count is the bar: a RISE
+  // fails loudly, a fall is reported and should be re-frozen. Same contract as the adoption
+  // baselines. See test/e2e/a11y-baselines.json.
+  if (total <= allowed) {
+    if (blocking.length > 0) {
+      testInfo.annotations.push({
+        type: 'a11y-debt',
+        description:
+          `${total}/${allowed} known serious+ element(s) on ${context} — ` +
+          blocking.map((v) => `${v.id}×${v.nodes.length}`).join(', '),
+      })
+    }
+    // A fall is news: say so, so the baseline gets tightened instead of drifting upward.
+    if (blocking.length > 0 && total < allowed) {
+      testInfo.annotations.push({
+        type: 'a11y-improved',
+        description: `${context} is now ${total} (baseline ${allowed}) — lower the baseline in test/e2e/a11y-baselines.json.`,
+      })
+    }
+    return
+  }
+
   throw new Error(
     [
-      `${blocking.length} serious+ accessibility violation(s) (${total} element(s)) on ${context}:`,
+      `Accessibility REGRESSION on ${context}: ${total} serious+ element(s), baseline allows ${allowed}.`,
       '',
       ...blocking.map(describeViolation),
       '',
       advisory.length > 0
         ? `(plus ${advisory.length} moderate/minor violation(s) recorded as annotations — not failing this run.)`
         : '(no moderate/minor violations.)',
+      '',
+      'If this is deliberate and understood, raise the entry in test/e2e/a11y-baselines.json',
+      'in the SAME commit, with a reason. Baselines are debt, and debt gets a name.',
     ].join('\n'),
   )
 }

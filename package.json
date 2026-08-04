@@ -12,6 +12,8 @@
     "test:e2e": "playwright test --grep-invert @visual",
     "test:e2e:visual": "playwright test --grep @visual",
     "test:e2e:update": "playwright test --update-snapshots --grep @visual",
+    "test:e2e:a11y": "playwright test --grep @a11y",
+    "a11y:baselines": "node scripts/a11y-baselines.mjs",
     "test:rls": "supabase test db",
     "check:authz": "node scripts/check-authz-guards.mjs",
     "check:canon": "node scripts/check-canon.mjs",
