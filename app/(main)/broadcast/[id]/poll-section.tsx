@@ -84,7 +84,9 @@ export function PollSection({
                   : 'border-border bg-surface hover:border-broadcast hover:bg-broadcast-bg'
               } disabled:cursor-not-allowed`}
             >
-              {/* Vote bar background */}
+              {/* Vote bar background. Left ad-hoc on purpose: this is an absolutely-positioned
+                  fill BEHIND the option label, not a track-and-fill bar, so ProgressTrack
+                  (which owns its own track box) cannot express it. */}
               {hasVoted && (
                 <span
                   className="absolute inset-y-0 left-0 bg-broadcast-bg transition-all duration-500"

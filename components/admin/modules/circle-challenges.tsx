@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { adoptCircleChallenge, dropCircleChallenge } from '@/app/(main)/circles/admin-actions'
 import type { CircleChallenge } from '@/lib/circles/challenges'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // The CircleQuest "Challenges" block: the global season challenges this circle has
 // taken on TOGETHER, each with the circle's collective progress ("N of M done"),
@@ -77,9 +78,7 @@ export function CircleChallenges({
                   </button>
                 </div>
                 {/* Collective progress bar — shared goal, not a competition. */}
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-elevated">
-                  <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
-                </div>
+                <ProgressTrack value={pct} label="Collective progress" animate className="mt-2" />
               </li>
             )
           })}

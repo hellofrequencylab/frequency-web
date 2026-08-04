@@ -8,6 +8,7 @@ import type { ProfileChores } from '@/lib/onboarding/profile-chores'
 import type { OnboardingStep } from '@/lib/onboarding/status'
 import { claimChoresReward } from '@/app/(main)/feed/chores-actions'
 import { EdgePill } from '@/components/layout/edge-pill'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // Vera's coach — the bait-and-switch (BETA-ACTIVATION §2) plus the "what next" nudge
 // (§5, build item 1.3 folded in here rather than a competing feed card). One Vera
@@ -247,9 +248,14 @@ export function ChoresOverlay({
                   Let’s get your corner of this place in order. Won’t take a minute.
                 </p>
                 <div className="mt-3 flex items-center gap-2">
-                  <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-broadcast-bg">
-                    <span className="block h-full rounded-full bg-broadcast transition-all duration-500" style={{ width: `${chores.pct}%` }} />
-                  </span>
+                  <ProgressTrack
+                    value={chores.pct}
+                    label="Setup progress"
+                    tone="broadcast"
+                    track="broadcast"
+                    animate
+                    className="flex-1"
+                  />
                   <span className="text-xs font-bold tabular-nums text-broadcast-strong">{chores.pct}%</span>
                 </div>
               </div>

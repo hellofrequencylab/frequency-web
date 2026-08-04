@@ -22,6 +22,7 @@ import {
   getBetaGrowthFunnel,
   type BetaFunnelStep,
 } from '@/lib/beta/stats'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // STATS — the Beta metrics board (Wave 2). It composes analytics we already ship
 // (waitlist reads, the engagement ledger, email events, the Growth-OS funnel)
@@ -277,13 +278,11 @@ function FunnelList({ steps }: { steps: BetaFunnelStep[] }) {
                 )}
               </span>
             </div>
-            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-elevated">
-              {s.value != null ? (
-                <div className="h-full rounded-full bg-primary" style={{ width: `${width}%` }} />
-              ) : (
-                <div className="h-full rounded-full border border-dashed border-border" />
-              )}
-            </div>
+            {s.value != null ? (
+              <ProgressTrack value={width} label={s.label} size="lg" className="mt-1.5" />
+            ) : (
+              <div className="mt-1.5 h-2 overflow-hidden rounded-pill border border-dashed border-border" />
+            )}
             {s.note && <p className="mt-1 text-2xs leading-snug text-muted">{s.note}</p>}
           </li>
         )

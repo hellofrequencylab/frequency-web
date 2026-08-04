@@ -22,6 +22,7 @@ import { PracticeActions } from '@/components/journey/v2/learn/practice-actions'
 import type { JourneyTree } from '@/lib/journeys/tree'
 import type { LessonContent, CheckConfig } from '@/lib/journeys/store'
 import type { PartialToday } from '@/lib/practices'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 interface Props {
   slug: string
@@ -280,9 +281,13 @@ export function LearnPlayer({
           <span className="font-semibold text-text">Your progress</span>
           <span className="tabular-nums text-muted">{tree.doneRequired} of {tree.totalRequired} done</span>
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-surface-elevated">
-          <div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${Math.max(2, tree.percent)}%` }} />
-        </div>
+        <ProgressTrack
+          value={tree.percent}
+          minVisible={2}
+          label={`${tree.doneRequired} of ${tree.totalRequired} done`}
+          size="lg"
+          animate
+        />
       </div>
 
       {/* Mobile: the syllabus is a drawer, collapsed by default (don't push the lesson down). */}

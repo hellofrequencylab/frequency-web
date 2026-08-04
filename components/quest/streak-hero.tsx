@@ -26,6 +26,7 @@ import { isError } from '@/lib/action-result'
 import { STREAK_MILESTONES } from '@/lib/streak'
 import type { PracticeStreakState } from '@/lib/practice-streak'
 import { pauseStreak, resumeStreak } from '@/app/(main)/crew/leaderboard/streak-actions'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 interface Progress {
   pct: number
@@ -153,12 +154,7 @@ export function StreakHero({
 
       {/* Milestone progress bar + pips. */}
       <div className="mt-5">
-        <div className="h-2 w-full overflow-hidden rounded-full bg-surface-elevated">
-          <div
-            className="h-full rounded-full bg-primary transition-[width] duration-500 motion-reduce:transition-none"
-            style={{ width: `${progress.pct}%` }}
-          />
-        </div>
+        <ProgressTrack value={progress.pct} label="Progress to the next streak milestone" size="lg" animate className="w-full" />
         <ol className="mt-2.5 flex items-start justify-between gap-1">
           {STREAK_MILESTONES.map((m) => {
             const hit = m.day <= current

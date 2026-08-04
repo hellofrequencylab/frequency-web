@@ -13,6 +13,7 @@ import { Compass } from 'lucide-react'
 import { accentColor } from '@/lib/studio/accents'
 import type { FrequencySignature, PillarKey } from '@/lib/frequency-signature'
 import { PILLAR_KEYS } from '@/lib/frequency-signature'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // Pillar → accent key (matches components/studio/journey/journey-builder.tsx) and the
 // axis position on the dial. Mind left, Body top, Spirit right, Expression bottom —
@@ -305,12 +306,13 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
                 {Math.round(fill * 100)}% to full
               </span>
             </div>
-            <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-surface-elevated">
-              <span
-                className="block h-full rounded-full bg-current"
-                style={{ width: `${Math.max(2, Math.round(fill * 100))}%` }}
-              />
-            </span>
+            <ProgressTrack
+              value={Math.round(fill * 100)}
+              minVisible={2}
+              label="Bloom"
+              tone="current"
+              className="mt-1"
+            />
           </div>
 
           <ul className="mt-3 space-y-1.5">

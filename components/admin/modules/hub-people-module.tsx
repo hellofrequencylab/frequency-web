@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { getHubPeopleData, type HubPeopleData } from '@/app/(main)/hubs/admin-actions'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // In-place "People" module (ADMIN-RAIL.md Phase 7, the 'people' spine cell for hubs — the LP-EVENT
 // recipe applied to hubs). Renders in the page admin dock on /hubs/[slug]; the server returns null
@@ -83,9 +84,7 @@ export function HubPeopleModule() {
                     </span>
                   </div>
                   {c.hostName && <p className="mt-0.5 text-2xs text-muted">Host: {c.hostName}</p>}
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-elevated">
-                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
-                  </div>
+                  <ProgressTrack value={pct} label={`${c.memberCount} of ${c.memberCap} seats filled`} animate className="mt-1.5" />
                 </li>
               )
             })}

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Users, MapPin, Settings, EyeOff, LayoutDashboard } from 'lucide-react'
+import { ProgressTrack } from '@/components/ui/progress-track'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { leaveCircle } from '../actions'
@@ -470,12 +471,14 @@ export default async function CirclePage({
                 </span>
               )}
             </div>
-            <div className="mt-2 h-1.5 max-w-xs rounded-full bg-border overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${full ? 'bg-danger' : 'bg-primary'}`}
-                style={{ width: `${pct}%` }}
-              />
-            </div>
+            <ProgressTrack
+              value={pct}
+              tone={full ? 'danger' : 'primary'}
+              track="border"
+              animate
+              className="mt-2 max-w-xs"
+              label={`${circle.member_count} of ${circle.member_cap} seats taken`}
+            />
           </div>
         }
       >

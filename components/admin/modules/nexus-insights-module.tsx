@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { getNexusInsightsData, type NexusInsightsData } from '@/app/(main)/nexuses/admin-actions'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // In-place "Insights" module (ADMIN-RAIL.md Phase 7, the 'insights' spine cell for nexuses). Renders
 // in the page admin dock on /nexuses/[slug]; the server returns null unless the caller holds
@@ -69,9 +70,7 @@ export function NexusInsightsModule() {
                 {data.totalMembers} / {data.memberCap}
               </span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-surface-elevated">
-              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${fillPct}%` }} />
-            </div>
+            <ProgressTrack value={fillPct} label={`${data.totalMembers} of ${data.memberCap} seats filled`} size="lg" animate />
           </div>
         )}
       </section>

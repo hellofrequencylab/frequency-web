@@ -10,6 +10,7 @@ import {
   dropCircleChallenge,
   type CircleEngageData,
 } from '@/app/(main)/circles/admin-actions'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // In-place "Engage" module (ADMIN-RAIL.md Phase 7, the 'engage' spine cell). Renders in the page
 // admin dock on /circles/[slug]; the server returns null unless the caller holds circle.assignTask.
@@ -160,9 +161,7 @@ export function CircleEngageModule() {
                         )}
                       </span>
                     </div>
-                    <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-elevated">
-                      <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
-                    </div>
+                    <ProgressTrack value={pct} label="Challenge completion" size="lg" animate className="mt-1.5" />
                   </li>
                 )
               })}

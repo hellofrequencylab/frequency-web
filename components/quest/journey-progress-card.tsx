@@ -3,6 +3,7 @@ import { Users, ArrowRight, CheckCircle2, CalendarRange } from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
 import { ExpressionAction } from '@/app/(main)/crew/challenges/expression-action'
 import { ExpressionIcon, expressionPillarStyle } from '@/lib/quest/expression-pillar'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // JourneyProgressCard — the honest arc for one active Journey on the Journey page.
 // A Journey is finished by logging its Practices on 14 DISTINCT days inside its
@@ -116,16 +117,13 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
       ) : (
         <>
           {/* The 14-distinct-days bar — credit days done, never frame it as 0%. */}
-          <div
-            className="h-2 overflow-hidden rounded-full bg-surface-elevated"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={daysRequired}
-            aria-valuenow={daysDone}
-            aria-label={`${daysDone} of ${daysRequired} practice days logged`}
-          >
-            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
-          </div>
+          <ProgressTrack
+            value={daysDone}
+            max={daysRequired}
+            label={`${daysDone} of ${daysRequired} practice days logged`}
+            size="lg"
+            animate
+          />
           <p className="mt-2 text-xs font-medium text-muted">
             {daysMet
               ? 'All 14 practice days logged.'

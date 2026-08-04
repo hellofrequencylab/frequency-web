@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Check, ArrowRight, Rocket, Trophy } from 'lucide-react'
+import { ProgressTrack } from '@/components/ui/progress-track'
 import { createClient } from '@/lib/supabase/server'
 import { FocusTemplate } from '@/components/templates'
 import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
@@ -60,9 +61,15 @@ export default async function FounderPage() {
             </p>
             <span className="text-xs font-bold tabular-nums text-broadcast-strong">{fw.pct}%</span>
           </div>
-          <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-broadcast-bg">
-            <span className="block h-full rounded-full bg-broadcast transition-all duration-500" style={{ width: `${fw.pct}%` }} />
-          </span>
+          <ProgressTrack
+            value={fw.doneCount}
+            max={fw.total}
+            tone="broadcast"
+            track="broadcast"
+            animate
+            className="mt-2"
+            label="First Week progress"
+          />
         </div>
       </div>
 

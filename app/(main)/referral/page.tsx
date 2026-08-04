@@ -11,6 +11,7 @@ import { DashboardTemplate } from '@/components/templates/dashboard-template'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ProgressTrack } from '@/components/ui/progress-track'
 import { getCallerProfile } from '@/lib/auth'
 import {
   betaReferralContestEnabled,
@@ -84,17 +85,14 @@ export default async function ReferralHubPage() {
             <Gift className="h-4 w-4 text-primary-strong" aria-hidden /> Founding-Member perks
           </h2>
           <p className="mt-1 text-sm text-muted">{foundingCopy}</p>
-          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-elevated">
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{
-                width: `${Math.min(
-                  100,
-                  (progress.activatedReferrals / FOUNDING_PERK_MIN_REFERRALS) * 100,
-                )}%`,
-              }}
-            />
-          </div>
+          <ProgressTrack
+            value={progress.activatedReferrals}
+            max={FOUNDING_PERK_MIN_REFERRALS}
+            size="lg"
+            animate
+            className="mt-3 w-full"
+            label={`${progress.activatedReferrals} of ${FOUNDING_PERK_MIN_REFERRALS} referrals toward the Founding-Member perks`}
+          />
           {progress.pendingReferrals > 0 && (
             <p className="mt-2 text-xs text-subtle">
               {progress.pendingReferrals} invited{' '}

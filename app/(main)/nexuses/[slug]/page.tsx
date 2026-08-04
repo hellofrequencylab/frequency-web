@@ -14,6 +14,7 @@ import { updateNexusField } from '../admin-actions'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 type NexusDetail = {
   id: string
@@ -160,12 +161,13 @@ export default async function NexusPage({
               {totalMembers} / {nexus.member_cap} members · {hubs.length} hubs
             </span>
             {/* Nexus capacity bar */}
-            <div className="mt-2 h-1.5 max-w-xs rounded-full bg-surface-elevated overflow-hidden">
-              <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{ width: `${Math.min(100, Math.round((totalMembers / nexus.member_cap) * 100))}%` }}
-              />
-            </div>
+            <ProgressTrack
+              value={totalMembers}
+              max={nexus.member_cap}
+              animate
+              className="mt-2 max-w-xs"
+              label={`${totalMembers} of ${nexus.member_cap} members`}
+            />
           </>
         }
       >

@@ -16,6 +16,7 @@ import { RewardsArt, StreakArt, StatsArt, DispatchArt } from './reveal-art'
 import type { RevealPayload } from '@/lib/on-air'
 import { achievedTier, TIER_LABELS, TIER_ORDER, TIER_FLOOR_MIN } from '@/lib/practices/tiers'
 import { depthStreakLine } from '@/lib/practices/depth-streak'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 const fmtMin = (sec: number) => {
   const m = Math.round(sec / 60)
@@ -401,9 +402,7 @@ function StreakPanel({ payload }: { payload: RevealPayload }) {
       </p>
       {streak.nextMilestone && (
         <div className="mt-5">
-          <div className="h-2 overflow-hidden rounded-full bg-border/60">
-            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
-          </div>
+          <ProgressTrack value={pct} label="Progress to the next streak milestone" size="lg" track="border" animate />
           <p className="mt-2 text-xs text-subtle">
             {streak.toNext} {streak.toNext === 1 ? 'day' : 'days'} to {streak.nextMilestone.label}
           </p>

@@ -6,6 +6,7 @@ import {
   Zap, Gem, Flame, X, Target, Sparkles, CheckCircle2, ArrowRight, Lock,
 } from 'lucide-react'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // ── Data shape (assembled server-side in right-sidebar.tsx) ───────────────────
 
@@ -191,12 +192,12 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
               : 'Top rank reached'}
           </span>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated">
-          <div
-            className="h-full rounded-full bg-primary"
-            style={{ width: `${rankProgress.nextLabel ? Math.min(100, Math.max(2, rankProgress.pct)) : 100}%` }}
-          />
-        </div>
+        <ProgressTrack
+          value={rankProgress.nextLabel ? rankProgress.pct : 100}
+          minVisible={2}
+          label="Progress to the next rank"
+          className="w-full"
+        />
       </div>
 
       {/* Current arc */}
@@ -212,9 +213,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
               <span className="truncate text-xs font-semibold text-text">{arc.chain}</span>
             </div>
             <p className="mt-0.5 mb-1.5 truncate text-2xs text-muted">{arc.step}</p>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
-              <div className="h-full rounded-full bg-signal-strong" style={{ width: `${Math.min(100, Math.max(2, arc.pct))}%` }} />
-            </div>
+            <ProgressTrack value={arc.pct} minVisible={2} label={`${arc.chain} progress`} tone="signal" track="surface" className="w-full" />
           </div>
         </div>
       )}

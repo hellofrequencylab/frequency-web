@@ -739,6 +739,8 @@ function ProfileStandingCard({
             <span className="font-semibold text-text">Climbing to {next.label}</span>
             <span className="tabular-nums text-subtle">{zapsToNext.toLocaleString()} ⚡ to go</span>
           </div>
+          {/* Left ad-hoc: ProgressTrack's `track` vocabulary has no warm/warning track, and this
+              rank-climb bar reads against the Zap tone rather than a neutral grey one. */}
           <div className="h-2 overflow-hidden rounded-full bg-warning-bg/60">
             <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
           </div>

@@ -6,6 +6,7 @@ import type { ChallengeDifficulty } from '@/lib/gamification'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { ExpressionAction } from '@/app/(main)/crew/challenges/expression-action'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 type ChallengeRow = {
   id: string
@@ -89,12 +90,7 @@ export async function ChallengesSeason() {
             <p className="text-3xl font-bold leading-none tabular-nums text-text">{completedPct}%</p>
           </div>
         </div>
-        <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-surface-elevated">
-          <div
-            className="h-full rounded-full bg-primary transition-all duration-700"
-            style={{ width: `${completedPct}%` }}
-          />
-        </div>
+        <ProgressTrack value={completedPct} label="Season completion" size="xl" animate className="mt-3" />
 
         {/* KPI tiles */}
         <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">

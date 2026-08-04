@@ -11,6 +11,7 @@ import { relativeTime } from '@/lib/utils'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { SpaceReviewsData, SpaceReviewItem, SpaceReviewResponse } from '@/lib/spaces/content-data'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // THE REVIEWS TAB body (redesign). A best-in-class review experience: a rating summary with a per-star
 // distribution, a sortable review wall where each member card carries a Member badge + relative date,
@@ -143,13 +144,12 @@ export function SpaceReviews({
                       {star}
                       <Star className="h-3 w-3 fill-subtle text-subtle" aria-hidden />
                     </span>
-                    <span
-                      className="h-2 flex-1 overflow-hidden rounded-full bg-surface-elevated"
-                      role="img"
-                      aria-label={`${star} star: ${n} review${n === 1 ? '' : 's'}`}
-                    >
-                      <span className="block h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
-                    </span>
+                    <ProgressTrack
+                      value={pct}
+                      label={`${star} star: ${n} review${n === 1 ? '' : 's'}`}
+                      size="lg"
+                      className="flex-1"
+                    />
                     <span className="w-6 shrink-0 text-right text-xs tabular-nums text-subtle">{n}</span>
                   </div>
                 )

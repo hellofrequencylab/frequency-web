@@ -9,6 +9,7 @@ import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-rank
 import { STREAK_MILESTONES, streakProgress } from '@/lib/streak'
 import type { Practice, PartialPracticeToday } from '@/lib/practices'
 import type { PillarCount } from '@/lib/pillars'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // The graduated home surface. Once a member finishes activation, the streak box
 // "levels up" into this: a multi-purpose journey guide + resource center that takes
@@ -127,12 +128,7 @@ export function JourneyBoard({
           {atRisk && !willFreezeProtect && (
             <span className="hidden truncate text-xs text-muted sm:inline">Log one practice today to keep it.</span>
           )}
-          <div className="h-1.5 min-w-8 flex-1 overflow-hidden rounded-full bg-surface">
-            <div
-              className="h-full rounded-full bg-primary transition-[width] duration-500"
-              style={{ width: `${p.pct}%` }}
-            />
-          </div>
+          <ProgressTrack value={p.pct} label="Journey progress" track="surface" animate className="min-w-8 flex-1" />
           <button
             type="button"
             onClick={toggle}
@@ -222,12 +218,7 @@ export function JourneyBoard({
 
         {/* Streak progress — slim bar + milestone pips. */}
         <div className="mt-3">
-          <div className="h-2 w-full overflow-hidden rounded-full bg-surface">
-            <div
-              className="h-full rounded-full bg-primary transition-[width] duration-500"
-              style={{ width: `${p.pct}%` }}
-            />
-          </div>
+          <ProgressTrack value={p.pct} label="Journey progress" size="lg" track="surface" animate className="w-full" />
           <div className="mt-2.5 flex items-center justify-between gap-1">
             {STREAK_MILESTONES.map((m) => {
               const hit = m.day <= streak

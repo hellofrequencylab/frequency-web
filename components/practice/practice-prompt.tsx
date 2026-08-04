@@ -6,6 +6,7 @@ import { Sparkles, Flame, Check, ChevronDown } from 'lucide-react'
 import { LogPracticeButton } from './log-practice-button'
 import { STREAK_MILESTONES, streakProgress } from '@/lib/streak'
 import type { Practice, PartialPracticeToday } from '@/lib/practices'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 const COLLAPSE_KEY = 'fq_streak_collapsed'
 
@@ -69,9 +70,7 @@ export function PracticePrompt({
               {p.maxed ? '· legend' : p.next ? `· ${p.toNext} to ${p.next.day}-day` : ''}
             </span>
           </p>
-          <div className="ml-auto h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-surface">
-            <div className="h-full rounded-full bg-primary" style={{ width: `${p.pct}%` }} />
-          </div>
+          <ProgressTrack value={p.pct} label="Streak progress" track="surface" className="ml-auto w-16 shrink-0" />
           <button
             type="button"
             onClick={toggle}
@@ -124,12 +123,7 @@ export function PracticePrompt({
 
       {/* Progress bar — always shown (slim); checkpoints only when expanded. */}
       <div className="mt-2.5">
-        <div className="h-2 w-full overflow-hidden rounded-full bg-surface">
-          <div
-            className="h-full rounded-full bg-primary transition-[width] duration-500"
-            style={{ width: `${p.pct}%` }}
-          />
-        </div>
+        <ProgressTrack value={p.pct} label="Streak progress" size="lg" track="surface" animate className="w-full" />
 
         {!collapsed && (
           <div className="mt-2.5 flex items-center justify-between gap-1">

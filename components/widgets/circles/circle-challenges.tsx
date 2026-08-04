@@ -1,6 +1,7 @@
 import { Trophy } from 'lucide-react'
 import { getCircleContext } from '@/lib/circles/active-circle'
 import { getCircleChallenges } from '@/lib/circles/challenges'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // The movable "Challenges" block (the `circle-challenges` layout module, paired with the Engage
 // editor). A zero-prop self-fetching RSC reading the active circle from the request-scoped context
@@ -34,9 +35,7 @@ export const CircleChallengesBlock = async () => {
                   {c.membersCompleted} of {c.memberCount} done
                 </span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-surface-elevated">
-                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
-              </div>
+              <ProgressTrack value={pct} label={`${c.membersCompleted} of ${c.memberCount} done`} size="lg" animate />
             </li>
           )
         })}

@@ -9,6 +9,7 @@ import { DashboardTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ProgressTrack } from '@/components/ui/progress-track'
 import { ChartCard, TrendArea, WeekBars, RingGauge } from '@/components/admin/spark-charts'
 import { getLibraryHealth, type FunnelMetrics } from '@/lib/practices/health'
 
@@ -237,12 +238,13 @@ function Funnel({ funnel }: { funnel: FunnelMetrics }) {
               <span className="ml-1.5 text-2xs">{Math.round(s.share * 100)}%</span>
             </span>
           </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-surface-elevated">
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${Math.max(s.share * 100, s.value > 0 ? 2 : 0)}%` }}
-            />
-          </div>
+          <ProgressTrack
+            value={s.share * 100}
+            size="xl"
+            minVisible={2}
+            animate
+            label={`${s.label}: ${Math.round(s.share * 100)}%`}
+          />
         </div>
       ))}
     </div>

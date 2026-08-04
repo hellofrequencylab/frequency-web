@@ -8,6 +8,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { TIER_CONFIG, CATEGORY_CONFIG } from '@/lib/gamification'
 import type { AchievementCategory, AchievementTier } from '@/lib/gamification'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // Vault layout module: Your Awards — the badge collection. Awards sit with the Trophy Case: the case
 // holds finished Journeys and season trophies; the badges are everything else you've earned by
@@ -90,9 +91,7 @@ function AwardsCollection({
           <span className="text-xs font-medium text-muted">Collection Progress</span>
           <span className="text-xs text-subtle">{stats.earned} of {stats.total}</span>
         </div>
-        <div className="h-2.5 overflow-hidden rounded-full bg-surface-elevated">
-          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${earnedPct}%` }} />
-        </div>
+        <ProgressTrack value={earnedPct} label={`${stats.earned} of ${stats.total} awards earned`} size="xl" animate />
       </div>
 
       {/* Badge categories. */}
