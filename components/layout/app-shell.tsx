@@ -1081,8 +1081,6 @@ function MobileLeftDrawer({
   onClose,
   role,
   identityRole,
-  realRole,
-  previewVisitor = false,
   operatorContext,
   availableContexts = [],
   profile,
@@ -1097,17 +1095,12 @@ function MobileLeftDrawer({
   sections = NAV_SECTIONS,
   menuDriven = false,
   mobileStats,
-  dock,
 }: {
   open: boolean
   onClose: () => void
   role: CommunityRole | null
   /** The viewer's actual community role — drives the identity badge (not gated). */
   identityRole: CommunityRole
-  /** True DB role (ignores any view-as override) — gates the janitor View-as control. */
-  realRole: CommunityRole
-  /** Janitor previewing as a logged-out visitor — flows into View-as. */
-  previewVisitor?: boolean
   /** Operator-identity context (framing) — powers the mobile context switcher. */
   operatorContext?: OperatorContext
   /** Contexts the caller may switch into (server-derived). */
@@ -1129,11 +1122,6 @@ function MobileLeftDrawer({
   /** The game-stats block (MobileGameStats). The drawer's bottom cluster is the < 768 home of
    *  the score; from md it is the bottom-right Vault tab (`dock`). Exactly one per viewport. */
   mobileStats?: React.ReactNode
-  /** The bottom-right Vault tab (three-docks law, owner ruling 2026-08-04). Rendered as a
-   *  SIBLING of the shell, not inside the rail column: that column is lg:flex and the tab must
-   *  exist from md. Gated on showSidebar, the same flag that keeps it off /admin, where the
-   *  operator page dock owns these exact coordinates. */
-  dock?: React.ReactNode
 }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -2157,8 +2145,6 @@ export default function AppShell({
           onClose={() => setDrawerOpen(false)}
           role={gateRole}
           identityRole={role}
-          realRole={effectiveRealRole}
-          previewVisitor={previewVisitor}
           operatorContext={operatorContext}
           availableContexts={availableContexts}
           profile={profile}
@@ -2173,7 +2159,6 @@ export default function AppShell({
           sections={navSections}
           menuDriven={menuDriven}
           mobileStats={mobileStats}
-          dock={dock}
         />
       )}
 

@@ -49,14 +49,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 3851,
+      "baseline": 3853,
       "frozen": {
         "at": "2026-08-04",
-        "value": 3851,
-        "direction": "lowered",
+        "value": 3853,
+        "direction": "raised",
         "basis": "d2a53ce6b015",
-        "reason": "Radius adoption sweep: rounded-full -> rounded-pill site-wide (value-identical, --radius-pill is 9999px in all five scopes), plus rounded-xl -> rounded-card on lines that PROVE the element is a card (border/bg-surface/lift present, button/input absent). Kit primitives hand-mapped. literal-radius 5413 -> 3851.",
-        "from": 5413
+        "reason": "The two loading spinners moved back from rounded-pill to rounded-full. --radius-pill is runtime-editable in Theme Studio (feel: 'length', so an operator can set it to 4px and it validates); --radius-full is a fixed literal, deliberately not var-bridged, precisely so a circle stays a circle. A spinner MUST stay circular, so rounded-full is correct there and the +2 is the price of that correctness.",
+        "from": 3851
       },
       "history": [
         {
@@ -79,6 +79,13 @@
           "to": 3851,
           "direction": "lowered",
           "reason": "Radius adoption sweep: rounded-full -> rounded-pill site-wide (value-identical, --radius-pill is 9999px in all five scopes), plus rounded-xl -> rounded-card on lines that PROVE the element is a card (border/bg-surface/lift present, button/input absent). Kit primitives hand-mapped. literal-radius 5413 -> 3851."
+        },
+        {
+          "at": "2026-08-04",
+          "from": 3851,
+          "to": 3853,
+          "direction": "raised",
+          "reason": "The two loading spinners moved back from rounded-pill to rounded-full. --radius-pill is runtime-editable in Theme Studio (feel: 'length', so an operator can set it to 4px and it validates); --radius-full is a fixed literal, deliberately not var-bridged, precisely so a circle stays a circle. A spinner MUST stay circular, so rounded-full is correct there and the +2 is the price of that correctness."
         }
       ]
     },

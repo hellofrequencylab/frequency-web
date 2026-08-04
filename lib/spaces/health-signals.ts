@@ -25,9 +25,6 @@ interface MemberSignal {
   newestJoinAt: string | null
 }
 
-/** A raw `space_members` projection — only the three columns the fold needs. */
-type MemberSignalRow = { space_id: string; status: string; created_at: string }
-
 /**
  * ONE grouped read over space_members for every Space, folded per space_id in memory. Returns a Map
  * keyed by space id -> its MemberSignal. FAIL-SAFE: a missing/unmigrated table yields an EMPTY map, so

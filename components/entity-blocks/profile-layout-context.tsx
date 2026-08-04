@@ -175,7 +175,16 @@ export function EntityLayoutProvider({
         if (now - lastPushAt.current > COALESCE_MS) {
           history.current.push(latest.current)
           if (history.current.length > HISTORY_MAX) history.current.shift()
-          if (!canUndo) setCanUndo(true)
+          // Unconditional, and it must stay that way. This read `if (!canUndo)` as a
+          // cheap guard against a redundant setState, which made `apply` depend on
+          // `canUndo` while its dep array is [flush] -- so the closure kept whatever
+          // `canUndo` was when it was built. `undo` (below) sets canUndo back to FALSE
+          // once it drains the stack, and the stale closure then still believed it was
+          // true and skipped this line: history had entries, the Undo button stayed
+          // disabled, and the only way out was a remount. React already bails out of a
+          // re-render when the value is unchanged, so the guard was never buying
+          // anything to begin with.
+          setCanUndo(true)
         }
         lastPushAt.current = now
       }

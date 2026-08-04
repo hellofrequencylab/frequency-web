@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
-  Zap, Gem, Flame, X, Target, Sparkles, CheckCircle2, ArrowRight, Lock, ChevronUp,
+  Zap, Gem, Flame, Target, Sparkles, CheckCircle2, ArrowRight, Lock, ChevronUp,
 } from 'lucide-react'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { ProgressTrack } from '@/components/ui/progress-track'
