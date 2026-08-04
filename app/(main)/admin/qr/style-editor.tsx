@@ -298,11 +298,12 @@ export function StyleEditor({
     return (
       <div className="space-y-4">
         <div
-          className="mx-auto aspect-square w-full max-w-[220px] rounded-xl border border-border bg-white p-2 shadow-sm [&>svg]:h-full [&>svg]:w-full"
+          // // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
+          className="mx-auto aspect-square w-full max-w-[220px] rounded-xl border border-border bg-white p-2 lift-1 [&>svg]:h-full [&>svg]:w-full"
           dangerouslySetInnerHTML={{ __html: svg }}
         />
         <div>
-          <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wider text-subtle">Presets</p>
+          <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wider text-muted">Presets</p>
           {presets}
           {warningsBox}
         </div>
@@ -331,6 +332,7 @@ export function StyleEditor({
         {renderCompact({
           preview: (
             <div
+              // // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
               className="aspect-square w-40 rounded-lg border border-border bg-white p-1.5 [&>svg]:h-full [&>svg]:w-full"
               dangerouslySetInnerHTML={{ __html: svg }}
             />
@@ -359,6 +361,7 @@ export function StyleEditor({
         {/* Live preview */}
         <div className="shrink-0">
           <div
+            // // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
             className="w-40 h-40 mx-auto rounded-lg border border-border bg-white p-1.5 [&>svg]:w-full [&>svg]:h-full"
             dangerouslySetInnerHTML={{ __html: svg }}
           />
@@ -379,7 +382,7 @@ export function StyleEditor({
 function Group({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="space-y-2">
-      <p className="text-3xs font-semibold uppercase tracking-wider text-subtle">{label}</p>
+      <p className="text-3xs font-semibold uppercase tracking-wider text-muted">{label}</p>
       {children}
     </div>
   )

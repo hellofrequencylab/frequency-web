@@ -77,7 +77,7 @@ function Layout({
 }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-canvas px-6 py-12">
-      <div className="max-w-md w-full bg-surface border border-border rounded-2xl shadow-sm p-8">
+      <div className="max-w-md w-full bg-surface border border-border rounded-2xl lift-1 p-8">
         <Link href="/" className="inline-block text-xl font-black tracking-tight text-text mb-6">
           frequency
         </Link>

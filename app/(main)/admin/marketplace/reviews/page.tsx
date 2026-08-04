@@ -36,7 +36,7 @@ function ReviewRow({ r }: { r: ModeratedReview }) {
         </div>
       </div>
       {r.body && <p className="mt-2 whitespace-pre-wrap text-sm text-muted">{r.body}</p>}
-      <p className="mt-1 text-2xs text-subtle">
+      <p className="mt-1 text-2xs text-muted">
         {r.reviewer} · {when}
       </p>
       <div className="mt-3">

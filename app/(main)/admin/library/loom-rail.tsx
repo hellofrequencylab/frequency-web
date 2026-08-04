@@ -64,7 +64,7 @@ function Row({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-1 mt-4 px-2.5 text-2xs font-semibold uppercase tracking-wide text-subtle first:mt-0">{children}</p>
+    <p className="mb-1 mt-4 px-2.5 text-2xs font-semibold uppercase tracking-wide text-muted first:mt-0">{children}</p>
   )
 }
 
@@ -197,7 +197,7 @@ export function LoomRail({
         ))}
 
         <div className="mb-1 mt-4 flex items-center justify-between px-2.5">
-          <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Collections</p>
+          <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Collections</p>
           <button
             type="button"
             onClick={newCollection}

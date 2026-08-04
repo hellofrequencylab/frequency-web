@@ -406,7 +406,7 @@ function TierManager({
                       </span>
                     )}
                     {!t.active && (
-                      <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-subtle">
+                      <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
                         Retired
                       </span>
                     )}

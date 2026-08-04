@@ -29,7 +29,7 @@ export default async function SignInPage({
       title="Sign in"
       subtitle="A place you’re actually missed when you’re gone."
     >
-      <div className="mx-auto mt-2 w-full max-w-sm rounded-2xl border border-white/10 bg-surface/95 p-6 text-left shadow-pop backdrop-blur">
+      <div className="mx-auto mt-2 w-full max-w-sm rounded-2xl border border-on-ink/10 bg-surface/95 p-6 text-left shadow-pop backdrop-blur">
         {error && (
           <div className="mb-4 rounded-lg bg-danger-bg px-4 py-3 text-sm text-danger ring-1 ring-danger">
             {decodeURIComponent(error)}
@@ -50,12 +50,12 @@ export default async function SignInPage({
               autoComplete="email"
               required
               placeholder="you@example.com"
-              className="mt-1 block w-full rounded-lg border border-border-strong bg-surface px-3 py-2.5 text-sm text-text placeholder-subtle shadow-sm focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30"
+              className="mt-1 block w-full rounded-lg border border-border-strong bg-surface px-3 py-2.5 text-sm text-text placeholder-subtle lift-1 focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30"
             />
           </div>
           <button
             type="submit"
-            className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+            className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
           >
             Send magic link
           </button>
@@ -75,7 +75,7 @@ export default async function SignInPage({
           {nextValue && <input type="hidden" name="next" value={nextValue} />}
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-border-strong bg-surface px-4 py-3 text-sm font-medium text-text shadow-sm transition-colors hover:bg-surface-elevated"
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-border-strong bg-surface px-4 py-3 text-sm font-medium text-text lift-1 transition-colors hover:bg-surface-elevated"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />

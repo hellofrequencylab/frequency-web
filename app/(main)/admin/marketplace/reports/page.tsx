@@ -23,7 +23,7 @@ function ReportRow({ r }: { r: MarketplaceReport }) {
       </div>
       <p className="mt-2 text-sm font-medium text-text">{r.reason}</p>
       {r.detail && <p className="mt-1 text-sm text-muted">{r.detail}</p>}
-      <p className="mt-1 text-2xs text-subtle">target {r.targetKind}:{r.targetId.slice(0, 8)}</p>
+      <p className="mt-1 text-2xs text-muted">target {r.targetKind}:{r.targetId.slice(0, 8)}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {r.status !== 'reviewing' && (
           <form action={moderateReportAction.bind(null, r.id, 'reviewing')}>

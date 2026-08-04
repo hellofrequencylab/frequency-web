@@ -102,7 +102,7 @@ export function PreferenceCenter({
                 aria-label={meta.label}
                 className={`relative inline-flex items-center justify-center w-10 h-6 rounded-full transition-colors shrink-0 ${subscribed ? 'bg-primary' : 'bg-border hover:bg-border-strong'}`}
               >
-                <span className={`inline-block w-4 h-4 bg-white rounded-full shadow transform transition-transform ${subscribed ? 'translate-x-2' : '-translate-x-2'}`} />
+                <span className={`inline-block w-4 h-4 bg-surface rounded-full shadow transform transition-transform ${subscribed ? 'translate-x-2' : '-translate-x-2'}`} />
               </button>
             </div>
           )

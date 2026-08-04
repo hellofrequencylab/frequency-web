@@ -194,18 +194,18 @@ export default async function PracticeLibraryHealthPage() {
             <ol className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
               {contributors.map((c, i) => (
                 <li key={c.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <span className="w-5 shrink-0 text-xs font-bold tabular-nums text-subtle">{i + 1}</span>
+                  <span className="w-5 shrink-0 text-xs font-bold tabular-nums text-muted">{i + 1}</span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-text">{c.displayName}</p>
-                    {c.handle && <p className="truncate text-xs text-subtle">@{c.handle}</p>}
+                    {c.handle && <p className="truncate text-xs text-muted">@{c.handle}</p>}
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="text-sm font-bold tabular-nums text-text">{c.published}</p>
-                    <p className="text-2xs text-subtle">published</p>
+                    <p className="text-2xs text-muted">published</p>
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="text-sm font-semibold tabular-nums text-muted">{c.reach30d}</p>
-                    <p className="text-2xs text-subtle">logs 30d</p>
+                    <p className="text-2xs text-muted">logs 30d</p>
                   </div>
                 </li>
               ))}
@@ -232,7 +232,7 @@ function Funnel({ funnel }: { funnel: FunnelMetrics }) {
         <div key={s.label}>
           <div className="mb-1 flex items-baseline justify-between gap-2">
             <span className="text-xs font-medium text-muted">{s.label}</span>
-            <span className="text-xs tabular-nums text-subtle">
+            <span className="text-xs tabular-nums text-muted">
               {s.value}
               <span className="ml-1.5 text-2xs">{Math.round(s.share * 100)}%</span>
             </span>
@@ -270,7 +270,7 @@ function PerformerList({
             <p className={`text-sm font-bold tabular-nums ${idle ? 'text-subtle' : 'text-text'}`}>
               {idle ? r.logs_total : r.logs_30d}
             </p>
-            <p className="text-2xs text-subtle">logs {metric}</p>
+            <p className="text-2xs text-muted">logs {metric}</p>
           </div>
         </li>
       ))}
@@ -283,7 +283,7 @@ function SlaBucket({ label, sub, value, tone }: { label: string; sub: string; va
     <div className="rounded-xl bg-surface-elevated/60 px-2 py-3">
       <p className={`text-xl font-extrabold tabular-nums ${tone}`}>{value}</p>
       <p className="mt-0.5 text-xs font-medium text-muted">{label}</p>
-      <p className="text-2xs text-subtle">{sub}</p>
+      <p className="text-2xs text-muted">{sub}</p>
     </div>
   )
 }

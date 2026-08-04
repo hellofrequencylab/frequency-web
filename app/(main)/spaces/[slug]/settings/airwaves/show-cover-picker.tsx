@@ -79,12 +79,12 @@ export function ShowCoverPicker({
           )}
         </div>
       </div>
-      <p className="text-2xs text-subtle">
+      <p className="text-2xs text-muted">
         Square art works best. Apple and Spotify want at least 1400 by 1400 pixels.
       </p>
 
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="Choose cover art from the Loom" className="max-w-lg">
-        <div className="rounded-2xl border border-border bg-canvas p-4 shadow-lg">
+        <div className="rounded-2xl border border-border bg-canvas p-4 lift-3">
           <div className="mb-3 flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold text-text">Your Loom</h2>
             <button

@@ -297,7 +297,7 @@ export default async function RoomPage({
             the roster, each wearing the shared PresenceDot. */}
         <aside className="hidden lg:flex w-64 shrink-0 flex-col border-l border-border bg-surface/30 dark:bg-canvas/30">
           <div className="px-4 py-3 border-b border-border">
-            <h3 className="text-2xs font-semibold uppercase tracking-wider text-subtle mb-2">
+            <h3 className="text-2xs font-semibold uppercase tracking-wider text-muted mb-2">
               In the room ({r.member_count})
             </h3>
             {isMember && <InviteToRoomButton roomId={roomId} />}

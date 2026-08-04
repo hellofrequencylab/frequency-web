@@ -97,7 +97,7 @@ export function DynamicLinks({
   return (
     <div className="space-y-6">
       {!hideCreate && (
-        <div className="rounded-2xl border border-border bg-surface shadow-sm">
+        <div className="rounded-2xl border border-border bg-surface lift-1">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <div>
               <h2 className="text-sm font-bold text-text">New dynamic link</h2>
@@ -204,7 +204,7 @@ function Folder({
   // group starts collapsed to keep the page-owned folders front-and-centre.
   const [open, setOpen] = useState(!unfiled)
   return (
-    <div className="rounded-2xl border border-border bg-surface-elevated/30 shadow-sm">
+    <div className="rounded-2xl border border-border bg-surface-elevated/30 lift-1">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -285,10 +285,11 @@ function LinkCard({
           : link.target_url ?? '–'
 
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+    <div className="rounded-2xl border border-border bg-surface lift-1 overflow-hidden">
       <div className="flex flex-col sm:flex-row gap-4 p-4">
         <div className="shrink-0 mx-auto sm:mx-0">
           <div
+            // // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
             className="w-28 h-28 rounded-lg border border-border bg-white p-1.5 [&>svg]:w-full [&>svg]:h-full"
             dangerouslySetInnerHTML={{ __html: link.svg }}
           />

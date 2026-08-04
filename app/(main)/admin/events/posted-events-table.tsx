@@ -42,7 +42,7 @@ const actionBtn =
 
 export function PostedEventsTable({ rows, canManage }: { rows: PostedEventRow[]; canManage: boolean }) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-sm">
+    <div className="overflow-x-auto rounded-2xl border border-border bg-surface lift-1">
       <table className="w-full min-w-[720px] border-collapse">
         <thead>
           <tr className="border-b border-border">
@@ -383,6 +383,7 @@ function RemovePanel({
           type="button"
           onClick={handleRemove}
           disabled={pending || !reason.trim()}
+          // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
           className="shrink-0 rounded-lg bg-danger px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-50"
         >
           {pending ? 'Removing…' : 'Remove event'}

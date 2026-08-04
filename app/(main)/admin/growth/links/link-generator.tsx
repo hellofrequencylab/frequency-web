@@ -117,12 +117,12 @@ export function LinkGenerator() {
             placeholder="https://example.com/offer or /events/spring"
             inputMode="url"
           />
-          <p className="text-2xs text-subtle">A full web address, or a link on this site that starts with /.</p>
+          <p className="text-2xs text-muted">A full web address, or a link on this site that starts with /.</p>
         </div>
 
         <div className="space-y-1.5">
           <Label>Campaign tags</Label>
-          <p className="text-2xs text-subtle">
+          <p className="text-2xs text-muted">
             Optional UTM tags, added to the destination so scans attribute to this campaign.
           </p>
           <div className="mt-2 grid gap-3 sm:grid-cols-2">
@@ -145,7 +145,7 @@ export function LinkGenerator() {
         <div className="space-y-1.5">
           <Label htmlFor="lg-slug">Custom short link (optional)</Label>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-subtle">/q/</span>
+            <span className="text-sm text-muted">/q/</span>
             <Input
               id="lg-slug"
               value={slug}
@@ -156,7 +156,7 @@ export function LinkGenerator() {
               placeholder="spring-launch"
             />
           </div>
-          <p className="text-2xs text-subtle">Letters, numbers, and hyphens. Leave blank for a generated code.</p>
+          <p className="text-2xs text-muted">Letters, numbers, and hyphens. Leave blank for a generated code.</p>
         </div>
 
         {trackedPreview && (
@@ -192,11 +192,12 @@ export function LinkGenerator() {
           <p className="flex items-center gap-1.5 text-xs font-medium text-muted">
             <QrCode className="h-3.5 w-3.5" /> Preview
           </p>
+          {/* KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface. */}
           <div className="mt-3 flex items-center justify-center rounded-xl border border-border bg-white p-4">
             {previewSvg ? (
               <div className="h-[200px] w-[200px]" dangerouslySetInnerHTML={{ __html: previewSvg }} />
             ) : (
-              <div className="flex h-[200px] w-[200px] items-center justify-center text-center text-2xs text-subtle">
+              <div className="flex h-[200px] w-[200px] items-center justify-center text-center text-2xs text-muted">
                 Enter a destination to preview the code.
               </div>
             )}
@@ -204,7 +205,7 @@ export function LinkGenerator() {
 
           {result && (
             <div className="mt-4 space-y-2">
-              <p className="text-2xs uppercase tracking-wide text-subtle">Short link</p>
+              <p className="text-2xs uppercase tracking-wide text-muted">Short link</p>
               <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-elevated/60 p-2.5">
                 <code className="min-w-0 flex-1 truncate text-xs text-text">{result.shortUrl}</code>
                 <button
@@ -216,7 +217,7 @@ export function LinkGenerator() {
                   {copied === 'short' ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
                 </button>
               </div>
-              <p className="text-2xs text-subtle">
+              <p className="text-2xs text-muted">
                 Live and trackable now. Manage, restyle, or retire it from the QR Studio without reprinting.
               </p>
             </div>

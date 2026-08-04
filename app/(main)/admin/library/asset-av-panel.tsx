@@ -105,7 +105,7 @@ export function AssetAvPanel({
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           {pending ? 'Replacing…' : 'Replace file'}
         </button>
-        <p className="mt-1 text-2xs text-subtle">
+        <p className="mt-1 text-2xs text-muted">
           Swaps the file and keeps every reference. The old file is saved as a version.
         </p>
         {error && <p className="mt-1 text-xs text-danger">{error}</p>}
@@ -131,9 +131,9 @@ export function AssetAvPanel({
                 {usage.recordings.map((r) => (
                   <li key={r.recordingId} className="rounded-lg border border-border bg-surface px-2.5 py-1.5">
                     <span className="text-sm font-semibold text-text">{r.title}</span>
-                    <span className="ml-1.5 text-2xs text-subtle">{r.mediaKind}</span>
+                    <span className="ml-1.5 text-2xs text-muted">{r.mediaKind}</span>
                     {(r.hosts.length > 0 || r.isEpisode) && (
-                      <p className="mt-0.5 text-2xs text-subtle">
+                      <p className="mt-0.5 text-2xs text-muted">
                         {[...(r.isEpisode ? ['Show episode'] : []), ...r.hosts].join(' · ')}
                       </p>
                     )}

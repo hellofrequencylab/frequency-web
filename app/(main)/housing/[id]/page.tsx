@@ -228,7 +228,7 @@ export default async function HousingDetailPage({
         <dl className="mb-5 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
           {facts.map((f) => (
             <div key={f.label}>
-              <dt className="text-2xs font-semibold uppercase tracking-wide text-subtle">{f.label}</dt>
+              <dt className="text-2xs font-semibold uppercase tracking-wide text-muted">{f.label}</dt>
               <dd className="mt-0.5 text-sm font-medium text-text">{f.value}</dd>
             </div>
           ))}
@@ -237,7 +237,7 @@ export default async function HousingDetailPage({
 
       {detail && detail.amenities.length > 0 && (
         <div className="mb-5">
-          <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Amenities</p>
+          <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Amenities</p>
           <ul className="flex flex-wrap gap-2">
             {detail.amenities.map((a) => (
               <li key={a} className="rounded-full bg-surface-elevated px-2.5 py-0.5 text-xs font-medium text-text">
@@ -250,7 +250,7 @@ export default async function HousingDetailPage({
 
       {detail && detail.accessibility.length > 0 && (
         <div className="mb-5">
-          <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Accessibility</p>
+          <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Accessibility</p>
           <ul className="flex flex-wrap gap-2">
             {detail.accessibility.map((t) => (
               <li key={t} className="rounded-full bg-surface-elevated px-2.5 py-0.5 text-xs font-medium text-text">
@@ -263,7 +263,7 @@ export default async function HousingDetailPage({
 
       {rules.length > 0 && (
         <div className="mb-5">
-          <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Good to know</p>
+          <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Good to know</p>
           <ul className="flex flex-wrap gap-2">
             {rules.map((r) => (
               <li key={r} className="rounded-full bg-primary-bg px-2.5 py-0.5 text-xs font-medium text-primary-strong">

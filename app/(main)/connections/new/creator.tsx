@@ -534,6 +534,7 @@ export function Creator({ userId }: { userId: string }) {
                     type="button"
                     onClick={() => removeExtraFile(i)}
                     aria-label={`Remove extra image ${i + 1}`}
+                    // KEEP the black/white pair: A scrim chip painted on a photo thumbnail, not on a themed surface, so the monochrome pair stays.
                     className="absolute right-1 top-1 rounded-full bg-black/55 p-0.5 text-white transition-colors hover:bg-black/70"
                   >
                     <X className="h-3 w-3" />
@@ -599,6 +600,7 @@ export function Creator({ userId }: { userId: string }) {
               Upload opens the library. Shown when a slot is tapped. */}
           {pickSide && (
             <div
+              // KEEP bg-black/40: A modal backdrop scrim over whatever is behind it (same value components/ui/dialog.tsx uses), so it stays monochrome.
               className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center"
               onClick={() => setPickSide(null)}
               role="dialog"
@@ -606,7 +608,7 @@ export function Creator({ userId }: { userId: string }) {
               aria-label="Add a card photo"
             >
               <div
-                className="w-full max-w-sm space-y-1 rounded-t-2xl border border-border bg-surface p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-2xl sm:pb-2"
+                className="w-full max-w-sm space-y-1 rounded-t-2xl border border-border bg-surface p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lift-3 sm:rounded-2xl sm:pb-2"
                 onClick={(e) => e.stopPropagation()}
               >
                 <button
@@ -833,6 +835,7 @@ function CardSlot({
           </>
         )}
       </button>
+      {/* KEEP the black/white pair below: a scrim chip painted on a photo thumbnail, not on a themed surface. */}
       {thumb && (
         <span className="pointer-events-none absolute bottom-1 left-1 rounded bg-black/55 px-1.5 py-0.5 text-xs font-medium text-white">
           {label}

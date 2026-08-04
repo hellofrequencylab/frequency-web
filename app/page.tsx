@@ -281,39 +281,39 @@ function Splash({
         subtitle="Frequency is a Community Collective. Start a Circle, host Events, and grow a Space alongside people building the same thing. You keep 100% of your own bookings. We earn only on what the network sends you."
         footer={
           <>
-            <p className="mt-8 text-base font-semibold text-white/90">
+            <p className="mt-8 text-base font-semibold text-on-ink/90">
               0% on your own bookings, always. We earn only a small, shrinking network-only take-rate on what the network sends you.
             </p>
-            <p className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-white/70">
+            <p className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-on-ink/70">
               <span>Never a cut of your bookings</span>
-              <span aria-hidden className="text-white/25">·</span>
+              <span aria-hidden className="text-on-ink/25">·</span>
               <span>One honest price, no surprise invoices</span>
-              <span aria-hidden className="text-white/25">·</span>
+              <span aria-hidden className="text-on-ink/25">·</span>
               <span>Leave anytime with your data</span>
-              <span aria-hidden className="text-white/25">·</span>
+              <span aria-hidden className="text-on-ink/25">·</span>
               <span>See what the network earned you</span>
             </p>
-            <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-sm text-white/55">
+            <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-sm text-on-ink/55">
               <span>Member free</span>
-              <span aria-hidden className="text-white/25">·</span>
+              <span aria-hidden className="text-on-ink/25">·</span>
               <span>Crew {CREW_NOTE.fromLabel}</span>
-              <span aria-hidden className="text-white/25">·</span>
+              <span aria-hidden className="text-on-ink/25">·</span>
               <span>Business {P.businessList}</span>
-              <span aria-hidden className="text-white/25">·</span>
+              <span aria-hidden className="text-on-ink/25">·</span>
               <span>Collective {P.collectiveList}</span>
-              <span aria-hidden className="text-white/25">·</span>
+              <span aria-hidden className="text-on-ink/25">·</span>
               <span>Non Profit {P.nonprofit}</span>
-              <span aria-hidden className="text-white/25">·</span>
+              <span aria-hidden className="text-on-ink/25">·</span>
               <span>Independent {INDEPENDENT_PRICE}</span>
             </p>
-            <p className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/55">
-              <span className="font-semibold text-white/75">Free during the beta.</span>
-              <span aria-hidden className="text-white/25">·</span>
+            <p className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-on-ink/55">
+              <span className="font-semibold text-on-ink/75">Free during the beta.</span>
+              <span aria-hidden className="text-on-ink/25">·</span>
               <span>No card. Crew is pay what you want. Leave anytime.</span>
             </p>
-            <p className="mt-2 text-sm text-white/40">
+            <p className="mt-2 text-sm text-on-ink/40">
               The first Lab is taking root in {FOUNDING_PLACE}.{' '}
-              <Link href="/sign-in" className="underline hover:text-white/70 transition-colors">
+              <Link href="/sign-in" className="underline hover:text-on-ink/70 transition-colors">
                 Already a member? Sign in
               </Link>
             </p>
@@ -323,18 +323,18 @@ function Splash({
       >
         <div className="flex flex-col items-center justify-center gap-4">
           {referrer && (
-            <div className="inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white shadow-sm backdrop-blur-sm">
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-on-ink/20 bg-on-ink/10 px-4 py-2 text-sm text-on-ink lift-1 backdrop-blur-sm">
               {referrer.avatarUrl ? (
                 <Image
                   src={avatarSrc(referrer.avatarUrl)}
                   alt=""
                   width={28}
                   height={28}
-                  className="h-7 w-7 rounded-full object-cover ring-2 ring-white/30"
+                  className="h-7 w-7 rounded-full object-cover ring-2 ring-on-ink/30"
                   style={avatarFocusStyle(referrer.avatarUrl)}
                 />
               ) : (
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-xs font-bold">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-on-ink/20 text-xs font-bold">
                   {getInitials(referrer.displayName)}
                 </span>
               )}
@@ -349,7 +349,7 @@ function Splash({
           {referrer?.vcardEnabled && (
             <a
               href={`/people/${referrer.handle}/vcard`}
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm backdrop-blur-sm transition-colors hover:bg-white/15"
+              className="inline-flex items-center gap-1.5 rounded-full border border-on-ink/20 bg-on-ink/5 px-3.5 py-1.5 text-sm font-semibold text-on-ink lift-1 backdrop-blur-sm transition-colors hover:bg-on-ink/15"
             >
               Save {referrer.displayName.trim().split(/\s+/)[0]}&rsquo;s contact
             </a>
@@ -360,7 +360,7 @@ function Splash({
             </Button>
             <Link
               href={BETA_CTA_HREF}
-              className="text-sm font-semibold text-white/70 underline-offset-4 hover:text-white hover:underline"
+              className="text-sm font-semibold text-on-ink/70 underline-offset-4 hover:text-on-ink hover:underline"
             >
               {BETA_CTA_LABEL}
             </Link>
@@ -504,7 +504,7 @@ function Splash({
             <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary mb-5">
               Moonlight Beach · 2020
             </p>
-            <h2 className="font-display uppercase text-white text-5xl sm:text-6xl lg:text-8xl leading-[0.9] text-balance">
+            <h2 className="font-display uppercase text-on-ink text-5xl sm:text-6xl lg:text-8xl leading-[0.9] text-balance">
               It already
               <br />
               <span className="text-primary">happened once.</span>
@@ -512,12 +512,12 @@ function Splash({
           </Reveal>
           <div className="mt-12 grid gap-10 lg:grid-cols-12">
             <Reveal as="div" delay={100} className="lg:col-span-7 lg:col-start-6">
-              <div className="space-y-5 text-lg sm:text-xl text-white/85 leading-relaxed">
+              <div className="space-y-5 text-lg sm:text-xl text-on-ink/85 leading-relaxed">
                 <p>
                   A few people started gathering on the cliffs at Moonlight Beach to meditate, every
                   single morning. They kept showing up for more than 500 days straight.
                 </p>
-                <p className="text-white/70">
+                <p className="text-on-ink/70">
                   Over a thousand people came through. No app, no agenda, just a standing time and a
                   place to be. It proved the hunger is real, and that ordinary people can answer it.
                 </p>
@@ -532,24 +532,24 @@ function Splash({
           </div>
           <Reveal delay={200} className="mt-16 grid grid-cols-3 gap-6 max-w-2xl">
             <div>
-              <p className="font-display text-5xl sm:text-7xl text-white">
+              <p className="font-display text-5xl sm:text-7xl text-on-ink">
                 <CountUp value={500} />+
               </p>
-              <p className="mt-3 text-xs uppercase tracking-widest font-bold text-white/50">
+              <p className="mt-3 text-xs uppercase tracking-widest font-bold text-on-ink/50">
                 Mornings in a row
               </p>
             </div>
             <div>
-              <p className="font-display text-5xl sm:text-7xl text-white">
+              <p className="font-display text-5xl sm:text-7xl text-on-ink">
                 <CountUp value={1000} />+
               </p>
-              <p className="mt-3 text-xs uppercase tracking-widest font-bold text-white/50">
+              <p className="mt-3 text-xs uppercase tracking-widest font-bold text-on-ink/50">
                 People came through
               </p>
             </div>
             <div>
               <p className="font-display text-5xl sm:text-7xl text-primary">{MEMBER_PRICE}</p>
-              <p className="mt-3 text-xs uppercase tracking-widest font-bold text-white/50">
+              <p className="mt-3 text-xs uppercase tracking-widest font-bold text-on-ink/50">
                 To show up
               </p>
             </div>
@@ -866,7 +866,7 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
   )
 
   return (
-    <article className="rounded-2xl border border-border bg-surface shadow-sm hover:shadow-md transition-shadow">
+    <article className="rounded-2xl border border-border bg-surface lift-2">
       <div className="p-5">
         {a?.handle ? (
           <Link href={communityHref(`/people/${a.handle}`, false)} className="flex items-start gap-3 mb-3 group">
@@ -899,7 +899,7 @@ function EventRow({ event }: { event: LiveEvent }) {
   const { month, day } = eventDateBadge(event.starts_at)
   const dateStr = formatEventDate(event.starts_at)
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm">
+    <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface px-5 py-4 lift-1">
       <div className="shrink-0 flex h-12 w-12 flex-col items-center justify-center rounded-xl bg-primary-bg">
         <span className="text-3xs font-bold leading-none text-primary-strong">{month}</span>
         <span className="text-base font-bold leading-tight text-primary-strong">{day}</span>

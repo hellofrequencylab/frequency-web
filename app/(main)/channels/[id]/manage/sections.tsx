@@ -60,7 +60,7 @@ export async function ChannelHomeStrip({
   return (
     <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
       <div>
-        <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-subtle">People</p>
+        <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-muted">People</p>
         <div className="flex flex-wrap gap-1.5">
           <StatCard
             size="xs"
@@ -72,7 +72,7 @@ export async function ChannelHomeStrip({
         </div>
       </div>
       <div>
-        <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Practice</p>
+        <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-muted">Practice</p>
         <div className="flex flex-wrap gap-1.5">
           <StatCard
             size="xs"
@@ -84,7 +84,7 @@ export async function ChannelHomeStrip({
         </div>
       </div>
       <div>
-        <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Conversation</p>
+        <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-muted">Conversation</p>
         <div className="flex flex-wrap gap-1.5">
           <StatCard
             size="xs"
@@ -222,7 +222,7 @@ export async function CirclesSection({
   // not already here; the action re-gates channel.manage and the data layer
   // refuses a paused channel either way.
   const addForm = (
-    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
       <SectionHeader title={`Add a ${noun}`} />
       <p className="mb-3 text-sm text-muted">
         Bring an existing Circle into this Channel. It keeps its host, members, and events; it
@@ -337,7 +337,7 @@ export async function CirclesSection({
 // ── Program: attach a blueprint, or run the one it has ──────────────────────
 
 function ProgramCard({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">{children}</div>
+  return <div className="rounded-2xl border border-border bg-surface p-5 lift-1">{children}</div>
 }
 
 export async function ProgramSection({

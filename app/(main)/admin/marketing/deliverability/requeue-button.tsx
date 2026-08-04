@@ -20,7 +20,7 @@ export function RequeueButton({ kind, label }: { kind?: string; label: string })
           if (!confirm(`Requeue ${scope}? They will retry on the next drain.`)) return
           start(async () => setResult(await requeueDeadLetters(kind)))
         }}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-on-primary text-xs font-semibold px-3 py-1.5 shadow-sm transition-colors disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-on-primary text-xs font-semibold px-3 py-1.5 lift-1 transition-colors disabled:opacity-60"
       >
         <RefreshCw className={`h-3.5 w-3.5 ${pending ? 'animate-spin' : ''}`} />
         {pending ? 'Requeuing…' : label}
@@ -56,7 +56,7 @@ export function DiscardButton({ kind, label }: { kind?: string; label: string })
           if (!confirm(`Discard ${scope}? This is terminal: they will not retry. Use Requeue instead if the failure was a temporary outage.`)) return
           start(async () => setResult(await discardDeadLetters(kind)))
         }}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface hover:bg-surface-elevated text-muted hover:text-text text-xs font-semibold px-3 py-1.5 shadow-sm transition-colors disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface hover:bg-surface-elevated text-muted hover:text-text text-xs font-semibold px-3 py-1.5 lift-1 transition-colors disabled:opacity-60"
       >
         <Trash2 className={`h-3.5 w-3.5 ${pending ? 'animate-pulse' : ''}`} />
         {pending ? 'Discarding…' : label}

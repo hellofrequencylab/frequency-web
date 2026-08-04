@@ -208,7 +208,7 @@ export default async function ConversationPage({
         {isGroup && (
           <aside className="hidden lg:flex w-64 shrink-0 flex-col border-l border-border bg-surface/30 dark:bg-canvas/30">
             <div className="px-4 py-3 border-b border-border">
-              <h3 className="text-2xs font-semibold uppercase tracking-wider text-subtle">
+              <h3 className="text-2xs font-semibold uppercase tracking-wider text-muted">
                 People ({participants.length})
               </h3>
             </div>
@@ -228,7 +228,7 @@ export default async function ConversationPage({
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-text truncate">{p.display_name}</p>
-                      {p.id === myProfileId && <p className="text-3xs text-subtle">You</p>}
+                      {p.id === myProfileId && <p className="text-3xs text-muted">You</p>}
                     </div>
                   </Link>
                 </li>

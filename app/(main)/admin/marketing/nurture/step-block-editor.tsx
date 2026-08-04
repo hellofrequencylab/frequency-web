@@ -90,7 +90,7 @@ export function StepBlockEditor({
       <LayoutSeeder layout={initialLayout} />
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Email design</p>
+          <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Email design</p>
           <button
             type="button"
             onClick={() => setPreviewOpen((v) => !v)}

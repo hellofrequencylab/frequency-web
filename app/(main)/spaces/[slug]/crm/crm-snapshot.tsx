@@ -60,7 +60,7 @@ export async function SpaceCrmSnapshot({ slug }: { slug: string }) {
   const boardHref = `/spaces/${space.slug}/crm`
 
   return (
-    <section className="space-y-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <section className="space-y-3 rounded-2xl border border-border bg-surface p-4 lift-1">
       {/* A tight stat row: just the three numbers that read at a glance. */}
       <div className="grid grid-cols-3 gap-2">
         <StatCard size="sm" label="Open deals" value={metrics.openCount} icon={Briefcase} />
@@ -111,7 +111,7 @@ function CrmUpsell({
   usage?: number
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <section className="rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="flex items-start gap-3">
         <span className="mt-0.5 rounded-lg bg-surface-elevated p-2 text-muted">
           <Gauge className="h-4 w-4" aria-hidden />

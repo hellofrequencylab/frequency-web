@@ -24,7 +24,7 @@ export function FunnelsManager({ campaigns }: { campaigns: Campaign[] }) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-border bg-surface shadow-sm">
+      <section className="rounded-2xl border border-border bg-surface lift-1">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="text-sm font-bold text-text">New campaign</h2>
           {!creating && (
@@ -76,7 +76,7 @@ function CampaignRow({ campaign }: { campaign: Campaign }) {
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 lift-1">
         <Link href={`/admin/marketing/funnels/${campaign.id}`} className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h3 className="truncate text-sm font-bold text-text">{campaign.name}</h3>

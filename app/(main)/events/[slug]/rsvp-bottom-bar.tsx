@@ -49,7 +49,7 @@ export function RsvpBottomBar({
       </div>
 
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="RSVP" className="max-w-md">
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-xl">
+        <div className="rounded-2xl border border-border bg-surface p-5 lift-3">
           {children}
         </div>
       </Dialog>

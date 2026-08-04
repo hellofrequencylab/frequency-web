@@ -29,7 +29,7 @@ export async function FunnelRollup({ promise }: { promise: Promise<FunnelRollupS
           <div key={s.stageId}>
             <div className="flex items-baseline justify-between gap-2 text-sm">
               <span className="truncate text-text">
-                <span className="text-2xs uppercase tracking-wide text-subtle">{s.kind}</span>{' '}
+                <span className="text-2xs uppercase tracking-wide text-muted">{s.kind}</span>{' '}
                 {s.label}
               </span>
               <span className="shrink-0 tabular-nums text-muted">

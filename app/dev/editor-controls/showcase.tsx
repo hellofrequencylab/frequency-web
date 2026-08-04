@@ -37,7 +37,7 @@ function Demo({ title, note, value, children }: { title: string; note?: string; 
           <code className="rounded bg-surface-elevated px-1.5 py-0.5 text-3xs text-muted">{value}</code>
         )}
       </div>
-      {note && <p className="text-2xs text-subtle">{note}</p>}
+      {note && <p className="text-2xs text-muted">{note}</p>}
       <div className="max-w-xs">{children}</div>
     </div>
   )
@@ -173,7 +173,7 @@ function PanelDemo({ id, label }: { id: string; label: string }) {
         onToggleHide={() => setHidden((h) => !h)}
       />
       <details className="[&_summary::-webkit-details-marker]:hidden">
-        <summary className="cursor-pointer text-2xs font-semibold uppercase tracking-wide text-subtle">
+        <summary className="cursor-pointer text-2xs font-semibold uppercase tracking-wide text-muted">
           State
         </summary>
         <pre className="mt-1 overflow-x-auto rounded bg-surface-elevated p-2 text-3xs text-muted">
@@ -209,7 +209,7 @@ function HeroPanelDemo() {
         ))}
       </div>
       <details className="[&_summary::-webkit-details-marker]:hidden">
-        <summary className="cursor-pointer text-2xs font-semibold uppercase tracking-wide text-subtle">
+        <summary className="cursor-pointer text-2xs font-semibold uppercase tracking-wide text-muted">
           State
         </summary>
         <pre className="mt-1 overflow-x-auto rounded bg-surface-elevated p-2 text-3xs text-muted">

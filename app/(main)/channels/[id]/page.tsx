@@ -403,7 +403,7 @@ export default async function ChannelPage({
                the Space-page lockup.
             4. SUBTITLE: one quiet on-ink line on the cover (the value prop).
             5. ACTIONS: bottom-right ON the cover. ONE filled primary CTA (Tune in, the Space
-               pattern: accent fill + shadow-md so it lifts off the photo); secondaries use the
+               pattern: accent fill + lift-1 so it lifts off the photo); secondaries use the
                glassy on-ink HERO_ACTION_CLASS.
             6. ADMIN: never on the cover — Edit + Manage read as a light row in the `band` below
                the hero (the Journey/Profile placement).
@@ -471,8 +471,8 @@ export default async function ChannelPage({
                         slug={channel.slug}
                         size="md"
                         // The kit's primary tokens + the hero lift (§8.5: primary CTAs on a
-                        // cover stay bg-primary with shadow-md) — never a hand-rolled string.
-                        className={buttonClasses('primary', 'md', 'shrink-0 shadow-md')}
+                        // cover stay bg-primary with lift-1) — never a hand-rolled string.
+                        className={buttonClasses('primary', 'md', 'shrink-0 lift-1')}
                       />
                     )
                   }
@@ -481,7 +481,7 @@ export default async function ChannelPage({
                 // Signed-out visitors still get the one primary join CTA.
                 <Link
                   href={`/sign-in?next=/channels/${channel.slug}`}
-                  className={buttonClasses('primary', 'md', 'shrink-0 shadow-md')}
+                  className={buttonClasses('primary', 'md', 'shrink-0 lift-1')}
                 >
                   Sign in to tune in
                 </Link>

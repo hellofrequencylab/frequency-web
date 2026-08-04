@@ -59,7 +59,7 @@ function ToggleSwitch({
       }`}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+        className={`inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform ${
           optimistic ? 'translate-x-4' : 'translate-x-0'
         }`}
       />
@@ -267,7 +267,7 @@ export function JourneyOfficialControl({
         }`}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+          className={`inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform ${
             optimisticOfficial ? 'translate-x-4' : 'translate-x-0'
           }`}
         />

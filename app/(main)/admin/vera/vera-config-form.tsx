@@ -101,7 +101,7 @@ export function VeraConfigForm({ cfg, featured }: { cfg: VeraConfig; featured: F
         </FormSection>
 
         <div className="flex items-center gap-3 pt-6">
-          <Button type="submit" className="shadow-sm">Save Vera</Button>
+          <Button type="submit" className="lift-1">Save Vera</Button>
           <span className="text-xs text-subtle">Changes apply to new conversations immediately.</span>
         </div>
       </form>
@@ -113,7 +113,7 @@ export function VeraConfigForm({ cfg, featured }: { cfg: VeraConfig; featured: F
       >
         <div className="space-y-4">
           <form action={refreshFeatured}>
-            <Button type="submit" variant="secondary" className="shadow-sm">Refresh featured posts</Button>
+            <Button type="submit" variant="secondary" className="lift-1">Refresh featured posts</Button>
           </form>
 
           {featured.length === 0 ? (

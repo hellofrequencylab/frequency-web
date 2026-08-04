@@ -93,6 +93,7 @@ function Thumb({ asset, fit }: { asset: LibraryGalleryItem; fit: 'cover' | 'cont
   }
   // Airwaves A/V (ADR-608 §7e): audio/video assets preview with a real scrub player, not a broken <img>.
   if (asset.url && asset.kind === 'video') {
+    // KEEP bg-black: the letterbox behind a video frame, which is black on every generation.
     return <video src={asset.url} controls preload="metadata" className="h-full w-full bg-black object-contain" />
   }
   if (asset.url && asset.kind === 'audio') {
@@ -166,7 +167,7 @@ export function LoomGrid({
         onClick={() => toggle(id)}
         aria-pressed={isSel}
         aria-label={isSel ? 'Deselect' : 'Select'}
-        className={`rounded-full bg-surface/90 shadow-sm transition-opacity ${
+        className={`rounded-full bg-surface/90 lift-1 transition-opacity ${
           isSel || sel.size > 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
         } ${className}`}
       >
@@ -258,7 +259,7 @@ export function LoomGrid({
                       <span className="truncate text-sm text-text" title={a.title}>
                         {a.title}
                       </span>
-                      <span className="shrink-0 text-xs text-subtle">{human(a.bytes)}</span>
+                      <span className="shrink-0 text-xs text-muted">{human(a.bytes)}</span>
                     </span>
                   )}
                 </button>

@@ -30,12 +30,12 @@ export default async function SegmentsPage() {
           <p className="flex items-center gap-2 font-semibold text-text">
             {s.name}
             {s.is_system && (
-              <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium uppercase tracking-wide text-subtle">
+              <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium uppercase tracking-wide text-muted">
                 Built-in
               </span>
             )}
           </p>
-          <p className="mt-0.5 truncate font-mono text-xs text-subtle">{describeSegment(s.definition)}</p>
+          <p className="mt-0.5 truncate font-mono text-xs text-muted">{describeSegment(s.definition)}</p>
           {s.description && <p className="mt-1 max-w-md text-xs text-muted">{s.description}</p>}
         </div>
       ),

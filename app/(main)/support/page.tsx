@@ -56,14 +56,14 @@ function TicketRow({ ticket }: { ticket: SupportTicket }) {
   return (
     <Link
       href={`/support/${ticket.id}`}
-      className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-border-strong"
+      className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 lift-1 transition-colors hover:border-border-strong"
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className={`rounded-full px-2 py-0.5 text-2xs font-semibold ${statusChipClass(ticket.status)}`}>
             {STATUS_LABELS[ticket.status]}
           </span>
-          <span className="text-2xs font-medium text-subtle">{TYPE_LABELS[ticket.type]} · #{ticket.ref}</span>
+          <span className="text-2xs font-medium text-muted">{TYPE_LABELS[ticket.type]} · #{ticket.ref}</span>
         </div>
         <p className="mt-1 truncate text-sm font-semibold text-text">{ticket.subject}</p>
         <p className="text-xs text-subtle">Updated {relativeTime(ticket.lastActivityAt)}</p>

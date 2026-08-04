@@ -191,7 +191,7 @@ export default async function PracticeDetailPage({ params }: Params) {
         {!profileId ? (
           <Link
             href="/sign-in"
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
           >
             <Zap className="h-4 w-4 fill-on-primary" /> Sign in to claim &amp; earn
           </Link>

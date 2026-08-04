@@ -101,7 +101,7 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
   return (
     <div className="space-y-6">
       {/* Cover — self-saving, above the form, because it is the first thing a visitor sees. */}
-      <section className="space-y-1.5 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <section className="space-y-1.5 rounded-2xl border border-border bg-surface p-5 lift-1">
         <span className={fieldLabel}>Cover image</span>
         <InlineCover
           value={channel.cover_image ?? null}
@@ -118,7 +118,7 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
       </section>
 
       <form onSubmit={onSubmit} className="space-y-6">
-        <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+        <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
           <h2 className="text-sm font-semibold text-text">Basics</h2>
 
           <FieldBlock label="Name">
@@ -152,7 +152,7 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
           </FieldBlock>
         </section>
 
-        <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+        <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
           <h2 className="text-sm font-semibold text-text">Where it sits</h2>
 
           <FieldBlock
@@ -230,7 +230,7 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
       </form>
 
       {/* The rest of the Channel lives in the Manage hub. Link out, never rebuild. */}
-      <section className="space-y-2 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <section className="space-y-2 rounded-2xl border border-border bg-surface p-5 lift-1">
         <h2 className="text-sm font-semibold text-text">The rest of this Channel</h2>
         <p className="text-2xs text-muted">
           Who is tuned in, which Circles practice here, and the Chapter blueprint are run from the

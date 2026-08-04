@@ -35,7 +35,7 @@ export default async function TrainingPage() {
         </div>
       ) : (
         <div className="space-y-5">
-          <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-5 lift-1">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-broadcast-bg text-broadcast-strong">
               <GraduationCap className="h-6 w-6" aria-hidden />
             </span>

@@ -82,7 +82,7 @@ export async function AiDepthUpsell({
             {next.title}
           </h3>
           <p className="mt-1 max-w-prose text-sm text-muted">{next.line}</p>
-          <p className="mt-2 text-2xs text-subtle">
+          <p className="mt-2 text-2xs text-muted">
             You have run {used.toLocaleString()} engine actions for your room this month.
           </p>
         </div>

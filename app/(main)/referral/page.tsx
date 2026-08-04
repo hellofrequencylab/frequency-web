@@ -79,7 +79,7 @@ export default async function ReferralHubPage() {
         <ReferralLinkCard url={inviteUrl} />
 
         {/* Progress toward the Founding-Member perk (3+ activated invites). */}
-        <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+        <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
           <h2 className="flex items-center gap-2 text-sm font-bold text-text">
             <Gift className="h-4 w-4 text-primary-strong" aria-hidden /> Founding-Member perks
           </h2>

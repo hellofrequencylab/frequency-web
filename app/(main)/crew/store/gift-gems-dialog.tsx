@@ -87,7 +87,7 @@ export function GiftGemsDialog({ balance }: { balance: number }) {
 
   return (
     <Dialog open={open} onClose={close} ariaLabel="Gift Gems" className="max-w-md">
-      <div className="w-full rounded-2xl border border-border bg-surface shadow-2xl">
+      <div className="w-full rounded-2xl border border-border bg-surface lift-3">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h2 className="flex items-center gap-1.5 text-sm font-semibold text-text">
             <Gift className="h-4 w-4 text-primary-strong" aria-hidden />

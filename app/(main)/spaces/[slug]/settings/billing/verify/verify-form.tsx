@@ -41,7 +41,7 @@ export function VerifyForm({ slug, readOnly }: { slug: string; readOnly: boolean
           autoComplete="organization"
           maxLength={200}
         />
-        <p className="text-2xs text-subtle">The name exactly as it appears on your IRS determination letter.</p>
+        <p className="text-2xs text-muted">The name exactly as it appears on your IRS determination letter.</p>
       </div>
 
       <div className="space-y-1.5">
@@ -54,7 +54,7 @@ export function VerifyForm({ slug, readOnly }: { slug: string; readOnly: boolean
           inputMode="numeric"
           maxLength={12}
         />
-        <p className="text-2xs text-subtle">Your 9-digit Employer Identification Number. Dashes are fine.</p>
+        <p className="text-2xs text-muted">Your 9-digit Employer Identification Number. Dashes are fine.</p>
       </div>
 
       {/* An honest note on what happens next, so the button never over-promises (skeptic test). */}

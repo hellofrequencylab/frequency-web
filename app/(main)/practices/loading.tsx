@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 // instead of flashing blank while the modules stream (no layout shift).
 function PracticeCardSkeleton() {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
       <div className="flex items-center justify-between gap-2">
         <Skeleton className="h-5 w-24 rounded-full" />
         <Skeleton className="h-4 w-10" />

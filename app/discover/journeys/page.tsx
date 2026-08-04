@@ -66,7 +66,7 @@ export default async function DiscoverJourneysPage() {
           </Button>
           <Link
             href="/discover/circles"
-            className="text-sm font-semibold text-white/80 hover:text-white transition-colors"
+            className="text-sm font-semibold text-on-ink/80 hover:text-on-ink transition-colors"
           >
             or just browse, no account needed →
           </Link>

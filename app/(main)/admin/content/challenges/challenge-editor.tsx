@@ -246,7 +246,7 @@ function ChallengeListItem({
               {challenge.category}
             </span>
           )}
-          <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium capitalize text-subtle">
+          <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium capitalize text-muted">
             {challenge.difficulty}
           </span>
           {!active && <span className="rounded-full bg-warning-bg px-2 py-0.5 text-2xs font-medium text-warning">Paused</span>}
@@ -419,7 +419,7 @@ export function ChallengeCreateForm({ journeys, onCreated }: { journeys: Express
               onClick={() => pickKind(opt.value)}
               className={
                 kind === opt.value
-                  ? 'rounded-md bg-surface px-3 py-2 text-sm font-medium text-text shadow-sm'
+                  ? 'rounded-md bg-surface px-3 py-2 text-sm font-medium text-text lift-1'
                   : 'rounded-md px-3 py-2 text-sm text-muted transition-colors hover:text-text'
               }
             >

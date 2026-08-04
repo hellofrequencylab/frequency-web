@@ -358,7 +358,7 @@ export function PracticesTable({
         <div
           role="region"
           aria-label="Bulk actions"
-          className="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-primary/30 bg-surface-elevated px-3 py-2 shadow-sm"
+          className="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-primary/30 bg-surface-elevated px-3 py-2 lift-1"
         >
           <span className="text-sm font-semibold text-text">{selectedCount} selected</span>
           <span className="mx-1 hidden h-4 w-px bg-border sm:block" aria-hidden />
@@ -550,7 +550,7 @@ export function PracticesTable({
                         <StatusChip tone={wt.tone} size="sm">{wt.label}</StatusChip>
                       </span>
                     ) : (
-                      <span className="hidden shrink-0 text-2xs text-subtle lg:inline">Unset weight</span>
+                      <span className="hidden shrink-0 text-2xs text-muted lg:inline">Unset weight</span>
                     )}
                   </div>
                   <span className="mt-0.5 block text-xs text-subtle lg:hidden">
@@ -568,7 +568,7 @@ export function PracticesTable({
                   title={`${p.adopters} adopters · ${p.logs_total} logs all-time`}
                 >
                   <span className="text-sm font-semibold tabular-nums text-text">{p.logs_30d}</span>
-                  <span className="text-2xs tabular-nums text-subtle">{p.logs_total} total · {p.adopters} adopt</span>
+                  <span className="text-2xs tabular-nums text-muted">{p.logs_total} total · {p.adopters} adopt</span>
                 </span>
                 <span className="hidden lg:inline-flex">
                   <StatusChip tone={st.tone} size="sm">{st.label}</StatusChip>

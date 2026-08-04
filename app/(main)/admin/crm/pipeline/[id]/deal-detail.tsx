@@ -159,7 +159,7 @@ export function DealDetail({
       {error && <Banner tone="critical" title="That didn’t go through">{error}</Banner>}
 
       {/* Editable fields */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-xs text-muted">
             Contact
@@ -210,7 +210,7 @@ export function DealDetail({
       </div>
 
       {/* Activities & tasks */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
         <p className="text-sm font-bold text-text">Activity &amp; tasks</p>
 
         {/* Add */}

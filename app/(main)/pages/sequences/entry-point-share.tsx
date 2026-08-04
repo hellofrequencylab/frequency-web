@@ -82,7 +82,7 @@ export function EntryPointShare({
       onClick={() => pick(m)}
       aria-pressed={mode === m}
       className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
-        mode === m ? 'bg-surface text-text shadow-sm' : 'text-muted hover:text-text'
+        mode === m ? 'bg-surface text-text lift-1' : 'text-muted hover:text-text'
       }`}
     >
       {label}
@@ -120,7 +120,7 @@ export function EntryPointShare({
   return (
     <div className="rounded-xl border border-border bg-surface-elevated/40 p-4">
       <div className="mb-3 flex items-center justify-between">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Entry point · share &amp; QR</p>
+        <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Entry point · share &amp; QR</p>
         <button
           type="button"
           onClick={() => setExpanded(false)}
@@ -133,6 +133,7 @@ export function EntryPointShare({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch">
       {/* QR for the active incoming point */}
       <div
+        // // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
         className="flex h-[160px] w-[160px] shrink-0 items-center justify-center self-center rounded-xl bg-white p-2 ring-1 ring-border [&>svg]:h-full [&>svg]:w-full"
         aria-label={`QR code for ${audience} (${mode === 'splash' ? 'splash page' : 'induction'})`}
         dangerouslySetInnerHTML={{ __html: qr }}
@@ -142,19 +143,19 @@ export function EntryPointShare({
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         {hasSplash ? (
           <div>
-            <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Incoming point</p>
+            <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Incoming point</p>
             <div className="inline-flex rounded-lg border border-border bg-surface-elevated p-0.5">
               {tab('splash', 'Splash page')}
               {tab('induction', 'Skip to induction')}
             </div>
-            <p className="mt-1.5 text-2xs leading-snug text-subtle">
+            <p className="mt-1.5 text-2xs leading-snug text-muted">
               {mode === 'splash'
                 ? 'Lands on the audience splash, then into the induction.'
                 : 'Drops straight into the voiced induction, no splash.'}
             </p>
           </div>
         ) : (
-          <p className="text-2xs leading-snug text-subtle">
+          <p className="text-2xs leading-snug text-muted">
             Drops straight into the voiced induction. The link and QR are safe to share and print.
           </p>
         )}

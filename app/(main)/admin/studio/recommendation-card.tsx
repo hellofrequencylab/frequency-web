@@ -55,7 +55,7 @@ export function RecommendationCard({ rec }: { rec: StudioRec }) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="min-w-0">
         <div className="mb-1 flex flex-wrap items-center gap-2">
           <StatusChip tone={SEV_TONE[rec.severity]} size="sm">

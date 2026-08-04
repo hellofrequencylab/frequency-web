@@ -104,7 +104,7 @@ export function MemberAdmin({
       </div>
 
       {/* Member list */}
-      <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden divide-y divide-border">
+      <div className="rounded-2xl border border-border bg-surface lift-1 overflow-hidden divide-y divide-border">
         {filtered.length === 0 ? (
           <p className="text-sm text-subtle text-center py-8">No members found.</p>
         ) : (

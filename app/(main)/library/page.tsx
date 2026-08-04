@@ -92,7 +92,7 @@ export default async function LibraryPage({
           {ctaLabel && ctaHref && (
             <a
               href={ctaHref}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
             >
               {ctaLabel}
             </a>

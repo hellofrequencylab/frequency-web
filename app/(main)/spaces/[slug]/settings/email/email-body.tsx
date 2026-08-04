@@ -171,7 +171,7 @@ async function SendAllowancePrompt({
 // Dimension-matched skeleton for the streamed campaign list (no CLS, PAGE-FRAMEWORK §5.4).
 function CampaignsSkeleton() {
   return (
-    <div className="space-y-px rounded-2xl border border-border bg-surface p-2 shadow-sm">
+    <div className="space-y-px rounded-2xl border border-border bg-surface p-2 lift-1">
       {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} className="h-14 animate-pulse rounded-lg bg-surface-elevated/50" />
       ))}

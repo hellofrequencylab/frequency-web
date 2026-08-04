@@ -182,13 +182,13 @@ function LinkRow({ linkId, refType, target }: { linkId: string; refType: StageRe
 
   return (
     <li className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface-elevated/50 px-3 py-1.5">
-      <Link2 className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
-      <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">{REF_TYPE_META[refType]?.label ?? refType}</span>
+      <Link2 className="h-3.5 w-3.5 shrink-0 text-muted" aria-hidden />
+      <span className="text-2xs font-semibold uppercase tracking-wide text-muted">{REF_TYPE_META[refType]?.label ?? refType}</span>
       <span className="min-w-0 flex-1 truncate text-xs text-text">{target}</span>
       <button
         onClick={remove}
         disabled={pending}
-        className="shrink-0 rounded-md p-1 text-subtle transition-colors hover:bg-danger-bg hover:text-danger disabled:opacity-50"
+        className="shrink-0 rounded-md p-1 text-muted transition-colors hover:bg-danger-bg hover:text-danger disabled:opacity-50"
         aria-label="Remove link"
       >
         <Trash2 className="h-3.5 w-3.5" />

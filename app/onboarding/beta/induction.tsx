@@ -513,16 +513,17 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       {/* Preview-only badge (subtle; public /preview route; ADR-068). */}
       {preview && (
         <div className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center">
-          <span className="rounded-full bg-black/5 px-3 py-1 text-2xs font-medium text-subtle backdrop-blur-sm">
+          <span className="rounded-full bg-ink/5 px-3 py-1 text-2xs font-medium text-muted backdrop-blur-sm">
             Preview · nothing is saved
           </span>
         </div>
       )}
 
       {/* Preview end-state. */}
+      {/* KEEP bg-black/40 below: a modal backdrop scrim over whatever is behind it, the same value components/ui/dialog.tsx uses. */}
       {preview && previewDone && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6">
-          <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-7 text-center shadow-lg">
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-7 text-center lift-3">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary-bg text-2xl text-primary-strong">✓</div>
             <h2 className="mt-4 text-xl font-bold text-text">Welcome in.</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted">
@@ -557,7 +558,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
           {/* Scanned in via a member's QR code → a warm "Invited by {name}" chip with
               their photo, so the welcome reads personal from the first beat. */}
           {inviter && (
-            <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-border bg-surface py-1.5 pl-1.5 pr-3.5 shadow-sm">
+            <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-border bg-surface py-1.5 pl-1.5 pr-3.5 lift-1">
               {inviter.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={avatarSrc(inviter.avatarUrl)} alt="" className="h-7 w-7 rounded-full object-cover" style={avatarFocusStyle(inviter.avatarUrl)} />
@@ -802,7 +803,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
 
                 <div className="mt-7 flex flex-col items-center gap-8 text-left md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* left: form card */}
-                  <div className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-surface p-6 shadow-sm">
+                  <div className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-surface p-6 lift-1">
                     <div>
                       <label htmlFor="induction-name" className={fieldLabel}>Display name</label>
                       <input
@@ -880,7 +881,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                         />
                         {location && <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-success" aria-hidden>✓</span>}
                         {locOpen && locResults.length > 0 && (
-                          <ul id="induction-city-list" role="listbox" aria-label="City suggestions" className="absolute z-20 mt-2 max-h-56 w-full overflow-auto rounded-xl border border-border bg-surface shadow-lg">
+                          <ul id="induction-city-list" role="listbox" aria-label="City suggestions" className="absolute z-20 mt-2 max-h-56 w-full overflow-auto rounded-xl border border-border bg-surface lift-3">
                             {locResults.map((r) => (
                               <li key={`${r.label}-${r.lat}`} role="option" aria-selected={location === r.label}>
                                 <button
@@ -906,7 +907,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                   {/* right: avatar over the copy, button under */}
                   <div className="flex w-full max-w-xs flex-col items-center gap-4 text-center md:items-start md:text-left">
                     <button type="button" onClick={() => fileInputRef.current?.click()} className="group">
-                      <div className="rounded-full ring-4 ring-surface shadow-sm">{renderAvatar()}</div>
+                      <div className="rounded-full ring-4 ring-surface lift-1">{renderAvatar()}</div>
                       <span className="mt-2 block text-center text-xs font-semibold text-primary group-hover:underline">
                         {avatarPreview ? 'Change photo' : 'Add a photo'}
                       </span>
@@ -933,7 +934,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
 
                 <div className="mt-7 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* portrait profile card with blank slots */}
-                  <div className="w-full max-w-72 shrink-0 rounded-3xl border border-border bg-surface p-7 text-center shadow-sm">
+                  <div className="w-full max-w-72 shrink-0 rounded-3xl border border-border bg-surface p-7 text-center lift-1">
                     <div className="mx-auto w-fit rounded-full ring-4 ring-surface">{renderAvatar()}</div>
                     <p className="mt-4 text-xl font-semibold text-text">{displayName || <span className="text-subtle">Your name</span>}</p>
                     <p className="text-sm text-muted">@{handle || 'handle'}</p>
@@ -965,7 +966,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
 
                 <div className="mt-7 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* portrait profile card — everything they just built */}
-                  <div className="w-full max-w-72 shrink-0 rounded-3xl border border-border bg-surface p-7 text-center shadow-sm">
+                  <div className="w-full max-w-72 shrink-0 rounded-3xl border border-border bg-surface p-7 text-center lift-1">
                     <div className="mx-auto w-fit rounded-full ring-4 ring-surface">{renderAvatar()}</div>
                     <p className="mt-4 text-xl font-semibold text-text">{displayName || <span className="text-subtle">Your name</span>}</p>
                     <p className="text-sm text-muted">@{handle || 'handle'}</p>

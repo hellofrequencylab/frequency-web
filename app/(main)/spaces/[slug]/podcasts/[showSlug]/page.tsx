@@ -132,7 +132,7 @@ export default async function ShowPage({
                 <img
                   src={coverUrl}
                   alt=""
-                  className="h-40 w-40 rounded-2xl border border-border object-cover shadow-sm sm:h-48 sm:w-48"
+                  className="h-40 w-40 rounded-2xl border border-border object-cover lift-1 sm:h-48 sm:w-48"
                 />
               ) : (
                 <div

@@ -159,7 +159,7 @@ function QuestionDialog({
     <Dialog open onClose={onClose} className="max-w-lg" ariaLabel={isEdit ? 'Edit question' : 'Add question'}>
       <form
         action={onSubmit}
-        className="rounded-2xl border border-border bg-surface p-5 shadow-lg"
+        className="rounded-2xl border border-border bg-surface p-5 lift-3"
       >
         <h3 className="mb-4 text-base font-bold text-text">
           {isEdit ? 'Edit question' : 'Add a question'}

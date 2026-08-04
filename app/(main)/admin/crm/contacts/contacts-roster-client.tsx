@@ -215,7 +215,7 @@ export function ContactsRosterClient({
         />
       ) : (
         <>
-          <ul className="divide-y divide-border rounded-2xl border border-border bg-surface shadow-sm">
+          <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
             {visible.map((row) => (
               <ContactRow key={row.contactId} row={row} />
             ))}
@@ -232,7 +232,7 @@ export function ContactsRosterClient({
               </button>
             </div>
           )}
-          <p className="text-center text-2xs text-subtle">
+          <p className="text-center text-2xs text-muted">
             Showing {visible.length} of {total}
           </p>
         </>
@@ -329,7 +329,7 @@ function ContactRow({ row }: { row: ContactRosterRow }) {
 
         {/* The upgrade "why", when this member is a candidate (transparent + tunable heuristic). */}
         {row.upgradeCandidate && row.upgradeReasons.length > 0 && (
-          <p className="mt-1 text-2xs text-subtle">
+          <p className="mt-1 text-2xs text-muted">
             Upgrade score {row.upgradeScore}: {row.upgradeReasons.join(' · ')}
           </p>
         )}

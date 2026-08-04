@@ -45,7 +45,7 @@ export default async function FounderPage() {
       <FounderClaim />
 
       {/* Progress + badge state */}
-      <div className="mb-5 flex items-center gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="mb-5 flex items-center gap-4 rounded-2xl border border-border bg-surface p-5 lift-1">
         <span
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${
             fw.complete ? 'bg-signal-bg text-signal' : 'bg-broadcast-bg text-broadcast-strong'

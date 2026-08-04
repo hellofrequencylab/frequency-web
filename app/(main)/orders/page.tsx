@@ -32,7 +32,7 @@ function OrderCard({ order, dispute }: { order: CommerceOrder; dispute: Commerce
   // A dispute makes sense on a completed purchase, not a failed / cancelled checkout.
   const disputable = order.status === 'paid' || order.status === 'fulfilled'
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="flex items-center justify-between gap-3">
         <span className="text-xs text-subtle">{when}</span>
         <span className={`rounded-full px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide ${STATUS_TONE[order.status] ?? 'bg-surface-elevated text-muted'}`}>

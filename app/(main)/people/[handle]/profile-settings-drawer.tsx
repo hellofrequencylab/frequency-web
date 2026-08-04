@@ -77,8 +77,9 @@ export function ProfileSettingsDrawer({
 
       {open && (
         <>
+          {/* KEEP bg-black/30: A modal backdrop scrim over whatever is behind it (same value components/ui/dialog.tsx uses), so it stays monochrome. */}
           <div className="fixed inset-0 z-[150] bg-black/30" onClick={() => setOpen(false)} aria-hidden />
-          <aside className="fixed right-0 top-0 z-[160] flex h-full w-80 max-w-[92vw] flex-col overflow-y-auto border-l border-border bg-surface shadow-2xl">
+          <aside className="fixed right-0 top-0 z-[160] flex h-full w-80 max-w-[92vw] flex-col overflow-y-auto border-l border-border bg-surface lift-3">
             <div className="sticky top-0 flex items-center justify-between border-b border-border bg-surface px-4 py-3">
               <p className="text-sm font-bold text-text">Member settings</p>
               <button type="button" onClick={() => setOpen(false)} className="rounded-md p-1 text-muted hover:text-text">

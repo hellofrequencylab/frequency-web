@@ -56,7 +56,7 @@ function NewCircleTaskForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg shadow-sm">
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg lift-1">
       <div className="sm:col-span-2">
         <label className={label}>Task name *</label>
         <input
@@ -149,7 +149,7 @@ function CircleTaskRow({ task }: { task: CircleTask }) {
   }
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface shadow-sm px-4 py-3 group">
+    <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface lift-1 px-4 py-3 group">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-medium text-text">{task.name}</span>

@@ -73,7 +73,7 @@ export default function ComparisonsIndexPage() {
             <Link
               key={c.slug}
               href={comparisonPath(c.slug)}
-              className="group flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-6 py-5 shadow-sm transition-colors hover:border-primary"
+              className="group flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-6 py-5 lift-1 transition-colors hover:border-primary"
             >
               <span>
                 <span className="block text-lg font-semibold text-text">

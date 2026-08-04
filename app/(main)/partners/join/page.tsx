@@ -29,7 +29,7 @@ export default async function PartnerProgramsPage() {
           // claim is pending review (P2.7).
           const live = state != null && (LIVE_PERSONA_STATES as readonly string[]).includes(state)
           return (
-            <div key={p} className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+            <div key={p} className="rounded-2xl border border-border bg-surface p-5 lift-1">
               <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-bg text-xl">
                   {meta.emoji}

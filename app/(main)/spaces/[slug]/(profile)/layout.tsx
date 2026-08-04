@@ -75,7 +75,7 @@ const SM_BUTTON_GEOMETRY =
   'inline-flex items-center justify-center gap-1.5 rounded-control px-3 py-1.5 text-sm font-semibold transition-colors'
 const onInkSecondaryClasses = cn(
   SM_BUTTON_GEOMETRY,
-  'border border-white/40 bg-white/10 text-on-ink backdrop-blur-sm hover:bg-white/20',
+  'border border-on-ink/40 bg-on-ink/10 text-on-ink backdrop-blur-sm hover:bg-on-ink/20',
 )
 
 // The ONE dominant primary action: a real filled primary BUTTON on the Space header (owner ask — the
@@ -83,7 +83,7 @@ const onInkSecondaryClasses = cn(
 // and over a Hero photo alike; on a cover photo it gains a soft shadow so it lifts off the image. Tokens
 // only, no hex.
 function primaryCtaButton(onInk: boolean): string {
-  return buttonClasses('primary', 'sm', onInk ? 'shadow-md' : undefined)
+  return buttonClasses('primary', 'sm', onInk ? 'lift-1' : undefined)
 }
 
 function ownerToolClasses(onInk: boolean): string {

@@ -319,7 +319,7 @@ export function SplashCopyEditor({
         {/* Custom funnels carry their own title (the audience). The default template's
             title is fixed, so this only shows for a custom slug. */}
         {!isDefault && (
-          <section className="space-y-2 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <section className="space-y-2 rounded-2xl border border-border bg-surface p-5 lift-1">
             <label className={LABEL} htmlFor="splash-audience">
               Funnel title
               <span className="ml-1.5 font-normal text-subtle/70">· the audience this funnel is for</span>
@@ -336,7 +336,7 @@ export function SplashCopyEditor({
         {/* Permalink (the funnel's slug): the ?seq= value + the link you share. Renaming re-keys the
             funnel; existing links to the old permalink stop resolving. Custom funnels only. */}
         {!isDefault && (
-          <section className="space-y-2 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <section className="space-y-2 rounded-2xl border border-border bg-surface p-5 lift-1">
             <label className={LABEL} htmlFor="splash-permalink">
               Permalink
               <span className="ml-1.5 font-normal text-subtle/70">· the /onboarding/beta?seq= slug and the link you share</span>
@@ -372,7 +372,7 @@ export function SplashCopyEditor({
                 {renaming ? 'Updating…' : 'Update permalink'}
               </button>
             </div>
-            <p className="text-2xs text-subtle">
+            <p className="text-2xs text-muted">
               Changing this updates the funnel&apos;s link everywhere. Existing links to the old permalink will stop working.
             </p>
             {renameError && <p className="text-2xs font-semibold text-danger">{renameError}</p>}
@@ -382,7 +382,7 @@ export function SplashCopyEditor({
           <section
             key={b.id}
             onFocusCapture={() => setPreviewBeat(b.beatIndex)}
-            className={`space-y-3 rounded-2xl border bg-surface p-5 shadow-sm transition-colors ${
+            className={`space-y-3 rounded-2xl border bg-surface p-5 lift-1 transition-colors ${
               previewBeat === b.beatIndex ? 'border-primary/50' : 'border-border'
             }`}
           >
@@ -443,7 +443,7 @@ export function SplashCopyEditor({
         {!isDefault && (
           <>
             {/* 1. Slide 2 feature cards */}
-            <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+            <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
               <div>
                 <h2 className="text-sm font-bold text-text">Slide 2 features</h2>
                 <p className="text-xs text-muted">
@@ -452,7 +452,7 @@ export function SplashCopyEditor({
               </div>
               {slide2.map((row, i) => (
                 <div key={i} className="space-y-3 rounded-xl border border-border bg-surface-elevated p-3">
-                  <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Feature {i + 1}</p>
+                  <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Feature {i + 1}</p>
                   <div>
                     <label className={LABEL} htmlFor={`slide2-title-${i}`}>Title</label>
                     <input
@@ -490,7 +490,7 @@ export function SplashCopyEditor({
             </section>
 
             {/* 2. Slide 3 core features + art */}
-            <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+            <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
               <div>
                 <h2 className="text-sm font-bold text-text">Slide 3 core features</h2>
                 <p className="text-xs text-muted">
@@ -501,7 +501,7 @@ export function SplashCopyEditor({
                 const artValue = row.art.kind === 'image' ? 'image' : row.art.render
                 return (
                   <div key={i} className="space-y-3 rounded-xl border border-border bg-surface-elevated p-3">
-                    <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Core feature {i + 1}</p>
+                    <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Core feature {i + 1}</p>
                     <div>
                       <label className={LABEL} htmlFor={`slide3-title-${i}`}>Title</label>
                       <input
@@ -552,7 +552,7 @@ export function SplashCopyEditor({
             </section>
 
             {/* 3. Completion destination */}
-            <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+            <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
               <div>
                 <h2 className="text-sm font-bold text-text">Where it goes when they finish</h2>
                 <p className="text-xs text-muted">
@@ -605,7 +605,9 @@ export function SplashCopyEditor({
         )}
 
         {/* Save / reset bar */}
-        <div className="sticky bottom-4 flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-border bg-surface p-3 shadow-md">
+        {/* The sticky save bar floats over the scrolling form — lift-3's named case
+            (the sticky action card), and it must not travel on hover the way lift-2 does. */}
+        <div className="sticky bottom-4 flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-border bg-surface p-3 lift-3">
           {error && <span className="text-xs font-medium text-danger">{error}</span>}
           {dirty && !error && <span className="text-xs font-medium text-warning">Unsaved changes</span>}
           {saved && !dirty && (
@@ -666,7 +668,7 @@ export function SplashCopyEditor({
 
         {/* The REAL induction component (preview mode: nothing is saved), scaled to
             half so a full screen fits the pane. Inert: the tabs drive navigation. */}
-        <div className="overflow-hidden rounded-2xl border border-border shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-border lift-1">
           <div aria-hidden className="pointer-events-none h-[50vh] w-full select-none overflow-hidden">
             <div className="h-[200%] w-[200%] origin-top-left scale-50">
               <BetaInduction
@@ -685,7 +687,7 @@ export function SplashCopyEditor({
             </div>
           </div>
         </div>
-        <p className="mt-2 text-2xs text-subtle">
+        <p className="mt-2 text-2xs text-muted">
           Previewing <span className="font-semibold text-muted">{active.title}</span>. This is the real flow, rendered with your edits.{' '}
           {isDefault
             ? 'Saving publishes straight to /onboarding/beta.'

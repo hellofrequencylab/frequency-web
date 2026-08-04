@@ -1377,7 +1377,7 @@ export default async function EventDetailPage({
                     eventSlug={event.slug}
                     previewMode
                   />
-                  <p className="text-xs text-subtle">
+                  <p className="text-xs text-muted">
                     Only you and your team see this. Buyers see it live once{' '}
                     {spaceHost ? `${spaceHost.name}'s owner connects` : 'you connect'} payouts in
                     Settings → Billing.
@@ -1883,7 +1883,7 @@ export default async function EventDetailPage({
           ) : (
             // Once a host has claimed the event, the original poster is just a small, unobtrusive
             // credit under the host line — no accent, no icon.
-            <p className="text-2xs text-subtle">
+            <p className="text-2xs text-muted">
               Posted by{' '}
               <Link
                 href={`/people/${postedBy.handle}`}
@@ -1928,7 +1928,7 @@ export default async function EventDetailPage({
               ) : (
                 <Link
                   href={`/onboarding/beta?seq=event-experience-hosts-copy&next=${encodeURIComponent(`/events/${event.slug}?claim=${extra.claim_token}`)}`}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-8 py-4 text-base font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-8 py-4 text-base font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
                 >
                   <Zap className="h-5 w-5" aria-hidden /> Claim This Event
                 </Link>

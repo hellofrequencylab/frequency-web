@@ -89,7 +89,7 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or handle..."
-          className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30 dark:border-border-strong dark:bg-surface-elevated dark:text-subtle/60 dark:placeholder:text-muted"
+          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30 dark:border-border-strong dark:bg-surface-elevated dark:text-subtle/60 dark:placeholder:text-muted"
         />
       </div>
 
@@ -108,7 +108,7 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
           ariaLabel={`Deactivate ${confirmTarget.displayName}?`}
           className="max-w-sm"
         >
-          <div className="bg-surface rounded-2xl shadow-xl border border-border p-6 w-full">
+          <div className="bg-surface rounded-2xl lift-3 border border-border p-6 w-full">
             <h3 className="text-sm font-semibold text-text mb-2">
               Deactivate {confirmTarget.displayName}?
             </h3>
@@ -126,6 +126,7 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
               <button
                 disabled={isPending}
                 onClick={() => handleDeactivate(confirmId)}
+                // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
                 className="rounded-lg bg-danger px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-colors"
               >
                 {isPending ? 'Deactivating...' : 'Deactivate'}

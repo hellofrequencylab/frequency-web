@@ -107,12 +107,13 @@ function CodeCard({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm p-4 flex flex-col">
+    <div className="rounded-2xl border border-border bg-surface lift-1 p-4 flex flex-col">
       <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-subtle">
         <Icon className="w-3.5 h-3.5" /> {card.title}
       </div>
 
       <div
+        // // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
         className="mt-3 mx-auto w-44 h-44 rounded-xl border border-border bg-white p-2 [&>svg]:w-full [&>svg]:h-full"
         dangerouslySetInnerHTML={{ __html: card.svg }}
       />

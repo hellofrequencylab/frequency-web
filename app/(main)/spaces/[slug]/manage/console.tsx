@@ -207,7 +207,7 @@ function SectionRow({
       <Link
         href={href}
         title={module.desc}
-        className={`group flex items-center gap-2.5 rounded-lg border border-border shadow-sm outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none ${nested ? 'bg-surface/60 px-2 py-1.5' : 'bg-surface px-2.5 py-2'}`}
+        className={`group flex items-center gap-2.5 rounded-lg border border-border lift-1 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none ${nested ? 'bg-surface/60 px-2 py-1.5' : 'bg-surface px-2.5 py-2'}`}
       >
         <span className={`flex shrink-0 items-center justify-center rounded-md bg-primary-bg text-primary-strong ${nested ? 'h-6 w-6' : 'h-7 w-7'}`}>
           <Icon className={nested ? 'h-3 w-3' : 'h-3.5 w-3.5'} aria-hidden />
@@ -250,7 +250,7 @@ function DangerRow({
   spaceId: string
 }) {
   return (
-    <li className="rounded-lg border border-danger/30 bg-surface px-2.5 py-2 shadow-sm">
+    <li className="rounded-lg border border-danger/30 bg-surface px-2.5 py-2 lift-1">
       <div className="flex items-center gap-2.5">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-danger-bg text-danger">
           <Trash2 className="h-3.5 w-3.5" aria-hidden />
@@ -449,7 +449,7 @@ export function SpaceSettingsSurface({
           Module Manager was only reachable by typing /manage/modules by hand from the in-place console. */}
       <Link
         href={`/spaces/${slug}/manage/modules`}
-        className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-3 shadow-sm outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+        className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-3 lift-1 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
           <SlidersHorizontal className="h-4 w-4" aria-hidden />
@@ -469,7 +469,7 @@ export function SpaceSettingsSurface({
           change what their space emphasizes. */}
       <Link
         href={`/spaces/${slug}/manage/mode`}
-        className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-3 shadow-sm outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+        className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-3 lift-1 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
           <Compass className="h-4 w-4" aria-hidden />

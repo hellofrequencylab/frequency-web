@@ -592,7 +592,7 @@ function DayBeat({
   body: string
 }) {
   return (
-    <li className="flex items-start gap-4 rounded-2xl border border-border bg-surface p-5 sm:p-6 shadow-sm">
+    <li className="flex items-start gap-4 rounded-2xl border border-border bg-surface p-5 sm:p-6 lift-1">
       <div className="shrink-0 w-12 h-12 rounded-2xl bg-primary-bg flex items-center justify-center">
         <Icon className="w-6 h-6 text-primary-strong" aria-hidden />
       </div>

@@ -124,7 +124,7 @@ export function NewChannelCompose({
                   <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
               </select>
-              <p className="mt-1 text-2xs text-subtle">
+              <p className="mt-1 text-2xs text-muted">
                 The Pillar (Mind, Body, Spirit, Expression) this Channel sits under.
               </p>
             </div>
@@ -142,7 +142,7 @@ export function NewChannelCompose({
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
-            <p className="mt-1 text-2xs text-subtle">
+            <p className="mt-1 text-2xs text-muted">
               The category sets the icon and where the channel sits in browse.
             </p>
           </div>

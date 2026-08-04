@@ -27,7 +27,7 @@ export function HubSearch({ items }: { items: HubSearchItem[] }) {
 
   return (
     <div className="relative">
-      <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 shadow-sm focus-within:border-border-strong">
+      <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 lift-1 focus-within:border-border-strong">
         <Search className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
         <input
           type="search"
@@ -42,7 +42,7 @@ export function HubSearch({ items }: { items: HubSearchItem[] }) {
         />
       </div>
       {q && (
-        <div className="absolute inset-x-0 top-full z-30 mt-1.5 overflow-hidden rounded-xl border border-border bg-surface shadow-lg">
+        <div className="absolute inset-x-0 top-full z-30 mt-1.5 overflow-hidden rounded-xl border border-border bg-surface lift-3">
           {matches.length > 0 ? (
             <ul className="max-h-[60vh] overflow-y-auto py-1">
               {matches.map((it) => (
@@ -52,7 +52,7 @@ export function HubSearch({ items }: { items: HubSearchItem[] }) {
                     className="group flex items-center gap-2 px-3 py-2.5 text-sm outline-none transition-colors hover:bg-surface-elevated focus-visible:bg-surface-elevated"
                   >
                     <span className="flex-1 truncate font-medium text-text">{it.label}</span>
-                    <span className="shrink-0 text-2xs uppercase tracking-wide text-subtle">{it.section}</span>
+                    <span className="shrink-0 text-2xs uppercase tracking-wide text-muted">{it.section}</span>
                     <ArrowRight className="h-3.5 w-3.5 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5" aria-hidden />
                   </Link>
                 </li>

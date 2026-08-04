@@ -45,7 +45,7 @@ export default async function AgentPage() {
           {proposed.map((a) => {
             const isDraft = a.kind === 'content_draft'
             return (
-            <div key={a.id} className="rounded-2xl border border-border bg-surface shadow-sm p-4">
+            <div key={a.id} className="rounded-2xl border border-border bg-surface lift-1 p-4">
               {isDraft ? (
                 <>
                   <p className="text-xs font-semibold uppercase tracking-wide text-primary-strong">
@@ -86,7 +86,7 @@ export default async function AgentPage() {
         {executed.length === 0 ? (
           <EmptyState variant="first-use" title="Nothing executed yet." description="Approved actions show up here once they run through the spine." />
         ) : (
-          <div className="rounded-2xl border border-border bg-surface shadow-sm divide-y divide-border/60 max-w-2xl">
+          <div className="rounded-2xl border border-border bg-surface lift-1 divide-y divide-border/60 max-w-2xl">
             {executed.slice(0, 20).map((a) => (
               <div key={a.id} className="px-4 py-2.5 text-sm text-muted">
                 {String(a.payload.subject ?? a.kind)} → {String(a.payload.email ?? '')}

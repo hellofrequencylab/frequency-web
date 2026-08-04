@@ -131,7 +131,7 @@ function LeaveChannelDialog({
   return (
     <Dialog open onClose={onClose} ariaLabel="Are you sure you want to leave this channel?" className="max-w-sm">
       {/* Dialog */}
-      <div className="relative w-full rounded-2xl border border-border bg-surface shadow-2xl">
+      <div className="relative w-full rounded-2xl border border-border bg-surface lift-3">
         {/* Close */}
         <button
           type="button"

@@ -38,7 +38,7 @@ function isScheduled(w: Walkthrough): boolean {
 function WalkthroughCard({ w }: { w: Walkthrough }) {
   const schedule = scheduleLabel(w)
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 lift-1 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <Link href={`/admin/walkthroughs/${w.id}`} className="truncate text-base font-bold text-text hover:text-primary-strong">

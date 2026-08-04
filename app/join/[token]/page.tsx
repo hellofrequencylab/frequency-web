@@ -79,7 +79,7 @@ export default async function JoinPage({ params }: Props) {
         description={circle.about ?? undefined}
       >
         <div className="w-full">
-          <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+          <div className="rounded-2xl border border-border bg-surface lift-1 overflow-hidden">
             {/* Circle card */}
             <div className="p-8">
               <div className="flex items-center gap-4 text-xs text-muted">

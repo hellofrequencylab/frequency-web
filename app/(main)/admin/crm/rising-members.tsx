@@ -41,12 +41,12 @@ export function RisingMembers({ members }: { members: RisingMember[] }) {
             {href ? (
               <Link
                 href={href}
-                className="group flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 shadow-sm transition-colors hover:bg-surface-elevated/60"
+                className="group flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 lift-1 transition-colors hover:bg-surface-elevated/60"
               >
                 {inner}
               </Link>
             ) : (
-              <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 shadow-sm">
+              <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 lift-1">
                 {inner}
               </div>
             )}

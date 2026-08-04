@@ -48,7 +48,7 @@ function IconSubmit({ label, danger = false, children }: { label: string; danger
 
 function ProductRow({ p }: { p: CommerceProduct }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="min-w-0">
         <Link href={`/market/${p.id}`} className="font-medium text-text hover:text-primary">
           {p.title}

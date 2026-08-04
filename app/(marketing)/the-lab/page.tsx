@@ -164,7 +164,7 @@ function LegacyTheLab() {
         }
         subtitle="Calm isn't something you can download. The body of this community is a room with a sauna, a cold plunge, and somebody counting you down. We haven't built it yet."
         footer={
-          <p className="mx-auto mt-7 max-w-xl text-sm leading-relaxed text-white/60">
+          <p className="mx-auto mt-7 max-w-xl text-sm leading-relaxed text-on-ink/60">
             Nothing here is bookable. The first Lab is planned to open in 2028. Until then the
             community meets in rooms we borrow, and this page is the plan, not the place.
           </p>
@@ -325,7 +325,7 @@ function Room({
         <SiteImage src={img} alt={alt} aspect="16/10" sizes="(min-width: 640px) 22rem, 100vw" />
         <span
           aria-hidden
-          className="absolute -bottom-4 left-5 flex h-9 w-9 items-center justify-center rounded-full bg-primary font-display text-sm text-white"
+          className="absolute -bottom-4 left-5 flex h-9 w-9 items-center justify-center rounded-full bg-primary font-display text-sm text-on-primary"
         >
           {n}
         </span>

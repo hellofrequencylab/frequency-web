@@ -52,7 +52,7 @@ export function RoleManager({ members }: { members: RoleMember[] }) {
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-surface shadow-sm">
+    <section className="rounded-2xl border border-border bg-surface lift-1">
       <div className="border-b border-border p-4">
         <div className="flex items-center justify-between gap-3">
           <div>

@@ -85,7 +85,7 @@ export function AwardDialog({
 
   return (
     <Dialog open={open} onClose={close} ariaLabel="Award Achievement" className="max-w-md">
-      <div className="w-full rounded-2xl border border-border bg-surface shadow-2xl">
+      <div className="w-full rounded-2xl border border-border bg-surface lift-3">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <h2 className="text-sm font-semibold text-text">Award Achievement</h2>
           <button onClick={close} aria-label="Close" className="p-1 rounded text-subtle hover:text-muted dark:hover:text-subtle">

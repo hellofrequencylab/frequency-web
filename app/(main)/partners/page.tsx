@@ -152,7 +152,7 @@ function OfferCard({ offer }: { offer: LiveOffer }) {
             <Check className="h-3 w-3" /> Unlocked
           </span>
         ) : until ? (
-          <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle">
+          <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
             Until {until}
           </span>
         ) : undefined

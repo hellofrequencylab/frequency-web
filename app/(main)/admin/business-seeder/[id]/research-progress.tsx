@@ -72,7 +72,7 @@ export function ResearchProgress({
 
   return (
     <div className="mx-auto max-w-2xl">
-      <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+      <div className="rounded-2xl border border-border bg-surface p-6 lift-1 sm:p-8">
         <div className="mb-6 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm font-semibold text-text">
             <RefreshCw className="h-4 w-4 animate-spin text-primary-strong" aria-hidden />

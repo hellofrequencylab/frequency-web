@@ -130,15 +130,15 @@ export default async function DiscoverHubPage() {
         subtitle="Somewhere close to you, your people are already meeting this week. A standing time, a handful of regulars, a seat that gets noticed when it's empty. Browse the Circles, events, and Channels for free; sign up to join one, RSVP, or post."
       >
         {counts.members >= SOCIAL_PROOF_FLOOR ? (
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-white/80">
-            <span><strong className="text-white">{counts.members}</strong> members</span>
-            <span className="text-white/30">|</span>
-            <span><strong className="text-white">{counts.circles}</strong> circles</span>
-            <span className="text-white/30">|</span>
-            <span><strong className="text-white">{events.length}</strong> upcoming events</span>
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-on-ink/80">
+            <span><strong className="text-on-ink">{counts.members}</strong> members</span>
+            <span className="text-on-ink/30">|</span>
+            <span><strong className="text-on-ink">{counts.circles}</strong> circles</span>
+            <span className="text-on-ink/30">|</span>
+            <span><strong className="text-on-ink">{events.length}</strong> upcoming events</span>
           </div>
         ) : (
-          <p className="text-sm text-white/80">
+          <p className="text-sm text-on-ink/80">
             Forming now in {FOUNDING_PLACE}: explore the first Circles, Channels, and events below.
           </p>
         )}
@@ -146,7 +146,7 @@ export default async function DiscoverHubPage() {
           <Button href={BETA_CTA_HREF}>
             {BETA_CTA_LABEL} <ArrowRight className="w-4 h-4" />
           </Button>
-          <Link href="/discover/circles" className="text-sm font-semibold text-white/80 hover:text-white transition-colors">
+          <Link href="/discover/circles" className="text-sm font-semibold text-on-ink/80 hover:text-on-ink transition-colors">
             or just browse, no account needed →
           </Link>
         </div>

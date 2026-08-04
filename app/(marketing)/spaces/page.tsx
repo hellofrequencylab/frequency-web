@@ -107,7 +107,7 @@ function GuideLink({ href, title, body }: { href: string; title: string; body: s
   return (
     <Link
       href={href}
-      className="group block rounded-2xl border border-border bg-surface p-6 shadow-sm transition-colors hover:border-border-strong"
+      className="group block rounded-2xl border border-border bg-surface p-6 lift-1 transition-colors hover:border-border-strong"
     >
       <h3 className="font-display uppercase text-text text-xl leading-none">{title}</h3>
       <p className="mt-2.5 text-base text-muted leading-relaxed">{body}</p>

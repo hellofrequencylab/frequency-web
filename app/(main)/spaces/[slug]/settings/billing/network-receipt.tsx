@@ -24,7 +24,7 @@ export function NetworkReceipt({ earnings }: { earnings: SpaceEarnings }) {
   return (
     <section
       aria-labelledby="network-receipt-heading"
-      className="rounded-2xl border border-success/30 bg-success-bg/15 px-5 py-4 shadow-sm"
+      className="rounded-2xl border border-success/30 bg-success-bg/15 px-5 py-4 lift-1"
     >
       <p className="text-xs font-semibold uppercase tracking-widest text-success">The network earned you</p>
       <p id="network-receipt-heading" className="mt-1 text-2xl font-black text-text">

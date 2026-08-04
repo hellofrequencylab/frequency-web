@@ -25,7 +25,7 @@ export function SeasonControl({
   const router = useRouter()
 
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm p-4 mb-8">
+    <div className="rounded-2xl border border-border bg-surface lift-1 p-4 mb-8">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2">
           <Trophy className="w-4 h-4 text-warning" />
@@ -55,6 +55,7 @@ export function SeasonControl({
                     }
                   })
                 }
+                // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
                 className="rounded-lg bg-danger text-white px-3 py-1.5 text-sm font-semibold disabled:opacity-60"
               >
                 {pending ? 'Ending…' : 'Confirm end'}

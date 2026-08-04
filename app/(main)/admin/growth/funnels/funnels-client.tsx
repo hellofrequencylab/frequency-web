@@ -115,7 +115,7 @@ function TemplateTile({ template }: { template: TemplateCard }) {
         <p className="mt-0.5 text-xs leading-snug text-muted">{template.blurb}</p>
       </div>
       <div className="flex items-center justify-between gap-2">
-        <span className="text-2xs uppercase tracking-wide text-subtle">
+        <span className="text-2xs uppercase tracking-wide text-muted">
           Goal: <span className="text-text">{template.goalEvent}</span>
         </span>
         <Button size="sm" onClick={clone} disabled={pending}>

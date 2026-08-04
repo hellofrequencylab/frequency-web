@@ -30,7 +30,7 @@ export async function SpaceResonanceSection({ spaceId }: { spaceId: string }) {
           {suggestions.map((s) => (
             <li
               key={`${s.anchorProfileId}:${s.match.profileId}`}
-              className="rounded-2xl border border-border bg-surface p-4 shadow-sm"
+              className="rounded-2xl border border-border bg-surface p-4 lift-1"
             >
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-semibold text-text">{s.anchorName}</span>

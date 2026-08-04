@@ -87,7 +87,7 @@ export default async function ClaimListingPage({ params }: { params: Promise<{ t
       >
         <div className="w-full space-y-4">
           {/* The listing preview. */}
-          <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+          <div className="overflow-hidden rounded-2xl border border-border bg-surface lift-1">
             {preview.image && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={preview.image} alt="" className="max-h-56 w-full object-cover" />

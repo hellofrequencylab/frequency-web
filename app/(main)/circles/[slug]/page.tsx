@@ -342,7 +342,7 @@ export default async function CirclePage({
                with the uppercase accent eyebrow above it — the Space-page lockup.
             4. SUBTITLE: one quiet on-ink line on the cover (the place line here).
             5. ACTIONS: bottom-right ON the cover. ONE filled primary CTA (Join, the Space pattern:
-               accent fill + shadow-md so it lifts off the photo); secondaries use the glassy
+               accent fill + lift-1 so it lifts off the photo); secondaries use the glassy
                on-ink HERO_ACTION_CLASS.
             6. ADMIN: never on the cover — Edit/host tools read as a light row in the `band`
                below the hero (the Journey/Profile placement).
@@ -378,18 +378,18 @@ export default async function CirclePage({
                   <CrewGateButton
                     isCrew={isCrew}
                     label="Join"
-                    buttonClassName="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-md hover:bg-primary-hover transition-colors"
+                    buttonClassName="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary lift-1 hover:bg-primary-hover transition-colors"
                   >
                     <JoinCircleButton
                       circleId={circle.id}
                       circleSlug={circle.slug}
-                      className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-md hover:bg-primary-hover transition-colors"
+                      className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary lift-1 hover:bg-primary-hover transition-colors"
                     />
                   </CrewGateButton>
                 )}
 
                 {!isMember && myProfileId && full && (
-                  <span className="shrink-0 inline-flex items-center justify-center rounded-lg border border-white/40 bg-white/10 px-3 py-1.5 text-sm font-semibold text-on-ink/70 backdrop-blur-sm cursor-not-allowed">
+                  <span className="shrink-0 inline-flex items-center justify-center rounded-lg border border-on-ink/40 bg-on-ink/10 px-3 py-1.5 text-sm font-semibold text-on-ink/70 backdrop-blur-sm cursor-not-allowed">
                     Full
                   </span>
                 )}

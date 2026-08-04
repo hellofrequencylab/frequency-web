@@ -121,7 +121,7 @@ export function EditContactFields({
         <div>
           <Label htmlFor="contact-email">Email</Label>
           <Input id="contact-email" value={email} disabled className="mt-1" />
-          <p className="mt-1 text-2xs text-subtle">Email is the join key and can&apos;t be edited here.</p>
+          <p className="mt-1 text-2xs text-muted">Email is the join key and can&apos;t be edited here.</p>
         </div>
       </div>
       <div className="mt-3 flex items-center gap-2">

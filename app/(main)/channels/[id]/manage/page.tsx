@@ -217,7 +217,7 @@ export default async function ManageChannelPage({
               </Link>
             </Button>
           </div>
-          <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
             <ChannelSettingsModule />
           </div>
         </section>

@@ -465,6 +465,7 @@ export function Creator({ userId }: { userId: string }) {
                 type="button"
                 onClick={() => removeFile(i)}
                 aria-label={`Remove shot ${i + 1}`}
+                // KEEP the black/white pair: A scrim chip painted on a photo thumbnail, not on a themed surface, so the monochrome pair stays.
                 className="absolute right-1 top-1 rounded-full bg-black/55 p-0.5 text-white transition-colors hover:bg-black/70"
               >
                 <X className="h-3 w-3" />
