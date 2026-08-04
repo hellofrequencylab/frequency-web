@@ -49,14 +49,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 3853,
+      "baseline": 3841,
       "frozen": {
         "at": "2026-08-04",
-        "value": 3853,
-        "direction": "raised",
+        "value": 3841,
+        "direction": "lowered",
         "basis": "d2a53ce6b015",
-        "reason": "The two loading spinners moved back from rounded-pill to rounded-full. --radius-pill is runtime-editable in Theme Studio (feel: 'length', so an operator can set it to 4px and it validates); --radius-full is a fixed literal, deliberately not var-bridged, precisely so a circle stays a circle. A spinner MUST stay circular, so rounded-full is correct there and the +2 is the price of that correctness.",
-        "from": 3851
+        "reason": "The icon-tile pass: 10 decorative tiles off rounded-card onto rounded-control, plus 15 hand-rolled icon squares retired into the kit's new IconButton bordered variant. Takes literal-radius to 3841, below the 3851 it stood at before the two spinners raised it, so that raise is paid back.",
+        "from": 3853
       },
       "history": [
         {
@@ -86,6 +86,13 @@
           "to": 3853,
           "direction": "raised",
           "reason": "The two loading spinners moved back from rounded-pill to rounded-full. --radius-pill is runtime-editable in Theme Studio (feel: 'length', so an operator can set it to 4px and it validates); --radius-full is a fixed literal, deliberately not var-bridged, precisely so a circle stays a circle. A spinner MUST stay circular, so rounded-full is correct there and the +2 is the price of that correctness."
+        },
+        {
+          "at": "2026-08-04",
+          "from": 3853,
+          "to": 3841,
+          "direction": "lowered",
+          "reason": "The icon-tile pass: 10 decorative tiles off rounded-card onto rounded-control, plus 15 hand-rolled icon squares retired into the kit's new IconButton bordered variant. Takes literal-radius to 3841, below the 3851 it stood at before the two spinners raised it, so that raise is paid back."
         }
       ]
     },
