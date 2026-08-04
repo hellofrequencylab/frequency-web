@@ -1,5 +1,11 @@
 # Master to-do — the single burn-down
 
+> ⚠️ **Superseded for near-term planning (2026-08-04).** The live plan is
+> [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) (ADR-925) with the phase runway in
+> [`BUILD-LIST.md`](BUILD-LIST.md) (ADR-921). This file predates the DAWN / UX-maturity
+> program and its status marks are not maintained. Kept for history and for the items it
+> still names that no current plan has absorbed.
+
 > **This is the one list.** It supersedes the scattered "open" tails in
 > [`META-SCAN-STATUS.md`](META-SCAN-STATUS.md), [`PATCH-LIST.md`](PATCH-LIST.md),
 > [`REDESIGN-STATUS.md`](REDESIGN-STATUS.md), and the in-code `TODO(...)` markers. Those docs

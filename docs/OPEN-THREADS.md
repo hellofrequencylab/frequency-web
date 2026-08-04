@@ -1,5 +1,11 @@
 # Open threads — the live development tracker
 
+> ⚠️ **Superseded for near-term planning (2026-08-04).** The live plan is
+> [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) (ADR-925) with the phase runway in
+> [`BUILD-LIST.md`](BUILD-LIST.md) (ADR-921). This file predates the DAWN / UX-maturity
+> program and its status marks are not maintained. Kept for history and for the items it
+> still names that no current plan has absorbed.
+
 > ▶ **Driving every domain to A+:** see **[`A-PLUS-ROADMAP.md`](A-PLUS-ROADMAP.md)** (the per-domain
 > gap analysis + what's code-reachable vs owner-gated). This file is the live per-item tracker.
 >

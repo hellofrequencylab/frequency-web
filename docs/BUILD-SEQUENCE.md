@@ -1,5 +1,11 @@
 # Build Sequence — the single front door
 
+> ⚠️ **Superseded for near-term planning (2026-08-04).** The live plan is
+> [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md) (ADR-925) with the phase runway in
+> [`BUILD-LIST.md`](BUILD-LIST.md) (ADR-921). This file predates the DAWN / UX-maturity
+> program and its status marks are not maintained. Kept for history and for the items it
+> still names that no current plan has absorbed.
+
 > **Open this first.** One page that says what to build next, what gates it, and where the detail
 > lives. It orders every execution track into one gated wave plan, overlays the launch timeline,
 > flags what still needs a deep plan, and has an **Idea Inbox** so new ideas get captured and
