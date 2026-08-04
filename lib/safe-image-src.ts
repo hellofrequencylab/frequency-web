@@ -18,9 +18,22 @@ export function safeImageSrc(src: string | null | undefined): string | null {
   if (!src) return null
   const s = src.trim()
   if (!s) return null
+
+  // Same-origin absolute path under public/app routes.
   if (s.startsWith('/')) return s
-  if (s.startsWith('blob:')) return s
-  if (/^data:image\/[a-z0-9.+-]+[,;]/i.test(s)) return s
-  if (/^https?:\/\//i.test(s)) return s
+
+  // Data URLs are only allowed for images.
+  if (s.startsWith('data:')) {
+    return /^data:image\/[a-z0-9.+-]+[,;]/i.test(s) ? s : null
+  }
+
+  // Canonicalize and validate external/object URLs by parsed protocol.
+  try {
+    const u = new URL(s)
+    if (u.protocol === 'http:' || u.protocol === 'https:' || u.protocol === 'blob:') return s
+  } catch {
+    return null
+  }
+
   return null
 }
