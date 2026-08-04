@@ -50,6 +50,7 @@ jobs:
       - name: Smoke suite
         env:
           PW_BASE_URL: ${{ inputs.base_url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm test:e2e
       - name: Upload report
         if: failure()
@@ -78,6 +79,7 @@ jobs:
       - name: Capture baselines
         env:
           PW_BASE_URL: ${{ inputs.base_url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm test:e2e:update
       - name: Commit baselines to the branch
         # The runner commits the captures directly: artifact downloads redirect to a
@@ -123,6 +125,7 @@ jobs:
       - name: Visual suite
         env:
           PW_BASE_URL: ${{ inputs.base_url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm test:e2e:visual
       - name: Upload report + diffs
         if: failure()

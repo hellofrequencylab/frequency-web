@@ -44,6 +44,20 @@ export default defineConfig({
     baseURL: process.env.PW_BASE_URL,
     trace: 'on-first-retry',
     ...(executablePath ? { launchOptions: { executablePath } } : {}),
+    // Vercel preview deployments sit behind Deployment Protection: without the
+    // bypass header every SSR route serves Vercel's auth interstitial (viewport-tall
+    // pages, /login redirects) and both e2e suites test the wall, not the app.
+    // Set VERCEL_AUTOMATION_BYPASS_SECRET (Vercel project settings -> Deployment
+    // Protection -> Protection Bypass for Automation) to run against previews;
+    // production needs no header.
+    ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+      ? {
+          extraHTTPHeaders: {
+            'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+            'x-vercel-set-bypass-cookie': 'true',
+          },
+        }
+      : {}),
   },
   projects: [
     {
