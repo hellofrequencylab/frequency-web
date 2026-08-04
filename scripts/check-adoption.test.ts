@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { globToRegExp, inScope, countEntry, evaluate, formatScoreboard, loadConfig } from './check-adoption.mjs'
+import { globToRegExp, inScope, evaluate, formatScoreboard, loadConfig } from './check-adoption.mjs'
 
 // Locks the adoption-debt RATCHET harness (Lift 2a, docs/UX-MATURITY-PLAN.md). countEntry/evaluate are
 // the pure functions the CLI runs; feeding them fixture corpora keeps the gate honest without touching

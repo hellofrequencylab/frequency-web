@@ -2078,17 +2078,21 @@ export default function AppShell({
                     )}
                   </aside>
                 )}
-                {/* The Vault dock — position:fixed, so it takes no column space. Mounted HERE,
-                    outside the collapsed/expanded ternary, so folding the rail to the mini
-                    strip never unmounts the member's score; it still lives inside the rail
-                    column, so its visibility follows the same page-chrome map as the rail
-                    (railFor 'none' surfaces render neither). */}
-                {dock}
                 {/* The settings drawer slides over THIS column (absolute, full height) on the
                     `open-settings` event, reporting its width up so the column sizes to match. */}
                 <AdminBar onStateChange={setSettings} />
               </div>
             )}
+            {/* The Vault dock — position:fixed, so it needs no column of its own. It lives
+                OUTSIDE the rail column on purpose: that column is lg-only, and between md and
+                lg the shell shows the left nav but no rail, while the phone drawer that carries
+                the score is md:hidden. Mounted inside the column, the dock rendered nowhere in
+                that band, so a tablet member had no home for their numbers at all.
+                `md:contents` keeps the wrapper transparent from md up; below md the drawer owns
+                the numbers, so nothing is offered twice. Still gated on showSidebar, so railFor
+                'none' surfaces render neither rail nor dock, and still outside the
+                collapsed/expanded ternary, so folding the rail never unmounts the score. */}
+            {showSidebar && <div className="hidden md:contents">{dock}</div>}
             {/* No member rail here (Focus surfaces, railFor 'none'): STILL mount the
                 AdminBar in a zero-width relative column so the page Settings button works
                 everywhere (its mobile half portals to <body> from here). The column grows to the bar

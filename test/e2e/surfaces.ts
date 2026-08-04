@@ -280,7 +280,10 @@ export async function assertNotProtectionWall(page: Page): Promise<void> {
     }
   })()
   const title = await page.title().catch(() => '')
-  if (host.endsWith('vercel.com') || /authentication required/i.test(title)) {
+  // Exact host or a true subdomain — `endsWith('vercel.com')` would also match a
+  // look-alike like `notvercel.com`, which is the incomplete-sanitization pattern.
+  const isVercelHost = host === 'vercel.com' || host.endsWith('.vercel.com')
+  if (isVercelHost || /authentication required/i.test(title)) {
     throw new Error(
       [
         `Landed on Vercel Deployment Protection (${current}).`,
