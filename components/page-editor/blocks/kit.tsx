@@ -227,7 +227,7 @@ export const headingComponents: Record<string, ComponentConfig> = {
           <h2
             className={`font-display uppercase text-balance ${scale} ${accent || (ink ? 'text-on-ink' : 'text-text')}`}
           >
-            {accentize(title, titleAccent)}
+            {accentize(title, titleAccent, ink)}
           </h2>
           {kicker && <Kicker ink={ink}>{kicker}</Kicker>}
         </Band>

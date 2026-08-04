@@ -372,7 +372,7 @@ export function QuoteSection({
               ink ? 'text-on-ink' : 'text-text'
             }`}
           >
-            {accentize(quote, accentWord)}
+            {accentize(quote, accentWord, ink)}
           </blockquote>
           {attribution && (
             <figcaption
@@ -401,7 +401,7 @@ export function QuoteSection({
             ink ? 'text-on-ink' : 'text-text'
           }`}
         >
-          {accentize(quote, accentWord)}
+          {accentize(quote, accentWord, ink)}
         </blockquote>
         <figcaption className={`flex items-center gap-4 ${centered ? 'flex-col' : ''}`}>
           {avatar && (
@@ -515,7 +515,10 @@ export const sectionsComponents: Record<string, ComponentConfig> = {
       <HeroSection
         variant={(variant as HeroVariant) ?? 'image'}
         eyebrow={eyebrow || undefined}
-        title={accentize(title, titleAccent)}
+        // The `image` variant always lays its copy on a photo scrim (it hardcodes
+        // on-ink CTAs and note text), so it is ink regardless of the tone control;
+        // split and minimal follow the band the operator picked.
+        title={accentize(title, titleAccent, variant === 'image' || isInk(tone))}
         subtitle={subtitle || undefined}
         image={image || undefined}
         focal={focal}
@@ -579,7 +582,7 @@ export const sectionsComponents: Record<string, ComponentConfig> = {
     }) => (
       <CallToActionSection
         eyebrow={eyebrow || undefined}
-        heading={accentize(heading, headingAccent)}
+        heading={accentize(heading, headingAccent, isInk(tone))}
         body={body || undefined}
         ctaPrimaryLabel={ctaPrimaryLabel || undefined}
         ctaPrimaryHref={ctaPrimaryHref || undefined}

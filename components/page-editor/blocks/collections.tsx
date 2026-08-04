@@ -694,7 +694,7 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
       <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
         <FeatureGridBlock
           eyebrow={eyebrow || undefined}
-          title={accentize(title, titleAccent) || undefined}
+          title={accentize(title, titleAccent, isInk(tone)) || undefined}
           style={style as 'icon' | 'image' | 'number'}
           columns={columns}
           items={items}
@@ -754,7 +754,7 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
       <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
         <StatRowBlock
           eyebrow={eyebrow || undefined}
-          title={accentize(title, titleAccent) || undefined}
+          title={accentize(title, titleAccent, isInk(tone)) || undefined}
           columns={columns}
           items={items}
           ink={isInk(tone)}
@@ -799,7 +799,7 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
       <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
         <AccordionBlock
           eyebrow={eyebrow || undefined}
-          title={accentize(title, titleAccent) || undefined}
+          title={accentize(title, titleAccent, isInk(tone)) || undefined}
           items={items}
           ink={isInk(tone)}
           emphasis={emphasis as EmphasisValue}
@@ -850,7 +850,7 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
     render: ({ title, titleAccent, columns, items, emphasis, density, tone, width, align, layout }) => (
       <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
         <ChecklistBlock
-          title={accentize(title, titleAccent) || undefined}
+          title={accentize(title, titleAccent, isInk(tone)) || undefined}
           columns={columns}
           items={items}
           ink={isInk(tone)}
@@ -1056,7 +1056,7 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
               ?.pricing
           }
           eyebrow={eyebrow || undefined}
-          title={accentize(title, titleAccent) || undefined}
+          title={accentize(title, titleAccent, isInk(tone)) || undefined}
           kicker={kicker || undefined}
           items={items}
           footnote={footnote || undefined}

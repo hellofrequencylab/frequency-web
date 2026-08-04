@@ -383,7 +383,7 @@ export const mediaComponents: Record<string, ComponentConfig> = {
         image={image as string}
         alt={alt as string}
         eyebrow={(eyebrow as string) || undefined}
-        title={accentize(title as string, titleAccent as string)}
+        title={accentize(title as string, titleAccent as string, isInk(tone as string))}
         kicker={(kicker as string) || undefined}
         body={body as string}
         reverse={side === 'right'}

@@ -68,7 +68,7 @@ describe('BlockRender golden markup (frozen; was byte-identical to Puck rsc <Ren
     const html = block(data)
     expect(html).toContain('Gather your ') // accent word "people" is wrapped in a span
     expect(html).toContain('bold')
-    expect(html).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="font-eyebrow text-sm font-bold uppercase tracking-[0.25em] mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Gather your <span class="text-primary">people</span></h2></div></section><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-lg text-muted leading-relaxed space-y-4"><p>Some <strong class="font-semibold text-text">bold</strong> and <em>italic</em> copy.</p></div></div></section><section class="bg-marketing-canvas px-6 py-14 sm:py-24 "><p class="font-display uppercase max-w-3xl mx-auto text-center text-text text-[clamp(2rem,6.5vw,3.75rem)] leading-[1.1]">A <span class="text-primary">bold</span> statement.</p></section>"`)
+    expect(html).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="font-eyebrow text-sm font-bold uppercase tracking-[0.25em] mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Gather your <span class="text-primary-strong">people</span></h2></div></section><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-lg text-muted leading-relaxed space-y-4"><p>Some <strong class="font-semibold text-text">bold</strong> and <em>italic</em> copy.</p></div></div></section><section class="bg-marketing-canvas px-6 py-14 sm:py-24 "><p class="font-display uppercase max-w-3xl mx-auto text-center text-text text-[clamp(2rem,6.5vw,3.75rem)] leading-[1.1]">A <span class="text-primary-strong">bold</span> statement.</p></section>"`)
   })
 
   it('threads metadata through the config root (space layout preset wraps children)', () => {
@@ -264,5 +264,59 @@ describe('BlockRender is resilient to malformed input (beyond Puck, which threw)
     // in-house renderer defensively defaults, matching the "render nothing" contract.
     expect(block({} as Data, {})).toBe('')
     expect(block({ content: undefined, root: undefined } as unknown as Data, {})).toBe('')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONTRAST GATE — which amber an accent word gets, per band.
+//
+// `accentize` picks between two shades of the same hue, and the choice is a
+// contrast decision rather than a style one:
+//
+//   text-primary        #E2912F   8.2:1 on slat   ·  2.52:1 on white  ← fails light
+//   text-primary-strong #9A5E12   5.27:1 on white ·  1.6:1 on slat    ← fails ink
+//
+// Each fails badly exactly where the other belongs, so a wrong flag is worse
+// than no flag. The golden snapshots above would catch a change here, but they
+// record WHAT the markup is, not WHY -- and a future reader updating a snapshot
+// with -u would sail straight past it. These assertions name the rule.
+//
+// The defect this locks: every Puck-rendered marketing page emitted the brand
+// amber as accent text on LIGHT bands, because accentize had no notion of the
+// band it was rendering onto. /spaces and /the-community carried 83 serious
+// axe elements between them from this one call (ADR-928 ratchet).
+// ─────────────────────────────────────────────────────────────────────────────
+describe('accent words resolve their amber from the band, not from a default', () => {
+  it('uses the DEEPER amber on light bands (surface and canvas)', () => {
+    const html = block({
+      root: {},
+      content: [
+        // Heading defaults to tone 'surface'; Statement defaults to tone 'canvas'.
+        item('Heading', 'h1', { title: 'Gather your people', titleAccent: 'people' }),
+        item('Statement', 's1', { text: 'A bold statement.', accent: 'bold' }),
+      ],
+    })
+    expect(html).toContain('<span class="text-primary-strong">people</span>')
+    expect(html).toContain('<span class="text-primary-strong">bold</span>')
+    // The brand amber must not appear as an accent span anywhere on a light band.
+    expect(html).not.toContain('<span class="text-primary">')
+  })
+
+  it('keeps the BRAND amber on an ink band, where -strong would be the regression', () => {
+    const html = block({
+      root: {},
+      content: [item('Heading', 'h1', { title: 'Gather your people', titleAccent: 'people', tone: 'ink' })],
+    })
+    expect(html).toContain('<span class="text-primary">people</span>')
+    expect(html).not.toContain('text-primary-strong')
+  })
+
+  it('follows the tone control when an operator switches a block between bands', () => {
+    const render = (tone: string) =>
+      block({ root: {}, content: [item('Heading', 'h1', { title: 'Real talk', titleAccent: 'Real', tone })] })
+    // The same block, same copy: only the band changed, and the shade tracked it.
+    expect(render('surface')).toContain('<span class="text-primary-strong">Real</span>')
+    expect(render('canvas')).toContain('<span class="text-primary-strong">Real</span>')
+    expect(render('ink')).toContain('<span class="text-primary">Real</span>')
   })
 })

@@ -122,7 +122,7 @@ export function RolePickerBlock({
           {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
           {title && (
             <h2 className={`font-display uppercase text-balance ${scale} ${accent || (ink ? 'text-on-ink' : 'text-text')}`}>
-              {accentize(title, titleAccent)}
+              {accentize(title, titleAccent, ink)}
             </h2>
           )}
         </div>
@@ -207,7 +207,7 @@ export function IllustratedFeatureBlock({
           {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
           {title && (
             <h2 className={`font-display uppercase text-balance ${scale} ${accent || (ink ? 'text-on-ink' : 'text-text')}`}>
-              {accentize(title, titleAccent)}
+              {accentize(title, titleAccent, ink)}
             </h2>
           )}
           {body && (
@@ -252,7 +252,7 @@ export function ManifestoBlock({
   return (
     <section className={`px-6 ${padClass(layout) ?? 'py-28 sm:py-36'} ${toneBg(tone)} ${visClass(layout)}`}>
       <p className={`max-w-4xl mx-auto font-display uppercase text-balance ${scale} ${textColor}`}>
-        {accentize(text, accent)}
+        {accentize(text, accent, ink)}
       </p>
     </section>
   )
@@ -310,7 +310,7 @@ export function LeadFunnelBlock({
           {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
           {title && (
             <h2 className={`font-display uppercase text-balance ${scale} ${accent || (ink ? 'text-on-ink' : 'text-text')}`}>
-              {accentize(title, titleAccent)}
+              {accentize(title, titleAccent, ink)}
             </h2>
           )}
         </div>

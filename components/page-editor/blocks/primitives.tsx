@@ -146,7 +146,7 @@ export const primitivesComponents: Record<string, ComponentConfig> = {
         pad={padClass(layout as LayoutValue)}
         vis={visClass(layout as LayoutValue)}
       >
-        {accentize(text as string, accent as string)}
+        {accentize(text as string, accent as string, isInk(tone as string))}
       </Statement>
     ),
   },

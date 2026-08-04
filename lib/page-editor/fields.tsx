@@ -322,14 +322,29 @@ export function densityClasses(value?: DensityValue): { gap: string; pad: string
 }
 
 // Wrap an accent word in the brand colour (one accent occurrence, first match).
-export function accentize(text?: string, accent?: string): React.ReactNode {
+//
+// `ink` picks the shade, and it is a CONTRAST decision, not a style one. The two
+// tokens are the same hue and differ only in depth:
+//
+//   ink band  -> `text-primary`        #E2912F  8.2:1 on --color-slat
+//   light band-> `text-primary-strong` #9A5E12  5.27:1 on white, 4.58:1 on canvas
+//
+// Each fails badly where the other belongs (brand amber is 2.52:1 on white;
+// -strong is 1.6:1 on slat), so passing the wrong flag is worse than passing
+// none. The default is the light shade because light bands are the common case
+// and the accessible default should be the one you get by forgetting.
+//
+// This mirrors `Quote`/`SectionHeading` in components/marketing/marketing-ui.tsx,
+// which resolve the same pair off their own `tone` prop. Callers inside Puck
+// blocks should pass `isInk(tone)` from ./kit rather than re-deriving it.
+export function accentize(text?: string, accent?: string, ink = false): React.ReactNode {
   if (!text) return null
   if (!accent || !text.includes(accent)) return text
   const i = text.indexOf(accent)
   return (
     <>
       {text.slice(0, i)}
-      <span className="text-primary">{accent}</span>
+      <span className={ink ? 'text-primary' : 'text-primary-strong'}>{accent}</span>
       {text.slice(i + accent.length)}
     </>
   )

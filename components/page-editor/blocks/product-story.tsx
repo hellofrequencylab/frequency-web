@@ -135,7 +135,7 @@ export function SeasonTimelineBlock({
           {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
           {title && (
             <h2 className={`font-display uppercase text-balance ${scale} ${accent || headingColor}`}>
-              {accentize(title, titleAccent)}
+              {accentize(title, titleAccent, ink)}
             </h2>
           )}
           {kicker && <Kicker ink={ink}>{kicker}</Kicker>}
@@ -238,7 +238,7 @@ export function CircleFirstNightBlock({
         {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
         {title && (
           <h2 className={`font-display uppercase text-balance ${scale} ${accent || headingColor}`}>
-            {accentize(title, titleAccent)}
+            {accentize(title, titleAccent, ink)}
           </h2>
         )}
         {kicker && <Kicker ink={ink}>{kicker}</Kicker>}
@@ -344,7 +344,7 @@ export function RolesPathBlock({
           {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
           {title && (
             <h2 className={`font-display uppercase text-balance ${scale} ${accent || headingColor}`}>
-              {accentize(title, titleAccent)}
+              {accentize(title, titleAccent, ink)}
             </h2>
           )}
           {kicker && <Kicker ink={ink}>{kicker}</Kicker>}
@@ -445,7 +445,7 @@ export function QuestLoopBlock({
           {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
           {title && (
             <h2 className={`font-display uppercase text-balance ${scale} ${accent || headingColor}`}>
-              {accentize(title, titleAccent)}
+              {accentize(title, titleAccent, ink)}
             </h2>
           )}
           {kicker && <Kicker ink={ink}>{kicker}</Kicker>}
@@ -540,7 +540,8 @@ export function BackTheBuildBlock({
           {eyebrow && <Eyebrow ink>{eyebrow}</Eyebrow>}
           {title && (
             <h2 className={`font-display uppercase text-balance ${scale} ${accent || 'text-on-ink'}`}>
-              {accentize(title, titleAccent)}
+              {/* Always ink: this block hardcodes bg-slat, it has no tone control. */}
+              {accentize(title, titleAccent, true)}
             </h2>
           )}
           {body && (
