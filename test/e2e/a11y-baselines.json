@@ -13,8 +13,21 @@
     "count is frozen per (surface, state), a RISE fails, and a fall is celebrated and re-frozen.",
     "Same contract as scripts/adoption-baselines.json.",
     "",
+    "WHAT THE FIRST CAPTURE (2026-08-04) ACTUALLY MEASURED, so nobody mistakes this file",
+    "for a clean bill of health:",
+    "  - 40 contexts, 219 serious+ elements, 12 contexts already clean.",
+    "  - Every DARK context is 0 or near-0; the debt is almost entirely on LIGHT surfaces,",
+    "    and dawn-light and midnight-light carry IDENTICAL counts per surface. That is the",
+    "    amber-as-text defect showing up exactly where the ratio math says it should.",
+    "  - 44 of the suite's 84 tests DID NOT RUN. The member shell (/feed, /channels,",
+    "    /settings) skips without PW_STORAGE_STATE, and no seeded beta account exists yet.",
+    "    Those surfaces are therefore UNMEASURED, not clean. They carry no entry, so",
+    "    $defaultMax holds them at 0 -- the day the storage state lands they will fail on",
+    "    their true debt. That failure is the point; seed them with a capture run, do not",
+    "    silence them.",
+    "",
     "Every number here is debt with a date on it. Lower them; never raise them.",
-    "Re-freeze after a sweep with: PW_A11Y_UPDATE=1 pnpm test:e2e --grep @a11y"
+    "Re-freeze after a sweep with: PW_A11Y_UPDATE=1 pnpm test:e2e:a11y && pnpm a11y:baselines"
   ],
   "$defaultMax": 0,
   "surfaces": {
