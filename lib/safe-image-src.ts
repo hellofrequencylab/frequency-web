@@ -30,7 +30,10 @@ export function safeImageSrc(src: string | null | undefined): string | null {
   // Canonicalize and validate external/object URLs by parsed protocol.
   try {
     const u = new URL(s)
-    if (u.protocol === 'http:' || u.protocol === 'https:' || u.protocol === 'blob:') return s
+    if (u.protocol === 'http:' || u.protocol === 'https:') return u.toString()
+    if (u.protocol === 'blob:' && typeof window !== 'undefined' && u.origin === window.location.origin) {
+      return u.toString()
+    }
   } catch {
     return null
   }
