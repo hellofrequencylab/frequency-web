@@ -1,0 +1,225 @@
+# E2E against a live URL, the MAINTAINER path. Dispatch-only, so nothing here ever appears
+# on a pull request.
+#
+# It lives apart from e2e.yml on purpose. These jobs used to sit in the same file behind
+# `if: github.event_name == 'workflow_dispatch'`, which meant every PR showed four checks
+# reading "smoke — skipped", "visual — skipped", "update-baselines — skipped",
+# "update-a11y — skipped". They were skipping because they are dispatch-only, but the
+# checklist made it look like the preview gate had been disabled or the Vercel bypass
+# secret was missing. A checklist that says "skipped" for a job that CANNOT run on a PR
+# teaches people to ignore the word, and the one place it needs to mean something is
+# e2e.yml, where "skipped" really does mean "nothing was tested".
+#
+# So: PRs see exactly one e2e check (pr-compare). This file is what you reach for by hand.
+#
+#   base_url         where to point Playwright (a preview URL, or production)
+#   run_visual       also run the @visual compare against committed baselines
+#   update_baselines CAPTURE fresh @visual baselines and commit them to the branch
+#   update_a11y      CAPTURE the @a11y ratchet counts and commit them to the branch
+name: e2e (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Base URL to test (e.g. a Vercel preview URL). Required.'
+        required: true
+        default: ''
+        type: string
+      run_visual:
+        description: 'Also run the @visual snapshot suite (needs committed baselines)'
+        required: false
+        default: false
+        type: boolean
+      update_baselines:
+        description: 'CAPTURE fresh @visual baselines against base_url and commit them to the branch'
+        required: false
+        default: false
+        type: boolean
+      update_a11y:
+        description: 'CAPTURE the @a11y ratchet baselines against base_url and commit them (falls are written down; a RISE fails the job rather than being laundered into the baseline)'
+        required: false
+        default: false
+        type: boolean
+
+# contents: write is needed ONLY by the two capture jobs' commit steps.
+permissions:
+  contents: write
+
+concurrency:
+  # Never cancel a maintainer capture: a half-written baseline set is worse than a slow one.
+  group: e2e-manual-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    # Manual path only — the PR path runs its own smoke step against the resolved preview.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      # `pnpm test:e2e` is grep-invert @visual, i.e. @smoke AND @a11y — the two suites with
+      # no committed-baseline dependency.
+      - name: Smoke + a11y suite
+        env:
+          PW_BASE_URL: ${{ inputs.base_url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: pnpm test:e2e
+      - name: Upload report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-smoke
+          path: playwright-report/
+          retention-days: 7
+
+  update-baselines:
+    if: ${{ inputs.update_baselines }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Capture baselines
+        env:
+          PW_BASE_URL: ${{ inputs.base_url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: pnpm test:e2e:update
+      - name: Commit baselines to the branch
+        # The runner commits the captures directly: artifact downloads redirect to a
+        # storage host the agent sandbox's network policy blocks, so an artifact-only
+        # hand-off dead-ends. always(): a single flaky surface must not discard the
+        # other captures — the job stays red on real failures, but partials still land.
+        #
+        # ⚠️ THIS COMMIT DOES NOT RE-TRIGGER CI. GitHub deliberately suppresses workflow
+        # runs for pushes made with GITHUB_TOKEN, so the freshly captured baselines land on
+        # the branch with ZERO checks against them and the PR's last judged SHA stays the
+        # commit BEFORE the capture. That reads exactly like "CI passed on the new
+        # baselines" when nothing evaluated them. Push any commit of your own afterwards
+        # (or re-run the PR's checks) to get the branch judged on what it now contains.
+        if: always()
+        run: |
+          git config user.email noreply@anthropic.com
+          git config user.name Claude
+          git add test/e2e/__screenshots__/
+          if git diff --cached --quiet; then
+            echo "No baseline changes to commit."
+          else
+            git commit -m "Visual baselines: capture against ${{ inputs.base_url }} (runner-committed)"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+      - name: Upload baselines (debug copy)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-baselines
+          path: test/e2e/__screenshots__/
+          retention-days: 7
+
+  # The a11y ratchet's seed/re-freeze path (ADR-928). Same shape as update-baselines and for
+  # the same reason: the numbers must come from a real deployment, and only the runner holds
+  # the bypass secret that gets past Deployment Protection.
+  update-a11y:
+    if: ${{ inputs.update_a11y }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      # PW_A11Y_UPDATE makes every @a11y test RECORD its violation count instead of asserting
+      # against the baseline, so the capture cannot fail on the debt it is there to measure.
+      - name: Capture a11y counts
+        env:
+          PW_BASE_URL: ${{ inputs.base_url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          PW_A11Y_UPDATE: '1'
+        run: pnpm test:e2e:a11y
+      # Merge is asymmetric and exits non-zero on a rise, so a regression cannot be quietly
+      # absorbed by re-running this job. No always() here for exactly that reason.
+      - name: Merge into the ratchet
+        run: pnpm a11y:baselines
+      - name: Commit baselines to the branch
+        # Same GITHUB_TOKEN caveat as update-baselines above: this push does NOT re-trigger
+        # CI, so the branch carries new baselines that nothing has been judged against.
+        run: |
+          git config user.email noreply@anthropic.com
+          git config user.name Claude
+          git add test/e2e/a11y-baselines.json
+          if git diff --cached --quiet; then
+            echo "No baseline changes to commit."
+          else
+            git commit -m "a11y baselines: capture against ${{ inputs.base_url }} (runner-committed)"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+      - name: Upload capture + report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-capture
+          path: |
+            test/e2e/a11y-baselines.json
+            test/e2e/.a11y-observed.jsonl
+            playwright-report/
+          retention-days: 7
+          include-hidden-files: true
+
+  visual:
+    if: ${{ inputs.run_visual }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Visual suite
+        env:
+          PW_BASE_URL: ${{ inputs.base_url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: pnpm test:e2e:visual
+      - name: Upload report + diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-visual
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

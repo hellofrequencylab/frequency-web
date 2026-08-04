@@ -1,46 +1,22 @@
-# E2E against a live URL (Vercel preview or production). Deliberately NOT part of ci.yml —
-# these need a running deployment, which CI does not have.
+# The automatic preview gate for pull requests (UX maturity plan, Lift 6c).
 #
-# TWO ENTRY POINTS:
-#   1. workflow_dispatch — the maintainer path. Point it at any URL; optionally run the
-#      @visual compare, or CAPTURE baselines on the runner (update_baselines for the pixel
-#      snapshots, update_a11y for the accessibility ratchet's frozen counts).
-#   2. pull_request      — the automatic COMPARE gate (UX maturity plan, Lift 6c). Runs on
-#      PRs that can move pixels (globals.css / components/** / lib/page-editor/**), resolves
-#      the PR's own Vercel preview through the deployments API, and runs smoke + a11y +
-#      @visual against it.
+# Runs on PRs that can move pixels, resolves the PR's own Vercel preview through the
+# deployments API, then runs smoke + @a11y and the @visual compare against it.
 #
-# The pull_request path SKIPS ITSELF (green, with a notice) unless
-# VERCEL_AUTOMATION_BYPASS_SECRET is set. Without that secret Vercel's Deployment Protection
-# serves its auth interstitial to Playwright, so every SSR route "renders" the wall: the
-# visual suite would diff the wall against real baselines and the a11y suite would audit it.
-# A red X that means "the owner has not created a secret yet" trains people to ignore the
-# check, which is the opposite of what a gate is for. See the plan's Addendum 2026-08-04.
+# This workflow contributes exactly ONE check to a PR. The maintainer-triggered jobs
+# (manual smoke, visual, baseline capture) live in e2e-manual.yml so they cannot show up
+# here as permanently-"skipped" rows — see that file's header for why that mattered.
+#
+# The gate SKIPS ITSELF (green, with a notice) unless VERCEL_AUTOMATION_BYPASS_SECRET is
+# set. Without that secret Vercel's Deployment Protection serves its auth interstitial to
+# Playwright, so every SSR route "renders" the wall: the visual suite would diff the wall
+# against real baselines and the a11y suite would audit it. A red X meaning "the owner has
+# not created a secret yet" trains people to ignore the check, which is the opposite of
+# what a gate is for. When this one says "skipped", nothing was tested — and that is the
+# only place in this repo where the word carries that meaning.
 name: e2e
 
 on:
-  workflow_dispatch:
-    inputs:
-      base_url:
-        description: 'Base URL to test (e.g. a Vercel preview URL). Required.'
-        required: true
-        default: ''
-        type: string
-      run_visual:
-        description: 'Also run the @visual snapshot suite (needs committed baselines)'
-        required: false
-        default: false
-        type: boolean
-      update_baselines:
-        description: 'CAPTURE fresh @visual baselines against base_url and upload them as an artifact (commit them from the artifact; agent sandboxes cannot reach deploy URLs)'
-        required: false
-        default: false
-        type: boolean
-      update_a11y:
-        description: 'CAPTURE the @a11y ratchet baselines against base_url and commit them (falls are written down; a RISE fails the job rather than being laundered into the baseline)'
-        required: false
-        default: false
-        type: boolean
   pull_request:
     branches: [main]
     # Same paths-filter shape db-tests.yml uses: only PRs that can actually change
@@ -53,193 +29,17 @@ on:
       - 'playwright.config.ts'
       - '.github/workflows/e2e.yml'
 
-# contents: write is needed ONLY by the update-baselines job's commit step (manual
-# dispatch, maintainer-triggered). The smoke/visual compare jobs never write.
 permissions:
-  contents: write
+  contents: read
+  deployments: read
+  statuses: read
 
 concurrency:
-  # Keyed by entry point as well as ref, so an automatic PR run can never cancel a
-  # maintainer's baseline capture on the same branch. Superseded PR runs DO cancel:
-  # only the newest commit's pixels are interesting.
-  group: e2e-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  # Superseded PR runs cancel: only the newest commit's pixels are interesting.
+  group: e2e-pr-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  smoke:
-    # Manual path only — the PR path runs its own smoke step against the resolved preview.
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 10.33.0
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: pnpm
-      - name: Install
-        run: pnpm install --frozen-lockfile
-      - name: Install Chromium
-        run: pnpm exec playwright install --with-deps chromium
-      # `pnpm test:e2e` is grep-invert @visual, i.e. @smoke AND @a11y — the two suites with
-      # no committed-baseline dependency.
-      - name: Smoke + a11y suite
-        env:
-          PW_BASE_URL: ${{ inputs.base_url }}
-          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-        run: pnpm test:e2e
-      - name: Upload report
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report-smoke
-          path: playwright-report/
-          retention-days: 7
-
-  update-baselines:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.update_baselines }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 10.33.0
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: pnpm
-      - name: Install
-        run: pnpm install --frozen-lockfile
-      - name: Install Chromium
-        run: pnpm exec playwright install --with-deps chromium
-      - name: Capture baselines
-        env:
-          PW_BASE_URL: ${{ inputs.base_url }}
-          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-        run: pnpm test:e2e:update
-      - name: Commit baselines to the branch
-        # The runner commits the captures directly: artifact downloads redirect to a
-        # storage host the agent sandbox's network policy blocks, so an artifact-only
-        # hand-off dead-ends. always(): a single flaky surface must not discard the
-        # other captures — the job stays red on real failures, but partials still land.
-        #
-        # ⚠️ THIS COMMIT DOES NOT RE-TRIGGER CI. GitHub deliberately suppresses workflow
-        # runs for pushes made with GITHUB_TOKEN, so the freshly captured baselines land on
-        # the branch with ZERO checks against them and the PR's last judged SHA stays the
-        # commit BEFORE the capture. That reads exactly like "CI passed on the new
-        # baselines" when nothing evaluated them. Push any commit of your own afterwards
-        # (or re-run the PR's checks) to get the branch judged on what it now contains.
-        if: always()
-        run: |
-          git config user.email noreply@anthropic.com
-          git config user.name Claude
-          git add test/e2e/__screenshots__/
-          if git diff --cached --quiet; then
-            echo "No baseline changes to commit."
-          else
-            git commit -m "Visual baselines: capture against ${{ inputs.base_url }} (runner-committed)"
-            git pull --rebase origin "${GITHUB_REF_NAME}"
-            git push origin "HEAD:${GITHUB_REF_NAME}"
-          fi
-      - name: Upload baselines (debug copy)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: visual-baselines
-          path: test/e2e/__screenshots__/
-          retention-days: 7
-
-  # The a11y ratchet's seed/re-freeze path (ADR-928). Same shape as update-baselines and for
-  # the same reason: the numbers must come from a real deployment, and only the runner holds
-  # the bypass secret that gets past Deployment Protection.
-  update-a11y:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.update_a11y }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 10.33.0
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: pnpm
-      - name: Install
-        run: pnpm install --frozen-lockfile
-      - name: Install Chromium
-        run: pnpm exec playwright install --with-deps chromium
-      # PW_A11Y_UPDATE makes every @a11y test RECORD its violation count instead of asserting
-      # against the baseline, so the capture cannot fail on the debt it is there to measure.
-      - name: Capture a11y counts
-        env:
-          PW_BASE_URL: ${{ inputs.base_url }}
-          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-          PW_A11Y_UPDATE: '1'
-        run: pnpm test:e2e:a11y
-      # Merge is asymmetric and exits non-zero on a rise, so a regression cannot be quietly
-      # absorbed by re-running this job. No always() here for exactly that reason.
-      - name: Merge into the ratchet
-        run: pnpm a11y:baselines
-      - name: Commit baselines to the branch
-        # Same GITHUB_TOKEN caveat as update-baselines above: this push does NOT re-trigger
-        # CI, so the branch carries new baselines that nothing has been judged against.
-        run: |
-          git config user.email noreply@anthropic.com
-          git config user.name Claude
-          git add test/e2e/a11y-baselines.json
-          if git diff --cached --quiet; then
-            echo "No baseline changes to commit."
-          else
-            git commit -m "a11y baselines: capture against ${{ inputs.base_url }} (runner-committed)"
-            git pull --rebase origin "${GITHUB_REF_NAME}"
-            git push origin "HEAD:${GITHUB_REF_NAME}"
-          fi
-      - name: Upload capture + report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: a11y-capture
-          path: |
-            test/e2e/a11y-baselines.json
-            test/e2e/.a11y-observed.jsonl
-            playwright-report/
-          retention-days: 7
-          include-hidden-files: true
-
-  visual:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_visual }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 10.33.0
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: pnpm
-      - name: Install
-        run: pnpm install --frozen-lockfile
-      - name: Install Chromium
-        run: pnpm exec playwright install --with-deps chromium
-      - name: Visual suite
-        env:
-          PW_BASE_URL: ${{ inputs.base_url }}
-          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-        run: pnpm test:e2e:visual
-      - name: Upload report + diffs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report-visual
-          path: |
-            playwright-report/
-            test-results/
-          retention-days: 7
-
-  # ── The automatic PR gate (Lift 6c) ─────────────────────────────────────────────────
   # Runs only on pull_request, and only for the paths filter above. Three outcomes:
   #   · bypass secret missing        → SKIP, green, with a notice + step summary (never red)
   #   · no successful Vercel preview → SKIP, green, with a notice (a PR can legitimately
@@ -247,7 +47,6 @@ jobs:
   #                                    which the Vercel check reports on its own)
   #   · preview resolved             → smoke + @a11y, then the @visual compare
   pr-compare:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     # Narrower than the workflow default (which is only `contents: write` for the
     # maintainer-triggered baseline commit). This job never writes.
