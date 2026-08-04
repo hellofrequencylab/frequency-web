@@ -10,7 +10,8 @@
 # teaches people to ignore the word, and the one place it needs to mean something is
 # e2e.yml, where "skipped" really does mean "nothing was tested".
 #
-# So: PRs see exactly one e2e check (pr-compare). This file is what you reach for by hand.
+# So: PRs see only the automatic e2e checks (pr-compare + lighthouse, ADR-936), never these.
+# This file is what you reach for by hand.
 #
 #   base_url         where to point Playwright (a preview URL, or production)
 #   run_visual       also run the @visual compare against committed baselines

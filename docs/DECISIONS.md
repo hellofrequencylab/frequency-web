@@ -17139,3 +17139,34 @@ The Space one matters more than "operator-only" suggests: assigning a Space skin
 **Consequences.** Safe to land as a hard cut: production has **nobody on midnight** — 51 profiles on `default` and one null, Spaces on `dawn`/`default`. So no member is downgraded and no Space repaints. ⚠️ `midnight`'s CSS stays shipped and still renders for any stored value; this withdraws the *offer*, not the skin. ⚠️ The Palette axis is invisible in the product today, which is correct but means a second selectable skin makes a whole section reappear — worth a look when one lands.
 
 The durable rule: **a capability flag is only as good as its narrowest reader** — adding one is not done until every surface that could grant the thing reads it, and a test says so.
+
+## ADR-936 — The speed gate's thresholds come from measurement, and it stops serialising behind Playwright (2026-08-04)
+
+**Status.** Accepted. Completes ADR-930, which shipped the Lighthouse gate with thresholds it openly called guesses, and ADR-934, which made the gate report its own numbers so the guesses could be replaced.
+
+**Context.** It took four attempts to read four numbers. The artifact holding them is a 26MB zip on `blob.core.windows.net`, a host this environment's egress policy denies; the production apex is denied too, so re-measuring locally was not a route either; and `lighthouse-ci` prints only assertions that FAIL, so three fully green runs reported nothing at all. Three more runs were cancelled by my own pushes before reaching the reporting step. The numbers finally landed via the `Report the numbers` step of ADR-934, in the job summary, where reading them costs nothing.
+
+**The measured baseline** (run 30934494633, 4 URLs × 3 runs, medians):
+
+| URL | LCP | CLS | TBT | FCP | Weight |
+|---|---|---|---|---|---|
+| `/` | 878ms | 0.000 | 9ms | 408ms | 1.23MB |
+| `/pricing` | 941ms | 0.032 | 1ms | 404ms | 1.21MB |
+| `/the-community` | 916ms | 0.032 | 2ms | 459ms | 1.15MB |
+| `/loneliness` | 950ms | 0.032 | 0ms | 419ms | 1.18MB |
+
+**The guesses were not slightly loose, they were decorative.** LCP 4000 against a 950ms worst case is 4.2× headroom. **TBT 600 against a 9ms worst case is sixty-six times.** A gate with 66× headroom cannot fail; a gate that cannot fail is decoration, and the green tick it prints is exactly the "nothing behind it" signal this whole wave existed to remove.
+
+**Decision — thresholds set from the data, bounded by the field budgets.** LCP **4000 → 2500**, TBT **600 → 300**, FCP warn **2500 → 1000**, byte-weight warn **3.5MB → 2MB**. CLS **holds at 0.1**.
+
+The floor on LCP is not conservatism, it is the config's own rule: lab thresholds sit ABOVE the field budgets (`lib/analytics/vitals-budgets.ts` marketing LCP **2000ms**), because a lab gate stricter than the field target would fail PRs for pages that are fine for real visitors. 2500 is the tightest value that keeps that rule. CLS holds for the same reason plus one more: 0.1 *is* both the field budget and the industry good/needs-improvement boundary. It gets no paired tighter warn, because lighthouse-ci takes **one assertion per audit id** — a 0.05 warn would replace the 0.1 error, not sit beneath it. TBT has no field twin (INP cannot be produced in a lab), so it is bounded by the lab convention instead: 300ms is Lighthouse's own needs-improvement line, still 33× the worst observed.
+
+**Decision — the speed gate gets its own job.** It was steps 11–13 of `pr-compare`, which put ~13 minutes of Lighthouse (4 URLs × 3 runs = 12 full audits) *after* ~11 minutes of Playwright: **~25 minutes of wall clock on every PR touching `app/` or `components/`**. The two share no dependency; both need only the resolved preview URL. Run side by side, the slower sets the clock and the same work lands in ~15 minutes.
+
+It resolves the preview **itself** rather than consuming a job output from `pr-compare`. That duplicates 1–2 minutes of polling and buys total isolation: `pr-compare` keeps the exact shape it had, so the visual/a11y gate cannot be broken by a change made purely to speed up the speed gate. Given that this workflow's failure mode is a **silent skip** — a green tick with nothing behind it, the thing `e2e.yml`'s own header warns about — two minutes is a cheap premium.
+
+**Alternatives considered.** *`numberOfRuns` 3 → 1* (rejected: saves ~8.5 minutes and reintroduces precisely the single-run noise the median exists to absorb). *Four URLs → two* (rejected: that is real coverage, and the one-per-shape set is already the minimum). *A three-job chain with a shared `preview` job* (rejected: it re-plumbs `pr-compare`'s `if:` conditions, and the downside of getting that wrong is the silent skip).
+
+**Consequences.** ⚠️ PRs now show **two** e2e checks, not one. The "exactly ONE check" rule in `e2e.yml`'s header was written against permanently-*skipped* rows teaching people to ignore the word; both jobs here always run, so the rule's purpose survives its letter. Both headers were corrected in the same change rather than left to drift. ⚠️ The new thresholds have not yet caught anything — the first PR to trip one is the real test. ⚠️ `unused-javascript` still scores **0** on all four URLs and stays a warn (ADR-934); tightening thresholds does not touch it, and it remains the one genuinely actionable speed finding.
+
+The durable rule: **a threshold nobody has measured against is a guess wearing a number** — and 66× headroom is how you discover the guess was never a gate.
