@@ -17,7 +17,8 @@ import { resolveTheme } from '@/lib/theme/server/resolve'
 import { structureFor } from '@/lib/theme/structure'
 import { THEME_COOKIE, parseThemeCookie } from '@/lib/theme/cookie'
 import { loadActiveThemeCss, resolveActiveOccasionSlug } from '@/lib/theme/server/themes'
-import RightSidebar, { MobileGameStats } from '@/components/sidebar/right-sidebar'
+import RightSidebar, { MobileGameStats, VaultDockSlot } from '@/components/sidebar/right-sidebar'
+import { isQuestSurface } from '@/lib/layout/rail-panels'
 import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
@@ -440,11 +441,27 @@ export default async function MainLayout({
     </Suspense>
   )
 
-  // The < lg counterpart — the same stats body in the mobile left drawer's bottom cluster
-  // (on lg the score lives in the rail's Your Quest panel; it must exist ONCE per viewport).
-  const mobileStats = (
+  // The score, ONCE PER VIEWPORT (three-docks law).
+  //   < 768  → this, the mobile drawer's bottom cluster. The drawer is md:hidden.
+  //   ≥ 768  → the Vault tab below. It is hidden md:block.
+  // The two are mutually exclusive by construction rather than by matching gates, which is what
+  // let the previous split disagree with itself: the tablet block keyed off showLeftRail while
+  // the rail panel keyed off showSidebar, so /crew rendered the score twice at 768-1023 and
+  // /admin rendered it there but not at ≥1024.
+  // isQuestSurface is applied on BOTH so the Quest page, which owns these figures itself, stays
+  // the single source at every width.
+  const mobileStats = isQuestSurface(currentPath ?? '') ? null : (
     <Suspense fallback={null}>
       <MobileGameStats profileId={profile.id} />
+    </Suspense>
+  )
+
+  // The ≥ 768 home: the bottom-right canvas tab. Same coordinates as the operator page dock,
+  // which is the point — DAWN's docks card says bottom-right is "The Vault (member) OR this
+  // page (operator)", and showSidebar is false on /admin, so only one can ever mount.
+  const dock = (
+    <Suspense fallback={null}>
+      <VaultDockSlot profileId={profile.id} />
     </Suspense>
   )
 
@@ -578,6 +595,7 @@ export default async function MainLayout({
       sidebar={sidebar}
 
       mobileStats={mobileStats}
+      dock={dock}
       ticker={ticker}
       unreadCount={unreadCount}
       messagesUnread={messagesUnread}

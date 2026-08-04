@@ -1097,6 +1097,7 @@ function MobileLeftDrawer({
   sections = NAV_SECTIONS,
   menuDriven = false,
   mobileStats,
+  dock,
 }: {
   open: boolean
   onClose: () => void
@@ -1125,9 +1126,14 @@ function MobileLeftDrawer({
   sections?: NavSectionGroup[]
   /** Sections are DB-driven (mode-per-item); forwarded to NavLinkList. */
   menuDriven?: boolean
-  /** The game-stats block (MobileGameStats) — the drawer's bottom cluster is the < lg home
-   *  of the game counts (the Vault dock is desktop-only; docks law, nothing offered twice). */
+  /** The game-stats block (MobileGameStats). The drawer's bottom cluster is the < 768 home of
+   *  the score; from md it is the bottom-right Vault tab (`dock`). Exactly one per viewport. */
   mobileStats?: React.ReactNode
+  /** The bottom-right Vault tab (three-docks law, owner ruling 2026-08-04). Rendered as a
+   *  SIBLING of the shell, not inside the rail column: that column is lg:flex and the tab must
+   *  exist from md. Gated on showSidebar, the same flag that keeps it off /admin, where the
+   *  operator page dock owns these exact coordinates. */
+  dock?: React.ReactNode
 }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -1413,6 +1419,7 @@ export default function AppShell({
   children,
   sidebar,
   mobileStats,
+  dock,
   ticker,
   unreadCount = 0,
   // Reserved for the persistent chat dock's unread badge (Phase 1). The header
@@ -1464,9 +1471,14 @@ export default function AppShell({
   children: React.ReactNode
   sidebar?: React.ReactNode
   /** The game-stats block (MobileGameStats) for the mobile left drawer's bottom cluster —
-   *  the < lg home of the game counts. On lg the same numbers live in the rail's Your Quest
-   *  panel (nothing is offered twice, but everything is offered once). */
+   *  the < 768 home of the score. From md the same numbers live in the bottom-right Vault tab
+   *  (`dock`); nothing is offered twice, and everything is offered once. */
   mobileStats?: React.ReactNode
+  /** The bottom-right Vault tab (three-docks law, owner ruling 2026-08-04). Rendered as a
+   *  SIBLING of the shell, not inside the rail column: that column is lg:flex and the tab must
+   *  exist from md. Gated on showSidebar, the same flag that keeps it off /admin, where the
+   *  operator page dock owns these exact coordinates. */
+  dock?: React.ReactNode
   /** Community news ticker pinned above the page content (streamed via Suspense). */
   ticker?: React.ReactNode
   unreadCount?: number
@@ -1963,19 +1975,6 @@ export default function AppShell({
                 <nav className="flex-1 py-3 space-y-1">
                   <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} operatesSpaces={operatesSpaces} sections={navSections} menuDriven={menuDriven} />
                 </nav>
-                {/* Your score, TABLET BAND ONLY (768-1023px).
-                    The drawer that carries the counts is `md:hidden` and the right rail's Your
-                    Quest panel is `lg:flex`, so between those two breakpoints the member's Zaps,
-                    Gems and streak had nowhere to render at all. This is the third home, and it
-                    is `lg:hidden` precisely so the law above holds: offered once per viewport,
-                    never twice. Same node the drawer renders, so the numbers cannot disagree.
-                    Capped + internally scrollable for the same reason the drawer caps it: a short
-                    tablet window must not let the score crush the nav above it. */}
-                {mobileStats && (
-                  <div className="hidden lg:hidden md:block max-h-[40dvh] overflow-y-auto border-t border-border px-3 py-3">
-                    {mobileStats}
-                  </div>
-                )}
                 {/* Bottom-left profile card — the account dock at the rail's FOOT (three-docks
                     law): the admin canvas corner-tab skin (rounded top, hairline, canvas-tinted
                     blur), sticky to the column bottom. Mirrors components/admin/
@@ -2130,6 +2129,13 @@ export default function AppShell({
           Profile ("You") stays the top-right account avatar in the header (not a tab); stats
           moved into the left drawer; Messages moved to the header. Hidden on a full-viewport
           editor takeover so it never sits over the editor's control dock. */}
+      {/* The bottom-right Vault tab. A shell sibling, deliberately: the rail column is lg:flex
+          and this must render from md. `showSidebar` is the arbitration with the operator page
+          dock, which occupies these exact coordinates on /admin. Outside the editor-takeover
+          guard below because it is not part of the mobile tab bar -- it is hidden md:block, so
+          it never renders at the width the tab bar occupies. */}
+      {showSidebar && !editorTakeover && dock}
+
       {!editorTakeover && (
         <MobileTabBar
           isActive={isActive}
@@ -2163,6 +2169,7 @@ export default function AppShell({
           sections={navSections}
           menuDriven={menuDriven}
           mobileStats={mobileStats}
+          dock={dock}
         />
       )}
 

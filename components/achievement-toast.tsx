@@ -123,7 +123,7 @@ export function AchievementToastContainer() {
     // cleared and the pill is higher on mobile.
     // The old lg:bottom-32 reserved 128px for GameStatsDockClient, which has had zero mount
     // sites since the Vault moved back into the rail.
-    <div className="fixed bottom-32 md:bottom-20 right-4 z-50 flex flex-col gap-3 pointer-events-none">
+    <div className="fixed bottom-32 md:bottom-24 right-4 z-50 flex flex-col gap-3 pointer-events-none">
       {toasts.map(t => (
         <AchievementToastCard
           key={t.id}

@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import { headers } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SEASON_RANKS, rankForCompletion, journeysFinishedThisSeason } from '@/lib/season-ranks'
-import { GameStatsPanel, type DockData } from '@/components/sidebar/game-stats-dock'
+import { GameStatsPanel, GameStatsDockClient, type DockData } from '@/components/sidebar/game-stats-dock'
 import { getPracticesToLogToday, getRecentPracticeLogs, getMemberPractices } from '@/lib/practices'
 import { getMemberJourneyProgress } from '@/lib/journeys/progress'
 import { DemoNotice } from '@/components/sidebar/demo-notice'
@@ -155,17 +155,14 @@ export async function loadGameStats(profileId: string): Promise<DockData> {
 // panels and scrolls with them. Suppressed on Quest surfaces, where the page already owns
 // the same numbers. In admin mode the settings drawer slides over this whole column, so the
 // rail becomes the operator's settings without this panel having to know about it.
-async function VaultPanel({ profileId }: { profileId: string }) {
-  return (
-    <section>
-      <div className="mb-2 px-1">
-        <h3 className="text-sm font-bold tracking-tight text-text">Your Quest</h3>
-      </div>
-      <div className="rounded-card border border-border bg-surface p-4">
-        <GameStatsPanel data={await loadGameStats(profileId)} showSummary />
-      </div>
-    </section>
-  )
+// The bottom-right dock slot. The score lives in the TAB now (three-docks law, owner ruling
+// 2026-08-04), not as a rail panel -- so this returns the dock rather than a <section>, and the
+// rail no longer carries the numbers at all. Quest surfaces still suppress it: that page owns
+// the same figures, and the rule is once per viewport, not once per column.
+export async function VaultDockSlot({ profileId }: { profileId: string }) {
+  const pathname = (await headers()).get('x-pathname') ?? ''
+  if (isQuestSurface(pathname)) return null
+  return <GameStatsDockClient data={await loadGameStats(profileId)} />
 }
 
 async function ActivityPanel({ profileId }: { profileId: string }) {
@@ -275,12 +272,9 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
             <ControlCenterPanel profileId={profileId} />
           </Suspense>
         )}
-        {/* Your Quest — the score, back in the rail where it reads without a click. */}
-        {!onQuest && (
-          <Suspense fallback={<PanelSkeleton />}>
-            <VaultPanel profileId={profileId} />
-          </Suspense>
-        )}
+        {/* The score is NOT here. It is the bottom-right Vault tab (VaultDockSlot above,
+            threaded by (main)/layout.tsx), so collapsing or scrolling the rail can never take
+            the member's numbers away with it. */}
         {/* Your activity — under Season Standing, except on /practices which already shows it. */}
         {showActivity && (
           <Suspense fallback={<PanelSkeleton />}>
