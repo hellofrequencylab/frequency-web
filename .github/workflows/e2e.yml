@@ -203,14 +203,23 @@ jobs:
             --collect.settings.extraHeaders="{\"x-vercel-protection-bypass\":\"${BYPASS}\"}" \
           || { echo "::warning title=Lighthouse::assertions failed -- see the job log and the uploaded .lighthouseci report"; exit 1; }
 
+      # The first run of this step uploaded NOTHING and still went green. LHCI writes to
+      # `.lighthouseci/`, which is a HIDDEN directory, and upload-artifact@v4 defaults
+      # `include-hidden-files: false` -- so it found no files, and `if-no-files-found: ignore`
+      # swallowed that. The log said "Dumping 12 reports to disk" three lines above "No files
+      # were found with the provided path". A gate whose evidence never leaves the runner is
+      # the same green-tick-with-nothing-behind-it this wave spent its time closing.
+      # `error` rather than `ignore`: if the reports vanish again, that must be loud, because
+      # the numbers in them are the only way to re-set the thresholds ADR-930 admits are guesses.
       - name: Upload Lighthouse report
         if: ${{ always() && steps.preview.outputs.ready == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: lighthouse-pr-compare
           path: .lighthouseci/
+          include-hidden-files: true
           retention-days: 7
-          if-no-files-found: ignore
+          if-no-files-found: error
 
       - name: Upload report + diffs
         if: ${{ failure() && steps.preview.outputs.ready == 'true' }}

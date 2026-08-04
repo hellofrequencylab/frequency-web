@@ -16950,6 +16950,26 @@ The thresholds sit **deliberately above** the field budgets in `lib/analytics/vi
 
 The durable rule: **a signal you cannot compute honestly should be omitted, not faked — a crawler that learns to distrust your `lastmod` distrusts all of it, including the entries you got right.**
 
+**Correction, 2026-08-04 (same day).** The first real run of this gate uploaded **nothing**, and
+went green doing it. LHCI writes to `.lighthouseci/`, a hidden directory, and
+`actions/upload-artifact@v4` defaults `include-hidden-files: false`; `if-no-files-found: ignore`
+then swallowed the miss. The job log carried both halves three lines apart — *"Dumping 12 reports
+to disk"* followed by *"No files were found with the provided path"*. So the one artifact that
+would let anyone re-set these thresholds from data never left the runner, in a gate whose own ADR
+says the thresholds are guesses that must be re-set from data. Fixed with `include-hidden-files:
+true` and `if-no-files-found: error`, because a second silent loss must be loud.
+
+Worth stating plainly, since this ADR and ADR-931 were written the same day about exactly this
+failure mode: the check that shipped to catch green-ticks-with-nothing-behind-them was itself one.
+
+What the first run DID report, from the log rather than the artifact: every error-level assertion
+(LCP, CLS, TBT) passed, and three warnings fired on `/the-community` and `/loneliness` —
+`unused-javascript` scored **0 across all three runs**, `render-blocking-resources` 0.5, and
+`uses-responsive-images` 0 to 0.5. The unused-JS zero is real signal and the first speed finding
+this gate has produced. The millisecond values behind the passing assertions remain unknown until
+a run uploads its report, so whether the thresholds are too loose is still an open question and
+must not be answered by guessing again.
+
 ## ADR-931 — Three gates did not hold the property they advertised, and one "completed" task was never started (2026-08-04)
 
 **Status.** Accepted. Outcome of a seven-agent read-only verification sweep over all 33 completed tasks.
