@@ -159,7 +159,6 @@ jobs:
       # Smoke + @a11y: no baseline dependency, so this half of the gate is trustworthy the
       # moment the bypass secret exists.
       - name: Smoke + a11y suite
-        id: functional
         if: steps.preview.outputs.ready == 'true'
         env:
           PW_BASE_URL: ${{ steps.preview.outputs.url }}
@@ -175,18 +174,8 @@ jobs:
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm test:e2e:visual
 
-      # ── Synthetic speed gate (ADR-930) ────────────────────────────────────────
-      # Reuses the preview URL and bypass secret this job already resolved rather than
-      # re-implementing 60 lines of deployment polling in a second workflow.
-      #
-      # always(), for the same reason the visual compare uses it: a functional failure
-      # above must not hide a performance regression here.
-      #
-      # This gate answers "did anything collapse", NOT "did we meet the Core Web Vitals
-      # budget". Those budgets (lib/analytics/vitals-budgets.ts) are field p75 from real
-      # devices; this is a lab run on a shared runner against a cold deployment. The
-      # thresholds in lighthouserc.json therefore sit well above the field budgets, and a
-      # green tick here is not evidence the budget is met. See the ADR before tightening.
+      # The synthetic speed gate used to run here as steps 11-13. It is its own parallel
+      # job now (ADR-936) -- see `lighthouse:` below.
 
       - name: Upload report + diffs
         if: ${{ failure() && steps.preview.outputs.ready == 'true' }}

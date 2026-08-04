@@ -157,18 +157,18 @@ The Frequency team`,
 export const BETA_NURTURE_TEMPLATES: BetaNurtureTemplate[] = [
   {
     key: 'waitlist_confirm',
-    label: 'Waitlist double opt-in confirm',
+    label: 'The Beta is open',
     phaseKey: 'P0',
     order: 1,
     delayHours: 0,
-    subject: 'Confirm your spot on the Frequency waitlist',
+    subject: 'The Frequency Beta is open',
     body: `Hi,
 
-You asked to join the Frequency Beta. One quick step: tap the button below to confirm it is really you, and you are on the list.
+You asked about the Frequency Beta. Good news: it is open, so there is nothing to wait for.
 
-[Confirm my spot](https://frequencylocal.com/beta/confirm)
+[Start a Circle](https://frequencylocal.com/onboarding/beta)
 
-We are opening the community in waves, city by city. Once your area is up, we will send your invite. That is it for now.
+Join one that is already meeting near you, or start the first one where you live. Free for the whole beta, no card.
 
 If you did not ask for this, you can ignore this email and nothing happens.
 

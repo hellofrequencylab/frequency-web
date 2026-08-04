@@ -54,18 +54,18 @@ const WAITLIST_CONFIRM: BetaLaunchEmail = {
     {
       id: 'prose',
       content: {
-        text: 'Hi,\n\nYou asked to join the Frequency Beta. One quick step: tap the button below to confirm it is really you, and you are on the list.',
+        text: 'Hi,\n\nYou asked about the Frequency Beta. Good news: it is open, so there is nothing to wait for. Tap below and pick your Circle.',
       },
     },
     { id: 'divider', content: {} },
     {
       id: 'button',
-      content: { label: 'Confirm my spot', url: 'https://frequencylocal.com/beta/confirm', align: 'center' },
+      content: { label: 'Start a Circle', url: 'https://frequencylocal.com/onboarding/beta', align: 'center' },
     },
     {
       id: 'text',
       content: {
-        text: 'We are opening the community in waves, city by city. Once your area is up, we will send your invite. That is it for now.\n\nIf you did not ask for this, you can ignore this email and nothing happens.\n\nSee you soon,\nThe Frequency team',
+        text: 'Join one that is already meeting near you, or start the first one where you live. Free for the whole beta, no card.\n\nIf you did not ask for this, you can ignore this email and nothing happens.\n\nSee you soon,\nThe Frequency team',
       },
     },
   ]),

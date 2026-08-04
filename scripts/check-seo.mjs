@@ -62,7 +62,6 @@ const INTENTIONALLY_EXCLUDED = new Map([
   ['/social-life-without-drinking', '308 permanentRedirect → /how-to-be-more-social (absorbed into the social-confidence pillar)'],
   ['/host-a-recurring-gathering', '308 permanentRedirect → /how-to-build-community (absorbed into the builder pillar)'],
   ['/how-to-run-a-community-space', '308 permanentRedirect → /how-to-build-community (absorbed into the builder pillar)'],
-  ['/beta/confirm', 'robots noindex — double-opt-in confirmation landing (transactional)'],
   ['/subscribe/confirm', 'robots noindex — double-opt-in confirmation landing (transactional)'],
 ])
 
