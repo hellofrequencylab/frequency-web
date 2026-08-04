@@ -13,6 +13,7 @@ export async function unblockFromSettings(profileId: string): Promise<void> {
   if (!myId) return
   await unblockUser(myId, profileId)
   revalidatePath('/settings/account')
+  revalidatePath('/settings') // the section now renders on the unified Settings page
 }
 
 // Permanently delete the signed-in member's account, then sign out and send them

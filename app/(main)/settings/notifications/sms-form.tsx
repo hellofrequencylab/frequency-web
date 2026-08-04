@@ -90,7 +90,7 @@ export function SmsForm({
   }
 
   return (
-    <div className="mt-6 rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+    <div className="mt-6 rounded-card border border-border bg-surface lift-1 overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-surface-elevated">
         <MessageSquare className="w-4 h-4 text-muted" />
         <span className="text-sm font-semibold text-text">Text messages</span>

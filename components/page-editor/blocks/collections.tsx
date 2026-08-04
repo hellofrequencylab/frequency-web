@@ -163,7 +163,7 @@ export function FeatureGridBlock({
             const num = String(i + 1).padStart(2, '0')
             return (
               <article key={i} className={`${cardBase} ${pad}`}>
-                <p className={`font-display text-5xl mb-5 ${ink ? 'text-white/20' : 'text-text/10'}`}>{num}</p>
+                <p className={`font-display text-5xl mb-5 ${ink ? 'text-on-ink/20' : 'text-text/10'}`}>{num}</p>
                 {item.title && <h3 className={`text-xl font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
                 {item.body && <div className={`text-base leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
                 {item.href && (
@@ -179,7 +179,7 @@ export function FeatureGridBlock({
           return (
             <article key={i} className={`${cardBase} ${pad}`}>
               {IconComp && (
-                <div className="w-11 h-11 rounded-2xl bg-primary-bg text-primary-strong flex items-center justify-center mb-5">
+                <div className="w-11 h-11 rounded-card bg-primary-bg text-primary-strong flex items-center justify-center mb-5">
                   <IconComp className="w-5 h-5" aria-hidden />
                 </div>
               )}
@@ -379,7 +379,7 @@ export function ShowcaseBlock({
               key={i}
               className={`flex flex-col items-center sm:items-stretch sm:flex-row ${reverse ? 'sm:flex-row-reverse' : ''}`}
             >
-              <div className="relative w-80 h-80 sm:w-[32rem] sm:h-[32rem] rounded-full overflow-hidden border-4 border-white/10 shrink-0">
+              <div className="relative w-80 h-80 sm:w-[32rem] sm:h-[32rem] rounded-full overflow-hidden border-4 border-on-ink/10 shrink-0">
                 <Image
                   src={p.image || '/images/site/lab-storefront.jpg'}
                   alt={p.title || ''}
@@ -389,7 +389,7 @@ export function ShowcaseBlock({
                 />
               </div>
               <div className={`relative z-10 flex flex-col justify-center max-w-md -mt-12 sm:mt-0 ${reverse ? 'sm:-mr-20' : 'sm:-ml-20'}`}>
-                <h3 className="font-display uppercase text-white text-[clamp(1.875rem,5.5vw,3rem)] mb-5 px-2 text-center sm:text-left">
+                <h3 className="font-display uppercase text-on-ink text-[clamp(1.875rem,5.5vw,3rem)] mb-5 px-2 text-center sm:text-left">
                   {p.title}
                 </h3>
                 <div className="bg-surface rounded-3xl p-8 shadow-pop">
@@ -508,7 +508,7 @@ export function TiersBlock({
             : raw
           const featured = tier.highlight === 'featured'
           const cardTone = featured
-            ? 'rounded-2xl bg-surface-elevated border-2 border-primary ring-4 ring-primary-bg lg:-translate-y-3 lg:scale-[1.02] shadow-pop'
+            ? 'rounded-card bg-surface-elevated border-2 border-primary ring-4 ring-primary-bg lg:-translate-y-3 lg:scale-[1.02] shadow-pop'
             : baseCard
           return (
             <article key={i} className={`relative flex flex-col h-full ${pad} ${cardTone}`}>
@@ -573,14 +573,14 @@ export function TiersBlock({
                 (tier.ctaStyle === 'disabled' ? (
                   <span
                     aria-disabled="true"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-bold border border-border bg-surface-elevated text-subtle cursor-default select-none"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-card px-6 py-3.5 text-base font-bold border border-border bg-surface-elevated text-subtle cursor-default select-none"
                   >
                     {tier.ctaLabel}
                   </span>
                 ) : (
                   <Link
                     href={safeHref(tier.ctaHref) ?? '#'}
-                    className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-bold transition-colors ${
+                    className={`inline-flex w-full items-center justify-center gap-2 rounded-card px-6 py-3.5 text-base font-bold transition-colors ${
                       tier.ctaStyle === 'primary'
                         ? 'bg-primary text-on-primary hover:bg-primary-hover shadow-pop'
                         : 'border border-border-strong text-text hover:bg-surface-elevated'

@@ -1,70 +1,10 @@
-import { notFound } from 'next/navigation'
-import { FocusTemplate } from '@/components/templates'
-import {
-  getMyConnectionPrefs,
-  getConnectionSettings,
-} from '@/lib/connections/connection-settings'
-import { getMyProfileId } from '@/lib/auth'
-import { getMatchingConsent } from '@/lib/resonance/matches'
-import { getMyMatchPrefs } from '@/lib/match/prefs'
-import { ConnectionPrefsForm } from '@/components/settings/connection-prefs-form'
-import { LiveLocationToggle } from '@/components/settings/live-location-toggle'
-import { FeedRadiusSlider } from '@/components/settings/feed-radius-slider'
-import { ResonanceMatchingToggle } from '@/components/settings/resonance-matching-toggle'
-import { MatchPrefsForm } from '@/components/settings/match-prefs-form'
+import { redirect } from 'next/navigation'
 
-export default async function ConnectionsSettingsPage() {
-  // Connection-layer prefs + the platform radius bounds (ADR-186), plus the caller's
-  // Resonance Engine matching consent (ADR-385) for the opt-in control below.
-  const [prefs, settings, myId] = await Promise.all([
-    getMyConnectionPrefs(),
-    getConnectionSettings(),
-    getMyProfileId(),
-  ])
-  if (!prefs) notFound()
-  const matching = myId ? await getMatchingConsent(myId) : { optedIn: false, optedOutAsTarget: false }
-  // Phase 5 (ADR-419): the opt-in romance + astrology match prefs, defaults when unset.
-  const matchPrefs = myId
-    ? await getMyMatchPrefs(myId)
-    : { connectIntent: ['community'], romanceMode: false, astrologyOptIn: false, birthData: null }
+// The settings suite is one page now (DAWN 2 screen pass): the connection and location
+// controls render as the #connections section of /settings (see ../page.tsx +
+// section.tsx). This route stays as a permanent anchor redirect so every existing link
+// (the admin rail bank, docs) keeps landing on the same controls.
 
-  return (
-    <FocusTemplate
-      title="Connections & Location"
-      description="Decide who can find you, how precisely your location is shown, and how far your reach extends. Changes save instantly."
-      back={{ href: '/settings', label: 'Settings' }}
-    >
-      <ConnectionPrefsForm
-        initial={{
-          directoryVisible: prefs.directoryVisible,
-          discoverableBy: prefs.discoverableBy,
-          locationBand: prefs.locationBand,
-          discoveryRadiusM: prefs.discoveryRadiusM,
-          ghostMode: prefs.ghostMode,
-          hasHome: prefs.hasHome,
-          minDiscoveryRadiusM: settings.minDiscoveryRadiusM,
-          maxDiscoveryRadiusM: settings.maxDiscoveryRadiusM,
-        }}
-      />
-      <div className="mt-5">
-        <FeedRadiusSlider initialRadiusM={prefs.feedRadiusM} />
-      </div>
-      <div className="mt-5">
-        <LiveLocationToggle initialLive={prefs.liveMode} liveUpdatedAt={prefs.liveUpdatedAt} />
-      </div>
-      <ResonanceMatchingToggle
-        initialOptedIn={matching.optedIn}
-        initialMuted={matching.optedOutAsTarget}
-      />
-      <div className="mt-5">
-        <MatchPrefsForm
-          initial={{
-            romanceMode: matchPrefs.romanceMode,
-            astrologyOptIn: matchPrefs.astrologyOptIn,
-            birthDate: matchPrefs.birthData?.date ?? '',
-          }}
-        />
-      </div>
-    </FocusTemplate>
-  )
+export default function ConnectionsRedirect() {
+  redirect('/settings#connections')
 }

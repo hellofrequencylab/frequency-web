@@ -267,14 +267,14 @@ tiles rather than a hardcoded `bg-surface`). The deliberate exceptions keep a
 live blocks, and `Spacer` (spacing only); `Container`/`Columns`/`Divider` carry
 their own tone/width because they're structural wrappers.
 
-### Catalog (24 blocks, 5 categories)
+### Catalog (5 categories; DAWN 2 additions marked ✚, ADR-926)
 | Category | Blocks |
 |---|---|
-| **Layout** | `Container` (tone band + nested slot), `Columns` (2/3 slots), `Spacer`, `Divider` |
-| **Content** | `Heading` (eyebrow+title+kicker, sizes), `Text` (markdown), `Statement`, `Quote` (pull / testimonial), `Buttons` (group) |
-| **Sections** | `Hero` (image / split / minimal), `FeatureGrid` (icon / image / numbered, 2 to 4 col), `Showcase` (alternating media+text; replaces `Pillars`), `StatRow`, `Tiers` (pricing/membership cards: featured ribbon, Founder badge, struck price), `Checklist`, `Accordion` (FAQ), `CallToAction` (replaces `BetaCTA`) |
-| **Media** | `Image`, `Gallery`, `MediaText` (replaces `ZigZag`), `Marquee` |
-| **Dynamic** | `LiveStats`, `LiveEvents`, `LivePosts` (live data via Puck `metadata`) |
+| **Layout** | `Container` (tone band + nested slot), `Columns` (2/3 slots), `Spacer`, `Divider` (hairline / ✚ `rule-amber` warm rule) |
+| **Content** | `Heading` (eyebrow+title+kicker, sizes), `Text` (markdown), `Statement`, ✚ `StoryBeats` (ruled prose beats on the reading measure), `Quote` (pull / testimonial), `Buttons` (group) |
+| **Sections** | `Hero` (image / split / minimal; ✚ `facts` glass dock on the image variant), `FeatureGrid` (icon / image / numbered, 2 to 4 col), ✚ `ValueBand` (ink principles, sheen cards), ✚ `BuildTimeline` (numbered/dated milestone cards, chosen highlight), ✚ `PhotoCardRow` (numbered photo panels + honesty overline), ✚ `PlanBand` (DAWN plan cards; `livePriceKey` binding per ADR-918, opt-in Product/Offer JSON-LD), ✚ `PillarNav` (the triptych), `Showcase`, `StatRow`, `Tiers` (pricing cards, `livePriceKey` binding), `Checklist`, `Accordion` (FAQ, emits its own FAQPage schema), `CallToAction` |
+| **Media** | `Image`, `Gallery`, `MediaText` (replaces `ZigZag`), ✚ `PhotoBeat` (full-bleed photograph carrying one line), ✚ `PhotoTrio` (figure row; arc shoulder + dot-grid chrome), `Marquee` |
+| **Dynamic** | `LiveStats`, `LiveEvents`, `LivePosts` (live data via `metadata`; `metadata.live.pricing` feeds `Tiers`/`PlanBand`) |
 
 Files: one per group. `kit.tsx` (`Heading`), `primitives.tsx` (`Text`,
 `Statement`, `Buttons`, `Container`, `Columns`, `Spacer`, `Divider`),

@@ -1,38 +1,25 @@
 import type { Data } from '@/lib/page-editor/types'
-import {
-  BETA_CTA_LABEL,
-  BETA_CTA_HREF,
-  BETA_CTA_SECONDARY_LABEL,
-  BETA_CTA_SECONDARY_HREF,
-} from '@/lib/site'
+import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ABOUT — the manifesto. The page that earns belief and calls in the builders.
+// ABOUT — the DAWN 2 rebuild, expressed in blocks (owner directive: the template
+// IS the page). Mirrors the coded rebuild in app/(marketing)/about/page.tsx
+// (commit 6395fe4, itself built to design_handoff/dawn/ui_kits/marketing/
+// about.html): the photographic hero with the glass fact dock, the rule-amber
+// story beats on the reading measure, one PhotoBeat, the ink principles band,
+// the arc-top figure row, the numbered asks, and the dark close. Same structure,
+// same copy — the template render and the coded fallback are visually equivalent.
 //
-// What this page does: tells the mission honestly and movingly, then calls in the
-// people who will build it. The storyline runs: the problem (the loneliest era,
-// the feed, the third place gone), the bet (real-world third places, a folding
-// chair with your name on it), the origin (Moonlight Beach, 2020), the design
-// principle (leaderful not leader-dependent, guru-free, one honest price), and the
-// invitation (we build it together; you don't need permission, you need rails).
-//
-// CONTRACT (copied from the-community.ts, the exemplar):
+// CONTRACT:
 //  • One `const L` layout literal, reused on every block so the rhythm stays even.
-//  • Section rhythm = alternating tones (surface → canvas → surface …), with a
-//    `Statement` interstitial between major movements and exactly ONE dark (`ink`)
-//    beat near the end before the close.
 //  • Compose ONLY from registered blocks (lib/page-editor/config.tsx). Canon terms
-//    rendered verbatim (Circle, Channel, Pillar, Journey, Run, Outpost, Frequency
-//    Lab; seven Channels, four Pillars). No em dashes. Sentence-case headings.
-//    Contractions always. Honest at day zero: no member counts, no invented numbers.
-//  • Movement-register language is the ONE allowance here (CONTENT-VOICE §6d) and
-//    stays RATIONED: a few plain sentences, never "revolution." The folding-chair
-//    line lives on this page, as the pull quote.
-//  • CTA SYSTEM: the page calls in the Latent Leader. The primary action is
-//    BETA_CTA_LABEL ("Start a Circle"), carried by the closing ink CallToAction,
-//    with ONE quiet secondary text link for the Seeker (BETA_CTA_SECONDARY_LABEL,
-//    "or just join as a member"). Never stack two buttons; a text link is not a
-//    button. The hero carries the premise and no button.
+//    verbatim (Circle, Journey, Frequency Lab). No em dashes. Sentence-case
+//    headings. Contractions always. Honest at day zero: the only numbers are the
+//    real story's (2020, a thousand at sunrise, 0% on your own bookings).
+//  • Movement-register language stays RATIONED (CONTENT-VOICE §6d): the one
+//    rationed line rides the PhotoBeat.
+//  • CTA SYSTEM: the hero carries the Seeker entry (/start); the closing ink
+//    CallToAction carries the shared beta CTA. Never stack two buttons.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const L = { spaceTop: 'default', spaceBottom: 'default', visibility: 'all' } as const
@@ -40,23 +27,27 @@ const L = { spaceTop: 'default', spaceBottom: 'default', visibility: 'all' } as 
 export const data: Data = {
   root: {},
   content: [
-    // ── Hero ── image variant, the premise, no button. People watching a sunset:
-    // the real-world third place, not a screen. ─────────────────────────────────
+    // ── Hero ── photographic, with the glass fact dock overhanging the seam. ────
     {
       type: 'Hero',
       props: {
         id: 'ab-hero',
         variant: 'image',
-        eyebrow: 'Why we exist',
+        eyebrow: 'Our story',
         title: 'The third place is gone. We hand people the tools to bring it back.',
-        titleAccent: 'bring it back',
+        titleAccent: '',
         subtitle:
-          'Frequency is community infrastructure for real-world connection. Not another feed. A way to find your people, a format any host can run, and a real home to grow into.',
-        image: '/images/site/nature-viewing-sunset.jpg',
+          "It started on a beach in 2020: no guru, no brand, just a thousand strangers who needed each other. We learned what it takes to make that last. Now we put it in the hands of the people who start the next one.",
+        image: '/images/site/moonlight-1.jpg',
         focal: 'center',
-        minHeight: 'screen',
-        ctaPrimaryLabel: '',
-        ctaPrimaryHref: '',
+        minHeight: 'auto',
+        facts: [
+          { value: '2020', label: 'A cliff at dawn' },
+          { value: '1,000', label: 'Strangers at sunrise' },
+          { value: '0%', label: 'On your own bookings' },
+        ],
+        ctaPrimaryLabel: 'Find your way in',
+        ctaPrimaryHref: '/start',
         ctaSecondaryLabel: '',
         ctaSecondaryHref: '',
         note: '',
@@ -67,235 +58,184 @@ export const data: Data = {
       },
     },
 
-    // ── The problem ── speak directly to the reader. The loneliest era, the feed,
-    // the third place that quietly disappeared. Plain, not clinical. ─────────────
+    // ── The story, told in beats separated by the warm hairline. Prose deserves
+    // a rule, not a box (DAWN about.html). Continues past the hero dock. ────────
     {
-      type: 'Heading',
+      type: 'StoryBeats',
       props: {
-        id: 'ab-problem-h',
-        eyebrow: 'The problem',
-        title: 'You have a hundred contacts and no one to call on a Tuesday.',
-        titleAccent: 'no one to call',
-        kicker: "It's not just you. The places adults used to meet quietly disappeared.",
-        size: 'default',
+        id: 'ab-story',
+        eyebrow: 'Where it comes from',
+        kicker: 'Most of a generation feels it. Almost nobody has a word for it.',
+        items: [
+          {
+            title: 'A hunger nobody could name.',
+            body: "We didn't set out to start a company. We set out to find each other, and discovered that the places built to hold people had quietly disappeared.\n\nThe corner café, the town square, the gathering ground: the third spaces that aren't home and aren't work, where you're known by name and missed when you don't show up. We traded them for feeds and followers, ended up surrounded yet unseen, and felt the loss long before we could explain it. No company is going to hand the third place back. People rebuild it, one Circle at a time, and it began the only honest way it could: with a handful of people on a cliff at dawn.",
+          },
+          {
+            title: 'It started on a cliff at dawn.',
+            body: `In a season when everyone felt cut off, a few people in ${FOUNDING_PLACE} started meeting on the bluffs above Moonlight Beach. Just breath, cold air, and each other: no membership, no marketing, no one in charge.\n\nWord got out the way real things do: one person bringing another. Within eighteen months, close to a thousand people were showing up to breathe together at sunrise, drawn by nothing but a hunger for something real that none of them could quite name.`,
+          },
+          {
+            title: 'No stage. No followers. Just a circle.',
+            body: "There was no guru on a stage and no audience in rows. People sat in a circle on the grass, passed instruments around, moved and breathed and actually talked. The point was never to watch someone perform belonging. It was to practice it together.\n\nThat shape mattered more than we understood at the time. A leader you follow can leave, burn out, or let you down. A circle holds itself. The thing we'd stumbled into wasn't a following at all. It was a community that could carry its own weight.",
+          },
+          {
+            title: 'And then it fell apart.',
+            body: "A thousand people, and nowhere to put them. No home, no infrastructure, no way to hold what had been built. It ran entirely on a few people's energy, and energy runs out. When it faded, it faded fast.\n\nBut it left something behind: a painfully clear picture of exactly what to build so that next time, it could last. Not more hype. Not a bigger personality. A format anyone can run, a model that doesn't depend on anyone's stamina, a way to stay open to everyone, and a real home to grow into.",
+          },
+        ],
+        flow: 'cont',
         tone: 'canvas',
-        width: 'default',
-        align: 'left',
-        layout: L,
-      },
-    },
-    {
-      type: 'Text',
-      props: {
-        id: 'ab-problem-b',
-        body: "Most of us are more connected and more alone than people have ever been. The feed promised company and handed us a screen. Meanwhile the places that held a life together kept closing: the corner cafe, the rec league, the standing time with the same faces. The third places that aren't home and aren't work are the infrastructure friendship runs on, and most of us watched them go without noticing until they were gone.\n\nNobody's coming to fix that for us. No app, no algorithm, no company is going to hand the third place back. Roads, water, power: nobody throws a party about infrastructure, but nothing works without it. Connection is the same, and right now it's missing.",
-        size: 'lg',
-        tone: 'canvas',
-        width: 'default',
-        align: 'left',
-        layout: L,
-      },
-    },
-    {
-      type: 'Statement',
-      props: {
-        id: 'ab-stmt-1',
-        text: 'No company is going to hand the third place back. People rebuild it, one Circle at a time.',
-        accent: 'one Circle at a time',
-        tone: 'surface',
         layout: L,
       },
     },
 
-    // ── Origin ── the honest beginning. Moonlight Beach, 2020. No guru, no brand,
-    // just strangers who needed each other, and what it taught us. ──────────────
+    // ── The mission, carried by a photograph. The one rationed movement line. ───
     {
-      type: 'MediaText',
+      type: 'PhotoBeat',
       props: {
-        id: 'ab-origin',
-        image: '/images/site/sunset-surf.jpg',
-        alt: 'Two people leaning on a railing with surfboards, watching the sun set over the water',
-        eyebrow: '2020 · Moonlight Beach',
-        title: 'It started with strangers who needed each other.',
-        titleAccent: 'needed each other',
-        kicker: 'No membership, no marketing, no one in charge.',
-        body: "In a season when everyone felt cut off, a few people started meeting on the bluffs above Moonlight Beach. Just breath, cold air, and each other. Word got out the way real things do, one person bringing another, until hundreds were showing up to breathe together at sunrise.\n\nThen it faded, because it ran on a few people's energy and energy runs out. There was no format, no home, no way to hold what had been built. But it left a painfully clear picture of exactly what to build so the next one could last.",
-        side: 'left',
-        imgAspect: 'portrait',
+        id: 'ab-beat',
+        image: '/images/site/adult-playground-parachute.jpg',
+        alt: 'Adults holding the edges of a parachute together on a sunny lawn',
+        eyebrow: 'Why we exist',
+        line: 'Somewhere to belong, near you.',
+        lineAccent: 'near you',
+        note: "We think the answer to the loneliest era in history is a folding chair with your name on it. We're not building a following. We're building infrastructure.",
         focal: 'center',
-        ctaLabel: '',
-        ctaHref: '',
-        tone: 'surface',
-        width: 'default',
-        align: 'left',
         layout: L,
       },
     },
 
-    // ── The bet ── what we are building, said plainly. Real-world third places and
-    // the framework that puts them back. The mission beat. ──────────────────────
+    // ── What we believe — the principles, on the ink band. ─────────────────────
     {
-      type: 'MediaText',
+      type: 'ValueBand',
       props: {
-        id: 'ab-bet',
-        image: '/images/site/sunset.jpg',
-        alt: 'A quiet beach at sunset with the tide coming in under a wide pink sky',
-        eyebrow: 'The bet',
-        title: "Real rooms, in the real world, that miss you when you're gone.",
-        titleAccent: "miss you when you're gone",
-        kicker: 'A way to find your people, a format any host can run, a season to walk together, and a real home to grow into.',
-        body: "Frequency is the framework that puts the third place back. You find what you practice through a Channel, gather a few people near you into a Circle, and walk a Journey together as a Run, week after week with the same faces. A real home, the Frequency Lab, is the place a community grows into.\n\nWe're not building a following. We're building the thing you can lean your whole weight on and trust to still be standing next year. The bet is simple: the cure for a lonely time isn't a better app. It's somewhere to go and people who notice when you don't.",
-        side: 'right',
-        imgAspect: 'landscape',
-        focal: 'center',
-        ctaLabel: '',
-        ctaHref: '',
-        tone: 'canvas',
-        width: 'default',
-        align: 'left',
-        layout: L,
-      },
-    },
-
-    // ── The rationed movement line ── the folding-chair line, as a pull quote.
-    // CONTENT-VOICE §6d names this page as the place it is allowed to live. ─────
-    {
-      type: 'Quote',
-      props: {
-        id: 'ab-quote',
-        variant: 'pull',
-        quote: 'We think the answer to the loneliest era in history is a folding chair with your name on it.',
-        accentWord: 'folding chair',
-        attribution: 'The Frequency founding circle',
-        role: '',
-        avatar: '',
-        tone: 'surface',
-        width: 'default',
-        align: 'center',
-        layout: L,
-      },
-    },
-
-    // ── The design principle ── how it stays honest and lasts: leaderful, one
-    // honest price, guru-free. The trust beat, said as three plain promises. ─────
-    {
-      type: 'Heading',
-      props: {
-        id: 'ab-principle-h',
-        eyebrow: "How it's built",
-        title: 'Built so no one person can capture it.',
-        titleAccent: 'no one person',
-        kicker: "A community built around one charismatic founder lives and dies with that person. We've all watched it happen, so this is built to be the opposite.",
-        size: 'default',
-        tone: 'canvas',
-        width: 'default',
-        align: 'left',
-        layout: L,
-      },
-    },
-    {
-      type: 'FeatureGrid',
-      props: {
-        id: 'ab-principle-grid',
-        eyebrow: '',
-        title: '',
+        id: 'ab-values',
+        eyebrow: 'What we believe',
+        title: "The principles we won't trade away.",
         titleAccent: '',
-        style: 'number',
-        columns: '3',
+        kicker: 'Four hard rules, learned the hard way.',
+        columns: '2',
         items: [
           {
-            icon: '',
-            image: '',
-            title: 'Leaderful, not leader-dependent',
-            body: 'Leaders rise from showing up, never from being anointed. Take any one of us away and it keeps running, because the practices, the places, and the people were the point all along.',
-            href: '',
-          },
-          {
-            icon: '',
-            image: '',
-            title: 'One honest price',
-            body: "You keep 100% of your own bookings, always. The only fee is a small network-only take-rate, and it drops by plan. Physical Spaces get funded by a separate community-owned vehicle, never a cut of your work. One honest price, and you leave anytime with your data.",
-            href: '',
-          },
-          {
-            icon: '',
-            image: '',
+            icon: 'Compass',
             title: 'Guru-free',
-            body: "A real person started this, and it's built to not need him. If the format works in a stranger’s living room with none of us in the room, we've done our job. That's the bar.",
-            href: '',
+            body: "No charismatic founder to follow, no one to put on a pedestal. The community is the point, not any single voice at the front of the room. A real person started this, and it's built to not need him.",
+          },
+          {
+            icon: 'Users',
+            title: 'Leaderful, not leader-dependent',
+            body: "Everyone holds a piece of it. Leaders rise from the people who keep showing up. Designed to outlast any one person, so it can't collapse the moment a few people get tired.",
+          },
+          {
+            icon: 'HandHeart',
+            title: 'One honest price',
+            body: 'Zero percent on your own bookings, always, and taking money is never behind a plan. We earn only a small, shrinking cut on the business the network sends you. One price, no surprise invoices, and your data leaves with you any month you want.',
+          },
+          {
+            icon: 'Home',
+            title: 'A third place',
+            body: "Not home, not work: a real place to exhale, reset, and be missed when you don't show up. Built to be returned to, not scrolled past.",
           },
         ],
-        tone: 'canvas',
-        width: 'default',
-        align: 'left',
         layout: L,
       },
     },
+
+    // ── The arc — cream rises back out of the ink on the shoulder. ─────────────
     {
-      type: 'Statement',
+      type: 'PhotoTrio',
       props: {
-        id: 'ab-stmt-2',
-        text: "You don't need permission to gather people. You need rails. We hand you the rails.",
-        accent: 'rails',
+        id: 'ab-arc',
+        eyebrow: 'The arc',
+        title: 'From a beach to your city.',
+        titleAccent: '',
+        kicker: 'One circle at a time, the way it always spread.',
+        intro: '',
+        items: [
+          {
+            image: '/images/site/moonlight-2.jpg',
+            alt: 'A gathering on the bluffs at Moonlight Beach at sunrise',
+            title: '2020 · A cliff at Moonlight Beach',
+            caption:
+              'A handful of people start meeting at dawn to breathe and reconnect. No brand, no plan, just a standing time and a place to be.',
+          },
+          {
+            image: '/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg',
+            alt: 'People in a quiet moment of breathwork together outdoors at golden hour',
+            title: '2021 · A thousand people, no home',
+            caption:
+              "Word of mouth carries it to nearly a thousand. It proves the hunger is real, and proves that without a home, even the most beautiful thing can't hold.",
+          },
+          {
+            image: '/images/site/lab-storefront.jpg',
+            alt: 'The storefront of the first Frequency Lab taking shape',
+            title: `Today · Founding in ${FOUNDING_PLACE}`,
+            caption:
+              'The blueprint becomes real: the tools handed to anyone who wants to start a Circle, a physical home taking root, and a model that keeps the doors open to everyone. The first Circles are forming.',
+          },
+        ],
+        footnote:
+          'Next, it spreads the only way it ever has: person to person, circle to circle, city by city, following the people who start them.',
+        shape: 'arc',
+        texture: 'dots',
         tone: 'surface',
         layout: L,
       },
     },
 
-    // ── The single dark beat ── call in the community builders. The invitation,
-    // spoken straight to the Latent Leader. ONE ink section before the close. ────
+    // ── What we hand you — the rebuild, said as three plain things. ────────────
     {
-      type: 'MediaText',
+      type: 'BuildTimeline',
       props: {
-        id: 'ab-call',
-        image: '/images/site/63978107-8b40-4ce2-8eaf-01a2f6f35cb9.jpg',
-        alt: 'A group on the beach celebrating together, arms raised at golden hour',
-        eyebrow: 'The invitation',
-        title: "If you're the one who gathers people, this is for you.",
-        titleAccent: 'gathers people',
-        kicker: '',
-        body: "You know who you are. You're the one who texts the group, sets the time, holds the door. Maybe you tried hosting something once and it fizzled, and you carried that quietly. The fizzle was never about you. It was about doing it alone with no format and no backup.\n\nSo we're calling you in. Bring the people you already care about, pick a Channel, and run one Circle. We hand you the format, the script, and the backup, and we'd rather be judged on what we hand you than on who we are. This is a space we can all exist in and hold open for each other. We do not want to be followed. We want to be joined.",
-        side: 'left',
-        imgAspect: 'landscape',
-        focal: 'center',
-        ctaLabel: '',
-        ctaHref: '',
-        tone: 'ink',
-        width: 'default',
-        align: 'left',
-        layout: L,
-      },
-    },
-    {
-      type: 'Marquee',
-      props: {
-        id: 'ab-marquee',
+        id: 'ab-asks',
+        eyebrow: 'Why the rebuild is deliberate',
+        title: "We're handing it back to ordinary people.",
+        titleAccent: '',
+        kicker: 'Not recreating a moment. Building the foundations the first one never had.',
+        intro: '',
         items: [
-          { text: 'Guru-free' },
-          { text: 'Leaderful, not leader-dependent' },
-          { text: 'Never a cut of your bookings' },
-          { text: 'A real third place' },
-          { text: 'Built to last' },
-          { text: 'Joined, not followed' },
+          {
+            label: '01',
+            title: 'The first-night script',
+            body: "You don't have to build a community from scratch. You set out the chairs for one Circle, and we hand you the rest.",
+            highlight: 'normal',
+          },
+          {
+            label: '02',
+            title: 'A structure past week three',
+            body: "The simple structure that keeps a group alive past week three, and a model that doesn't depend on anyone's stamina.",
+            highlight: 'normal',
+          },
+          {
+            label: '03',
+            title: 'A Journey and a bench',
+            body: 'A Journey to walk together over a season, and a bench of people who have done it before.',
+            highlight: 'normal',
+          },
         ],
+        footnote: '',
+        texture: 'none',
+        flow: 'soft',
+        tone: 'canvas',
         layout: L,
       },
     },
 
-    // ── Close ── the one and only button on the page: Start a Circle, with the
-    // quiet member path for the Seeker. ─────────────────────────────────────────
+    // ── Close — the dark beat, the one button on the page. ─────────────────────
     {
       type: 'CallToAction',
       props: {
         id: 'ab-cta',
         eyebrow: '',
-        heading: 'Help us build it.',
-        headingAccent: 'build it',
-        body: "This time it gets a home, and it gets you. Find a few people near you, pick what you practice, and hold the door for one Circle. We'll point you at the first move.",
+        heading: 'Be one of the first.',
+        headingAccent: '',
+        body: "This time it gets a home, and it gets you. Pick your way in, and we'll point you at the first move.",
         ctaPrimaryLabel: BETA_CTA_LABEL,
         ctaPrimaryHref: BETA_CTA_HREF,
-        ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL,
-        ctaSecondaryHref: BETA_CTA_SECONDARY_HREF,
+        ctaSecondaryLabel: '',
+        ctaSecondaryHref: '',
+        emphasis: { scale: 'default', accent: 'none' },
         tone: 'ink',
         width: 'default',
         align: 'center',

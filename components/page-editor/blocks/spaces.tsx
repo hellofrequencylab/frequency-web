@@ -54,7 +54,7 @@ function spaceFrom(puck: PuckArg): SpaceContentData | undefined {
 // Shown in the editor canvas (no live data) so a section stays visible + draggable there.
 function EditorStub({ label, hint }: { label: string; hint: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-8 text-center text-sm text-muted">
+    <div className="rounded-card border border-dashed border-border bg-surface/60 px-4 py-8 text-center text-sm text-muted">
       {label}
       <span className="mt-0.5 block text-2xs text-subtle">{hint}</span>
     </div>
@@ -142,10 +142,10 @@ export function CoverBlock({
           <div className="absolute inset-0 bg-black/35" aria-hidden />
           <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
             {eyebrow && (
-              <p className="text-sm font-bold uppercase tracking-[0.25em] text-white/80 mb-3">{eyebrow}</p>
+              <p className="text-sm font-bold uppercase tracking-[0.25em] text-on-ink/80 mb-3">{eyebrow}</p>
             )}
             {title && (
-              <h1 className="font-display uppercase text-balance text-white text-[clamp(1.875rem,6vw,3.5rem)]">
+              <h1 className="font-display uppercase text-balance text-on-ink text-[clamp(1.875rem,6vw,3.5rem)]">
                 {title}
               </h1>
             )}
@@ -184,7 +184,7 @@ export function SpaceUpdatesBlock({
         {shown.map((u) => (
           <article
             key={u.id}
-            className={`overflow-hidden rounded-2xl border ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface'} shadow-sm`}
+            className={`overflow-hidden rounded-card border ${ink ? 'border-on-ink/10 bg-on-ink/5' : 'border-border bg-surface'} shadow-sm`}
           >
             {u.imageUrl && (
               <SiteImage src={u.imageUrl} alt={u.title || ''} aspect="16/9" sizes="(min-width: 640px) 40rem, 100vw" />
@@ -226,7 +226,7 @@ function Stars({ rating, ink }: { rating: number; ink?: boolean }) {
       {[1, 2, 3, 4, 5].map((n) => (
         <Star
           key={n}
-          className={`h-4 w-4 ${n <= Math.round(rating) ? 'fill-primary text-primary' : ink ? 'text-white/25' : 'text-border-strong'}`}
+          className={`h-4 w-4 ${n <= Math.round(rating) ? 'fill-primary text-primary' : ink ? 'text-on-ink/25' : 'text-border-strong'}`}
           aria-hidden
         />
       ))}
@@ -268,7 +268,7 @@ export function SpaceReviewsBlock({
         {shown.map((r) => (
           <article
             key={r.id}
-            className={`rounded-2xl border p-6 ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface shadow-sm'}`}
+            className={`rounded-card border p-6 ${ink ? 'border-on-ink/10 bg-on-ink/5' : 'border-border bg-surface shadow-sm'}`}
           >
             <Stars rating={r.rating} ink={ink} />
             {r.body && (

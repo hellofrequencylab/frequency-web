@@ -5,15 +5,16 @@ import { Check } from 'lucide-react'
 import { SKINS, type SkinId, DEFAULT_SKIN } from '@/lib/theme/skins'
 import { GENERATIONS, type GenerationId, DEFAULT_GENERATION } from '@/lib/theme/generations'
 import { OCCASIONS, type OccasionId } from '@/lib/theme/occasions'
-import { SectionHeader } from '@/components/ui/section-header'
 import { setThemeSkin, setThemeGeneration, setThemeOccasion } from './actions'
 
 // The member-facing theme switcher: the UI half of the previously-disconnected `fxtheme` cookie
 // (docs/THEME.md §6, BUILD-CATALOG §A.13 #1). Each axis writes the cookie through its server
 // action, which repaints the in-app shell on the next request. Copy comes straight from the typed
 // registries (skin.label/description, generation.label/vibe, occasion.label) so the names stay on
-// the naming canon. Light/dark MODE is the separate localStorage toggle on the Settings home; this
-// surface owns the three server-resolved axes only.
+// the naming canon. Light/dark MODE is the separate localStorage ModeSwitcher; this surface owns
+// the three server-resolved axes only. DAWN 2 screen pass: the PALETTE axis leads as swatch cards
+// (each preview strip renders under its own [data-skin], so the token utilities paint the real
+// palette); Feel + Seasonal accent stay quiet option lists below.
 
 /** One option row in an axis picker. Mirrors the Settings-home appearance button styling. */
 function OptionButton({
@@ -55,10 +56,58 @@ function AxisCard({ label, children }: { label: string; children: React.ReactNod
   return (
     <div className="mb-6">
       <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">{label}</p>
-      <div className="rounded-2xl border border-border bg-surface shadow-sm divide-y divide-border/80 dark:divide-border/50 overflow-hidden">
+      <div className="rounded-card border border-border bg-surface lift-1 divide-y divide-border/80 dark:divide-border/50 overflow-hidden">
         {children}
       </div>
     </div>
+  )
+}
+
+/** A palette swatch card: a preview strip painted under the skin's own [data-skin] scope,
+ *  so canvas / surface / primary / signal show the real palette before it is chosen. */
+function SkinCard({
+  active,
+  pending,
+  skinId,
+  label,
+  description,
+  onSelect,
+}: {
+  active: boolean
+  pending: boolean
+  skinId: SkinId
+  label: string
+  description: string
+  onSelect: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      disabled={pending}
+      aria-pressed={active}
+      className={`press w-full overflow-hidden rounded-card border bg-surface text-left transition-colors disabled:opacity-60 ${
+        active ? 'border-primary/40 lift-1' : 'border-border hover:border-border-strong'
+      }`}
+    >
+      <span className="flex h-14" data-skin={skinId} aria-hidden>
+        <span className="flex-[2] bg-canvas" />
+        <span className="flex-1 bg-surface-elevated" />
+        <span className="w-5 bg-primary" />
+        <span className="w-5 bg-signal" />
+      </span>
+      <span className="block border-t border-border px-3.5 py-2.5">
+        <span className="flex items-center gap-2">
+          <span className="text-sm font-bold tracking-tight text-text">{label}</span>
+          {active && (
+            <span className="rounded-pill bg-primary-bg px-2 py-0.5 text-xs font-semibold text-primary-strong">
+              On
+            </span>
+          )}
+        </span>
+        <span className="mt-0.5 block text-xs text-muted">{description}</span>
+      </span>
+    </button>
   )
 }
 
@@ -96,20 +145,22 @@ export function ThemeSwitcher({
 
   return (
     <section>
-      <SectionHeader title="Theme" />
-
-      <AxisCard label="Palette">
-        {SKINS.map((s) => (
-          <OptionButton
-            key={s.id}
-            active={skin === s.id}
-            pending={isPending}
-            label={s.label}
-            description={s.id === DEFAULT_SKIN ? `${s.description} The standard look.` : s.description}
-            onSelect={() => chooseSkin(s.id)}
-          />
-        ))}
-      </AxisCard>
+      <div className="mb-6">
+        <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">Palette</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {SKINS.map((s) => (
+            <SkinCard
+              key={s.id}
+              active={skin === s.id}
+              pending={isPending}
+              skinId={s.id}
+              label={s.label}
+              description={s.id === DEFAULT_SKIN ? `${s.description} The standard look.` : s.description}
+              onSelect={() => chooseSkin(s.id)}
+            />
+          ))}
+        </div>
+      </div>
 
       <AxisCard label="Feel">
         {GENERATIONS.map((g) => (

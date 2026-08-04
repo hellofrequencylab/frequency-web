@@ -130,7 +130,7 @@ function LinkTreeView({ items, tint }: { items: LinkRow[]; tint?: BlockTint }) {
           href={item.url}
           target="_blank"
           rel="noopener noreferrer nofollow"
-          className="block rounded-2xl border border-border-strong bg-surface px-4 py-3 text-center text-sm font-semibold text-text shadow-sm transition-colors hover:bg-surface-elevated"
+          className="block rounded-card border border-border-strong bg-surface px-4 py-3 text-center text-sm font-semibold text-text shadow-sm transition-colors hover:bg-surface-elevated"
           style={tintStyle(tint)}
         >
           {item.label?.trim() || item.url}
@@ -151,13 +151,13 @@ function ImageView({
 }) {
   if (!assetPath) {
     return (
-      <div className="flex aspect-video items-center justify-center rounded-2xl border border-dashed border-border text-xs text-subtle">
+      <div className="flex aspect-video items-center justify-center rounded-card border border-dashed border-border text-xs text-subtle">
         Upload an image
       </div>
     )
   }
   return (
-    <div className="overflow-hidden rounded-2xl border border-border">
+    <div className="overflow-hidden rounded-card border border-border">
       <Image
         src={`${publicBase}${assetPath}`}
         alt={alt}
@@ -183,7 +183,7 @@ function GalleryView({ items, publicBase }: { items: GalleryRow[]; publicBase: s
   const safe = items.filter((i) => i?.assetPath).slice(0, MAX_GALLERY_IMAGES)
   if (safe.length === 0) {
     return (
-      <div className="flex aspect-video items-center justify-center rounded-2xl border border-dashed border-border text-xs text-subtle">
+      <div className="flex aspect-video items-center justify-center rounded-card border border-dashed border-border text-xs text-subtle">
         Add gallery images
       </div>
     )
@@ -326,13 +326,13 @@ function TopFriendsView({ title, meta }: { title?: string; meta: SpotlightRender
 function EmbedView({ provider, embedRef }: { provider: EmbedProvider; embedRef: string }) {
   if (!embedRef) {
     return (
-      <div className="flex aspect-video items-center justify-center rounded-2xl border border-dashed border-border text-xs text-subtle">
+      <div className="flex aspect-video items-center justify-center rounded-card border border-dashed border-border text-xs text-subtle">
         Add a {provider} link
       </div>
     )
   }
   return (
-    <div className="overflow-hidden rounded-2xl border border-border">
+    <div className="overflow-hidden rounded-card border border-border">
       <iframe
         src={buildEmbedSrc(provider, embedRef)}
         title={`${provider} embed`}

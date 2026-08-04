@@ -135,7 +135,9 @@ export interface PricingTier {
   priceKind: TierPriceKind
   /** The dual-interval price for the headline (Pro base / nonprofit seat / org floor). */
   price: DualPrice
-  /** Whether this tier is the highlighted, most-chosen column (Pro). */
+  /** Whether this tier is the highlighted, most-chosen column. Read off the offering model
+   *  (pricing-grid `Offering.featured`: Collective, the DAWN 2 reference's "Best choice"), never
+   *  decided here. */
   featured: boolean
   /** One plain line on who the tier is for. */
   forWho: string

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Mail, Bell, Smartphone, Check, ShieldCheck } from 'lucide-react'
+import { Mail, Bell, Smartphone, MessageSquare, Minus, Check, ShieldCheck } from 'lucide-react'
 import type {
   NotificationSettings,
   NotificationCategory,
@@ -50,6 +50,12 @@ const CHANNELS = [
   { key: 'push',  label: 'Push',   Icon: Smartphone, disabled: false },
 ] as const
 
+// The fourth channel of the DAWN reference grid. SMS preferences are a separate consent
+// flow (opt in with a verified number, then per-category toggles in the Text messages
+// card below), so the grid shows the column as a placeholder rather than live switches —
+// the column exists, the card below is where texts are actually managed.
+const SMS_PLACEHOLDER_TITLE = 'Texts are managed in the Text messages card below.'
+
 const FREQUENCY_LABELS: Record<NotificationFrequency, string> = {
   realtime:      'Realtime',
   daily_digest:  'Daily digest',
@@ -94,7 +100,7 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
   return (
     <div className="space-y-3">
       {/* Guidance: topics vs frequency, in plain terms. */}
-      <div className="rounded-2xl border border-border bg-surface-elevated px-4 py-3 text-sm text-muted">
+      <div className="rounded-card border border-border bg-surface-elevated px-4 py-3 text-sm text-muted">
         <p className="text-text font-medium">Choose what you hear about, and how often.</p>
         <p className="mt-1">
           Each row is a topic. The switches pick the channels. Frequency sets the pace: realtime
@@ -103,9 +109,11 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
         </p>
       </div>
 
-      {/* Channel header + rows */}
-      <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
-        <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-3 px-4 py-3 border-b border-border bg-surface-elevated">
+      {/* The four-channel grid: topics down, channels across (Email / In-app / Push / SMS),
+          plus the per-topic frequency. SMS renders as a placeholder column — see the
+          Text messages card below for the real controls. */}
+      <div className="rounded-card border border-border bg-surface lift-1 overflow-hidden">
+        <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 px-4 py-3 border-b border-border bg-surface-elevated">
           <span className="text-xs font-semibold text-muted uppercase tracking-wide">Topic</span>
           {CHANNELS.map(({ key, label, Icon, disabled }) => (
             <div key={key} className="flex items-center gap-1.5 w-16 justify-center">
@@ -115,6 +123,10 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
               </span>
             </div>
           ))}
+          <div className="flex items-center gap-1.5 w-12 justify-center" title={SMS_PLACEHOLDER_TITLE}>
+            <MessageSquare className="w-3.5 h-3.5 text-subtle" />
+            <span className="text-xs font-semibold uppercase tracking-wide text-subtle">SMS</span>
+          </div>
           <span className="text-xs font-semibold text-muted uppercase tracking-wide w-28 text-center">
             Frequency
           </span>
@@ -122,7 +134,7 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
 
         <div className="divide-y divide-border">
           {CATEGORIES.map(({ key, label, description }) => (
-            <div key={key} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-3 items-center px-4 py-3.5">
+            <div key={key} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 items-center px-4 py-3.5">
               <div className="min-w-0">
                 <p className="text-sm font-medium text-text">{label}</p>
                 <p className="text-xs text-muted mt-0.5">{description}</p>
@@ -160,6 +172,10 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
                   </div>
                 )
               })}
+              {/* SMS placeholder cell — the real controls live in the Text messages card below. */}
+              <div className="w-12 flex justify-center" title={SMS_PLACEHOLDER_TITLE}>
+                <Minus className="w-3.5 h-3.5 text-subtle" aria-hidden />
+              </div>
               {/* Per-category frequency */}
               <div className="w-28 flex justify-center">
                 <select
@@ -179,7 +195,7 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
       </div>
 
       {/* Events from Spaces you follow: a separate, opt-in email. Off by default. */}
-      <div className="flex items-start justify-between gap-4 rounded-2xl border border-border bg-surface px-4 py-3.5 shadow-sm">
+      <div className="flex items-start justify-between gap-4 rounded-card border border-border bg-surface px-4 py-3.5 lift-1">
         <div className="min-w-0">
           <p className="text-sm font-medium text-text">Events from Spaces you follow</p>
           <p className="text-xs text-muted mt-0.5">
@@ -209,7 +225,7 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
       </div>
 
       {/* Transactional carve-out: always-on, stated plainly. */}
-      <div className="flex items-start gap-2.5 rounded-2xl border border-border bg-surface px-4 py-3 text-xs text-muted">
+      <div className="flex items-start gap-2.5 rounded-card border border-border bg-surface px-4 py-3 text-xs text-muted">
         <ShieldCheck className="w-4 h-4 mt-0.5 text-success shrink-0" />
         <p>
           Account and security email always sends: sign-in codes, receipts, password resets, and

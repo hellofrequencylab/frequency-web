@@ -48,6 +48,7 @@ export async function saveNotificationPreferences(
   if (error) return fail(error.message)
 
   revalidatePath('/settings/notifications')
+  revalidatePath('/settings') // the section now renders on the unified Settings page
   return ok()
 }
 
@@ -101,5 +102,6 @@ export async function saveConsentScope(
   }
 
   revalidatePath('/settings/notifications')
+  revalidatePath('/settings') // the section now renders on the unified Settings page
   return ok()
 }

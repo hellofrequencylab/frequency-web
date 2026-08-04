@@ -131,7 +131,7 @@ function profileFrom(puck: PuckArg): SpaceProfileData | undefined {
 // `puck.isEditing`), so a visitor never meets a dashed "add your content" box.
 function EditorStub({ label, hint }: { label: string; hint: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-12 text-center text-sm text-muted">
+    <div className="rounded-card border border-dashed border-border bg-surface/60 px-4 py-12 text-center text-sm text-muted">
       {label}
       <span className="mt-1 block text-2xs text-subtle">{hint}</span>
     </div>
@@ -157,12 +157,12 @@ function AnchorSection({ anchor, children }: { anchor: string; children: React.R
 // section reads as a deliberate, well-defined card that stands off the canvas (the old hairline
 // translucent treatment washed out and read as cramped). `ink` swaps to the dark-band treatment for
 // legibility. One radius/spacing/elevation rhythm across the whole set. `rounded-card` (not a
-// rounded-2xl literal): the Space's page theme shapes its cards (ADR-578 — editorial squares them,
+// rounded-card literal): the Space's page theme shapes its cards (ADR-578 — editorial squares them,
 // playful pillows them); the [data-space-theme] baseline pin keeps `bold` at exactly today's 1rem.
 function InfoCard({ children, ink, className = '' }: { children: React.ReactNode; ink?: boolean; className?: string }) {
   return (
     <div
-      className={`rounded-card border ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface shadow-sm'} p-6 sm:p-8 ${className}`}
+      className={`rounded-card border ${ink ? 'border-on-ink/10 bg-on-ink/5' : 'border-border bg-surface shadow-sm'} p-6 sm:p-8 ${className}`}
     >
       {children}
     </div>
@@ -233,10 +233,10 @@ function IdentityLockup({
             <img
               src={logo}
               alt=""
-              className="h-20 w-20 rounded-2xl border-4 border-surface bg-surface object-contain shadow-md sm:h-24 sm:w-24"
+              className="h-20 w-20 rounded-card border-4 border-surface bg-surface object-contain shadow-md sm:h-24 sm:w-24"
             />
           ) : (
-            <span className="flex h-20 w-20 items-center justify-center rounded-2xl border-4 border-surface bg-surface-elevated text-2xl font-bold text-subtle shadow-md sm:h-24 sm:w-24">
+            <span className="flex h-20 w-20 items-center justify-center rounded-card border-4 border-surface bg-surface-elevated text-2xl font-bold text-subtle shadow-md sm:h-24 sm:w-24">
               {getInitials(identity.name)}
             </span>
           )}
@@ -253,7 +253,7 @@ function IdentityLockup({
             {identity.typeLabel && (
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-2xs font-semibold ${
-                  overlay ? 'bg-white/15 text-on-ink' : 'bg-primary-bg text-primary-strong'
+                  overlay ? 'bg-on-ink/15 text-on-ink' : 'bg-primary-bg text-primary-strong'
                 }`}
               >
                 <Building2 className="h-3 w-3" aria-hidden />
@@ -273,15 +273,15 @@ function IdentityLockup({
           {identity.primaryCta && (
             <Link
               href={identity.primaryCta.href || '#'}
-              className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-2.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover shadow-pop"
+              className="inline-flex items-center gap-2 rounded-card bg-primary px-6 py-2.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover shadow-pop"
             >
               {identity.primaryCta.label}
             </Link>
           )}
           {showFollow && (
             <span
-              className={`inline-flex items-center gap-2 rounded-2xl border px-6 py-2.5 text-sm font-bold ${
-                overlay ? 'border-white/40 text-on-ink' : 'border-border-strong text-text'
+              className={`inline-flex items-center gap-2 rounded-card border px-6 py-2.5 text-sm font-bold ${
+                overlay ? 'border-on-ink/40 text-on-ink' : 'border-border-strong text-text'
               }`}
             >
               Follow
@@ -346,7 +346,7 @@ export function SpaceIdentityHeaderBlock({
   const h = HEADER_COVER_HEIGHT[height ?? 'medium'] ?? HEADER_COVER_HEIGHT.medium
   return (
     <section className="w-full pt-4">
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-2xs">
+      <div className="overflow-hidden rounded-card border border-border bg-surface shadow-2xs">
         {/* Cover band. A neutral tinted fill when there is no uploaded cover, so the header still reads
             as an intentional identity card, never broken. */}
         <div className={`relative w-full ${h} ${cover ? '' : 'bg-gradient-to-br from-primary-bg/40 via-surface-elevated to-surface'}`}>
@@ -424,7 +424,7 @@ export function SpaceHighlightsBlock({ highlights, ink }: { highlights: SpaceHig
       {shown.map((s) => (
         <div
           key={s.label}
-          className={`rounded-2xl border p-6 text-center ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface shadow-sm'}`}
+          className={`rounded-card border p-6 text-center ${ink ? 'border-on-ink/10 bg-on-ink/5' : 'border-border bg-surface shadow-sm'}`}
         >
           <div className={`text-3xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>
             {s.value.toLocaleString()}
@@ -506,10 +506,10 @@ export function SpaceStatsBlock({
         {shown.map((s) => (
           <div
             key={s.metric}
-            className={`rounded-2xl border p-6 ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface shadow-sm'}`}
+            className={`rounded-card border p-6 ${ink ? 'border-on-ink/10 bg-on-ink/5' : 'border-border bg-surface shadow-sm'}`}
           >
             <span
-              className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${ink ? 'bg-white/10 text-primary' : 'bg-primary-bg text-primary-strong'}`}
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${ink ? 'bg-on-ink/10 text-primary' : 'bg-primary-bg text-primary-strong'}`}
             >
               {STAT_METRIC_META[s.metric]?.icon}
             </span>
@@ -574,7 +574,7 @@ export function SpaceQuickLinksBlock({
                 {...(isExt ? { target: '_blank', rel: 'noreferrer' } : {})}
                 className={`group flex items-center justify-between gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors ${
                   ink
-                    ? 'border-white/10 bg-white/5 text-on-ink hover:bg-white/10'
+                    ? 'border-on-ink/10 bg-on-ink/5 text-on-ink hover:bg-on-ink/10'
                     : 'border-border/60 bg-surface/60 text-text hover:border-primary/40 hover:bg-primary-bg/20'
                 }`}
               >
@@ -628,13 +628,13 @@ export function SpaceEventsBlock({
                 href={`/events/${e.slug}`}
                 className={`flex items-center gap-4 rounded-xl border px-4 py-3 transition-colors ${
                   ink
-                    ? 'border-white/10 bg-white/5 hover:bg-white/10'
+                    ? 'border-on-ink/10 bg-on-ink/5 hover:bg-on-ink/10'
                     : 'border-border/60 bg-surface/60 hover:border-primary/40 hover:bg-primary-bg/20'
                 }`}
               >
                 <span
                   className={`flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl ${
-                    ink ? 'bg-white/10' : 'bg-primary-bg'
+                    ink ? 'bg-on-ink/10' : 'bg-primary-bg'
                   }`}
                 >
                   <span className={`text-3xs font-bold leading-none ${ink ? 'text-primary' : 'text-primary-strong'}`}>{month}</span>
@@ -670,12 +670,12 @@ function PracticeRow({ item, hrefBase, fallbackEmoji, ink }: { item: SpacePracti
         href={`/${hrefBase}/${item.slug}`}
         className={`flex items-start gap-4 rounded-xl border px-4 py-3 transition-colors ${
           ink
-            ? 'border-white/10 bg-white/5 hover:bg-white/10'
+            ? 'border-on-ink/10 bg-on-ink/5 hover:bg-on-ink/10'
             : 'border-border/60 bg-surface/60 hover:border-primary/40 hover:bg-primary-bg/20'
         }`}
       >
         <span
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${ink ? 'bg-white/10' : 'bg-primary-bg'}`}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${ink ? 'bg-on-ink/10' : 'bg-primary-bg'}`}
           aria-hidden
         >
           {item.emoji || fallbackEmoji}
@@ -782,7 +782,7 @@ export function SpaceCommunityBlock({
               href={`/circles/${c.slug}`}
               className={`flex h-full flex-col rounded-xl border px-4 py-3 transition-colors ${
                 ink
-                  ? 'border-white/10 bg-white/5 hover:bg-white/10'
+                  ? 'border-on-ink/10 bg-on-ink/5 hover:bg-on-ink/10'
                   : 'border-border/60 bg-surface/60 hover:border-primary/40 hover:bg-primary-bg/20'
               }`}
             >
@@ -829,7 +829,7 @@ export function SpaceBookingBlock({
   return (
     <InfoCard ink={ink} className={accent && !ink ? 'border-primary/25 bg-primary-bg/40' : ''}>
       <div className="flex items-start gap-5">
-        <span className={`mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${ink ? 'bg-white/10 text-primary' : 'bg-primary-bg text-primary-strong'}`}>
+        <span className={`mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-card ${ink ? 'bg-on-ink/10 text-primary' : 'bg-primary-bg text-primary-strong'}`}>
           <CalendarCheck className="h-6 w-6" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
@@ -892,8 +892,8 @@ export function SpaceOfferingsBlock({
             return (
               <div
                 key={i}
-                className={`flex flex-col rounded-2xl border p-6 transition-shadow ${
-                  ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface shadow-sm hover:shadow-md'
+                className={`flex flex-col rounded-card border p-6 transition-shadow ${
+                  ink ? 'border-on-ink/10 bg-on-ink/5' : 'border-border bg-surface shadow-sm hover:shadow-md'
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -903,7 +903,7 @@ export function SpaceOfferingsBlock({
                   {price && (
                     <span
                       className={`shrink-0 rounded-full px-2.5 py-1 text-sm font-semibold ${
-                        ink ? 'bg-white/10 text-on-ink' : 'bg-primary-bg text-primary-strong'
+                        ink ? 'bg-on-ink/10 text-on-ink' : 'bg-primary-bg text-primary-strong'
                       }`}
                     >
                       {price}
@@ -1282,7 +1282,7 @@ export function SpaceCalloutBlock({
   const centered = align === 'center'
   return (
     <div
-      className={`rounded-2xl border p-8 sm:p-10 ${ink ? 'border-white/15 bg-white/5' : 'border-primary/25 bg-primary-bg'} ${
+      className={`rounded-card border p-8 sm:p-10 ${ink ? 'border-on-ink/15 bg-on-ink/5' : 'border-primary/25 bg-primary-bg'} ${
         centered ? 'text-center' : ''
       }`}
     >
@@ -1386,7 +1386,7 @@ export function SpaceBusinessBlock({
               <Star
                 key={i}
                 className={`h-5 w-5 ${
-                  i < filled ? 'fill-primary text-primary' : ink ? 'text-white/25' : 'text-border-strong'
+                  i < filled ? 'fill-primary text-primary' : ink ? 'text-on-ink/25' : 'text-border-strong'
                 }`}
               />
             ))}
@@ -1411,7 +1411,7 @@ export function SpaceBusinessBlock({
                 rel="noreferrer"
                 className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors ${
                   ink
-                    ? 'border-white/10 bg-white/5 text-on-ink hover:bg-white/10'
+                    ? 'border-on-ink/10 bg-on-ink/5 text-on-ink hover:bg-on-ink/10'
                     : 'border-border/60 bg-surface/60 text-text hover:border-primary/40 hover:bg-primary-bg/20'
                 }`}
               >

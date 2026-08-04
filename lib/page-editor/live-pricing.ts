@@ -31,6 +31,9 @@ export interface LivePriceRow {
   yearly: string | null
   /** The plain rate sentence, e.g. "0% on your own people, 10% on network-sourced sales". */
   takeRate: string
+  /** Monthly price in MINOR units (cents), for block-emitted Product/Offer JSON-LD.
+   *  0 = a free rung (no Offer node is emitted for it — a $0 Product reads as spam). */
+  monthlyCents: number
 }
 
 export type LivePricing = Record<string, LivePriceRow>
@@ -56,6 +59,7 @@ export async function getLivePricing(): Promise<LivePricing> {
         strikePrice: o.listAnchor ?? null,
         yearly: o.yearly ?? null,
         takeRate: o.takeRate,
+        monthlyCents: o.monthlyCents,
       }
     }
     return out

@@ -156,10 +156,10 @@ export function CtaButton({
       ? 'bg-primary text-on-primary hover:bg-primary-hover shadow-pop'
       : variant === 'secondary'
         ? onInk
-          ? 'border border-white/30 text-white hover:bg-white/10 hover:border-white/50'
+          ? 'border border-on-ink/30 text-on-ink hover:bg-on-ink/10 hover:border-on-ink/50'
           : 'border border-border-strong text-text hover:bg-surface-elevated'
         : onInk
-          ? 'text-white/80 hover:text-white'
+          ? 'text-on-ink/80 hover:text-on-ink'
           : 'text-primary-strong hover:underline'
   return (
     <Link href={safeHref(href) ?? '#'} className={`${base} ${styles}`}>

@@ -1,149 +1,198 @@
-'use client'
-
+import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import Link from 'next/link'
-import { useState } from 'react'
-import { Moon, Sun, Monitor, Check, User, Shield, Bell, CreditCard, MapPin, Palette } from 'lucide-react'
+import { redirect } from 'next/navigation'
+import { User, Palette, Bell, MapPin, Shield, CreditCard } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
+import { Skeleton } from '@/components/ui/skeleton'
+import { getMyProfileId } from '@/lib/auth'
+import { AppearanceSection } from './appearance/section'
+import { NotificationsSection } from './notifications/section'
+import { ConnectionsSection } from './connections/section'
+import { AccountSection } from './account/section'
+import { PlanSection } from './billing/section'
 
-type Theme = 'light' | 'dark' | 'system'
+// The member Settings suite as ONE page (DAWN 2 screen pass, per
+// design_handoff/dawn/ui_kits/screens/settings.html): a chip section-rail up top, then
+// the whole suite stacked — Appearance (the skin picker leads), the four-channel
+// notification grid, Connections and location, Account and privacy, Plan and billing.
+// Each section keeps the exact forms + server actions its old standalone route had (the
+// old routes now redirect to their anchor here); this page only composes them.
+//
+// Framework notes (docs/PAGE-FRAMEWORK.md): a Focus template surface; the rail stays
+// 'global' via lib/layout/page-chrome.ts (the /settings row already exists — no change).
+// Speed is structural: every section fetches its own data behind its own <Suspense>, so
+// the shell + chips paint immediately and no section blocks another.
 
-const THEME_OPTIONS: { value: Theme; label: string; description: string; Icon: typeof Moon }[] = [
-  {
-    value: 'light',
-    label: 'Light',
-    description: 'Always use the light theme',
-    Icon: Sun,
-  },
-  {
-    value: 'dark',
-    label: 'Dark',
-    description: 'Always use the dark theme',
-    Icon: Moon,
-  },
-  {
-    value: 'system',
-    label: 'System',
-    description: 'Follow your device setting',
-    Icon: Monitor,
-  },
-]
+export const dynamic = 'force-dynamic'
 
-export default function SettingsPage() {
-  // Storage + apply logic mirror the in-app account-menu toggle in
-  // components/layout/app-shell.tsx (key `freq-theme`, values 'light' | 'dark' |
-  // 'system'), so the two toggles and the pre-paint script in app/layout.tsx stay
-  // in agreement. Initial state falls back to the legacy `theme` key (the same
-  // one-time migration the layout script does) so existing members aren't reset.
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return 'system'
-    const saved = (localStorage.getItem('freq-theme') ?? localStorage.getItem('theme')) as Theme | null
-    return saved === 'dark' || saved === 'light' || saved === 'system' ? saved : 'system'
-  })
+export const metadata: Metadata = {
+  title: 'Settings',
+  description: 'Your whole settings suite on one page.',
+}
 
-  // Apply (mode → .dark class + meta theme-color) and persist to `freq-theme`.
-  function applyTheme(next: Theme) {
-    setThemeState(next)
-    localStorage.setItem('freq-theme', next)
-    const sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    const isDark = next === 'dark' || (next === 'system' && sysDark)
-    document.documentElement.classList.toggle('dark', isDark)
-    const meta = document.querySelector('meta[name="theme-color"]')
-    // token-ok: browser theme-color literal (mirrors --color-ink/--color-canvas; set on <meta>, no CSS var)
-    if (meta) meta.setAttribute('content', isDark ? '#16130E' : '#FBFAF6')
-  }
+// The section rail: Profile links out to its own editor (a full form surface with the
+// Spotlight builder attached); the rest are in-page anchors.
+const SECTIONS = [
+  { id: 'appearance', label: 'Appearance', Icon: Palette },
+  { id: 'notifications', label: 'Notifications', Icon: Bell },
+  { id: 'connections', label: 'Connections and location', Icon: MapPin },
+  { id: 'account', label: 'Account and privacy', Icon: Shield },
+  { id: 'plan', label: 'Plan and billing', Icon: CreditCard },
+] as const
+
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ session_id?: string; upgraded?: string; payouts?: string; bundle?: string }>
+}) {
+  // The suite is a signed-in surface (the old billing page gated the same way).
+  const myProfileId = await getMyProfileId()
+  if (!myProfileId) redirect('/sign-in?next=/settings')
+
+  // Stripe checkout / Connect returns land here via the /settings/billing redirect.
+  const params = await searchParams
 
   return (
-    <FocusTemplate title="Settings" description="Manage your preferences.">
-      {/* Account — all of a member's settings reachable from one place. */}
-      <section className="mb-8">
-        <SectionHeader title="Account" />
-        <div className="space-y-3">
-          <SettingLink href="/settings/profile" Icon={User} title="Edit profile" description="Display name, handle, bio, and photo" />
-          <SettingLink href="/settings/account" Icon={Shield} title="Account & privacy" description="Blocked members, delete account" />
-          <SettingLink href="/settings/connections" Icon={MapPin} title="Connections & Location" description="Discovery, location precision, ghost mode" />
-          <SettingLink href="/settings/notifications" Icon={Bell} title="Notifications" description="Email and push preferences" />
-          <SettingLink href="/settings/billing" Icon={CreditCard} title="Billing" description="Membership and payment" />
-        </div>
+    <FocusTemplate title="Settings" description="The whole suite on one page." width="wide">
+      {/* Section chips — one page, one scroll; each chip jumps to its section. */}
+      <nav
+        aria-label="Settings sections"
+        className="mb-8 flex flex-wrap gap-2 border-b border-border pb-5"
+      >
+        <SectionChip href="/settings/profile" label="Profile" Icon={User} />
+        {SECTIONS.map(({ id, label, Icon }) => (
+          <SectionChip key={id} href={`#${id}`} label={label} Icon={Icon} />
+        ))}
+      </nav>
+
+      {/* Profile — the full editor (form + Spotlight builder) stays its own surface. */}
+      <section id="profile" className="scroll-mt-24">
+        <SectionHeader title="Profile" href="/settings/profile" />
+        <Link
+          href="/settings/profile"
+          className="flex items-center gap-3 rounded-card border border-border bg-surface px-4 py-3 lift-1 hover:border-primary-bg dark:hover:border-primary hover:bg-primary-bg/30 dark:hover:bg-primary-bg transition-colors"
+        >
+          <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-surface-elevated shrink-0">
+            <User className="w-4 h-4 text-muted" />
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-sm font-medium text-text">Edit profile</span>
+            <span className="mt-0.5 block text-xs text-muted">
+              Display name, handle, bio, photo, and your Spotlight page
+            </span>
+          </span>
+          <span className="text-subtle text-sm">→</span>
+        </Link>
       </section>
 
-      {/* Appearance — light/dark mode. */}
-      <section>
-        <SectionHeader title="Appearance" />
-        <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">Mode</p>
-        <div className="rounded-2xl border border-border bg-surface shadow-sm divide-y divide-border/80 dark:divide-border/50 overflow-hidden">
-          {THEME_OPTIONS.map(({ value, label, description, Icon }) => {
-            const active = theme === value
-            return (
-              <button
-                key={value}
-                onClick={() => applyTheme(value)}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors ${
-                  active
-                    ? 'bg-primary-bg/60 dark:bg-primary-bg/40'
-                    : 'hover:bg-surface-elevated'
-                }`}
-              >
-                <div className={`flex items-center justify-center w-9 h-9 rounded-lg shrink-0 ${
-                  active
-                    ? 'bg-primary-bg'
-                    : 'bg-surface-elevated'
-                }`}>
-                  <Icon className={`w-4 h-4 ${active ? 'text-primary-strong' : 'text-muted'}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
-                    {label}
-                  </p>
-                  <p className="text-xs text-muted mt-0.5">{description}</p>
-                </div>
-                {active && (
-                  <Check className="w-4 h-4 text-primary-strong shrink-0" />
-                )}
-              </button>
-            )
-          })}
-        </div>
+      <SettingsSection
+        id="appearance"
+        title="Appearance"
+        intro="Pick the palette, feel, and seasonal accent. Changes save instantly."
+      >
+        <Suspense fallback={<SectionSkeleton rows={3} />}>
+          <AppearanceSection />
+        </Suspense>
+      </SettingsSection>
 
-        {/* Theme — the palette, feel, and seasonal accent (the server-resolved fxtheme axes),
-            on their own surface so the Mode card stays the quick light/dark switch. */}
-        <div className="mt-3">
-          <SettingLink
-            href="/settings/appearance"
-            Icon={Palette}
-            title="Theme"
-            description="Palette, feel, and seasonal accent"
-          />
-        </div>
-      </section>
+      <SettingsSection
+        id="notifications"
+        title="Notifications"
+        intro="Choose how and when Frequency contacts you. Changes save instantly."
+      >
+        <Suspense fallback={<SectionSkeleton rows={6} />}>
+          <NotificationsSection />
+        </Suspense>
+      </SettingsSection>
+
+      <SettingsSection
+        id="connections"
+        title="Connections and location"
+        intro="Decide who can find you, how precisely your location is shown, and how far your reach extends. Changes save instantly."
+      >
+        <Suspense fallback={<SectionSkeleton rows={4} />}>
+          <ConnectionsSection />
+        </Suspense>
+      </SettingsSection>
+
+      <SettingsSection
+        id="account"
+        title="Account and privacy"
+        intro="Manage who you have blocked, download your data, and delete your account."
+      >
+        <Suspense fallback={<SectionSkeleton rows={3} />}>
+          <AccountSection />
+        </Suspense>
+      </SettingsSection>
+
+      <SettingsSection id="plan" title="Plan and billing" intro="Your plan and payment.">
+        {/* Anchor alias: old deep links said "billing". */}
+        <span id="billing" />
+        <Suspense fallback={<SectionSkeleton rows={2} />}>
+          <PlanSection sessionId={params.session_id} payouts={params.payouts} />
+        </Suspense>
+      </SettingsSection>
     </FocusTemplate>
   )
 }
 
-function SettingLink({
+/** One chip in the section rail. An in-page anchor (or the Profile route link). */
+function SectionChip({
   href,
+  label,
   Icon,
-  title,
-  description,
 }: {
   href: string
-  Icon: typeof Moon
-  title: string
-  description: string
+  label: string
+  Icon: typeof User
 }) {
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 rounded-2xl border border-border bg-surface shadow-sm px-4 py-3 hover:border-primary-bg dark:hover:border-primary hover:bg-primary-bg/30 dark:hover:bg-primary-bg transition-colors"
+      className="press inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted lift-1 transition-colors hover:border-primary/40 hover:text-primary-strong"
     >
-      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-surface-elevated shrink-0">
-        <Icon className="w-4 h-4 text-muted" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-text">{title}</p>
-        <p className="text-xs text-muted mt-0.5">{description}</p>
-      </div>
-      <span className="text-subtle text-sm">→</span>
+      <Icon className="h-3.5 w-3.5" aria-hidden />
+      {label}
     </Link>
+  )
+}
+
+/** A stacked section: anchor target + SectionHeader + plain intro line. */
+function SettingsSection({
+  id,
+  title,
+  intro,
+  children,
+}: {
+  id: string
+  title: string
+  intro?: string
+  children: React.ReactNode
+}) {
+  return (
+    <section id={id} className="mt-12 scroll-mt-24 border-t border-border pt-8">
+      <SectionHeader title={title} />
+      {intro && <p className="-mt-1 mb-4 max-w-xl text-sm text-muted">{intro}</p>}
+      {children}
+    </section>
+  )
+}
+
+/** Loading shape for a section: a few row cards, no layout shift on arrival. */
+function SectionSkeleton({ rows }: { rows: number }) {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 rounded-card border border-border bg-surface px-4 py-3 lift-1">
+          <Skeleton className="h-9 w-9 shrink-0 rounded-lg" />
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-3 w-48 max-w-full" />
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }

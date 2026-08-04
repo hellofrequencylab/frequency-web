@@ -212,14 +212,17 @@ const CARD_STYLE_LIGHT: Record<string, string> = {
 }
 
 const CARD_STYLE_INK: Record<string, string> = {
-  border: 'border border-white/10 bg-white/5',
-  elevated: 'border border-white/10 bg-white/5 shadow-pop',
+  border: 'border border-on-ink/10 bg-on-ink/5',
+  elevated: 'border border-on-ink/10 bg-on-ink/5 shadow-pop',
   plain: 'bg-transparent',
 }
 
+// Radius ROLES, not literals (DAWN): `rounded-control` (0.5rem) and `rounded-card` (1rem)
+// resolve identically to the old rounded-lg / rounded-2xl at the root, but retheme inside a
+// Space subtree (ADR-578). 'lg' keeps rounded-3xl: no 1.5rem role exists yet.
 const CARD_RADIUS: Record<string, string> = {
-  sm: 'rounded-lg',
-  md: 'rounded-2xl',
+  sm: 'rounded-control',
+  md: 'rounded-card',
   lg: 'rounded-3xl',
 }
 
