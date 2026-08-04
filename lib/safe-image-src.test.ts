@@ -22,6 +22,16 @@ describe('safeImageSrc', () => {
     expect(safeImageSrc('file:///etc/passwd')).toBeNull()
     // data: that is not an image (an HTML payload) stays out.
     expect(safeImageSrc('data:text/html,<script>alert(1)</script>')).toBeNull()
+    // An opaque-origin blob — what a sandboxed document mints. A blob: URL carries its
+    // creator's origin inside it, and `null` there means we cannot say who made it.
+    expect(safeImageSrc('blob:null/9f2c-1')).toBeNull()
+  })
+
+  it('does not answer differently on the server than in the browser', () => {
+    // This ran through `typeof window !== 'undefined'` once, which made every server render
+    // silently drop blob previews. The allowlist must depend only on its argument.
+    expect(typeof window).toBe('undefined')
+    expect(safeImageSrc('blob:https://app.local/9f2c-1')).toBe('blob:https://app.local/9f2c-1')
   })
 
   it('treats empty and absent values as no image', () => {
