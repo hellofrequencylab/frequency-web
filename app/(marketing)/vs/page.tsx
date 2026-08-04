@@ -61,7 +61,7 @@ export default function ComparisonsIndexPage() {
         eyebrow="Compare"
         title={
           <>
-            How Frequency <span className="text-primary">compares</span>
+            How Frequency <span className="text-primary-strong">compares</span>
           </>
         }
         subtitle="Most tools help you throw one event, share one link, or sell one ticket. Frequency is the standing room underneath: a small Circle that keeps meeting in person. When you host, selling is open on a free account and your own people are always free. Here is how it stacks up against the tools you already know."

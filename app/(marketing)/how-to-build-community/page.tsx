@@ -332,7 +332,7 @@ export default function HowToBuildCommunityPage() {
 
       <PullQuote tone="surface">
         You do not have to build a community.{' '}
-        <span className="text-primary">Host one small group, more than once.</span>
+        <span className="text-primary-strong">Host one small group, more than once.</span>
       </PullQuote>
 
       {/* Absorbed track 1: recurrence logistics (from host-a-recurring-gathering). */}
@@ -387,7 +387,7 @@ export default function HowToBuildCommunityPage() {
 
       <Statement tone="canvas">
         The quiet nights are not the failure.{' '}
-        <span className="text-primary">Cancelling is.</span>
+        <span className="text-primary-strong">Cancelling is.</span>
       </Statement>
 
       {/* Absorbed track 2: the operator playbook (from how-to-run-a-community-space). */}
@@ -516,7 +516,7 @@ export default function HowToBuildCommunityPage() {
 
       <PullQuote tone="surface">
         Groups do not die from low numbers.{' '}
-        <span className="text-primary">They die from chaos and burnout.</span>
+        <span className="text-primary-strong">They die from chaos and burnout.</span>
       </PullQuote>
 
       {/* Builder CTA into the product (Build pillar). Pricing intent handled honestly. */}

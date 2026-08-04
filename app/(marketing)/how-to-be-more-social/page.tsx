@@ -194,7 +194,7 @@ export default function HowToBeMoreSocialPage() {
 
       <PullQuote tone="surface">
         Being social is not a personality.{' '}
-        <span className="text-primary">It is a habit of showing up.</span>
+        <span className="text-primary-strong">It is a habit of showing up.</span>
       </PullQuote>
 
       {/* One concept per section. Question H2 in the reader's words, answer first. */}
@@ -259,7 +259,7 @@ export default function HowToBeMoreSocialPage() {
 
       <Statement tone="canvas">
         You do not need to be more outgoing.{' '}
-        <span className="text-primary">You need to go back a third time.</span>
+        <span className="text-primary-strong">You need to go back a third time.</span>
       </Statement>
 
       {/* One concept per section: the introvert reader, named plainly. */}
@@ -352,7 +352,7 @@ export default function HowToBeMoreSocialPage() {
 
       <Statement tone="surface">
         You do not have to be the most comfortable person in the room.{' '}
-        <span className="text-primary">You have to walk in twice.</span>
+        <span className="text-primary-strong">You have to walk in twice.</span>
       </Statement>
 
       {/* ABSORBED PILLAR 2: social-life-without-drinking. Answer-first H2, the
@@ -446,7 +446,7 @@ export default function HowToBeMoreSocialPage() {
           you yet, that is not a dead end, it is the cue to start the small standing
           room you wish you could walk into. Joining costs nothing, and Frequency
           never takes a cut of your own bookings, so you can{' '}
-          <a href="/pricing" className="text-primary underline underline-offset-4">
+          <a href="/pricing" className="text-primary-strong underline underline-offset-4">
             see exactly how the pricing works
           </a>{' '}
           before you commit to anything.
@@ -461,15 +461,15 @@ export default function HowToBeMoreSocialPage() {
         </div>
         <p className="mt-8 text-muted">
           Keep going:{' '}
-          <a href="/friendship-as-an-adult" className="text-primary underline underline-offset-4">
+          <a href="/friendship-as-an-adult" className="text-primary-strong underline underline-offset-4">
             how to make friends as an adult
           </a>
           ,{' '}
-          <a href="/friendship-as-an-adult" className="text-primary underline underline-offset-4">
+          <a href="/friendship-as-an-adult" className="text-primary-strong underline underline-offset-4">
             how to meet people in a new city
           </a>
           , and{' '}
-          <a href="/loneliness" className="text-primary underline underline-offset-4">
+          <a href="/loneliness" className="text-primary-strong underline underline-offset-4">
             feeling lonely but not alone
           </a>
           .

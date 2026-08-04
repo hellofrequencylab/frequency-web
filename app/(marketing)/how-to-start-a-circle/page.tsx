@@ -170,7 +170,7 @@ export default function HowToStartACirclePage() {
 
       <PullQuote tone="surface">
         You do not have to build a community.{' '}
-        <span className="text-primary">Host one Circle. We hand you the format.</span>
+        <span className="text-primary-strong">Host one Circle. We hand you the format.</span>
       </PullQuote>
 
       {/* One concept per section. Question H2 in the reader's words, answer first. */}
@@ -229,7 +229,7 @@ export default function HowToStartACirclePage() {
 
       <Statement tone="canvas">
         You do not have to get it perfect.{' '}
-        <span className="text-primary">You have to hold the same time twice.</span>
+        <span className="text-primary-strong">You have to hold the same time twice.</span>
       </Statement>
 
       {/* One concept per section: why groups fizzle, the failure mode named plainly. */}

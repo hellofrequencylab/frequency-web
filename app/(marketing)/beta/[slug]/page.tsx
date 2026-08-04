@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 function accent(text: string) {
   const parts = text.split(/\*([^*]+)\*/)
   return parts.map((part, i) =>
-    i % 2 === 1 ? <span key={i} className="text-primary">{part}</span> : <span key={i}>{part}</span>,
+    i % 2 === 1 ? <span key={i} className="text-primary-strong">{part}</span> : <span key={i}>{part}</span>,
   )
 }
 

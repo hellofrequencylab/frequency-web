@@ -128,7 +128,7 @@ export default function ToolsForCommunityBuildersPage() {
 
       <PullQuote tone="surface">
         Four apps that do not talk to each other{' '}
-        <span className="text-primary">is how good communities die tired.</span>
+        <span className="text-primary-strong">is how good communities die tired.</span>
       </PullQuote>
 
       {/* One concept per section. Question H2 in the reader's words, answer first. */}
@@ -209,7 +209,7 @@ export default function ToolsForCommunityBuildersPage() {
 
       <Statement tone="surface">
         You do not need five apps.{' '}
-        <span className="text-primary">You need four jobs, done in one place.</span>
+        <span className="text-primary-strong">You need four jobs, done in one place.</span>
       </Statement>
 
       {/* Hand off to the product: the stack, in one Space. */}

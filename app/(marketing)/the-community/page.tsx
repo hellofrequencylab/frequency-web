@@ -191,7 +191,7 @@ function LegacyTheCommunity() {
 
       <Statement tone="surface">
         Not a feed. Not a follower count.{' '}
-        <span className="text-primary">A few people who notice.</span>
+        <span className="text-primary-strong">A few people who notice.</span>
       </Statement>
 
       {/* The four Pillars: the parts a whole life moves through */}
@@ -257,7 +257,7 @@ function LegacyTheCommunity() {
       <Statement tone="surface">
         Get people together.
         <br />
-        Do things <span className="text-primary">on purpose.</span>
+        Do things <span className="text-primary-strong">on purpose.</span>
       </Statement>
 
       {/* Channels + Circles: the core mechanic, in detail */}
@@ -296,7 +296,7 @@ function LegacyTheCommunity() {
 
       <Statement tone="surface">
         Two words are all you need to{' '}
-        <span className="text-primary">belong</span>.
+        <span className="text-primary-strong">belong</span>.
       </Statement>
 
       {/* The growth loop: cells, not franchises */}
@@ -411,7 +411,7 @@ function LegacyTheCommunity() {
 
       <Statement tone="surface">
         The practices, the places, and{' '}
-        <span className="text-primary">the people</span> are the point.
+        <span className="text-primary-strong">the people</span> are the point.
       </Statement>
 
       {/* A day in Frequency: how the structure plays out in real life */}

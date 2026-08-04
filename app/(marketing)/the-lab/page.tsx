@@ -233,7 +233,7 @@ function LegacyTheLab() {
 
       <Statement tone="canvas">
         The community comes first.{' '}
-        <span className="text-primary">The Lab is where it gets a body.</span>
+        <span className="text-primary-strong">The Lab is where it gets a body.</span>
       </Statement>
 
       {/* ── In the meantime: the thing that already exists, on the shoulder ───── */}

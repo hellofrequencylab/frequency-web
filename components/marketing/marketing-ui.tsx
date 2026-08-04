@@ -559,7 +559,16 @@ export function Steps({
     <div className="grid gap-6 sm:grid-cols-3 sm:gap-8">
       {steps.map((s, i) => (
         <div key={i} className="relative">
-          <span className="font-display text-5xl sm:text-6xl text-primary leading-none">
+          {/* The numeral is large text, so it needs 3:1. The brand amber gives 2.52:1 on a
+              light surface and only clears the bar against ink, so it branches on tone like
+              every other coloured element in this kit. It read `text-primary` unconditionally
+              while `isInk` sat computed and unused two lines up, which failed on every light
+              rendering of Steps at once. */}
+          <span
+            className={`font-display text-5xl sm:text-6xl leading-none ${
+              isInk ? 'text-primary' : 'text-primary-strong'
+            }`}
+          >
             {String(i + 1).padStart(2, '0')}
           </span>
           <h3

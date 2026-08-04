@@ -377,7 +377,7 @@ function Splash({
               <>
                 The third place is broken.
                 <br />
-                <span className="text-primary">Somebody</span> has to start the next one.
+                <span className="text-primary-strong">Somebody</span> has to start the next one.
               </>
             }
             kicker="It does not take a big personality. It takes a standing time and a door someone holds open."
@@ -403,7 +403,7 @@ function Splash({
       <PullQuote tone="surface" cite="The wedge, in one line">
         Seen, not followed.
         <br />
-        <span className="text-primary">Missed,</span> not muted.
+        <span className="text-primary-strong">Missed,</span> not muted.
       </PullQuote>
 
       {/* ── The three roles — Build / Practice / Spread, the /start decision ── */}
@@ -413,7 +413,7 @@ function Splash({
             eyebrow="Pick your way in"
             title={
               <>
-                Three ways to <span className="text-primary">be one of them.</span>
+                Three ways to <span className="text-primary-strong">be one of them.</span>
               </>
             }
             kicker="Builders first. Pick the role that fits you, and we will point you at your first move."
@@ -453,7 +453,7 @@ function Splash({
             eyebrow="How it works"
             title={
               <>
-                A standing time, a small group, and <span className="text-primary">show up.</span>
+                A standing time, a small group, and <span className="text-primary-strong">show up.</span>
               </>
             }
             kicker="No application. No audition. No performance."
@@ -571,7 +571,7 @@ function Splash({
             eyebrow="Built together"
             title={
               <>
-                It grows on <span className="text-primary">its own.</span>
+                It grows on <span className="text-primary-strong">its own.</span>
               </>
             }
             kicker="Leaderful, never leader-dependent."
@@ -597,7 +597,7 @@ function Splash({
       <PullQuote tone="surface" cite="The promise we won't trade">
         0% on your own bookings.
         <br />
-        <span className="text-primary">Always.</span>
+        <span className="text-primary-strong">Always.</span>
       </PullQuote>
 
       {/* ── The honest "we are early" trust beat ───────────────────────────── */}

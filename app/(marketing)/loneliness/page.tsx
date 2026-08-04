@@ -184,7 +184,7 @@ export default function LonelinessPage() {
 
       <PullQuote tone="surface">
         A full phone is not the same as{' '}
-        <span className="text-primary">someone to call on a Tuesday.</span>
+        <span className="text-primary-strong">someone to call on a Tuesday.</span>
       </PullQuote>
 
       {/* One concept per section. Question H2s in the reader's words, answer first. */}
@@ -237,7 +237,7 @@ export default function LonelinessPage() {
           list of people we would actually call when something goes sideways, and
           for a lot of adults that short list has slowly shrunk to almost no one.
           If that is where you are, the{' '}
-          <a href="/friendship-as-an-adult" className="text-primary underline underline-offset-4">
+          <a href="/friendship-as-an-adult" className="text-primary-strong underline underline-offset-4">
             adult-friendship guide
           </a>{' '}
           goes deeper on how those short lists rebuild.
@@ -311,7 +311,7 @@ export default function LonelinessPage() {
 
       <Statement tone="canvas">
         The third places did not just vanish.{' '}
-        <span className="text-primary">The rhythms stopped getting held.</span>
+        <span className="text-primary-strong">The rhythms stopped getting held.</span>
       </Statement>
 
       {/* ── Absorbed: life-after-the-feed (doomscrolling) ────────────────────── */}
@@ -380,7 +380,7 @@ export default function LonelinessPage() {
 
       <PullQuote tone="canvas">
         You will not out-willpower the feed.{' '}
-        <span className="text-primary">You replace it with somewhere to be.</span>
+        <span className="text-primary-strong">You replace it with somewhere to be.</span>
       </PullQuote>
 
       {/* ── The answer: how to feel less alone (steps → HowTo schema) ─────────── */}
@@ -410,7 +410,7 @@ export default function LonelinessPage() {
 
       <PullQuote tone="canvas">
         You do not need more people in the room.{' '}
-        <span className="text-primary">You need a few you keep coming back to.</span>
+        <span className="text-primary-strong">You need a few you keep coming back to.</span>
       </PullQuote>
 
       {/* How Frequency helps. The answer made concrete, with a real photo and an
@@ -439,7 +439,7 @@ export default function LonelinessPage() {
           with friends. You pick what you practice, find a few people near you, and
           come back. Joining is free, and Frequency never takes a cut of your own
           bookings; you can see exactly how that works on the{' '}
-          <a href="/pricing" className="text-primary underline underline-offset-4">
+          <a href="/pricing" className="text-primary-strong underline underline-offset-4">
             pricing page
           </a>
           .
@@ -467,12 +467,12 @@ export default function LonelinessPage() {
         </p>
         <p>
           New to town and starting from zero? The{' '}
-          <a href="/friendship-as-an-adult" className="text-primary underline underline-offset-4">
+          <a href="/friendship-as-an-adult" className="text-primary-strong underline underline-offset-4">
             new-city guide
           </a>{' '}
           is the same idea aimed at week one. Always wired and can&apos;t switch
           off? Start with{' '}
-          <a href="/calm-down-fast" className="text-primary underline underline-offset-4">
+          <a href="/calm-down-fast" className="text-primary-strong underline underline-offset-4">
             a few ways to calm down fast
           </a>
           .

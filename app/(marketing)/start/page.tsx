@@ -73,7 +73,7 @@ export default function StartPage() {
         eyebrow="Pick your way in"
         title={
           <>
-            Where do you want to <span className="text-primary">start?</span>
+            Where do you want to <span className="text-primary-strong">start?</span>
           </>
         }
         subtitle="The third place is gone, and ordinary people are rebuilding it where they live. There are three ways to be one of them. Pick the one that fits you."

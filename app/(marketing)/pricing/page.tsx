@@ -512,7 +512,7 @@ export default async function PricingPage() {
 
       <Statement tone="canvas">
         You pay for the parts of the business{' '}
-        <span className="text-primary">you actually run.</span>
+        <span className="text-primary-strong">you actually run.</span>
       </Statement>
 
       {/* Earned, not bought: roles never come from a checkout. */}
