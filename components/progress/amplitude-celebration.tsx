@@ -33,7 +33,7 @@ export function AmplitudeCelebration({
         milestone ? 'border-warning bg-warning-bg/50' : 'border-primary bg-primary-bg/40'
       }`}
     >
-      <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong shadow-sm">
+      <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong lift-1">
         <AudioWaveform className="h-4 w-4" />
       </span>
       <div className="min-w-0 flex-1">

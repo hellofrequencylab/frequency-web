@@ -15,7 +15,7 @@ export async function NewestMembers() {
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
-      <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Newest members</p>
+      <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Newest members</p>
       <ul className="mt-3 space-y-2">
         {data.map((member) => {
           const name = member.display_name || member.handle || 'Member'

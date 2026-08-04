@@ -159,7 +159,7 @@ export function ChoresOverlay({
           aria-modal="true"
           aria-labelledby="chores-title"
           tabIndex={-1}
-          className="relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-2xl outline-none motion-safe:animate-[slideUp_0.25s_ease-out]"
+          className="relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-border bg-surface lift-3 outline-none motion-safe:animate-[slideUp_0.25s_ease-out]"
         >
           <button
             type="button"
@@ -232,7 +232,7 @@ export function ChoresOverlay({
               >
                 Don’t show till tomorrow
               </button>
-              <p className="mt-1.5 text-2xs text-subtle/70">Finish all your tasks and I’ll see myself out.</p>
+              <p className="mt-1.5 text-2xs text-muted/70">Finish all your tasks and I’ll see myself out.</p>
             </div>
           ) : (
             /* ── Beat 1: chores first ────────────────────────────────────────── */
@@ -287,7 +287,7 @@ export function ChoresOverlay({
                 <button type="button" onClick={close} className="text-xs font-medium text-subtle transition-colors hover:text-muted">
                   Fine, in a minute.
                 </button>
-                <p className="mt-1 text-2xs text-subtle/70">
+                <p className="mt-1 text-2xs text-muted/70">
                   (I’ve “locked” your screen. Dramatic, I know. The ✕ still works. I’m not a monster.)
                 </p>
               </div>

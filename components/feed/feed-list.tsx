@@ -406,7 +406,7 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
   return (
     <Link
       href={href}
-      className="group block rounded-2xl border border-border/70 bg-surface px-4 py-3.5 shadow-sm transition-colors hover:border-broadcast dark:border-border/60 dark:bg-surface-elevated/80"
+      className="group block rounded-2xl border border-border/70 bg-surface px-4 py-3.5 lift-1 transition-colors hover:border-broadcast dark:border-border/60 dark:bg-surface-elevated/80"
     >
       <div className="flex items-start gap-3">
         <div className="shrink-0 w-7 h-7 rounded-lg bg-broadcast-bg flex items-center justify-center mt-0.5">
@@ -441,7 +441,7 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
             d.excerpt && <p className="text-xs text-muted line-clamp-1 mt-0.5">{d.excerpt}</p>
           )}
           <div className="flex items-center justify-between mt-1.5">
-            <span className="text-2xs text-subtle">
+            <span className="text-2xs text-muted">
               {d.author?.display_name} · {relativeTime(d.published_at)}
             </span>
             <ArrowRight className="w-3 h-3 text-broadcast-strong group-hover:text-broadcast transition-colors" />
@@ -462,7 +462,7 @@ function EventFeedCard({ event: e }: { event: { id: string; title: string; start
   return (
     <Link
       href={`/events/${e.slug}`}
-      className="group block rounded-2xl border border-border/70 bg-surface px-4 py-3.5 shadow-sm transition-colors hover:border-success dark:border-border/60 dark:bg-surface-elevated/80"
+      className="group block rounded-2xl border border-border/70 bg-surface px-4 py-3.5 lift-1 transition-colors hover:border-success dark:border-border/60 dark:bg-surface-elevated/80"
     >
       <div className="flex items-center gap-3">
         <div className="shrink-0 w-10 h-10 rounded-lg bg-success-bg flex flex-col items-center justify-center">
@@ -478,9 +478,9 @@ function EventFeedCard({ event: e }: { event: { id: string; title: string; start
             {e.title}
           </p>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-2xs text-subtle">{dateStr}</span>
+            <span className="text-2xs text-muted">{dateStr}</span>
             {e.location && (
-              <span className="text-2xs text-subtle flex items-center gap-0.5">
+              <span className="text-2xs text-muted flex items-center gap-0.5">
                 <MapPin className="w-2.5 h-2.5" /> {e.location}
               </span>
             )}

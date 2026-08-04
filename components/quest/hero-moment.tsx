@@ -197,13 +197,13 @@ function FinishMoment({
     <section
       role="status"
       aria-live="polite"
-      className="relative overflow-hidden rounded-3xl border border-rank-gold/40 bg-gradient-to-br from-rank-gold/15 via-surface to-surface p-5 shadow-sm motion-safe:animate-[slideUp_0.45s_ease-out] sm:p-7 dark:from-rank-gold/10"
+      className="relative overflow-hidden rounded-3xl border border-rank-gold/40 bg-gradient-to-br from-rank-gold/15 via-surface to-surface p-5 lift-1 motion-safe:animate-[slideUp_0.45s_ease-out] sm:p-7 dark:from-rank-gold/10"
     >
       <DismissButton onClose={onClose} />
 
       <div className="flex items-start gap-4">
         <span
-          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-on-primary shadow-sm"
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-on-primary lift-1"
           style={{ background: 'var(--rank-gold)' }}
           aria-hidden
         >
@@ -285,13 +285,13 @@ function SeasonCompleteMoment({
     <section
       role="status"
       aria-live="polite"
-      className="relative overflow-hidden rounded-3xl border border-rank-gold/50 bg-gradient-to-br from-rank-gold/20 via-surface to-surface p-6 shadow-md motion-safe:animate-[slideUp_0.5s_ease-out] sm:p-8 dark:from-rank-gold/12"
+      className="relative overflow-hidden rounded-3xl border border-rank-gold/50 bg-gradient-to-br from-rank-gold/20 via-surface to-surface p-6 lift-1 motion-safe:animate-[slideUp_0.5s_ease-out] sm:p-8 dark:from-rank-gold/12"
     >
       <DismissButton onClose={onClose} />
 
       <div className="max-w-xl pr-6">
         <span
-          className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl text-on-primary shadow-sm"
+          className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl text-on-primary lift-1"
           style={{ background: 'var(--rank-gold)' }}
           aria-hidden
         >

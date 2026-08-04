@@ -125,7 +125,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             role="dialog"
             aria-modal="true"
             aria-label="Capture a moment"
-            className="relative flex max-h-[100dvh] w-full flex-col overflow-y-auto border-border bg-canvas p-4 shadow-2xl motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[90vh] sm:max-w-md sm:rounded-3xl sm:border"
+            className="relative flex max-h-[100dvh] w-full flex-col overflow-y-auto border-border bg-canvas p-4 lift-3 motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[90vh] sm:max-w-md sm:rounded-3xl sm:border"
             style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
           >
             {/* Header — the Zap menu: where the interactive energy starts.
@@ -176,7 +176,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             <button
               type="button"
               onClick={openMindless}
-              className="group mt-3 flex w-full shrink-0 items-center gap-3 overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-br from-primary-bg/80 to-primary-bg/25 p-3.5 text-left shadow-sm transition-all hover:border-primary hover:shadow-md active:scale-[0.99]"
+              className="group mt-3 flex w-full shrink-0 items-center gap-3 overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-br from-primary-bg/80 to-primary-bg/25 p-3.5 text-left lift-1 transition-all hover:border-primary active:scale-[0.99]"
             >
               <MindlessArt className="block h-12 shrink-0" />
               <span className="min-w-0 flex-1">
@@ -250,7 +250,7 @@ function ZapTile({
       )}
       <span className="flex h-12 w-full items-center justify-center">{art}</span>
       <span className="mt-1.5 block text-sm font-bold text-text">{label}</span>
-      <span className="block text-2xs leading-snug text-subtle">{soon ? 'Soon' : sub}</span>
+      <span className="block text-2xs leading-snug text-muted">{soon ? 'Soon' : sub}</span>
       {zaps && (
         <span className="mt-1 inline-flex items-center gap-0.5 rounded-full bg-primary-bg px-1.5 py-0.5 text-3xs font-bold text-primary-strong">
           <Zap className="h-2.5 w-2.5" /> {zaps}

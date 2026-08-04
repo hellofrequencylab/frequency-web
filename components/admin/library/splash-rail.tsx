@@ -50,7 +50,7 @@ function Row({
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <p className="mb-1 mt-4 px-2.5 text-2xs font-semibold uppercase tracking-wide text-subtle">{children}</p>
+  return <p className="mb-1 mt-4 px-2.5 text-2xs font-semibold uppercase tracking-wide text-muted">{children}</p>
 }
 
 export function SplashRail({ counts, active, base }: { counts: Counts; active: Active; base: Base }) {

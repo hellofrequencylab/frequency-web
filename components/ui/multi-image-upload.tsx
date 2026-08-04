@@ -239,7 +239,7 @@ export function MultiImageUpload({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+      <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
         <ImageIcon className="h-3.5 w-3.5" /> {label}
         {value.length > 0 && <span className="font-normal text-muted">· {value.length}</span>}
       </span>
@@ -321,7 +321,7 @@ export function MultiImageUpload({
                   onClick={() => move(i, i - 1)}
                   disabled={disabled || busy || i === 0}
                   aria-label="Move earlier"
-                  className="rounded-full bg-black/60 p-1 text-white shadow-sm transition-colors hover:bg-black/80 disabled:opacity-30"
+                  className="rounded-full bg-black/60 p-1 text-white lift-1 transition-colors hover:bg-black/80 disabled:opacity-30"
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
                 </button>
@@ -330,7 +330,7 @@ export function MultiImageUpload({
                   onClick={() => move(i, i + 1)}
                   disabled={disabled || busy || i === value.length - 1}
                   aria-label="Move later"
-                  className="rounded-full bg-black/60 p-1 text-white shadow-sm transition-colors hover:bg-black/80 disabled:opacity-30"
+                  className="rounded-full bg-black/60 p-1 text-white lift-1 transition-colors hover:bg-black/80 disabled:opacity-30"
                 >
                   <ChevronRight className="h-3.5 w-3.5" />
                 </button>

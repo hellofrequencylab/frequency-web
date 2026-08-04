@@ -80,7 +80,7 @@ function TypeBlock({ block }: { block: TypeDefaultBlock }) {
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-surface shadow-sm">
+    <section className="rounded-2xl border border-border bg-surface lift-1">
       <div className="border-b border-border p-4">
         <h2 className="text-sm font-semibold text-text">{block.typeLabel}</h2>
         <p className="mt-0.5 text-xs text-muted">

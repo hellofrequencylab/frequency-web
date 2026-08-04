@@ -93,7 +93,7 @@ export function MemberFooter({ role, staffRole = null, navAccess }: MemberFooter
       >
         {columns.map((col) => (
           <div key={col.title}>
-            <p className="mb-3 text-3xs font-semibold uppercase tracking-wider text-subtle">
+            <p className="mb-3 text-3xs font-semibold uppercase tracking-wider text-muted">
               {col.title}
             </p>
             <ul className="space-y-2">
@@ -138,7 +138,7 @@ export function MemberFooter({ role, staffRole = null, navAccess }: MemberFooter
           </span>
           <p className="text-sm text-muted">{SITE_TAGLINE}.</p>
         </div>
-        <p className="text-2xs text-subtle">
+        <p className="text-2xs text-muted">
           &copy; {year} {ORG_LEGAL_NAME}
         </p>
       </div>

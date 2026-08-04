@@ -249,7 +249,7 @@ export function SpaceMemberComposer({
   }
 
   return (
-    <section className="space-y-4 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <section className="space-y-4 rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="flex items-center gap-2">
         <Mail className="h-4 w-4 text-primary" aria-hidden />
         <h3 className="text-sm font-bold text-text">Send a message</h3>
@@ -292,7 +292,7 @@ export function SpaceMemberComposer({
             className={`${inputClass} pl-8`}
           />
           {(searching || results.length > 0) && query.trim().length >= 2 && (
-            <ul className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-border bg-surface shadow-md">
+            <ul className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-border bg-surface lift-1">
               {searching && results.length === 0 ? (
                 <li className="flex items-center gap-2 px-3 py-2 text-xs text-muted">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Searching
@@ -320,7 +320,7 @@ export function SpaceMemberComposer({
                           <span className="block truncate text-subtle">{r.email}</span>
                         </span>
                         {already ? (
-                          <span className="shrink-0 text-3xs uppercase tracking-wide text-subtle">Added</span>
+                          <span className="shrink-0 text-3xs uppercase tracking-wide text-muted">Added</span>
                         ) : (
                           <Plus className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
                         )}

@@ -187,7 +187,7 @@ export function ImageUpload({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+      <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
         <ImageIcon className="h-3.5 w-3.5" /> {label}
       </span>
 
@@ -208,7 +208,7 @@ export function ImageUpload({
               type="button"
               onClick={openSource}
               disabled={disabled || busy}
-              className="rounded-lg bg-canvas/90 px-2.5 py-1 text-xs font-medium text-text shadow-sm backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60"
+              className="rounded-lg bg-canvas/90 px-2.5 py-1 text-xs font-medium text-text lift-1 backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60"
             >
               {busy ? 'Uploading…' : 'Replace'}
             </button>
@@ -217,7 +217,7 @@ export function ImageUpload({
               onClick={() => onChange(null)}
               disabled={disabled || busy}
               aria-label="Remove image"
-              className="rounded-lg bg-canvas/90 p-1 text-subtle shadow-sm backdrop-blur transition-colors hover:text-danger disabled:opacity-60"
+              className="rounded-lg bg-canvas/90 p-1 text-subtle lift-1 backdrop-blur transition-colors hover:text-danger disabled:opacity-60"
             >
               <X className="h-4 w-4" />
             </button>

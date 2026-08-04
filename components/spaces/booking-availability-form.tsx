@@ -136,7 +136,7 @@ export function BookingAvailabilityForm({
 
   return (
     <form
-      className="space-y-6 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6"
+      className="space-y-6 rounded-2xl border border-border bg-surface p-5 lift-1 sm:p-6"
       onSubmit={(e) => {
         e.preventDefault()
         if (!pending) save()

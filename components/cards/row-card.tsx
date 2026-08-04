@@ -78,7 +78,7 @@ export function RowCard({
     </>
   )
 
-  const surface = `rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md motion-reduce:transition-none ${
+  const surface = `rounded-2xl border border-border bg-surface px-5 py-4 lift-1 transition-colors hover:border-primary-bg motion-reduce:transition-none ${
     dimmed ? 'opacity-[0.72]' : ''
   }`
 

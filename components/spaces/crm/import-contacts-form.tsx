@@ -49,7 +49,7 @@ export function ImportContactsForm({ spaceId }: { spaceId: string }) {
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+    <section className="rounded-2xl border border-border bg-surface p-5 lift-1">
       <div className="mb-3 flex items-start gap-3">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
           <Users className="h-5 w-5" aria-hidden />

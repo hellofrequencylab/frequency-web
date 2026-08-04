@@ -230,7 +230,7 @@ function PageRow({
   return (
     <li
       className={cn(
-        'flex items-center gap-3 rounded-xl border bg-surface p-3 shadow-sm transition-colors',
+        'flex items-center gap-3 rounded-xl border bg-surface p-3 lift-1 transition-colors',
         active ? 'border-primary ring-1 ring-primary' : 'border-border',
       )}
     >
@@ -265,7 +265,7 @@ function PageRow({
         >
           <span className="block truncate text-sm font-semibold text-text">{page.label}</span>
           {page.system && (
-            <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle">
+            <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
               Main
             </span>
           )}

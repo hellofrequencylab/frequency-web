@@ -104,7 +104,7 @@ export function BookingServiceMember({
             key={service.id}
             type="button"
             onClick={() => pick(service)}
-            className="flex flex-col items-start gap-1 rounded-2xl border border-border bg-surface p-4 text-left shadow-sm transition-colors hover:border-border-strong hover:bg-surface-elevated"
+            className="flex flex-col items-start gap-1 rounded-2xl border border-border bg-surface p-4 text-left lift-1 transition-colors hover:border-border-strong hover:bg-surface-elevated"
           >
             <span className="text-sm font-bold text-text">{service.name}</span>
             <span className="flex items-center gap-1.5 text-xs font-semibold text-muted">

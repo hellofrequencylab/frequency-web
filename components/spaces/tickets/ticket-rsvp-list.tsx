@@ -27,7 +27,7 @@ export async function TicketRsvpList({ spaceId }: { spaceId: string }) {
   })
 
   return (
-    <ul className="divide-y divide-border rounded-2xl border border-border bg-surface shadow-sm">
+    <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
       {rsvps.map((r) => (
         <li key={r.id} className="flex items-center justify-between gap-4 px-4 py-3">
           <div className="min-w-0">

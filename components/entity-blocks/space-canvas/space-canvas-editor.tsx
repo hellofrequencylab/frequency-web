@@ -192,7 +192,7 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
       <aside className="min-w-0 space-y-3" aria-label="Sections and settings">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-text">Sections</h3>
-          <span className="flex items-center gap-1 text-2xs text-subtle" role="status" aria-live="polite">
+          <span className="flex items-center gap-1 text-2xs text-muted" role="status" aria-live="polite">
             {store.saving ? (
               <>
                 <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Saving
@@ -217,7 +217,7 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
               <li key={row.id} className="rounded-xl border border-border bg-surface">
                 {/* Section header: reorder, layout picker, remove. */}
                 <div className="flex items-center gap-1 border-b border-border px-2 py-1.5">
-                  <span className="min-w-0 flex-1 truncate text-2xs font-semibold uppercase tracking-wide text-subtle">
+                  <span className="min-w-0 flex-1 truncate text-2xs font-semibold uppercase tracking-wide text-muted">
                     Section {ri + 1}
                   </span>
                   <SplitPicker active={activeSplit(row.columns, row.ratio)} onChoose={(s) => onSplit(row.id, s)} />
@@ -483,8 +483,8 @@ function AddBlockPalette({
   return (
     <div className="space-y-1.5 rounded-lg border border-border bg-surface-elevated/40 p-2">
       <div className="flex items-center justify-between">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Add a block</p>
-        <button type="button" onClick={onClose} className="text-2xs font-semibold text-subtle hover:text-text">
+        <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Add a block</p>
+        <button type="button" onClick={onClose} className="text-2xs font-semibold text-muted hover:text-text">
           Close
         </button>
       </div>

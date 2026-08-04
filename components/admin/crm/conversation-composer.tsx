@@ -96,7 +96,7 @@ export function ConversationComposer({
           onClick={() => setInternal(false)}
           aria-pressed={!internal}
           className={`flex-1 rounded-md px-2 py-1 font-semibold transition-colors ${
-            !internal ? 'bg-surface text-primary-strong shadow-sm' : 'text-muted'
+            !internal ? 'bg-surface text-primary-strong lift-1' : 'text-muted'
           }`}
         >
           Reply
@@ -106,7 +106,7 @@ export function ConversationComposer({
           onClick={() => setInternal(true)}
           aria-pressed={internal}
           className={`flex flex-1 items-center justify-center gap-1 rounded-md px-2 py-1 font-semibold transition-colors ${
-            internal ? 'bg-surface text-warning shadow-sm' : 'text-muted'
+            internal ? 'bg-surface text-warning lift-1' : 'text-muted'
           }`}
         >
           <Lock className="h-3 w-3" /> Note
@@ -127,7 +127,7 @@ export function ConversationComposer({
         aria-label={internal ? 'Internal note' : 'Reply'}
         className="w-full resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
       />
-      {aiDrafted && <p className="mt-1 text-2xs text-subtle">Vera drafted this. Read it and edit before you send.</p>}
+      {aiDrafted && <p className="mt-1 text-2xs text-muted">Vera drafted this. Read it and edit before you send.</p>}
       {error && (
         <p role="alert" className="mt-1 text-xs text-danger">
           {error}

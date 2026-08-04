@@ -157,7 +157,7 @@ export function EventDispatchCompose({
           <span
             aria-disabled="true"
             title="Text messages are coming soon."
-            className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-dashed border-border px-2.5 py-1.5 text-2xs font-medium text-subtle"
+            className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-dashed border-border px-2.5 py-1.5 text-2xs font-medium text-muted"
           >
             <Smartphone className="h-3.5 w-3.5" />
             Text the group
@@ -180,19 +180,19 @@ export function EventDispatchCompose({
       {error && <p className="mt-2 text-2xs font-medium text-danger">{error}</p>}
 
       {toDispatch && (
-        <p className="mt-2 text-2xs text-subtle">
+        <p className="mt-2 text-2xs text-muted">
           Guests who RSVP&rsquo;d get this in their Dispatches, unless they muted this event.
         </p>
       )}
 
       {toEmail && (
-        <p className="mt-2 text-2xs text-subtle">
+        <p className="mt-2 text-2xs text-muted">
           Emails everyone on your guest list who accepts event emails.
         </p>
       )}
 
       {toSms && (
-        <p className="mt-2 text-2xs text-subtle">
+        <p className="mt-2 text-2xs text-muted">
           Goes out by text to guests who opted in, within their quiet hours.
         </p>
       )}

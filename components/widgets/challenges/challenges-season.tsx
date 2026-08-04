@@ -73,7 +73,7 @@ export async function ChallengesSeason() {
     <div className="space-y-6">
       {/* ── KPI band — deliberately a shade darker than the canvas so the season
             stats read as one focused dashboard header. ─────────────────────────── */}
-      <section className="rounded-3xl border border-border/70 bg-marketing-canvas p-5 shadow-sm sm:p-6">
+      <section className="rounded-3xl border border-border/70 bg-marketing-canvas p-5 lift-1 sm:p-6">
         {/* Season progress headline */}
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex items-center gap-3">

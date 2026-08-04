@@ -155,7 +155,7 @@ export function SpaceInfoConnectForm({
 
   return (
     <form
-      className="space-y-8 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6"
+      className="space-y-8 rounded-2xl border border-border bg-surface p-5 lift-1 sm:p-6"
       onSubmit={(e) => e.preventDefault()}
       onBlur={onFieldBlur}
     >
@@ -334,7 +334,7 @@ export function SpaceInfoConnectForm({
             <div className="grid gap-3 sm:grid-cols-2">
               {SPACE_SOCIAL_PLATFORMS.map((p) => (
                 <div key={p.key}>
-                  <Label htmlFor={`biz-social-${p.key}`} className="mb-1 block text-2xs font-medium text-subtle">
+                  <Label htmlFor={`biz-social-${p.key}`} className="mb-1 block text-2xs font-medium text-muted">
                     {p.label}
                   </Label>
                   <Input

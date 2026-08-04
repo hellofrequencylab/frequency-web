@@ -170,7 +170,7 @@ export function EmailStyleEditor({
 
       {/* RIGHT: a live mini-preview of an email in the working colors (inline hex — this renders the EMAIL). */}
       <div>
-        <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Preview</p>
+        <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Preview</p>
         <div className="rounded-2xl p-4" style={{ background: preview.canvas }}>
           <div
             className="mx-auto max-w-[18rem] rounded-xl p-5"

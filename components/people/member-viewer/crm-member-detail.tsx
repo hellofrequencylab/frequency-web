@@ -98,7 +98,7 @@ function NetworkGroup({ icon: Icon, label, items }: { icon: typeof Users; label:
   if (items.length === 0) return null
   return (
     <div>
-      <p className="mb-1.5 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+      <p className="mb-1.5 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
         <Icon className="h-3.5 w-3.5" aria-hidden /> {label}
       </p>
       <ul className="space-y-1">
@@ -111,7 +111,7 @@ function NetworkGroup({ icon: Icon, label, items }: { icon: typeof Users; label:
             ) : (
               <span className="truncate text-text">{it.label}</span>
             )}
-            {it.meta && <span className="shrink-0 text-2xs text-subtle">{it.meta}</span>}
+            {it.meta && <span className="shrink-0 text-2xs text-muted">{it.meta}</span>}
           </li>
         ))}
       </ul>
@@ -132,7 +132,7 @@ function FullProfile({ detail }: { detail: CrmMemberDetail }) {
       {/* Notes */}
       {notes && notes.length > 0 && (
         <section>
-          <h4 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Notes</h4>
+          <h4 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Notes</h4>
           <ul className="space-y-1.5">
             {notes.map((n) => (
               <li key={n.id} className="flex items-start gap-2 text-sm text-muted">
@@ -147,7 +147,7 @@ function FullProfile({ detail }: { detail: CrmMemberDetail }) {
       {/* Scores */}
       {hasScores && (
         <section>
-          <h4 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Scores</h4>
+          <h4 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Scores</h4>
           <div className="grid grid-cols-3 gap-2">
             <StatCard label="Health" value={scores!.health == null ? '–' : Math.round(scores!.health)} icon={HeartPulse} detail={scores!.tier ?? undefined} />
             <StatCard label="Churn risk" value={scores!.churn ?? '–'} icon={Activity} />
@@ -159,7 +159,7 @@ function FullProfile({ detail }: { detail: CrmMemberDetail }) {
       {/* Engagement rollup — the tiles kept, smaller, 4 across. */}
       {engagement && (
         <section>
-          <h4 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Engagement</h4>
+          <h4 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Engagement</h4>
           <div className="grid grid-cols-4 gap-2">
             <StatCard label="Sent" value={engagement.sent} icon={Send} />
             <StatCard label="Opened" value={engagement.opened} icon={MailOpen} />
@@ -167,7 +167,7 @@ function FullProfile({ detail }: { detail: CrmMemberDetail }) {
             <StatCard label="Replied" value={engagement.replied} icon={Reply} />
           </div>
           {engagement.lastTouch && (
-            <p className="mt-1.5 text-2xs text-subtle">Last touch {engagement.lastTouch}</p>
+            <p className="mt-1.5 text-2xs text-muted">Last touch {engagement.lastTouch}</p>
           )}
         </section>
       )}
@@ -176,7 +176,7 @@ function FullProfile({ detail }: { detail: CrmMemberDetail }) {
       {hasNetwork && (
         <section className="grid gap-4 @lg:grid-cols-2">
           <div className="space-y-3">
-            <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Manages</p>
+            <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Manages</p>
             <NetworkGroup icon={Users} label="Circles hosted" items={network!.circlesHosted} />
             <NetworkGroup icon={CalendarDays} label="Events hosted" items={network!.eventsHosted} />
             <NetworkGroup icon={Building2} label="Spaces owned" items={network!.spacesOwned} />
@@ -185,7 +185,7 @@ function FullProfile({ detail }: { detail: CrmMemberDetail }) {
             )}
           </div>
           <div className="space-y-3">
-            <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Part of</p>
+            <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Part of</p>
             <NetworkGroup icon={UserCheck} label="Circles" items={network!.memberOf} />
             {network!.memberOf.length === 0 && <p className="text-sm text-subtle">No circle memberships yet.</p>}
           </div>
@@ -223,7 +223,7 @@ function MoreAboutFold({ detail }: { detail: CrmMemberDetail }) {
       >
         <UserCheck className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
         <span className="text-sm font-bold tracking-tight text-text">More about {firstName}</span>
-        <span className="min-w-0 flex-1 truncate text-right text-2xs text-subtle">
+        <span className="min-w-0 flex-1 truncate text-right text-2xs text-muted">
           Scores, engagement, and their network
         </span>
         <ChevronRight
@@ -392,11 +392,11 @@ export function CrmMemberDetailPane({
           >
             {/* Near-fullscreen compose overlay: the email editor fills the CENTER at full size, with an
                 editorial context rail (communication stats + threaded past communications) on the RIGHT. */}
-            <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xl">
+            <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface lift-3">
               <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-5 py-3">
                 <div className="min-w-0">
                   <h3 className="truncate text-sm font-bold text-text">Message {detail.displayName}</h3>
-                  <p className="truncate text-2xs text-subtle">
+                  <p className="truncate text-2xs text-muted">
                     Saves automatically as you type. Close anytime and pick up where you left off.
                   </p>
                 </div>
@@ -471,7 +471,7 @@ function ComposeContextRail({ detail }: { detail: CrmMemberDetail }) {
   return (
     <aside className="hidden w-80 shrink-0 flex-col gap-5 overflow-y-auto border-l border-border bg-canvas p-4 lg:flex">
       <div>
-        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Reaching</p>
+        <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Reaching</p>
         <p className="mt-1 truncate text-sm font-bold text-text">{detail.displayName}</p>
         {contact?.email && <p className="truncate text-xs text-subtle">{contact.email}</p>}
       </div>
@@ -500,7 +500,7 @@ function ComposeContextRail({ detail }: { detail: CrmMemberDetail }) {
       {/* Communication rollup — reached vs. responded. */}
       {engagement && (
         <section>
-          <h4 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Communication</h4>
+          <h4 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Communication</h4>
           <div className="grid grid-cols-2 gap-2">
             <StatCard label="Sent" value={engagement.sent} icon={Send} />
             <StatCard label="Opened" value={engagement.opened} icon={MailOpen} />
@@ -508,7 +508,7 @@ function ComposeContextRail({ detail }: { detail: CrmMemberDetail }) {
             <StatCard label="Replied" value={engagement.replied} icon={Reply} />
           </div>
           {engagement.lastTouch && (
-            <p className="mt-1.5 text-2xs text-subtle">Last touch {engagement.lastTouch}</p>
+            <p className="mt-1.5 text-2xs text-muted">Last touch {engagement.lastTouch}</p>
           )}
         </section>
       )}
@@ -516,7 +516,7 @@ function ComposeContextRail({ detail }: { detail: CrmMemberDetail }) {
       {/* Threaded past communications. */}
       {interactions && interactions.length > 0 && (
         <section>
-          <h4 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Past communication</h4>
+          <h4 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Past communication</h4>
           <ol className="space-y-3 border-l border-border pl-4">
             {interactions.map((it, i) => (
               <li key={`${it.kind}-${it.when}-${i}`} className="relative">
@@ -534,7 +534,7 @@ function ComposeContextRail({ detail }: { detail: CrmMemberDetail }) {
       {/* Steward notes. */}
       {notes && notes.length > 0 && (
         <section>
-          <h4 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Notes</h4>
+          <h4 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Notes</h4>
           <ul className="space-y-1.5">
             {notes.map((n) => (
               <li key={n.id} className="flex items-start gap-2 text-xs text-muted">

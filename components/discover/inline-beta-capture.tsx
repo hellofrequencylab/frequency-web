@@ -36,7 +36,7 @@ export function InlineBetaCapture({
 
   if (status === 'done' || status === 'already') {
     return (
-      <div className="rounded-2xl border border-border bg-surface p-6 text-center shadow-sm" role="status">
+      <div className="rounded-2xl border border-border bg-surface p-6 text-center lift-1" role="status">
         <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-success-bg text-success">
           <Check className="h-5 w-5" strokeWidth={2.5} aria-hidden />
         </div>
@@ -55,7 +55,7 @@ export function InlineBetaCapture({
   return (
     <form
       onSubmit={onSubmit}
-      className="rounded-2xl border border-border bg-surface p-6 shadow-sm text-left"
+      className="rounded-2xl border border-border bg-surface p-6 lift-1 text-left"
     >
       <h3 className="text-lg font-semibold text-text">{heading}</h3>
       <p className="mt-1 mb-4 text-sm text-muted leading-relaxed">{body}</p>

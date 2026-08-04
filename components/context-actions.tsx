@@ -127,7 +127,7 @@ export function ContextActions({ role, context }: ContextActionsProps) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 min-w-[180px] rounded-2xl border border-border bg-surface shadow-lg z-50 overflow-hidden py-1">
+        <div className="absolute right-0 top-full mt-1 min-w-[180px] rounded-2xl border border-border bg-surface lift-3 z-50 overflow-hidden py-1">
           {actions.map((action) =>
             action.kind === 'link' ? (
               <Link

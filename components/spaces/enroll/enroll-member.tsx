@@ -86,7 +86,7 @@ export async function EnrollMember({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
         <h3 className="text-base font-bold leading-tight text-text">{program.name}</h3>
 
         <ul className="mt-2 space-y-1.5 text-sm text-muted">
@@ -137,7 +137,7 @@ export async function EnrollMember({
       </div>
 
       {!mine && (
-        <p className="text-2xs text-subtle">
+        <p className="text-2xs text-muted">
           Enrolling reserves your seat. We do not take a payment yet, so paid enrollment comes later.
         </p>
       )}

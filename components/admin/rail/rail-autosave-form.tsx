@@ -40,7 +40,7 @@ export function RailSaveRow({ state, error }: { state: RailSaveState; error: str
     )
   }
   if (state === 'idle') {
-    return <p className="text-2xs text-subtle">Changes save automatically.</p>
+    return <p className="text-2xs text-muted">Changes save automatically.</p>
   }
   return (
     <p className="flex items-center gap-1.5 text-xs font-medium text-subtle" aria-live="polite">

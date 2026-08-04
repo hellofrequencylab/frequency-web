@@ -115,7 +115,7 @@ export function EmailPreview({
               srcDoc={html}
               sandbox="allow-same-origin"
               onLoad={measureHeight}
-              className="rounded-lg border border-border bg-white shadow-sm"
+              className="rounded-lg border border-border bg-white lift-1"
               style={{ width: frameW, height: frameH, transform: `scale(${scale})`, transformOrigin: 'top left' }}
             />
           </div>

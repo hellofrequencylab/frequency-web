@@ -214,7 +214,7 @@ export function RsvpControls({
           <UserPlus className="h-4 w-4" />
           Request to join
         </button>
-        <p className="text-2xs text-subtle">The host approves who joins this one.</p>
+        <p className="text-2xs text-muted">The host approves who joins this one.</p>
       </div>
     )
   }
@@ -302,7 +302,7 @@ export function RsvpControls({
       </div>
 
       {(isGoing || isWaitlisted) && (
-        <p className="text-2xs text-subtle">
+        <p className="text-2xs text-muted">
           {isWaitlisted
             ? 'You’re on the waitlist. Tap Going to step out. We’ll let you in if a spot opens.'
             : 'Tap Going again to undo.'}
@@ -558,7 +558,7 @@ function EventQuestionnaire({
             )}
 
             {saving === q.id ? (
-              <p className="text-2xs text-subtle">Saving…</p>
+              <p className="text-2xs text-muted">Saving…</p>
             ) : savedId === q.id ? (
               <p className="inline-flex items-center gap-1 text-2xs text-success">
                 <Check className="h-3 w-3" />
@@ -568,7 +568,7 @@ function EventQuestionnaire({
           </div>
         )
       })}
-      <p className="text-2xs text-subtle">Only the host sees your answers.</p>
+      <p className="text-2xs text-muted">Only the host sees your answers.</p>
     </div>
   )
 }

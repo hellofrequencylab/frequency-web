@@ -207,7 +207,7 @@ export function FunnelFlow({ funnel }: { funnel: FlowFunnel }) {
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
                       <span className="truncate text-sm font-semibold text-text">{stage.label}</span>
-                      <span className="shrink-0 rounded-full bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium uppercase tracking-wide text-subtle">
+                      <span className="shrink-0 rounded-full bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium uppercase tracking-wide text-muted">
                         {kindMeta.label}
                       </span>
                     </span>
@@ -359,8 +359,8 @@ function StagePanel({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
-      <p className="text-2xs font-bold uppercase tracking-wide text-subtle">{kindMeta.label} step</p>
+    <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
+      <p className="text-2xs font-bold uppercase tracking-wide text-muted">{kindMeta.label} step</p>
       <p className="mt-0.5 text-xs text-muted">{kindMeta.blurb}</p>
 
       <label className="mt-4 block text-xs font-semibold text-text" htmlFor={`label-${stage.id}`}>
@@ -393,7 +393,7 @@ function StagePanel({
                 className="flex items-center gap-2 rounded-lg border border-border bg-canvas px-2.5 py-1.5"
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block text-2xs font-medium uppercase tracking-wide text-subtle">
+                  <span className="block text-2xs font-medium uppercase tracking-wide text-muted">
                     {REF_TYPE_META[link.refType]?.label ?? link.refType}
                   </span>
                   <span className="block truncate text-xs text-text">{link.refKey ?? link.refId ?? ''}</span>
@@ -451,7 +451,7 @@ function StagePanel({
         </Button>
       </div>
 
-      <p className="mt-3 flex items-center gap-1.5 text-2xs text-subtle">
+      <p className="mt-3 flex items-center gap-1.5 text-2xs text-muted">
         <X className="h-3 w-3" aria-hidden />
         Changes save as you make them.
       </p>

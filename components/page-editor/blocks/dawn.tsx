@@ -3,9 +3,10 @@
 // Puck + our custom blocks, styled to the DAWN reference).
 //
 // Keys:  PhotoBeat | PhotoTrio | StoryBeats | ValueBand | BuildTimeline |
-//        PhotoCardRow | PlanBand | PillarNav
+//        PhotoCardRow | PlanBand | PillarNav | DawnHowToSteps
 // Categories: Media (PhotoBeat, PhotoTrio, PhotoCardRow) · Content (StoryBeats)
-//             · Sections (ValueBand, BuildTimeline, PlanBand, PillarNav)
+//             · Sections (ValueBand, BuildTimeline, PlanBand, PillarNav,
+//               DawnHowToSteps)
 //
 // Every block WRAPS the marketing kit (components/marketing/marketing-ui.tsx:
 // PhotoBeat, PhotoTrio, Section, SectionHeading, Lead, Body, Card, PillarNav)
@@ -33,6 +34,13 @@ import {
   Handshake,
   MapPin,
   Star,
+  Zap,
+  Gem,
+  Trophy,
+  Repeat,
+  DoorOpen,
+  CalendarDays,
+  LineChart,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import {
@@ -48,8 +56,8 @@ import {
 import { SiteImage } from '@/components/marketing/site-image'
 import { Reveal } from '@/components/marketing/motion'
 import { JsonLd } from '@/components/json-ld'
-import { productSchema } from '@/lib/jsonld'
-import { richParagraphs, safeHref } from '@/lib/page-editor/richtext'
+import { productSchema, howToSchema } from '@/lib/jsonld'
+import { richParagraphs, richPlainText, safeHref } from '@/lib/page-editor/richtext'
 import { focalField, focalClass } from '@/lib/page-editor/image-controls'
 import { imgField } from '@/lib/page-editor/fields'
 import type { LivePricing } from '@/lib/page-editor/live-pricing'
@@ -78,6 +86,10 @@ function sectionTone(tone?: string): SectionTone {
 }
 
 // Icon chips for the value cards — a curated lucide set, DAWN-toned by the card.
+// The first fourteen carry the community/principles register (About, The Lab); the
+// trailing seven were added when The Quest (the game's currencies and keepsakes) and
+// Spaces (the operator's front door, calendar, and growth) needed a vocabulary the
+// original set could not name. Curated, not open-ended: an editor picks from this list.
 const VALUE_ICONS: Record<string, LucideIcon> = {
   Compass,
   Users,
@@ -93,6 +105,13 @@ const VALUE_ICONS: Record<string, LucideIcon> = {
   Handshake,
   MapPin,
   Star,
+  Zap,
+  Gem,
+  Trophy,
+  Repeat,
+  DoorOpen,
+  CalendarDays,
+  LineChart,
 }
 const valueIconField = {
   type: 'select' as const,
@@ -356,7 +375,14 @@ export function ValueBandBlock({
 //    "what we hand you" asks (01/02/03) and the Now → 2027 → 2028 build plan.
 // ─────────────────────────────────────────────────────────────────────────────
 
-type TimelineItem = { label?: string; title?: string; body?: string; highlight?: 'normal' | 'chosen' }
+type TimelineItem = {
+  label?: string
+  title?: string
+  /** Short qualifier riding the title (e.g. "One Journey done"). Optional; omitted renders nothing. */
+  tag?: string
+  body?: string
+  highlight?: 'normal' | 'chosen'
+}
 
 export function BuildTimelineBlock({
   eyebrow,
@@ -431,7 +457,16 @@ export function BuildTimelineBlock({
                   >
                     {item.label || String(i + 1).padStart(2, '0')}
                   </span>
-                  {item.title && <h3 className="mt-3 text-lg font-bold text-text">{item.title}</h3>}
+                  {(item.title || item.tag) && (
+                    <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                      {item.title && <h3 className="text-lg font-bold text-text">{item.title}</h3>}
+                      {item.tag && (
+                        <span className="text-3xs font-bold uppercase tracking-widest text-primary-strong">
+                          {item.tag}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   {item.body && (
                     <p className="mt-2 text-base leading-relaxed text-muted">{item.body}</p>
                   )}
@@ -920,6 +955,183 @@ export function PlanBandBlock({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 8. DawnHowToSteps — an ordered how-to that OWNS its structured data.
+//
+//    The block emits schema.org/HowTo from ITS OWN fields, exactly the way the
+//    Accordion block emits FAQPage from its own Q/A pairs (blocks/collections.tsx):
+//    same <JsonLd> component (so the same `<` escaping guard), same placement (the
+//    first child of the block's root, before any visible markup), and the same
+//    fail-closed rule — a node is emitted only when the data is genuinely valid,
+//    never a half-formed one, because an answer engine silently discards a
+//    malformed node and we would have paid the SEO cost for nothing.
+//
+//    Validity, per Google's HowTo requirements:
+//      • `name` is required, and at least one step with BOTH a name and text.
+//      • Every step is a HowToStep with a position, so the order is machine-read.
+//      • `totalTime` is emitted ONLY if it parses as an ISO 8601 duration — a
+//        janitor typing "about 30 minutes" must not poison the node.
+//      • Schema text is plain (markdown stripped) so the structured data mirrors
+//        the visible copy word for word.
+//    This is the gating dependency for converting the seeker articles: those pages
+//    are the highest-intent SEO surface, and converting them without HowTo would be
+//    a net loss (UX-MATURITY-PLAN Lift 5d).
+// ─────────────────────────────────────────────────────────────────────────────
+
+type HowToStepItem = { name?: string; text?: string; image?: string; alt?: string }
+
+// ISO 8601 duration, the only form schema.org accepts for totalTime (e.g. PT30M,
+// PT1H30M, P2D). Anything else is dropped rather than emitted invalid.
+const ISO_8601_DURATION = /^P(?!$)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)?$/
+
+/** The block's structured data, or `null` when the fields cannot make a valid HowTo.
+ *  Pure and exported so the schema contract is unit-testable without a render. */
+export function howToStepsSchema({
+  name,
+  intro,
+  totalTime,
+  steps,
+}: {
+  name?: string
+  intro?: string
+  totalTime?: string
+  steps?: HowToStepItem[]
+}): object | null {
+  const guide = (name ?? '').trim()
+  // Only well-formed steps qualify (Google requires a name AND text on each), and
+  // markdown is stripped so the schema matches the rendered sentence.
+  const valid = (steps ?? [])
+    .map((s) => ({ name: (s.name ?? '').trim(), text: richPlainText(s.text).trim(), image: s.image }))
+    .filter((s) => s.name && s.text)
+  if (!guide || valid.length === 0) return null
+  const lead = richPlainText(intro).trim()
+  const duration = (totalTime ?? '').trim()
+  const firstImage = valid.find((s) => s.image)?.image
+  return howToSchema({
+    name: guide,
+    description: lead || null,
+    image: firstImage || null,
+    totalTime: ISO_8601_DURATION.test(duration) ? duration : null,
+    steps: valid.map((s) => ({ name: s.name, text: s.text })),
+  })
+}
+
+export function DawnHowToStepsBlock({
+  eyebrow,
+  name,
+  nameAccent,
+  kicker,
+  intro,
+  totalTime,
+  totalTimeLabel,
+  steps,
+  tone,
+  pad,
+  vis,
+}: {
+  eyebrow?: string
+  /** The guide's name: the visible heading AND the HowTo `name`. */
+  name?: string
+  nameAccent?: string
+  kicker?: string
+  /** Lead paragraph under the heading; also the HowTo `description`. */
+  intro?: string
+  /** ISO 8601 duration for the whole guide (e.g. PT30M). Schema only. */
+  totalTime?: string
+  /** How the time reads to a human (e.g. "About 30 minutes"). Visible only. */
+  totalTimeLabel?: string
+  steps?: HowToStepItem[]
+  tone?: string
+  pad?: string
+  vis?: string
+}) {
+  const t = sectionTone(tone)
+  const ink = t === 'ink'
+  const shown = (steps ?? []).filter((s) => s.name || s.text)
+  const schema = howToStepsSchema({ name, intro, totalTime, steps })
+  return (
+    <Section
+      tone={t}
+      className={ink ? 'spot relative overflow-hidden' : ''}
+      pad={pad}
+      vis={vis}
+    >
+      {/* Placed first, exactly like the Accordion's FAQPage node, so the structured
+          data travels with the block whichever surface renders the document. */}
+      {schema && <JsonLd data={schema} />}
+      <div className="relative z-10">
+        {(eyebrow || name || kicker) && (
+          <SectionHeading
+            tone={ink ? 'ink' : 'light'}
+            eyebrow={eyebrow || undefined}
+            title={accentize(name, nameAccent)}
+            kicker={kicker || undefined}
+          />
+        )}
+        {intro && (
+          <div
+            className={`text-lg leading-relaxed [&>p+p]:mt-4 ${ink ? 'text-on-ink-muted' : 'text-muted'}`}
+          >
+            {richParagraphs(intro)}
+          </div>
+        )}
+        {totalTimeLabel && (
+          <p
+            className={`mt-5 text-3xs font-bold uppercase tracking-widest ${
+              ink ? 'text-on-ink-subtle' : 'text-subtle'
+            }`}
+          >
+            {totalTimeLabel}
+          </p>
+        )}
+        <ol className="stagger mt-9 space-y-5">
+          {shown.map((step, i) => (
+            <Reveal
+              as="li"
+              key={i}
+              className={`lift-1 overflow-hidden rounded-card border ${
+                ink ? 'border-on-ink/10 bg-on-ink/5' : 'border-border bg-surface'
+              }`}
+            >
+              {step.image && (
+                <SiteImage
+                  src={step.image}
+                  alt={step.alt ?? ''}
+                  aspect="16/10"
+                  sizes="(min-width: 768px) 44rem, 100vw"
+                />
+              )}
+              <div className="p-6">
+                <span
+                  className={`font-display text-4xl leading-none sm:text-5xl ${
+                    ink ? 'text-primary' : 'text-primary-strong'
+                  }`}
+                >
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                {step.name && (
+                  <h3 className={`mt-2 text-lg font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>
+                    {step.name}
+                  </h3>
+                )}
+                {step.text && (
+                  <div
+                    className={`mt-2 text-base leading-relaxed [&>p+p]:mt-3 ${
+                      ink ? 'text-on-ink-muted' : 'text-muted'
+                    }`}
+                  >
+                    {richParagraphs(step.text)}
+                  </div>
+                )}
+              </div>
+            </Reveal>
+          ))}
+        </ol>
+      </div>
+    </Section>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ComponentConfig map — exported as dawnComponents
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1219,6 +1431,7 @@ export const dawnComponents: Record<string, ComponentConfig> = {
         arrayFields: {
           label: { type: 'text', label: 'Numeral or date (e.g. 01, Now, 2028)' },
           title: { type: 'text', label: 'Title' },
+          tag: { type: 'text', label: 'Short qualifier beside the title (optional)' },
           body: { type: 'textarea', label: 'Body' },
           highlight: {
             type: 'radio',
@@ -1512,6 +1725,99 @@ export const dawnComponents: Record<string, ComponentConfig> = {
           tone={isInk(tone as string) ? 'ink' : tone === 'canvas' ? 'canvas' : 'surface'}
         />
       </div>
+    ),
+  },
+
+  // ── DawnHowToSteps ───────────────────────────────────────────────────────────
+  DawnHowToSteps: {
+    label: 'How-to steps (ordered, owns HowTo schema)',
+    fields: {
+      eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
+      name: { type: 'textarea', label: 'Guide name (the heading AND the HowTo name)' },
+      nameAccent: { type: 'text', label: 'Accent word (optional)' },
+      kicker: { type: 'textarea', label: 'Italic kicker (optional)' },
+      intro: { type: 'textarea', label: 'Intro paragraph (also the HowTo description)' },
+      totalTimeLabel: { type: 'text', label: 'Time it takes, in words (e.g. About 30 minutes)' },
+      totalTime: {
+        type: 'text',
+        label: 'Time it takes, ISO 8601 for search engines (e.g. PT30M). Blank is fine.',
+      },
+      steps: {
+        type: 'array',
+        label: 'Steps (in order)',
+        arrayFields: {
+          name: { type: 'text', label: 'Step name' },
+          text: { type: 'textarea', label: 'What to do (**bold**, *italic*, [link](/path))' },
+          image: imgField,
+          alt: { type: 'text', label: 'Alt text' },
+        },
+        getItemSummary: (item: HowToStepItem) => item.name || 'Step',
+      },
+      tone: toneField,
+      layout: layoutField,
+    },
+    defaultProps: {
+      eyebrow: 'How to',
+      name: 'How to start a Circle',
+      nameAccent: '',
+      kicker: '',
+      intro: 'Four steps, a standing time, and a few people. That is the whole thing.',
+      totalTimeLabel: '',
+      totalTime: '',
+      steps: [
+        {
+          name: 'Pick what you gather around',
+          text: 'A class, a walk, a supper table, a sit. One thing, named plainly, so the right people know it is for them.',
+          image: '',
+          alt: '',
+        },
+        {
+          name: 'Pick a standing time',
+          text: 'Same day, same hour, every week. A standing time is what turns a plan into a habit.',
+          image: '',
+          alt: '',
+        },
+        {
+          name: 'Invite the few you already know',
+          text: 'Three people is a Circle. Ask them directly, not with a post, and tell them the time.',
+          image: '',
+          alt: '',
+        },
+        {
+          name: 'Hold the door, week after week',
+          text: 'Show up even on the quiet weeks. The room is built by the people who keep coming back.',
+          image: '',
+          alt: '',
+        },
+      ],
+      tone: 'surface',
+      layout: layoutDefault,
+    },
+    render: ({
+      eyebrow,
+      name,
+      nameAccent,
+      kicker,
+      intro,
+      totalTime,
+      totalTimeLabel,
+      steps,
+      tone,
+      layout,
+    }) => (
+      <DawnHowToStepsBlock
+        eyebrow={(eyebrow as string) || undefined}
+        name={(name as string) || undefined}
+        nameAccent={(nameAccent as string) || undefined}
+        kicker={(kicker as string) || undefined}
+        intro={(intro as string) || undefined}
+        totalTime={(totalTime as string) || undefined}
+        totalTimeLabel={(totalTimeLabel as string) || undefined}
+        steps={steps as HowToStepItem[]}
+        tone={tone as string}
+        pad={padClass(layout as LayoutValue)}
+        vis={visClass(layout as LayoutValue)}
+      />
     ),
   },
 }

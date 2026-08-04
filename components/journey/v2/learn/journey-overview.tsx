@@ -118,7 +118,7 @@ export function AboutThisJourneyHero({
 
           {/* Four-Pillar balance — how the practices spread across Mind / Body / Spirit / Expression. */}
           <div>
-            <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+            <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
               <Layers className="h-3 w-3 shrink-0" aria-hidden /> Pillar balance
               <span className="font-medium normal-case tracking-normal text-subtle">{covered} of 4 Pillars</span>
             </p>
@@ -300,7 +300,7 @@ export function AuthorBlock({ author }: { author: PlanAuthor | null }) {
       <SectionHeader title="Your guide" />
       <Link
         href={`/people/${author.handle}`}
-        className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-border-strong"
+        className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 lift-1 transition-colors hover:border-border-strong"
       >
         {author.avatarUrl ? (
           <Image

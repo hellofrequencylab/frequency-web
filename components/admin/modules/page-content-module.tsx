@@ -115,7 +115,7 @@ export function PageContentModule() {
             />
           </label>
         </div>
-        <p className="text-2xs text-subtle">
+        <p className="text-2xs text-muted">
           Leave a field blank to use the page&rsquo;s built-in default. The CTA button shows only when
           both its label and link are set.
         </p>

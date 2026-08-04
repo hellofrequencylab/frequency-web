@@ -82,7 +82,7 @@ export function CohostManager({
                 {p.avatarUrl ? (
                   <Image src={avatarSrc(p.avatarUrl)} alt={p.displayName} width={28} height={28} className="h-7 w-7 shrink-0 rounded-full object-cover" style={avatarFocusStyle(p.avatarUrl)} />
                 ) : (
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-2xs font-bold text-subtle select-none">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-2xs font-bold text-muted select-none">
                     {getInitials(p.displayName)}
                   </div>
                 )}
@@ -196,7 +196,7 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
           dropdown — the real reason the matches never showed. An in-flow list pushes the
           content below it down and is never clipped. */}
       {hits.length > 0 && (
-        <div className="mt-1 w-full max-w-sm rounded-xl border border-border bg-surface py-1 shadow-xl shadow-black/5">
+        <div className="mt-1 w-full max-w-sm rounded-xl border border-border bg-surface py-1 lift-3">
           {hits.map((p) => (
             <button
               key={p.id}
@@ -214,7 +214,7 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
               )}
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-semibold text-text">{p.display_name}</p>
-                <p className="truncate text-2xs text-subtle">@{p.handle}</p>
+                <p className="truncate text-2xs text-muted">@{p.handle}</p>
               </div>
             </button>
           ))}
@@ -337,7 +337,7 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
             className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
           />
           {hits.length > 0 && (
-            <div className="mt-1 w-full max-w-sm rounded-xl border border-border bg-surface py-1 shadow-xl shadow-black/5">
+            <div className="mt-1 w-full max-w-sm rounded-xl border border-border bg-surface py-1 lift-3">
               {hits.map((p) => (
                 <button
                   key={p.id}
@@ -354,7 +354,7 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-semibold text-text">{p.display_name}</p>
-                    <p className="truncate text-2xs text-subtle">@{p.handle}</p>
+                    <p className="truncate text-2xs text-muted">@{p.handle}</p>
                   </div>
                 </button>
               ))}

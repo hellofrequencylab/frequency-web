@@ -148,9 +148,9 @@ function StatGrid({ stats }: { stats: NonNullable<MemberDetail['engagementStats'
     <dl className="grid grid-cols-2 gap-3 @lg:grid-cols-3">
       {stats.map((s) => (
         <div key={s.label} className="rounded-xl border border-border bg-surface p-3">
-          <dt className="text-2xs font-medium uppercase tracking-wide text-subtle">{s.label}</dt>
+          <dt className="text-2xs font-medium uppercase tracking-wide text-muted">{s.label}</dt>
           <dd className="mt-0.5 text-lg font-bold text-text">{s.value}</dd>
-          {s.hint && <p className="mt-0.5 text-2xs text-subtle">{s.hint}</p>}
+          {s.hint && <p className="mt-0.5 text-2xs text-muted">{s.hint}</p>}
         </div>
       ))}
     </dl>
@@ -206,7 +206,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
           {/* Contact */}
           {detail.contact && (detail.contact.email || detail.contact.phone || detail.contact.links?.length) && (
             <section>
-              <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Contact</h3>
+              <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Contact</h3>
               <ul className="space-y-1.5 text-sm">
                 {detail.contact.email && (
                   <li>
@@ -250,7 +250,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
           {/* Engagement stats */}
           {detail.engagementStats && detail.engagementStats.length > 0 && (
             <section>
-              <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Engagement</h3>
+              <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Engagement</h3>
               <StatGrid stats={detail.engagementStats} />
             </section>
           )}
@@ -258,7 +258,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
           {/* Pipeline (the member's CRM / contact pipeline stage) */}
           {detail.pipeline && (
             <section>
-              <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Pipeline</h3>
+              <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Pipeline</h3>
               <div className="flex items-center gap-2 rounded-xl border border-border bg-surface p-3">
                 <GitBranch className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
                 <span className="min-w-0 flex-1 truncate text-sm text-muted">{detail.pipeline.label}</span>
@@ -272,7 +272,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
           {/* Active funnels (the funnels the member is active in) */}
           {detail.funnels && detail.funnels.length > 0 && (
             <section>
-              <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Active funnels</h3>
+              <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Active funnels</h3>
               <ul className="space-y-1.5">
                 {detail.funnels.map((f, i) => (
                   <li
@@ -295,7 +295,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
           {/* Recent interactions (truncated to ~5, with a "view all" affordance) */}
           {detail.interactions && detail.interactions.length > 0 && (
             <section>
-              <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Recent interactions</h3>
+              <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Recent interactions</h3>
               <ul className="space-y-2">
                 {detail.interactions.slice(0, INTERACTION_CAP).map((it, i) => (
                   <li key={`${it.kind}-${i}`} className="flex items-start gap-2.5">
@@ -303,9 +303,9 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline justify-between gap-3">
                         <span className="min-w-0 flex-1 truncate text-sm text-text">{it.summary}</span>
-                        <span className="shrink-0 text-2xs text-subtle">{it.when}</span>
+                        <span className="shrink-0 text-2xs text-muted">{it.when}</span>
                       </div>
-                      <p className="text-2xs text-subtle">{it.kind}</p>
+                      <p className="text-2xs text-muted">{it.kind}</p>
                     </div>
                   </li>
                 ))}
@@ -325,7 +325,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
           {/* Latest activity */}
           {detail.latestActivity && detail.latestActivity.length > 0 && (
             <section>
-              <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Latest activity</h3>
+              <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Latest activity</h3>
               <ul className="space-y-2">
                 {detail.latestActivity.map((a, i) => {
                   const row = (
@@ -333,7 +333,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
                       <span className={cn('min-w-0 flex-1 truncate text-sm text-text', a.href && 'group-hover:text-primary-strong')}>
                         {a.label}
                       </span>
-                      <span className="shrink-0 text-2xs text-subtle">{a.when}</span>
+                      <span className="shrink-0 text-2xs text-muted">{a.when}</span>
                     </div>
                   )
                   return (

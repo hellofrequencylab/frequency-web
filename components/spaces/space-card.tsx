@@ -43,13 +43,13 @@ function SpaceLogo({ logoUrl }: { logoUrl: string | null }) {
       <img
         src={logoUrl}
         alt=""
-        className="h-12 w-12 rounded-xl border border-border bg-surface object-contain shadow-sm"
+        className="h-12 w-12 rounded-xl border border-border bg-surface object-contain lift-1"
       />
     )
   }
   return (
     <span
-      className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface text-subtle shadow-sm"
+      className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface text-subtle lift-1"
       aria-hidden
     >
       <Building2 className="h-5 w-5" />
@@ -84,7 +84,7 @@ export function SpaceCard({ space }: { space: NetworkedSpace }) {
           <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/10 to-transparent" />
           {/* KIND pill, top-left — what shape of thing this Space is (Studios / Shops / …, ADR-887)
               on a soft backdrop (legible over photo or gradient). Reads 'Business' when unset. */}
-          <span className="absolute left-3 top-3 rounded-full bg-surface/90 px-2.5 py-0.5 text-2xs font-semibold text-text shadow-sm backdrop-blur-sm">
+          <span className="absolute left-3 top-3 rounded-full bg-surface/90 px-2.5 py-0.5 text-2xs font-semibold text-text lift-1 backdrop-blur-sm">
             {space.kindLabel}
           </span>
           {/* LOGO, bottom-left. */}

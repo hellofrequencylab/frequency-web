@@ -24,7 +24,7 @@ function Stat({ label, value, hint }: { label: string; value: React.ReactNode; h
     <div className="rounded-xl bg-surface-elevated/60 px-3 py-2">
       <p className="text-base font-extrabold leading-none tabular-nums text-text">{value}</p>
       <p className="mt-1 text-2xs font-medium text-muted">{label}</p>
-      {hint && <p className="mt-0.5 text-2xs text-subtle">{hint}</p>}
+      {hint && <p className="mt-0.5 text-2xs text-muted">{hint}</p>}
     </div>
   )
 }
@@ -92,7 +92,7 @@ export function CampaignAnalyticsExpansion({ campaignId }: { campaignId: string 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
             <Stat label="Recipients" value={metrics.attributedRecipients.toLocaleString()} />
           </div>
-          <p className="mt-2 text-2xs text-subtle">This send predates open and click tracking. Your next send has full stats.</p>
+          <p className="mt-2 text-2xs text-muted">This send predates open and click tracking. Your next send has full stats.</p>
         </div>
       ) : (
         <>
@@ -104,7 +104,7 @@ export function CampaignAnalyticsExpansion({ campaignId }: { campaignId: string 
             <Stat label="Complaints" value={metrics.complained.toLocaleString()} />
             <Stat label="Unsubscribes" value={metrics.unsubscribed.toLocaleString()} />
           </div>
-          <p className="text-2xs text-subtle">Opens are approximate (Apple Mail privacy inflates them). Weight clicks as the real signal.</p>
+          <p className="text-2xs text-muted">Opens are approximate (Apple Mail privacy inflates them). Weight clicks as the real signal.</p>
 
           {spark && (
             <div>
@@ -141,7 +141,7 @@ export function CampaignAnalyticsExpansion({ campaignId }: { campaignId: string 
           )}
         </div>
         {legacy && !coach && (
-          <p className="mt-1.5 text-2xs text-subtle">Analysis needs open and click data, which starts with your next send.</p>
+          <p className="mt-1.5 text-2xs text-muted">Analysis needs open and click data, which starts with your next send.</p>
         )}
         {coach && (
           <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-muted">

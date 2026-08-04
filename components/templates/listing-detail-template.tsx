@@ -149,7 +149,7 @@ export function ListingDetailTemplate({
         <div className="min-w-0 space-y-6">
           {/* Description, moved above the Questions feed. Vertical extras (housing facts, market buy)
               lead inside the same card; the market purchase panel (footer) follows it. */}
-          <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm">
+          <div className="rounded-3xl border border-border bg-surface p-5 lift-1">
             {children}
             {view.description && (
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">{view.description}</p>
@@ -171,7 +171,7 @@ export function ListingDetailTemplate({
 
           {view.pickup && (
             <section className="rounded-2xl border border-border bg-surface p-4">
-              <h2 className="mb-3 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+              <h2 className="mb-3 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
                 <MapPin className="h-3.5 w-3.5" aria-hidden /> {view.pickup.precise ? 'Pickup location' : 'Pickup area'}
               </h2>
               <ListingLocationMap
@@ -198,7 +198,7 @@ export function ListingDetailTemplate({
             </section>
           ) : showContact ? (
             <section className="rounded-2xl border border-border bg-surface p-4">
-              <h2 className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Contact the seller</h2>
+              <h2 className="mb-3 text-2xs font-semibold uppercase tracking-wide text-muted">Contact the seller</h2>
               <ListingContactDialog
                 // A ListingDetailView is always a marketplace listing (never a Recording), so its
                 // comment kind is always an offer target; narrow the wider comment union here.

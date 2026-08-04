@@ -135,7 +135,7 @@ async function TimelineBoard() {
           {ticks.map((t) => (
             <div
               key={t.label + t.left}
-              className="absolute top-0 -translate-x-1/2 text-2xs font-semibold uppercase tracking-wide text-subtle"
+              className="absolute top-0 -translate-x-1/2 text-2xs font-semibold uppercase tracking-wide text-muted"
               style={{ left: `${t.left}%` }}
             >
               {t.label}
@@ -165,7 +165,7 @@ async function TimelineBoard() {
                   <p className="truncate text-sm font-semibold text-text">
                     <span className="text-primary-strong">{phase.key}</span> {phase.title}
                   </p>
-                  <p className="text-2xs text-subtle">{dateLabel}</p>
+                  <p className="text-2xs text-muted">{dateLabel}</p>
                 </div>
                 <div className="relative h-9">
                   {/* the today line, faint, across the track */}

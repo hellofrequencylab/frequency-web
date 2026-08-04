@@ -204,7 +204,7 @@ export function BroadcastComposer({
           <Megaphone className="h-3.5 w-3.5 text-primary" aria-hidden />
           {heading}
         </p>
-        <p className="text-2xs text-subtle">
+        <p className="text-2xs text-muted">
           {listCount > 0 ? `${listCount} ${listCount === 1 ? 'person' : 'people'} on this list.` : 'No one is on this list yet.'}
         </p>
         <p className="mt-2 text-xs text-muted">{locked.message}</p>
@@ -245,12 +245,12 @@ export function BroadcastComposer({
               </button>
             </>
           ) : (
-            <p className="text-2xs text-subtle">{locked.reinvite.emptyNote}</p>
+            <p className="text-2xs text-muted">{locked.reinvite.emptyNote}</p>
           )}
         </div>
 
         {/* The one quiet upsell line (voice canon: one plain sentence, one link). */}
-        <p className="mt-2 text-2xs text-subtle">
+        <p className="mt-2 text-2xs text-muted">
           <Link href={locked.upsell.href} className="font-medium text-primary hover:underline">
             {locked.upsell.text}
           </Link>
@@ -307,7 +307,7 @@ export function BroadcastComposer({
       )}
 
       {/* The recipient summary line. */}
-      <p className="mb-3 text-2xs text-subtle" aria-live="polite">
+      <p className="mb-3 text-2xs text-muted" aria-live="polite">
         {count > 0 && summaryLabel
           ? `${summaryLabel}: ${count} ${count === 1 ? 'person' : 'people'}`
           : 'No one is in this audience yet.'}
@@ -348,7 +348,7 @@ export function BroadcastComposer({
                 key={c.key}
                 aria-disabled="true"
                 title={c.note || `${label} is unavailable here.`}
-                className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-dashed border-border px-2.5 py-1.5 text-2xs font-medium text-subtle"
+                className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-dashed border-border px-2.5 py-1.5 text-2xs font-medium text-muted"
               >
                 <Icon className="h-3.5 w-3.5" aria-hidden />
                 {label}
@@ -387,7 +387,7 @@ export function BroadcastComposer({
 
       {/* Per-channel expectation lines while composing (only for selected channels). */}
       {activeNotes.map((c) => (
-        <p key={c.key} className="mt-2 text-2xs text-subtle">
+        <p key={c.key} className="mt-2 text-2xs text-muted">
           {CHANNEL_META[c.key].label}: {c.note}
         </p>
       ))}

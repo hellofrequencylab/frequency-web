@@ -156,7 +156,7 @@ export function SpotlightTour({
         ref={cardRef}
         tabIndex={-1}
         style={anchored ? { top: cardPos!.top, left: cardPos!.left } : undefined}
-        className={`absolute w-[320px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-border bg-surface p-4 shadow-2xl outline-none motion-safe:animate-cue-pop ${
+        className={`absolute w-[320px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-border bg-surface p-4 lift-3 outline-none motion-safe:animate-cue-pop ${
           anchored ? '' : 'left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
         }`}
       >
@@ -216,7 +216,7 @@ export function SpotlightTour({
             </button>
           </div>
         </div>
-        <p className="mt-1.5 text-center text-2xs tabular-nums text-subtle">
+        <p className="mt-1.5 text-center text-2xs tabular-nums text-muted">
           {i + 1} of {stops.length}
         </p>
       </div>

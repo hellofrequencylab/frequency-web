@@ -26,7 +26,7 @@ function BankGrid({ bank }: { bank: readonly BankLink[] }) {
   if (bank.length === 0) return null
   return (
     <div className="min-w-0 space-y-2">
-      <p className="px-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Go to</p>
+      <p className="px-1 text-2xs font-semibold uppercase tracking-wide text-muted">Go to</p>
       <div className="grid grid-cols-2 gap-2">
         {bank.map((link) => {
           const Icon = link.icon

@@ -164,7 +164,7 @@ export function EventsBlock({
     // list — today's rows, restyled on the theme radius tokens, inside the block's own card (data
     // blocks self-card; the Background toggle strips it via the entity-bg-strip contract).
     body = (
-      <div className="rounded-card border border-border bg-surface p-6 shadow-sm sm:p-8">
+      <div className="rounded-card border border-border bg-surface p-6 lift-1 sm:p-8">
         <SpaceEventsList items={items.slice(0, LIST_MAX)} />
       </div>
     )

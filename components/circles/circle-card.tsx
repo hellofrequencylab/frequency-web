@@ -143,14 +143,14 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
         circle.isStarter ? (
           <Link
             href={href}
-            className="inline-flex rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+            className="inline-flex rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
           >
             Remix
           </Link>
         ) : isMember ? (
           <Link
             href={`/circles/${circle.slug}`}
-            className="inline-flex rounded-lg bg-surface px-3 py-1.5 text-xs font-semibold text-primary-strong shadow-sm ring-1 ring-border transition-colors hover:bg-surface-elevated"
+            className="inline-flex rounded-lg bg-surface px-3 py-1.5 text-xs font-semibold text-primary-strong lift-1 ring-1 ring-border transition-colors hover:bg-surface-elevated"
           >
             Open
           </Link>
@@ -158,10 +158,10 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
           <JoinCircleButton
             circleId={circle.id}
             circleSlug={circle.slug}
-            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
           />
         ) : (
-          <span className="inline-flex rounded-lg bg-surface px-3 py-1.5 text-xs font-medium text-muted shadow-sm ring-1 ring-border">
+          <span className="inline-flex rounded-lg bg-surface px-3 py-1.5 text-xs font-medium text-muted lift-1 ring-1 ring-border">
             Full
           </span>
         )

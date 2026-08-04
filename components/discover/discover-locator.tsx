@@ -98,7 +98,7 @@ export function DiscoverLocator({
           <DiscoverMap
             cities={matchedCities}
             center={mapCenter}
-            className="h-full min-h-[18rem] w-full overflow-hidden rounded-2xl border border-border shadow-sm"
+            className="h-full min-h-[18rem] w-full overflow-hidden rounded-2xl border border-border lift-1"
           />
         </div>
       </div>
@@ -111,13 +111,13 @@ export function DiscoverLocator({
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search circles, topics, or cities"
             aria-label="Search circles, topics, or cities"
-            className="w-full rounded-2xl border border-border bg-surface py-2.5 pl-9 pr-3 text-sm text-text placeholder:text-subtle shadow-sm focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30"
+            className="w-full rounded-2xl border border-border bg-surface py-2.5 pl-9 pr-3 text-sm text-text placeholder:text-subtle lift-1 focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30"
           />
         </div>
 
         {isSearching ? (
           matches.length > 0 ? (
-            <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+            <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface lift-1">
               {matches.map((c) => (
                 <li key={c.slug}>
                   <Link
@@ -139,12 +139,12 @@ export function DiscoverLocator({
               ))}
             </ul>
           ) : (
-            <div className="rounded-2xl border border-border bg-surface px-4 py-6 text-center text-sm text-muted shadow-sm">
+            <div className="rounded-2xl border border-border bg-surface px-4 py-6 text-center text-sm text-muted lift-1">
               No circles match {`"${query.trim()}"`} yet.
             </div>
           )
         ) : (
-          <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+          <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface lift-1">
             {ranked.slice(0, 8).map((c) => (
               <li key={c.city}>
                 <Link

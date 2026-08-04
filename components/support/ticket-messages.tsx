@@ -26,7 +26,7 @@ export function TicketMessages({ messages }: { messages: TicketMessage[] }) {
         const Icon = m.authorKind === 'vera' ? Sparkles : m.authorKind === 'staff' ? Shield : null
         return (
           <div key={m.id} className={mine ? 'flex flex-col items-end' : 'flex flex-col items-start'}>
-            <p className="mb-0.5 flex items-center gap-1 px-1 text-2xs text-subtle">
+            <p className="mb-0.5 flex items-center gap-1 px-1 text-2xs text-muted">
               {Icon && <Icon className="h-3 w-3 text-primary-strong" />}
               <span className="font-semibold text-muted">
                 {mine ? 'You' : m.authorKind === 'vera' ? 'Vera' : m.authorName ?? 'Support'}

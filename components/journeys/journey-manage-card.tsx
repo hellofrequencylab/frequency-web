@@ -97,7 +97,7 @@ function Menu({
           <button type="button" aria-hidden tabIndex={-1} onClick={onClose} className="fixed inset-0 z-40 cursor-default" />
           <div
             role="menu"
-            className="absolute right-0 z-50 mt-1 w-60 rounded-xl border border-border bg-surface p-1 shadow-lg"
+            className="absolute right-0 z-50 mt-1 w-60 rounded-xl border border-border bg-surface p-1 lift-3"
             onKeyDown={(e) => e.key === 'Escape' && onClose()}
           >
             {children}
@@ -204,7 +204,7 @@ export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
             <span className={`shrink-0 rounded-full px-2 py-0.5 text-2xs font-semibold ${badge.cls}`}>{badge.label}</span>
           </div>
           {plan.summary && <p className="mt-0.5 line-clamp-1 text-sm text-muted">{plan.summary}</p>}
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-subtle">
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-muted">
             <span className="inline-flex items-center gap-1"><Vis.Icon className="h-3 w-3" /> {Vis.label}</span>
             <span className="inline-flex items-center gap-1"><Layers className="h-3 w-3" /> {plan.phaseCount} {plan.phaseCount === 1 ? 'phase' : 'phases'}</span>
             <span className="inline-flex items-center gap-1"><ListChecks className="h-3 w-3" /> {plan.stepCount} {plan.stepCount === 1 ? 'step' : 'steps'}</span>
@@ -266,7 +266,7 @@ export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
             </button>
           }
         >
-          <p className="px-2.5 py-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Show this journey on</p>
+          <p className="px-2.5 py-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Show this journey on</p>
           {targetsLoading && (
             <p className="flex items-center gap-2 px-2.5 py-2 text-sm text-muted"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading</p>
           )}

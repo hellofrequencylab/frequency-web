@@ -82,7 +82,7 @@ export function EventHeaderControls({
             showSliders={false}
           />
         ) : (
-          <p className="text-2xs text-subtle">
+          <p className="text-2xs text-muted">
             Add a header photo above to choose where it sits in frame.
           </p>
         )}
@@ -111,7 +111,7 @@ export function EventHeaderControls({
               )
             })}
           </div>
-          <p className="text-2xs text-subtle">How tall the cover shows at the top of the event page.</p>
+          <p className="text-2xs text-muted">How tall the cover shows at the top of the event page.</p>
         </div>
       </div>
 

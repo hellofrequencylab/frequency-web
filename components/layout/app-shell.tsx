@@ -550,7 +550,7 @@ function ProfileCard({
             </div>
             {/* No Sign out here (three-docks law): signing out is a SYSTEM act and
                 lives in the account menu, top right — nothing is offered twice. */}
-            <p className="px-2 pt-1.5 pb-1 text-2xs leading-relaxed text-subtle">
+            <p className="px-2 pt-1.5 pb-1 text-2xs leading-relaxed text-muted">
               Appearance and sign out live in the account menu, top right.
             </p>
           </div>
@@ -1828,7 +1828,7 @@ export default function AppShell({
           >
             <Search className="w-4 h-4" />
             <span>Search</span>
-            <kbd className="text-3xs leading-none rounded px-1.5 py-1 border border-border bg-surface text-subtle">
+            <kbd className="text-3xs leading-none rounded px-1.5 py-1 border border-border bg-surface text-muted">
               ⌘K
             </kbd>
           </button>

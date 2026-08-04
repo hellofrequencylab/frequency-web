@@ -15,7 +15,7 @@ import {
 // housing surfaces only; the shared ListingCard contract is untouched.
 
 const BUTTON =
-  'inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface/90 text-muted shadow-sm backdrop-blur transition-colors hover:text-text'
+  'inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface/90 text-muted lift-1 backdrop-blur transition-colors hover:text-text'
 
 export function SaveListingButton({
   listingId,

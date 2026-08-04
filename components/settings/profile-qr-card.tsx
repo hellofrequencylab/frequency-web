@@ -51,7 +51,7 @@ export function ProfileQrCard({
   const btn = 'inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60'
 
   return (
-    <section className="mt-6 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+    <section className="mt-6 rounded-2xl border border-border bg-surface p-5 lift-1">
       <h2 className="flex items-center gap-1.5 text-sm font-bold text-text">
         <QrCode className="h-4 w-4 text-primary-strong" /> Your QR code
       </h2>

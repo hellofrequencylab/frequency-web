@@ -260,7 +260,7 @@ export function SpaceCirclesManager({
                 Cancel
               </button>
             </div>
-            <p className="text-2xs text-subtle">
+            <p className="text-2xs text-muted">
               It starts as a draft, so you can shape it before anyone sees it.
             </p>
           </div>
@@ -270,9 +270,9 @@ export function SpaceCirclesManager({
               Attach one of your circles
             </label>
             {attachable === null ? (
-              <p className="text-2xs text-subtle">Finding your circles…</p>
+              <p className="text-2xs text-muted">Finding your circles…</p>
             ) : attachable.length === 0 ? (
-              <p className="text-2xs text-subtle">
+              <p className="text-2xs text-muted">
                 Every circle you host already lives here. Start one below, or ask its host to move it.
               </p>
             ) : (
@@ -302,7 +302,7 @@ export function SpaceCirclesManager({
               </div>
             )}
             <div className="flex items-center justify-between gap-2">
-              <p className="text-2xs text-subtle">
+              <p className="text-2xs text-muted">
                 The circle keeps its host and members. Its events join this space&apos;s calendar.
               </p>
               <button
@@ -361,7 +361,7 @@ export function SpaceCirclesManager({
                   >
                     {c.name}
                   </Link>
-                  <p className="mt-0.5 text-2xs text-subtle">
+                  <p className="mt-0.5 text-2xs text-muted">
                     {c.memberCount} {c.memberCount === 1 ? 'member' : 'members'}
                     {c.status !== 'active' && ` · ${c.status}`}
                   </p>
@@ -386,7 +386,7 @@ export function SpaceCirclesManager({
                         type="button"
                         onClick={() => endRun(c.run!.id, 'cancelled', c.name)}
                         disabled={pending}
-                        className="rounded-lg px-2 py-1 text-2xs font-medium text-subtle transition-colors hover:text-danger disabled:opacity-40"
+                        className="rounded-lg px-2 py-1 text-2xs font-medium text-muted transition-colors hover:text-danger disabled:opacity-40"
                       >
                         Cancel Run
                       </button>
@@ -411,7 +411,7 @@ export function SpaceCirclesManager({
                     onClick={() => openMove(c.id)}
                     disabled={pending}
                     aria-label={`Move ${c.name}`}
-                    className="rounded-lg px-2 py-1 text-2xs font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
+                    className="rounded-lg px-2 py-1 text-2xs font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
                   >
                     Move
                   </button>
@@ -421,7 +421,7 @@ export function SpaceCirclesManager({
               {/* Move it: to another space this steward runs, or to them as their own circle. */}
               {moveFor === c.id && (
                 <div className="mt-3 space-y-2 border-t border-border pt-3">
-                  <label htmlFor={`move-${c.id}`} className="block text-2xs font-semibold uppercase tracking-wide text-subtle">
+                  <label htmlFor={`move-${c.id}`} className="block text-2xs font-semibold uppercase tracking-wide text-muted">
                     Where it should live
                   </label>
                   <select
@@ -457,7 +457,7 @@ export function SpaceCirclesManager({
                       Cancel
                     </button>
                   </div>
-                  <p className="text-2xs text-subtle">
+                  <p className="text-2xs text-muted">
                     Members and any Run travel with it. You can move a circle into a space you help
                     run, or take it as your own.
                   </p>
@@ -465,7 +465,7 @@ export function SpaceCirclesManager({
                   {/* Handing it to someone ELSE is an offer, not a move: it stays yours until they
                       accept, because a circle carries members (ADR-845). */}
                   <div className="space-y-1.5 border-t border-border pt-2">
-                    <label htmlFor={`handoff-${c.id}`} className="block text-2xs font-semibold uppercase tracking-wide text-subtle">
+                    <label htmlFor={`handoff-${c.id}`} className="block text-2xs font-semibold uppercase tracking-wide text-muted">
                       Or hand it to someone
                     </label>
                     <input
@@ -490,12 +490,12 @@ export function SpaceCirclesManager({
                             <span className="min-w-0 truncate text-xs font-semibold text-text">
                               {p.display_name}
                             </span>
-                            <span className="shrink-0 text-2xs text-subtle">@{p.handle}</span>
+                            <span className="shrink-0 text-2xs text-muted">@{p.handle}</span>
                           </button>
                         ))}
                       </div>
                     )}
-                    <p className="text-2xs text-subtle">
+                    <p className="text-2xs text-muted">
                       They get an offer on the circle. It stays yours until they accept.
                     </p>
                   </div>
@@ -505,7 +505,7 @@ export function SpaceCirclesManager({
               {/* The picker: only the Journeys this Space offers. The server re-checks it. */}
               {runFor === c.id && !c.run && (
                 <div className="mt-3 space-y-2 border-t border-border pt-3">
-                  <label htmlFor={`plan-${c.id}`} className="block text-2xs font-semibold uppercase tracking-wide text-subtle">
+                  <label htmlFor={`plan-${c.id}`} className="block text-2xs font-semibold uppercase tracking-wide text-muted">
                     Which Journey
                   </label>
                   <select
@@ -534,12 +534,12 @@ export function SpaceCirclesManager({
                     </button>
                     <Link
                       href={`/spaces/${spaceSlug}/journeys`}
-                      className="inline-flex items-center gap-1 text-2xs text-subtle underline-offset-2 hover:text-text hover:underline"
+                      className="inline-flex items-center gap-1 text-2xs text-muted underline-offset-2 hover:text-text hover:underline"
                     >
                       Manage Journeys <ArrowRight className="h-3 w-3" />
                     </Link>
                   </div>
-                  <p className="text-2xs text-subtle">
+                  <p className="text-2xs text-muted">
                     Everyone active in this circle is enrolled when the Run starts.
                   </p>
                 </div>

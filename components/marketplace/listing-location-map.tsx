@@ -72,7 +72,7 @@ export function ListingLocationMap({
       >
         <ListingLocationMapCanvas lat={lat} lng={lng} precise={precise} />
         {/* An expand affordance so it reads as clickable; pointer-events off so the click hits the button. */}
-        <span className="pointer-events-none absolute right-2 top-2 inline-flex items-center gap-1 rounded-lg bg-surface/90 px-2 py-1 text-2xs font-semibold text-text shadow-sm backdrop-blur-sm">
+        <span className="pointer-events-none absolute right-2 top-2 inline-flex items-center gap-1 rounded-lg bg-surface/90 px-2 py-1 text-2xs font-semibold text-text lift-1 backdrop-blur-sm">
           <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" /> Expand
         </span>
       </button>

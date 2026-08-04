@@ -146,13 +146,13 @@ function ComposeBody({
 
   return (
     <Dialog open onClose={onClose} ariaLabel="New email" className="max-w-7xl !mt-0">
-      <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xl">
+      <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface lift-3">
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-5 py-3">
           <div className="min-w-0">
             <h3 className="flex items-center gap-2 text-sm font-bold text-text">
               <Send className="h-4 w-4 text-primary" aria-hidden /> New email
             </h3>
-            <p className="truncate text-2xs text-subtle">
+            <p className="truncate text-2xs text-muted">
               Saves automatically as a draft. Pick the audience and send it on the right.
             </p>
           </div>

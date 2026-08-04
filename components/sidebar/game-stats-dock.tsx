@@ -23,7 +23,7 @@ export type DockData = {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-3xs font-semibold uppercase tracking-widest text-subtle">{children}</p>
+    <p className="text-3xs font-semibold uppercase tracking-widest text-muted">{children}</p>
   )
 }
 
@@ -185,7 +185,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <SectionLabel>Rank</SectionLabel>
-          <span className="text-2xs text-subtle">
+          <span className="text-2xs text-muted">
             {rankProgress.nextLabel
               ? `${rankProgress.toGo.toLocaleString()} zaps to ${rankProgress.nextLabel}`
               : 'Top rank reached'}
@@ -211,7 +211,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
               <Target className="w-3.5 h-3.5 text-signal-strong shrink-0" />
               <span className="truncate text-xs font-semibold text-text">{arc.chain}</span>
             </div>
-            <p className="mt-0.5 mb-1.5 truncate text-2xs text-subtle">{arc.step}</p>
+            <p className="mt-0.5 mb-1.5 truncate text-2xs text-muted">{arc.step}</p>
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
               <div className="h-full rounded-full bg-signal-strong" style={{ width: `${Math.min(100, Math.max(2, arc.pct))}%` }} />
             </div>
@@ -232,7 +232,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
           <Gem className="w-3.5 h-3.5 text-signal" />
           {vaultGems.toLocaleString()} gems to spend
         </p>
-        <p className="mt-0.5 text-2xs text-subtle">Titles, cosmetics &amp; membership credits →</p>
+        <p className="mt-0.5 text-2xs text-muted">Titles, cosmetics &amp; membership credits →</p>
       </Link>
 
       {/* Full dashboard */}

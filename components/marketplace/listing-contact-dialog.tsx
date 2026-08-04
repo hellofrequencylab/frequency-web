@@ -169,13 +169,13 @@ export function ListingContactDialog({
             <div className="space-y-4">
               <div>
                 <h2 className="text-base font-semibold text-text">Contact {sellerName}</h2>
-                <p className="mt-1 text-2xs text-subtle">
+                <p className="mt-1 text-2xs text-muted">
                   This opens a message. No payment happens here.
                 </p>
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="listing-contact-message" className="block text-2xs font-semibold uppercase tracking-wide text-subtle">
+                <label htmlFor="listing-contact-message" className="block text-2xs font-semibold uppercase tracking-wide text-muted">
                   Message
                 </label>
                 <textarea
@@ -191,8 +191,8 @@ export function ListingContactDialog({
 
               {canOffer && (
                 <div className="space-y-1.5">
-                  <label htmlFor="listing-contact-offer" className="block text-2xs font-semibold uppercase tracking-wide text-subtle">
-                    Your offer <span className="font-normal normal-case text-subtle">(optional)</span>
+                  <label htmlFor="listing-contact-offer" className="block text-2xs font-semibold uppercase tracking-wide text-muted">
+                    Your offer <span className="font-normal normal-case text-muted">(optional)</span>
                   </label>
                   <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-elevated/50 px-3 py-2 focus-within:border-primary">
                     <Tag className="h-4 w-4 shrink-0 text-subtle" aria-hidden />

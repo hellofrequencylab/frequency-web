@@ -53,7 +53,7 @@ export function ProductReviews({
       <h2 className="text-lg font-bold text-text">Reviews</h2>
 
       {/* Summary */}
-      <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-4 lift-1">
         <div className="text-center">
           <div className="text-3xl font-bold tabular-nums text-text">
             {reviews.average != null ? reviews.average.toFixed(1) : '--'}
@@ -138,7 +138,7 @@ function ReviewForm({ productId, initial }: { productId: string; initial: { rati
   }
 
   return (
-    <div className="space-y-2 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <div className="space-y-2 rounded-2xl border border-border bg-surface p-4 lift-1">
       <p className="text-sm font-semibold text-text">{initial ? 'Update your review' : 'Leave a review'}</p>
       <div className="flex items-center gap-1" onMouseLeave={() => setHover(0)}>
         {[1, 2, 3, 4, 5].map((n) => (
@@ -190,7 +190,7 @@ function ReviewForm({ productId, initial }: { productId: string; initial: { rati
 function HideButton({ id }: { id: string }) {
   const [hidden, setHidden] = useState(false)
   const [pending, start] = useTransition()
-  if (hidden) return <p className="text-2xs text-subtle">Hidden.</p>
+  if (hidden) return <p className="text-2xs text-muted">Hidden.</p>
   return (
     <button
       type="button"
@@ -201,7 +201,7 @@ function HideButton({ id }: { id: string }) {
           setHidden(true)
         })
       }
-      className="text-2xs font-semibold text-subtle hover:text-danger disabled:opacity-60"
+      className="text-2xs font-semibold text-muted hover:text-danger disabled:opacity-60"
     >
       {pending ? 'Hiding' : 'Hide'}
     </button>

@@ -1572,7 +1572,7 @@ export function OnAirSession({
           <button
             type="button"
             onClick={leave}
-            className="rounded-full px-4 py-1 text-2xs font-medium text-subtle transition-colors hover:text-danger"
+            className="rounded-full px-4 py-1 text-2xs font-medium text-muted transition-colors hover:text-danger"
           >
             Cancel · don&rsquo;t log
           </button>
@@ -1669,9 +1669,9 @@ export function OnAirSession({
             })}
           </div>
           {/* A plain one-line subline for the chosen mode (no narrated feelings, no em dashes). */}
-          <p className="mt-2 text-2xs text-subtle">{SESSION_MODE_META[mode].subline}</p>
+          <p className="mt-2 text-2xs text-muted">{SESSION_MODE_META[mode].subline}</p>
           {!practiceCanTime && mode === 'log' && (
-            <p className="mt-1 text-2xs text-subtle">
+            <p className="mt-1 text-2xs text-muted">
               {freeSit
                 ? 'This practice is log-only. Pick a sit mode above to run a Free Practice instead.'
                 : 'This practice is log-only.'}
@@ -1755,7 +1755,7 @@ export function OnAirSession({
             <Label>Minutes</Label>
             <div className="mt-2 flex items-center justify-between rounded-xl border border-border bg-surface-elevated/40 px-3.5 py-2.5">
               <span className="text-sm font-semibold tabular-nums text-text">{minutes}m</span>
-              <span className="text-2xs text-subtle">Set by the practice</span>
+              <span className="text-2xs text-muted">Set by the practice</span>
             </div>
           </div>
         )}
@@ -1863,7 +1863,7 @@ export function OnAirSession({
                   </button>
                 ))}
               </div>
-              <p className="mt-1.5 text-2xs text-subtle">The lead-in before the session starts. The same timer counts this down, then runs your session.</p>
+              <p className="mt-1.5 text-2xs text-muted">The lead-in before the session starts. The same timer counts this down, then runs your session.</p>
             </div>
             <div className="mt-3 space-y-3 rounded-xl border border-border px-3.5 py-3">
                 {/* Ambient — a soft background loop, independent of the bell; sits at the TOP of the
@@ -1903,7 +1903,7 @@ export function OnAirSession({
                     <div className="mt-2.5">
                       <div className="flex items-center justify-between">
                         <SubLabel>Ambient volume</SubLabel>
-                        <span className="text-2xs font-medium text-subtle">{Math.round(ambientVolume * 100)}%</span>
+                        <span className="text-2xs font-medium text-muted">{Math.round(ambientVolume * 100)}%</span>
                       </div>
                       <input
                         type="range"
@@ -1956,7 +1956,7 @@ export function OnAirSession({
                 <div>
                   <div className="flex items-center justify-between">
                     <SubLabel>Bell volume</SubLabel>
-                    <span className="text-2xs font-medium text-subtle">{Math.round(bellVolume * 100)}%</span>
+                    <span className="text-2xs font-medium text-muted">{Math.round(bellVolume * 100)}%</span>
                   </div>
                   <input
                     type="range"
@@ -2067,12 +2067,12 @@ export function OnAirSession({
           centered content above scrolls on a short screen (item #5). */}
       <div className="sticky bottom-0 -mx-6 mt-auto bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 lg:-mx-10 lg:px-10">
         {runPractice?.loggedToday && mode !== 'log' && (
-          <p className="pb-1.5 text-center text-2xs text-subtle">
+          <p className="pb-1.5 text-center text-2xs text-muted">
             {runPractice.title} is already counted today. The sit still banks airtime.
           </p>
         )}
         {practicedToday >= 3 && (
-          <p className="pb-1.5 text-center text-2xs text-subtle">
+          <p className="pb-1.5 text-center text-2xs text-muted">
             {practicedToday} members practiced today.
           </p>
         )}
@@ -2151,7 +2151,7 @@ function InstructionsPopup({
         onClick={onClose}
         className="absolute inset-0 bg-canvas/80 backdrop-blur-sm"
       />
-      <div className="relative w-full max-w-sm rounded-2xl border border-border bg-surface px-6 py-6 shadow-lg">
+      <div className="relative w-full max-w-sm rounded-2xl border border-border bg-surface px-6 py-6 lift-3">
         <button
           type="button"
           onClick={onClose}
@@ -2181,7 +2181,7 @@ function Label({ children }: { children: React.ReactNode }) {
 }
 
 function SubLabel({ children }: { children: React.ReactNode }) {
-  return <p className="text-2xs font-medium uppercase tracking-wider text-subtle">{children}</p>
+  return <p className="text-2xs font-medium uppercase tracking-wider text-muted">{children}</p>
 }
 
 function ModeButton({

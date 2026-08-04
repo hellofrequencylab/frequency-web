@@ -75,7 +75,7 @@ export function FeatureTierRange({ ladder, currentTier, upgradeHref, live = fals
   }
 
   return (
-    <section className="mt-4 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <section className="mt-4 rounded-2xl border border-border bg-surface p-4 lift-1">
       <p className="text-xs font-semibold uppercase tracking-widest text-subtle">{ladder.title} plans</p>
 
       {/* The segmented range: one radio per tier. Roving tabindex + arrow keys. */}
@@ -151,13 +151,13 @@ export function FeatureTierRange({ ladder, currentTier, upgradeHref, live = fals
           became real — dropping the one line that told a member nothing is charged during the beta. The
           two facts are separate: "these numbers are provisional" and "billing is not switched on". */}
       {ladder.placeholderPricing ? (
-        <p className="mt-2 text-2xs text-subtle">
+        <p className="mt-2 text-2xs text-muted">
           {live
             ? 'Prices shown are placeholders while we finish setting up billing. Nothing is charged here.'
             : 'Billing is not live yet. Prices are placeholders for preview, and nothing is charged.'}
         </p>
       ) : !live ? (
-        <p className="mt-2 text-2xs text-subtle">
+        <p className="mt-2 text-2xs text-muted">
           These are the real prices. Billing is not live yet, so nothing is charged.
         </p>
       ) : null}

@@ -34,7 +34,7 @@ export function PracticeDetail({
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           {pillar && <PillarBadge name={pillar.name} />}
-          <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">The practice</span>
+          <span className="text-2xs font-semibold uppercase tracking-wide text-muted">The practice</span>
         </div>
         {practice.summary && <p className="text-sm leading-relaxed text-text">{practice.summary}</p>}
       </div>

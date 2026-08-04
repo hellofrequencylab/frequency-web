@@ -512,7 +512,7 @@ function DispatchPanel({
   return (
     <div className="w-full max-w-sm">
       <DispatchArt className="mx-auto mb-4 h-24 w-auto" />
-      <div className="rounded-2xl border border-primary/50 bg-primary-bg/30 p-5 text-left shadow-sm">
+      <div className="rounded-2xl border border-primary/50 bg-primary-bg/30 p-5 text-left lift-1">
         <p className="flex items-center gap-1.5 text-2xs font-bold uppercase tracking-widest text-primary-strong">
           <Radio className="h-3.5 w-3.5" /> Incoming · Dispatch from Vera
         </p>

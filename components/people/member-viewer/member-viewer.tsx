@@ -465,7 +465,7 @@ export function MemberViewer({
                     ))}
                   </div>
                 ) : (
-                  <ul className="divide-y divide-border rounded-2xl border border-border bg-surface shadow-sm">
+                  <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
                     {visible.map((m) => (
                       <ListRow
                         key={m.id}
@@ -493,7 +493,7 @@ export function MemberViewer({
                 )}
               </div>
 
-              <p className="mt-2 text-center text-2xs text-subtle">
+              <p className="mt-2 text-center text-2xs text-muted">
                 Showing {visible.length} of {total}
               </p>
             </>
@@ -504,7 +504,7 @@ export function MemberViewer({
             scroll or sticky cap, so the member's stats stretch to their natural height and the page
             (not this panel) scrolls. The email editor opens in a popup, so this pane never has to hold it. */}
         <div ref={detailPaneRef} className="hidden min-w-0 flex-1 scroll-mt-4 lg:block">
-          <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
             {detailPane}
           </div>
         </div>
@@ -641,7 +641,7 @@ function MemberMeta({ member }: { member: MemberSummary }) {
   }
   if (items.length === 0) return null
   return (
-    <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-2xs text-subtle">
+    <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-2xs text-muted">
       {items}
     </div>
   )

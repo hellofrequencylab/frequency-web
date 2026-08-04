@@ -65,7 +65,7 @@ export function CirclesToolbar({ showSearch = true }: { showSearch?: boolean } =
                 onClick={() => update({ type: key || null })}
                 aria-pressed={active}
                 className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors ${
-                  active ? 'bg-surface text-primary-strong shadow-sm' : 'text-muted hover:text-text'
+                  active ? 'bg-surface text-primary-strong lift-1' : 'text-muted hover:text-text'
                 }`}
               >
                 <Icon className="h-3.5 w-3.5" />

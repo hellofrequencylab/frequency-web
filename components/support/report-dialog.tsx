@@ -144,7 +144,7 @@ export function ReportDialog({
         aria-label="Report an issue"
         tabIndex={-1}
         onPaste={onPaste}
-        className="relative flex w-full flex-col overflow-y-auto border-border bg-canvas p-4 shadow-2xl outline-none motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[92vh] sm:max-w-lg sm:rounded-3xl sm:border"
+        className="relative flex w-full flex-col overflow-y-auto border-border bg-canvas p-4 lift-3 outline-none motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[92vh] sm:max-w-lg sm:rounded-3xl sm:border"
         style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
       >
         <div className="mb-1 flex items-center justify-between">

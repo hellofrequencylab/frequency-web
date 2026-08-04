@@ -193,7 +193,7 @@ export function PracticeSpark() {
           {!usingWritten && step === 4 && (
             <div className="space-y-5">
               <div>
-                <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">How often</p>
+                <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">How often</p>
                 <div className="flex flex-wrap items-center gap-2">
                   {CADENCE_CHOICES.map((c) => (
                     <button key={c.key} type="button" onClick={() => setCadence(c.key)} aria-pressed={cadence === c.key}
@@ -204,7 +204,7 @@ export function PracticeSpark() {
                 </div>
               </div>
               <div>
-                <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Time a session</p>
+                <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Time a session</p>
                 <div className="grid grid-cols-2 gap-2">
                   {([['light', 'Light', 'Five minutes or less'], ['medium', 'Medium', 'Ten to twenty minutes']] as const).map(([key, lbl, hint]) => (
                     <button key={key} type="button" onClick={() => setPace(key)} aria-pressed={pace === key}
@@ -228,23 +228,23 @@ export function PracticeSpark() {
               ) : (
                 <>
                   <label className="block">
-                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Name</span>
+                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Name</span>
                     <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} className={`${FIELD} font-semibold`} placeholder="Name your Practice" />
                   </label>
                   <label className="block">
-                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Card hook</span>
+                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Card hook</span>
                     <input value={summary} onChange={(e) => setSummary(e.target.value)} maxLength={140} className={FIELD} placeholder="The problem it solves, in a line" />
                   </label>
                   <label className="block">
-                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Description</span>
+                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Description</span>
                     <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} maxLength={280} className={FIELD} placeholder="Who it's for and what they notice after a week" />
                   </label>
                   <label className="block">
-                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Guide</span>
+                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Guide</span>
                     <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} maxLength={8000} className={FIELD} placeholder="The steps, in plain words" />
                   </label>
                   <div>
-                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Pillars</span>
+                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Pillars</span>
                     <div className="flex flex-wrap gap-1.5">
                       {PILLARS.map((p) => (
                         <button
@@ -258,11 +258,11 @@ export function PracticeSpark() {
                         </button>
                       ))}
                     </div>
-                    <p className="mt-1.5 text-2xs text-subtle">Pick one or more Pillars. You can change them, the cadence, and everything else in the next step.</p>
+                    <p className="mt-1.5 text-2xs text-muted">Pick one or more Pillars. You can change them, the cadence, and everything else in the next step.</p>
                   </div>
                   {timer && (
                     <div className="rounded-xl border border-border bg-canvas px-3.5 py-2.5">
-                      <span className="block text-2xs font-semibold uppercase tracking-wide text-subtle">How it&apos;s done</span>
+                      <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">How it&apos;s done</span>
                       <p className="mt-0.5 text-sm font-medium text-text">
                         {timerPreview({
                           timerKind: timer.timerKind,
@@ -273,7 +273,7 @@ export function PracticeSpark() {
                           ? ` · ${MINDLESS_LABEL[timer.mindlessMode] ?? ''}`
                           : ''}
                       </p>
-                      <p className="mt-0.5 text-2xs text-subtle">
+                      <p className="mt-0.5 text-2xs text-muted">
                         Vera set the timer to match the act. Tune every part of it in the next step.
                       </p>
                     </div>

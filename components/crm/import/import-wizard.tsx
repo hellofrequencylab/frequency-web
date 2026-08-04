@@ -425,7 +425,7 @@ export function ImportWizard({
       <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium">
         {steps.map((s, i) => (
           <li key={s.key} className="flex items-center gap-2">
-            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-2xs ${i <= stepIndex ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-subtle'}`}>{i + 1}</span>
+            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-2xs ${i <= stepIndex ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-muted'}`}>{i + 1}</span>
             <span className={i <= stepIndex ? 'text-text' : 'text-subtle'}>{s.label}</span>
             {i < steps.length - 1 && <span className="text-subtle">/</span>}
           </li>
@@ -504,7 +504,7 @@ export function ImportWizard({
                   <FileText className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-text">{q.name}</p>
-                    <p className="text-2xs text-subtle">{formatBytes(q.size)}</p>
+                    <p className="text-2xs text-muted">{formatBytes(q.size)}</p>
                     {q.reason && <p className="mt-0.5 text-2xs text-muted">{q.reason}</p>}
                   </div>
                   <div className="shrink-0 text-xs font-medium">
@@ -641,7 +641,7 @@ export function ImportWizard({
                               placeholder="Custom field name"
                               aria-label={`Custom field name for ${m.header}`}
                             />
-                            <p className="mt-0.5 text-2xs text-subtle">
+                            <p className="mt-0.5 text-2xs text-muted">
                               Saved as <code className="text-muted">{m.customKey || customFieldKey(m.customLabel ?? m.header)}</code>
                               {knownFields.some((f) => f.key === m.customKey) ? ' · reuses an existing field' : ''}
                             </p>
@@ -741,7 +741,7 @@ export function ImportWizard({
                         <td className="px-3 py-2"><ActionBadge action={r.action} severity={r.error ? (r.severity ?? 'error') : null} /></td>
                         <td className="px-3 py-2">
                           <p className="font-medium text-text">{r.name || '—'}</p>
-                          {r.email && <p className="text-2xs text-subtle">{r.email}</p>}
+                          {r.email && <p className="text-2xs text-muted">{r.email}</p>}
                         </td>
                         <td className="px-3 py-2 text-xs text-muted">{rowDetail(r)}</td>
                       </tr>

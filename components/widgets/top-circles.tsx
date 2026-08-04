@@ -17,7 +17,7 @@ export async function TopCircles() {
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
-      <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Active circles</p>
+      <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Active circles</p>
       <ul className="mt-3 space-y-1">
         {data.map((circle) => (
           <li key={circle.id}>

@@ -83,7 +83,7 @@ export function DonationAskForm({
         if (!pending) save()
       }}
     >
-      <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
         <PriceModeEditor
           value={offering}
           onChange={(next) => {

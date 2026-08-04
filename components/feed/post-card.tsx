@@ -186,7 +186,7 @@ export function PostCard({
 
   return (
     <article
-      className={`rounded-2xl border bg-surface shadow-sm transition-shadow hover:shadow-md dark:bg-surface-elevated/80 ${cardBorder}`}
+      className={`rounded-2xl border bg-surface lift-1 dark:bg-surface-elevated/80 ${cardBorder}`}
     >
       <div className="p-4">
         {/* Kicker — the ONE slot for a post's special state (announcement / pinned /
@@ -204,7 +204,7 @@ export function PostCard({
               </span>
             )}
             {isNote && (
-              <span className="inline-flex items-center gap-1 text-2xs font-semibold uppercase tracking-wider text-subtle">
+              <span className="inline-flex items-center gap-1 text-2xs font-semibold uppercase tracking-wider text-muted">
                 <NotebookPen className="h-3 w-3" /> Note
               </span>
             )}

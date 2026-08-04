@@ -178,7 +178,7 @@ export function LoomImagePopup({
 
   return (
     <Dialog open={open} onClose={onClose} ariaLabel="Choose a photo" className="max-w-3xl">
-      <div className="overflow-hidden rounded-3xl border border-border bg-surface shadow-xl">
+      <div className="overflow-hidden rounded-3xl border border-border bg-surface lift-3">
         <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
           <div>
             <h2 className="text-base font-bold text-text">Choose a photo</h2>
@@ -286,7 +286,7 @@ export function LoomImagePopup({
 
             {/* RIGHT — the selected photo: preview, alt text, crop, and the confirm/remove actions. */}
             <div className="space-y-3 border-t border-border bg-surface-elevated/30 p-5 sm:border-l sm:border-t-0">
-              <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Selected</p>
+              <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Selected</p>
               {selectedUrl ? (
                 <>
                   <div className="overflow-hidden rounded-xl border border-border bg-surface">
@@ -301,7 +301,7 @@ export function LoomImagePopup({
                     <Crop className="h-4 w-4" aria-hidden /> Crop
                   </button>
                   <div>
-                    <label className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">
+                    <label className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
                       Alt text
                     </label>
                     <textarea

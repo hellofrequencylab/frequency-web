@@ -36,7 +36,7 @@ export function JourneyExport({ slug }: { slug: string }) {
 
   return (
     <div>
-      <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Export</p>
+      <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Export</p>
       <button
         type="button"
         onClick={exportJourney}

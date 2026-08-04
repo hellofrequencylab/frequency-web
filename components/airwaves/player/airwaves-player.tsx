@@ -512,7 +512,7 @@ export function AirwavesPlayer({
                 className="peer absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"
               />
             </div>
-            <div className="flex items-center justify-between text-2xs tabular-nums text-subtle">
+            <div className="flex items-center justify-between text-2xs tabular-nums text-muted">
               <span>{formatTime(current)}</span>
               <span>{formatRemaining(current, duration)}</span>
             </div>
@@ -676,7 +676,7 @@ export function AirwavesPlayer({
                       i === activeChapter ? 'bg-primary-bg font-medium text-primary-strong' : 'text-text',
                     )}
                   >
-                    <span className="shrink-0 tabular-nums text-2xs text-subtle">{formatTime(c.startSec)}</span>
+                    <span className="shrink-0 tabular-nums text-2xs text-muted">{formatTime(c.startSec)}</span>
                     <span className="min-w-0 flex-1 truncate">{c.title}</span>
                   </button>
                 </li>

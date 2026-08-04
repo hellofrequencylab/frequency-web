@@ -95,7 +95,7 @@ function IntervalButton({
       aria-checked={active}
       onClick={onClick}
       className={`rounded-xl px-5 py-2 text-sm font-bold transition-colors ${
-        active ? 'bg-primary text-white shadow-sm' : 'text-muted hover:text-text'
+        active ? 'bg-primary text-on-primary lift-1' : 'text-muted hover:text-text'
       }`}
     >
       {label}

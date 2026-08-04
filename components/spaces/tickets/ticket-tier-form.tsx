@@ -158,7 +158,7 @@ export function TicketTierForm({
         {rows.map((r, i) => (
           <div
             key={i}
-            className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm"
+            className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1"
           >
             <div className="flex items-start justify-between gap-3">
               <span className="text-xs font-semibold text-subtle">Tier {i + 1}</span>

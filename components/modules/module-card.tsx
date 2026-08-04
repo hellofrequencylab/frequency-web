@@ -22,7 +22,7 @@ export function ModuleCard({
 }) {
   if (tile) {
     return (
-      <section className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <section className="rounded-2xl border border-border bg-surface p-4 lift-1">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-sm font-bold tracking-tight text-text">{title}</h3>
           {badge && (

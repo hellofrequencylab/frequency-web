@@ -255,7 +255,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
           {/* Template: pick the interior shape by clicking its mock-up (not a name). Each tile
               draws the layout's actual block arrangement; the chosen one is ringed + tinted. */}
           <div>
-            <p className="mb-1.5 text-2xs font-medium uppercase tracking-wide text-subtle">Template</p>
+            <p className="mb-1.5 text-2xs font-medium uppercase tracking-wide text-muted">Template</p>
             {/* Flex by the CONTAINER's width, not the viewport: auto-fit + a min tile width lets the
                 tiles reflow to fit however wide the panel is (3-up in the narrow settings drawer, more
                 in a full-width editor), instead of a fixed viewport breakpoint that overflows the drawer. */}
@@ -295,7 +295,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
               return (
                 <div key={s.id} className="space-y-2">
                   {multiSlot && (
-                    <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">{s.label}</p>
+                    <p className="text-2xs font-semibold uppercase tracking-wide text-muted">{s.label}</p>
                   )}
                   {/* Row header (ADR-562): an optional heading rendered above this row on the public
                       page. Off by default — a row shows a header only when the operator turns it on. */}
@@ -380,7 +380,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pl-9">
                             {multiSlot && (
                               <label className="flex items-center gap-2">
-                                <span className="text-2xs font-medium uppercase tracking-wide text-subtle">Area</span>
+                                <span className="text-2xs font-medium uppercase tracking-wide text-muted">Area</span>
                                 <select
                                   value={item.slot}
                                   onChange={(e) => setSlot(item.id, e.target.value)}
@@ -397,7 +397,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
                               </label>
                             )}
                             <label className="flex min-w-0 flex-1 items-center gap-2">
-                              <span className="shrink-0 text-2xs font-medium uppercase tracking-wide text-subtle">Who sees it</span>
+                              <span className="shrink-0 text-2xs font-medium uppercase tracking-wide text-muted">Who sees it</span>
                               <select
                                 value={item.role ?? ''}
                                 onChange={(e) => setRole(item.id, (e.target.value || null) as ModuleRole | null)}

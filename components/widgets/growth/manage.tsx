@@ -137,7 +137,7 @@ function ManageGroup({ title, description, cards }: { title: string; description
             </div>
             <p className="mt-auto flex items-baseline gap-1.5">
               {c.stat && <span className="text-lg font-bold tabular-nums text-text">{c.stat}</span>}
-              <span className="text-2xs font-medium uppercase tracking-wide text-subtle">{c.statLabel}</span>
+              <span className="text-2xs font-medium uppercase tracking-wide text-muted">{c.statLabel}</span>
             </p>
           </Link>
         ))}

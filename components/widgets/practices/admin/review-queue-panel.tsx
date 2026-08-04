@@ -76,14 +76,14 @@ function ScreenPanel({ screen }: { screen: PracticeScreenResult }) {
           </span>
         )}
       </div>
-      <p className="mt-1 text-2xs text-subtle">Advice only. You still make the call.</p>
+      <p className="mt-1 text-2xs text-muted">Advice only. You still make the call.</p>
       {anything ? (
         <div className="mt-2 space-y-2">
           {groups
             .filter((g) => g.notes.length > 0)
             .map((g) => (
               <div key={g.label}>
-                <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">{g.label}</p>
+                <p className="text-2xs font-semibold uppercase tracking-wide text-muted">{g.label}</p>
                 <ul className="mt-0.5 space-y-0.5">
                   {g.notes.map((n, i) => (
                     <li key={i} className="text-xs text-muted">
@@ -273,7 +273,7 @@ export function ReviewQueuePanel({ rows }: { rows: ReviewRow[] }) {
         <div
           role="region"
           aria-label="Bulk review"
-          className="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-primary/30 bg-surface-elevated px-3 py-2 shadow-sm"
+          className="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-primary/30 bg-surface-elevated px-3 py-2 lift-1"
         >
           <span className="text-sm font-semibold text-text">{selected.size} selected</span>
           <span className="mx-1 hidden h-4 w-px bg-border sm:block" aria-hidden />

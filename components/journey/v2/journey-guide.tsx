@@ -281,7 +281,7 @@ export function JourneyGuide({
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-semibold text-text">{t.name}</span>
                       <span className="block text-xs leading-snug text-muted">{t.description}</span>
-                      <span className="mt-1 block text-2xs font-medium uppercase tracking-wide text-subtle">
+                      <span className="mt-1 block text-2xs font-medium uppercase tracking-wide text-muted">
                         {t.phases} {t.phases === 1 ? 'phase' : 'phases'} · {t.lessons} {t.lessons === 1 ? 'lesson' : 'lessons'}
                       </span>
                     </span>
@@ -308,7 +308,7 @@ export function JourneyGuide({
                       <Layers className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold text-text">{p.title || `Phase ${i + 1}`}</span>
-                        <span className="block text-2xs text-subtle">
+                        <span className="block text-2xs text-muted">
                           {p.steps.length} {p.steps.length === 1 ? 'step' : 'steps'}
                         </span>
                       </span>
@@ -340,7 +340,7 @@ export function JourneyGuide({
                 >
                   <Plus className="h-4 w-4" /> Add a phase
                 </button>
-                <p className="text-2xs text-subtle">
+                <p className="text-2xs text-muted">
                   Renaming phases, writing lessons, and picking practices happen in the editor. The guide keeps the big picture.
                 </p>
               </div>
@@ -350,13 +350,13 @@ export function JourneyGuide({
           {phase === 'schedule' && (
             <div className="space-y-5">
               <div>
-                <p className="mb-1.5 inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+                <p className="mb-1.5 inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
                   <CalendarRange className="h-3.5 w-3.5" /> Run window
                 </p>
                 <p className="mb-2 text-xs text-muted">Run it between dates, or leave both empty to keep it open anytime.</p>
                 <div className="flex flex-wrap items-end gap-3">
                   <label className="flex flex-col gap-1">
-                    <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Opens</span>
+                    <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Opens</span>
                     <input
                       type="date"
                       value={windowStart}
@@ -366,7 +366,7 @@ export function JourneyGuide({
                     />
                   </label>
                   <label className="flex flex-col gap-1">
-                    <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Closes</span>
+                    <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Closes</span>
                     <input
                       type="date"
                       value={windowEnd}
@@ -386,7 +386,7 @@ export function JourneyGuide({
 
               {access.dripAllowed ? (
                 <div>
-                  <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Phase drip</p>
+                  <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Phase drip</p>
                   <p className="mb-2 text-xs text-muted">How fast the phases unlock once someone starts.</p>
                   <div className="flex flex-wrap items-center gap-2">
                     {DRIP_CHOICES.map(([days, label]) => (
@@ -429,7 +429,7 @@ export function JourneyGuide({
               )}
 
               {access.canRunCohorts ? (
-                <p className="text-2xs text-subtle">
+                <p className="text-2xs text-muted">
                   Once published, you can open cohort Runs from the Journey page so a group moves through it together.
                 </p>
               ) : (
@@ -458,7 +458,7 @@ export function JourneyGuide({
                       <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
                         {c.label}
                         {!c.ok && !c.required && (
-                          <span className="rounded-full bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-subtle">Optional</span>
+                          <span className="rounded-full bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">Optional</span>
                         )}
                       </span>
                       <span className="block text-xs leading-snug text-muted">{c.detail}</span>
@@ -468,7 +468,7 @@ export function JourneyGuide({
               </ul>
 
               <div>
-                <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Who can see it</p>
+                <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Who can see it</p>
                 {live ? (
                   <p className="text-sm text-muted">{whoCanSee(plan.visibility)}</p>
                 ) : (
@@ -497,7 +497,7 @@ export function JourneyGuide({
                       </button>
                     ))}
                     {access.publishCap !== null && (
-                      <p className="text-2xs text-subtle">
+                      <p className="text-2xs text-muted">
                         Your plan includes {access.publishCap} published {access.publishCap === 1 ? 'Journey' : 'Journeys'}.{' '}
                         <Link href="/upgrade" className="underline-offset-4 hover:underline">See plans</Link>
                       </p>

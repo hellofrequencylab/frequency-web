@@ -264,7 +264,7 @@ export function CircleWizard() {
           {mode === 'questions' && (
             <div className="space-y-3">
               <label className="block">
-                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">What is it about</span>
+                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">What is it about</span>
                 <input
                   autoFocus
                   value={topic}
@@ -274,7 +274,7 @@ export function CircleWizard() {
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Who is it for</span>
+                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Who is it for</span>
                 <input
                   value={who}
                   onChange={(e) => setWho(e.target.value)}
@@ -283,7 +283,7 @@ export function CircleWizard() {
                 />
               </label>
               <div>
-                <span className="mb-1.5 block text-2xs font-semibold uppercase tracking-wide text-subtle">
+                <span className="mb-1.5 block text-2xs font-semibold uppercase tracking-wide text-muted">
                   Primary Pillar (optional)
                 </span>
                 <div className="flex flex-wrap gap-2">
@@ -305,7 +305,7 @@ export function CircleWizard() {
                 </div>
               </div>
               <label className="block">
-                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">
+                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
                   How it meets (optional)
                 </span>
                 <input
@@ -322,7 +322,7 @@ export function CircleWizard() {
           {mode === 'review' && spark && (
             <div className="space-y-3">
               <label className="block">
-                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Name</span>
+                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Name</span>
                 <input
                   value={spark.name}
                   onChange={(e) => setSpark({ ...spark, name: e.target.value })}
@@ -331,7 +331,7 @@ export function CircleWizard() {
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">The Card</span>
+                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">The Card</span>
                 <input
                   value={spark.card}
                   onChange={(e) => setSpark({ ...spark, card: e.target.value })}
@@ -340,7 +340,7 @@ export function CircleWizard() {
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">About</span>
+                <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">About</span>
                 <textarea
                   value={spark.oneLiner}
                   onChange={(e) => setSpark({ ...spark, oneLiner: e.target.value })}
@@ -349,7 +349,7 @@ export function CircleWizard() {
                   placeholder="Who it is for and what they get"
                 />
               </label>
-              <p className="text-2xs leading-relaxed text-subtle">
+              <p className="text-2xs leading-relaxed text-muted">
                 Vera also drafted the four Pillars inside, the rhythm, the agreements, and more. Create the draft to edit
                 all of it in the builder.
               </p>

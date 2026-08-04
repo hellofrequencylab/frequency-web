@@ -82,7 +82,7 @@ function PillarGauge({ pillar }: { pillar: PillarProgress }) {
 
         {/* The Pillar's site icon, dropped into the gauge's mouth. */}
         <span
-          className={`absolute bottom-0 flex h-9 w-9 items-center justify-center rounded-full shadow-sm ${
+          className={`absolute bottom-0 flex h-9 w-9 items-center justify-center rounded-full lift-1 ${
             active ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-subtle'
           }`}
           aria-hidden
@@ -94,7 +94,7 @@ function PillarGauge({ pillar }: { pillar: PillarProgress }) {
       <div className="w-full text-center">
         <p
           className={`text-2xs font-bold uppercase tracking-widest ${
-            active ? 'text-primary-strong' : 'text-subtle'
+            active ? 'text-primary-strong' : 'text-muted'
           }`}
         >
           {pillar.name}
@@ -142,7 +142,7 @@ export function SeasonMap({
 
   return (
     <section
-      className="overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary-bg/55 via-surface to-surface shadow-sm dark:from-primary-bg/20"
+      className="overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary-bg/55 via-surface to-surface lift-1 dark:from-primary-bg/20"
       aria-labelledby="season-map-heading"
     >
       {/* Frame — the season is the FRAME: its name + the time left sit at the top, with
@@ -167,14 +167,14 @@ export function SeasonMap({
           style={seasonRankStyle(rank)}
         >
           <span
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-on-primary shadow-sm"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-on-primary lift-1"
             style={{ background: `var(--rank-${RANK_TO_KEY[rank]})` }}
             aria-hidden
           >
             <Trophy className="h-4 w-4" />
           </span>
           <span className="min-w-0 text-right">
-            <span className="block text-2xs font-medium text-subtle">Rank</span>
+            <span className="block text-2xs font-medium text-muted">Rank</span>
             <span className="block text-sm font-bold text-text">{RANK_LABELS[rank] ?? rank}</span>
           </span>
         </Link>
@@ -210,7 +210,7 @@ export function SeasonMap({
                   />
                   <span
                     className={`text-2xs font-semibold leading-none ${
-                      isCurrent ? 'text-text' : 'text-subtle'
+                      isCurrent ? 'text-text' : 'text-muted'
                     }`}
                   >
                     {r.label}

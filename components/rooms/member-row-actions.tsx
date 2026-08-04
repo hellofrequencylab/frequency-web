@@ -47,7 +47,7 @@ export function MemberRowActions({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-40 rounded-lg border border-border bg-surface shadow-lg z-30 overflow-hidden">
+        <div className="absolute right-0 top-full mt-1 w-40 rounded-lg border border-border bg-surface lift-3 z-30 overflow-hidden">
           {isAdmin ? (
             <button
               onClick={(e) => { e.preventDefault(); handle(() => demoteRoomMember(roomId, memberId)) }}

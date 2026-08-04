@@ -70,12 +70,12 @@ export function PageQrManager({
       {/* LEFT 2/3 — the creator (min-w-0 so the column can shrink on phones
           instead of widening the Settings panel) */}
       <div className="min-w-0 space-y-4 md:col-span-2">
-        <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+        <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
           <Palette className="h-3.5 w-3.5" /> Design a QR for this page
         </p>
 
         <label className="block">
-          <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Title</span>
+          <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Title</span>
           <input
             value={title}
             onChange={(e) => {
@@ -95,7 +95,7 @@ export function PageQrManager({
           presetsFooter={
             <Link
               href={archiveHref}
-              className="inline-flex items-center gap-1 text-2xs font-medium text-subtle transition-colors hover:text-text"
+              className="inline-flex items-center gap-1 text-2xs font-medium text-muted transition-colors hover:text-text"
             >
               <Archive className="h-3 w-3" /> Archived codes
             </Link>
@@ -131,14 +131,14 @@ export function PageQrManager({
       {/* RIGHT 1/3 — share + scan activity, aligned to the title row */}
       <div className="min-w-0 space-y-5">
         <div className="space-y-2">
-          <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+          <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
             <Link2 className="h-3.5 w-3.5" /> Share code
           </p>
           <ShareCode url={url} pathname={pathname} />
         </div>
 
         <div className="space-y-2">
-          <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+          <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
             <ScanLine className="h-3.5 w-3.5" /> Scan activity
           </p>
           <ScanActivity stats={stats} archiveHref={archiveHref} />
@@ -169,21 +169,21 @@ export function PageShareKit({
   return (
     <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-8">
       <div className="shrink-0">
-        <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+        <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
           <QrCode className="h-3.5 w-3.5" /> Scan to open
         </p>
         <div
           aria-label="QR code for this page"
-          className="mx-auto aspect-square w-40 rounded-xl border border-border bg-white p-2 shadow-sm [&>svg]:h-full [&>svg]:w-full"
+          className="mx-auto aspect-square w-40 rounded-xl border border-border bg-white p-2 lift-1 [&>svg]:h-full [&>svg]:w-full"
           dangerouslySetInnerHTML={{ __html: svg }}
         />
       </div>
       <div className="w-full min-w-0 space-y-2 sm:max-w-xs">
-        <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+        <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
           <Link2 className="h-3.5 w-3.5" /> Share link
         </p>
         <ShareCode url={url} pathname={pathname} />
-        <p className="text-2xs text-subtle">
+        <p className="text-2xs text-muted">
           Anyone with the link or the code lands right on this page.
         </p>
       </div>
@@ -196,11 +196,11 @@ export function PageShareKit({
 // `qr_scans` aggregation QR Studio uses (summarizePageScans), scoped to `page_path`.
 function ScanActivity({ stats, archiveHref }: { stats: PageQrScanStats | null; archiveHref: string }) {
   if (stats === null) {
-    return <p className="px-0.5 text-2xs text-subtle">Loading scan activity…</p>
+    return <p className="px-0.5 text-2xs text-muted">Loading scan activity…</p>
   }
   if (stats.codeCount === 0) {
     return (
-      <p className="px-0.5 text-2xs text-subtle">
+      <p className="px-0.5 text-2xs text-muted">
         No codes saved for this page yet. Save one and its scans show up here.
       </p>
     )
@@ -227,7 +227,7 @@ function ScanActivity({ stats, archiveHref }: { stats: PageQrScanStats | null; a
           )
         }
       />
-      <p className="px-0.5 pt-0.5 text-2xs text-subtle">
+      <p className="px-0.5 pt-0.5 text-2xs text-muted">
         {stats.codeCount === 1 ? '1 code' : `${stats.codeCount} codes`} filed under this page ·{' '}
         <Link href={archiveHref} className="font-medium underline-offset-2 hover:underline">
           open in Studio
@@ -240,7 +240,7 @@ function ScanActivity({ stats, archiveHref }: { stats: PageQrScanStats | null; a
 function StatRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface-elevated/50 px-2.5 py-1.5 text-2xs">
-      <span className="shrink-0 text-subtle">{label}</span>
+      <span className="shrink-0 text-muted">{label}</span>
       <span className="min-w-0 truncate text-right font-semibold text-text">{value}</span>
     </div>
   )

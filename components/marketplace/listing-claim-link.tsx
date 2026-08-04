@@ -22,7 +22,7 @@ export function ListingClaimLink({ claimShareUrl }: { claimShareUrl: string }) {
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
-      <p className="mb-1.5 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+      <p className="mb-1.5 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
         <Send className="h-3.5 w-3.5" aria-hidden /> Claim Listing link
       </p>
       <p className="mb-2 text-xs text-muted">

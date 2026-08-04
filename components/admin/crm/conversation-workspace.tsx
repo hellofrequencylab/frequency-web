@@ -182,7 +182,7 @@ export function ConversationWorkspace({
                           {r.spaceName}
                         </span>
                       )}
-                      {r.assigneeName && <span className="truncate text-3xs text-subtle">{r.assigneeName}</span>}
+                      {r.assigneeName && <span className="truncate text-3xs text-muted">{r.assigneeName}</span>}
                     </div>
                   </Link>
                 </li>
@@ -239,7 +239,7 @@ function ThreadReader({
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-text">{thread.counterpartName || 'Unknown'}</p>
           {thread.counterpartEmail && <p className="truncate text-xs text-muted">{thread.counterpartEmail}</p>}
-          <p className="mt-0.5 truncate text-2xs text-subtle">
+          <p className="mt-0.5 truncate text-2xs text-muted">
             #{thread.ref} · {thread.subject}
           </p>
         </div>
@@ -433,7 +433,7 @@ function MessageBubble({ message: m }: { message: ConversationThreadMessage }) {
   return (
     <div className={`flex flex-col gap-0.5 ${outbound ? 'items-end' : 'items-start'}`}>
       {bubble}
-      <p className="px-1 text-3xs text-subtle">
+      <p className="px-1 text-3xs text-muted">
         {m.authorName} · {channelLabel(m.channel)} · {when(m.occurredAt)}
         {delivery && (
           <span className={deliveryTone}> · {delivery}</span>

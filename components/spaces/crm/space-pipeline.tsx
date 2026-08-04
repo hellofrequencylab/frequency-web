@@ -97,7 +97,7 @@ export async function SpacePipeline({
                     return (
                       <div
                         key={deal.id}
-                        className="rounded-xl border border-border bg-surface p-3 shadow-sm"
+                        className="rounded-xl border border-border bg-surface p-3 lift-1"
                       >
                         <p className="line-clamp-2 text-sm font-semibold text-text">{deal.title}</p>
                         {who && <p className="mt-0.5 truncate text-xs text-muted">{who}</p>}

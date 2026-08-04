@@ -444,8 +444,8 @@ export function Composer({
       data-tour-anchor="composer"
       className={`relative bg-surface transition-shadow dark:bg-surface-elevated/80 ${
         expanded
-          ? 'rounded-3xl border border-border p-5 shadow-2xl'
-          : 'rounded-2xl border border-border/70 p-4 shadow-sm focus-within:shadow-md dark:border-border/60'
+          ? 'rounded-3xl border border-border p-5 lift-3'
+          : 'rounded-2xl border border-border/70 p-4 lift-1 dark:border-border/60'
       }`}
     >
       {expanded && (
@@ -492,7 +492,7 @@ export function Composer({
         {/* @mention autocomplete dropdown */}
         {suggestions.length > 0 && mentionQuery !== null && (
           <div
-            className="absolute left-0 top-full z-50 mt-1 w-64 rounded-xl border border-border bg-surface py-1 shadow-xl shadow-black/5"
+            className="absolute left-0 top-full z-50 mt-1 w-64 rounded-xl border border-border bg-surface py-1 lift-3"
             onMouseDown={e => e.preventDefault()}
           >
             {suggestions.map((p, i) => (
@@ -513,7 +513,7 @@ export function Composer({
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-semibold text-text">{p.display_name}</p>
-                  <p className="truncate text-2xs text-subtle">@{p.handle}</p>
+                  <p className="truncate text-2xs text-muted">@{p.handle}</p>
                 </div>
               </button>
             ))}
@@ -557,7 +557,7 @@ export function Composer({
           aria-label="Add a photo"
         >
           <div
-            className="w-full max-w-sm space-y-1 rounded-t-2xl border border-border bg-surface p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-2xl sm:pb-2"
+            className="w-full max-w-sm space-y-1 rounded-t-2xl border border-border bg-surface p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lift-3 sm:rounded-2xl sm:pb-2"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -634,7 +634,7 @@ export function Composer({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => setToolsOpen(true)}
             aria-expanded={false}
-            className="inline-flex items-center gap-1 rounded-md px-1 py-0.5 text-2xs font-medium text-subtle transition-colors hover:text-text"
+            className="inline-flex items-center gap-1 rounded-md px-1 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
           >
             <ChevronUp className="h-3 w-3" /> Format
           </button>
@@ -651,7 +651,7 @@ export function Composer({
               type="button"
               onClick={() => setIsAnnouncement(false)}
               className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-2xs font-semibold transition-colors ${
-                !isAnnouncement ? 'bg-surface text-primary-strong shadow-sm' : 'text-subtle hover:text-muted'
+                !isAnnouncement ? 'bg-surface text-primary-strong lift-1' : 'text-muted hover:text-muted'
               }`}
               title="A regular post"
             >
@@ -662,7 +662,7 @@ export function Composer({
               type="button"
               onClick={() => setIsAnnouncement(true)}
               className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-2xs font-semibold transition-colors ${
-                isAnnouncement ? 'bg-surface text-warning shadow-sm' : 'text-subtle hover:text-muted'
+                isAnnouncement ? 'bg-surface text-warning lift-1' : 'text-muted hover:text-muted'
               }`}
               title="Dispatch: send an announcement to your group"
             >
@@ -675,7 +675,7 @@ export function Composer({
         )}
 
         <div className="flex items-center gap-2.5">
-          <span className="hidden text-2xs text-subtle sm:inline">⌘ + Enter</span>
+          <span className="hidden text-2xs text-muted sm:inline">⌘ + Enter</span>
           <button
             onClick={submit}
             disabled={!canPost}

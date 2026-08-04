@@ -21,7 +21,7 @@ export function MarketplaceGuide() {
   return (
     <section
       aria-label="About the marketplace"
-      className="rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6"
+      className="rounded-2xl border border-border bg-surface p-5 lift-1 sm:p-6"
     >
       <SectionHeader title="What's where" />
 

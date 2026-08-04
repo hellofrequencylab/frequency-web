@@ -30,7 +30,7 @@ export function ShopTabs({ consoleHref, active }: { consoleHref: string; active:
   return (
     <nav
       aria-label="Shop views"
-      className="flex flex-wrap gap-1 rounded-2xl border border-border bg-surface p-1 shadow-sm"
+      className="flex flex-wrap gap-1 rounded-2xl border border-border bg-surface p-1 lift-1"
     >
       {SHOP_TABS.map((t) => {
         const isActive = t.tab === active

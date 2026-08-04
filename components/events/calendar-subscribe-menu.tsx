@@ -60,7 +60,7 @@ export function CalendarSubscribeMenu({
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} aria-hidden />
           <div className="absolute right-0 z-20 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface p-4 shadow-pop">
             <p className="text-sm font-semibold text-text">{title}</p>
-            <p className="mt-1 text-2xs leading-relaxed text-subtle">{description}</p>
+            <p className="mt-1 text-2xs leading-relaxed text-muted">{description}</p>
 
             <div className="mt-3 flex flex-col gap-2">
               <a

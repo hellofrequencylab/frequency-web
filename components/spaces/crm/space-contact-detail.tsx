@@ -126,7 +126,7 @@ export async function SpaceContactDetail({
       </Link>
 
       {/* Identity + fields */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
         <div className="flex items-start gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
             <User className="h-5 w-5" aria-hidden />
@@ -201,7 +201,7 @@ export async function SpaceContactDetail({
             description="Deals you track for this person in this space show here."
           />
         ) : (
-          <ul className="divide-y divide-border rounded-2xl border border-border bg-surface shadow-sm">
+          <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
             {deals.map((deal) => (
               <li key={deal.id} className="flex items-center justify-between gap-4 px-4 py-3">
                 <div className="min-w-0">
@@ -319,7 +319,7 @@ function InsightBand({ insight }: { insight: SpaceContactInsight }) {
 
   return (
     <section>
-      <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
         <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-subtle">
           <Sparkles className="h-3.5 w-3.5" aria-hidden /> Where this person is
         </p>
@@ -386,7 +386,7 @@ function AboutPanel({ insight }: { insight: SpaceContactInsight }) {
   return (
     <section>
       <SectionHeader title="About" />
-      <div className="space-y-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <div className="space-y-3 rounded-2xl border border-border bg-surface p-4 lift-1">
         {neighborhood && (
           <p className="flex items-center gap-2 text-sm text-text">
             <MapPin className="h-4 w-4 shrink-0 text-subtle" aria-hidden /> {neighborhood}
@@ -421,7 +421,7 @@ function TimelineRow({ entry }: { entry: TimelineEntry }) {
   const when = entry.at ? sinceFmt.format(new Date(entry.at)) : ''
   const ago = relativeTime(entry.at)
   return (
-    <li className="flex gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <li className="flex gap-3 rounded-2xl border border-border bg-surface p-4 lift-1">
       <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-muted">
         {timelineIcon(entry)}
       </span>

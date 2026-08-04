@@ -120,7 +120,7 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-text truncate">{r.display_name}</p>
-                    <p className="text-2xs text-subtle truncate">@{r.handle}</p>
+                    <p className="text-2xs text-muted truncate">@{r.handle}</p>
                   </div>
                   {wasInvited && <Check className="w-4 h-4 text-success shrink-0" />}
                 </button>

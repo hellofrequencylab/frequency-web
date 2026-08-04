@@ -56,7 +56,7 @@ export function HostSchedule({
         </p>
         {phases.map((p) => (
           <div key={p.id} className="rounded-lg border border-border bg-surface-elevated/30 p-2.5">
-            <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">{p.label}</p>
+            <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">{p.label}</p>
             <div className="grid gap-1.5 sm:grid-cols-2">
               <Slot slug={slug} runId={runId} phaseId={p.id} kind="meetup" label="Circle Meetup" event={scheduled[p.id]?.meetup ?? null} />
               <Slot slug={slug} runId={runId} phaseId={p.id} kind="gathering" label="Weekend Gathering" event={scheduled[p.id]?.gathering ?? null} />

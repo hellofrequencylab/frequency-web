@@ -96,7 +96,7 @@ export function NewTaskCompose({
                   }`}
                 >
                   <span>{TIER_LABELS[t]}</span>
-                  <span className={`text-2xs font-semibold ${active ? 'text-primary-strong' : 'text-subtle'}`}>{zaps} Zaps</span>
+                  <span className={`text-2xs font-semibold ${active ? 'text-primary-strong' : 'text-muted'}`}>{zaps} Zaps</span>
                 </button>
               )
             })}

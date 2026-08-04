@@ -298,7 +298,7 @@ function DispatchTimelineCard({ dispatch: d }: { dispatch: DispatchItem }) {
   return (
     <Link
       href={`/broadcast/${d.id}`}
-      className="group block rounded-2xl border border-border/70 bg-surface px-4 py-3.5 shadow-sm transition-colors hover:border-primary dark:border-border/60 dark:bg-surface-elevated/80"
+      className="group block rounded-2xl border border-border/70 bg-surface px-4 py-3.5 lift-1 transition-colors hover:border-primary dark:border-border/60 dark:bg-surface-elevated/80"
     >
       <div className="flex items-start gap-3">
         <div className="shrink-0 w-7 h-7 rounded-lg bg-primary-bg flex items-center justify-center mt-0.5">
@@ -322,7 +322,7 @@ function DispatchTimelineCard({ dispatch: d }: { dispatch: DispatchItem }) {
             <p className="text-xs text-muted line-clamp-1 mt-0.5">{d.excerpt}</p>
           )}
           <div className="flex items-center justify-between mt-1.5">
-            <span className="text-2xs text-subtle">
+            <span className="text-2xs text-muted">
               {d.author?.display_name} · {relativeTime(d.published_at)}
             </span>
             <ArrowRight className="w-3 h-3 text-primary-strong dark:text-primary-strong group-hover:text-primary-strong transition-colors" />
@@ -340,7 +340,7 @@ function EventTimelineCard({ event: e }: { event: EventItem }) {
   return (
     <Link
       href={`/events/${e.slug}`}
-      className="group block rounded-2xl border border-border/70 bg-surface px-4 py-3.5 shadow-sm transition-colors hover:border-warning dark:border-border/60 dark:bg-surface-elevated/80"
+      className="group block rounded-2xl border border-border/70 bg-surface px-4 py-3.5 lift-1 transition-colors hover:border-warning dark:border-border/60 dark:bg-surface-elevated/80"
     >
       <div className="flex items-center gap-3">
         <div className="shrink-0 w-10 h-10 rounded-lg bg-warning-bg dark:bg-warning-bg flex flex-col items-center justify-center">

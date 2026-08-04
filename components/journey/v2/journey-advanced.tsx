@@ -130,7 +130,7 @@ export function JourneyAdvanced({
       <div className="space-y-5">
         {/* Discovery-page layout */}
         <div>
-          <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Discovery page</p>
+          <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Discovery page</p>
           <p className="mt-0.5 text-xs text-muted">What visitors see before they start. Toggle and reorder the blocks.</p>
           <ul className="mt-2 space-y-1">
             {disc.map((d, i) => {
@@ -163,7 +163,7 @@ export function JourneyAdvanced({
         {/* Official program (role-gated) */}
         {canOfficial && (
           <div className="border-t border-border pt-4">
-            <p className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+            <p className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
               <Sparkles className="h-3.5 w-3.5" /> Official program
             </p>
             <p className="mt-0.5 text-xs text-muted">Flag this as an official Journey and link it to a Season.</p>
@@ -194,13 +194,13 @@ export function JourneyAdvanced({
 
             {/* Play window — the ~4-week span that sequences a Season's Journeys */}
             <div className="mt-5 border-t border-border pt-4">
-              <p className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+              <p className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
                 <CalendarRange className="h-3.5 w-3.5" /> Play window
               </p>
               <p className="mt-0.5 text-xs text-muted">When this Journey is in play. Leave a date empty to keep it open.</p>
               <div className="mt-2 flex flex-wrap items-end gap-3">
                 <label className="flex flex-col gap-1">
-                  <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Opens</span>
+                  <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Opens</span>
                   <input
                     type="date"
                     value={windowStart}
@@ -210,7 +210,7 @@ export function JourneyAdvanced({
                   />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Closes</span>
+                  <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Closes</span>
                   <input
                     type="date"
                     value={windowEnd}

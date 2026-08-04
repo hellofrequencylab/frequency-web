@@ -137,7 +137,7 @@ export function InviteForm({
   return (
     <div className="space-y-6">
       <form
-        className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm"
+        className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1"
         onSubmit={(e) => {
           e.preventDefault()
           if (!pending) send()
@@ -233,7 +233,7 @@ export function InviteForm({
             {invites.map((invite) => (
               <li
                 key={invite.id}
-                className="space-y-3 rounded-2xl border border-border bg-surface p-4 shadow-sm"
+                className="space-y-3 rounded-2xl border border-border bg-surface p-4 lift-1"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

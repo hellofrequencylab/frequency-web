@@ -310,7 +310,7 @@ export function SpacePublishFab({
             onClick={() => void onPublish()}
             disabled={publishBusy}
             title="Go live now"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-sm font-bold text-on-primary shadow-sm transition-colors hover:bg-primary-strong disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-sm font-bold text-on-primary lift-1 transition-colors hover:bg-primary-strong disabled:opacity-60"
           >
             {publishBusy ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />

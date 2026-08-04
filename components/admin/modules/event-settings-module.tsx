@@ -341,7 +341,7 @@ export function EventSettingsModule() {
                       type="button"
                       onClick={handleRemovePoster}
                       disabled={pending}
-                      className="text-2xs font-medium text-subtle underline underline-offset-2 transition-colors hover:text-danger disabled:opacity-50"
+                      className="text-2xs font-medium text-muted underline underline-offset-2 transition-colors hover:text-danger disabled:opacity-50"
                     >
                       Remove the scanned poster
                     </button>
@@ -413,7 +413,7 @@ export function EventSettingsModule() {
               className="min-w-0 flex-1 bg-transparent px-2 py-2 text-text outline-none"
             />
           </span>
-          <span className="text-2xs text-subtle">Leave blank for a free RSVP event. Set a price to sell tickets.</span>
+          <span className="text-2xs text-muted">Leave blank for a free RSVP event. Set a price to sell tickets.</span>
         </label>
 
         {/* DESCRIPTION */}
@@ -473,7 +473,7 @@ export function EventSettingsModule() {
             />
             <span className="text-sm text-text">
               {MARKET_LISTING_LABEL}
-              <span className="block text-2xs font-normal text-subtle">{MARKET_LISTING_HELP}</span>
+              <span className="block text-2xs font-normal text-muted">{MARKET_LISTING_HELP}</span>
             </span>
           </label>
           <input type="hidden" name="market_listed" value={marketListed ? 'on' : 'off'} />
@@ -629,7 +629,7 @@ export function EventSettingsModule() {
                 />
                 <span className="text-sm text-text">
                   Hide the address until someone registers
-                  <span className="block text-2xs font-normal text-subtle">
+                  <span className="block text-2xs font-normal text-muted">
                     People browsing see the city only. The venue, street, map pin, and directions
                     show after they RSVP or get a ticket.
                   </span>
@@ -649,7 +649,7 @@ export function EventSettingsModule() {
                   requestAnimationFrame(saveNow)
                 }}
               />
-              <p className="text-2xs text-subtle">
+              <p className="text-2xs text-muted">
                 Drag the pin or tap the map to set the exact spot. This is the precise venue, not the
                 city-level area shown to people browsing.
               </p>

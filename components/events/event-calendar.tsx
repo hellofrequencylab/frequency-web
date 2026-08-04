@@ -211,12 +211,12 @@ export function EventCalendar({
                   {(ev.sourceLabel || ev.statusLabel) && (
                     <span className="mt-0.5 flex flex-wrap items-center gap-1">
                       {ev.statusLabel && (
-                        <span className="inline-block rounded bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-subtle">
+                        <span className="inline-block rounded bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-muted">
                           {ev.statusLabel}
                         </span>
                       )}
                       {ev.sourceLabel && (
-                        <span className="inline-block rounded bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-subtle">
+                        <span className="inline-block rounded bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
                           {ev.sourceLabel}
                         </span>
                       )}
@@ -239,7 +239,7 @@ export function EventCalendar({
       <>
       <div className="grid grid-cols-7 border-b border-border">
         {WEEKDAY_LABELS.map((label) => (
-          <div key={label} className="px-2 py-2 text-center text-2xs font-semibold uppercase tracking-wide text-subtle">
+          <div key={label} className="px-2 py-2 text-center text-2xs font-semibold uppercase tracking-wide text-muted">
             <span className="hidden sm:inline">{label}</span>
             <span className="sm:hidden">{label[0]}</span>
           </div>
@@ -282,7 +282,7 @@ export function EventCalendar({
                         className={cn(
                           'w-full truncate rounded px-1.5 py-0.5 text-left text-2xs font-medium transition-colors',
                           ev.isCancelled
-                            ? 'bg-surface-elevated text-subtle line-through'
+                            ? 'bg-surface-elevated text-muted line-through'
                             : 'bg-primary/10 text-primary-strong hover:bg-primary/20',
                         )}
                       >
@@ -290,7 +290,7 @@ export function EventCalendar({
                       </button>
                     ))}
                     {dayEvents.length > 3 && (
-                      <span className="px-1.5 text-2xs font-medium text-subtle">+{dayEvents.length - 3} more</span>
+                      <span className="px-1.5 text-2xs font-medium text-muted">+{dayEvents.length - 3} more</span>
                     )}
                   </div>
                 </div>
@@ -309,7 +309,7 @@ export function EventCalendar({
           const showViewer = inViewerTz && viewerLabel !== null
           const whenText = showViewer ? viewerLabel : selected.whenLabel
           return (
-          <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-xl">
+          <div className="overflow-hidden rounded-2xl border border-border bg-surface lift-3">
             {selected.coverUrl && (
               // eslint-disable-next-line @next/next/no-img-element -- external public bucket URL, not a local asset
               <img
@@ -328,12 +328,12 @@ export function EventCalendar({
             {(selected.sourceLabel || selected.statusLabel) && (
               <p className="mt-1 flex flex-wrap items-center gap-1">
                 {selected.statusLabel && (
-                  <span className="inline-block rounded bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle">
+                  <span className="inline-block rounded bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
                     {selected.statusLabel}
                   </span>
                 )}
                 {selected.sourceLabel && (
-                  <span className="inline-block rounded bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-subtle">
+                  <span className="inline-block rounded bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
                     {selected.sourceLabel}
                   </span>
                 )}

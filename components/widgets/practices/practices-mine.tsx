@@ -65,7 +65,7 @@ function CommitmentLine({ a, today }: { a: MemberAdoption; today: string }) {
   const prog = termProgress({ startsOn: a.startsOn, endsOn: a.endsOn, today })
   if (prog.totalDays == null) return null
   return (
-    <p className="mt-1 text-2xs font-medium text-subtle">
+    <p className="mt-1 text-2xs font-medium text-muted">
       Week {prog.week} of {prog.totalWeeks} · Day {prog.day} of {prog.totalDays}
     </p>
   )
@@ -96,7 +96,7 @@ function MineRow({
   const href = `/practices/${p.slug ?? p.id}`
   return (
     <li>
-      <div className="flex h-full flex-col rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md motion-reduce:transition-none">
+      <div className="flex h-full flex-col rounded-2xl border border-border bg-surface p-4 lift-2 transition-colors hover:border-primary-bg motion-reduce:transition-none">
         <div className="flex items-start justify-between gap-2">
           <Link href={href} className="min-w-0 flex-1">
             <h3 className="truncate text-sm font-bold leading-tight text-text transition-colors hover:text-primary-strong">

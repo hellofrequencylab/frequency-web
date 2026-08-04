@@ -9,7 +9,7 @@ function ImpactStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-2xl bg-surface-elevated/60 px-3 py-2.5 text-center">
       <div className="text-2xl font-bold leading-none tabular-nums text-text">{value}</div>
-      <div className="mt-1.5 text-2xs text-subtle">{label}</div>
+      <div className="mt-1.5 text-2xs text-muted">{label}</div>
     </div>
   )
 }

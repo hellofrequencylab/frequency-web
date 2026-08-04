@@ -18,7 +18,7 @@ export function TicketContext({
 
   return (
     <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
-      <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Captured context</p>
+      <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Captured context</p>
 
       {pageUrl && (
         <Link href={pageUrl} className="inline-flex max-w-full items-center gap-1.5 truncate text-xs font-medium text-primary-strong hover:underline">

@@ -121,7 +121,7 @@ function AwardsCollection({
                     <div
                       key={a.id}
                       className={`rounded-2xl px-4 py-3 transition-all ${
-                        a.earned ? `${tier.bg} ${tier.glow ? `shadow-sm ${tier.glow}` : ''}` : 'bg-surface-elevated/60 opacity-70'
+                        a.earned ? `${tier.bg} ${tier.glow ? `lift-1 ${tier.glow}` : ''}` : 'bg-surface-elevated/60 opacity-70'
                       }`}
                     >
                       <div className="flex items-start gap-3">

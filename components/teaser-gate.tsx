@@ -120,7 +120,7 @@ export function TeaserGate({
       {/* Live preview countdown pill */}
       {!gated && ready && (
         <div className="pointer-events-none fixed bottom-6 left-1/2 z-40 -translate-x-1/2">
-          <div className="flex items-center gap-2 rounded-full border border-primary/30 bg-surface/95 px-4 py-2 text-sm font-semibold text-primary-strong shadow-lg backdrop-blur">
+          <div className="flex items-center gap-2 rounded-full border border-primary/30 bg-surface/95 px-4 py-2 text-sm font-semibold text-primary-strong lift-3 backdrop-blur">
             <Sparkles className="h-4 w-4" />
             <span>Preview · {remaining}s</span>
           </div>
@@ -131,7 +131,7 @@ export function TeaserGate({
       {gated && !dismissed && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-          <div className="relative w-full max-w-sm rounded-3xl border border-border bg-surface p-7 text-center shadow-2xl">
+          <div className="relative w-full max-w-sm rounded-3xl border border-border bg-surface p-7 text-center lift-3">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-bg">
               <Lock className="h-6 w-6 text-primary-strong" />
             </div>
@@ -159,7 +159,7 @@ export function TeaserGate({
         <button
           type="button"
           onClick={() => setDismissed(false)}
-          className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-on-primary shadow-lg transition-colors hover:bg-primary-hover"
+          className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-on-primary lift-3 transition-colors hover:bg-primary-hover"
         >
           <Lock className="h-4 w-4" />
           Upgrade to join in

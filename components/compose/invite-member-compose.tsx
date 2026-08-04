@@ -59,7 +59,7 @@ export function InviteMemberCompose({
           <label className={cmLabel}>Your message</label>
           <textarea value={message} onChange={e => setMessage(e.target.value)}
             rows={4} className={`${cmInput} resize-y leading-relaxed`} />
-          <p className="text-2xs text-subtle mt-1">
+          <p className="text-2xs text-muted mt-1">
             The signup link will be added automatically at the bottom.
           </p>
         </div>

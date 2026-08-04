@@ -42,7 +42,7 @@ export function AtRiskWinBackButton({ slug, contactId }: { slug: string; contact
         type="button"
         onClick={onClick}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-text shadow-sm transition-colors hover:bg-surface-elevated disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-text lift-1 transition-colors hover:bg-surface-elevated disabled:opacity-60"
       >
         <HeartHandshake className="h-3.5 w-3.5" aria-hidden />
         {pending ? 'Starting' : 'Win back'}

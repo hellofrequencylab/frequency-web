@@ -80,7 +80,7 @@ export function RecordingAttachManager({
     <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-text">{heading}</h3>
-        {rows.length > 0 && <span className="text-2xs text-subtle">{rows.length} attached</span>}
+        {rows.length > 0 && <span className="text-2xs text-muted">{rows.length} attached</span>}
       </div>
 
       {rows.length > 0 && (

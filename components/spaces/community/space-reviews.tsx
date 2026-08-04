@@ -121,7 +121,7 @@ export function SpaceReviews({
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       {/* Rating summary: big average + stars + count, beside the per-star distribution. */}
-      <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <section className="rounded-2xl border border-border bg-surface p-5 lift-1">
         {hasReviews ? (
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
             <div className="flex shrink-0 flex-col items-center gap-1 sm:w-32">
@@ -196,7 +196,7 @@ export function SpaceReviews({
                     className={`rounded-lg px-2 py-1 text-2xs font-semibold transition-colors ${
                       sort === s.key
                         ? 'bg-primary-bg text-primary-strong'
-                        : 'text-subtle hover:text-text'
+                        : 'text-muted hover:text-text'
                     }`}
                   >
                     {s.label}
@@ -256,10 +256,10 @@ function ReviewCard({
   const [hidden, setHidden] = useState(false)
   const name = review.author?.displayName ?? 'Member'
 
-  if (hidden) return <li className="rounded-2xl border border-dashed border-border p-4 text-2xs text-subtle">Hidden.</li>
+  if (hidden) return <li className="rounded-2xl border border-dashed border-border p-4 text-2xs text-muted">Hidden.</li>
 
   return (
-    <li className="space-y-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <li className="space-y-3 rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <Avatar name={name} avatarUrl={review.author?.avatarUrl ?? null} />
@@ -270,7 +270,7 @@ function ReviewCard({
             </div>
             <div className="mt-0.5 flex items-center gap-2">
               <Stars value={review.rating} className="h-3.5 w-3.5" />
-              {review.createdAt && <span className="text-2xs text-subtle">{relativeTime(review.createdAt)}</span>}
+              {review.createdAt && <span className="text-2xs text-muted">{relativeTime(review.createdAt)}</span>}
             </div>
           </div>
         </div>
@@ -354,7 +354,7 @@ function ResponseBlock({
           <div className="flex items-center gap-2">
             <Avatar name={spaceName} avatarUrl={response.author?.avatarUrl ?? spaceLogoUrl} size={24} />
             <span className="text-xs font-semibold text-text">Response from {spaceName}</span>
-            {response.at && <span className="text-2xs text-subtle">{relativeTime(response.at)}</span>}
+            {response.at && <span className="text-2xs text-muted">{relativeTime(response.at)}</span>}
           </div>
           <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-muted">{response.body}</p>
           {canRespond && (
@@ -365,7 +365,7 @@ function ResponseBlock({
                   setDraft(response.body)
                   setEditing(true)
                 }}
-                className="text-2xs font-semibold text-subtle hover:text-primary-strong"
+                className="text-2xs font-semibold text-muted hover:text-primary-strong"
               >
                 Edit reply
               </button>
@@ -373,7 +373,7 @@ function ResponseBlock({
                 type="button"
                 onClick={remove}
                 disabled={pending}
-                className="text-2xs font-semibold text-subtle hover:text-danger disabled:opacity-60"
+                className="text-2xs font-semibold text-muted hover:text-danger disabled:opacity-60"
               >
                 Remove reply
               </button>
@@ -386,7 +386,7 @@ function ResponseBlock({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="text-2xs font-semibold text-subtle hover:text-primary-strong"
+          className="text-2xs font-semibold text-muted hover:text-primary-strong"
         >
           Respond
         </button>
@@ -412,7 +412,7 @@ function ResponseBlock({
                 setDraft(response?.body ?? '')
                 setError(null)
               }}
-              className="rounded-lg px-3 py-1.5 text-2xs font-semibold text-subtle hover:text-text"
+              className="rounded-lg px-3 py-1.5 text-2xs font-semibold text-muted hover:text-text"
             >
               Cancel
             </button>
@@ -457,7 +457,7 @@ function ReviewForm({ slug, initial }: { slug: string; initial: { rating: number
   }
 
   return (
-    <div className="space-y-2 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <div className="space-y-2 rounded-2xl border border-border bg-surface p-4 lift-1">
       <p className="text-sm font-semibold text-text">{initial ? 'Update your review' : 'Leave a review'}</p>
       <div className="flex items-center gap-1" onMouseLeave={() => setHover(0)}>
         {[1, 2, 3, 4, 5].map((n) => (
@@ -511,7 +511,7 @@ function HideButton({ slug, id, onHidden }: { slug: string; id: string; onHidden
           if (!isError(res)) onHidden()
         })
       }
-      className="shrink-0 text-2xs font-semibold text-subtle hover:text-danger disabled:opacity-60"
+      className="shrink-0 text-2xs font-semibold text-muted hover:text-danger disabled:opacity-60"
     >
       {pending ? 'Hiding' : 'Hide'}
     </button>

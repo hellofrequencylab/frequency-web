@@ -24,7 +24,7 @@ export async function ConnectionsPulse() {
         <Sparkles className="h-4 w-4 text-primary-strong" />
         <h2 className="text-sm font-bold tracking-tight text-text">Connect with others</h2>
       </div>
-      <p className="mt-1 text-2xs text-subtle">A few people it might be nice to reach out to this week.</p>
+      <p className="mt-1 text-2xs text-muted">A few people it might be nice to reach out to this week.</p>
 
       {/* Single column — lives in the directory's right rail. */}
       <div className="mt-4 space-y-5">
@@ -42,7 +42,7 @@ export async function ConnectionsPulse() {
                   >
                     {m.displayName}
                   </Link>
-                  <p className="truncate text-2xs text-subtle">You&rsquo;ve drifted a little</p>
+                  <p className="truncate text-2xs text-muted">You&rsquo;ve drifted a little</p>
                 </div>
                 <Link
                   href={`/people/${m.handle}`}
@@ -69,7 +69,7 @@ export async function ConnectionsPulse() {
                   >
                     {m.displayName}
                   </Link>
-                  <p className="truncate text-2xs text-subtle">{nearMissLine(m)}</p>
+                  <p className="truncate text-2xs text-muted">{nearMissLine(m)}</p>
                 </div>
                 <PulseConnectButton targetId={m.profileId} />
               </div>
@@ -101,7 +101,7 @@ export async function ConnectionsPulse() {
 function PulseGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">{title}</h3>
+      <h3 className="mb-3 text-2xs font-semibold uppercase tracking-wide text-muted">{title}</h3>
       <div className="flex flex-col gap-3">{children}</div>
     </div>
   )

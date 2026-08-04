@@ -61,8 +61,8 @@ export function CaptureBox({
             aria-label={m.label}
             className={`inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-2xs font-semibold transition-colors ${
               active
-                ? `bg-surface shadow-sm ${m.key === 'dispatch' ? 'text-warning' : 'text-primary-strong'}`
-                : 'text-subtle hover:text-muted'
+                ? `bg-surface lift-1 ${m.key === 'dispatch' ? 'text-warning' : 'text-primary-strong'}`
+                : 'text-muted hover:text-muted'
             }`}
           >
             <m.icon className="h-3.5 w-3.5" />
@@ -76,7 +76,7 @@ export function CaptureBox({
 
   if (mode === 'contact') {
     return (
-      <div className="rounded-2xl bg-surface p-4 shadow-md">
+      <div className="rounded-2xl bg-surface p-4 lift-1">
         <ContactCaptureForm />
         <TakeProfilePic />
         <div className="mt-3 border-t border-border pt-3">{featureRow}</div>

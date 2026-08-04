@@ -81,7 +81,7 @@ export function StreakHero({
   return (
     <section
       aria-labelledby="streak-hero-title"
-      className="overflow-hidden rounded-3xl border border-primary-bg bg-gradient-to-br from-primary-bg/40 via-surface to-surface p-5 shadow-sm sm:p-6 dark:from-primary-bg/15"
+      className="overflow-hidden rounded-3xl border border-primary-bg bg-gradient-to-br from-primary-bg/40 via-surface to-surface p-5 lift-1 sm:p-6 dark:from-primary-bg/15"
     >
       <div className="flex items-start gap-4">
         <span
@@ -175,12 +175,12 @@ export function StreakHero({
                       ? 'bg-primary text-on-primary'
                       : isNext
                         ? 'bg-surface text-primary-strong ring-2 ring-primary'
-                        : 'bg-surface-elevated text-subtle'
+                        : 'bg-surface-elevated text-muted'
                   }`}
                 >
                   {hit ? <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden /> : m.day}
                 </span>
-                <span className="text-2xs text-subtle">{m.label}</span>
+                <span className="text-2xs text-muted">{m.label}</span>
               </li>
             )
           })}

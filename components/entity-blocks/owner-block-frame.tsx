@@ -33,7 +33,7 @@ export function OwnerBlockFrame({
       <Link
         href={editHref}
         aria-label={`Edit ${label ?? blockId}`}
-        className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-surface text-muted opacity-0 shadow-sm transition hover:text-text focus-visible:opacity-100 group-hover:opacity-100"
+        className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-surface text-muted opacity-0 lift-1 transition hover:text-text focus-visible:opacity-100 group-hover:opacity-100"
       >
         <Pencil className="h-4 w-4" aria-hidden />
       </Link>

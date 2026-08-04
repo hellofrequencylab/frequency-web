@@ -18,7 +18,7 @@ export async function VeraTab() {
       <AdminSection title="AI operator" description="The console where the operator proposes work for your approval.">
         <Link
           href="/admin/marketing/agent"
-          className="group flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-broadcast hover:bg-broadcast-bg/20 motion-reduce:transition-none"
+          className="group flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 lift-1 transition-colors hover:border-broadcast hover:bg-broadcast-bg/20 motion-reduce:transition-none"
         >
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-broadcast-bg text-broadcast-strong">
             <Bot className="h-5 w-5" aria-hidden />

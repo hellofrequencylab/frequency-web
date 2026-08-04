@@ -122,12 +122,12 @@ export function MapBanner() {
 
   return (
     <div className="mb-8">
-      <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border shadow-sm">
+      <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border lift-1">
         <CircleMap key={mapKey} circles={ctx.circles} starters={ctx.starters} interactive center={ctx.center} className="h-full w-full" />
         <button
           type="button"
           onClick={() => ctx.setOpen(false)}
-          className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-lg bg-surface/95 px-3 py-1.5 text-sm font-semibold text-text shadow-md transition-colors hover:bg-surface"
+          className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-lg bg-surface/95 px-3 py-1.5 text-sm font-semibold text-text lift-1 transition-colors hover:bg-surface"
         >
           <X className="h-4 w-4" /> Close
         </button>

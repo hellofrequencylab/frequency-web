@@ -108,12 +108,12 @@ export function EventShareButton({
         <div className="rounded-2xl border border-border bg-surface p-4 shadow-pop sm:p-6">
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
             <div className="shrink-0">
-              <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+              <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
                 <QrCode className="h-3.5 w-3.5" /> Scan to open
               </p>
               <div
                 aria-label={`QR code for ${title}`}
-                className="mx-auto aspect-square w-40 rounded-xl border border-border bg-white p-2 shadow-sm [&>svg]:h-full [&>svg]:w-full"
+                className="mx-auto aspect-square w-40 rounded-xl border border-border bg-white p-2 lift-1 [&>svg]:h-full [&>svg]:w-full"
                 dangerouslySetInnerHTML={{ __html: svg }}
               />
               {/* Take the code with you: PNG for flyers and socials, SVG for print at any size. */}
@@ -135,7 +135,7 @@ export function EventShareButton({
               </div>
             </div>
             <div className="w-full min-w-0 space-y-3">
-              <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+              <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
                 <Link2 className="h-3.5 w-3.5" /> Share link
               </p>
               <code
@@ -172,7 +172,7 @@ export function EventShareButton({
                   <Share2 className="h-3.5 w-3.5" /> Share
                 </button>
               )}
-              <p className="text-2xs text-subtle">Anyone with the link or the code lands on this event.</p>
+              <p className="text-2xs text-muted">Anyone with the link or the code lands on this event.</p>
             </div>
           </div>
 

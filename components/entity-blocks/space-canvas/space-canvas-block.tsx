@@ -887,7 +887,7 @@ export function SpaceCanvasBlock({
               Add photos to this gallery in its settings.
             </p>
           )}
-          <p className="text-2xs text-subtle">Add, remove, and reorder these photos in this block&rsquo;s settings.</p>
+          <p className="text-2xs text-muted">Add, remove, and reorder these photos in this block&rsquo;s settings.</p>
         </div>
       )
     }

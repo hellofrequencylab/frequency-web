@@ -29,7 +29,7 @@ export async function CrmPlaybooksRegistry() {
           description="Saved plays show here once the registry declares them. The engine starts in suggest only, so nothing fires until you approve it."
         />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-border bg-surface lift-1">
           <ul className="divide-y divide-border">
             {PLAYBOOK_REGISTRY.map((p) => (
               <PlaybookRow key={p.id} playbook={p} paused={paused.has(p.id)} />

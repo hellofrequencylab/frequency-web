@@ -226,7 +226,7 @@ export function MessageThread({
                 }`}
               >
                 {!isMine && sender && (
-                  <span className="text-2xs text-subtle px-1 mb-0.5">
+                  <span className="text-2xs text-muted px-1 mb-0.5">
                     {sender.display_name}
                   </span>
                 )}
@@ -237,7 +237,7 @@ export function MessageThread({
                     <div key={msg.id} className="group flex items-end gap-1.5">
                       {isMine && (
                         <span
-                          className={`text-3xs text-subtle opacity-0 group-hover:opacity-100 transition-opacity ${
+                          className={`text-3xs text-muted opacity-0 group-hover:opacity-100 transition-opacity ${
                             isLast ? '' : 'invisible'
                           }`}
                         >
@@ -257,7 +257,7 @@ export function MessageThread({
                       </div>
                       {!isMine && (
                         <span
-                          className={`text-3xs text-subtle opacity-0 group-hover:opacity-100 transition-opacity ${
+                          className={`text-3xs text-muted opacity-0 group-hover:opacity-100 transition-opacity ${
                             isLast ? '' : 'invisible'
                           }`}
                         >
@@ -318,7 +318,7 @@ export function MessageThread({
             </svg>
           </button>
         </div>
-        <p className="text-3xs text-subtle mt-1.5 text-right">Enter to send · Shift+Enter for new line</p>
+        <p className="text-3xs text-muted mt-1.5 text-right">Enter to send · Shift+Enter for new line</p>
       </div>
     </div>
   )

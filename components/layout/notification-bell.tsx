@@ -108,14 +108,14 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
       >
         <Bell className="w-5 h-5" />
         {unread > 0 && (
-          <span className="absolute top-1 right-1 flex items-center justify-center min-w-[14px] h-[14px] rounded-full bg-danger text-white text-3xs font-bold leading-none px-0.5">
+          <span className="absolute top-1 right-1 flex items-center justify-center min-w-[14px] h-[14px] rounded-full bg-danger text-on-primary text-3xs font-bold leading-none px-0.5">
             {unread > 9 ? '9+' : unread}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-border bg-surface-elevated shadow-xl shadow-black/5 z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-border bg-surface-elevated lift-3 z-50 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <p className="text-sm font-semibold text-text">Notifications</p>
             {unread > 0 && (
@@ -159,7 +159,7 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
                     )}
                     {n.body}
                   </p>
-                  <p className="text-2xs text-subtle mt-0.5">{relativeTime(n.created_at)}</p>
+                  <p className="text-2xs text-muted mt-0.5">{relativeTime(n.created_at)}</p>
                 </div>
                 {!n.read_at && (
                   <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1" />

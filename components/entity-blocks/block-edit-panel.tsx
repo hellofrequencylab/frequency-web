@@ -69,7 +69,7 @@ export type UploadImage = (file: File) => Promise<{ url: string } | { error: str
 
 const inputCls =
   'w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text placeholder:text-subtle outline-none focus:border-primary'
-const labelCls = 'block text-2xs font-semibold uppercase tracking-wide text-subtle'
+const labelCls = 'block text-2xs font-semibold uppercase tracking-wide text-muted'
 
 /** Whether a field stays in the SETTINGS-ONLY rail when block content is edited on the live page (the
  *  isCoreField split). Mirrors the space canvas `isRailField` (space-canvas-editor) EXACTLY: the block's TEXT
@@ -179,7 +179,7 @@ export function BlockEditPanel({
       {/* About + Story: the text above is the space's shared story. Editing it here updates it everywhere.
           Suppressed in edit mode — the story text is edited on the page there, not in this rail. */}
       {sharesStory && !contentOnCanvas && (
-        <p className="text-2xs leading-relaxed text-subtle">
+        <p className="text-2xs leading-relaxed text-muted">
           This is your space&rsquo;s story. Edit it here and it updates everywhere it shows.
         </p>
       )}
@@ -459,7 +459,7 @@ function SettingsGroup({
 }) {
   return (
     <details open={defaultOpen} className="group overflow-hidden rounded-lg border border-border bg-surface">
-      <summary className="flex cursor-pointer list-none select-none items-center gap-1.5 px-2.5 py-2 text-2xs font-semibold uppercase tracking-wide text-subtle outline-none transition-colors hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40 [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none select-none items-center gap-1.5 px-2.5 py-2 text-2xs font-semibold uppercase tracking-wide text-muted outline-none transition-colors hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40 [&::-webkit-details-marker]:hidden">
         <ChevronRight
           className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none"
           aria-hidden
@@ -830,7 +830,7 @@ function FeaturesEditor({
           <div className="flex items-start gap-1.5">
             <IconPicker value={it.icon} onChange={(token) => patch(i, { icon: token })} />
             {textOnCanvas ? (
-              <p className="flex-1 pt-1 text-2xs leading-snug text-subtle">Edit the title and text on the canvas.</p>
+              <p className="flex-1 pt-1 text-2xs leading-snug text-muted">Edit the title and text on the canvas.</p>
             ) : (
               <input
                 value={it.title}
@@ -1026,7 +1026,7 @@ function CardsEditor({
             />
           )}
           {textOnCanvas && (
-            <p className="text-2xs leading-snug text-subtle">Edit this card&rsquo;s title and text on the canvas.</p>
+            <p className="text-2xs leading-snug text-muted">Edit this card&rsquo;s title and text on the canvas.</p>
           )}
 
           {/* Photo card: an image URL (+ upload when the surface allows it). */}

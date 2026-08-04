@@ -85,7 +85,7 @@ function CommentRow({
                 compact
               />
             )}
-            <span className="text-2xs text-subtle">{relativeTime(comment.created_at)}</span>
+            <span className="text-2xs text-muted">{relativeTime(comment.created_at)}</span>
           </div>
           <PostBody body={comment.body ?? ''} className="mt-0.5 text-xs leading-relaxed text-text" />
           {/* Per-comment actions: the emoji ReactionBar (comments are posts, so the
@@ -103,7 +103,7 @@ function CommentRow({
               <button
                 type="button"
                 onClick={() => onReply({ id: comment.id, name: author.display_name })}
-                className="rounded-lg px-2 py-0.5 text-2xs font-medium text-subtle transition-colors hover:bg-surface-elevated hover:text-muted"
+                className="rounded-lg px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-muted"
               >
                 Reply
               </button>

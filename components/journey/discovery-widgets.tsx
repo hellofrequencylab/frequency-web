@@ -235,7 +235,7 @@ export function PathBlock({
             const cadence = i === 0 ? 'Unlocks at start' : `Week ${i + 1}`
             const lessons = p.modules.flatMap((m) => m.lessons)
             return (
-              <li key={p.id} className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+              <li key={p.id} className="overflow-hidden rounded-2xl border border-border bg-surface lift-1">
                 <details className="group" {...(i === 0 ? { open: true } : {})}>
                   <summary className="flex cursor-pointer list-none items-center gap-3 p-4 [&::-webkit-details-marker]:hidden">
                     <span
@@ -285,7 +285,7 @@ export function PathBlock({
                         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-border-strong" />
                         <span className="min-w-0 truncate text-text">{l.title}</span>
                         {l.estMinutes ? (
-                          <span className="ml-auto shrink-0 text-2xs tabular-nums text-subtle">
+                          <span className="ml-auto shrink-0 text-2xs tabular-nums text-muted">
                             {l.estMinutes} min
                           </span>
                         ) : null}
@@ -354,7 +354,7 @@ export function InstructorBlock({
       <SectionHeader title="Your guide" />
       <Link
         href={`/people/${author.handle}`}
-        className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-border-strong"
+        className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 lift-1 transition-colors hover:border-border-strong"
       >
         {author.avatarUrl ? (
           <Image src={avatarSrc(author.avatarUrl)} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-full object-cover" style={avatarFocusStyle(author.avatarUrl)} />
@@ -398,7 +398,7 @@ export function JourneyFaq({ plan }: { plan: Pick<JourneyPlan, 'drip_interval_da
         {faqs.map((f) => (
           <details
             key={f.q}
-            className="group overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
+            className="group overflow-hidden rounded-2xl border border-border bg-surface lift-1"
           >
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
               <span className="text-sm font-semibold text-text">{f.q}</span>
@@ -562,7 +562,7 @@ export function AtAGlanceCard({
 
         {phasesTotal > 0 && (
           <div className="border-t border-border pt-4">
-            <p className="text-2xs font-medium text-subtle">
+            <p className="text-2xs font-medium text-muted">
               {progress && progress.phasesComplete > 0
                 ? `Phase ${phaseAt} of ${phasesTotal}`
                 : `Phase 1 of ${phasesTotal}`}
@@ -578,7 +578,7 @@ export function AtAGlanceCard({
           </div>
         )}
 
-        <p className="border-t border-border pt-4 text-2xs leading-relaxed text-subtle">
+        <p className="border-t border-border pt-4 text-2xs leading-relaxed text-muted">
           Runs with your Circle as a cohort, or solo at your own pace.
         </p>
       </div>

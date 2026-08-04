@@ -50,7 +50,7 @@ export function DangerModal({
 
   return (
     <Dialog open={open} onClose={onClose} ariaLabel={title} className="max-w-md">
-      <div className="relative w-full rounded-2xl border border-border bg-surface p-5 shadow-lg">
+      <div className="relative w-full rounded-2xl border border-border bg-surface p-5 lift-3">
         <div className="flex items-start gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-danger-bg text-danger">
             <AlertTriangle className="h-5 w-5" aria-hidden />

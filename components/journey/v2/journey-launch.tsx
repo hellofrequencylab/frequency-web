@@ -221,7 +221,7 @@ export function JourneyLaunch({
                     )}
                   </span>
                   <span className="block text-xs leading-snug text-muted">{d.purpose}</span>
-                  <span className="mt-0.5 flex items-center gap-1 text-2xs text-subtle">
+                  <span className="mt-0.5 flex items-center gap-1 text-2xs text-muted">
                     <CalendarClock className="h-3 w-3" aria-hidden /> {sendAtLabel(edit?.sendAt ?? d.sendAt)}
                   </span>
                 </span>
@@ -233,7 +233,7 @@ export function JourneyLaunch({
 
               <div className="space-y-3 border-t border-border px-4 py-3">
                 <label className="block">
-                  <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">
+                  <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
                     Subject
                   </span>
                   <input
@@ -245,7 +245,7 @@ export function JourneyLaunch({
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">
+                  <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
                     Message
                   </span>
                   <textarea
@@ -257,7 +257,7 @@ export function JourneyLaunch({
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">
+                  <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
                     Sends
                   </span>
                   <input
@@ -330,7 +330,7 @@ export function JourneyLaunch({
                 </button>
               )}
               {scheduledIds.length === 0 && !funnelId && (
-                <p className="mt-1 text-2xs text-subtle">Schedule a send first, then wire it up.</p>
+                <p className="mt-1 text-2xs text-muted">Schedule a send first, then wire it up.</p>
               )}
             </div>
           </div>

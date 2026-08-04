@@ -21,7 +21,7 @@ function ZapToastCard({ reward, onDismiss }: { reward: ZapReward; onDismiss: () 
   }, [onDismiss])
 
   return (
-    <div className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-primary-bg bg-surface shadow-xl px-4 py-3 animate-[slideUp_0.4s_ease-out]">
+    <div className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-primary-bg bg-surface lift-3 px-4 py-3 animate-[slideUp_0.4s_ease-out]">
       <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary-bg text-primary-strong shrink-0">
         <Zap className="w-5 h-5" strokeWidth={2.5} />
       </div>

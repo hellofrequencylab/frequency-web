@@ -153,7 +153,7 @@ export function SpaceLifecyclePanel({
       )}
 
       {/* Lifecycle */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h3 className="text-sm font-semibold text-text">Lifecycle</h3>
@@ -182,7 +182,7 @@ export function SpaceLifecyclePanel({
       </div>
 
       {/* Ownership */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h3 className="text-sm font-semibold text-text">Ownership</h3>
@@ -221,7 +221,7 @@ export function SpaceLifecyclePanel({
         className="max-w-md"
       >
         {lifecycleConfirm && (
-          <div className="rounded-2xl border border-border bg-surface p-6 shadow-lg">
+          <div className="rounded-2xl border border-border bg-surface p-6 lift-1">
             <div className="flex items-start gap-3">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning-bg text-warning">
                 <AlertTriangle className="h-5 w-5" aria-hidden />
@@ -270,7 +270,7 @@ export function SpaceLifecyclePanel({
         ariaLabel="Transfer ownership"
         className="max-w-md"
       >
-        <div className="rounded-2xl border border-border bg-surface p-6 shadow-lg">
+        <div className="rounded-2xl border border-border bg-surface p-6 lift-1">
           <div className="flex items-start gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
               <ArrowLeftRight className="h-5 w-5" aria-hidden />

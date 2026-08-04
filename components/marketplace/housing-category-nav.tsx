@@ -66,7 +66,7 @@ export function HousingCategoryNav({ selectedType }: { selectedType: string }) {
           Other
           <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" aria-hidden />
         </summary>
-        <div className="absolute left-0 z-20 mt-1 min-w-[9rem] rounded-lg border border-border bg-surface p-1 shadow-lg">
+        <div className="absolute left-0 z-20 mt-1 min-w-[9rem] rounded-lg border border-border bg-surface p-1 lift-3">
           {OTHER.map((o) => (
             <Link
               key={o.slug}

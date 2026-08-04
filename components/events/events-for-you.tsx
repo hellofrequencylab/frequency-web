@@ -71,7 +71,7 @@ export async function EventsForYou({
           For you
         </h2>
       </div>
-      <p className="text-2xs text-subtle">
+      <p className="text-2xs text-muted">
         Picked from what is coming up, by what you are into and who is going.
       </p>
 

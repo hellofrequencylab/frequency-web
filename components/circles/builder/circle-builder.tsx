@@ -535,7 +535,7 @@ function CircleActions({
 function SaveIndicator({ state }: { state: SaveState }) {
   if (state === 'saving')
     return (
-      <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-subtle">
+      <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-muted">
         <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Saving…
       </span>
     )
@@ -545,7 +545,7 @@ function SaveIndicator({ state }: { state: SaveState }) {
         <Check className="h-3.5 w-3.5" aria-hidden /> Saved
       </span>
     )
-  return <span className="text-2xs font-medium text-subtle">Saves automatically</span>
+  return <span className="text-2xs font-medium text-muted">Saves automatically</span>
 }
 
 // ── A builder section: a heading, its edit-mode callouts, then its fields. ──
@@ -574,7 +574,7 @@ function Section({
 function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</span>
+      <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">{label}</span>
       {children}
     </label>
   )

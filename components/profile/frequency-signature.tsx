@@ -86,7 +86,7 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
     if (compact) {
       return (
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-elevated px-2.5 py-1 text-2xs font-medium text-subtle ${className ?? ''}`}
+          className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-elevated px-2.5 py-1 text-2xs font-medium text-muted ${className ?? ''}`}
           title="No Frequency Signature yet. Log practices across the Pillars to form one"
         >
           <Compass className="h-3 w-3" /> No signature yet
@@ -265,7 +265,7 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
   // Full: the constellation with corner Pillar labels overlaid, plus a legend that
   // reads the balance + dominant pillar and the per-pillar shares.
   return (
-    <div className={`rounded-2xl border border-border bg-surface p-5 shadow-sm ${className ?? ''}`}>
+    <div className={`rounded-2xl border border-border bg-surface p-5 lift-1 ${className ?? ''}`}>
       <div className={`flex flex-col items-center gap-5 ${stacked ? '' : 'sm:flex-row sm:items-center sm:gap-6'}`}>
         {/* The constellation, with axis labels positioned at the four cardinals.
             Stacked (narrow sidebar): a responsive square that shrinks to fit. */}
@@ -301,7 +301,7 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
           <div className="mt-3" style={{ color: balanceTint }}>
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-xs font-semibold text-text">Bloom</span>
-              <span className="text-2xs font-medium tabular-nums text-subtle">
+              <span className="text-2xs font-medium tabular-nums text-muted">
                 {Math.round(fill * 100)}% to full
               </span>
             </div>
@@ -328,7 +328,7 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
                       style={{ width: `${pct}%`, backgroundColor: acc }}
                     />
                   </span>
-                  <span className="w-9 shrink-0 text-right text-2xs tabular-nums text-subtle">
+                  <span className="w-9 shrink-0 text-right text-2xs tabular-nums text-muted">
                     {pct}%
                   </span>
                 </li>
@@ -364,7 +364,7 @@ function AxisLabel({
   return (
     <span
       className={`pointer-events-none absolute text-2xs font-semibold tracking-tight ${place} ${
-        isDom ? '' : 'text-subtle'
+        isDom ? '' : 'text-muted'
       }`}
       style={isDom ? { color: accentColor(PILLARS[pillar].accent) } : undefined}
     >

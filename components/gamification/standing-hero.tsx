@@ -42,12 +42,12 @@ export function StandingHero({
   const { def, next, pct, zapsToNext } = rankProgress(journeysFinished)
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary-bg/55 via-surface to-surface shadow-sm dark:from-primary-bg/20">
+    <section className="overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary-bg/55 via-surface to-surface lift-1 dark:from-primary-bg/20">
       {/* Crest band — rank identity + climb line, printed on the warm canvas. */}
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 pt-6 sm:px-7">
         <div className="flex items-center gap-3.5">
           <span
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-on-primary shadow-sm"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-on-primary lift-1"
             style={{ background: `var(--rank-${def.rankKey})` }}
             aria-hidden
           >
@@ -106,7 +106,7 @@ export function StandingHero({
                     current ? `${r.color} ring-current ring-offset-1` : achieved ? `${r.color} ring-transparent` : 'bg-border-strong ring-transparent'
                   }`}
                 />
-                <span className={`text-2xs font-semibold leading-none ${current ? r.text : 'text-subtle'}`}>
+                <span className={`text-2xs font-semibold leading-none ${current ? r.text : 'text-muted'}`}>
                   {r.label}
                 </span>
               </div>

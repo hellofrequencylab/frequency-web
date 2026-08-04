@@ -100,7 +100,7 @@ export function PlacesFinder({ cities }: { cities: FinderCity[] }) {
           </p>
           <Link
             href={BETA_CTA_HREF}
-            className="text-emboss inline-flex items-center justify-center gap-1.5 rounded-2xl bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-pop transition-colors hover:bg-primary-hover"
+            className="text-emboss inline-flex items-center justify-center gap-1.5 rounded-2xl bg-primary px-5 py-2.5 text-sm font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover"
           >
             {BETA_CTA_LABEL} <ArrowRight className="h-4 w-4" />
           </Link>

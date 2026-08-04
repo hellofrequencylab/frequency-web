@@ -84,7 +84,7 @@ export async function DonateMember({
       {/* Record one space.cta_click on mount (Epic 1.11): the Donate engine has no action button yet,
           so this keeps the CTA telemetry the placeholder list used to fire. Fail-safe + fire-and-forget. */}
       {ask.id && <DonateCtaTracker spaceId={spaceId} />}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
         <h3 className="text-base font-bold leading-tight text-text">{ask.fundLabel}</h3>
         {ask.description && (
           <p className="mt-2 text-sm leading-relaxed text-muted">{ask.description}</p>
@@ -100,7 +100,7 @@ export async function DonateMember({
         </div>
       </div>
 
-      <p className="text-2xs text-subtle">
+      <p className="text-2xs text-muted">
         Giving is not wired up yet, so these amounts are a preview of what this fund plans to ask for.
         We do not take a payment. Follow this space to hear when giving opens.
       </p>

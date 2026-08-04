@@ -75,7 +75,7 @@ export function SubtitleEditor() {
             placeholder="The line shown under the page title"
           />
         </label>
-        <p className="text-2xs text-subtle">Leave blank to use the page&rsquo;s built-in subtitle.</p>
+        <p className="text-2xs text-muted">Leave blank to use the page&rsquo;s built-in subtitle.</p>
         {error && <p className="text-xs text-danger">{error}</p>}
         <div className="flex items-center justify-end gap-2 pt-1">
           {saved && (

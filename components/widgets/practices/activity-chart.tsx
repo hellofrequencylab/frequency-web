@@ -47,7 +47,7 @@ export function ActivityChart({
             onClick={() => setView(v.key)}
             aria-pressed={view === v.key}
             className={`rounded-md px-2.5 py-1 transition-colors ${
-              view === v.key ? 'bg-surface text-text shadow-sm' : 'text-subtle hover:text-text'
+              view === v.key ? 'bg-surface text-text lift-1' : 'text-subtle hover:text-text'
             }`}
           >
             {v.label}

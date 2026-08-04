@@ -656,7 +656,7 @@ export async function PulsePanel() {
           >
             <Icon className="h-4 w-4 text-primary-strong" aria-hidden />
             <span className="text-lg font-bold leading-none tabular-nums text-text">{value.toLocaleString()}</span>
-            <span className="text-2xs text-subtle">{label}</span>
+            <span className="text-2xs text-muted">{label}</span>
           </Link>
         ))}
       </div>

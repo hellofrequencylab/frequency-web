@@ -25,7 +25,7 @@ export function BrandAnchor({ name, logoUrl }: { name: string; logoUrl: string |
         src={logoUrl}
         alt=""
         className={cn(
-          'h-20 w-20 shrink-0 rounded-card border-4 border-surface bg-surface shadow-md lg:h-28 lg:w-28',
+          'h-20 w-20 shrink-0 rounded-card border-4 border-surface bg-surface lift-1 lg:h-28 lg:w-28',
           isOpaquePhoto
             ? 'object-cover'
             : 'object-contain [filter:drop-shadow(0_0_1px_var(--color-ink))] dark:[filter:drop-shadow(0_0_1px_var(--color-on-ink))]',
@@ -35,7 +35,7 @@ export function BrandAnchor({ name, logoUrl }: { name: string; logoUrl: string |
   }
   return (
     <span
-      className="flex h-20 w-20 shrink-0 items-center justify-center rounded-card border-4 border-surface bg-surface-elevated text-2xl font-bold text-subtle shadow-md lg:h-28 lg:w-28 lg:text-3xl"
+      className="flex h-20 w-20 shrink-0 items-center justify-center rounded-card border-4 border-surface bg-surface-elevated text-2xl font-bold text-subtle lift-1 lg:h-28 lg:w-28 lg:text-3xl"
       aria-hidden
     >
       {getInitials(name)}

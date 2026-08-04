@@ -82,7 +82,7 @@ export function CircleVeraPanel({
 
       {open && (
         <>
-          <p className="mt-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Fill a section</p>
+          <p className="mt-2 text-2xs font-semibold uppercase tracking-wide text-muted">Fill a section</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {SECTIONS.map((s) => (
               <button
@@ -98,7 +98,7 @@ export function CircleVeraPanel({
             ))}
           </div>
 
-          <p className="mt-4 text-2xs font-semibold uppercase tracking-wide text-subtle">Tell Vera what to change</p>
+          <p className="mt-4 text-2xs font-semibold uppercase tracking-wide text-muted">Tell Vera what to change</p>
           <textarea
             value={change}
             disabled={pending}

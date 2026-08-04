@@ -103,7 +103,7 @@ export function HostCohostSection({
                 hasSpaceCohosts ? 'mt-3' : ''
               }`}
             >
-              <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">People</p>
+              <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">People</p>
               <ul className="space-y-0.5">
                 {cohosts.map((c) => (
                   <li key={c.id}>

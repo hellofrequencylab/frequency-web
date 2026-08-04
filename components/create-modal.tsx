@@ -89,7 +89,7 @@ export function CreateModal({
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="w-full sm:max-w-2xl sm:my-8 rounded-t-2xl sm:rounded-2xl border border-border bg-surface shadow-xl flex flex-col max-h-[90vh] sm:max-h-[calc(100vh-4rem)] outline-none"
+        className="w-full sm:max-w-2xl sm:my-8 rounded-t-2xl sm:rounded-2xl border border-border bg-surface lift-3 flex flex-col max-h-[90vh] sm:max-h-[calc(100vh-4rem)] outline-none"
       >
         {/* Mobile drag indicator */}
         <div className="sm:hidden flex justify-center pt-2.5 pb-1">
@@ -130,7 +130,7 @@ export function CreateModal({
           <Button type="button" variant="secondary" onClick={() => !isPending && onClose()} disabled={isPending}>
             Cancel
           </Button>
-          <Button type="submit" className="shadow-sm" disabled={submitDisabled || isPending}>
+          <Button type="submit" className="lift-1" disabled={submitDisabled || isPending}>
             {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
             <span className="text-emboss">{isPending ? pendingLabel : submitLabel}</span>
           </Button>

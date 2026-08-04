@@ -27,7 +27,7 @@ export function CheckinCodeCard({ svg, link }: { svg: string; link: string }) {
     'inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated'
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
       <h3 className="flex items-center gap-1.5 text-sm font-bold text-text">
         <QrCode className="h-4 w-4 text-primary-strong" aria-hidden /> Check-in code
       </h3>

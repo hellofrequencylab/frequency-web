@@ -17,7 +17,7 @@ function Stat({ label, value, Icon }: { label: string; value: string; Icon: type
     <div className="rounded-xl border border-border bg-surface p-3 text-center">
       <Icon className="mx-auto mb-1 h-3.5 w-3.5 text-subtle" />
       <div className="text-lg font-bold leading-none tabular-nums text-text">{value}</div>
-      <div className="mt-1 text-2xs font-medium uppercase tracking-wide text-subtle">{label}</div>
+      <div className="mt-1 text-2xs font-medium uppercase tracking-wide text-muted">{label}</div>
     </div>
   )
 }

@@ -173,7 +173,7 @@ export function MenuArrangeBoard({
                     onDragLeave={() => setOverId((cur) => (cur === box.id ? null : cur))}
                     onDrop={(e) => handleDropOnBox(box.id, e)}
                     className={
-                      'rounded-2xl border bg-surface p-3 shadow-sm transition-colors ' +
+                      'rounded-2xl border bg-surface p-3 lift-1 transition-colors ' +
                       (isOver ? 'border-primary ring-2 ring-primary/30' : 'border-border')
                     }
                   >

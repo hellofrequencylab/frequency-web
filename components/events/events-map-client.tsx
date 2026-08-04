@@ -60,7 +60,7 @@ export function EventsMapToggle({
       {view === 'map' ? (
         <div>
           <EventsMap pins={pins} />
-          <p className="mt-2 text-2xs text-subtle">
+          <p className="mt-2 text-2xs text-muted">
             Pins sit on each circle&rsquo;s area, not the exact address. The full venue is on the
             event page once you RSVP.
           </p>

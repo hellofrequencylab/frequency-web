@@ -37,7 +37,7 @@ export function Toggle({
         }`}
       >
         <span
-          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform motion-reduce:transition-none ${
+          className={`inline-block h-5 w-5 transform rounded-full bg-surface shadow-sm transition-transform motion-reduce:transition-none ${
             checked ? 'translate-x-[1.375rem]' : 'translate-x-0.5'
           }`}
         />

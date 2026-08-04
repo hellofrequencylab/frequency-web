@@ -644,11 +644,11 @@ export function EntityPageBuilder({
         </p>
       </div>
       {store.saving || reconciling ? (
-        <span className="flex items-center gap-1 text-2xs text-subtle" role="status" aria-live="polite">
+        <span className="flex items-center gap-1 text-2xs text-muted" role="status" aria-live="polite">
           <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Saving
         </span>
       ) : (
-        <span className="flex items-center gap-1 text-2xs text-subtle" role="status" aria-live="polite">
+        <span className="flex items-center gap-1 text-2xs text-muted" role="status" aria-live="polite">
           <Check className="h-3 w-3 text-success" aria-hidden /> Saved
         </span>
       )}
@@ -673,7 +673,7 @@ export function EntityPageBuilder({
       {/* Starters — schematic wireframe thumbnails, shown on a default / empty layout (no lock). */}
       {showStarters && (
         <div className="space-y-2 rounded-2xl border border-border bg-surface-elevated/40 p-3">
-          <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Start with a layout</p>
+          <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Start with a layout</p>
           <div className="grid grid-cols-3 gap-2">
             {(Object.keys(STARTER_LAYOUTS[kind]) as StarterId[]).map((id) => (
               <button
@@ -752,7 +752,7 @@ export function EntityPageBuilder({
               aria-label="Add a block"
               className="space-y-2 rounded-2xl border border-border bg-surface-elevated/40 p-2"
             >
-              <p className="px-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Add a block</p>
+              <p className="px-1 text-2xs font-semibold uppercase tracking-wide text-muted">Add a block</p>
               <ul className="flex flex-wrap gap-1.5">
                 {bench.map((id) => (
                   <li key={id}>
@@ -861,7 +861,7 @@ export function EntityPageBuilder({
                   placeholder={`Row ${index + 1}`}
                   aria-label={`Title for row ${index + 1}`}
                   onChange={(e) => onRowTitle(row.id, e.target.value)}
-                  className="min-w-0 flex-1 truncate rounded border border-transparent bg-transparent px-1 py-0.5 text-2xs text-text placeholder:text-subtle hover:border-border focus:border-primary focus:outline-none"
+                  className="min-w-0 flex-1 truncate rounded border border-transparent bg-transparent px-1 py-0.5 text-2xs text-text placeholder:text-muted hover:border-border focus:border-primary focus:outline-none"
                 />
                 <button
                   type="button"
@@ -917,7 +917,7 @@ export function EntityPageBuilder({
                       {/* The row layout (Full · 50/50 · Main/Side) is the strip's own picker now; the menu
                           carries the per-row SPACING control (ADR-569 C3) + the destructive action. */}
                       <div className="space-y-1.5 px-2.5 py-2">
-                        <p className="text-3xs font-semibold uppercase tracking-wide text-subtle">Spacing</p>
+                        <p className="text-3xs font-semibold uppercase tracking-wide text-muted">Spacing</p>
                         <MarginControl
                           top={row.mt ?? 'none'}
                           bottom={row.mb ?? 'none'}
@@ -1215,7 +1215,7 @@ function BlockPill({
         className="min-w-0 flex-1 truncate text-left text-xs font-semibold text-text transition-colors hover:text-primary-strong"
       >
         {label(id)}
-        {hidden && <span className="ml-1 text-2xs font-normal text-subtle">(hidden)</span>}
+        {hidden && <span className="ml-1 text-2xs font-normal text-muted">(hidden)</span>}
       </button>
       <button
         type="button"
@@ -1263,13 +1263,13 @@ function BlockPill({
               <>
                 {sections.length > 0 && (
                   <>
-                    <p className="px-2.5 pt-1.5 text-3xs font-semibold uppercase tracking-wide text-subtle">Move to section</p>
+                    <p className="px-2.5 pt-1.5 text-3xs font-semibold uppercase tracking-wide text-muted">Move to section</p>
                     {sections
                       .filter((s) => s.rowId !== currentRowId)
                       .map((s) => (
                         <MenuItem key={s.rowId} onClick={() => onMoveToSection(s.rowId)}>
                           <MoveRight className="h-3.5 w-3.5" aria-hidden /> Section {s.ri + 1}
-                          {s.full && <span className="ml-auto text-3xs text-subtle">full</span>}
+                          {s.full && <span className="ml-auto text-3xs text-muted">full</span>}
                         </MenuItem>
                       ))}
                     <MenuItem onClick={onMoveToNewSection}>
@@ -1361,7 +1361,7 @@ function BlocksTray({
                   </div>
                   {openMenu === `bench:${id}` && (
                     <Menu>
-                      <p className="px-2.5 pt-1.5 text-3xs font-semibold uppercase tracking-wide text-subtle">Place in</p>
+                      <p className="px-2.5 pt-1.5 text-3xs font-semibold uppercase tracking-wide text-muted">Place in</p>
                       {emptySlots.length === 0 ? (
                         <p className="px-2.5 py-1.5 text-2xs text-muted">No empty slots. Add a row or widen one.</p>
                       ) : (
@@ -1386,7 +1386,7 @@ function BlocksTray({
 // ── Small primitives ──
 function Menu({ children }: { children: React.ReactNode }) {
   return (
-    <div className="absolute right-0 z-20 mt-1 min-w-44 rounded-xl border border-border bg-surface p-1 shadow-lg">
+    <div className="absolute right-0 z-20 mt-1 min-w-44 rounded-xl border border-border bg-surface p-1 lift-3">
       {children}
     </div>
   )

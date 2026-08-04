@@ -26,7 +26,7 @@ export function StudioField({
   className?: string
 }) {
   return (
-    <label className={`flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wide text-subtle ${className ?? ''}`}>
+    <label className={`flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wide text-muted ${className ?? ''}`}>
       {label}
       {children}
     </label>

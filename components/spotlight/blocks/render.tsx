@@ -144,7 +144,7 @@ export function BlockView({
               href={item.url}
               target="_blank"
               rel="noopener noreferrer nofollow"
-              className="block rounded-2xl border border-border-strong bg-surface px-4 py-3 text-center text-sm font-semibold text-text shadow-sm transition-colors hover:bg-surface-elevated"
+              className="block rounded-2xl border border-border-strong bg-surface px-4 py-3 text-center text-sm font-semibold text-text lift-1 transition-colors hover:bg-surface-elevated"
               style={{ ...cardStyle, ...tintStyle(block.tint) }}
             >
               {item.label}

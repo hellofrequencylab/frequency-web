@@ -179,7 +179,7 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
         <button
           type="button"
           onClick={() => openSupport('bug')}
-          className="inline-flex items-center gap-1.5 text-2xs font-medium text-subtle transition-colors hover:text-text"
+          className="inline-flex items-center gap-1.5 text-2xs font-medium text-muted transition-colors hover:text-text"
         >
           <Bug className="h-3.5 w-3.5" /> Report a bug or get help
         </button>

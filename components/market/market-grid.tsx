@@ -33,7 +33,7 @@ function Card({ l, distance }: { l: GridListing; distance: number | null }) {
   return (
     <Link
       href={`/classifieds/${l.id}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-colors hover:border-primary/60"
+      className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface lift-1 transition-colors hover:border-primary/60"
     >
       {/* COVER — the type pill lives here, overlaid top-left, so it never repeats in the body (C3/C4).
           A gradient placeholder stands in when a listing has no photo, so the pill always has a home. */}
@@ -53,7 +53,7 @@ function Card({ l, distance }: { l: GridListing; distance: number | null }) {
         )}
         {/* Ink scrim at the top so the chip reads over any photo. */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-ink/45 to-transparent" aria-hidden />
-        <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-surface/90 px-2.5 py-0.5 text-2xs font-semibold uppercase tracking-wide text-text shadow-sm backdrop-blur-sm">
+        <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-surface/90 px-2.5 py-0.5 text-2xs font-semibold uppercase tracking-wide text-text lift-1 backdrop-blur-sm">
           {kindLabel}
         </span>
       </div>

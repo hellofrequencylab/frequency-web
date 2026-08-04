@@ -186,7 +186,7 @@ export function ThemeEditor({ initial, mode }: { initial: ThemeRow | null; mode:
         {/* ── LEFT: the form ── */}
         <div className="min-w-0 space-y-8">
           {/* Identity */}
-          <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
             <SectionHeader title="Identity" />
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -296,7 +296,7 @@ export function ThemeEditor({ initial, mode }: { initial: ThemeRow | null; mode:
           {TOKEN_GROUPS.map((group) => (
             <section
               key={group.title}
-              className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm"
+              className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1"
             >
               <div>
                 <SectionHeader title={group.title} />
@@ -313,7 +313,7 @@ export function ThemeEditor({ initial, mode }: { initial: ThemeRow | null; mode:
 
         {/* ── RIGHT: live preview (sticky) ── */}
         <div className="lg:sticky lg:top-4 lg:self-start">
-          <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
             <ThemePreview tokens={draft.tokens} />
           </div>
         </div>

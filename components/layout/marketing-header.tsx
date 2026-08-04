@@ -126,7 +126,7 @@ export function MarketingHeader({
         className={`hidden sm:block text-sm font-semibold px-3 py-1.5 rounded-lg transition-colors ${
           light
             ? 'text-muted hover:text-text hover:bg-surface-elevated'
-            : 'text-white/75 hover:text-white hover:bg-white/10'
+            : 'text-on-ink-muted hover:text-on-ink hover:bg-on-ink/10'
         }`}
       >
         Sign in
@@ -136,7 +136,7 @@ export function MarketingHeader({
         className={`rounded-lg px-4 py-2 text-sm font-bold transition-colors whitespace-nowrap ${
           light
             ? 'bg-primary text-on-primary hover:bg-primary-hover'
-            : 'bg-white text-ink hover:bg-white/90'
+            : 'bg-on-ink text-ink hover:bg-on-ink/90'
         }`}
       >
         {ctaLabel}

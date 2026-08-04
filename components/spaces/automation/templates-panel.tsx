@@ -61,7 +61,7 @@ export function TemplatesPanel({
           return (
             <li
               key={t.id}
-              className="flex flex-col rounded-2xl border border-border bg-surface p-4 shadow-sm"
+              className="flex flex-col rounded-2xl border border-border bg-surface p-4 lift-1"
             >
               <div className="mb-2 flex items-center gap-2">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
@@ -70,7 +70,7 @@ export function TemplatesPanel({
                 <span className="text-sm font-semibold text-text">{t.title}</span>
               </div>
               <p className="flex-1 text-xs text-muted">{t.description}</p>
-              <span className="mt-3 inline-flex w-fit items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-subtle">
+              <span className="mt-3 inline-flex w-fit items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
                 {t.triggerEvent ? 'Sends on join' : 'Manual start'}
               </span>
               <div className="mt-3">
@@ -112,7 +112,7 @@ export function TemplatesPanel({
 
       {/* Honesty note (ADR-797): a triggered template only enrolls members who join AFTER the sequence is
           turned on. Past joins are not replayed, so set it up before a launch, not after. */}
-      <p className="text-2xs text-subtle">
+      <p className="text-2xs text-muted">
         A template that sends on join applies to members who join after you turn its sequence on. It does
         not go back over people who joined earlier.
       </p>

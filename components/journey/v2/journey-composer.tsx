@@ -98,15 +98,15 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
           <p className="mt-1 text-sm text-muted">A few specifics and Vera fills one practice per Pillar (new or from the library). Edit anything after.</p>
           <div className="mt-3 space-y-2.5">
             <label className="block">
-              <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Who is it for</span>
+              <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Who is it for</span>
               <input value={who} disabled={pending} onChange={(e) => setWho(e.target.value)} placeholder="e.g. People who feel wired and tired" className={FIELD} />
             </label>
             <label className="block">
-              <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">What is it about</span>
+              <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">What is it about</span>
               <input value={topic} disabled={pending} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Sleep and screen habits" className={FIELD} />
             </label>
             <label className="block">
-              <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">What they walk away with</span>
+              <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">What they walk away with</span>
               <input value={outcome} disabled={pending} onChange={(e) => setOutcome(e.target.value)} placeholder="e.g. Fall asleep easier, most nights" className={FIELD} />
             </label>
           </div>
@@ -124,7 +124,7 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
             </button>
           </div>
           <div className="mt-4">
-            <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">What you&apos;ll get</p>
+            <p className="text-2xs font-semibold uppercase tracking-wide text-muted">What you&apos;ll get</p>
             <ul className="mt-2 grid gap-2 sm:grid-cols-2">
               {PREVIEW.map((p, i) => (
                 <li key={i} className="flex items-start gap-2 rounded-lg border border-border bg-surface px-3 py-2">

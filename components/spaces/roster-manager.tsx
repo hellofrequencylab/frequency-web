@@ -196,7 +196,7 @@ export function RosterManager({
     <div className="space-y-4">
       {/* Bulk action bar — appears once members are selected. */}
       {selected.size > 0 && (
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface-elevated p-3 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface-elevated p-3 lift-1">
           <span className="text-sm font-medium text-text">
             {selected.size} selected
           </span>
@@ -270,7 +270,7 @@ export function RosterManager({
         </p>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-border bg-surface lift-1">
         {/* Select-all header (only when there are selectable members). */}
         {selectableIds.length > 0 && (
           <div className="flex items-center gap-3 border-b border-border px-4 py-2.5 text-xs font-medium text-muted">

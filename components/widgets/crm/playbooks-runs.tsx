@@ -23,7 +23,7 @@ export async function CrmPlaybooksRuns() {
           description="When a play is proposed, run, or waved off, it shows here with the outcome. The engine starts in suggest only, so the first runs appear once you approve a draft on Today."
         />
       ) : (
-        <ul className="divide-y divide-border rounded-2xl border border-border bg-surface shadow-sm">
+        <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
           {runs.map((run, i) => (
             <RunRow key={`${run.playbookId}-${run.startedAt ?? i}`} run={run} />
           ))}

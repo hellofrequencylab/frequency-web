@@ -92,7 +92,7 @@ export function FeatureMeterRange({ ladder, currentTier, upgradeHref, live = fal
   }
 
   return (
-    <section className="mt-4 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <section className="mt-4 rounded-2xl border border-border bg-surface p-4 lift-1">
       <p className="text-xs font-semibold uppercase tracking-widest text-subtle">{ladder.dimension} allowance</p>
 
       {/* The OPTIONAL usage readout: "X of N used" on the viewer's current tier. Informational only. */}
@@ -181,13 +181,13 @@ export function FeatureMeterRange({ ladder, currentTier, upgradeHref, live = fal
           the line that says nothing is limited yet. "Provisional numbers" and "enforcement is off" are
           two different claims and only one of them stopped being true. */}
       {ladder.placeholderAllowances ? (
-        <p className="mt-2 text-2xs text-subtle">
+        <p className="mt-2 text-2xs text-muted">
           {live
             ? 'These allowances are a preview while we finish setting up billing. Nothing is charged or limited here.'
             : 'Billing is not live yet. These allowances are a preview, and nothing is charged or limited.'}
         </p>
       ) : !live ? (
-        <p className="mt-2 text-2xs text-subtle">
+        <p className="mt-2 text-2xs text-muted">
           These are the real allowances. Billing is not live yet, so nothing is charged or limited.
         </p>
       ) : null}

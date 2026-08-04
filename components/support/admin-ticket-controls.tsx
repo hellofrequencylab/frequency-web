@@ -78,7 +78,7 @@ export function AdminTicketControls({
   }
 
   const sel = 'w-full rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text focus:border-border-strong focus:outline-none'
-  const lbl = 'mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle'
+  const lbl = 'mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted'
 
   return (
     <div className="space-y-4">
@@ -93,7 +93,7 @@ export function AdminTicketControls({
           {triaging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
           AI triage
         </button>
-        {triageNote && <span className="text-2xs text-subtle">✨ {triageNote}</span>}
+        {triageNote && <span className="text-2xs text-muted">✨ {triageNote}</span>}
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -120,10 +120,10 @@ export function AdminTicketControls({
 
       <div className="rounded-xl border border-border bg-surface p-3">
         <div className="mb-2 flex items-center gap-1 rounded-lg bg-surface-elevated p-0.5 text-xs">
-          <button type="button" onClick={() => setInternal(false)} aria-pressed={!internal} className={`flex-1 rounded-md px-2 py-1 font-semibold transition-colors ${!internal ? 'bg-surface text-primary-strong shadow-sm' : 'text-muted'}`}>
+          <button type="button" onClick={() => setInternal(false)} aria-pressed={!internal} className={`flex-1 rounded-md px-2 py-1 font-semibold transition-colors ${!internal ? 'bg-surface text-primary-strong lift-1' : 'text-muted'}`}>
             Reply to member
           </button>
-          <button type="button" onClick={() => setInternal(true)} aria-pressed={internal} className={`flex flex-1 items-center justify-center gap-1 rounded-md px-2 py-1 font-semibold transition-colors ${internal ? 'bg-surface text-warning shadow-sm' : 'text-muted'}`}>
+          <button type="button" onClick={() => setInternal(true)} aria-pressed={internal} className={`flex flex-1 items-center justify-center gap-1 rounded-md px-2 py-1 font-semibold transition-colors ${internal ? 'bg-surface text-warning lift-1' : 'text-muted'}`}>
             <Lock className="h-3 w-3" /> Internal note
           </button>
         </div>
@@ -135,7 +135,7 @@ export function AdminTicketControls({
           placeholder={internal ? 'A note only staff can see…' : 'Reply to the member…'}
           className="w-full resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
         />
-        {aiDrafted && <p className="mt-1 text-2xs text-subtle">✨ AI draft. Review and edit before sending.</p>}
+        {aiDrafted && <p className="mt-1 text-2xs text-muted">✨ AI draft. Review and edit before sending.</p>}
         {error && <p className="mt-1 text-xs text-danger">{error}</p>}
         <div className="mt-2 flex items-center justify-between gap-2">
           <button type="button" onClick={draft} disabled={drafting || pending} title="Draft a reply with AI (you review before sending)" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50">

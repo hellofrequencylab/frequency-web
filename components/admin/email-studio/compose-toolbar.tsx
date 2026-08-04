@@ -85,7 +85,7 @@ export function ComposeToolbar({
     <div className="space-y-3 rounded-2xl border border-border bg-surface p-3">
       <div className="space-y-2">
         <label className="block">
-          <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Subject</span>
+          <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Subject</span>
           <input
             ref={subjectRef}
             type="text"
@@ -96,7 +96,7 @@ export function ComposeToolbar({
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">
+          <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
             Preheader
           </span>
           <input
@@ -108,7 +108,7 @@ export function ComposeToolbar({
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">
+          <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
             From name
           </span>
           <input
@@ -118,20 +118,20 @@ export function ComposeToolbar({
             onChange={(e) => onFromName(e.target.value)}
             className="w-full rounded-lg border border-border bg-surface-elevated/50 px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
           />
-          <span className="mt-1 block text-2xs text-subtle">
+          <span className="mt-1 block text-2xs text-muted">
             The name recipients see this email is from. Leave it blank to send as Frequency. The sending address stays the same.
           </span>
         </label>
         {onReplyMode && (
           <div className="block sm:col-span-2">
-            <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Replies</span>
+            <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Replies</span>
             <div className="inline-flex items-center gap-1 rounded-lg bg-surface-elevated p-0.5 text-xs">
               <button
                 type="button"
                 onClick={() => onReplyMode('broadcast')}
                 aria-pressed={replyMode !== 'conversation'}
                 className={`rounded-md px-2.5 py-1 font-semibold transition-colors ${
-                  replyMode !== 'conversation' ? 'bg-surface text-primary-strong shadow-sm' : 'text-muted'
+                  replyMode !== 'conversation' ? 'bg-surface text-primary-strong lift-1' : 'text-muted'
                 }`}
               >
                 Broadcast
@@ -141,13 +141,13 @@ export function ComposeToolbar({
                 onClick={() => onReplyMode('conversation')}
                 aria-pressed={replyMode === 'conversation'}
                 className={`rounded-md px-2.5 py-1 font-semibold transition-colors ${
-                  replyMode === 'conversation' ? 'bg-surface text-primary-strong shadow-sm' : 'text-muted'
+                  replyMode === 'conversation' ? 'bg-surface text-primary-strong lift-1' : 'text-muted'
                 }`}
               >
                 Conversation
               </button>
             </div>
-            <span className="mt-1 block text-2xs text-subtle">
+            <span className="mt-1 block text-2xs text-muted">
               {replyMode === 'conversation'
                 ? 'Reply-able: each send opens a tracked thread in your inbox, and replies come back to it.'
                 : 'A no-reply mass send. Best for newsletters and announcements.'}

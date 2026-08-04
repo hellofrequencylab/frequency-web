@@ -34,12 +34,12 @@ export function EditorShell({
 }) {
   const hasHeader = Boolean(title || eyebrow || actions)
   return (
-    <div className={`overflow-hidden rounded-3xl border border-border bg-surface shadow-md ${className}`}>
+    <div className={`overflow-hidden rounded-3xl border border-border bg-surface lift-1 ${className}`}>
       {hasHeader && (
         <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-4 sm:px-6">
           <div className="min-w-0">
             {eyebrow && (
-              <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">{eyebrow}</p>
+              <p className="text-2xs font-semibold uppercase tracking-wide text-muted">{eyebrow}</p>
             )}
             {title && <h2 className="truncate text-base font-bold text-text">{title}</h2>}
           </div>

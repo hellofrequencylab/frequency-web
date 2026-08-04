@@ -19,7 +19,7 @@ export function ProfileAwards({ awards, firstName, isOwner }: { awards: ProfileA
   const who = isOwner ? 'Your' : `${firstName}’s`
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
       {achievements.length > 0 && (
         <div className="mb-4">
           <p className="mb-2 text-sm font-bold tracking-tight text-text">

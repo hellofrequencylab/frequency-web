@@ -97,7 +97,7 @@ export function AppsLane({ items, view = 'cards' }: { items: AppCard[]; view?: '
             return (
               <div
                 key={a.id}
-                className={`group relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-shadow hover:shadow-pop ${
+                className={`group relative overflow-hidden rounded-2xl border border-border bg-surface lift-1 transition-shadow hover:shadow-pop ${
                   featured ? 'col-span-2 sm:col-span-1' : ''
                 }`}
               >
@@ -110,7 +110,7 @@ export function AppsLane({ items, view = 'cards' }: { items: AppCard[]; view?: '
                       <span className="truncate text-sm text-text" title={a.title}>
                         {a.title}
                       </span>
-                      <span className="shrink-0 text-2xs uppercase tracking-wide text-subtle">{a.categoryLabel}</span>
+                      <span className="shrink-0 text-2xs uppercase tracking-wide text-muted">{a.categoryLabel}</span>
                     </span>
                     <span className="mt-1.5 flex flex-wrap gap-1">
                       {a.surfaces.map((s) => (
@@ -133,7 +133,7 @@ export function AppsLane({ items, view = 'cards' }: { items: AppCard[]; view?: '
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</p>
+      <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-muted">{label}</p>
       <div className="text-sm text-text">{children}</div>
     </div>
   )
@@ -234,7 +234,7 @@ function AppDrawer({ app, onClose }: { app: AppCard; onClose: () => void }) {
                   <li key={c.id} className="flex items-center gap-1.5 text-sm text-text">
                     <Link2 className="h-4 w-4 text-subtle" aria-hidden />
                     {c.label}
-                    {c.required && <span className="text-2xs text-subtle">(required)</span>}
+                    {c.required && <span className="text-2xs text-muted">(required)</span>}
                   </li>
                 ))}
               </ul>

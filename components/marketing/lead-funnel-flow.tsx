@@ -46,7 +46,7 @@ function StepCard({
   if (vertical) {
     // A row: element on the left, text on the right, left-aligned.
     return (
-      <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-4 lift-1">
         <div className="relative flex h-20 w-24 flex-none items-center justify-center">
           <Illustration name={step.illustration} className="h-full" />
           {showNumbers && <span className={BADGE}>{n}</span>}
@@ -60,7 +60,7 @@ function StepCard({
   }
   // A centered column card.
   return (
-    <div className="flex flex-1 flex-col items-center rounded-2xl border border-border bg-surface p-5 text-center shadow-sm">
+    <div className="flex flex-1 flex-col items-center rounded-2xl border border-border bg-surface p-5 text-center lift-1">
       <div className="relative mb-4 flex h-24 w-full items-center justify-center">
         <Illustration name={step.illustration} className="h-full" animate />
         {showNumbers && <span className={BADGE}>{n}</span>}

@@ -286,7 +286,7 @@ function PostCard({
 
   return (
     <article
-      className={`space-y-3 rounded-2xl border bg-surface p-4 shadow-sm ${pinned ? 'border-primary/50' : 'border-border'}`}
+      className={`space-y-3 rounded-2xl border bg-surface p-4 lift-1 ${pinned ? 'border-primary/50' : 'border-border'}`}
     >
       <header className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5">
@@ -303,7 +303,7 @@ function PostCard({
               type="button"
               onClick={togglePin}
               disabled={pending}
-              className="text-2xs font-semibold text-subtle hover:text-primary-strong disabled:opacity-60"
+              className="text-2xs font-semibold text-muted hover:text-primary-strong disabled:opacity-60"
             >
               {pinned ? 'Unpin' : 'Pin'}
             </button>
@@ -313,7 +313,7 @@ function PostCard({
               type="button"
               onClick={remove}
               disabled={pending}
-              className="text-2xs font-semibold text-subtle hover:text-danger disabled:opacity-60"
+              className="text-2xs font-semibold text-muted hover:text-danger disabled:opacity-60"
             >
               Remove
             </button>

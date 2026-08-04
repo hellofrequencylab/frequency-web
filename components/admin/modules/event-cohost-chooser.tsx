@@ -146,7 +146,7 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
               )}
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-semibold text-text">{c.displayName}</p>
-                {c.handle && <p className="truncate text-2xs text-subtle">@{c.handle}</p>}
+                {c.handle && <p className="truncate text-2xs text-muted">@{c.handle}</p>}
               </div>
               <span className="shrink-0 rounded-full bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
                 {c.status === 'accepted' ? 'Cohost' : 'Invited'}
@@ -168,7 +168,7 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
       {/* The one quiet upgrade pointer (ADR-834): a cohost is a personal credit; a business gets the
           featured Collaborator billing, which needs a Business Space. One line, one link, hosts only
           (this rail is already host-gated). */}
-      <p className="text-2xs text-subtle">
+      <p className="text-2xs text-muted">
         Run a business?{' '}
         <Link href="/spaces/new" className="underline underline-offset-2 hover:text-text">
           Feature it on events as a Collaborator.
@@ -177,7 +177,7 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
 
       {/* In-flow results — never an absolute overlay (the rail's @container clips a top-full list). */}
       {hits.length > 0 && (
-        <div className="overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-xl shadow-black/5">
+        <div className="overflow-hidden rounded-xl border border-border bg-surface py-1 lift-3">
           {hits.map((p) => (
             <button
               key={p.id}
@@ -195,7 +195,7 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
               )}
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-semibold text-text">{p.display_name}</p>
-                <p className="truncate text-2xs text-subtle">@{p.handle}</p>
+                <p className="truncate text-2xs text-muted">@{p.handle}</p>
               </div>
             </button>
           ))}

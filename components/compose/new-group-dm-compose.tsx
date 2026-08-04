@@ -192,7 +192,7 @@ function ResultRow({
       )}
       <div className="flex-1 min-w-0">
         <p className="text-xs font-semibold text-text truncate">{result.display_name}</p>
-        <p className="text-2xs text-subtle truncate">@{result.handle}</p>
+        <p className="text-2xs text-muted truncate">@{result.handle}</p>
       </div>
 
       {isFriend && (
@@ -219,7 +219,7 @@ function ResultRow({
         </button>
       )}
       {(status === 'pending_outgoing' || requested) && (
-        <span className="shrink-0 inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-2xs text-subtle">
+        <span className="shrink-0 inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-2xs text-muted">
           <Clock className="w-3 h-3" />
           Pending
         </span>

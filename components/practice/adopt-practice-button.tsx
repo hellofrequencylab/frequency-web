@@ -153,13 +153,13 @@ export function AdoptPracticeButton({
           role="dialog"
           aria-label="Your practice list is full"
           style={{ position: 'fixed', top: panel.top, left: panel.left, width: PANEL_W }}
-          className="z-50 rounded-xl border border-border bg-surface-elevated p-3 shadow-lg"
+          className="z-50 rounded-xl border border-border bg-surface-elevated p-3 lift-3"
         >
           <p className="flex items-center gap-1.5 text-xs font-semibold text-text">
             <ArrowLeftRight className="h-3.5 w-3.5 text-primary-strong" aria-hidden />
             You hold {ACTIVE_PRACTICE_CAP} already. Swap one out?
           </p>
-          <p className="mt-1 text-2xs text-subtle">
+          <p className="mt-1 text-2xs text-muted">
             A short list is the point: the ones you keep are the ones that happen. Pick one to
             set down. Its history stays yours.
           </p>
@@ -197,7 +197,7 @@ export function AdoptPracticeButton({
           role="dialog"
           aria-label="How long will you take it on for?"
           style={{ position: 'fixed', top: panel.top, left: panel.left, width: PANEL_W }}
-          className="z-50 rounded-xl border border-border bg-surface-elevated p-3 shadow-lg"
+          className="z-50 rounded-xl border border-border bg-surface-elevated p-3 lift-3"
         >
           <p className="text-xs font-semibold text-text">How long will you take it on for?</p>
           <div className="mt-2 grid grid-cols-2 gap-1.5">
@@ -215,13 +215,13 @@ export function AdoptPracticeButton({
                 }`}
               >
                 {p.label}
-                {p.recommended && <span className="block text-2xs font-normal text-subtle">makes it stick</span>}
-                {p.default && <span className="block text-2xs font-normal text-subtle">most pick this</span>}
+                {p.recommended && <span className="block text-2xs font-normal text-muted">makes it stick</span>}
+                {p.default && <span className="block text-2xs font-normal text-muted">most pick this</span>}
               </button>
             ))}
           </div>
           <label className="mt-2.5 block">
-            <span className="text-2xs text-subtle">
+            <span className="text-2xs text-muted">
               When will you do it? Optional. Tying it to something you already do makes it far more likely to happen.
             </span>
             <input

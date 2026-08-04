@@ -155,8 +155,8 @@ function triggerClass(variant: Variant, highlighted: boolean) {
   return `inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors motion-reduce:transition-none ${
     dark
       ? highlighted
-        ? 'text-white bg-white/10'
-        : 'text-white/75 hover:text-white hover:bg-white/10'
+        ? 'text-on-ink bg-on-ink/10'
+        : 'text-on-ink-muted hover:text-on-ink hover:bg-on-ink/10'
       : highlighted
         ? 'text-text bg-surface-elevated'
         : 'text-muted hover:text-text hover:bg-surface-elevated'
@@ -382,7 +382,7 @@ export function MegaBar({
     return (
       <div key={cat.id} className="min-w-[10rem]" style={useGrid ? gridStyle(cat) : undefined}>
         {cat.label && (
-          <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">{cat.label}</p>
+          <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">{cat.label}</p>
         )}
         {items.length > 0 && <div className="space-y-0.5">{items}</div>}
         {children.length > 0 && <div className="mt-3 space-y-3">{children}</div>}

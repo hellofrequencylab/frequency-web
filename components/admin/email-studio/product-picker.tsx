@@ -185,7 +185,7 @@ export function ProductCardEditor({
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-xs font-semibold text-text">{o.label}</span>
-                      <span className="block truncate text-3xs text-subtle">{o.sublabel}</span>
+                      <span className="block truncate text-3xs text-muted">{o.sublabel}</span>
                     </span>
                   </button>
                 </li>
@@ -209,13 +209,13 @@ export function ProductCardEditor({
                     setOwner(null)
                     setProducts([])
                   }}
-                  className="shrink-0 text-3xs font-semibold text-subtle underline hover:text-text"
+                  className="shrink-0 text-3xs font-semibold text-muted underline hover:text-text"
                 >
                   Back
                 </button>
               </div>
               {loading ? (
-                <p className="flex items-center gap-1.5 px-1 py-2 text-2xs text-subtle">
+                <p className="flex items-center gap-1.5 px-1 py-2 text-2xs text-muted">
                   <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Loading products
                 </p>
               ) : products.length === 0 ? (
@@ -241,7 +241,7 @@ export function ProductCardEditor({
                         )}
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-xs font-semibold text-text">{p.title || 'Untitled'}</span>
-                          <span className="block truncate text-3xs text-subtle">
+                          <span className="block truncate text-3xs text-muted">
                             {p.price || 'No price'}
                             {!p.active && ' · draft'}
                           </span>
@@ -265,7 +265,7 @@ export function ProductCardEditor({
 
       {/* Button label for the card's CTA. */}
       <label className="block space-y-1">
-        <span className="text-2xs font-semibold text-subtle">Button label</span>
+        <span className="text-2xs font-semibold text-muted">Button label</span>
         <input
           type="text"
           value={ctaLabel}

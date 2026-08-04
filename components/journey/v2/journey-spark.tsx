@@ -239,7 +239,7 @@ export function JourneySpark({
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-semibold text-text">{t.name}</span>
                     <span className="block text-xs leading-snug text-muted">{t.description}</span>
-                    <span className="mt-1 block text-2xs font-medium uppercase tracking-wide text-subtle">
+                    <span className="mt-1 block text-2xs font-medium uppercase tracking-wide text-muted">
                       {t.phases} {t.phases === 1 ? 'phase' : 'phases'} · {t.lessons} {t.lessons === 1 ? 'lesson' : 'lessons'}
                     </span>
                   </span>
@@ -301,7 +301,7 @@ export function JourneySpark({
               </div>
 
               {/* Vera AI note — set the expectation that a model drafts from what they upload. */}
-              <p className="flex items-center gap-1 text-2xs text-subtle">
+              <p className="flex items-center gap-1 text-2xs text-muted">
                 <Sparkles className="h-3 w-3 text-primary-strong" aria-hidden /> Vera reads your files and drafts the Journey. You review and edit everything before it is created.
               </p>
 
@@ -312,7 +312,7 @@ export function JourneySpark({
                 </p>
               )}
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Weeks</span>
+                <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Weeks</span>
                 {WEEK_CHOICES.map((w) => (
                   <button key={w} type="button" onClick={() => setWeeks(w)} aria-pressed={weeks === w}
                     className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${weeks === w ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}>
@@ -328,7 +328,7 @@ export function JourneySpark({
             <>
               <textarea autoFocus value={who} onChange={(e) => setWho(e.target.value)} rows={4} className={FIELD} placeholder="e.g. Busy parents who feel wired and tired. By the end they keep a ten minute evening wind down and get their evenings back." />
 
-              <p className="mt-5 mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Or start another way</p>
+              <p className="mt-5 mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Or start another way</p>
 
               {/* Second path: drop in a WHOLE stack of course docs at once and let Vera build it. */}
               <button
@@ -371,7 +371,7 @@ export function JourneySpark({
           {!usingOverview && step === 4 && (
             <div className="space-y-5">
               <div>
-                <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Weeks</p>
+                <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Weeks</p>
                 <div className="flex flex-wrap items-center gap-2">
                   {WEEK_CHOICES.map((w) => (
                     <button key={w} type="button" onClick={() => setWeeks(w)} aria-pressed={weeks === w}
@@ -382,7 +382,7 @@ export function JourneySpark({
                 </div>
               </div>
               <div>
-                <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Time a day</p>
+                <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Time a day</p>
                 <div className="grid grid-cols-2 gap-2">
                   {([['light', 'Light', 'A few minutes'], ['medium', 'Medium', 'Ten to twenty minutes']] as const).map(([key, lbl, hint]) => (
                     <button key={key} type="button" onClick={() => setPace(key)} aria-pressed={pace === key}
@@ -406,20 +406,20 @@ export function JourneySpark({
               ) : (
                 <>
                   <label className="block">
-                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Title</span>
+                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Title</span>
                     <input value={title} onChange={(e) => setTitle(e.target.value)} className={`${FIELD} font-semibold`} placeholder="Name your Journey" />
                   </label>
                   <label className="block">
-                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">One-line promise</span>
+                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">One-line promise</span>
                     <input value={promise} onChange={(e) => setPromise(e.target.value)} className={FIELD} placeholder="What they'll walk away with" />
                   </label>
                   <label className="block">
-                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Overview</span>
+                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Overview</span>
                     <textarea value={overview} onChange={(e) => setOverview(e.target.value)} rows={4} className={FIELD} placeholder="What this is and who it's for." />
                   </label>
                   {arc.length > 0 && (
                     <div>
-                      <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Your {arc.length} {arc.length === 1 ? 'week' : 'weeks'}</span>
+                      <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Your {arc.length} {arc.length === 1 ? 'week' : 'weeks'}</span>
                       <ol className="space-y-1.5">
                         {arc.map((w, i) => (
                           <li key={i} className="rounded-lg border border-border bg-surface px-3 py-2">
@@ -428,14 +428,14 @@ export function JourneySpark({
                           </li>
                         ))}
                       </ol>
-                      <p className="mt-1.5 text-2xs text-subtle">Vera lays these out as weekly Phases. Edit them in the next step.</p>
+                      <p className="mt-1.5 text-2xs text-muted">Vera lays these out as weekly Phases. Edit them in the next step.</p>
                     </div>
                   )}
 
                   {/* How the group meets (ADR-302). Optional and pre-filled from Vera's read of the
                       outline; the full editor lives in the Journey's Settings panel later. */}
                   <div className="rounded-xl border border-border bg-canvas px-3 py-3">
-                    <span className="mb-1.5 block text-2xs font-semibold uppercase tracking-wide text-subtle">How will you meet?</span>
+                    <span className="mb-1.5 block text-2xs font-semibold uppercase tracking-wide text-muted">How will you meet?</span>
                     <div className="flex flex-wrap gap-1.5">
                       {MEETING_FORMATS.map(([value, Icon, lbl]) => (
                         <button
@@ -487,7 +487,7 @@ export function JourneySpark({
                       />
                     )}
 
-                    <p className="mt-1.5 text-2xs text-subtle">Optional. You can fine-tune this in Settings later.</p>
+                    <p className="mt-1.5 text-2xs text-muted">Optional. You can fine-tune this in Settings later.</p>
                   </div>
                 </>
               )}

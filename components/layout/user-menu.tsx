@@ -27,7 +27,7 @@ export function AuthButtons({ dark = false }: { dark?: boolean }) {
         href="/sign-in"
         className={`text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${
           dark
-            ? 'text-white/70 hover:text-white hover:bg-white/10'
+            ? 'text-on-ink-muted hover:text-on-ink hover:bg-on-ink/10'
             : 'text-muted hover:text-text hover:bg-surface-elevated'
         }`}
       >
@@ -37,7 +37,7 @@ export function AuthButtons({ dark = false }: { dark?: boolean }) {
         href={BETA_CTA_HREF}
         className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors whitespace-nowrap ${
           dark
-            ? 'bg-white text-ink hover:bg-surface-elevated'
+            ? 'bg-on-ink text-ink hover:bg-surface-elevated'
             : 'bg-primary text-on-primary hover:bg-primary-hover'
         }`}
       >
@@ -127,7 +127,7 @@ export function UserMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 w-52 rounded-xl border border-border bg-surface-elevated shadow-xl shadow-black/5 py-1 z-50">
+        <div className="absolute right-0 top-full mt-1.5 w-52 rounded-xl border border-border bg-surface-elevated lift-3 py-1 z-50">
           {/* Identity */}
           <div className="px-3 py-2.5 border-b border-border">
             <p className="text-sm font-semibold text-text truncate">
@@ -153,7 +153,7 @@ export function UserMenu({
           {sections.map((s) => (
             <div key={s.label ?? 'section'} className="border-t border-border py-1">
               {s.label ? (
-                <p className="px-3 pt-1 pb-0.5 text-3xs font-semibold uppercase tracking-wider text-subtle">
+                <p className="px-3 pt-1 pb-0.5 text-3xs font-semibold uppercase tracking-wider text-muted">
                   {s.label}
                 </p>
               ) : null}

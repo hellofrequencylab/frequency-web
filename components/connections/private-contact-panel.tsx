@@ -36,7 +36,7 @@ export function PrivateContactPanel({ card, memberName }: { card: LinkedContactC
   ].filter(Boolean) as { Icon: typeof Mail; label: string; href?: string }[]
 
   return (
-    <div className="mb-6 rounded-2xl border border-border bg-surface-elevated/40 p-5 shadow-sm">
+    <div className="mb-6 rounded-2xl border border-border bg-surface-elevated/40 p-5 lift-1">
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-1.5 text-sm font-bold text-text">
           <Lock className="h-3.5 w-3.5 text-subtle" /> Your private contact card
@@ -72,7 +72,7 @@ export function PrivateContactPanel({ card, memberName }: { card: LinkedContactC
         </div>
       )}
 
-      <p className="mt-3 flex items-center gap-1 text-2xs text-subtle">
+      <p className="mt-3 flex items-center gap-1 text-2xs text-muted">
         <ScanText className="h-3 w-3" /> {SOURCE_LABEL[card.source] ?? card.source}
         {added && ` · added ${added}`}
       </p>

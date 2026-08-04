@@ -47,7 +47,7 @@ export function EventLocationMap({
     return (
       <div>
         <EventVenueMap lat={venuePoint.lat} lng={venuePoint.lng} className={mapClass} />
-        <p className="mt-1.5 text-3xs text-subtle">The pin marks the exact venue.</p>
+        <p className="mt-1.5 text-3xs text-muted">The pin marks the exact venue.</p>
       </div>
     )
   }
@@ -56,7 +56,7 @@ export function EventLocationMap({
     return (
       <div>
         <EventsMap pins={[mapPin]} className={mapClass} />
-        <p className="mt-1.5 text-3xs text-subtle">
+        <p className="mt-1.5 text-3xs text-muted">
           The pin sits on the circle&rsquo;s area, not the exact address.
         </p>
       </div>

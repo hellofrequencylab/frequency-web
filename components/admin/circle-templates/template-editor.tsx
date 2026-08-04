@@ -200,7 +200,7 @@ export function TemplateEditor({ template }: { template: CircleTemplate }) {
           />
           {!imageUrl && (
             <div className="space-y-1.5">
-              <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">
+              <span className="text-2xs font-semibold uppercase tracking-wide text-muted">
                 Drawn header (used when no image is set)
               </span>
               <div className="relative h-24 w-full overflow-hidden rounded-xl border border-border">

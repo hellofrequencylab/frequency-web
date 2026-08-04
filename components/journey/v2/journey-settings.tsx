@@ -258,7 +258,7 @@ export function JourneySettings(props: JourneySettingsProps) {
           {/* Header overlay — the shared None / Shade / Blend control (ADR-794). None keeps a clean photo,
               Shade darkens it, Blend fades it into the page; Shade/Blend take a pickable color. Autosaves. */}
           <div>
-            <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Header overlay</span>
+            <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Header overlay</span>
             <div className="flex flex-wrap gap-2">
               {([['none', 'None'], ['shadow', 'Shade'], ['fade', 'Blend']] as const).map(([v, label]) => {
                 const active = overlayStyle === v
@@ -301,10 +301,10 @@ export function JourneySettings(props: JourneySettingsProps) {
 
       {/* Delivery + rewards */}
       <div className="space-y-2.5">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Delivery and rewards</p>
+        <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Delivery and rewards</p>
         <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
-          <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+          <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
             <Gem className="h-3.5 w-3.5" /> Completion Gems
           </span>
           <input
@@ -318,7 +318,7 @@ export function JourneySettings(props: JourneySettingsProps) {
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+          <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
             <CalendarClock className="h-3.5 w-3.5" /> Phase drip (days)
           </span>
           <input
@@ -339,7 +339,7 @@ export function JourneySettings(props: JourneySettingsProps) {
             <span className="inline-flex items-center gap-1.5 text-sm font-medium text-text">
               <Award className="h-4 w-4 text-rank-gold" aria-hidden /> Certificate
             </span>
-            <span className="text-2xs text-subtle">A printable certificate when someone finishes.</span>
+            <span className="text-2xs text-muted">A printable certificate when someone finishes.</span>
           </span>
           <Toggle
             checked={certificate}
@@ -354,7 +354,7 @@ export function JourneySettings(props: JourneySettingsProps) {
 
       {/* Publish / visibility */}
       <div className="space-y-2.5">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Who can see it</p>
+        <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Who can see it</p>
         <div className="flex flex-wrap items-center gap-2 text-xs">
         {([
           ['private', Lock, 'Just me'],
@@ -380,10 +380,10 @@ export function JourneySettings(props: JourneySettingsProps) {
 
       {/* Discovery + delivery attributes (ADR-302) */}
       <div className="space-y-2.5">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">More</p>
+        <p className="text-2xs font-semibold uppercase tracking-wide text-muted">More</p>
 
         <div>
-          <span className="mb-1 block text-2xs font-medium text-subtle">Difficulty</span>
+          <span className="mb-1 block text-2xs font-medium text-muted">Difficulty</span>
           <div className="flex flex-wrap gap-1.5">
             {DIFFICULTIES.map((d) => (
               <button
@@ -400,7 +400,7 @@ export function JourneySettings(props: JourneySettingsProps) {
         </div>
 
         <label className="flex flex-col gap-1">
-          <span className="text-2xs font-medium text-subtle">Category</span>
+          <span className="text-2xs font-medium text-muted">Category</span>
           <input
             value={category}
             onChange={(e) => setCategory(e.target.value)}
@@ -411,7 +411,7 @@ export function JourneySettings(props: JourneySettingsProps) {
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-2xs font-medium text-subtle">Tags (comma-separated)</span>
+          <span className="text-2xs font-medium text-muted">Tags (comma-separated)</span>
           <input
             value={tags}
             onChange={(e) => setTags(e.target.value)}
@@ -423,7 +423,7 @@ export function JourneySettings(props: JourneySettingsProps) {
 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1">
-            <span className="text-2xs font-medium text-subtle">Minutes a day</span>
+            <span className="text-2xs font-medium text-muted">Minutes a day</span>
             <input
               type="number"
               min={0}
@@ -436,7 +436,7 @@ export function JourneySettings(props: JourneySettingsProps) {
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-2xs font-medium text-subtle">Max people</span>
+            <span className="text-2xs font-medium text-muted">Max people</span>
             <input
               type="number"
               min={0}
@@ -446,7 +446,7 @@ export function JourneySettings(props: JourneySettingsProps) {
               placeholder="no limit"
               className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
             />
-            <span className="text-2xs text-subtle">A Run of about 8 to 12 keeps real accountability.</span>
+            <span className="text-2xs text-muted">A Run of about 8 to 12 keeps real accountability.</span>
           </label>
         </div>
       </div>
@@ -456,7 +456,7 @@ export function JourneySettings(props: JourneySettingsProps) {
           chooses. Both share the same controls and persist through one setJourneyMeeting call (the
           flat fields for the Meetup, the nested `gathering` for the Gathering). */}
       <div className="space-y-5">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">How the Circle gathers</p>
+        <p className="text-2xs font-semibold uppercase tracking-wide text-muted">How the Circle gathers</p>
 
         {/* Circle Meetup — the mid-week touchpoint, on the flat fields. */}
         <TouchpointForm
@@ -515,11 +515,11 @@ function TouchpointForm({
     <div className="space-y-2.5 rounded-xl border border-border bg-canvas/40 p-3">
       <div>
         <p className="text-sm font-semibold text-text">{title}</p>
-        <p className="mt-0.5 text-2xs text-subtle">{hint}</p>
+        <p className="mt-0.5 text-2xs text-muted">{hint}</p>
       </div>
 
       <div>
-        <span className="mb-1 block text-2xs font-medium text-subtle">Format</span>
+        <span className="mb-1 block text-2xs font-medium text-muted">Format</span>
         <div className="flex flex-wrap gap-1.5">
           {MEETING_FORMATS.map(([value, Icon, label]) => (
             <button
@@ -534,7 +534,7 @@ function TouchpointForm({
           ))}
         </div>
         {format && (
-          <p className="mt-1.5 text-2xs text-subtle">
+          <p className="mt-1.5 text-2xs text-muted">
             {format === 'virtual' && 'People join online. Add a join link below.'}
             {format === 'in_person' && 'People meet in person. Add a location below.'}
             {format === 'hybrid' && 'Some join online, some in person. Add both a location and a join link.'}
@@ -545,7 +545,7 @@ function TouchpointForm({
       {/* Schedule + its timezone, side by side so "when" reads as one thing. */}
       <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
         <label className="flex flex-col gap-1">
-          <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-subtle">
+          <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-muted">
             <CalendarClock className="h-3.5 w-3.5" aria-hidden /> Schedule
           </span>
           <input
@@ -558,7 +558,7 @@ function TouchpointForm({
           />
         </label>
         <label className="flex flex-col gap-1 sm:w-28">
-          <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-subtle">
+          <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-muted">
             <Clock className="h-3.5 w-3.5" aria-hidden /> Timezone
           </span>
           <input
@@ -574,7 +574,7 @@ function TouchpointForm({
 
       {(format === 'in_person' || format === 'hybrid') && (
         <label className="flex flex-col gap-1">
-          <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-subtle">
+          <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-muted">
             <MapPin className="h-3.5 w-3.5" aria-hidden /> Location
           </span>
           <input
@@ -590,7 +590,7 @@ function TouchpointForm({
 
       {(format === 'virtual' || format === 'hybrid') && (
         <label className="flex flex-col gap-1">
-          <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-subtle">
+          <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-muted">
             <Video className="h-3.5 w-3.5" aria-hidden /> Join link
           </span>
           <input
@@ -613,7 +613,7 @@ function TouchpointForm({
       />
 
       <label className="flex flex-col gap-1">
-        <span className="text-2xs font-medium text-subtle">Notes</span>
+        <span className="text-2xs font-medium text-muted">Notes</span>
         <textarea
           value={t?.notes ?? ''}
           onChange={(e) => onPatch({ notes: e.target.value })}
