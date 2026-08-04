@@ -310,21 +310,33 @@ export const primitivesComponents: Record<string, ComponentConfig> = {
   Divider: {
     label: 'Divider',
     fields: {
+      style: {
+        type: 'radio',
+        label: 'Style',
+        options: [
+          { label: 'Hairline', value: 'hairline' },
+          { label: 'Warm rule (amber)', value: 'rule-amber' },
+        ],
+      },
       width: widthField,
       tone: toneField,
       layout: layoutField,
     },
     defaultProps: {
+      style: 'hairline',
       width: 'default',
       tone: 'none',
       layout: layoutDefault,
     },
-    render: ({ width, tone, layout }) => (
+    // `.rule-amber` is the DAWN warm rule (globals.css). It is unlayered CSS carrying
+    // margin: 0, so the vertical rhythm stays on the section wrapper, not the <hr>.
+    // Docs stored before the `style` field existed carry no value → hairline (unchanged).
+    render: ({ style, width, tone, layout }) => (
       <section
         className={`px-6 ${padClass(layout as LayoutValue) ?? 'py-4'} ${toneBg(tone as string)} ${visClass(layout as LayoutValue)}`}
       >
         <div className={`${widthClass(width as string)} mx-auto`}>
-          <hr className="border-border" />
+          <hr className={style === 'rule-amber' ? 'rule-amber' : 'border-border'} />
         </div>
       </section>
     ),

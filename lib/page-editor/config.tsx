@@ -18,6 +18,7 @@ import { mediaComponents } from '@/components/page-editor/blocks/media'
 import { primitivesComponents } from '@/components/page-editor/blocks/primitives'
 import { dynamicComponents } from '@/components/page-editor/blocks/dynamic'
 import { marketingComponents } from '@/components/page-editor/blocks/marketing'
+import { dawnComponents } from '@/components/page-editor/blocks/dawn'
 import { productStoryComponents } from '@/components/page-editor/blocks/product-story'
 import { circlesComponents } from '@/components/page-editor/blocks/circles'
 import { linktreeComponents, LINKTREE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/linktree'
@@ -50,6 +51,7 @@ export const config: Config = {
     ...collectionsComponents,
     ...mediaComponents,
     ...marketingComponents,
+    ...dawnComponents,
     ...productStoryComponents,
     ...dynamicComponents,
     ...circlesComponents,
@@ -74,11 +76,11 @@ export const config: Config = {
     },
     content: {
       title: 'Content',
-      components: ['Heading', 'Text', 'Statement', 'Quote', 'Buttons'],
+      components: ['Heading', 'Text', 'Statement', 'StoryBeats', 'Quote', 'Buttons'],
     },
     sections: {
       title: 'Sections',
-      components: ['Hero', 'FeatureGrid', 'IllustratedFeature', 'RolePicker', 'Manifesto', 'LeadFunnel', 'Showcase', 'StatRow', 'Tiers', 'Checklist', 'Accordion', 'CallToAction'],
+      components: ['Hero', 'FeatureGrid', 'ValueBand', 'BuildTimeline', 'PhotoCardRow', 'PlanBand', 'PillarNav', 'IllustratedFeature', 'RolePicker', 'Manifesto', 'LeadFunnel', 'Showcase', 'StatRow', 'Tiers', 'Checklist', 'Accordion', 'CallToAction'],
     },
     productStory: {
       title: 'Product story',
@@ -86,7 +88,7 @@ export const config: Config = {
     },
     media: {
       title: 'Media',
-      components: ['Cover', 'Image', 'Gallery', 'MediaText', 'Marquee'],
+      components: ['Cover', 'Image', 'Gallery', 'MediaText', 'PhotoBeat', 'PhotoTrio', 'Marquee'],
     },
     dynamic: {
       title: 'Dynamic',

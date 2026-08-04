@@ -228,15 +228,15 @@ export function PhotoHeroBlock({
   // ── beside / below: a framed photo next to (or above) the copy, theme tokens, no scrim. ──
   if (display !== 'overlay') {
     const framedMedia = hasImage ? (
-      <div className="overflow-hidden rounded-2xl border border-border shadow-pop">
+      <div className="overflow-hidden rounded-card border border-border shadow-pop">
         <SiteImage src={image!} alt={alt ?? ''} aspect="4/3" className="w-full" />
       </div>
     ) : (
-      <div className="aspect-[4/3] w-full rounded-2xl border border-border bg-primary-bg" aria-hidden />
+      <div className="aspect-[4/3] w-full rounded-card border border-border bg-primary-bg" aria-hidden />
     )
     if (display === 'beside') {
       return (
-        <section className={`rounded-2xl ${padClass(layout) ?? ''} ${visClass(layout)}`}>
+        <section className={`rounded-card ${padClass(layout) ?? ''} ${visClass(layout)}`}>
           <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2 md:gap-12">
             {framedMedia}
             <div>{copy(false)}</div>
@@ -246,7 +246,7 @@ export function PhotoHeroBlock({
     }
     // below
     return (
-      <section className={`rounded-2xl ${padClass(layout) ?? ''} ${visClass(layout)}`}>
+      <section className={`rounded-card ${padClass(layout) ?? ''} ${visClass(layout)}`}>
         {framedMedia}
         <div className="mt-8 text-center">{copy(true)}</div>
       </section>
@@ -255,7 +255,7 @@ export function PhotoHeroBlock({
 
   // ── overlay (default): copy centered over the photo / wash, sized by `height`. ──
   return (
-    <section className={`relative overflow-hidden rounded-2xl ${padClass(layout) ?? ''} ${visClass(layout)}`}>
+    <section className={`relative overflow-hidden rounded-card ${padClass(layout) ?? ''} ${visClass(layout)}`}>
       {hasImage ? (
         <>
           {/* Full-bleed photo fills the section (next/image `fill` + object-cover, the profile cover
@@ -374,7 +374,7 @@ export function EditorialSectionBlock({
     </>
   )
   return surface === 'soft-card' ? (
-    // rounded-card (was rounded-2xl): the Space page theme shapes this card (ADR-578); the
+    // rounded-card (was rounded-card): the Space page theme shapes this card (ADR-578); the
     // [data-space-theme] baseline pin keeps `bold` at exactly today's 1rem.
     <div className="rounded-card border border-border bg-surface p-6 shadow-pop sm:p-10">{inner}</div>
   ) : (
@@ -448,7 +448,7 @@ export function CardGridBlock({
           {shown.map((card, i) => (
             <article
               key={i}
-              // rounded-card (was rounded-2xl): themable card shape (ADR-578); pinned to 1rem for `bold`.
+              // rounded-card (was rounded-card): themable card shape (ADR-578); pinned to 1rem for `bold`.
               className="flex flex-col overflow-hidden rounded-card border border-border bg-surface shadow-pop"
             >
               {/* A photo card shows its image on top whenever one is set (email overhaul: not only the
@@ -466,7 +466,7 @@ export function CardGridBlock({
                   </div>
                 )}
                 {role === 'feature' && !card.image && !card.stat?.value && card.icon && (
-                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-bg text-xl leading-none text-primary-strong" aria-hidden>
+                  <span className="flex h-11 w-11 items-center justify-center rounded-card bg-primary-bg text-xl leading-none text-primary-strong" aria-hidden>
                     {card.icon}
                   </span>
                 )}
@@ -624,7 +624,7 @@ export function ZigzagBlock({
   )
 
   return (
-    <div className={`rounded-2xl ${background === 'accent-wash' ? 'bg-primary-bg p-6 sm:p-10' : ''}`}>
+    <div className={`rounded-card ${background === 'accent-wash' ? 'bg-primary-bg p-6 sm:p-10' : ''}`}>
       <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2 md:gap-12">
         {mediaSide === 'left' ? (
           <>
@@ -706,7 +706,7 @@ export function AccentBeatBlock({
   )
 
   return (
-    <section className="relative overflow-hidden rounded-2xl">
+    <section className="relative overflow-hidden rounded-card">
       {onImage ? (
         <>
           <SiteImage src={image!} alt={alt ?? ''} aspect="21/9" className="absolute inset-0 h-full w-full" />

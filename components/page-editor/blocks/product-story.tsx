@@ -60,7 +60,7 @@ function MockFrame({ ink, children, className = '' }: { ink?: boolean; children:
   return (
     <div
       className={`rounded-3xl p-6 sm:p-8 ${
-        ink ? 'bg-white/5 border border-white/10' : 'bg-marketing-canvas border border-border'
+        ink ? 'bg-on-ink/5 border border-on-ink/10' : 'bg-marketing-canvas border border-border'
       } ${className}`}
     >
       {children}
@@ -168,10 +168,10 @@ export function SeasonTimelineBlock({
                 {leg.blurb && <p className={`text-sm leading-relaxed ${bodyColor}`}>{leg.blurb}</p>}
 
                 {/* The Expression Challenge capstone node that closes the leg. */}
-                <div className={`mt-4 pt-4 border-t ${ink ? 'border-white/10' : 'border-border'}`}>
+                <div className={`mt-4 pt-4 border-t ${ink ? 'border-on-ink/10' : 'border-border'}`}>
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-3xs font-bold uppercase tracking-wider ring-1 ${
-                      ink ? 'bg-white/10 text-on-ink ring-white/15' : `bg-primary-bg/60 text-primary-strong ${a.ring}`
+                      ink ? 'bg-on-ink/10 text-on-ink ring-on-ink/15' : `bg-primary-bg/60 text-primary-strong ${a.ring}`
                     }`}
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${a.dot}`} aria-hidden /> {capstoneLabel}
@@ -279,7 +279,7 @@ export function CircleFirstNightBlock({
             <li
               key={i}
               className={`flex gap-4 rounded-xl ${pad} ${
-                ink ? 'bg-white/5' : 'bg-surface border border-border'
+                ink ? 'bg-on-ink/5' : 'bg-surface border border-border'
               }`}
             >
               <span className={`shrink-0 w-14 text-sm font-bold tabular-nums ${ink ? 'text-primary' : 'text-primary-strong'}`}>
@@ -375,7 +375,7 @@ export function RolesPathBlock({
               {!last && (
                 <ArrowRight
                   className={`hidden lg:block absolute top-1/2 -right-3 w-5 h-5 -translate-y-1/2 ${
-                    ink ? 'text-white/25' : 'text-border-strong'
+                    ink ? 'text-on-ink/25' : 'text-border-strong'
                   }`}
                   aria-hidden
                 />
@@ -388,7 +388,7 @@ export function RolesPathBlock({
       {/* The safety-net beat: you are never out front alone. */}
       {safetyNet && (
         <div
-          className={`mt-8 rounded-2xl p-6 ${
+          className={`mt-8 rounded-card p-6 ${
             ink ? 'bg-primary/10 border border-primary/30' : 'bg-primary-bg/50 border border-primary/30'
           }`}
         >
@@ -471,7 +471,7 @@ export function QuestLoopBlock({
               {!last && (
                 <div className="flex items-center justify-center py-2 sm:py-0 sm:px-2">
                   <ArrowRight
-                    className={`w-6 h-6 rotate-90 sm:rotate-0 ${ink ? 'text-white/25' : 'text-border-strong'}`}
+                    className={`w-6 h-6 rotate-90 sm:rotate-0 ${ink ? 'text-on-ink/25' : 'text-border-strong'}`}
                     aria-hidden
                   />
                 </div>

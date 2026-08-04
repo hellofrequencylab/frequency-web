@@ -196,7 +196,7 @@ export function IllustratedFeatureBlock({
         <div className="flex justify-center">
           <div
             className={`w-full max-w-sm rounded-3xl p-8 ${
-              ink ? 'bg-white/5' : 'bg-marketing-canvas'
+              ink ? 'bg-on-ink/5' : 'bg-marketing-canvas'
             }`}
           >
             <Illustration name={asIllustration(illustration)} className="w-full" animate />

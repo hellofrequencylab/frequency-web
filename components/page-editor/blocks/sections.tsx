@@ -43,6 +43,8 @@ import { PhotoHero } from '@/components/marketing/marketing-ui'
 
 type HeroVariant = 'image' | 'split' | 'minimal'
 
+type HeroFact = { value?: string; label?: string }
+
 export function HeroSection({
   variant,
   eyebrow,
@@ -51,6 +53,7 @@ export function HeroSection({
   image,
   focal,
   minHeight,
+  facts,
   ctaPrimaryLabel,
   ctaPrimaryHref,
   ctaSecondaryLabel,
@@ -68,6 +71,8 @@ export function HeroSection({
   image?: string
   focal?: string
   minHeight?: 'auto' | 'screen'
+  /** The DAWN glass fact dock (image variant only): up to three short value/label figures. */
+  facts?: HeroFact[]
   ctaPrimaryLabel?: string
   ctaPrimaryHref?: string
   ctaSecondaryLabel?: string
@@ -80,6 +85,12 @@ export function HeroSection({
 }) {
   // ── image variant ──────────────────────────────────────────────────────────
   if (variant === 'image') {
+    // The fact dock: well-formed [value, label] pairs only, capped at three (the
+    // glass panel's grammar — PhotoHero owns the styling + the mk-hero-dock seam).
+    const dock = (facts ?? [])
+      .filter((f) => f.value && f.label)
+      .slice(0, 3)
+      .map((f) => [f.value!, f.label!] as const)
     const ctas = (
       <div className="flex items-center gap-3 flex-wrap justify-center">
         {ctaPrimaryLabel && ctaPrimaryHref && (
@@ -99,7 +110,8 @@ export function HeroSection({
         subtitle={subtitle}
         focal={focalClass(focal)}
         minHeight={minHeight === 'screen' ? 'screen' : undefined}
-        footer={note ? <p className="mt-8 text-sm text-white/45">{note}</p> : undefined}
+        facts={dock.length > 0 ? dock : undefined}
+        footer={note ? <p className="mx-auto mt-7 max-w-xl text-sm leading-relaxed text-on-ink/60">{note}</p> : undefined}
       >
         {(ctaPrimaryLabel && ctaPrimaryHref) || (ctaSecondaryLabel && ctaSecondaryHref)
           ? ctas
@@ -157,7 +169,7 @@ export function HeroSection({
           {/* Photo column */}
           <div
             className={`w-full rounded-3xl overflow-hidden border ${
-              ink2 ? 'border-white/10 shadow-pop' : 'border-border shadow-md'
+              ink2 ? 'border-on-ink/10 shadow-pop' : 'border-border shadow-md'
             }`}
           >
             <SiteImage
@@ -447,6 +459,15 @@ export const sectionsComponents: Record<string, ComponentConfig> = {
           { label: 'Full screen', value: 'screen' },
         ],
       },
+      facts: {
+        type: 'array',
+        label: 'Fact dock (image variant, up to 3)',
+        arrayFields: {
+          value: { type: 'text', label: 'Value (e.g. 2020)' },
+          label: { type: 'text', label: 'Label (e.g. A cliff at dawn)' },
+        },
+        getItemSummary: (item: HeroFact) => (item.value ? `${item.value} · ${item.label ?? ''}` : 'Fact'),
+      },
       ctaPrimaryLabel: { type: 'text', label: 'Primary CTA label' },
       ctaPrimaryHref: { type: 'text', label: 'Primary CTA URL' },
       ctaSecondaryLabel: { type: 'text', label: 'Secondary CTA label (optional)' },
@@ -463,6 +484,7 @@ export const sectionsComponents: Record<string, ComponentConfig> = {
       image: '/images/site/lab-thermal.jpg',
       focal: 'center',
       minHeight: 'screen',
+      facts: [],
       ctaPrimaryLabel: 'Get early access',
       ctaPrimaryHref: '/beta',
       ctaSecondaryLabel: 'Learn more',
@@ -479,6 +501,7 @@ export const sectionsComponents: Record<string, ComponentConfig> = {
       image,
       focal,
       minHeight,
+      facts,
       ctaPrimaryLabel,
       ctaPrimaryHref,
       ctaSecondaryLabel,
@@ -497,6 +520,7 @@ export const sectionsComponents: Record<string, ComponentConfig> = {
         image={image || undefined}
         focal={focal}
         minHeight={(minHeight as 'auto' | 'screen') ?? 'screen'}
+        facts={(facts as HeroFact[]) || undefined}
         ctaPrimaryLabel={ctaPrimaryLabel || undefined}
         ctaPrimaryHref={ctaPrimaryHref || undefined}
         ctaSecondaryLabel={ctaSecondaryLabel || undefined}

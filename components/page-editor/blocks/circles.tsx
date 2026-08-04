@@ -26,7 +26,7 @@ function indexFrom(puck: PuckArg): CirclesIndexData | undefined {
 // Shown in the editor canvas (no live data) so a section is visible + draggable there.
 function EditorStub({ label }: { label: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-8 text-center text-sm text-muted">
+    <div className="rounded-card border border-dashed border-border bg-surface/60 px-4 py-8 text-center text-sm text-muted">
       {label}
       <span className="mt-0.5 block text-2xs text-subtle">Live circles show on the published page</span>
     </div>
@@ -157,7 +157,7 @@ export const circlesComponents: Record<string, ComponentConfig> = {
       return (
         <div className="space-y-6">
           {d.signedIn && d.nearlyFullCount > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary-bg bg-primary-bg/40 p-4 dark:bg-primary-bg/15">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-primary-bg bg-primary-bg/40 p-4 dark:bg-primary-bg/15">
               <div className="flex items-start gap-3">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
                   <Sparkles className="h-5 w-5" />
