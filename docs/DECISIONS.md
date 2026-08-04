@@ -16637,6 +16637,33 @@ One bug found by the tests written for this and worth recording, because the sha
 
 The durable rule: **when two columns mean different things, the names, the writes and the reads must all keep them apart — a vague resolver name is how a money axis and a placement axis become one field nobody can tell apart.**
 
+## ADR-913 — Frequency charges once for the introduction: relationship attribution replaces cookies, and a tip carries no fee (2026-07-30)
+
+**Status.** Accepted, owner rulings 2026-07-30. **Parts 1-4 stand; part 5 was reversed the next day by [ADR-914](#adr-914)**, which says so itself. Makes the differential take-rate of ADR-811 §A the live charging path; supersedes ADR-786's "tips stay flat" and ADR-552's flat paying-state trio on that path.
+
+🔴 **Written retroactively on 2026-08-04, reconstructed — not remembered.** The decision shipped in commit `1b5e8783` (PR #1999) and was cited into 33 code sites and 13 docs the same day; the ledger entry was skipped, and the ADRs that PR *did* write (914-917, 919) came from later commits, so nobody noticed. Every clause below traces to that commit's own message or the code comments it left. Confirmed absent from every commit on every ref before writing this. `scripts/check-adr.mjs` counts headings and guards duplicates, so it cannot see a cited-but-missing number.
+
+**Context.** The take-rate ladder existed and almost never fired. `classifyOrderSource` decided "did the network source this sale?" from two cookies and defaulted to `self` on any miss — and cookies clear, expire, and do not survive a phone-to-laptop switch, so nearly every sale billed 0% by accident rather than by rule. A cookie also cannot answer the question a host eventually asks: *why did you charge me for that sale?* Tips had no source classification at all, so a tip from the recipient's own follower was charged where the identical person buying a ticket was not. And `/admin/pricing` wrote four flat fields over the whole `take_rate` blob, silently wiping the `network_bps` vector charging reads — an operator was editing numbers that never reached a charge.
+
+**Decision.** **Frequency charges once for the introduction. After that they are your people, free.**
+
+1. **The differential network vector is the live model.** Every fee path resolves `take_rate.network_bps` through `lib/billing/fees.ts`. The flat ADR-552 fields remain only so a pre-vector blob resolves to a number; nothing on the charging path may be wired to them again.
+2. **Attribution is relationship-first.** `lib/commerce/seller-audience.ts` answers "is this buyer already the seller's own audience?" from six signals — the buyer is the seller, follows the Space, is an active member, is in its CRM, is on the seller's contact list, or has bought before. Any one is enough, and the answer is 0% on every tier. The check sits **above** the entry point and the cookies.
+3. **A settled purchase records the buyer as a contact.** Nothing turned a purchase into a contact before, so a repeat buyer looked like a stranger forever. This write is what makes "charge once" true rather than aspirational.
+4. **A tip carries no platform fee, on any tier.** Zero, not "the self rate": a tip has no order source to classify and never will. Passed as an explicit zero fee so the destination-charge shape stays identical across channels.
+5. **The seller wall moves off event creation onto the price field.** ⚠️ **Reversed by ADR-914 — recorded for the history.** Creation was Crew-gated in the UI while the server never gated it. What survives is only that **event creation is not a paid feature**.
+
+**The fail-safe direction is "their audience", everywhere.** Any read failure or missing id resolves to 0%. Under-collecting on an error is recoverable; charging a fee we publicly promised not to charge is not.
+
+**Alternatives considered.** *Keep cookies, add relationship as a tiebreak* (rejected — a cookie is a guess, a relationship is a row with a timestamp, and the guess cannot survive an audit). *Let the entry point outrank the relationship, so a third party referring an existing follower still earns network credit* (rejected, and the cost is knowingly paid: it would mean charging a host for someone they already had, which is the one thing the promise forbids). *Charge tips the "self" rate* (rejected — it implies a classification that does not exist).
+
+**Consequences.** ⚠️ Inert until money moves: `billingLive()` gates the checkouts. ⚠️ The relationship check adds a read to checkout, placed after the self-scan so it short-circuits before any IO. ⚠️ `recordBuyerAsContact` is Space-scoped because `contacts` is keyed on `space_id`; a Crew-hosted event has no Space CRM, and that case stays covered for pricing by `prior_purchase`. ⚠️ It check-then-inserts rather than upserting (no unique constraint on `(space_id, profile_id)`), so a race can duplicate a row — a tidiness issue, never a money one, since the check only asks whether any row exists.
+
+Two bugs the new tests caught, recorded because both shapes recur: the `entryPoint` branch ran **before** the relationship check while the comment above it claimed the opposite order; and the contact write selected `email` from `profiles`, a column that does not exist, which PostgREST answers by nulling the whole row.
+
+The durable rule: **charge for the introduction, never for the relationship — and prove which one it was from a row, not a cookie.**
+
+
 ## ADR-914
 
 **Selling is not a tier. The rate is the ladder.** (2026-07-30, owner ruling; supersedes ADR-913's seller gate)
@@ -16729,6 +16756,29 @@ That correction removes the urgency and keeps every requirement. Two rules ship 
 The durable rule: **a cap with no grandfather is a promise broken retroactively, and the safest grandfather is the one that cannot go stale — computed from what the customer holds right now, not from a snapshot somebody has to remember to take.**
 
 ---
+
+## ADR-918 — A janitor edits the words; the numbers stay derived (2026-07-30)
+
+**Status.** Accepted. Owner directive: *"make sure pricing is wired into any CMS elements."* Completes [ADR-916](#adr-916) on the CMS side; extended to the DAWN two-band layout by [ADR-926](#adr-926). Strategy and the fallback-chain table live in [`VALUE-LADDER.md`](VALUE-LADDER.md) Appendix C.
+
+🔴 **Written retroactively on 2026-08-04.** Shipped in commit `540c7af2` (PR #1999), cited into 10 code sites, ledger entry skipped. Unlike ADR-913 this needed almost no reconstruction: Appendix C is already an authoritative statement of the decision, stamped *"Settled 2026-07-30 (ADR-918)"*.
+
+**Context.** ADR-916 had just collapsed nine structures that each held their own copy of the prices, six of which could disagree, onto one derived source. The CMS was outside that fix. The Puck `Tiers` block stores `price`, `strikePrice`, `cadence` and `priceNote` as free text, and Publish writes that text into a jsonb document — so the first Publish of a pricing page froze every figure, and an `/admin/pricing` rate edit would move the generated page while the published one quoted last quarter's numbers. Re-forking the source on the next Publish would have put it somewhere strictly worse than a constant in a file, because **a row in a database is not greppable and no test can read it**.
+
+**Decision.** **A janitor edits the WORDS. The NUMBERS stay derived.**
+
+1. **Binding, not typing.** A tier card carries `livePriceKey`, an offering id. When it resolves, price, struck anchor, cadence and rate come from the same config checkout bills on. The typed fields stay, and are the right choice for genuinely editorial cards — an add-on, or "Space Memberships: Owner-set" — which have no offering behind them.
+2. **Pricing rides the shared `LiveData`,** not a `/pricing`-only prop: any of the eight CMS pages can carry a `Tiers` block, and a binding that worked on one route would be a trap for whoever adds the second.
+3. **Both failure paths lean editorial.** An unresolved key falls back to typed text rather than blanking the card, and `getLivePricing` returns `{}` rather than throwing, because it runs during static generation where a throw takes the whole route down at build time.
+4. **The seed template is where the invariant is enforced,** because it is the one part of the chain that lives in git. `live-pricing.test.ts` asserts every card naming a real offering carries a key, and every key resolves.
+5. **`/pricing` gets two fallback rungs where the other seven get three.** Its coded page is the DERIVED one; its template is a static snapshot, so slotting the template in as a middle rung would mean any deploy where nobody has published silently downgrades live figures to a snapshot. Both chains say *published words beat the best available default*; they disagree only about which default is best, and that is a decision rather than an inconsistency to "fix" later.
+
+**Alternatives considered.** *Delete the typed fields and make binding mandatory* (rejected — editorial cards have nowhere to put a figure, and it removes the fail-safe). *Blank an unresolved card* (rejected — a visibly empty card is a worse failure than a slightly stale one, and the stale one self-corrects on redeploy). *Let `getLivePricing` throw so a misconfiguration is loud* (rejected — see 3). *Rewrite the stored document on every rate change* (rejected — it makes an operator's saved page a moving target and puts a pricing job on a content path).
+
+**Consequences.** ⚠️ The published document is still a database row nothing in CI can read, so the guarantee is only as strong as the seed template plus the fallback. A janitor who deletes a `livePriceKey` gets typed text back with no error — the intended fail-safe, and also how this can silently regress. ⚠️ The `pricing` template is deliberately not regenerated on later DAWN passes (ADR-926): a full Publish would freeze figures.
+
+The durable rule: **a CMS may own the words and never the numbers — the moment Publish can write a figure into a document, the figure has forked, and it has forked somewhere nothing can grep.**
+
 
 ## ADR-919 — Crew is pay what you want, so it has no price to lock (2026-07-30)
 
