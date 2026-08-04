@@ -127,7 +127,7 @@ export function JourneyCard({ journey }: { journey: JourneyPlan }) {
               {journey.emoji}
             </span>
           ) : (
-            <span className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+            <span className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
               <MapIcon className="w-4 h-4" />
             </span>
           )}

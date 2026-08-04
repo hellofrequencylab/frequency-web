@@ -51,6 +51,7 @@ import {
   type OutlineNode,
 } from '../mobile/data-ops'
 import { FieldForm, type FieldsSchema, type PushRequest } from '../mobile/field-form'
+import { IconButton } from '@/components/ui/icon-button'
 
 // ── Live-document context (the usePuck().appState.data replacement) ────────────
 const EditorDocContext = createContext<Data | null>(null)
@@ -466,14 +467,9 @@ function Inspector({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-2 border-b border-border px-3 py-2">
         {subs.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setSubs((s) => s.slice(0, -1))}
-            aria-label="Back"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-surface-elevated hover:text-text"
-          >
+          <IconButton label="Back" onClick={() => setSubs((s) => s.slice(0, -1))}>
             <ChevronLeft className="h-5 w-5" aria-hidden />
-          </button>
+          </IconButton>
         )}
         <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-text">{heading}</h2>
       </div>
@@ -528,14 +524,9 @@ function PalettePopover({
       >
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="text-sm font-semibold text-text">Add a block</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-surface-elevated hover:text-text"
-          >
+          <IconButton label="Close" onClick={onClose}>
             <X className="h-5 w-5" aria-hidden />
-          </button>
+          </IconButton>
         </div>
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
           {groups.map((group) => (

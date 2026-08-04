@@ -8,6 +8,7 @@ import { UnlogPracticeButton } from '@/components/practice/unlog-practice-button
 import { RemovePracticeButton } from '@/components/practice/remove-practice-button'
 import type { TimerKind, MindlessMode, PartialToday } from '@/lib/practices'
 import type { MovementConfig } from '@/lib/movement'
+import { IconButton } from '@/components/ui/icon-button'
 
 // The "your practices" tight action row (WEBSITE-CHANGES-PLAN B.3 + B.4). One
 // button + one link per practice: "Log practice" and "View practice" (the row
@@ -143,16 +144,16 @@ function OwnerMenu({ practiceId, title }: { practiceId: string; title: string })
 
   return (
     <div ref={ref} className="relative shrink-0">
-      <button
-        type="button"
+      <IconButton
+        variant="bordered"
+        label={`More options for ${title}`}
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={`More options for ${title}`}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface text-subtle transition-colors hover:bg-surface-elevated hover:text-text motion-reduce:transition-none"
+        className="bg-surface"
       >
         <MoreHorizontal className="h-4 w-4" aria-hidden />
-      </button>
+      </IconButton>
 
       {open && (
         <div
