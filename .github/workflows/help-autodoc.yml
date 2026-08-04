@@ -1,8 +1,13 @@
 # AI doc-writer (advisory). On a PR that touches app routes, post ONE comment with
 # a staff checklist of help articles to review/update (docs/SUPPORT-SYSTEM.md §6).
-# Propose-only: it never commits or merges. Needs the ANTHROPIC_API_KEY secret; the
-# built-in GITHUB_TOKEN (pull-requests: write) posts the comment. Degrades to a
-# manual-review checklist if the key is absent.
+# Propose-only: it never commits or merges. The built-in GITHUB_TOKEN
+# (pull-requests: write) posts the comment.
+#
+# CREDENTIAL: needs EITHER the ANTHROPIC_API_KEY repository secret OR the
+# AI_GATEWAY_URL + AI_GATEWAY_API_KEY pair (lib/ai/client.ts supports both). With
+# neither, the job still posts, but the comment leads with a ⚠️ banner saying the
+# AI review did not run and why, and the article list collapses to a lookup —
+# it does NOT masquerade as a reviewed checklist.
 name: help-autodoc
 
 on:
@@ -30,4 +35,6 @@ jobs:
         run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-autodoc.mts
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AI_GATEWAY_URL: ${{ secrets.AI_GATEWAY_URL }}
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
