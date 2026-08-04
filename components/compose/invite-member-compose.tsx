@@ -22,7 +22,9 @@ export function InviteMemberCompose({
 
   const signupUrl = 'https://frequencylocal.com/sign-in'
   const mailtoBody = `${message}\n\n${signupUrl}\n\nSee you there!\n${inviterName}`
-  const mailto = `mailto:${email}?subject=${encodeURIComponent('Join me on Frequency')}&body=${encodeURIComponent(mailtoBody)}`
+  // The address is encoded like every other part of the URL: it is typed by the member, and
+  // an unencoded `&` or `?` in it would otherwise inject extra mail headers into the link.
+  const mailto = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent('Join me on Frequency')}&body=${encodeURIComponent(mailtoBody)}`
 
   function handleCopy() {
     navigator.clipboard.writeText(`${message}\n\n${signupUrl}`)
