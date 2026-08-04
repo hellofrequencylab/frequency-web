@@ -22,11 +22,17 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 const LEDGER = join('docs', 'DECISIONS.md')
-const HEADING = /^## ADR-(\d+[a-z]?)\b/
+// `#{2,3}`, not `##`. Seven entries in the ledger use a ### heading -- ADR-052 through
+// ADR-057 and ADR-156a -- and a `^## ` regex simply does not see them. When the citation
+// scan below was first switched on it therefore reported six FULLY WRITTEN decisions as
+// missing, including ADR-056 (the RLS SECURITY DEFINER pattern) which is cited from 17
+// live migrations and a contract test. Verified collision-safe: widening adds no new
+// duplicate ids beyond the already-grandfathered 088-094 and 875.
+const HEADING = /^#{2,3} ADR-(\d+[a-z]?)\b/
 
 // Historical collisions, frozen at their current counts. A number here may appear
 // exactly this many times; appearing MORE means a new collision was just added.
-/** ADR numbers CITED in the tree that have no entry, frozen on 2026-08-04.
+/** ADR numbers CITED in the tree that have no entry, frozen on 2026-08-04. EIGHT of them.
  *
  *  A RATCHET, not a waiver, and the same contract as scripts/adoption-baselines.json and the
  *  a11y baselines (ADR-928): these 13 are pre-existing debt, and a FOURTEENTH fails the build.
@@ -38,8 +44,17 @@ const HEADING = /^## ADR-(\d+[a-z]?)\b/
  *  citations between them, covering the live money model and the CMS pricing invariant. The rest
  *  are older and mostly cited from superseded planning docs. Shrink this list; never grow it. */
 const KNOWN_MISSING = new Set([
-  '052', '053', '054', '055', '056', '057', // the earliest cluster, cited from DECISIONS/DATABASE/ARCHITECTURE
-  '188', '314', '447', '448', '624', '788', '790', '845',
+  // Five REAL decisions that were never written, ranked by live-code exposure:
+  '624', // contacts uniqueness per-space. 27 live sites. docs/CONTACT-TENANCY.md §1 is the decision, verbatim.
+  '845', // circle handoff + generic cover focal point. 12 live sites. Commit 74efab5 ends "ADR-845 to follow".
+  '788', // Profile & Settings becomes a real hub tab. REVERSES ADR-785 §4, which still says the opposite.
+  '447', // practice library Phase 3 "Grow". Siblings 445/446 exist; BUILD-LIST.md documents the shipped rows.
+  '790', // admin search bar above the sub-nav. ADR-791's own Status line vouches for it.
+  // Three that are NOT decisions and must never have an ADR written for them. Each is prose
+  // ABOUT numbering that this scanner cannot tell from a citation:
+  '188', // DECISIONS.md itself declaring 188-195 deliberately unused.
+  '314', // ENTITY-SPACES-BUILD.md reserving a range; the reservation over-claimed (314-317 never used).
+  '448', // PLATFORM-MASTER-PLAN.md proposing a number that was never accepted.
 ])
 
 const GRANDFATHERED = new Map([
