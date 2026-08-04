@@ -124,6 +124,13 @@ jobs:
         # storage host the agent sandbox's network policy blocks, so an artifact-only
         # hand-off dead-ends. always(): a single flaky surface must not discard the
         # other captures — the job stays red on real failures, but partials still land.
+        #
+        # ⚠️ THIS COMMIT DOES NOT RE-TRIGGER CI. GitHub deliberately suppresses workflow
+        # runs for pushes made with GITHUB_TOKEN, so the freshly captured baselines land on
+        # the branch with ZERO checks against them and the PR's last judged SHA stays the
+        # commit BEFORE the capture. That reads exactly like "CI passed on the new
+        # baselines" when nothing evaluated them. Push any commit of your own afterwards
+        # (or re-run the PR's checks) to get the branch judged on what it now contains.
         if: always()
         run: |
           git config user.email noreply@anthropic.com
@@ -176,6 +183,8 @@ jobs:
       - name: Merge into the ratchet
         run: pnpm a11y:baselines
       - name: Commit baselines to the branch
+        # Same GITHUB_TOKEN caveat as update-baselines above: this push does NOT re-trigger
+        # CI, so the branch carries new baselines that nothing has been judged against.
         run: |
           git config user.email noreply@anthropic.com
           git config user.name Claude
