@@ -1,6 +1,20 @@
-# Manual E2E runs against a live URL (Vercel preview or production).
-# Deliberately NOT part of ci.yml — these need a running deployment, which
-# CI does not have. Trigger from the Actions tab with the URL to test.
+# E2E against a live URL (Vercel preview or production). Deliberately NOT part of ci.yml —
+# these need a running deployment, which CI does not have.
+#
+# TWO ENTRY POINTS:
+#   1. workflow_dispatch — the maintainer path. Point it at any URL; optionally run the
+#      @visual compare, or CAPTURE baselines on the runner (update_baselines). Unchanged.
+#   2. pull_request      — the automatic COMPARE gate (UX maturity plan, Lift 6c). Runs on
+#      PRs that can move pixels (globals.css / components/** / lib/page-editor/**), resolves
+#      the PR's own Vercel preview through the deployments API, and runs smoke + a11y +
+#      @visual against it.
+#
+# The pull_request path SKIPS ITSELF (green, with a notice) unless
+# VERCEL_AUTOMATION_BYPASS_SECRET is set. Without that secret Vercel's Deployment Protection
+# serves its auth interstitial to Playwright, so every SSR route "renders" the wall: the
+# visual suite would diff the wall against real baselines and the a11y suite would audit it.
+# A red X that means "the owner has not created a secret yet" trains people to ignore the
+# check, which is the opposite of what a gate is for. See the plan's Addendum 2026-08-04.
 name: e2e
 
 on:
@@ -21,6 +35,17 @@ on:
         required: false
         default: false
         type: boolean
+  pull_request:
+    branches: [main]
+    # Same paths-filter shape db-tests.yml uses: only PRs that can actually change
+    # rendering pay for a preview-backed run.
+    paths:
+      - 'app/globals.css'
+      - 'components/**'
+      - 'lib/page-editor/**'
+      - 'test/e2e/**'
+      - 'playwright.config.ts'
+      - '.github/workflows/e2e.yml'
 
 # contents: write is needed ONLY by the update-baselines job's commit step (manual
 # dispatch, maintainer-triggered). The smoke/visual compare jobs never write.
@@ -28,11 +53,16 @@ permissions:
   contents: write
 
 concurrency:
-  group: e2e-${{ github.ref }}
-  cancel-in-progress: false
+  # Keyed by entry point as well as ref, so an automatic PR run can never cancel a
+  # maintainer's baseline capture on the same branch. Superseded PR runs DO cancel:
+  # only the newest commit's pixels are interesting.
+  group: e2e-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   smoke:
+    # Manual path only — the PR path runs its own smoke step against the resolved preview.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -47,7 +77,9 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
-      - name: Smoke suite
+      # `pnpm test:e2e` is grep-invert @visual, i.e. @smoke AND @a11y — the two suites with
+      # no committed-baseline dependency.
+      - name: Smoke + a11y suite
         env:
           PW_BASE_URL: ${{ inputs.base_url }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
@@ -61,7 +93,7 @@ jobs:
           retention-days: 7
 
   update-baselines:
-    if: ${{ inputs.update_baselines }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.update_baselines }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -107,7 +139,7 @@ jobs:
           retention-days: 7
 
   visual:
-    if: ${{ inputs.run_visual }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_visual }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -132,6 +164,144 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-visual
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  # ── The automatic PR gate (Lift 6c) ─────────────────────────────────────────────────
+  # Runs only on pull_request, and only for the paths filter above. Three outcomes:
+  #   · bypass secret missing        → SKIP, green, with a notice + step summary (never red)
+  #   · no successful Vercel preview → SKIP, green, with a notice (a PR can legitimately
+  #                                    have no preview: forks, skipped builds, build failure
+  #                                    which the Vercel check reports on its own)
+  #   · preview resolved             → smoke + @a11y, then the @visual compare
+  pr-compare:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    # Narrower than the workflow default (which is only `contents: write` for the
+    # maintainer-triggered baseline commit). This job never writes.
+    permissions:
+      contents: read
+      deployments: read
+      statuses: read
+    steps:
+      - name: Gate on the Vercel bypass secret
+        id: gate
+        env:
+          BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BYPASS}" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Visual/a11y compare skipped::VERCEL_AUTOMATION_BYPASS_SECRET is not set, so every preview route would serve Vercel's Deployment Protection interstitial instead of the app. Nothing was tested."
+            {
+              echo "### e2e compare skipped"
+              echo
+              echo "\`VERCEL_AUTOMATION_BYPASS_SECRET\` is not configured for this repository."
+              echo
+              echo "Vercel Deployment Protection serves an auth interstitial to Playwright, so the"
+              echo "suite would compare baselines against the wall rather than the app. Skipping is"
+              echo "the honest result; a red X here would mean nothing about this PR."
+              echo
+              echo "**To enable:** Vercel → project → Settings → Deployment Protection →"
+              echo "*Protection Bypass for Automation* → generate, then add the value as the GitHub"
+              echo "Actions secret \`VERCEL_AUTOMATION_BYPASS_SECRET\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve the PR's Vercel preview URL
+        id: preview
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          # Vercel records each build as a GitHub Deployment on the head SHA and reports the
+          # live URL as `environment_url` on the deployment's `success` status. Poll for it:
+          # the PR event fires before the build finishes.
+          url=""
+          for attempt in $(seq 1 30); do
+            for dep in $(gh api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" --jq '.[].id' || true); do
+              candidate=$(gh api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" \
+                --jq 'map(select(.state=="success") | .environment_url // empty) | first // empty' || true)
+              if [ -n "${candidate}" ]; then
+                url="${candidate}"
+                break
+              fi
+            done
+            if [ -n "${url}" ]; then
+              break
+            fi
+            echo "No successful deployment for ${SHA} yet (attempt ${attempt}/30); waiting 20s."
+            sleep 20
+          done
+
+          if [ -z "${url}" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Visual/a11y compare skipped::No successful Vercel deployment for ${SHA} after 10 minutes. Nothing was tested (the Vercel check reports build failures on its own)."
+            {
+              echo "### e2e compare skipped"
+              echo
+              echo "No successful Vercel deployment was found for \`${SHA}\` within 10 minutes."
+              echo "Build failures are reported by Vercel's own check; this job stays quiet rather"
+              echo "than duplicating that signal as a false visual-regression failure."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "url=${url}" >> "$GITHUB_OUTPUT"
+            echo "Resolved preview: ${url}"
+            echo "### e2e compare target" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "\`${url}\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.preview.outputs.ready == 'true'
+      - uses: pnpm/action-setup@v6
+        if: steps.preview.outputs.ready == 'true'
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v7
+        if: steps.preview.outputs.ready == 'true'
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Install
+        if: steps.preview.outputs.ready == 'true'
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        if: steps.preview.outputs.ready == 'true'
+        run: pnpm exec playwright install --with-deps chromium
+
+      # Smoke + @a11y: no baseline dependency, so this half of the gate is trustworthy the
+      # moment the bypass secret exists.
+      - name: Smoke + a11y suite
+        id: functional
+        if: steps.preview.outputs.ready == 'true'
+        env:
+          PW_BASE_URL: ${{ steps.preview.outputs.url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: pnpm test:e2e
+
+      # @visual: needs committed baselines captured against a deployment of the SAME kind.
+      # always() so a smoke/a11y failure above does not hide a pixel regression here.
+      - name: Visual compare
+        if: ${{ always() && steps.preview.outputs.ready == 'true' }}
+        env:
+          PW_BASE_URL: ${{ steps.preview.outputs.url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: pnpm test:e2e:visual
+
+      - name: Upload report + diffs
+        if: ${{ failure() && steps.preview.outputs.ready == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-pr-compare
           path: |
             playwright-report/
             test-results/
