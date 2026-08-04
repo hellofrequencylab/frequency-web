@@ -93,6 +93,7 @@ export async function setLiveLocation(input: {
       .eq('id', me.id)
     if (error) return fail(error.message)
     revalidatePath('/settings/connections')
+    revalidatePath('/settings') // the section now renders on the unified Settings page
     return ok()
   }
 
@@ -107,6 +108,7 @@ export async function setLiveLocation(input: {
     .eq('id', me.id)
   if (error) return fail(error.message)
   revalidatePath('/settings/connections')
+  revalidatePath('/settings') // the section now renders on the unified Settings page
   revalidatePath('/network')
   return ok()
 }

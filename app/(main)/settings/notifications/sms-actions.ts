@@ -111,6 +111,7 @@ export async function sendSmsCode(rawPhone: string): Promise<ActionResult<{ phon
   })
 
   revalidatePath('/settings/notifications')
+  revalidatePath('/settings') // the section now renders on the unified Settings page
   return ok({ phone })
 }
 
@@ -217,6 +218,7 @@ export async function verifySmsCode(rawCode: string): Promise<ActionResult> {
   }
 
   revalidatePath('/settings/notifications')
+  revalidatePath('/settings') // the section now renders on the unified Settings page
   return ok()
 }
 
@@ -277,5 +279,6 @@ export async function saveSmsPreferences(prefs: SmsPreferences): Promise<ActionR
   }
 
   revalidatePath('/settings/notifications')
+  revalidatePath('/settings') // the section now renders on the unified Settings page
   return ok()
 }

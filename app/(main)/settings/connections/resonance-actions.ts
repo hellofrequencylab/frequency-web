@@ -22,6 +22,7 @@ export async function setResonanceMatching(optedIn: boolean): Promise<{ ok: bool
   const r = await setMatchingConsent(me, optedIn)
   if (r.ok) {
     revalidatePath('/settings/connections')
+    revalidatePath('/settings') // the section now renders on the unified Settings page
     revalidatePath('/network/friends')
   }
   return r

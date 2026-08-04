@@ -61,6 +61,7 @@ export async function saveMatchPrefsAction(input: SaveMatchPrefsInput): Promise<
   if (error) return fail('Could not save your match preferences.')
 
   revalidatePath('/settings/connections')
+  revalidatePath('/settings') // the section now renders on the unified Settings page
   revalidatePath('/feed')
   return ok()
 }
