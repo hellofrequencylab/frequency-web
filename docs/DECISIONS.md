@@ -16849,3 +16849,19 @@ The durable rule: **a wall the database cannot prove is a guard, not a wall — 
 **Consequences.** The lighter canvas + chrome frame changes every app page's first impression; the Playwright visual-snapshot harness (#2005) should re-baseline after merge. `text-subtle` remains failing AA at small sizes anywhere outside the swept rail chrome — the P8 dark/a11y pass owns the site-wide sweep. ⚠️ The DAWN 2 rounds (docks, screens, marketing rebuilds, pricing page, Lab vision, wizard) are gated on the full project export reaching the repo. ⚠️ Brief 02's naming deltas are NOT canon where they conflict with NAMING.md — the naming canon wins on names, and DAWN inherits corrections, not the reverse.
 
 The durable rule: **design rounds are applied through the repo's conventions and canons, never pasted — and where a design doc and production disagree about what exists, production is the witness.**
+
+---
+
+## ADR-925 — The eight UX maturity lifts become phased, gated workstreams (2026-08-04)
+
+**Status.** Accepted. Owner directive on the 2026-08-04 rebuild grading: "build these 8 recommends into the next phases. Go deep into each and make sure it's fully mature."
+
+**Context.** The rebuild graded 74/100 against a best-in-class bar: token architecture and design ops in the 90s, screen craft mid-migration (65), accessibility spot-fixed (60), mobile inherited rather than designed (55), and no user evidence anywhere in the design loop (40). Eight improvement recommendations came out of the grading; unphased recommendations decay into sentiment.
+
+**Decision.** The eight lifts are specced as full workstreams in [`docs/UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md), each with a definition of done, machine enforcement in the house gate pattern, a moving metric, and named owner actions: (1) the user-evidence loop (journey registry + quarterly moderated tests + findings feeding the DAWN round), (2) adoption-debt ratchets (`check:adoption` baselines that only shrink, generalizing the admin-client ratchet), (3) accessibility as blocking gates (token-pair contrast validation across all four render states, axe-core in e2e, focus/reduced-motion audits), (4) a mobile grammar decided once via BRIEF-07 to DAWN with a standing every-pass mobile statement rule, (5) one render path per marketing route (block parity → template regeneration → coded-body retirement held by `check:render-path`), (6) visual regression at real surface area (~120 captures across four render states, auto-compare on styling PRs), (7) per-template vitals budgets read in every DAWN round with a breach protocol, (8) an interaction-state contract with a kit sweep and a `check:elements` extension. Sequencing interleaves the lifts into the existing waves rather than adding a track.
+
+**Alternatives considered.** *A dedicated "quality phase" after the remodel* (rejected — quality phases scheduled after feature work are the work most often cut; mounting the lifts onto running waves makes them un-cuttable). *Advisory-only gates* (rejected except research freshness, the one cadence a build cannot honestly block on — every other lift gets a blocking check because the repo's own history shows advisory counts drift).
+
+**Consequences.** The near-term wave order in UX-MATURITY-PLAN §Sequencing supersedes the informal "next screens" queue. ⚠️ Four items are owner-gated and listed there: research recruiting, the seeded snapshot account, flipping new checks to required, the Auth leaked-password toggle. ⚠️ The vitals beacon gains a `viewport_class` field — account-free, so ADR-922's consent posture is unchanged.
+
+The durable rule: **a quality bar without a gate is a wish, and a gate without a number is a ritual — every lift ships with both.**

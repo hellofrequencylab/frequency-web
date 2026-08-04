@@ -1,5 +1,11 @@
 # Master build list — Frequency web
 
+> **Active companion (2026-08-04): [`UX-MATURITY-PLAN.md`](UX-MATURITY-PLAN.md)** ([ADR-925](DECISIONS.md)) —
+> the eight gated lifts (user-evidence loop · adoption ratchets · a11y gates · mobile grammar ·
+> one render path · visual regression at scale · vitals budgets · interaction states) and the
+> wave sequencing that interleaves them with the DAWN 2 screen passes. Its §Sequencing table is
+> the near-term order of operations for the redesign.
+
 > **The single, prioritized, execute-from list for the whole platform.** Consolidates every
 > scattered roadmap (BACKLOG · ONBOARDING-BUILD-LIST · DEVELOPMENT-MAP · IA-RESTRUCTURE ·
 > EDIT-PATH-AUDIT · STUDIO-REVIEW · LAUNCH · CHECKLIST) into one ranked list, after the
