@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { Check } from 'lucide-react'
-import { SKINS, type SkinId, DEFAULT_SKIN } from '@/lib/theme/skins'
+import { SELECTABLE_SKINS, type SkinId, DEFAULT_SKIN } from '@/lib/theme/skins'
 import { GENERATIONS, type GenerationId, DEFAULT_GENERATION } from '@/lib/theme/generations'
 import { OCCASIONS, type OccasionId } from '@/lib/theme/occasions'
 import { setThemeSkin, setThemeGeneration, setThemeOccasion } from './actions'
@@ -148,7 +148,7 @@ export function ThemeSwitcher({
       <div className="mb-6">
         <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">Palette</p>
         <div className="grid gap-3 sm:grid-cols-2">
-          {SKINS.map((s) => (
+          {SELECTABLE_SKINS.map((s) => (
             <SkinCard
               key={s.id}
               active={skin === s.id}

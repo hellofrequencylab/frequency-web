@@ -24,6 +24,18 @@ export interface SkinDef {
   label: string
   /** One plain sentence on the feel (voice: plain, no em dashes). */
   description: string
+  /**
+   * May a member CHOOSE this skin? Distinct from whether it exists.
+   *
+   * A skin that is registered but not selectable stays fully alive: its CSS blocks stay
+   * authored, `resolveSkin` still maps a stored value onto it, `[data-skin]` still applies,
+   * and the e2e suite still captures it as a render state. It simply is not offered.
+   *
+   * That separation is the point. Deleting Midnight would strip the CSS the render-state
+   * matrix depends on and orphan any `spaces.skin = 'midnight'` row already in the database,
+   * and re-adding it later would mean re-authoring rather than re-listing.
+   */
+  selectable: boolean
 }
 
 /** Every registered skin. `default` (DAWN) is first; it is the fallback everywhere. */
@@ -32,13 +44,24 @@ export const SKINS: readonly SkinDef[] = [
     id: 'default',
     label: 'Dawn',
     description: 'The signature Frequency look: a warm cream canvas with amber light.',
+    selectable: true,
   },
   {
     id: 'midnight',
     label: 'Midnight',
     description: 'A cooler, deeper take: cool slate surfaces with the warm amber accent kept.',
+    // Owner call, 2026-08-04: kept in the system, taken out of members' hands. Midnight's
+    // only non-colour lever is sharper corners, and radius-role adoption is about 2%, so what
+    // a member would actually get today is Dawn with a cooler palette rather than the second
+    // skin the system promises. Flip this back once role adoption is high enough that the
+    // skin changes the FEEL and not just the hue.
+    selectable: false,
   },
 ]
+
+/** The skins a member may actually pick. Every user-facing picker reads THIS, never SKINS —
+ *  SKINS is the full registry and stays the source of truth for resolution and rendering. */
+export const SELECTABLE_SKINS: readonly SkinDef[] = SKINS.filter((s) => s.selectable)
 
 /** The fallback skin id. An unknown or missing `spaces.skin` value resolves to this. */
 export const DEFAULT_SKIN: SkinId = 'default'
