@@ -73,15 +73,16 @@ export const PAIRS = [
   { fg: '--color-text-muted', bg: '--color-surface-post', role: 'body', note: 'secondary copy on a feed post' },
   { fg: '--color-text-muted', bg: '--color-chrome', role: 'body', note: 'secondary copy in the chrome band' },
 
-  // ── The tertiary step (text-subtle) — a LARGE/secondary role by contract ─────────────────
-  // text-subtle is the labels-and-meta step. It is held to 3.0 (WCAG large) rather than 4.5
-  // BECAUSE the companion ratchet `subtle-tiny-type` (scripts/adoption-baselines.json) forbids
-  // pairing it with the tiny type scale — that ratchet is what makes this classification true,
-  // and its count only shrinks. Raising this to 4.5 is an owner palette decision, not a gate edit.
-  { fg: '--color-text-subtle', bg: '--color-canvas', role: 'large', note: 'meta/labels on the canvas' },
-  { fg: '--color-text-subtle', bg: '--color-surface', role: 'large', note: 'meta/labels on a card' },
-  { fg: '--color-text-subtle', bg: '--color-surface-elevated', role: 'large', note: 'meta/labels on an elevated surface' },
-  { fg: '--color-text-subtle', bg: '--color-chrome', role: 'large', note: 'meta/labels in the chrome band' },
+  // ── The tertiary step (text-subtle) — body copy, held to 4.5 ─────────────────────────────
+  // This step used to be classified `large` (3.0) on the argument that the companion
+  // `subtle-tiny-type` ratchet kept it off the tiny scale. axe disagreed on the live pages and
+  // axe was right: text-subtle carries ordinary meta and label copy at normal size, so 4.5 is
+  // its real minimum. The token was darkened in all four states to meet it (worst case ~4.97),
+  // and the classification now matches what a browser actually judges.
+  { fg: '--color-text-subtle', bg: '--color-canvas', role: 'body', note: 'meta/labels on the canvas' },
+  { fg: '--color-text-subtle', bg: '--color-surface', role: 'body', note: 'meta/labels on a card' },
+  { fg: '--color-text-subtle', bg: '--color-surface-elevated', role: 'body', note: 'meta/labels on an elevated surface' },
+  { fg: '--color-text-subtle', bg: '--color-chrome', role: 'body', note: 'meta/labels in the chrome band' },
 
   // ── The ink bands (marketing dark bands, in both modes) ──────────────────────────────────
   { fg: '--color-on-ink', bg: '--color-ink', role: 'body', note: 'copy on an ink band' },

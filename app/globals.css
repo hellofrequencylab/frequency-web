@@ -40,7 +40,7 @@
      near-black on the cream canvas, still ~10:1 contrast. */
   --color-text:             #3D352A;
   --color-text-muted:       #6B6253;
-  --color-text-subtle:      #8F8675;
+  --color-text-subtle:      #6E6558;
 
   /* Ink. Deep warm near-black for the public site's dark bands — drawn from
      Frequency's black wood-slat interiors. This is the load-bearing half of the
@@ -220,7 +220,7 @@
   --color-border-strong:     #D9D3C8;
   --color-text:              #3D352A;
   --color-text-muted:        #6B6253;
-  --color-text-subtle:       #8F8675;
+  --color-text-subtle:       #6E6558;
   --color-primary:           #E2912F;
   --color-primary-hover:     #CE8023;
   --color-primary-strong:    #9A5E12;
@@ -286,7 +286,7 @@
   /* Text — deep slate ink (≈12:1 on canvas), cool muted/subtle steps. */
   --color-text:              #1C2535;
   --color-text-muted:        #4B566B;
-  --color-text-subtle:       #6E7A91;
+  --color-text-subtle:       #5B6576;
 
   /* Primary — keep the warm amber accent so the brand carries; nudged slightly
      deeper/cooler-shadowed to sit on the cool surfaces. */
@@ -326,7 +326,7 @@
 
   --color-text:             #EFE8DB;
   --color-text-muted:       #A99C88;
-  --color-text-subtle:      #7E735F;
+  --color-text-subtle:      #A2957D;
 
   /* Ink runs even deeper than the dark canvas so the splash dark bands still
      read as a deliberate, cinematic black in dark mode. */
@@ -415,7 +415,7 @@
   /* Text — cool off-white ink (≈14:1 on canvas), cool muted/subtle steps. */
   --color-text:             #E7ECF4;
   --color-text-muted:       #9AA6BC;
-  --color-text-subtle:      #6B7689;
+  --color-text-subtle:      #8D9AB0;
 
   /* Primary — warm amber accent kept (brighter in the dark, as DAWN does), so the
      cool field still carries a Frequency-warm highlight. */
