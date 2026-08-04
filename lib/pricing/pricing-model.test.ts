@@ -62,7 +62,11 @@ describe('pricing table model', () => {
   it('leads with Free Space and carries every tier through Independent (owner, 2026-07)', () => {
     const tiers = pricingTiers(true)
     expect(tiers.map((t) => t.id)).toEqual(['free', 'business', 'collective', 'nonprofit', 'independent'])
-    expect(tiers.find((t) => t.id === 'business')!.featured).toBe(true)
+    // COLLECTIVE is the highlighted Space column: the DAWN 2 pricing reference the owner adopted
+    // (design_handoff/dawn/ui_kits/marketing/pricing.html) crowns Crew + Collective "Best choice",
+    // and no ADR names a different featured plan. Was `business` before the reference landed.
+    expect(tiers.map((t) => [t.id, t.featured])).toContainEqual(['collective', true])
+    expect(tiers.filter((t) => t.featured).map((t) => t.id)).toEqual(['collective'])
     // Phase 5 (ADR-916): the columns are DERIVED from pricing-grid spaceOfferings, so the table cannot
     // hold a tier the grid does not, or omit one it does. Independent is displayed on every public
     // surface; whether it is offered as an in-app UPGRADE is the plan ladder's own, separate call.

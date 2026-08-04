@@ -98,6 +98,15 @@ describe('offerings: every sellable tier is on the page', () => {
     }
   })
 
+  it('crowns exactly Crew and Collective (the adopted DAWN 2 reference; no ADR overrides it)', () => {
+    // One featured column per ladder: Crew on the member band, Collective on the Space band, the
+    // "Best choice" pair in design_handoff/dawn/ui_kits/marketing/pricing.html. The page float, the
+    // comparison emphasis, and the default-open mobile column all read THIS flag, so this is the one
+    // place the crown is decided.
+    expect(memberOfferings(input).filter((o) => o.featured).map((o) => o.id)).toEqual(['crew'])
+    expect(spaceOfferings(input).filter((o) => o.featured).map((o) => o.id)).toEqual(['collective'])
+  })
+
   it('applies the operator-set trial to the paid Space plans only', () => {
     for (const o of spaceOfferings(input)) {
       if (o.tier === 'free') expect(o.trial).toBeNull()

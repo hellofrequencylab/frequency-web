@@ -22,6 +22,10 @@ import { Illustration } from '@/components/marketing/illustrations'
 import { breadcrumbSchema, faqSchema, productSchema } from '@/lib/jsonld'
 import { Reveal } from '@/components/marketing/motion'
 import { PricingComparison } from '@/components/marketing/pricing-comparison'
+import {
+  PricingBillingToggle,
+  PricingIntervalScope,
+} from '@/components/marketing/pricing-billing-toggle'
 import { getPricingValues } from '@/lib/pricing/settings'
 import { catalogConfigByKey, loadCatalogConfig } from '@/lib/pricing/catalog-config'
 import { isBetaPricingActive } from '@/lib/pricing/beta'
@@ -55,9 +59,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // between tiers moves it in the grid. There is no dollar figure, and no percentage, in this file.
 //
 // SPEED: the page is ISR (revalidate below). The two config reads are request-cached and happen once per
-// revalidation, not per visitor. Every price renders statically (monthly headline, yearly beside it); the
-// retired monthly/yearly toggle took the last page-specific client island with it (DAWN 2 screen pass,
-// matching the reference's single-figure cards), leaving only the shared scroll-reveal island.
+// revalidation, not per visitor. Every price renders statically at BOTH intervals; the monthly/yearly
+// toggle (owner: "keep the billing toggle") is the one page-specific client island, and it holds no
+// price data — it flips a data-interval attribute and CSS shows the matching span, exactly the
+// pre-rebuild wiring, now scoped across the two DAWN 2 plan bands.
 export const revalidate = 3600
 
 /** Resolve the whole pricing model from the operator-editable config. One place, so the metadata, the
@@ -352,49 +357,63 @@ export default async function PricingPage() {
         <p className="text-center text-lg leading-relaxed text-muted sm:text-xl">{MISSION_FRAMING}</p>
       </Section>
 
+      {/* The CSS that drives the monthly/yearly toggle island: hide the interval the wrapper is not on.
+          The scope wrapper carries data-interval; each price span carries data-interval-show. No client
+          JS in the page itself; the toggle (a client island) only flips the wrapper attribute. */}
+      <style>{`
+        [data-interval='month'] [data-interval-show='year'] { display: none; }
+        [data-interval='year'] [data-interval-show='month'] { display: none; }
+      `}</style>
+
       {/* THE PLANS (DAWN 2 structure, design_handoff/dawn/ui_kits/marketing/pricing.html). Two bands
           instead of two side-by-side ladders. Row one, cream: everything a person starts free, Member ·
           Crew · Space, with Crew the wide, floating middle card. Row two, ink: the paid Space plans,
           Business · Collective · Non Profit, Collective floating. Independent stays on the page as the
           quiet full-width strip under the ink row. Every figure still reads off the offering model
-          (operator config), never this file; only the STRUCTURE changed. */}
-      <Section tone="canvas" width="wide">
-        <SectionHeading
-          align="center"
-          eyebrow="The plans"
-          title="Pick the plan that fits."
-          kicker="Two ladders. One for you as a member, one for the Space you run. Every rung on both sells, so the only thing that moves down the ladder is the rate. You can be on both, and you can start on the free rung of either."
-        />
-        <div className="stagger grid items-center gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
-          <PlanCard offering={member} />
-          <PlanCard offering={crew} featured />
-          <PlanCard offering={spaceFree} />
-        </div>
-      </Section>
-
-      <Section tone="ink" width="wide" className="spot relative overflow-hidden">
-        <div className="relative z-10">
+          (operator config), never this file; the float reads Offering.featured, so the emphasized card
+          and the model's emphasis cannot disagree. One billing toggle governs both bands, so a reader
+          compares monthly against monthly. */}
+      <PricingIntervalScope>
+        <Section tone="canvas" width="wide">
           <SectionHeading
-            tone="ink"
             align="center"
-            title="For your Space"
-            kicker="A Space is free for anyone to start, and a free Space sells. The paid plans buy the rate down and lift the caps."
+            eyebrow="The plans"
+            title="Pick the plan that fits."
+            kicker="Two ladders. One for you as a member, one for the Space you run. Every rung on both sells, so the only thing that moves down the ladder is the rate. You can be on both, and you can start on the free rung of either."
           />
+          <PricingBillingToggle yearlyNote={annualDiscountNote(input.values)} />
           <div className="stagger grid items-center gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
-            <PlanCard offering={business} tone="ink" />
-            <PlanCard offering={collective} tone="ink" featured />
-            <PlanCard offering={nonprofit} tone="ink" />
+            <PlanCard offering={member} />
+            <PlanCard offering={crew} />
+            <PlanCard offering={spaceFree} />
           </div>
-          {independent && <IndependentStrip offering={independent} />}
-          <p className="mx-auto mt-10 max-w-2xl text-center text-base leading-relaxed text-on-ink-muted">
-            {annualDiscountNote(input.values)} Never a wall in front of the transaction.{' '}
-            {PLAN_STORY.meters} You keep 100% of your own bookings on every rung: the take-rate applies
-            only to a sale the network introduced, and it drops as your plan rises. Once someone is
-            yours, a follower, one of your members, a contact, or a past buyer, we take nothing on them
-            again. We charge once for the introduction. After that they are your people, free.
-          </p>
-        </div>
-      </Section>
+        </Section>
+
+        <Section tone="ink" width="wide" className="spot relative overflow-hidden">
+          <div className="relative z-10">
+            <SectionHeading
+              tone="ink"
+              align="center"
+              title="For your Space"
+              kicker="A Space is free for anyone to start, and a free Space sells. The paid plans buy the rate down and lift the caps."
+            />
+            <div className="stagger grid items-center gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
+              <PlanCard offering={business} tone="ink" />
+              <PlanCard offering={collective} tone="ink" />
+              <PlanCard offering={nonprofit} tone="ink" />
+            </div>
+            {independent && <IndependentStrip offering={independent} />}
+            <p className="mx-auto mt-10 max-w-2xl text-center text-base leading-relaxed text-on-ink-muted">
+              {annualDiscountNote(input.values)} Never a wall in front of the transaction.{' '}
+              {PLAN_STORY.meters} You keep 100% of your own bookings on every rung: the take-rate
+              applies only to a sale the network introduced, and it drops as your plan rises. Once
+              someone is yours, a follower, one of your members, a contact, or a past buyer, we take
+              nothing on them again. We charge once for the introduction. After that they are your
+              people, free.
+            </p>
+          </div>
+        </Section>
+      </PricingIntervalScope>
 
       {/* Seats + the AI add-on: the two things you can add to a plan, priced from the same config, and
           both also rows in the comparison below so the difference between tiers stays visible. */}
@@ -420,12 +439,14 @@ export default async function PricingPage() {
           kicker="Every row below is read from the same rules the product runs on, so this table says what your account will actually do."
         />
 
+        {/* The default-open mobile column is the FEATURED offering (the same flag the cards float and
+            the table emphasizes), so no surface on this page crowns a different plan. */}
         <ComparisonBlock
           title="Membership"
           kicker="What you get as a person, on the free tier and on Crew."
           grid={memberFeatureGrid(input)}
           offerings={members}
-          openId="crew"
+          openId={members.find((o) => o.featured)?.id ?? members[0]!.id}
         />
 
         <div className="mt-14">
@@ -434,7 +455,7 @@ export default async function PricingPage() {
             kicker="What a Space gets on each plan, from free to Independent."
             grid={spaceFeatureGrid(input)}
             offerings={spaces}
-            openId="business"
+            openId={spaces.find((o) => o.featured)?.id ?? spaces[0]!.id}
           />
         </div>
       </Section>
@@ -529,19 +550,23 @@ export default async function PricingPage() {
 // KIT NOTE: these are page-local rather than marketing-ui pieces because the kit `Card` and `Button`
 // carry no ink tone yet. If a second surface needs an on-ink card or CTA, promote these to the kit.
 
-/** One plan card. `featured` is the row's floating middle card (lift-2, primary border, the badge,
- *  wider via the grid's 1.2fr middle column and taller via the negative block margin, exactly the
- *  reference's silhouette). Non-featured cards rest on the page (lift-1) and center vertically. */
+/** One plan card. The featured card is the row's floating middle card (lift-2, primary border, the
+ *  badge, wider via the grid's 1.2fr middle column and taller via the negative block margin, exactly
+ *  the reference's silhouette). Non-featured cards rest on the page (lift-1) and center vertically.
+ *
+ *  `featured` READS the model (`Offering.featured`: Crew + Collective, the DAWN 2 reference's "Best
+ *  choice" pair the owner adopted; see the flag's doc in lib/pricing/pricing-grid.ts), never a page
+ *  prop — a prop here is how the page float and the comparison emphasis came to crown different
+ *  plans. */
 function PlanCard({
   offering,
   tone = 'light',
-  featured = false,
 }: {
   offering: Offering
   tone?: 'light' | 'ink'
-  featured?: boolean
 }) {
   const ink = tone === 'ink'
+  const featured = offering.featured
   const shell = featured
     ? `lift-2 border-2 border-primary p-7 sm:p-8 lg:-my-4 ${
         ink ? 'bg-on-ink/5' : 'bg-surface ring-4 ring-primary-bg'
@@ -606,9 +631,12 @@ function RateLine({ takeRate, ink = false }: { takeRate: string; ink?: boolean }
   )
 }
 
-/** The headline price, single figure (the reference's card grammar): the struck LIST anchor with its
- *  "Beta price" tag where the config carries one, the monthly headline, the yearly beside it, and the
- *  honest beta lock line only under a real anchor. Every figure reads off the offering. */
+/** The headline price in the reference's card grammar, at BOTH intervals: the struck LIST anchor with
+ *  its "Beta price" tag where the config carries one (the anchor is a monthly figure, so it rides the
+ *  monthly span), the headline figure, and the honest beta lock line only under a real anchor. Both
+ *  interval spans render statically and the billing toggle's CSS shows one — the pre-rebuild wiring,
+ *  in the rebuilt card. A free tier has no yearly price, so its yearly span repeats the same label
+ *  rather than going blank. Every figure reads off the offering. */
 function PlanPrice({
   offering,
   ink = false,
@@ -618,42 +646,49 @@ function PlanPrice({
   ink?: boolean
   featured?: boolean
 }) {
+  const intervals: { key: 'month' | 'year'; label: string; anchor: string | null }[] = [
+    { key: 'month', label: offering.monthly, anchor: offering.listAnchor },
+    { key: 'year', label: offering.yearly ?? offering.monthly, anchor: null },
+  ]
   // A long price label (pay-what-you-want Crew reads "from $4.99/mo") steps down a size so the display
   // face never wraps mid-figure; the reference sizes by string length the same way.
-  const long = offering.monthly.length > 8
-  const size = featured
-    ? long
-      ? 'text-3xl sm:text-4xl'
-      : 'text-5xl sm:text-6xl'
-    : long
-      ? 'text-3xl'
-      : 'text-4xl'
+  const sizeFor = (label: string) => {
+    const long = label.length > 8
+    return featured
+      ? long
+        ? 'text-3xl sm:text-4xl'
+        : 'text-5xl sm:text-6xl'
+      : long
+        ? 'text-3xl'
+        : 'text-4xl'
+  }
   return (
     <div className="mt-4">
-      {offering.listAnchor && (
-        <span className="flex items-baseline gap-2">
-          <span className={`text-sm line-through ${ink ? 'text-on-ink-subtle' : 'text-subtle'}`}>
-            {offering.listAnchor}/mo
-          </span>
+      {intervals.map(({ key, label, anchor }) => (
+        <span key={key} data-interval-show={key}>
+          {anchor && (
+            <span className="flex items-baseline gap-2">
+              <span className={`text-sm line-through ${ink ? 'text-on-ink-subtle' : 'text-subtle'}`}>
+                {anchor}/mo
+              </span>
+              <span
+                className={`text-3xs font-black uppercase tracking-wider ${
+                  ink ? 'text-primary' : 'text-primary-strong'
+                }`}
+              >
+                Beta price
+              </span>
+            </span>
+          )}
           <span
-            className={`text-3xs font-black uppercase tracking-wider ${
-              ink ? 'text-primary' : 'text-primary-strong'
+            className={`mt-1 block font-display leading-none ${sizeFor(label)} ${
+              ink ? 'text-on-ink' : 'text-text'
             }`}
           >
-            Beta price
+            {label}
           </span>
         </span>
-      )}
-      <span
-        className={`mt-1 block font-display leading-none ${size} ${ink ? 'text-on-ink' : 'text-text'}`}
-      >
-        {offering.monthly}
-      </span>
-      {offering.yearly && (
-        <span className={`mt-1.5 block text-sm ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
-          or {offering.yearly}
-        </span>
-      )}
+      ))}
       {offering.betaNote && (
         <span
           className={`mt-2 block text-xs font-semibold ${
@@ -712,8 +747,11 @@ function IndependentStrip({ offering }: { offering: Offering }) {
       <div>
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h3 className="font-display uppercase text-2xl text-on-ink">{offering.label}</h3>
-          <span className="font-display text-xl text-primary">{offering.monthly}</span>
-          {offering.yearly && <span className="text-sm text-on-ink-muted">or {offering.yearly}</span>}
+          {/* The strip sits inside the interval scope too, so its figure flips with the toggle. */}
+          <span className="font-display text-xl text-primary">
+            <span data-interval-show="month">{offering.monthly}</span>
+            <span data-interval-show="year">{offering.yearly ?? offering.monthly}</span>
+          </span>
         </div>
         <p className="mt-1 text-sm font-semibold text-on-ink-muted">{offering.tagline}</p>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-on-ink-muted">{offering.forWho}</p>

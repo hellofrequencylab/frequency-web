@@ -124,7 +124,11 @@ export interface Offering {
    *  Carried alongside the sentence so a caller that needs the bare rate (an answer-engine line, a
    *  comparison, a JSON-LD field) reads it instead of parsing the prose back apart. */
   networkRateBps: number
-  /** True for the one column the page highlights. */
+  /** True for the column its band highlights: Crew on the member ladder, Collective on the Space
+   *  ladder. That is the DAWN 2 pricing reference's "Best choice" pair
+   *  (design_handoff/dawn/ui_kits/marketing/pricing.html), whose structure the owner adopted for
+   *  /pricing wholesale; no ADR names a different featured plan (ADR-875/878/914 shape the ladder,
+   *  not the crown), so the adopted reference is the canon and the page float reads THIS flag. */
   featured: boolean
   cta: { label: string; href: string }
 }
@@ -245,7 +249,9 @@ export function memberOfferings(input: PricingGridInput): Offering[] {
       billing: `Monthly or yearly. ${annualDiscountNote(values)}`,
       takeRate: rateLine(crewBps),
       networkRateBps: crewBps,
-      featured: false,
+      // The member ladder's crown (see the `featured` doc above): the DAWN 2 reference marks Crew,
+      // and the page's floating middle card reads this flag rather than restating the choice.
+      featured: true,
       cta: { label: 'Join Crew', href: '/upgrade' },
     },
   ]
@@ -301,7 +307,10 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
         billing: `Monthly or yearly. ${annualDiscountNote(values)}`,
         takeRate: rate(plan),
         networkRateBps: rateBps(plan),
-        featured: plan === 'business',
+        // The Space ladder's crown (see the `featured` doc above). This was `business` while the DAWN 2
+        // reference the owner adopted crowns COLLECTIVE ("Best choice"), which had the page float and
+        // the model emphasis disagreeing; the model now matches the adopted reference.
+        featured: plan === 'collective',
         cta: { label: plan === 'nonprofit' ? 'Get verified' : 'Start a Space', href: '/spaces' },
       }
     }),
