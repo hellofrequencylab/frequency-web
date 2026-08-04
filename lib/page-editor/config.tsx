@@ -80,7 +80,7 @@ export const config: Config = {
     },
     sections: {
       title: 'Sections',
-      components: ['Hero', 'FeatureGrid', 'ValueBand', 'BuildTimeline', 'PhotoCardRow', 'PlanBand', 'PillarNav', 'IllustratedFeature', 'RolePicker', 'Manifesto', 'LeadFunnel', 'Showcase', 'StatRow', 'Tiers', 'Checklist', 'Accordion', 'CallToAction'],
+      components: ['Hero', 'FeatureGrid', 'ValueBand', 'BuildTimeline', 'PhotoCardRow', 'DawnHowToSteps', 'PlanBand', 'PillarNav', 'IllustratedFeature', 'RolePicker', 'Manifesto', 'LeadFunnel', 'Showcase', 'StatRow', 'Tiers', 'Checklist', 'Accordion', 'CallToAction'],
     },
     productStory: {
       title: 'Product story',
