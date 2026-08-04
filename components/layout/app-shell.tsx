@@ -313,7 +313,12 @@ interface Profile extends ProfileIdentity {
 // `host` access floor the seed carries. A custom DB menu that re-gated the item off `host` falls
 // through to the normal canSeeMenuItem path (fail-safe: no worse than the old proxy).
 function isPayoutsMenuItem(it: ResolvedItem): boolean {
-  return it.href === '/settings/billing?tab=payouts' && it.minAccess === 'host'
+  // '/settings/billing?tab=payouts' is the retired pre-one-pager href: DB-authored menus
+  // may still carry it, so both spellings ride the real payouts capability.
+  return (
+    (it.href === '/settings#payouts' || it.href === '/settings/billing?tab=payouts') &&
+    it.minAccess === 'host'
+  )
 }
 
 // Visibility for one account-menu (profile surface) link: the payouts item rides the real payouts
