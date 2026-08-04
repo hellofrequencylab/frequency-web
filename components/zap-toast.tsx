@@ -51,7 +51,11 @@ export function ZapToastContainer() {
   }, [])
 
   return (
-    <div className="pointer-events-none fixed bottom-4 right-4 z-50 flex flex-col gap-2 items-end">
+    // The TOAST LANE of the bottom-right stacking contract (see the comment in
+    // components/sidebar/game-stats-dock.tsx): lg keeps it above the Vault dock chip
+    // (bottom-32), md above the chat edge pill (bottom-20) — a "+15 Zaps" toast must
+    // never cover the Zaps counter at the exact reward moment. Mobile keeps bottom-4.
+    <div className="pointer-events-none fixed bottom-4 right-4 z-50 flex flex-col gap-2 items-end md:bottom-20 lg:bottom-32">
       {toasts.map((t) => (
         <ZapToastCard key={t.key} reward={t.reward} onDismiss={() => dismiss(t.key)} />
       ))}

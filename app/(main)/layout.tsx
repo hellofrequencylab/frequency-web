@@ -17,7 +17,7 @@ import { resolveTheme } from '@/lib/theme/server/resolve'
 import { structureFor } from '@/lib/theme/structure'
 import { THEME_COOKIE, parseThemeCookie } from '@/lib/theme/cookie'
 import { loadActiveThemeCss, resolveActiveOccasionSlug } from '@/lib/theme/server/themes'
-import RightSidebar from '@/components/sidebar/right-sidebar'
+import RightSidebar, { VaultDockSlot, MobileGameStats } from '@/components/sidebar/right-sidebar'
 import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
@@ -440,6 +440,24 @@ export default async function MainLayout({
     </Suspense>
   )
 
+  // The Vault dock — the member's score as a floating chip, fixed bottom right (three-docks
+  // law). Its own slot (NOT inside RightSidebar) so the shell can keep it mounted while the
+  // rail is collapsed; the shell renders it inside the rail column, so rail-'none' surfaces
+  // get no dock. Streams behind its own Suspense (multi-hop stats load never blocks the shell).
+  const dock = (
+    <Suspense fallback={null}>
+      <VaultDockSlot profileId={profile.id} />
+    </Suspense>
+  )
+
+  // The < lg counterpart — the same stats body in the mobile left drawer's bottom cluster
+  // (the dock above renders only beside the desktop rail; the score must exist ONCE on phones).
+  const mobileStats = (
+    <Suspense fallback={null}>
+      <MobileGameStats profileId={profile.id} />
+    </Suspense>
+  )
+
   // The onboarding coach (ChoresOverlay) and its next-step chain (chores + getOnboardingStatus /
   // getFounderTasks / getActiveTraining) moved into CoachOverlaySlot below — flag-guarded
   // (nextStepsEnabled ships OFF) and streamed behind its own Suspense, so it never blocks the shell.
@@ -568,6 +586,8 @@ export default async function MainLayout({
       operatorContext={operatorContext}
       availableContexts={availableContexts}
       sidebar={sidebar}
+      dock={dock}
+      mobileStats={mobileStats}
       ticker={ticker}
       unreadCount={unreadCount}
       messagesUnread={messagesUnread}

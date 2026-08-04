@@ -1091,6 +1091,7 @@ function MobileLeftDrawer({
   operatesSpaces = false,
   sections = NAV_SECTIONS,
   menuDriven = false,
+  mobileStats,
 }: {
   open: boolean
   onClose: () => void
@@ -1119,6 +1120,9 @@ function MobileLeftDrawer({
   sections?: NavSectionGroup[]
   /** Sections are DB-driven (mode-per-item); forwarded to NavLinkList. */
   menuDriven?: boolean
+  /** The game-stats block (MobileGameStats) — the drawer's bottom cluster is the < lg home
+   *  of the game counts (the Vault dock is desktop-only; docks law, nothing offered twice). */
+  mobileStats?: React.ReactNode
 }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -1158,8 +1162,8 @@ function MobileLeftDrawer({
         </div>
 
         {/* Identity — tap the card for your profile. Operators can switch hats here (View-as
-            + context switcher, both self-gating), and a small daily-streak visualizer sits
-            directly under the card. Stats moved to the bottom of the drawer. */}
+            + context switcher, both self-gating). The game stats live at the BOTTOM of the
+            drawer (the < lg home of the Vault dock's numbers), never up here. */}
         <div className="shrink-0 border-b border-border px-3 py-3">
           <Link
             href={profileHref}
@@ -1193,8 +1197,9 @@ function MobileLeftDrawer({
             </div>
           </Link>
 
-          {/* Space switcher only (owner: no View-as-role, no streak in the mobile drawer). Self-gates
-              to null for members with a single context, so a regular member sees nothing extra. */}
+          {/* Space switcher only (owner: no View-as-role, no streak up here by the identity
+              card — the score lives in the bottom cluster). Self-gates to null for members
+              with a single context, so a regular member sees nothing extra. */}
           <div className="mt-2 space-y-0.5">
             <ContextSwitcher context={operatorContext ?? { kind: 'personal' }} available={availableContexts} />
           </div>
@@ -1204,8 +1209,16 @@ function MobileLeftDrawer({
           <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} operatesSpaces={operatesSpaces} sections={sections} menuDriven={menuDriven} />
         </nav>
 
-        {/* Bottom cluster — About/legal, then a thumb-zone Close (owner: no stats section). */}
+        {/* Bottom cluster — the game stats (the drawer is the < lg home of the Vault dock's
+            numbers; docks law, DAWN 2026-08-03), then About/legal, then a thumb-zone Close. */}
         <div className="shrink-0 border-t border-border pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          {/* Your score — Zaps · Gems · streak + the progress body (MobileGameStats). Capped
+              and internally scrollable so it can never crush the nav on a short screen. */}
+          {mobileStats && (
+            <div className="max-h-[40dvh] overflow-y-auto border-b border-border px-3 py-3">
+              {mobileStats}
+            </div>
+          )}
           {/* About / What is Frequency / Terms / Privacy — the site pages that were desktop
               mega-menu only, so nothing is desktop-reachable-only. */}
           <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 pt-3 text-2xs text-muted">
@@ -1394,6 +1407,8 @@ export default function AppShell({
   availableContexts = [],
   children,
   sidebar,
+  dock,
+  mobileStats,
   ticker,
   unreadCount = 0,
   // Reserved for the persistent chat dock's unread badge (Phase 1). The header
@@ -1444,6 +1459,14 @@ export default function AppShell({
   availableContexts?: AvailableContext[]
   children: React.ReactNode
   sidebar?: React.ReactNode
+  /** The Vault dock (fixed bottom right, three-docks law). Mounted in the rail COLUMN but
+   *  OUTSIDE the collapsed/expanded ternary, so folding the rail never unmounts the member's
+   *  score. Shares the rail slot's visibility (rail 'none' surfaces get no dock). */
+  dock?: React.ReactNode
+  /** The game-stats block (MobileGameStats) for the mobile left drawer's bottom cluster —
+   *  the < lg home of the game counts now that the Vault dock is desktop-only and the streak
+   *  chip left the top bar (nothing is offered twice, but everything is offered once). */
+  mobileStats?: React.ReactNode
   /** Community news ticker pinned above the page content (streamed via Suspense). */
   ticker?: React.ReactNode
   unreadCount?: number
@@ -2050,6 +2073,12 @@ export default function AppShell({
                     )}
                   </aside>
                 )}
+                {/* The Vault dock — position:fixed, so it takes no column space. Mounted HERE,
+                    outside the collapsed/expanded ternary, so folding the rail to the mini
+                    strip never unmounts the member's score; it still lives inside the rail
+                    column, so its visibility follows the same page-chrome map as the rail
+                    (railFor 'none' surfaces render neither). */}
+                {dock}
                 {/* The settings drawer slides over THIS column (absolute, full height) on the
                     `open-settings` event, reporting its width up so the column sizes to match. */}
                 <AdminBar onStateChange={setSettings} />
@@ -2126,6 +2155,7 @@ export default function AppShell({
           operatesSpaces={operatesSpaces}
           sections={navSections}
           menuDriven={menuDriven}
+          mobileStats={mobileStats}
         />
       )}
 

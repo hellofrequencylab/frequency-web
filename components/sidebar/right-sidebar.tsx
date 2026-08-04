@@ -64,12 +64,19 @@ interface RightSidebarProps {
 // The rail is page-aware via the `x-pathname` request header (set in proxy.ts —
 // Next 16's middleware), which keeps the panels server-rendered while varying by route.
 
-async function GameStatsDock({ profileId }: { profileId: string }) {
+// The Vault dock slot — handed to AppShell's `dock` prop by (main)/layout.tsx and mounted in
+// the rail COLUMN but OUTSIDE the collapsed/expanded ternary, so folding the rail never
+// unmounts the member's score. Reads the same x-pathname header as the rail for the Quest
+// suppression (the /crew tree owns the member's standing on-page; nothing is offered twice).
+export async function VaultDockSlot({ profileId }: { profileId: string }) {
+  const pathname = (await headers()).get('x-pathname') ?? ''
+  if (isQuestSurface(pathname)) return null
   return <GameStatsDockClient data={await loadGameStats(profileId)} />
 }
 
-// Mobile counterpart — the same stats body (with a zaps/gems/streak summary header)
-// for the right-side stats menu in the app shell, streamed via Suspense.
+// Mobile counterpart — the same stats body (with a zaps/gems/streak summary header) for the
+// mobile LEFT drawer's bottom cluster (AppShell's `mobileStats` slot): the < lg home of the
+// game counts, since the Vault dock renders only beside the desktop rail. Streamed via Suspense.
 export async function MobileGameStats({ profileId }: { profileId: string }) {
   return <GameStatsPanel data={await loadGameStats(profileId)} showSummary />
 }
@@ -224,7 +231,9 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
   // Off-Quest (feed, channels, …) the page shows no standing, so the rail keeps it.
   const onQuest = isQuestSurface(pathname)
   // No duplicate functions: a rail panel never shows on the page that already features that
-  // function. The Your Quest box is the only always-on panel; the rest are contextual.
+  // function — and no duplicate NUMBERS: the game counts (zaps · gems · streak · rank) live in
+  // the Vault dock alone, so the rail's Your Quest box is nudges-only and self-hides when
+  // there is no next step. The rest of the panels are contextual.
   const showActivity = pathname !== '/practices'
   const showSignature = !pathname.startsWith('/people/')
   return (
@@ -245,10 +254,14 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
         {/* Site-wide demo notice — pinned ABOVE the Quest box when demo content is
             present (it self-hides otherwise). */}
         <DemoNotice />
-        {/* Quest control center: rank/standing + (when live) the next onboarding step. The ONE
-            always-on rail box. Hidden on Quest surfaces, where the page already owns this standing. */}
+        {/* Quest control center: the next onboarding/setup step ONLY (when live). The game
+            numbers moved to the Vault dock (three-docks law — nothing is offered twice), so
+            this renders nothing when there is no step. Hidden on Quest surfaces, where the
+            page already owns the member's standing. */}
+        {/* fallback null, not a skeleton: the panel usually renders nothing now (Next Steps
+            ship off), and a skeleton that resolves to nothing reads as a broken load. */}
         {!onQuest && (
-          <Suspense fallback={<PanelSkeleton />}>
+          <Suspense fallback={null}>
             <ControlCenterPanel profileId={profileId} />
           </Suspense>
         )}
@@ -269,18 +282,9 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
           </Suspense>
         )}
       </div>
-      {/* The Vault dock — the player's progress cockpit as a floating chip cluster,
-          fixed bottom right (three-docks law, DAWN 2026-08-03). Mounted from this rail
-          slot so its visibility follows the same page-chrome map as the rail itself
-          (rail 'none' surfaces get no Vault dock) — the shell never path-sniffs.
-          Hidden on Quest surfaces (the page owns standing there; nothing is offered
-          twice). Its own Suspense so its multi-hop stats load never blocks the rail
-          (PAGE-FRAMEWORK §5). */}
-      {!onQuest && (
-        <Suspense fallback={<PanelSkeleton />}>
-          <GameStatsDock profileId={profileId} />
-        </Suspense>
-      )}
+      {/* The Vault dock no longer mounts here: it lives in AppShell's `dock` slot
+          (VaultDockSlot above, threaded by (main)/layout.tsx) so collapsing the rail
+          to the mini strip never unmounts the member's score. */}
     </div>
   )
 }
