@@ -44,17 +44,21 @@ const HEADING = /^#{2,3} ADR-(\d+[a-z]?)\b/
  *  citations between them, covering the live money model and the CMS pricing invariant. The rest
  *  are older and mostly cited from superseded planning docs. Shrink this list; never grow it. */
 const KNOWN_MISSING = new Set([
-  // Five REAL decisions that were never written, ranked by live-code exposure:
-  '624', // contacts uniqueness per-space. 27 live sites. docs/CONTACT-TENANCY.md §1 is the decision, verbatim.
-  '845', // circle handoff + generic cover focal point. 12 live sites. Commit 74efab5 ends "ADR-845 to follow".
-  '788', // Profile & Settings becomes a real hub tab. REVERSES ADR-785 §4, which still says the opposite.
-  '447', // practice library Phase 3 "Grow". Siblings 445/446 exist; BUILD-LIST.md documents the shipped rows.
-  '790', // admin search bar above the sub-nav. ADR-791's own Status line vouches for it.
-  // Three that are NOT decisions and must never have an ADR written for them. Each is prose
-  // ABOUT numbering that this scanner cannot tell from a citation:
-  '188', // DECISIONS.md itself declaring 188-195 deliberately unused.
-  '314', // ENTITY-SPACES-BUILD.md reserving a range; the reservation over-claimed (314-317 never used).
-  '448', // PLATFORM-MASTER-PLAN.md proposing a number that was never accepted.
+  // EMPTY, and the goal is that it stays that way (2026-08-04).
+  //
+  // It held eight entries. Five were real decisions that shipped without a record -- 624
+  // (contacts uniqueness per-space), 845 (circle handoff + generic cover focus), 788 (Profile &
+  // Settings as a real hub tab), 447 (practice library Phase 3 "Grow"), 790 (admin search above
+  // the sub-nav) -- and all five are now written in docs/DECISIONS.md, reconstructed from the
+  // shipped code, the migrations and the commit messages that promised them.
+  //
+  // The other three were never decisions at all: prose ABOUT numbering that this scanner cannot
+  // distinguish from a citation. Rather than grant them permanent exemptions, the prose was
+  // reworded to stop looking like a reference -- the numbers are written bare, without the `ADR-`
+  // prefix, and say outright that no such record exists.
+  //
+  // Adding an entry here is now an admission that a cited decision has no record. Prefer writing
+  // the ADR, or rewording the citation if it was never a decision.
 ])
 
 const GRANDFATHERED = new Map([

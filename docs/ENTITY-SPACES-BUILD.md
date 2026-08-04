@@ -425,8 +425,10 @@ covers migrations, tests, copy, theming, empty states, analytics, permissions, a
 updates. **Cheap-now tag** on each epic: 🟢 free/existing infra · 🟡 small cost · 🔴 costs
 real money, defer.
 
-> **ADR numbering:** ADR-314..319 were consumed by the Phase 0.5 streamline (the AI gateway seam
-> is ADR-318, the dialog/kit consolidation is ADR-319). The Phase 0 schema ADRs are **ADR-320**
+> **ADR numbering:** numbers 314 through 319 were set aside for the Phase 0.5 streamline, though only
+> two were ever written (the AI gateway seam
+> is ADR-318, the dialog/kit consolidation is ADR-319); 314 through 317 were never used, so the
+> range above is written bare rather than as a citation. The Phase 0 schema ADRs are **ADR-320**
 > (`space_members` + the per-space role ladder), **ADR-321** (`space_id` ownership FKs), and
 > **ADR-322** (`spaces.visibility`/`plan`/`entitlements`). Further new decisions in this work
 > continue from **ADR-323**. Add each to `docs/DECISIONS.md`.

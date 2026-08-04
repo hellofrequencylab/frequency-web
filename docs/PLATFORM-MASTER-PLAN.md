@@ -6,7 +6,7 @@
 > Hardening ([ADR-439/440](DECISIONS.md)), Growth OS ([GROWTH-OS-BUILD-PLAN.md](GROWTH-OS-BUILD-PLAN.md)),
 > the Practice Library ([ADR-438](DECISIONS.md)), and the ~70-item [BUILD-LIST](BUILD-LIST.md) backlog
 > into ONE sequenced program. Authority: running code + `supabase/migrations/` > this doc > Notion.
-> Proposed decision record: ADR-448. Status legend: ✅ built · 🟡 partial · 📐 designed · 🆕 net-new.
+> Proposed decision record: number 448 (proposed only, never accepted — ADR-449 took the next slot the same day, so no such record exists and none should be written). Status legend: ✅ built · 🟡 partial · 📐 designed · 🆕 net-new.
 
 ---
 
