@@ -48,6 +48,13 @@ const LIVE: Metadata = {
 const block = (data: Data, metadata: Metadata = {}) =>
   renderToStaticMarkup(<BlockRender config={config} data={data} metadata={metadata} />)
 
+/** The same doc rendered on an EDITOR canvas (the only surface that passes isEditing). */
+const editing = (data: Data, metadata: Metadata = {}) =>
+  renderToStaticMarkup(<BlockRender config={config} data={data} metadata={metadata} isEditing />)
+
+// The dashed authoring placeholder every block set uses for a section with nothing to show.
+const STUB = 'border-dashed'
+
 describe('BlockRender golden markup (frozen; was byte-identical to Puck rsc <Render>)', () => {
   it('root + plain prop-driven blocks (Heading, Text, Statement)', () => {
     const data: Data = {
@@ -183,6 +190,71 @@ describe('BlockRender golden markup (frozen; was byte-identical to Puck rsc <Ren
 
   it('renders an empty document to empty markup', () => {
     expect(block({ root: {}, content: [] })).toBe('')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EDITOR PLACEHOLDERS NEVER REACH A PUBLIC PAGE (ADR-927 follow-up).
+//
+// `puck.isEditing` used to be hardcoded false here, which broke the contract in BOTH
+// directions: every isEditing-gated placeholder was unreachable dead code, and the
+// blocks that compensated by treating "no live metadata" as "must be the editor"
+// rendered their dashed operator scaffolding to VISITORS (a brand-new Space, whose
+// live counts are all zero, published a dashed "Highlights / Your live counts show on
+// the live page" box on its public landing). The state is now a real prop, so these
+// lock the invariant from both sides.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('editor placeholders are gated on puck.isEditing', () => {
+  // SpaceHighlights: live counts, empty for a brand-new Space (the public leak).
+  // SpaceAbout with an empty body: operator-authored, the placeholder that was dead code.
+  const unfilled: Data = {
+    root: {},
+    content: [item('SpaceHighlights', 'hl'), item('SpaceAbout', 'ab', { body: '' })],
+  }
+
+  it('a public page shows NO placeholder for a section with nothing to show', () => {
+    const html = block(unfilled, { space: { highlights: [] } })
+    expect(html).not.toContain(STUB)
+    expect(html).not.toContain('Your live counts show on the live page')
+    expect(html).not.toContain('Tell people who you are and what to expect')
+    // Only the config root's rhythm div + the honest-empty anchor wrapper survive
+    // (`empty:hidden` collapses the wrapper, so the page shows no phantom gap).
+    expect(html).toMatchInlineSnapshot(
+      `"<div class="space-y-12 py-8 sm:space-y-14 sm:py-10"><section id="about" class="scroll-mt-36 empty:hidden"></section></div>"`,
+    )
+  })
+
+  it('the SAME doc on an editor canvas shows the authoring placeholders', () => {
+    const html = editing(unfilled, { space: { highlights: [] } })
+    expect(html).toContain(STUB)
+    expect(html).toContain('Your live counts show on the live page')
+    expect(html).toContain('Tell people who you are and what to expect')
+  })
+
+  it('real data wins over the placeholder on BOTH surfaces (isEditing only fills a gap)', () => {
+    const live: Metadata = { space: { highlights: [{ label: 'Members', value: 12 }] } }
+    for (const html of [block(unfilled, live), editing(unfilled, live)]) {
+      expect(html).toContain('12')
+      expect(html).not.toContain('Your live counts show on the live page')
+    }
+  })
+
+  it('threads isEditing into a block nested in a SLOT (layout presets wrap blocks)', () => {
+    // A Space page arranged by the `main-rail` preset nests its blocks in a SpaceLayout
+    // slot. Nested items get their puck object from SlotItem, not DropZoneRender, so the
+    // flag has to ride BOTH paths or the placeholders vanish the moment a preset is used.
+    const nested: Data = {
+      root: {},
+      content: [item('SpaceLayout', 'sl', { layout: 'main-side', main: [item('SpaceHighlights', 'hl')], side: [] })],
+    }
+    expect(editing(nested, { space: { highlights: [] } })).toContain('Your live counts show on the live page')
+    expect(block(nested, { space: { highlights: [] } })).not.toContain(STUB)
+  })
+
+  it('defaults to false, so any surface that forgets the prop is treated as public', () => {
+    // The safe default matters more than the flag: a new render path that omits
+    // isEditing must fail CLOSED (no scaffolding), never open.
+    expect(block(unfilled)).not.toContain(STUB)
   })
 })
 

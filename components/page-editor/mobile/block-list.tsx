@@ -23,12 +23,14 @@ type Item = Data['content'][number]
 // single-item document. Non-interactive (pointer-events off) so taps hit the row.
 // `metadata` is threaded through so asset-backed blocks (e.g. the Spotlight image /
 // gallery, which derive their URL from `metadata.spotlight.publicBase`) resolve here
-// instead of rendering broken images against an empty base.
+// instead of rendering broken images against an empty base. `isEditing` marks it as an
+// authoring surface, so an unfilled section previews as its placeholder instead of an
+// empty row the operator cannot recognise.
 function BlockPreview({ config, item, metadata }: { config: Config; item: Item; metadata?: Record<string, unknown> }) {
   const doc: Data = { root: {}, content: [item] }
   return (
     <div className="pointer-events-none max-h-40 overflow-hidden [zoom:0.5]" aria-hidden>
-      <BlockRender config={config} data={doc} metadata={metadata} />
+      <BlockRender config={config} data={doc} metadata={metadata} isEditing />
     </div>
   )
 }

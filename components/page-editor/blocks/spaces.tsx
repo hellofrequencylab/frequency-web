@@ -39,19 +39,21 @@ import type {
 //   SpaceFAQ     - operator Q and A rendered as an accordion (DYNAMIC).
 // The three dynamic blocks read the live rows off `puck.metadata.space`
 // (SpaceContentData), injected server-side by the Space landing render path -- the
-// SAME metadata-injection pattern LiveStats + the Circles index blocks use. With no
-// metadata (the editor canvas) each shows a labelled placeholder the operator can
-// drag-rearrange, so the editor never depends on live data and this module stays
+// SAME metadata-injection pattern LiveStats + the Circles index blocks use. With
+// nothing to show, each renders a labelled placeholder ON THE EDITOR CANVAS ONLY
+// (`puck.isEditing`) and nothing at all on the live page, so the editor never depends
+// on live data and a visitor never meets operator scaffolding. This module stays
 // client-safe (it imports nothing server-only). Copy is CONTENT-VOICE: plain, no em
 // dashes, never invented counts.
 // ─────────────────────────────────────────────────────────────────────────────
 
-type PuckArg = { metadata?: Record<string, unknown> } | undefined
+type PuckArg = { metadata?: Record<string, unknown>; isEditing?: boolean } | undefined
 function spaceFrom(puck: PuckArg): SpaceContentData | undefined {
   return puck?.metadata?.space as SpaceContentData | undefined
 }
 
-// Shown in the editor canvas (no live data) so a section stays visible + draggable there.
+// Shown on the editor canvas ONLY (`puck.isEditing`) so a section with nothing to show yet stays
+// visible + draggable there. Never rendered on a live page.
 function EditorStub({ label, hint }: { label: string; hint: string }) {
   return (
     <div className="rounded-card border border-dashed border-border bg-surface/60 px-4 py-8 text-center text-sm text-muted">
@@ -390,7 +392,11 @@ export const spacesComponents: Record<string, ComponentConfig> = {
     },
     render: ({ eyebrow, heading, limit, viewAllHref, puck }) => {
       const d = spaceFrom(puck)
-      return d ? (
+      if (!d || d.updates.length === 0) {
+        if (!puck?.isEditing) return <></>
+        return <EditorStub label="Space updates" hint="Your published updates show on the live page" />
+      }
+      return (
         <AnchorSection anchor="updates">
           <SpaceUpdatesBlock
             eyebrow={(eyebrow as string) || undefined}
@@ -400,8 +406,6 @@ export const spacesComponents: Record<string, ComponentConfig> = {
             viewAllHref={(viewAllHref as string) || undefined}
           />
         </AnchorSection>
-      ) : (
-        <EditorStub label="Space updates" hint="Your published updates show on the live page" />
       )
     },
   },
@@ -428,7 +432,11 @@ export const spacesComponents: Record<string, ComponentConfig> = {
     },
     render: ({ eyebrow, heading, limit, puck }) => {
       const d = spaceFrom(puck)
-      return d ? (
+      if (!d || d.reviews.count === 0) {
+        if (!puck?.isEditing) return <></>
+        return <EditorStub label="Space reviews" hint="Member reviews show on the live page" />
+      }
+      return (
         <AnchorSection anchor="reviews">
           <SpaceReviewsBlock
             eyebrow={(eyebrow as string) || undefined}
@@ -437,8 +445,6 @@ export const spacesComponents: Record<string, ComponentConfig> = {
             limit={Number(limit) || 4}
           />
         </AnchorSection>
-      ) : (
-        <EditorStub label="Space reviews" hint="Member reviews show on the live page" />
       )
     },
   },
@@ -459,7 +465,11 @@ export const spacesComponents: Record<string, ComponentConfig> = {
     },
     render: ({ eyebrow, heading, titleAccent, emphasis, puck }) => {
       const d = spaceFrom(puck)
-      return d ? (
+      if (!d || d.faqs.length === 0) {
+        if (!puck?.isEditing) return <></>
+        return <EditorStub label="Space FAQ" hint="Your questions show on the live page" />
+      }
+      return (
         <AnchorSection anchor="faq">
           <SpaceFaqBlock
             eyebrow={(eyebrow as string) || undefined}
@@ -468,8 +478,6 @@ export const spacesComponents: Record<string, ComponentConfig> = {
             emphasis={emphasis as EmphasisValue}
           />
         </AnchorSection>
-      ) : (
-        <EditorStub label="Space FAQ" hint="Your questions show on the live page" />
       )
     },
   },

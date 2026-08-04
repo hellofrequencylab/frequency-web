@@ -327,7 +327,9 @@ export function MobileEditor({
               <span className="text-xs font-medium uppercase tracking-wide text-subtle">Preview</span>
             </div>
             <div className="pointer-events-none">
-              <BlockRender config={config} data={data} metadata={metadata} />
+              {/* `isEditing`: the authoring canvas, so an unfilled section shows its
+                  placeholder here and nothing at all on the public page. */}
+              <BlockRender config={config} data={data} metadata={metadata} isEditing />
             </div>
           </>
         )}

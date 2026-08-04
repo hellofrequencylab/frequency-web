@@ -216,7 +216,10 @@ export function DesktopEditor({
               outline, so a stray click never navigates away or fires a block's link. */}
           <main className="min-h-0 flex-1 overflow-y-auto bg-canvas">
             <div className="pointer-events-none mx-auto w-full">
-              <BlockRender config={config} data={data} metadata={metadata} />
+              {/* `isEditing`: this IS the authoring canvas, so blocks show their placeholder
+                  for a section that would render nothing (the public page passes nothing,
+                  so a visitor never meets one). */}
+              <BlockRender config={config} data={data} metadata={metadata} isEditing />
             </div>
           </main>
 

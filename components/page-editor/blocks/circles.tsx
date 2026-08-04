@@ -14,16 +14,22 @@ import { MapZone, MapBanner, FindNearMeButton } from '@/components/circles/circl
 // Each block reads the live CirclesIndexData injected at render time via
 // `puck.metadata.circlesIndex` (app/(main)/circles/page.tsx) — the same metadata-
 // injection pattern the LiveStats/LiveEvents blocks use. So the PUBLISHED page shows
-// real, faceted data while the EDITOR canvas (which has no metadata) shows a labelled
-// placeholder operators can drag-rearrange. The faceted toolbar (search/filter/sort)
-// and the map both stay self-contained client islands inside their block.
+// real, faceted data while the EDITOR canvas shows a labelled placeholder operators can
+// drag-rearrange. The faceted toolbar (search/filter/sort) and the map both stay
+// self-contained client islands inside their block.
+//
+// The placeholder is gated on `puck.isEditing`, NOT on "metadata is missing". These
+// blocks sit in a visible palette category, so an operator can drop one on a Space or
+// marketing page that never injects `circlesIndex` — and a metadata-only gate rendered
+// the dashed operator placeholder to every VISITOR of that page. Off the editor canvas,
+// a block with no data to read renders nothing at all.
 
-type PuckArg = { metadata?: Record<string, unknown> } | undefined
+type PuckArg = { metadata?: Record<string, unknown>; isEditing?: boolean } | undefined
 function indexFrom(puck: PuckArg): CirclesIndexData | undefined {
   return puck?.metadata?.circlesIndex as CirclesIndexData | undefined
 }
 
-// Shown in the editor canvas (no live data) so a section is visible + draggable there.
+// Shown on the editor canvas ONLY (`puck.isEditing`) so a section is visible + draggable there.
 function EditorStub({ label }: { label: string }) {
   return (
     <div className="rounded-card border border-dashed border-border bg-surface/60 px-4 py-8 text-center text-sm text-muted">
@@ -73,7 +79,7 @@ export const circlesComponents: Record<string, ComponentConfig> = {
     fields: {},
     render: ({ puck }) => {
       const d = indexFrom(puck)
-      if (!d) return <EditorStub label="Channel filter chips" />
+      if (!d) return puck?.isEditing ? <EditorStub label="Channel filter chips" /> : <></>
       return <ChannelPills links={d.channelLinks} />
     },
   },
@@ -85,7 +91,7 @@ export const circlesComponents: Record<string, ComponentConfig> = {
     fields: {},
     render: ({ puck }) => {
       const d = indexFrom(puck)
-      if (!d) return <EditorStub label="Search, filter & sort bar" />
+      if (!d) return puck?.isEditing ? <EditorStub label="Search, filter & sort bar" /> : <></>
       // Search now lives in the Circles index hero header; the toolbar keeps format + sort only so
       // the two search inputs never duplicate.
       return <CirclesToolbar showSearch={false} />
@@ -101,7 +107,7 @@ export const circlesComponents: Record<string, ComponentConfig> = {
     fields: {},
     render: ({ puck }) => {
       const d = indexFrom(puck)
-      if (!d) return <EditorStub label="Find near me + Channel tags" />
+      if (!d) return puck?.isEditing ? <EditorStub label="Find near me + Channel tags" /> : <></>
       const pills = <ChannelPills links={d.channelLinks} />
       if (!d.showMap) return <div className="mt-4">{pills}</div>
 
@@ -124,7 +130,7 @@ export const circlesComponents: Record<string, ComponentConfig> = {
     defaultProps: { heading: 'Featured circles' },
     render: ({ heading, puck }) => {
       const d = indexFrom(puck)
-      if (!d) return <EditorStub label="Featured circles row" />
+      if (!d) return puck?.isEditing ? <EditorStub label="Featured circles row" /> : <></>
       const featured = d.cards.filter((c) => c.isFeatured).slice(0, 3)
       if (featured.length === 0) return <></>
 
@@ -153,7 +159,7 @@ export const circlesComponents: Record<string, ComponentConfig> = {
     fields: {},
     render: ({ puck }) => {
       const d = indexFrom(puck)
-      if (!d) return <EditorStub label="Circles grid" />
+      if (!d) return puck?.isEditing ? <EditorStub label="Circles grid" /> : <></>
       return (
         <div className="space-y-6">
           {d.signedIn && d.nearlyFullCount > 0 && (
@@ -216,7 +222,7 @@ export const circlesComponents: Record<string, ComponentConfig> = {
     fields: {},
     render: ({ puck }) => {
       const d = indexFrom(puck)
-      if (!d) return <EditorStub label="Browse by Channel & region" />
+      if (!d) return puck?.isEditing ? <EditorStub label="Browse by Channel & region" /> : <></>
       if (d.interestChips.length === 0 && d.nexuses.length === 0) return <></>
 
       return (

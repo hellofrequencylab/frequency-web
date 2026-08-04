@@ -72,10 +72,10 @@ import {
 //   SpaceContact        - contact + hours as an info card.
 //   SpaceTeam           - the people, as avatar cards.
 //   SpaceCTA            - a tasteful conversion band (card + one button).
-// The dynamic reads default to a placeholder in the editor canvas (no metadata) and to
-// nothing on the live render when the space has no data, so a block never depends on
-// live data and this module stays client-safe. Copy is CONTENT-VOICE: plain, no em
-// dashes, never invented counts.
+// A block with nothing to show renders a placeholder on the EDITOR CANVAS (`puck.isEditing`)
+// and nothing at all on the live page, so a block never depends on live data, an operator can
+// still see + move an unfilled section, and a visitor never meets operator scaffolding. This
+// module stays client-safe. Copy is CONTENT-VOICE: plain, no em dashes, never invented counts.
 //
 // UNIFORM + WHITE-LABEL (AGENTS.md D4/D6): every card uses the SAME semantic tokens +
 // the SAME radius/spacing scale, so any space looks cohesive + best-practice out of the
@@ -83,7 +83,7 @@ import {
 // no text-[10/11px].
 // ─────────────────────────────────────────────────────────────────────────────
 
-type PuckArg = { metadata?: Record<string, unknown> } | undefined
+type PuckArg = { metadata?: Record<string, unknown>; isEditing?: boolean } | undefined
 function identityFrom(puck: PuckArg): SpaceIdentity | undefined {
   const space = puck?.metadata?.space as { identity?: SpaceIdentity } | undefined
   return space?.identity
@@ -127,8 +127,15 @@ function profileFrom(puck: PuckArg): SpaceProfileData | undefined {
 }
 
 // Shown ONLY in the editor canvas so an unfilled authored section stays visible + draggable there.
-// The LIVE page never shows a stub: an empty section renders nothing (the config renders gate on
+// The LIVE page never shows a stub: an empty section renders nothing (every stub below is behind
 // `puck.isEditing`), so a visitor never meets a dashed "add your content" box.
+//
+// `puck.isEditing` is the ONLY correct gate here. It used to be hardcoded false in the render path
+// (ADR-927), and several blocks compensated by treating "no live metadata" as "must be the editor".
+// That heuristic was wrong in BOTH directions: the Space page editor injects the real metadata
+// (WYSIWYG), so the operator saw no placeholder; and a live Space with no rows yet has empty
+// metadata, so the VISITOR saw the placeholder. BlockRender now carries the real editing state, so
+// the rule is simply: nothing to show + editing ⇒ stub; nothing to show + live ⇒ render nothing.
 function EditorStub({ label, hint }: { label: string; hint: string }) {
   return (
     <div className="rounded-card border border-dashed border-border bg-surface/60 px-4 py-12 text-center text-sm text-muted">
@@ -1811,6 +1818,8 @@ export const profileComponents: Record<string, ComponentConfig> = {
     render: ({ style, coverOverride, logoOverride, focal, height, showFollow, puck }) => {
       const identity = identityFrom(puck)
       if (!identity) {
+        // No identity to render: a placeholder in the editor, nothing at all on a live page.
+        if (!puck?.isEditing) return <></>
         return <div className="w-full pt-4"><EditorStub label="Identity header" hint="The space cover, logo, and name show on the live page" /></div>
       }
       return (
@@ -1859,11 +1868,13 @@ export const profileComponents: Record<string, ComponentConfig> = {
     defaultProps: {},
     render: ({ puck }) => {
       const highlights = highlightsFrom(puck)
-      return highlights.length > 0 ? (
-        <SpaceHighlightsBlock highlights={highlights} />
-      ) : (
-        <EditorStub label="Highlights" hint="Your live counts show on the live page" />
-      )
+      // Honest at day zero: a Space with no positive counts yet resolves to an EMPTY
+      // highlight set on the LIVE page too, so the stub can only be gated on isEditing.
+      if (highlights.length === 0) {
+        if (!puck?.isEditing) return <></>
+        return <EditorStub label="Highlights" hint="Your live counts show on the live page" />
+      }
+      return <SpaceHighlightsBlock highlights={highlights} />
     },
   },
 
@@ -1886,8 +1897,11 @@ export const profileComponents: Record<string, ComponentConfig> = {
     render: ({ eyebrow, heading, metrics, puck }) => {
       const stats = statsFrom(puck)
       const choices = (metrics as StatChoice[]) ?? []
-      // In the editor (no metadata) show a placeholder; on the live page render the honest, resolved set.
-      if (stats.length === 0) {
+      // "Nothing to show" is what the BLOCK would render, not whether metadata arrived: a chosen
+      // metric that resolves to zero is dropped (selectSpaceStats), so a Space can carry a full
+      // stat set and still render nothing. Placeholder in the editor, nothing on the live page.
+      if (selectSpaceStats(choices, stats).length === 0) {
+        if (!puck?.isEditing) return <></>
         return (
           <div>
             <CardTitle eyebrow={(eyebrow as string) || undefined} heading={(heading as string) || undefined} />
@@ -1989,8 +2003,12 @@ export const profileComponents: Record<string, ComponentConfig> = {
     },
     render: ({ eyebrow, heading, practicesHeading, journeysHeading, puck }) => {
       const data = practicesFrom(puck)
-      // Editor (no metadata) shows a placeholder; the live page renders nothing when there are none.
-      if (!data) {
+      // Placeholder in the editor, nothing on the live page. Gated on what the block would
+      // RENDER (SpacePracticesBlock returns null for an empty pair), not on whether metadata
+      // arrived: the Space page editor injects the real rows, so an operator with no practices
+      // yet used to see a silently blank section.
+      if (!data || (data.practices?.length ?? 0) + (data.journeys?.length ?? 0) === 0) {
+        if (!puck?.isEditing) return <></>
         return (
           <div>
             <CardTitle eyebrow={(eyebrow as string) || undefined} heading={(heading as string) || undefined} />
@@ -2024,8 +2042,10 @@ export const profileComponents: Record<string, ComponentConfig> = {
     },
     render: ({ eyebrow, heading, puck }) => {
       const circles = communityFrom(puck)
-      // Editor (no metadata) shows a placeholder; the live page renders nothing when there are none.
-      if (!circles) {
+      // Placeholder in the editor, nothing on the live page (SpaceCommunityBlock returns null
+      // for an empty list, so an empty list is "nothing to show" on both surfaces).
+      if (!circles || circles.length === 0) {
+        if (!puck?.isEditing) return <></>
         return (
           <div>
             <CardTitle eyebrow={(eyebrow as string) || undefined} heading={(heading as string) || undefined} />
@@ -2068,8 +2088,11 @@ export const profileComponents: Record<string, ComponentConfig> = {
     },
     render: ({ heading, body, ctaLabel, accent, puck }) => {
       const booking = bookingFrom(puck)
-      // Editor (no metadata) shows a placeholder; the live page renders nothing when booking is off.
-      if (!booking) {
+      // Placeholder in the editor, nothing on the live page. Gated on the same condition
+      // SpaceBookingBlock uses to render nothing (bookings off, or no booking href), so the
+      // operator sees the section in the canvas before availability is published.
+      if (!booking?.enabled || !booking.href) {
+        if (!puck?.isEditing) return <></>
         return (
           <EditorStub label="Booking" hint="Shows a booking button when this space is taking bookings" />
         )
@@ -2261,8 +2284,10 @@ export const profileComponents: Record<string, ComponentConfig> = {
     },
     render: ({ eyebrow, heading, body, ctaLabel, accent, puck }) => {
       const identity = identityFrom(puck)
-      // Editor (no metadata) shows a placeholder; the live page renders the primary action CTA.
+      // Placeholder in the editor, nothing on the live page: with no identity there is no
+      // primary action to link to, and a dead button is worse than no section.
       if (!identity) {
+        if (!puck?.isEditing) return <></>
         return (
           <EditorStub
             label="Action"
