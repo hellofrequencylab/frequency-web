@@ -5,29 +5,22 @@
 // Protocol, ADR-093) — the counterpart to the client's gtag mirror in trackClient —
 // so events that never touch the browser (QR scans, referral attribution) still land.
 
+// MACHINE-ENFORCED. This module reaches the database, and it was the payload at the end
+// of a five-hop import chain that started at a 'use client' component in the root layout
+// -- putting @supabase/supabase-js and a crypto polyfill in every page's browser bundle.
+// The chain is broken (sanitizeProps moved to ./sanitize); this makes it stay broken by
+// turning the next accidental client import into a BUILD ERROR rather than a slow page.
+import 'server-only'
+
 import { recordEngagementEvent } from '@/lib/engagement/events'
+// sanitizeProps lives in ./sanitize (dependency-free) rather than here, so client code
+// can reach it without dragging THIS module's database imports into the browser bundle.
+// Imported for local use and re-exported, because callers already import it from track.
+import { sanitizeProps } from './sanitize'
+export { sanitizeProps } from './sanitize'
 import { isTrackedEvent } from './events'
 import { gaServerEnabled, sendGa4Event } from './ga-server'
 import { hasConsent } from '@/lib/consent/consent'
-
-/** Keep only primitive prop values, cap count + string length, so the ledger never
- *  stores nested junk or unbounded payloads. Exported for the /api/track endpoint. */
-export function sanitizeProps(input: unknown, maxKeys = 20, maxLen = 500): Record<string, string | number | boolean> {
-  const out: Record<string, string | number | boolean> = {}
-  if (!input || typeof input !== 'object') return out
-  let n = 0
-  for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
-    if (n >= maxKeys) break
-    if (typeof v === 'number' || typeof v === 'boolean') {
-      out[k] = v
-      n++
-    } else if (typeof v === 'string') {
-      out[k] = v.slice(0, maxLen)
-      n++
-    }
-  }
-  return out
-}
 
 /** Record a product event into engagement_events. Unknown events are dropped (not an
  *  error). Each call is a distinct ledger row (analytics events aren't deduped). */

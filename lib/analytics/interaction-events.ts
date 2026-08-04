@@ -7,7 +7,11 @@
 // Pure + server-shared: the /api/observe batch sink uses normalizeBatch to clean what
 // the client buffer sends. No DB, no IO here.
 
-import { sanitizeProps } from './track'
+// From ./sanitize, NOT ./track. track.ts reaches the database; this module is imported
+// (via observe -> vitals) by a 'use client' component in the root layout, so importing
+// from there put @supabase/supabase-js and a crypto polyfill in every page's bundle.
+// The header above promises "Pure + server-shared. No DB, no IO here" -- this keeps it.
+import { sanitizeProps } from './sanitize'
 
 /** Max events accepted per batch POST (a flush). Bounds payload + insert size. */
 export const MAX_BATCH = 50
