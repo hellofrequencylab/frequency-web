@@ -372,6 +372,7 @@ lib/airwaves/shows.ts
 lib/amplitude-celebration.ts
 lib/analytics/dashboard.ts
 lib/analytics/density.ts
+lib/analytics/insights-read.ts
 lib/analytics/marketing-intel.ts
 lib/analytics/outcomes.ts
 lib/analytics/practice.ts

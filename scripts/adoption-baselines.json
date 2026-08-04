@@ -33,7 +33,7 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 5541
+      "baseline": 5468
     },
     {
       "key": "shadow-literals",
@@ -48,7 +48,7 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 684
+      "baseline": 54
     },
     {
       "key": "white-black-literals",
@@ -66,7 +66,7 @@
         "app/**/opengraph-image.tsx",
         "app/**/twitter-image.tsx"
       ],
-      "baseline": 419
+      "baseline": 297
     },
     {
       "key": "subtle-tiny-type",
@@ -82,7 +82,7 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 832
+      "baseline": 23
     },
     {
       "key": "raw-button-bg",
@@ -117,7 +117,7 @@
         "components/ui/meter.tsx",
         "components/ui/streak-meter.tsx"
       ],
-      "baseline": 51
+      "baseline": 14
     },
     {
       "key": "bespoke-cards",
