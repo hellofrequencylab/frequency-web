@@ -410,6 +410,22 @@ the app shell at all.**
 > A guard that has never been observed failing is not evidence; it is decoration that reads
 > like evidence, which is worse than nothing because it ends the investigation.
 
+> **The rule paid for itself the same day it was written, and the story is the argument.**
+> While widening `check:seo`, the first draft of its private-route detector treated
+> `getMyProfileId()` as a wall — reasonable, since a page asking who you are usually needs you to
+> be someone. But `/market` calls it to **personalise**, not to gate. So the new gate classified
+> `/market` as correctly-private and reported green **over the exact route it had just been
+> written to watch**. Nothing about the output hinted at it: 46 pages checked, no failures, a
+> clean tick.
+>
+> Only the fail-proof caught it. Injecting the defect the gate existed to catch produced green,
+> which is the one result an injection must never produce. The signal is now the *stop* —
+> `redirect(`, `notFound()`, a `require*` guard — not the lookup.
+>
+> Generalise from it: a gate is at its most convincing in the minutes after you write it, because
+> you know what it is for and it agrees with you. That is precisely when it has never been
+> observed failing. **Write the injection before you trust the tick.**
+
 The corollary is about *shape*, not diligence. Four of the five failures above share one form: **a
 test that greps the string it was just handed cannot see what the compiler or the cascade does with
 it.** `cn()` in this repo is a plain join, not `tailwind-merge`, so a class passed to a primitive
@@ -422,10 +438,10 @@ or display that does not compile `app/globals.css` is asserting about a string, 
 
 | Item | Size | Why |
 | :--- | :---: | :--- |
-| `white-on-rank` pairs in `check:contrast` | S | 10 measured AA failures the gate currently calls green. Blocks the `RankBadge` sweep from being verifiable |
-| `raw-button-bg` → opening-tag form | S | It is a 500-char proximity window over arbitrary JSX, not a count of buttons: collapsing indentation alone moves it 529 → 564. It cannot measure the largest sweep in Phase 3 |
-| `check:headers` sees delegated `<h1>` | S | 3 known evaders |
-| `check:seo` covers non-marketing indexable routes | S | `/market`, `/housing`, `/classifieds` are crawlable and unwatched |
+| ✅ `white-on-rank` pairs in `check:contrast` | S | **Done 2026-08-05.** 30 pairs × 5 states; the table went 215 → 365 rows. Worst non-waived pair moved 3.68:1 → **3.06:1**, which is the gate showing its real floor rather than a flattering one. Icons take the `edge` 3:1 minimum, text the `body` 4.5 — and that split encodes a ceiling: slate (4.31) and plum (4.46) do not clear 4.5, so a rank **core** may carry a glyph and must never carry a label |
+| ✅ `raw-button-bg` → opening-tag form | S | **Done 2026-08-05**, re-frozen at **530**. The `=>` alternative in the new pattern is load-bearing, not tidiness: a plain `[^>]*` truncates at `onClick={() => …}`, which most raw buttons carry *before* their className, and that under-counts 244 against a true 530 — the one direction a ratchet must never be wrong in. Validated against a brace- and quote-aware mini-parser over the identical corpus: **0 missed, 0 extra**, and it needs no proximity window at all |
+| ✅ `check:headers` sees delegated `<h1>` | S | **Done 2026-08-05.** It had TWO defects, not one: it walked `page.tsx` only, *and* its `/<h1[\s/>]/` ran per line, so `\s` had no newline to match and a bare `<h1` with attributes on following lines scored zero — **the shape `PageHeading` itself is written in**. Now starts at `page.tsx` *and* `layout.tsx` and follows route-local imports. The 3 evaders are named in a `KNOWN_DELEGATED` map that may only shrink, and a listed file that stops hand-rolling fails as a stale entry |
+| ✅ `check:seo` covers non-marketing indexable routes | S | **Done 2026-08-05.** Every crawler-reachable page outside `(marketing)` must now declare intent — advertised, or `index:false`. Silence fails; noindex *and* advertised fails as a contradiction. 47 checked, 158 skipped as private, 0 noise. Found one real defect on its first run: `/spaces/operating` gates by **scoping rather than redirecting**, so an anonymous crawler got a 200 and an empty operator hub |
 | ✅ **`PW_STORAGE_STATE`** | S | **Built 2026-08-05 (ADR-950).** Was the top of this queue. Two halves: the harness now ANNOUNCES an unphotographed shell (no credential needed — see below), and `pnpm e2e:session` mints a member session per run from the service-role key, the same `generateLink` + `verifyOtp` pair `impersonate-actions.ts` uses. 🔴 Owner action remaining: create the e2e member account and add three repo secrets |
 | 🔴 First member-shell baselines | S | The four shell surfaces have **never had a PNG**. `e2e-manual.yml` gained `capture_shell` (default OFF) so the first capture is chosen, not sprung: `capture_shell + update_baselines` writes 12 new files (16 with `PW_SPACE_SLUG`), then `capture_shell + update_a11y` seeds their a11y counts before a PR run meets `$defaultMax: 0` |
 | `PW_REQUIRE_SHELL=1` | XS | The ratchet. Before the credential, a zero-app-surface run announces; after it, the same run fails, so an expiring credential cannot silently re-open the blind spot |
