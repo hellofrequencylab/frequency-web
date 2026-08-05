@@ -196,6 +196,21 @@ its own DAWN adoption decision; do not fold its debt into this app's scoreboard.
 1. **Every phase past 1 changes rendering, and `pr-compare` is not a required check.** Batch the
    rendering work, then recapture once against a finished tree. The runner's capture commit does
    not re-trigger CI.
+
+   > **Measured cost, 2026-08-05.** This is no longer hypothetical. #2038 recaptured baselines that
+   > had drifted across **six** merges. #2042 then merged red — because an advisory gate cannot
+   > block anything — and the **very next PR** inherited the drift: 4 failures on `/about` mobile,
+   > `390×9587` vs `390×9566`, a 21px shortening traced to `SectionHeading`'s eyebrow tightening
+   > from 0.25em to 0.18em and un-wrapping a line. Two recapture cycles in two days, both for the
+   > same reason.
+   >
+   > The recapture is also the cleanest attribution tool available: it rewrote **exactly the 4
+   > baselines that failed and no others**, which is mechanical proof that the other 60 surfaces
+   > were pixel-identical. If a capture rewrites more files than the run reported failing, the
+   > extra ones are the real regression and the diff is where to look.
+   >
+   > **Making `pr-compare` required is the fix.** Until then, budget one recapture cycle per
+   > rendering merge and read a green `pr-compare` as "either nothing changed, or nobody looked."
 2. **Ratchet counts only shrink.** A phase that raises one fails CI, and that is the mechanism.
    New primitives arrive as kit pieces, so adopting them should move a count DOWN.
 3. **Build the primitive before sweeping onto it** (Phase 2 before Phase 3). Half this plan's
