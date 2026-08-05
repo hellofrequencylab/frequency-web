@@ -2,7 +2,8 @@
 
 import { useState, useTransition, useRef, useEffect, useCallback, type ReactNode } from 'react'
 import Image from 'next/image'
-import { Megaphone, ImagePlus, X, PenLine, Bold, Italic, List, Link2, Maximize2, Minimize2, ChevronDown, ChevronUp, Camera } from 'lucide-react'
+import { Megaphone, ImagePlus, X, PenLine, Bold, Italic, List, Link2, Maximize2, Minimize2, ChevronDown, ChevronUp, Camera, type LucideIcon } from 'lucide-react'
+import { IconButton } from '@/components/ui/icon-button'
 import { createPost } from '@/app/(main)/feed/actions'
 import { isError } from '@/lib/action-result'
 import { createClient } from '@/lib/supabase/client'
@@ -14,6 +15,13 @@ import { ComposeLightbox } from './compose-lightbox'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024 // 5 MB (post-prep; raw camera shots are converted + downscaled first)
+
+// The composer's two send modes. Same shape as the Capture box's feature row so the two
+// selectors read as one control (see the render, "PATTERN:" note).
+const MODES: { label: string; icon: LucideIcon; announcement: boolean; hint: string }[] = [
+  { label: 'Post', icon: PenLine, announcement: false, hint: 'A regular post' },
+  { label: 'Dispatch', icon: Megaphone, announcement: true, hint: 'Dispatch: send an announcement to your group' },
+]
 
 type HandleResult = { id: string; handle: string; display_name: string; avatar_url: string | null }
 
@@ -651,29 +659,44 @@ export function Composer({
         {bottomSlot != null ? (
           bottomSlot
         ) : canAnnounce && kind !== 'note' ? (
-          <div className="inline-flex items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
-            <button
-              type="button"
-              onClick={() => setIsAnnouncement(false)}
-              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-2xs font-semibold transition-colors ${
-                !isAnnouncement ? 'bg-surface text-primary-strong lift-1' : 'text-muted hover:text-muted'
-              }`}
-              title="A regular post"
-            >
-              <PenLine className="h-3.5 w-3.5" />
-              Post
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsAnnouncement(true)}
-              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-2xs font-semibold transition-colors ${
-                isAnnouncement ? 'bg-surface text-warning lift-1' : 'text-muted hover:text-muted'
-              }`}
-              title="Dispatch: send an announcement to your group"
-            >
-              <Megaphone className="h-3.5 w-3.5" />
-              Dispatch
-            </button>
+          // PATTERN: the same DAWN composer row as the Capture box's feature selector
+          // (dawn/ui_kits/app/feed.jsx:138-148) — one labelled chip for the active mode
+          // (radius-pill + border-strong hairline), the other mode as a bare 32px
+          // radius-control icon button, and NO `bg-surface-elevated p-0.5` track. WHY the
+          // same pattern rather than tabs: Post/Dispatch is the same choice this box's
+          // richer sibling offers (it is literally the two-mode case of the CaptureBox
+          // row), so the two must read as one control, and neither navigates anywhere.
+          // `title` is kept on both so the "what is a Dispatch" hint survives.
+          <div className="inline-flex items-center gap-1">
+            {MODES.map((m) => {
+              const active = m.announcement === isAnnouncement
+              return active ? (
+                <button
+                  key={m.label}
+                  type="button"
+                  onClick={() => setIsAnnouncement(m.announcement)}
+                  aria-pressed
+                  title={m.hint}
+                  className={`inline-flex items-center gap-1.5 rounded-pill border border-border-strong px-3 py-1.5 text-meta font-bold ${
+                    m.announcement ? 'text-warning' : 'text-text'
+                  }`}
+                >
+                  <m.icon className="h-3.5 w-3.5" aria-hidden />
+                  {m.label}
+                </button>
+              ) : (
+                <IconButton
+                  key={m.label}
+                  label={m.label}
+                  title={m.hint}
+                  tone={m.announcement ? 'warning' : 'default'}
+                  onClick={() => setIsAnnouncement(m.announcement)}
+                  aria-pressed={false}
+                >
+                  <m.icon className="h-4 w-4" aria-hidden />
+                </IconButton>
+              )
+            })}
           </div>
         ) : (
           <span />
