@@ -609,6 +609,18 @@ afternoon and buy 5 of them.** Package 10 is not a project, it is a habit.
    | `--color-text-on-broadcast` | `#FFFFFF` | `#1A1206` | same, on the broadcast cyan |
    | `--color-text-subtle` | `#8F8675` | `#6E6558` | the contrast sweep darkened it |
 
+### 4b. The work breakdown
+
+The element-by-element denominator for the packages above — every raw control, duplicate
+primitive, hand-rolled route and arbitrary utility, counted and grouped into eight phases — lives
+in **[`DAWN-CONVERSION.md`](DAWN-CONVERSION.md)**. It is subordinate to this plan and holds no
+status of its own: sequencing stays here, and the ratchet JSON stays the scoreboard.
+
+The headline from that census: **~3,176 elements**, of which 3,124 (98%) are raw
+`<button>`/`<input>`/`<select>`/`<textarea>` that never reach a primitive — and **11 of DAWN's 30
+primitives do not exist or have under two call sites**, so half the sweep volume is blocked on
+building them first.
+
 ### 5. The constraint that governs the whole plan
 
 Every package above 4 changes rendering, and `pr-compare` **is still not a required check**

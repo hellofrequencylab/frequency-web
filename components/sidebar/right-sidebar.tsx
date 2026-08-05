@@ -245,12 +245,17 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
   const showSignature = !pathname.startsWith('/people/')
   return (
     <div className="flex flex-1 flex-col">
-      <div className="flex-1 space-y-4 pt-1 pb-6">
+      {/* space-y-6, not -4: the panels are borderless titled GROUPS now (group, don't box), so
+          whitespace is doing the separating work the nine hairline boxes used to do. At the old
+          gap they ran together into one column of rows. */}
+      <div className="flex-1 space-y-6 pt-1 pb-6">
         {/* Report a bug / get help — pinned to the very TOP of the right rail. The shared
             support sheet (same `open-support` event as the account menu + footer). */}
+        {/* Quiet, not boxed. Invite is the rail's ONE deliberate tinted object; a second
+            bordered box above it made the top of the rail read as two competing cards. */}
         <ReportButton
           variant="ghost"
-          className="w-full justify-start border border-border bg-surface hover:bg-surface-elevated"
+          className="w-full justify-start hover:bg-surface-elevated"
         />
         {/* Invite a friend — right under Report a bug. A small warm CTA that opens the member's invite
             link + branded QR (earn Zaps when a friend joins). Its own Suspense so provisioning the code

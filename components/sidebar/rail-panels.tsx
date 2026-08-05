@@ -113,7 +113,7 @@ export async function EventsPanel({ circleIds }: { circleIds: string[] }) {
   if (events.length === 0) return null
 
   return (
-    <WidgetCard tile title={fellBack ? 'Happening soon' : 'Upcoming events'}>
+    <WidgetCard title={fellBack ? 'Happening soon' : 'Upcoming events'}>
       <div className="space-y-0.5">
         {events.map((event) => (
           <Link
@@ -194,7 +194,7 @@ export async function MembersPanel({ profileId, circleIds }: { profileId: string
   if (members.length === 0) return null
 
   return (
-    <WidgetCard tile title="Members" badge={onlineCount > 0 ? `${onlineCount} online` : undefined}>
+    <WidgetCard title="Members" badge={onlineCount > 0 ? `${onlineCount} online` : undefined}>
       <div className="space-y-0.5">
         {members.map((m) => {
           const online = isOnline(m.profile.last_seen_at)
@@ -236,7 +236,7 @@ export async function DispatchesPanel({ profileId, circleIds }: { profileId: str
   if (dispatches.length === 0) return null
 
   return (
-    <WidgetCard tile title="Dispatches">
+    <WidgetCard title="Dispatches">
       <div className="space-y-0.5">
         {dispatches.map((d) => (
           <Link
@@ -283,7 +283,7 @@ export async function LeaderboardPanel() {
   const rankColors = ['text-primary', 'text-subtle', 'text-primary', 'text-subtle', 'text-subtle']
 
   return (
-    <WidgetCard tile title="Leaderboard">
+    <WidgetCard title="Leaderboard">
       <div className="space-y-0.5">
         {top.map((member, i) => (
           <Link
@@ -401,7 +401,7 @@ export async function WhoOnlinePanel({ profileId }: { profileId: string }) {
   if (people.length === 0) return null
 
   return (
-    <WidgetCard tile title="Who’s online" badge={`${people.length}`}>
+    <WidgetCard title="Who’s online" badge={`${people.length}`}>
       <div className="flex flex-wrap gap-1.5 px-1 py-1">
         {people.slice(0, 10).map((p) => (
           <Link key={p.id} href={`/people/${p.handle}`} title={p.display_name} className="relative shrink-0">
@@ -440,7 +440,7 @@ export async function CirclesPanel({ circleIds }: { circleIds: string[] }) {
   if (rows.length === 0) return null
 
   return (
-    <WidgetCard tile title="Circles to explore">
+    <WidgetCard title="Circles to explore">
       <div className="space-y-0.5">
         {rows.map((c) => (
           <Link
@@ -504,7 +504,7 @@ export async function NewCirclesPanel({ circleIds }: { circleIds: string[] }) {
   if (rows.length === 0) return null
 
   return (
-    <WidgetCard tile title={fellBack ? 'Circles to explore' : 'Newest circles'} badge={fellBack ? undefined : 'New'}>
+    <WidgetCard title={fellBack ? 'Circles to explore' : 'Newest circles'} badge={fellBack ? undefined : 'New'}>
       <div className="space-y-0.5">
         {rows.map((c) => (
           <Link
@@ -577,7 +577,7 @@ export async function ActiveNowPanel({ profileId }: { profileId: string }) {
   const onlineCount = people.filter((p) => isOnline(p.last_seen_at)).length
 
   return (
-    <WidgetCard tile title={fellBack ? 'New members' : 'Active now'} badge={!fellBack && onlineCount > 0 ? `${onlineCount} online` : undefined}>
+    <WidgetCard title={fellBack ? 'New members' : 'Active now'} badge={!fellBack && onlineCount > 0 ? `${onlineCount} online` : undefined}>
       <div className="space-y-0.5">
         {people.map((p) => {
           const online = isOnline(p.last_seen_at)
@@ -646,7 +646,7 @@ export async function PulsePanel() {
   ]
 
   return (
-    <WidgetCard tile title="Community pulse">
+    <WidgetCard title="Community pulse">
       <div className="grid grid-cols-3 gap-1.5">
         {stats.map(({ href, Icon, value, label }) => (
           <Link

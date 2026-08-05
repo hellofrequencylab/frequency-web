@@ -242,9 +242,13 @@ export function PostCard({
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 leading-snug">
+              {/* The author is the card's title, so it takes the card-title role (a type role
+                  that existed unused) with the heading's negative tracking. It was sharing one
+                  size with the body, the timestamp and the reaction row, which is how a post
+                  came to have no hierarchy at all. */}
               <Link
                 href={`/people/${author.handle}`}
-                className="text-body-sm font-semibold text-text hover:underline"
+                className="text-card-title font-bold tracking-tight text-text hover:underline"
               >
                 {author.display_name}
               </Link>
@@ -287,9 +291,11 @@ export function PostCard({
           />
         </div>
 
-        {/* Body */}
+        {/* Body — `text-body`, the reading role, not the compact `text-body-sm` UI role. "Type
+            is the hero" is DAWN's first in-app principle, and small body copy is one of the three
+            habits its own diagnosis blames for the app reading as a SaaS template. */}
         {post.body && (
-          <PostBody body={post.body} className="mb-2.5 text-body-sm leading-relaxed text-text" />
+          <PostBody body={post.body} className="mb-2.5 text-body leading-relaxed text-text" />
         )}
 
         {/* Post image — inset media, no second frame around it. */}
