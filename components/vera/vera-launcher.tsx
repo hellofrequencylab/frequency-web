@@ -388,18 +388,22 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
     if (!open) return
     return onOtherDockSegmentOpen('chat', close)
     // Same reasoning as the two listeners above: `close` is stable in behaviour, not identity.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   // ITEM 5, the 'open' reading — INERT while RAIL_END_ACTIVATION is 'nudge' (see the constant).
-  // Wired rather than described so flipping the behaviour is one word and not a rewrite.
+  // Wired rather than described, so flipping the behaviour is one word and not a rewrite.
+  //
+  // It reacts inside the store's CALLBACK rather than in the effect body on `atRailEnd`. That is
+  // not a style preference: an effect body that calls `show()` when a subscribed value changes is
+  // a cascading render, and this repo's lint (react-hooks/set-state-in-effect) rejects it by name.
+  // Reacting to an external system from the callback it hands you is the shape the rule sanctions.
   useEffect(() => {
     if (RAIL_END_ACTIVATION !== 'open') return
-    if (!atRailEnd) return
-    show()
-    // `show` is re-created every render; this must fire on the rail-end EDGE, never per render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [atRailEnd])
+    return subscribeDockGeometry(() => {
+      if (getDockGeometry().atRailEnd) show()
+    })
+    // `show` only touches setters and refs, all of which are stable for this component's life.
+  }, [])
 
   function close() {
     setOpen(false)
