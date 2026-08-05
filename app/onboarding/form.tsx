@@ -194,7 +194,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
       return (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={previewSrc} // codeql[js/xss-through-dom]
+          src={previewSrc}
           alt="Avatar preview"
           className={`${dim} rounded-pill object-cover shrink-0 ring-2 ring-primary-bg`}
         />

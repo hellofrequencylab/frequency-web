@@ -70,26 +70,33 @@ export function safeImageSrc(src: string | null | undefined): string | null {
 // SVG loaded through <img> is script-disabled in every browser) but because a preview
 // has no reason to carry inline bytes, and a guard that permits what the caller cannot
 // produce is a guard with slack in it.
-// WHY THE CALL SITES CARRY `// codeql[js/xss-through-dom]`.
+// KNOWN CODEQL FALSE POSITIVES, and why they cannot be fixed in code.
 //
-// CodeQL does not model either function as a sanitizer, so every <img> fed by one is
-// reported as "DOM text reinterpreted as HTML". The path it draws is real but inert:
+// CodeQL does not model either function as a sanitizer, so every <img> they feed is
+// reported as js/xss-through-dom, "DOM text reinterpreted as HTML". The path it draws
+// is real but inert:
 //
 //   <input type="file">  →  e.target.files[0]   (CodeQL: DOM text)
 //   URL.createObjectURL(file)                   (CodeQL: taint survives)
 //   <img src={…}>                               (CodeQL: HTML sink)
 //
-// `createObjectURL` does not embed anything from the file. It returns a browser-minted
-// `blob:<origin>/<uuid>` — the filename, the bytes and the MIME type never appear in the
-// string, so there is no attacker-controlled character to escape. The taint label is
-// carried by the File, not by the URL that identifies it.
+// `createObjectURL` embeds nothing from the file. It returns a browser-minted
+// `blob:<origin>/<uuid>` — the filename, the bytes and the MIME type never appear in
+// the string, so there is no attacker-controlled character to escape. The taint label
+// belongs to the File, not to the URL that identifies it. An <img> src also cannot
+// execute script the way an href can, which is the premise this whole file rests on.
 //
-// Adding these guards RAISED the alert count 5 → 7, because routing four more surfaces
-// through one shared helper is exactly what lets CodeQL connect the path across files.
-// The code got stricter and the report got louder; both facts are true at once.
+// DO NOT try to silence these with `// codeql[js/xss-through-dom]` comments. That was
+// tried on all nine sites, placed on the exact lines CodeQL reports, and the count did
+// not move: inline suppression comments are an LGTM legacy feature that GitHub code
+// scanning does not honour. The only supported routes are dismissing each alert in the
+// Security tab or excluding the query in .github/workflows/codeql.yml — and excluding
+// it repo-wide would also blind us to a genuine innerHTML finding, which is the one
+// thing this query is worth keeping for. So: dismiss, and leave the query armed.
 //
-// Suppressed per site rather than filtered globally, so a genuine js/xss-through-dom
-// somewhere else — an innerHTML, a dangerouslySetInnerHTML — still fails the build.
+// Also worth recording: adding these guards RAISED the alert count 5 → 7. Routing four
+// more surfaces through one shared helper is exactly what let CodeQL connect the path
+// across files. The code got stricter and the report got louder at the same time.
 export function safeUploadPreviewSrc(src: string | null | undefined): string | null {
   const safe = safeImageSrc(src)
   if (!safe) return null

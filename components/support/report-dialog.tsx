@@ -231,11 +231,7 @@ export function ReportDialog({
               {shot ? (
                 <div className="relative overflow-hidden rounded-card border border-border">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={safeImageSrc(shot.url) ?? undefined} // codeql[js/xss-through-dom]
-                    alt="Attached screenshot"
-                    className="max-h-48 w-full object-contain bg-surface-elevated"
-                  />
+                  <img src={safeImageSrc(shot.url) ?? undefined} alt="Attached screenshot" className="max-h-48 w-full object-contain bg-surface-elevated" />
                   <button type="button" onClick={() => setShot(null)} aria-label="Remove screenshot" className="absolute right-2 top-2 rounded-pill bg-black/60 p-1.5 text-white transition-colors hover:bg-black/80">
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>

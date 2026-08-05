@@ -529,11 +529,7 @@ export function Composer({
               blob: src that the Next image optimizer can't (and shouldn't) touch,
               so a plain <img> is correct here. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={safeUploadPreviewSrc(imagePreview) ?? undefined} // codeql[js/xss-through-dom]
-            alt="Upload preview"
-            className="max-h-48 rounded-card border border-border object-cover"
-          />
+          <img src={safeUploadPreviewSrc(imagePreview) ?? undefined} alt="Upload preview" className="max-h-48 rounded-card border border-border object-cover" />
           <button
             type="button"
             onClick={removeImage}

@@ -491,7 +491,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     const previewSrc = safeUploadPreviewSrc(avatarPreview)
     if (previewSrc) {
       // eslint-disable-next-line @next/next/no-img-element
-      return <img src={previewSrc} alt="Avatar preview" className="h-24 w-24 rounded-pill object-cover shrink-0 ring-2 ring-primary" /> // codeql[js/xss-through-dom]
+      return <img src={previewSrc} alt="Avatar preview" className="h-24 w-24 rounded-pill object-cover shrink-0 ring-2 ring-primary" />
     }
     const initials = getInitials(displayName || userEmail)
     return (
