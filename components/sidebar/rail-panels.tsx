@@ -19,6 +19,7 @@ import { isOnline, ONLINE_MS, RECENT_MS } from '@/lib/presence'
 import { getRecentDispatchesForProfile } from '@/lib/dispatches'
 import { getOnboardingStatus, nextStepsEnabled } from '@/lib/onboarding/status'
 import { WidgetCard } from '@/components/modules/module-card'
+import { Counter } from '@/components/ui/counter'
 
 // The rail's PAGE PANELS (ADR-161) — contextual stat cards keyed into the right rail
 // by route (lib/layout/rail-panels.ts). Each is an independent async server component
@@ -304,10 +305,16 @@ export async function LeaderboardPanel() {
               <span className="rank-badge text-3xs font-bold leading-tight" style={seasonRankStyle(member.current_season_rank)}>
                 {RANK_LABELS[member.current_season_rank] ?? member.current_season_rank}
               </span>
-              <div className="flex items-center gap-0.5">
-                <Zap className="w-2.5 h-2.5 text-primary" />
-                <span className="text-meta font-semibold text-muted">{(member.current_season_zaps ?? 0).toLocaleString()}</span>
-              </div>
+              {/* Season Zaps through Counter: amber bolt (the Zaps tone), mono numeral. The word
+                  "Zaps" is hidden on this row — the board is five names deep in a 288px rail and
+                  the bolt already says which currency it is — but it still reaches assistive tech. */}
+              <Counter
+                value={member.current_season_zaps ?? 0}
+                label="Zaps"
+                glyph={Zap}
+                tone="primary"
+                labelHidden
+              />
             </div>
           </Link>
         ))}
@@ -655,8 +662,11 @@ export async function PulsePanel() {
             className="flex flex-col items-center gap-0.5 rounded-lg px-1 py-2 text-center transition-colors hover:bg-surface-elevated"
           >
             <Icon className="h-4 w-4 text-primary-strong" aria-hidden />
-            <span className="text-body-lg font-bold leading-none tabular-nums text-text">{value.toLocaleString()}</span>
-            <span className="text-2xs text-muted">{label}</span>
+            {/* The count goes through Counter (stacked): these were tabular but not MONO, so three
+                totals that update at different rates drifted against each other in a 3-up grid.
+                The panel's own Icon stays above as the tile's identity; the Counter carries the
+                reading and its label. */}
+            <Counter value={value} label={label} layout="stacked" />
           </Link>
         ))}
       </div>

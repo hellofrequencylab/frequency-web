@@ -514,7 +514,7 @@ function Splash({
         <div className="amber-glow absolute inset-0 pointer-events-none" />
         <div className="relative z-10 mx-auto max-w-5xl px-6 py-28 sm:py-40">
           <Reveal>
-            <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary mb-5">
+            <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary mb-5">
               Moonlight Beach · 2020
             </p>
             <h2 className="font-display uppercase text-on-ink text-5xl sm:text-6xl lg:text-8xl leading-[0.9] text-balance">
@@ -620,7 +620,7 @@ function Splash({
         <div className="amber-glow absolute inset-0 pointer-events-none" />
         <div className="relative z-10 mx-auto max-w-3xl px-6 py-24 sm:py-28 text-center">
           <Reveal>
-            <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary mb-4">
+            <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary mb-4">
               The honest part
             </p>
             <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl mb-6 text-balance">
@@ -754,7 +754,7 @@ async function LiveProof() {
         <div className="amber-glow absolute inset-0 pointer-events-none" />
         <div className="relative z-10 mx-auto max-w-3xl text-center">
           <Reveal>
-            <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary mb-4">
+            <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary mb-4">
               Not a someday idea
             </p>
             <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl mb-6">
@@ -810,7 +810,7 @@ async function LiveProof() {
         <section className="bg-surface px-6 py-20 sm:py-24">
           <div className="max-w-2xl mx-auto">
             <Reveal className="text-center">
-              <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
+              <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">
                 In their own words
               </p>
               <h2 className={`font-display uppercase text-text text-3xl sm:text-4xl text-balance ${postsCurated ? 'mb-3' : 'mb-10'}`}>

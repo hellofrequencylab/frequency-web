@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Zap, Gem, Flame, Trophy } from 'lucide-react'
 import { StatCard } from '@/components/ui/stat-card'
+import { Counter, type CounterTone } from '@/components/ui/counter'
 import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 
 // StandingTiles — the single way a member's standing renders anywhere it appears
@@ -47,13 +48,13 @@ export function StandingTiles({
   if (variant === 'compact') {
     return (
       <div className="grid grid-cols-3 gap-1.5">
-        <ScoreTile href={links?.zaps} icon={Zap} iconCls="text-primary" value={zaps.toLocaleString()} label="Zaps" />
-        <ScoreTile href={links?.gems} icon={Gem} iconCls="text-signal" value={gems.toLocaleString()} label="Gems" />
+        <ScoreTile href={links?.zaps} icon={Zap} tone="primary" value={zaps} label="Zaps" />
+        <ScoreTile href={links?.gems} icon={Gem} tone="signal" value={gems} label="Gems" />
         <ScoreTile
           href={links?.streak}
           icon={Flame}
-          iconCls={streak > 0 ? 'text-primary-strong' : 'text-subtle'}
-          value={streak.toLocaleString()}
+          tone={streak > 0 ? 'primary-strong' : 'neutral'}
+          value={streak}
           label="Streak"
         />
       </div>
@@ -73,28 +74,27 @@ export function StandingTiles({
 }
 
 // One cell of the compact rail scoreboard — a tinted, optionally-linked count.
+//
+// The count itself is a Counter in its `stacked` layout, not hand-rolled markup: the numeral was
+// tabular but not MONO here, which is the half of DAWN's counter law that keeps a changing score
+// from shuffling sideways. The tile keeps its own tint, padding and link affordance; only the
+// reading moved into the kit. Tone follows the KIND (Zaps amber, Gems teal, a lit streak amber, a
+// cold one neutral) in the shared tone vocabulary rather than a raw class per call site.
 function ScoreTile({
   href,
   icon: Icon,
-  iconCls,
+  tone,
   value,
   label,
 }: {
   href?: string
   icon: typeof Zap
-  iconCls: string
-  value: string
+  tone: CounterTone
+  value: number
   label: string
 }) {
-  const inner = (
-    <>
-      <span className="flex items-center justify-center gap-1 text-body font-bold tabular-nums text-text">
-        <Icon className={`h-3.5 w-3.5 ${iconCls}`} /> {value}
-      </span>
-      <span className="text-2xs font-medium uppercase tracking-wide text-muted">{label}</span>
-    </>
-  )
-  const cls = 'rounded-lg bg-primary-bg/40 px-2 py-2 text-center'
+  const inner = <Counter value={value} label={label} glyph={Icon} tone={tone} layout="stacked" />
+  const cls = 'block rounded-lg bg-primary-bg/40 px-2 py-2 text-center'
   return href ? (
     <Link href={href} className={`${cls} transition-colors hover:bg-primary-bg/60 motion-reduce:transition-none`}>
       {inner}

@@ -8,6 +8,7 @@ import {
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { ProgressTrack } from '@/components/ui/progress-track'
 import { StreakMeter } from '@/components/ui/streak-meter'
+import { Counter } from '@/components/ui/counter'
 import { StandingTiles } from '@/components/gamification/standing-tiles'
 
 // ── Data shape (assembled server-side in right-sidebar.tsx) ───────────────────
@@ -139,21 +140,20 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-primary">
           <Zap className="h-3.5 w-3.5 fill-current text-on-primary" />
         </span>
-        <span className="text-body-sm font-semibold tabular-nums text-text">{zaps.toLocaleString()}</span>
+        {/* THROUGH THE KIT. Every number a member sees goes through Counter (mono, tabular) or
+            StreakMeter — and this strip is the most-read number cluster in the app, so it was the
+            worst place to be hand-rolled: the three numerals were tabular but NOT mono, which is
+            the half of the contract that actually holds a changing count still.
+            `labelHidden` because the head is ~240px once the chat segment takes its ~48px: the
+            glyphs carry the kind here (the amber bolt, the teal Gem, the amber flame) and the
+            words would cost the numbers their room. The labels still reach assistive tech.
+            Gems are TEAL. DAWN's counter tone law is by kind, not by chrome: Zaps and streaks
+            amber, Gems and trophies teal, Airtime and movement the Move blue. */}
+        <Counter value={zaps} label="Zaps" labelHidden />
         <span aria-hidden className="h-4 w-px bg-border" />
-        {/* Gems are TEAL. DAWN's counter tone law is by kind, not by chrome: Zaps and streaks
-            amber, Gems and trophies teal, Airtime and movement the Move blue. Amber here made the
-            two currencies read as one, and disagreed with ScoreTile in standing-tiles.tsx, which
-            already colours the same Gem glyph `text-signal`. */}
-        <span className="inline-flex items-center gap-1 text-body-sm tabular-nums text-muted">
-          <Gem className="h-3.5 w-3.5 text-signal" />
-          {gems.toLocaleString()}
-        </span>
+        <Counter value={gems} label="Gems" glyph={Gem} tone="signal" labelHidden />
         <span aria-hidden className="h-4 w-px bg-border" />
-        <span className="inline-flex items-center gap-1 text-body-sm tabular-nums text-muted">
-          <Flame className="h-3.5 w-3.5 text-primary-strong" />
-          {streak}
-        </span>
+        <Counter value={streak} label="day streak" glyph={Flame} tone="primary-strong" labelHidden />
         {/* The rank chip used to sit here. It does not fit once the chat segment takes ~48px off
             this head, and squeezing it would have come out of the three numbers, which are the
             thing you actually read at rest. Rank lives in the panel below (and in the summary),
@@ -285,9 +285,10 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
           <Lock className="w-3.5 h-3.5 text-primary-strong shrink-0" />
           <span className="text-meta font-bold uppercase tracking-wider text-primary-strong">The Vault</span>
         </div>
-        <p className="mt-1 flex items-center gap-1 text-body-sm font-semibold text-text">
-          <Gem className="w-3.5 h-3.5 text-signal" />
-          {vaultGems.toLocaleString()} gems to spend
+        {/* The spendable balance is a READING, so it goes through Counter too — same teal Gem,
+            same mono numeral as the head above, rather than a third hand-rolled spelling of it. */}
+        <p className="mt-1">
+          <Counter value={vaultGems} label="gems to spend" glyph={Gem} tone="signal" />
         </p>
         <p className="mt-0.5 text-2xs text-muted">Titles, cosmetics &amp; membership credits →</p>
       </Link>

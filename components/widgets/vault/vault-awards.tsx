@@ -126,8 +126,12 @@ function AwardsCollection({
                       // needed to compose with, and the glow has been inert ever since. The tier
                       // glow is a ring now, which composes with anything, so the toast keeps its
                       // halo and this tile gets an honest border instead.
-                      className={`rounded-card px-4 py-3 transition-all ${
-                        a.earned ? `${tier.bg} border ${tier.border} lift-1` : 'bg-surface-elevated/60 opacity-70'
+                      // `border` on BOTH branches, transparent when unearned. A border on only
+                      // one branch makes the two tiles measure differently — 2px of content box
+                      // — so adjacent text baselines in the grid stop lining up. Badge solves the
+                      // same problem the same way.
+                      className={`rounded-card border px-4 py-3 transition-all ${
+                        a.earned ? `${tier.bg} ${tier.border} lift-1` : 'border-transparent bg-surface-elevated/60 opacity-70'
                       }`}
                     >
                       <div className="flex items-start gap-3">

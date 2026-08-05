@@ -181,10 +181,15 @@ export function PostCard({
   // with the SAME amber, because they are one family of "special post" and amber is
   // the only chrome accent. Warning is a state colour and a pinned post is not a
   // caution; using it here made two sibling states read as two different meanings.
+  // One family, two weights. Both special states tint the hairline amber — warning is a state
+  // colour and a pinned post is not a caution — but /45 against /40 was a 5% alpha difference on
+  // a 1px line, which is no difference at all: the two kinds became indistinguishable except by
+  // reading the kicker. An announcement is the louder of the two, so it gets a hairline you can
+  // actually see, and pinned stays quiet.
   const cardBorder = isAnnouncement
-    ? 'border-primary/45'
+    ? 'border-primary/70'
     : post.is_pinned
-    ? 'border-primary/40'
+    ? 'border-primary/35'
     : 'border-border/70 dark:border-border/60'
 
   return (

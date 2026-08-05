@@ -376,7 +376,7 @@ export function QuoteSection({
           </blockquote>
           {attribution && (
             <figcaption
-              className={`mt-7 text-body-sm font-bold uppercase tracking-[0.25em] ${
+              className={`mt-7 text-body-sm font-bold uppercase tracking-eyebrow ${
                 ink ? 'text-on-ink-subtle' : 'text-subtle'
               }`}
             >

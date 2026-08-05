@@ -49,15 +49,24 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
   // the active `--tap-min`: 32px density floor on a mouse, 44px on a coarse pointer
   // (app/globals.css). LABELLED, the <label> is the real hit area — clicking anywhere in it
   // toggles the box — so the floor goes there and the box stays a trim 20px beside the text.
-  // UNLABELLED there is nothing else to grow, so the floor goes on the input itself. Neither
-  // branch bleeds a ::after hit area, which in a stacked list of checkboxes would overlap the
-  // neighbouring row and toggle the wrong one.
+  //
+  // UNLABELLED it goes on the WRAPPER, not the input. It used to go on the input, and that was
+  // wrong in a way nothing would have caught: this input is `appearance-none` with its own
+  // border and fill, so it IS the visible box, and a min-block-size floor does not grow a hit
+  // area around it — it grows the CHECKBOX. On a coarse pointer that drew a 44px square, and on
+  // the kids generations (`--tap-min` up to 56px) a square nearly three times its intended 20px
+  // with the tick still frozen at 12px in the middle. The wrapper is an unlabelled <label>, so
+  // the floor lands on a real hit area and the box stays 20px inside it. Neither branch bleeds a
+  // ::after, which in a stacked list would overlap the next row and toggle the wrong one.
+  const Box = labelled ? 'span' : 'label'
   const box = (
-    // `relative inline-flex` so the check mark can sit over the input. Presentational only,
-    // which is why it is a <span> carrying no role — the input below is the whole control.
-    <span
+    // `relative inline-flex` so the check mark can sit over the input. When unlabelled this is a
+    // bare <label> with no text: it names nothing (the caller owns that via aria-label or a
+    // surrounding Field) and exists only to be the clickable floor around the box.
+    <Box
       className={cn(
         'relative inline-flex shrink-0 items-center justify-center',
+        !labelled && 'tap-target',
         !labelled && wrapperClassName,
       )}
     >
@@ -65,7 +74,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
         ref={ref}
         type="checkbox"
         disabled={disabled}
-        className={cn(checkboxClasses, !labelled && 'tap-target', className)}
+        className={cn(checkboxClasses, className)}
         {...props}
       />
       <svg
@@ -80,7 +89,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
       >
         <polyline points="20 6 9 17 4 12" />
       </svg>
-    </span>
+    </Box>
   )
 
   if (!labelled) return box

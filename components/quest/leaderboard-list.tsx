@@ -5,6 +5,7 @@ import type { LucideIcon } from 'lucide-react'
 import { getRankDef, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
+import { Counter, type CounterTone } from '@/components/ui/counter'
 
 // LeaderboardList — the responsive, mobile-first board that replaces the old fixed
 // six-column grid (grid-cols-[2.5rem_1fr_5rem_4rem_4rem_5rem]) that broke on phones.
@@ -35,19 +36,21 @@ export interface LeaderboardListEntry {
   streak: number
 }
 
+// Tone follows the KIND, in the kit's shared tone vocabulary (DAWN's counter tone law: Zaps and
+// streaks both amber, the streak on the deeper step it already used).
 const TRACK: Record<
   LeaderboardTrack,
-  { icon: LucideIcon; iconCls: string; metric: (e: LeaderboardListEntry) => number; unit: (n: number) => string }
+  { icon: LucideIcon; tone: CounterTone; metric: (e: LeaderboardListEntry) => number; unit: (n: number) => string }
 > = {
   zaps: {
     icon: Zap,
-    iconCls: 'text-primary',
+    tone: 'primary',
     metric: (e) => e.seasonZaps,
     unit: () => 'Zaps',
   },
   consistency: {
     icon: Flame,
-    iconCls: 'text-primary-strong',
+    tone: 'primary-strong',
     metric: (e) => e.streak,
     unit: (n) => (n === 1 ? 'day' : 'days'),
   },
@@ -121,13 +124,14 @@ export function LeaderboardList({
                 </span>
               </span>
 
-              {/* The ONE metric for the active track — the only number per row. */}
-              <span className="flex shrink-0 items-center gap-1.5 text-right">
-                <Icon className={`h-4 w-4 shrink-0 ${t.iconCls}`} aria-hidden />
-                <span className="text-body-sm font-bold tabular-nums text-text">
-                  {value.toLocaleString()}
-                </span>
-                <span className="hidden text-meta font-medium text-muted sm:inline">{t.unit(value)}</span>
+              {/* The ONE metric for the active track — the only number per row, and now the kit's
+                  Counter rather than three hand-rolled spans. The numeral was tabular but not MONO,
+                  which is what stops a column of five scores from shuffling as they change.
+                  NOTE: the unit word used to be `hidden sm:inline`. Counter carries its label at
+                  every width (at text-2xs, smaller than the text-meta desktop used to get), so a
+                  phone now reads "Zaps"/"days" too instead of a bare number. */}
+              <span className="shrink-0">
+                <Counter value={value} label={t.unit(value)} glyph={Icon} tone={t.tone} />
               </span>
             </Link>
           </li>

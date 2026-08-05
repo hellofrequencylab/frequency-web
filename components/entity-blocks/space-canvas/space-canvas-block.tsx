@@ -55,8 +55,8 @@ const STRUCTURAL_PREVIEW_IDS: ReadonlySet<string> = new Set(['links', 'embed', '
 // ── Canvas typography, matched to the published design components so the page style shows while editing. ──
 // `font-eyebrow` matches kit.tsx's Eyebrow: the Space page theme's per-role kicker hook (ADR-578), a
 // bare marker with no bold-scoped rule, so the canvas previews the same treatment the page renders.
-const EYEBROW_CLS = 'font-eyebrow text-body-sm font-bold uppercase tracking-[0.25em] text-primary-strong'
-const EYEBROW_INK_CLS = 'font-eyebrow text-body-sm font-bold uppercase tracking-[0.25em] text-primary'
+const EYEBROW_CLS = 'font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong'
+const EYEBROW_INK_CLS = 'font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow text-primary'
 /** A design-block heading (DesignHeading default): the Anton display face at the published FLUID CLAMP, so the
  *  canvas heading is not dramatically smaller than the page (parity fix 5). */
 const HEADING_CLS = 'font-display text-[clamp(1.875rem,5.5vw,3rem)] uppercase leading-[1.05] text-text'

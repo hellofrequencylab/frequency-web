@@ -49,14 +49,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 3824,
+      "baseline": 3783,
       "frozen": {
         "at": "2026-08-05",
-        "value": 3824,
-        "direction": "lowered",
-        "basis": "d2a53ce6b015",
-        "reason": "Side effect of pass 2a, credited correctly here on 2026-08-05: the type sweep rewrote className strings that also carried literal radii, retiring 9 of them (3833 -> 3824). This entry previously carried literal-type's sentence verbatim ('literal-type goes to 0 and the floor moves with it') because a blanket `--update --reason` stamps one reason onto every entry it moves. The tool now refuses a multi-entry update without --key for exactly that reason.",
-        "from": 3833
+        "value": 3783,
+        "direction": "rebased",
+        "basis": "6a00b952da5c",
+        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
+        "from": 3824
       },
       "history": [
         {
@@ -107,6 +107,13 @@
           "to": 3824,
           "direction": "lowered",
           "reason": "Pass 2a retired the last text-xs/sm/base/lg/xl/2xl literals in app, components and lib: the template-literal classNames pass 1's attribute walker could not reach, the page-editor tree it held out, and text-lg once --text-body-lg existed to receive it. literal-type goes to 0 and the floor moves with it so the sweep cannot silently unwind."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 3824,
+          "to": 3783,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
         }
       ]
     },
@@ -128,8 +135,8 @@
         "at": "2026-08-05",
         "value": 0,
         "direction": "rebased",
-        "basis": "6e5e01ab30a9",
-        "reason": "Scope parity only, no sweep: include gains .mts to match literal-radius, shadow-literals, white-black-literals and subtle-tiny-type, which all watch {ts,tsx,mts}. literal-type was the only utility-class entry omitting it — inert today (0 .mts files under app/components/lib) but exactly the divergence its own 2026-08-05 rebase claimed to have closed. Count stays 0; only the basis moves.",
+        "basis": "4e516bacbecf",
+        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
         "from": 0
       },
       "history": [
@@ -153,6 +160,13 @@
           "to": 0,
           "direction": "rebased",
           "reason": "Scope parity only, no sweep: include gains .mts to match literal-radius, shadow-literals, white-black-literals and subtle-tiny-type, which all watch {ts,tsx,mts}. literal-type was the only utility-class entry omitting it — inert today (0 .mts files under app/components/lib) but exactly the divergence its own 2026-08-05 rebase claimed to have closed. Count stays 0; only the basis moves."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 0,
+          "to": 0,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
         }
       ]
     },
@@ -169,14 +183,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 54,
+      "baseline": 52,
       "frozen": {
-        "at": "2026-08-04",
-        "value": 54,
-        "direction": "lowered",
-        "basis": "58c79f8e3c36",
-        "reason": "Sweep, same basis as the addendum audit. The shadow→lift codemod landed: literal shadow-* fell 684 → 54 while lift-* adopters rose 33 → 657, so the −630 is matched by +624 adoptions.",
-        "from": 684
+        "at": "2026-08-05",
+        "value": 52,
+        "direction": "rebased",
+        "basis": "50ae235138cf",
+        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
+        "from": 54
       },
       "history": [
         {
@@ -185,6 +199,13 @@
           "to": 54,
           "direction": "lowered",
           "reason": "Sweep, same basis as the addendum audit. The shadow→lift codemod landed: literal shadow-* fell 684 → 54 while lift-* adopters rose 33 → 657, so the −630 is matched by +624 adoptions."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 54,
+          "to": 52,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
         }
       ]
     },
@@ -204,14 +225,14 @@
         "app/**/opengraph-image.tsx",
         "app/**/twitter-image.tsx"
       ],
-      "baseline": 266,
+      "baseline": 214,
       "frozen": {
         "at": "2026-08-05",
-        "value": 266,
+        "value": 214,
         "direction": "rebased",
-        "basis": "014711546b1d",
-        "reason": "Pattern bug, not a sweep: the -black branch matched font-black, a FONT-WEIGHT utility, so 31 of the 297 were never monochrome colours at all and no theme-generation pass could ever retire them. Added a (?<!font) guard; 297 -> 266. The entry's own description called this 'the only bug class in the census' while itself carrying one.",
-        "from": 297
+        "basis": "564513ba9761",
+        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
+        "from": 266
       },
       "history": [
         {
@@ -227,6 +248,13 @@
           "to": 266,
           "direction": "rebased",
           "reason": "Pattern bug, not a sweep: the -black branch matched font-black, a FONT-WEIGHT utility, so 31 of the 297 were never monochrome colours at all and no theme-generation pass could ever retire them. Added a (?<!font) guard; 297 -> 266. The entry's own description called this 'the only bug class in the census' while itself carrying one."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 266,
+          "to": 214,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
         }
       ]
     },
@@ -244,14 +272,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 24,
+      "baseline": 23,
       "frozen": {
-        "at": "2026-08-04",
-        "value": 24,
-        "direction": "raised",
-        "basis": "434c0b2eb5b5",
-        "reason": "Instrument artifact, not new debt. Both classes are proximity-window metrics and both rose +1 while the wave added ZERO matching sites: no file gained a text-2xs/3xs line (verified per-file against the diff), and raw-button-bg's new hit is Switch's hover:bg-primary-hover -- the CORRECT hover token, whose substring matches the bg-primary pattern. Reformatting alone moves raw-button-bg 529->564, so +1 is inside the noise floor. Stays flagged so Lift 2b replaces both patterns with element-scoped forms.",
-        "from": 23
+        "at": "2026-08-05",
+        "value": 23,
+        "direction": "rebased",
+        "basis": "2616a25fff84",
+        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
+        "from": 24
       },
       "history": [
         {
@@ -267,6 +295,13 @@
           "to": 24,
           "direction": "raised",
           "reason": "Instrument artifact, not new debt. Both classes are proximity-window metrics and both rose +1 while the wave added ZERO matching sites: no file gained a text-2xs/3xs line (verified per-file against the diff), and raw-button-bg's new hit is Switch's hover:bg-primary-hover -- the CORRECT hover token, whose substring matches the bg-primary pattern. Reformatting alone moves raw-button-bg 529->564, so +1 is inside the noise floor. Stays flagged so Lift 2b replaces both patterns with element-scoped forms."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 24,
+          "to": 23,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
         }
       ]
     },
@@ -285,14 +320,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 528,
+      "baseline": 527,
       "frozen": {
         "at": "2026-08-05",
-        "value": 528,
-        "direction": "lowered",
-        "basis": "b0d275f91676",
-        "reason": "Pass 2a retired the last text-xs/sm/base/lg/xl/2xl literals in app, components and lib: the template-literal classNames pass 1's attribute walker could not reach, the page-editor tree it held out, and text-lg once --text-body-lg existed to receive it. literal-type goes to 0 and the floor moves with it so the sweep cannot silently unwind.",
-        "from": 529
+        "value": 527,
+        "direction": "rebased",
+        "basis": "ceca96ead2f3",
+        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
+        "from": 528
       },
       "history": [
         {
@@ -322,6 +357,13 @@
           "to": 528,
           "direction": "lowered",
           "reason": "Pass 2a retired the last text-xs/sm/base/lg/xl/2xl literals in app, components and lib: the template-literal classNames pass 1's attribute walker could not reach, the page-editor tree it held out, and text-lg once --text-body-lg existed to receive it. literal-type goes to 0 and the floor moves with it so the sweep cannot silently unwind."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 528,
+          "to": 527,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
         }
       ]
     },
@@ -341,14 +383,14 @@
         "components/ui/meter.tsx",
         "components/ui/streak-meter.tsx"
       ],
-      "baseline": 14,
+      "baseline": 12,
       "frozen": {
         "at": "2026-08-05",
-        "value": 14,
+        "value": 12,
         "direction": "rebased",
-        "basis": "256bb80c803c",
-        "reason": "The pattern named a class that no longer exists. It keyed on rounded-full, and the radius sweep then retired rounded-full site-wide in favour of rounded-pill — including inside ProgressTrack itself. The gate went on reporting 0 not because no bar was hand-rolled but because its subject had been renamed out from under it. Widened to rounded-(pill|full); the true count is 14 across 12 files, among them components/gamification/standing-hero.tsx, which is a five-line copy of ProgressTrack's own render. 0 -> 14 is a measurement correction, not a regression.",
-        "from": 0
+        "basis": "d2bda376c3f2",
+        "reason": "Two causes in one number, stated so neither is mistaken for the other. (1) A REAL sweep: standing-hero.tsx replaced a five-line copy of ProgressTrack's own render with the primitive, and challenges-season.tsx did the same for its per-challenge bar - two bars genuinely retired. (2) The corpus basis moved to comment-blanking (strip-comments@1) in the same pass. The sweep is what moved this count; the basis change is recorded because the fingerprint moved with it and a floor measured under a different question is not a floor.",
+        "from": 14
       },
       "history": [
         {
@@ -371,6 +413,13 @@
           "to": 14,
           "direction": "rebased",
           "reason": "The pattern named a class that no longer exists. It keyed on rounded-full, and the radius sweep then retired rounded-full site-wide in favour of rounded-pill — including inside ProgressTrack itself. The gate went on reporting 0 not because no bar was hand-rolled but because its subject had been renamed out from under it. Widened to rounded-(pill|full); the true count is 14 across 12 files, among them components/gamification/standing-hero.tsx, which is a five-line copy of ProgressTrack's own render. 0 -> 14 is a measurement correction, not a regression."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 14,
+          "to": 12,
+          "direction": "rebased",
+          "reason": "Two causes in one number, stated so neither is mistaken for the other. (1) A REAL sweep: standing-hero.tsx replaced a five-line copy of ProgressTrack's own render with the primitive, and challenges-season.tsx did the same for its per-challenge bar - two bars genuinely retired. (2) The corpus basis moved to comment-blanking (strip-comments@1) in the same pass. The sweep is what moved this count; the basis change is recorded because the fingerprint moved with it and a floor measured under a different question is not a floor."
         }
       ]
     },
@@ -392,14 +441,14 @@
         "components/ui/*.tsx",
         "**/*.{test,spec}.tsx"
       ],
-      "baseline": 23,
+      "baseline": 24,
       "frozen": {
-        "at": "2026-08-04",
-        "value": 23,
+        "at": "2026-08-05",
+        "value": 24,
         "direction": "rebased",
-        "basis": "ccc7af5ed089",
-        "reason": "Mostly sweep, but the basis widened, so treat the −12 as −11 earned. 11 files adopted the kit; 1 more left the population because this entry excludes components/ui/*.tsx, and the `absent` set widened from EntityCard/RowCard to four primitives (inert today, wider than the audit's basis from here on).",
-        "from": 35
+        "basis": "027f9491b495",
+        "reason": "A RISE, and a correct one: comment-blanking (strip-comments@1) revealed debt the gate was crediting to prose. This entry disqualifies a file when an 'absent' pattern names a kit primitive, and a file that merely MENTIONED EntityCard in a comment was satisfying that disqualifier without composing it. Blanking comments removes the false alibi, so one more file now counts as the bespoke card it actually is. 23 -> 24 is the instrument getting more honest, not the debt growing - no card was added.",
+        "from": 23
       },
       "history": [
         {
@@ -408,6 +457,13 @@
           "to": 23,
           "direction": "rebased",
           "reason": "Mostly sweep, but the basis widened, so treat the −12 as −11 earned. 11 files adopted the kit; 1 more left the population because this entry excludes components/ui/*.tsx, and the `absent` set widened from EntityCard/RowCard to four primitives (inert today, wider than the audit's basis from here on)."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 23,
+          "to": 24,
+          "direction": "rebased",
+          "reason": "A RISE, and a correct one: comment-blanking (strip-comments@1) revealed debt the gate was crediting to prose. This entry disqualifies a file when an 'absent' pattern names a kit primitive, and a file that merely MENTIONED EntityCard in a comment was satisfying that disqualifier without composing it. Blanking comments removes the false alibi, so one more file now counts as the bespoke card it actually is. 23 -> 24 is the instrument getting more honest, not the debt growing - no card was added."
         }
       ]
     },
@@ -430,12 +486,12 @@
       ],
       "baseline": 14,
       "frozen": {
-        "at": "2026-08-04",
+        "at": "2026-08-05",
         "value": 14,
-        "direction": "lowered",
-        "basis": "aceb2b231b26",
-        "reason": "One file left the population (15 → 14). RowCard importers are unchanged at 3, matching the audit exactly, so this was not an adoption — it is a file that no longer renders bespoke markup. The added components/cards/*.tsx exclusion is currently inert (0 files).",
-        "from": 15
+        "direction": "rebased",
+        "basis": "3d158978716c",
+        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
+        "from": 14
       },
       "history": [
         {
@@ -444,6 +500,13 @@
           "to": 14,
           "direction": "lowered",
           "reason": "One file left the population (15 → 14). RowCard importers are unchanged at 3, matching the audit exactly, so this was not an adoption — it is a file that no longer renders bespoke markup. The added components/cards/*.tsx exclusion is currently inert (0 files)."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 14,
+          "to": 14,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
         }
       ]
     },
@@ -463,12 +526,22 @@
       ],
       "baseline": 3,
       "frozen": {
-        "at": "2026-08-04",
+        "at": "2026-08-05",
         "value": 3,
-        "direction": "seed",
-        "basis": "45d2238b2ca3",
-        "reason": "Seeded from the addendum audit and reproduces exactly: 3 genuine underline strips (the 4 pill consoles are owner-ruled out of the class)."
-      }
+        "direction": "rebased",
+        "basis": "0a2d583d1e76",
+        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
+        "from": 3
+      },
+      "history": [
+        {
+          "at": "2026-08-05",
+          "from": 3,
+          "to": 3,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
+        }
+      ]
     },
     {
       "key": "raw-px-arbitrary",
@@ -489,14 +562,14 @@
         "components/ui/icon.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 127,
+      "baseline": 124,
       "frozen": {
         "at": "2026-08-05",
-        "value": 127,
+        "value": 124,
         "direction": "rebased",
-        "basis": "e3bbcb1315c1",
-        "reason": "Allowlist repair: the WCAG 2.5.5 exemption did not work. The lookahead sat at a \\\\b, and min-h-[44px] has a SECOND word boundary at its inner h — where the lookahead sees only h-[44px], fails to match the allowlist, and lets it through. So 12 tap-target floors across 5 files were counted as debt, meaning a PR that ADDED a correct 44px target raised the class and failed CI: the ratchet pushing against accessibility. Anchored at a true token start instead. 139 -> 127, exactly the 12 allowlisted sites.",
-        "from": 139
+        "basis": "085cd5ead614",
+        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
+        "from": 127
       },
       "history": [
         {
@@ -505,6 +578,13 @@
           "to": 127,
           "direction": "rebased",
           "reason": "Allowlist repair: the WCAG 2.5.5 exemption did not work. The lookahead sat at a \\\\b, and min-h-[44px] has a SECOND word boundary at its inner h — where the lookahead sees only h-[44px], fails to match the allowlist, and lets it through. So 12 tap-target floors across 5 files were counted as debt, meaning a PR that ADDED a correct 44px target raised the class and failed CI: the ratchet pushing against accessibility. Anchored at a true token start instead. 139 -> 127, exactly the 12 allowlisted sites."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 127,
+          "to": 124,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
         }
       ]
     },
@@ -521,14 +601,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 301,
+      "baseline": 300,
       "frozen": {
         "at": "2026-08-05",
-        "value": 301,
+        "value": 300,
         "direction": "rebased",
-        "basis": "03e3af05cb7e",
-        "reason": "New class, seeded at the measured 301 across 67 files. Deliberately SEPARATE from literal-type rather than an extra branch on its alternation: literal-type reached a defended 0 and folding 301 untouched display sites into it would convert a real win into a number nobody could read. Retiring these is pass 2b, a per-site design decision (which display role is this heading?) rather than a mechanical rename, so it is ratcheted now and swept later.",
-        "from": 0
+        "basis": "8cd8fa7502b5",
+        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
+        "from": 301
       },
       "history": [
         {
@@ -537,6 +617,13 @@
           "to": 301,
           "direction": "rebased",
           "reason": "New class, seeded at the measured 301 across 67 files. Deliberately SEPARATE from literal-type rather than an extra branch on its alternation: literal-type reached a defended 0 and folding 301 untouched display sites into it would convert a real win into a number nobody could read. Retiring these is pass 2b, a per-site design decision (which display role is this heading?) rather than a mechanical rename, so it is ratcheted now and swept later."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 301,
+          "to": 300,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
         }
       ]
     },
@@ -560,10 +647,10 @@
       "frozen": {
         "at": "2026-08-05",
         "value": 0,
-        "direction": "lowered",
-        "basis": "eb0a69c6c6e2",
-        "reason": "Retired by the rank-spectrum sweep: lib/gamification.ts's exported TIER_CONFIG and DIFFICULTY_CONFIG were the only raw Tailwind palette classes in the repo, and being exported they propagated into every achievement, award and challenge surface while answering to no skin, occasion or feel generation. Both records now draw from the DAWN rank spectrum (core = fill, deep = text on light, bright = text on dark), which required bridging the deep/bright steps into @theme -- until now only .rank-badge could reach them, which is why callers reached for Tailwind instead. 48 -> 0.",
-        "from": 48
+        "direction": "rebased",
+        "basis": "aadfca900c6a",
+        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
+        "from": 0
       },
       "history": [
         {
@@ -579,6 +666,13 @@
           "to": 0,
           "direction": "lowered",
           "reason": "Retired by the rank-spectrum sweep: lib/gamification.ts's exported TIER_CONFIG and DIFFICULTY_CONFIG were the only raw Tailwind palette classes in the repo, and being exported they propagated into every achievement, award and challenge surface while answering to no skin, occasion or feel generation. Both records now draw from the DAWN rank spectrum (core = fill, deep = text on light, bright = text on dark), which required bridging the deep/bright steps into @theme -- until now only .rank-badge could reach them, which is why callers reached for Tailwind instead. 48 -> 0."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 0,
+          "to": 0,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
         }
       ]
     },
@@ -601,9 +695,9 @@
         "at": "2026-08-05",
         "value": 37,
         "direction": "rebased",
-        "basis": "1cbd44267732",
-        "reason": "New class, seeded at the measured 37 across 27 files. IconButton owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance; each hand-rolled control re-derives all four and some get it wrong (components/events/rsvp-controls.tsx ships a 28px stepper, under both floors). The pattern is deliberately conservative — opening tag, one self-closing element, close — so it undercuts a careful census of 54 by excluding the ternary-icon forms. A first attempt merely required an icon somewhere inside the button and matched text buttons and card buttons at 67; a ratchet on a number that means the wrong thing is worse than none.",
-        "from": 0
+        "basis": "3b1142ddb186",
+        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
+        "from": 37
       },
       "history": [
         {
@@ -612,6 +706,13 @@
           "to": 37,
           "direction": "rebased",
           "reason": "New class, seeded at the measured 37 across 27 files. IconButton owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance; each hand-rolled control re-derives all four and some get it wrong (components/events/rsvp-controls.tsx ships a 28px stepper, under both floors). The pattern is deliberately conservative — opening tag, one self-closing element, close — so it undercuts a careful census of 54 by excluding the ternary-icon forms. A first attempt merely required an icon somewhere inside the button and matched text buttons and card buttons at 67; a ratchet on a number that means the wrong thing is worse than none."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 37,
+          "to": 37,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
         }
       ]
     }
