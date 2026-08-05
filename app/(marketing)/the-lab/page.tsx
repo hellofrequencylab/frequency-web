@@ -212,7 +212,7 @@ function LegacyTheLab() {
               title="Community first, building second."
               kicker="Most third places sign a lease, then go looking for the people. We're doing it the other way round."
             />
-            <p className="mx-auto max-w-2xl text-center text-lg leading-relaxed text-muted">
+            <p className="mx-auto max-w-2xl text-center text-body-lg leading-relaxed text-muted">
               A feed can keep people warm between meetings. It can&apos;t hold a sound bath, a
               cold plunge, or the hour after when nobody wants to leave. The Lab is the room
               those things happen in: a place built to be felt, not scrolled.
@@ -248,7 +248,7 @@ function LegacyTheLab() {
             title="The community is here."
             kicker="The building is the sequel."
           />
-          <p className="mx-auto max-w-2xl text-center text-lg leading-relaxed text-muted">
+          <p className="mx-auto max-w-2xl text-center text-body-lg leading-relaxed text-muted">
             Everything the Lab is meant to hold is already happening in borrowed rooms. You
             don&apos;t have to wait for 2028 to be part of it.
           </p>
@@ -365,7 +365,7 @@ function BuildStep({
         >
           {when}
         </span>
-        <h3 className="mt-3 text-lg font-bold text-text">{title}</h3>
+        <h3 className="mt-3 text-body-lg font-bold text-text">{title}</h3>
         <p className="mt-2 text-body leading-relaxed text-muted">{body}</p>
       </Card>
     </Reveal>

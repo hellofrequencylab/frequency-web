@@ -54,7 +54,7 @@ export async function EntityGettingStarted() {
 
       {canEdit ? (
         <>
-          <h2 className="mt-4 text-lg font-bold text-text">Your {typeLabel} profile is ready to fill in.</h2>
+          <h2 className="mt-4 text-body-lg font-bold text-text">Your {typeLabel} profile is ready to fill in.</h2>
           <p className="mt-1 max-w-xl text-body-sm text-muted">
             Add your first session, practice, or program and it shows up here. Here is what a finished
             profile carries:
@@ -62,7 +62,7 @@ export async function EntityGettingStarted() {
         </>
       ) : (
         <>
-          <h2 className="mt-4 text-lg font-bold text-text">{name} is just getting started.</h2>
+          <h2 className="mt-4 text-body-lg font-bold text-text">{name} is just getting started.</h2>
           <p className="mt-1 max-w-xl text-body-sm text-muted">
             There is nothing to browse yet. Follow along and these show up the moment they go live:
           </p>

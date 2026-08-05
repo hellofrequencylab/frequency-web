@@ -53,7 +53,7 @@ export async function AnalyticsPanel({ spaceId }: { spaceId: string }) {
       </div>
       <p
         id="space-email-deliverability"
-        className={`mt-3 text-xs ${overCeiling ? 'font-medium text-danger' : 'text-muted'}`}
+        className={`mt-3 text-meta ${overCeiling ? 'font-medium text-danger' : 'text-muted'}`}
       >
         {note}
       </p>

@@ -145,7 +145,7 @@ function AppDrawer({ app, onClose }: { app: AppCard; onClose: () => void }) {
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-slat/40" />
       <div className="relative flex h-full w-full max-w-md flex-col overflow-y-auto bg-surface shadow-pop">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h2 className="font-display text-lg uppercase text-text">App</h2>
+          <h2 className="font-display text-body-lg uppercase text-text">App</h2>
           <button
             type="button"
             onClick={onClose}

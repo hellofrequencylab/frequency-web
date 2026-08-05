@@ -213,7 +213,7 @@ function LogTouch({ contactId }: { contactId: string }) {
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Log
         </button>
-        {msg && <span className={`self-center text-xs ${msg.ok ? 'text-success' : 'text-danger'}`}>{msg.text}</span>}
+        {msg && <span className={`self-center text-meta ${msg.ok ? 'text-success' : 'text-danger'}`}>{msg.text}</span>}
       </div>
     </div>
   )

@@ -28,12 +28,12 @@ export function ImageField({
           value={value ?? ''}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Image URL"
-          className="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+          className="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-body-sm"
         />
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="shrink-0 inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-sm hover:bg-surface-elevated"
+          className="shrink-0 inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-body-sm hover:bg-surface-elevated"
         >
           <ImagePlus className="w-3.5 h-3.5" /> Choose
         </button>

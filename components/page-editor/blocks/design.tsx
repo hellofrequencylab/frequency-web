@@ -226,7 +226,7 @@ export function PhotoHeroBlock({
       <InlineRich
         as="p"
         value={subtitle}
-        className={`mt-5 max-w-xl text-lg ${centered ? 'mx-auto' : ''} ${subtitleCls}`}
+        className={`mt-5 max-w-xl text-body-lg ${centered ? 'mx-auto' : ''} ${subtitleCls}`}
       />
       {actions}
     </>
@@ -324,7 +324,7 @@ export function EditorialSectionBlock({
     <div className="mb-8">
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
       <DesignHeading title={title} accentWord={accentWord} headerFont={headerFont} />
-      {kicker && <p className="mt-4 text-xl italic text-muted">{kicker}</p>}
+      {kicker && <p className="mt-4 text-lead italic text-muted">{kicker}</p>}
     </div>
   )
 
@@ -338,7 +338,7 @@ export function EditorialSectionBlock({
             <dt className="font-display text-[clamp(2.5rem,6vw,4rem)] leading-none text-primary-strong">
               {s.value}
             </dt>
-            <dd className="mt-2 text-sm font-semibold uppercase tracking-[0.18em] text-muted">{s.label}</dd>
+            <dd className="mt-2 text-body-sm font-semibold uppercase tracking-[0.18em] text-muted">{s.label}</dd>
           </div>
         ))}
       </dl>
@@ -349,14 +349,14 @@ export function EditorialSectionBlock({
       <div className="divide-y divide-border border-y border-border">
         {shown.map((f, i) => (
           <details key={i} className="group py-4">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-semibold text-text">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-body-lg font-semibold text-text">
               {f.q}
               <ArrowRight
                 className="h-5 w-5 shrink-0 text-primary transition-transform group-open:rotate-90"
                 aria-hidden
               />
             </summary>
-            {f.a && <div className="mt-3 space-y-3 text-base leading-relaxed text-muted">{richParagraphs(f.a)}</div>}
+            {f.a && <div className="mt-3 space-y-3 text-body leading-relaxed text-muted">{richParagraphs(f.a)}</div>}
           </details>
         ))}
       </div>
@@ -365,10 +365,10 @@ export function EditorialSectionBlock({
     // lead + prose share the paragraph renderer; prose caps the reading measure to ~62 characters.
     const measure = body === 'prose' ? 'max-w-[62ch]' : 'max-w-2xl'
     content = lead ? (
-      <InlineRich value={lead} className={`${measure} text-lg leading-relaxed text-muted`} />
+      <InlineRich value={lead} className={`${measure} text-body-lg leading-relaxed text-muted`} />
     ) : (
       // Never a blank block: an empty body shows a quiet writing prompt (editor guidance).
-      <p className="text-base italic text-subtle">Add your words here. Tell the story in plain sentences.</p>
+      <p className="text-body italic text-subtle">Add your words here. Tell the story in plain sentences.</p>
     )
   }
 
@@ -468,17 +468,17 @@ export function CardGridBlock({
                   <div>
                     {card.stat?.value && <div className="font-display text-4xl leading-none text-primary-strong">{card.stat.value}</div>}
                     {card.stat?.label && (
-                      <div className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-subtle">{card.stat.label}</div>
+                      <div className="mt-1 text-meta font-bold uppercase tracking-[0.12em] text-subtle">{card.stat.label}</div>
                     )}
                   </div>
                 )}
                 {role === 'feature' && !card.image && !card.stat?.value && card.icon && (
-                  <span className="flex h-11 w-11 items-center justify-center rounded-control bg-primary-bg text-xl leading-none text-primary-strong" aria-hidden>
+                  <span className="flex h-11 w-11 items-center justify-center rounded-control bg-primary-bg text-lead leading-none text-primary-strong" aria-hidden>
                     {card.icon}
                   </span>
                 )}
                 {role === 'step' && (
-                  <span className="flex h-9 w-9 items-center justify-center rounded-pill bg-primary-bg font-display text-lg text-primary-strong" aria-hidden>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-pill bg-primary-bg font-display text-body-lg text-primary-strong" aria-hidden>
                     {i + 1}
                   </span>
                 )}
@@ -486,8 +486,8 @@ export function CardGridBlock({
                   <h3
                     className={
                       role === 'feature' || role === 'step'
-                        ? 'font-display text-xl uppercase text-text'
-                        : 'text-lg font-bold text-text'
+                        ? 'font-display text-lead uppercase text-text'
+                        : 'text-body-lg font-bold text-text'
                     }
                   >
                     {/* A whole-card link (email overhaul) applies to the title, so the card stays a single, valid
@@ -502,12 +502,12 @@ export function CardGridBlock({
                   </h3>
                 )}
                 {card.body && (
-                  <p className={`text-base leading-relaxed text-muted ${role === 'testimonial' ? 'italic' : ''}`}>
+                  <p className={`text-body leading-relaxed text-muted ${role === 'testimonial' ? 'italic' : ''}`}>
                     {card.body}
                   </p>
                 )}
                 {role === 'testimonial' && card.by && (
-                  <p className="mt-auto text-sm font-semibold text-text">{card.by}</p>
+                  <p className="mt-auto text-body-sm font-semibold text-text">{card.by}</p>
                 )}
                 {card.button?.label && (
                   <div className="mt-auto pt-1">
@@ -524,7 +524,7 @@ export function CardGridBlock({
         <div className="mt-10">
           <Link
             href={browseSafe || '#'}
-            className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] text-primary-strong hover:underline"
+            className="inline-flex items-center gap-2 text-body-sm font-bold uppercase tracking-[0.18em] text-primary-strong hover:underline"
           >
             {browseLabel}
             <ArrowRight className="h-4 w-4" aria-hidden />
@@ -600,28 +600,28 @@ export function ZigzagBlock({
             <InlineRich
               as="blockquote"
               value={lead}
-              className="border-l-2 border-primary pl-5 text-xl font-medium italic text-text"
+              className="border-l-2 border-primary pl-5 text-lead font-medium italic text-text"
             />
-            {quoteBy && <figcaption className="mt-3 text-sm font-semibold text-muted">{quoteBy}</figcaption>}
+            {quoteBy && <figcaption className="mt-3 text-body-sm font-semibold text-muted">{quoteBy}</figcaption>}
           </figure>
         ) : body === 'list' ? (
           <ul className="space-y-3">
             {list.map((t, i) => (
-              <li key={i} className="flex gap-3 text-lg text-muted">
+              <li key={i} className="flex gap-3 text-body-lg text-muted">
                 <ArrowRight className="mt-1 h-5 w-5 shrink-0 text-primary" aria-hidden />
                 <span>{t}</span>
               </li>
             ))}
           </ul>
         ) : (
-          <InlineRich value={lead} className="text-lg leading-relaxed text-muted" />
+          <InlineRich value={lead} className="text-body-lg leading-relaxed text-muted" />
         )}
       </div>
       {/* Link shows once labelled; a missing link falls back to '#' until the operator sets one. */}
       {ctaLabel && (
         <Link
           href={ctaSafe || '#'}
-          className="mt-6 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] text-primary-strong hover:underline"
+          className="mt-6 inline-flex items-center gap-2 text-body-sm font-bold uppercase tracking-[0.18em] text-primary-strong hover:underline"
         >
           {ctaLabel}
           <ArrowRight className="h-4 w-4" aria-hidden />
@@ -698,12 +698,12 @@ export function AccentBeatBlock({
                 (bg-canvas/85 below), not ink, so this never sits on a dark band. */}
             {accentWord ? accentize(title ?? '', accentWord) : title}
           </blockquote>
-          {quoteBy && <figcaption className="mt-4 text-sm font-semibold text-muted">{quoteBy}</figcaption>}
+          {quoteBy && <figcaption className="mt-4 text-body-sm font-semibold text-muted">{quoteBy}</figcaption>}
         </figure>
       ) : (
         <DesignHeading title={title} accentWord={accentWord} headerFont={headerFont} />
       )}
-      <InlineRich as="p" value={body} className="mx-auto mt-5 max-w-xl text-lg text-muted" />
+      <InlineRich as="p" value={body} className="mx-auto mt-5 max-w-xl text-body-lg text-muted" />
       {/* Buttons always show once labelled (a no-link button falls back to '#' until the operator sets a
           link); only a blank label hides the CTA. */}
       {mode === 'cta' && ctaLabel && (
@@ -776,7 +776,7 @@ export function DisplayHeadingBlock({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function ProseBlock({ text }: { text?: string }) {
-  return <InlineRich value={text} className="max-w-[62ch] text-lg leading-relaxed text-muted" />
+  return <InlineRich value={text} className="max-w-[62ch] text-body-lg leading-relaxed text-muted" />
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

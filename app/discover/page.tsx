@@ -165,7 +165,7 @@ export default async function DiscoverHubPage() {
               title="Find your area"
               kicker="Every dot is neighbors already gathering."
             />
-            <p className="mt-5 text-lg text-muted leading-relaxed">
+            <p className="mt-5 text-body-lg text-muted leading-relaxed">
               Start with the map. Each marker is a real Circle taking root nearby. Close
               enough to walk to, small enough that you&apos;re missed when you don&apos;t come.
             </p>
@@ -184,7 +184,7 @@ export default async function DiscoverHubPage() {
             />
           ) : (
             <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-marketing-canvas p-8 text-center">
-              <p className="mb-1 text-lg font-semibold text-text">We&apos;re starting in {FOUNDING_PLACE}.</p>
+              <p className="mb-1 text-body-lg font-semibold text-text">We&apos;re starting in {FOUNDING_PLACE}.</p>
               <p className="mb-5 text-body-sm text-muted leading-relaxed">
                 The first Circles are forming now. Be one of the first in your neighborhood.
               </p>
@@ -218,7 +218,7 @@ export default async function DiscoverHubPage() {
                 title={<>Find what you <span className="text-primary">practice</span></>}
                 kicker="The thing you already love is a doorway to a room of people."
               />
-              <p className="mt-5 text-lg text-muted leading-relaxed">
+              <p className="mt-5 text-body-lg text-muted leading-relaxed">
                 Movement, spirituality, creative. Pick the Channel that&apos;s calling you,
                 and on the other side of it is a Circle living it near you this week.
               </p>
@@ -253,7 +253,7 @@ export default async function DiscoverHubPage() {
                 title={<>Show up <span className="text-primary">this week</span></>}
                 kicker="These are real plans, on real days, with room for you."
               />
-              <p className="mt-5 text-lg text-muted leading-relaxed">
+              <p className="mt-5 text-body-lg text-muted leading-relaxed">
                 A sunrise on the bluff, a thermal circuit, a supper table. Pick one, RSVP, and
                 you&apos;re expected. The kind of plan that pulls you off the couch and into a room.
               </p>
@@ -287,7 +287,7 @@ export default async function DiscoverHubPage() {
                 title={<>Circles forming <span className="text-primary">now</span></>}
                 kicker="Up to fifty neighbors, small enough to know everyone."
               />
-              <p className="mt-5 text-lg text-muted leading-relaxed">
+              <p className="mt-5 text-body-lg text-muted leading-relaxed">
                 Each one started with a few people, a standing time, and someone willing to say
                 see you next week. Find one that sounds like your people, or a reason to start your own.
               </p>

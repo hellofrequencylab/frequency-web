@@ -153,7 +153,7 @@ async function AssistantStats() {
     >
       <TileGrid>
         <Tile label="Platform AI">
-          <p className={`text-xl font-bold leading-tight ${ai.enabled ? 'text-success' : 'text-muted'}`}>
+          <p className={`text-lead font-bold leading-tight ${ai.enabled ? 'text-success' : 'text-muted'}`}>
             {ai.enabled ? 'On' : 'Off'}
           </p>
           <p className="mt-1.5 text-meta font-medium text-muted">
@@ -283,7 +283,7 @@ async function ManageSections() {
               <p className="mt-0.5 text-meta leading-snug text-muted">{c.desc}</p>
             </div>
             <p className="mt-auto flex items-baseline gap-1.5">
-              {c.stat && <span className="text-lg font-bold tabular-nums text-text">{c.stat}</span>}
+              {c.stat && <span className="text-body-lg font-bold tabular-nums text-text">{c.stat}</span>}
               <span className="text-2xs font-medium uppercase tracking-wide text-muted">{c.statLabel}</span>
             </p>
           </Link>

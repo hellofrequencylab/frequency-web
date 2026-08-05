@@ -997,7 +997,7 @@ export function EntityPageBuilder({
                         <button
                           type="button"
                           onClick={() => setAddingAt({ rowId: row.id, col })}
-                          className={`flex w-full items-center justify-center gap-1 rounded-lg border border-dashed px-2 py-3 text-xs font-medium transition-colors hover:border-primary hover:text-text ${
+                          className={`flex w-full items-center justify-center gap-1 rounded-lg border border-dashed px-2 py-3 text-meta font-medium transition-colors hover:border-primary hover:text-text ${
                             // A dragged block turns every add slot into an obvious drop hint (item 7).
                             dragKind === 'block' ? 'border-primary text-primary-strong' : 'border-border text-muted'
                           }`}
@@ -1396,7 +1396,7 @@ function MenuItem({ children, onClick, danger = false }: { children: React.React
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium transition-colors ${
+      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-meta font-medium transition-colors ${
         danger ? 'text-danger hover:bg-danger-bg' : 'text-text hover:bg-surface-elevated'
       }`}
     >

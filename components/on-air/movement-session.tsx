@@ -1127,7 +1127,7 @@ export function MovementSession({
 
               {/* The phase chip — color-coded, with the round counter for Strength. */}
               <span
-                className={`rounded-pill px-3 py-1 text-xs font-bold uppercase tracking-widest ${tone.bg} ${tone.text}`}
+                className={`rounded-pill px-3 py-1 text-meta font-bold uppercase tracking-widest ${tone.bg} ${tone.text}`}
               >
                 {pos.phase.label}
                 {plan.rounds > 1 && pos.phase.kind !== 'prepare' && (
@@ -1515,7 +1515,7 @@ function ModeButton({
     <button
       type="button"
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2 text-xs transition-colors ${
+      className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2 text-meta transition-colors ${
         active
           ? 'border-move/60 bg-move-bg/40 font-semibold text-text'
           : 'border-border text-muted hover:bg-surface-elevated'
@@ -1543,7 +1543,7 @@ function Chip({
       type="button"
       onClick={onClick}
       title={title}
-      className={`rounded-xl border px-2 py-1.5 text-sm tabular-nums transition-colors ${
+      className={`rounded-xl border px-2 py-1.5 text-body-sm tabular-nums transition-colors ${
         active
           ? 'border-move/60 bg-move-bg/40 font-semibold text-text'
           : 'border-border text-muted hover:bg-surface-elevated'

@@ -84,7 +84,7 @@ export default async function DiscoverEventsPage() {
               title={<>The first gathering hasn&apos;t <span className="text-primary">happened yet</span></>}
               kicker="Every Circle begins with a few neighbors deciding to show up."
             />
-            <p className="mt-6 text-lg text-muted leading-relaxed">
+            <p className="mt-6 text-body-lg text-muted leading-relaxed">
               We&rsquo;re just getting started in North County San Diego. The calendar is quiet
               for now, but quiet is how every standing time starts: one sunrise, one cold plunge,
               one supper that someone put on the calendar. Join the beta and you&rsquo;ll be among
@@ -112,7 +112,7 @@ export default async function DiscoverEventsPage() {
                   title={<>What&apos;s <span className="text-primary">coming up</span></>}
                   kicker="Pick one, RSVP, and you're expected."
                 />
-                <p className="mt-5 text-lg text-muted leading-relaxed">
+                <p className="mt-5 text-body-lg text-muted leading-relaxed">
                   This is the kind of plan that pulls you off the couch and into a room. Look
                   through what&apos;s next, find the one that sounds like your morning, and let
                   a few neighbors start to know your face.

@@ -33,7 +33,7 @@ function columnsClass(columns: number, ratio: string | undefined): string {
  *  operator turned the row header on. Kit tokens only (no hex), voice-neutral. Sits above the row content. */
 function RowHeader({ title }: { title: string }) {
   return (
-    <h2 className="mb-4 font-display text-lead font-bold uppercase tracking-tight text-text sm:text-2xl">
+    <h2 className="mb-4 font-display text-lead font-bold uppercase tracking-tight text-text sm:text-page-title">
       {title}
     </h2>
   )

@@ -254,7 +254,7 @@ export default async function LoomStudioPage({
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
             <div className="flex items-baseline gap-2">
-              <h2 className="font-display text-lg uppercase text-text">{activeLabel}</h2>
+              <h2 className="font-display text-body-lg uppercase text-text">{activeLabel}</h2>
               <span className="text-body-sm text-subtle">
                 {pageResult.total} asset{pageResult.total === 1 ? '' : 's'}
               </span>
@@ -395,7 +395,7 @@ export default async function LoomStudioPage({
                           key={nn}
                           href={pageHref(nn)}
                           aria-current={nn === currentPage ? 'page' : undefined}
-                          className={`min-w-[2.25rem] rounded-xl border px-3 py-1.5 text-center text-sm ${
+                          className={`min-w-[2.25rem] rounded-xl border px-3 py-1.5 text-center text-body-sm ${
                             nn === currentPage
                               ? 'border-primary bg-primary text-on-primary'
                               : 'border-border text-text hover:bg-surface-elevated'

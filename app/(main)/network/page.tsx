@@ -437,7 +437,7 @@ export default async function CommunityPage({
             <Link
               href={filterHref({ ...base, online: onlineFilter ? undefined : '1' })}
               aria-pressed={!!onlineFilter}
-              className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm font-medium transition-colors ${
+              className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border px-3.5 py-2.5 text-body-sm font-medium transition-colors ${
                 onlineFilter
                   ? 'border-primary bg-primary text-on-primary'
                   : 'border-border bg-surface text-text hover:border-primary hover:text-primary-strong'

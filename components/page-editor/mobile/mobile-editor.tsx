@@ -277,15 +277,15 @@ export function MobileEditor({
         className="sticky top-0 z-[55] flex shrink-0 items-center gap-2 border-b border-border bg-canvas/95 px-3 py-2 backdrop-blur"
       >
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-sm font-semibold text-text">{title}</h1>
-          {statusLabel(saveState) && <p className="text-xs text-muted">{statusLabel(saveState)}</p>}
+          <h1 className="truncate text-body-sm font-semibold text-text">{title}</h1>
+          {statusLabel(saveState) && <p className="text-meta text-muted">{statusLabel(saveState)}</p>}
         </div>
         {extraActions}
         <button
           type="button"
           onClick={handlePublish}
           disabled={!dirty && publishState !== 'error'}
-          className={`min-h-[44px] rounded-lg px-4 text-sm font-semibold transition-colors ${
+          className={`min-h-[44px] rounded-lg px-4 text-body-sm font-semibold transition-colors ${
             dirty || publishState === 'error'
               ? 'bg-primary text-on-primary hover:bg-primary-hover'
               : 'cursor-default bg-surface-elevated text-subtle'
@@ -324,7 +324,7 @@ export function MobileEditor({
         ) : (
           <>
             <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border/60 bg-canvas/80 py-1 backdrop-blur">
-              <span className="text-xs font-medium uppercase tracking-wide text-subtle">Preview</span>
+              <span className="text-meta font-medium uppercase tracking-wide text-subtle">Preview</span>
             </div>
             <div className="pointer-events-none">
               {/* `isEditing`: the authoring canvas, so an unfilled section shows its
@@ -396,7 +396,7 @@ export function MobileEditor({
             <button
               type="button"
               onClick={() => setReordering((v) => !v)}
-              className="min-h-[36px] rounded-lg px-3 text-sm font-medium text-text hover:bg-surface"
+              className="min-h-[36px] rounded-lg px-3 text-body-sm font-medium text-text hover:bg-surface"
             >
               {reordering ? 'Done' : 'Reorder'}
             </button>
@@ -460,7 +460,7 @@ export function MobileEditor({
         <div className="space-y-5">
           {pickerGroups.map((group) => (
             <div key={group.key}>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-subtle">
+              <h3 className="mb-2 text-meta font-semibold uppercase tracking-wide text-subtle">
                 {group.title}
               </h3>
               <div className="grid grid-cols-3 gap-2">
@@ -472,7 +472,7 @@ export function MobileEditor({
                       title={b.reason}
                       aria-disabled="true"
                       aria-label={b.reason ? `${b.label}. ${b.reason}` : b.label}
-                      className="flex min-h-[64px] cursor-not-allowed flex-col items-center justify-center gap-1 rounded-card border border-border bg-surface-elevated px-2 py-2 text-center text-xs font-medium text-subtle opacity-60"
+                      className="flex min-h-[64px] cursor-not-allowed flex-col items-center justify-center gap-1 rounded-card border border-border bg-surface-elevated px-2 py-2 text-center text-meta font-medium text-subtle opacity-60"
                     >
                       <span className="line-clamp-2">{b.label}</span>
                     </div>
@@ -481,7 +481,7 @@ export function MobileEditor({
                       key={b.type}
                       type="button"
                       onClick={() => handleAdd(b.type)}
-                      className="flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-control border border-border bg-surface px-2 py-2 text-center text-xs font-medium text-text hover:bg-surface-elevated"
+                      className="flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-control border border-border bg-surface px-2 py-2 text-center text-meta font-medium text-text hover:bg-surface-elevated"
                     >
                       <span className="line-clamp-2">{b.label}</span>
                     </button>
@@ -499,7 +499,7 @@ export function MobileEditor({
         onClose={() => setConfirmDelete(null)}
         title="Delete this block?"
       >
-        <p className="mb-4 text-sm text-muted">You can undo right after.</p>
+        <p className="mb-4 text-body-sm text-muted">You can undo right after.</p>
         <div className="flex gap-3">
           <Button type="button" variant="secondary" className="flex-1" onClick={() => setConfirmDelete(null)}>
             Keep
@@ -549,7 +549,7 @@ function DockTab({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 text-xs font-medium transition-colors ${
+      className={`flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 text-meta font-medium transition-colors ${
         active ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface hover:text-text'
       }`}
     >
@@ -622,9 +622,9 @@ function FormScreen({
           <ChevronLeft className="h-6 w-6" aria-hidden />
         </button>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-sm font-semibold text-text">{heading}</h1>
-          {saveState === 'saving' && <p className="text-xs text-muted">Saving…</p>}
-          {saveState === 'saved' && <p className="text-xs text-muted">Draft saved</p>}
+          <h1 className="truncate text-body-sm font-semibold text-text">{heading}</h1>
+          {saveState === 'saving' && <p className="text-meta text-muted">Saving…</p>}
+          {saveState === 'saved' && <p className="text-meta text-muted">Draft saved</p>}
         </div>
       </header>
 
@@ -705,7 +705,7 @@ function BlockEditSheet({
           <button
             type="button"
             onClick={() => setSubs((s) => s.slice(0, -1))}
-            className="inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2 text-sm font-medium text-text hover:bg-surface-elevated"
+            className="inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2 text-body-sm font-medium text-text hover:bg-surface-elevated"
           >
             <ChevronLeft className="h-4 w-4" aria-hidden /> Back
           </button>

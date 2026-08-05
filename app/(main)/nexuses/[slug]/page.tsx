@@ -115,7 +115,7 @@ export default async function NexusPage({
             <InlineText
               value={nexus.name}
               save={updateNexusField.bind(null, nexus.id, slug, 'name')}
-              inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-lead sm:text-2xl font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
+              inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-lead sm:text-page-title font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
             />
           ) : (
             nexus.name

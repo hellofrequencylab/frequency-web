@@ -257,7 +257,7 @@ export function RsvpControls({
             onClick={onGoing}
             disabled={pending}
             aria-pressed={isGoing || isWaitlisted}
-            className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 text-xs font-semibold transition-colors disabled:opacity-60 ${
+            className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 text-meta font-semibold transition-colors disabled:opacity-60 ${
               isGoing
                 ? 'bg-success-bg text-success'
                 : isWaitlisted
@@ -275,7 +275,7 @@ export function RsvpControls({
           onClick={onMaybe}
           disabled={pending}
           aria-pressed={isMaybe}
-          className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 text-xs font-semibold transition-colors disabled:opacity-60 ${
+          className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 text-meta font-semibold transition-colors disabled:opacity-60 ${
             isMaybe
               ? 'bg-primary-bg text-primary-strong'
               : 'text-muted hover:bg-surface-elevated hover:text-text'
@@ -290,7 +290,7 @@ export function RsvpControls({
           onClick={onCantGo}
           disabled={pending}
           aria-pressed={isNotGoing}
-          className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 text-xs font-semibold transition-colors disabled:opacity-60 ${
+          className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 text-meta font-semibold transition-colors disabled:opacity-60 ${
             isNotGoing
               ? 'bg-surface-elevated text-text'
               : 'text-muted hover:bg-surface-elevated hover:text-text'
@@ -509,7 +509,7 @@ function EventQuestionnaire({
                         save(q.id, opt)
                       }}
                       aria-pressed={selected}
-                      className={`rounded-lg px-3 py-1.5 text-sm font-semibold capitalize transition-colors ${
+                      className={`rounded-lg px-3 py-1.5 text-body-sm font-semibold capitalize transition-colors ${
                         selected
                           ? 'bg-primary-bg text-primary-strong'
                           : 'text-muted hover:bg-surface-elevated hover:text-text'
@@ -600,7 +600,7 @@ function MultiSelectAnswer({
             type="button"
             onClick={() => toggle(opt)}
             aria-pressed={on}
-            className={`rounded-pill px-3 py-1 text-sm font-medium transition-colors ${
+            className={`rounded-pill px-3 py-1 text-body-sm font-medium transition-colors ${
               on
                 ? 'bg-primary-bg text-primary-strong'
                 : 'border border-border text-muted hover:bg-surface-elevated hover:text-text'

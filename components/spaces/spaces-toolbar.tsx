@@ -55,7 +55,7 @@ export function SpacesToolbar({
   }
 
   const pill = (active: boolean) =>
-    `inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+    `inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-body-sm font-medium transition-colors ${
       active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface hover:text-text'
     }`
 
@@ -108,7 +108,7 @@ export function SpacesToolbar({
               type="button"
               onClick={toggleFollowing}
               aria-pressed={following}
-              className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 text-sm font-medium transition-colors ${
+              className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 text-body-sm font-medium transition-colors ${
                 following
                   ? 'border-primary bg-primary-bg text-primary-strong'
                   : 'border-border bg-surface text-muted hover:border-primary hover:text-text'

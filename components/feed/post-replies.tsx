@@ -322,7 +322,7 @@ export function PostReplies({
           <button
             onClick={() => setOpen((o) => !o)}
             aria-label={open ? 'Hide comments' : 'Show comments'}
-            className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors sm:min-h-0 ${
+            className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-meta font-medium transition-colors sm:min-h-0 ${
               open ? 'text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
             }`}
           >

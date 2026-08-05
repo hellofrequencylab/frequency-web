@@ -25,7 +25,7 @@ export async function QuestNextGathering() {
       <div className="flex items-center gap-3.5">
         <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl bg-success-bg">
           <span className="text-3xs font-bold uppercase leading-none text-success">{month}</span>
-          <span className="text-lg font-bold leading-tight text-success">{day}</span>
+          <span className="text-body-lg font-bold leading-tight text-success">{day}</span>
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">

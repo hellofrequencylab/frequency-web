@@ -115,7 +115,7 @@ function DirectoryPager({
   if (total <= DEFAULT_PER_PAGE && per === DEFAULT_PER_PAGE) return null
 
   const sizePill = (n: number) =>
-    `rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+    `rounded-lg px-2.5 py-1 text-meta font-medium transition-colors ${
       n === per ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface hover:text-text'
     }`
 

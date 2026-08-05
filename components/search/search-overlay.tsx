@@ -296,7 +296,7 @@ function ResultRow({
           {badge && <span className="shrink-0 rounded-md bg-danger-bg px-1.5 py-0.5 text-3xs font-medium text-danger">{badge}</span>}
         </span>
         {subtitle && (
-          <span className={`mt-0.5 block text-xs text-subtle ${clampSubtitle ? 'line-clamp-1' : 'truncate'}`}>{subtitle}</span>
+          <span className={`mt-0.5 block text-meta text-subtle ${clampSubtitle ? 'line-clamp-1' : 'truncate'}`}>{subtitle}</span>
         )}
       </span>
     </Link>

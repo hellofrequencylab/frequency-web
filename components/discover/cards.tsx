@@ -234,7 +234,7 @@ export function SignInCta({
 }) {
   return (
     <Card tone="feature" className="p-8 text-center">
-      <p className="text-lg font-bold text-text mb-2">{title}</p>
+      <p className="text-body-lg font-bold text-text mb-2">{title}</p>
       <p className="text-body-sm text-muted leading-relaxed mb-6 max-w-sm mx-auto">{body}</p>
       <Button href={href} size="sm">
         {action}

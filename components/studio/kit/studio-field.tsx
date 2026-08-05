@@ -8,7 +8,7 @@ import { Info } from 'lucide-react'
  *  builder guides the author inline instead of assuming they know. Plain copy, no icon noise. */
 export function StudioNote({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`flex items-start gap-2 rounded-lg border border-border bg-surface-elevated/60 px-3 py-2 text-xs leading-relaxed text-muted ${className ?? ''}`}>
+    <div className={`flex items-start gap-2 rounded-lg border border-border bg-surface-elevated/60 px-3 py-2 text-meta leading-relaxed text-muted ${className ?? ''}`}>
       <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
       <div className="min-w-0 [&_strong]:font-semibold [&_strong]:text-text">{children}</div>
     </div>

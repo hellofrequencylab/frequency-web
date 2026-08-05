@@ -205,7 +205,7 @@ function LegacyTheCommunity() {
           title="A whole life has four Pillars."
           kicker="Mind, Body, Spirit, Expression. Start in any of them."
         />
-        <p className="text-lg text-muted leading-relaxed mb-9">
+        <p className="text-body-lg text-muted leading-relaxed mb-9">
           The Pillars are the four parts a real life moves through. They&apos;re the
           map you arrive on: pick the one that&apos;s calling you right now, and the
           Channels and Circles inside it are where you actually land.
@@ -577,7 +577,7 @@ function Hold({
     <Card tone="feature">
       <div className="flex items-center gap-2.5 mb-3">
         <Icon className="w-5 h-5 text-primary-strong" />
-        <h3 className="font-bold text-text text-lg leading-snug">{title}</h3>
+        <h3 className="font-bold text-text text-body-lg leading-snug">{title}</h3>
       </div>
       <p className="text-body-sm text-muted leading-relaxed">{text}</p>
     </Card>

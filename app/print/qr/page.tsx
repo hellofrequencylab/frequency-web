@@ -132,7 +132,7 @@ function PosterSheet({ svg, title, url }: { svg: string; title: string; url: str
       <p className="text-body-sm font-semibold uppercase tracking-[0.25em] text-muted">Scan to join</p>
       <h1 className="text-4xl font-bold text-text">{title}</h1>
       <div className="h-[460px] w-[460px] max-w-full [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />
-      <p className="text-lg text-muted">{prettyUrl(url)}</p>
+      <p className="text-body-lg text-muted">{prettyUrl(url)}</p>
     </div>
   )
 }

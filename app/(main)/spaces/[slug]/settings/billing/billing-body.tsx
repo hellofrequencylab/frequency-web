@@ -154,7 +154,7 @@ export async function BillingBody({ slug }: { slug: string }) {
       <div className="space-y-8">
         <div className="rounded-2xl border border-border bg-surface px-5 py-4 lift-1">
           <p className="text-meta font-semibold uppercase tracking-widest text-subtle">Current plan</p>
-          <p className="mt-1 text-lg font-bold text-text">{SPACE_PLAN_LABEL[currentPlan]}</p>
+          <p className="mt-1 text-body-lg font-bold text-text">{SPACE_PLAN_LABEL[currentPlan]}</p>
         </div>
 
         {/* MANUAL BILLING AGREEMENT (ADR-872): the read-only receipt for an off-Stripe deal the crew

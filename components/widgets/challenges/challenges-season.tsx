@@ -134,7 +134,7 @@ export async function ChallengesSeason() {
             <SectionHeader
               title={diff.label}
               action={
-                <span className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ${diff.bg} ${diff.color}`}>
+                <span className={`rounded-md px-1.5 py-0.5 text-meta font-semibold ${diff.bg} ${diff.color}`}>
                   {done}/{items.length}
                 </span>
               }
@@ -170,11 +170,11 @@ export async function ChallengesSeason() {
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className={`text-sm font-semibold ${isComplete ? 'text-success' : 'text-text'}`}>
+                          <h3 className={`text-body-sm font-semibold ${isComplete ? 'text-success' : 'text-text'}`}>
                             {challenge.name}
                           </h3>
                           <span
-                            className={`inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-bold ${
+                            className={`inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-meta font-bold ${
                               isComplete ? 'bg-success-bg text-success' : 'bg-primary-bg text-primary-strong'
                             }`}
                           >

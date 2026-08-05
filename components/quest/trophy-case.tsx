@@ -35,7 +35,7 @@ function TrophyTile({ trophy }: { trophy: JourneyTrophy }) {
   const inner = (
     <span className="flex h-full items-start gap-3" style={seasonRankStyle(trophy.rankEarned)}>
       <span
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-lg lift-1"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-body-lg lift-1"
         style={{
           background: 'color-mix(in srgb, var(--rank) 16%, var(--color-surface))',
           color: 'var(--rank-deep)',

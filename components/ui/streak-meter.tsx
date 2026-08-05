@@ -47,7 +47,7 @@ export function StreakMeter({
       (frozen > 0 ? `, ${frozen} bridged by a streak freeze` : '')
   return (
     <div className="inline-flex items-center gap-2.5">
-      {/* The empty branch is text-xs + text-muted, not text-2xs + text-subtle: it is the one
+      {/* The empty branch is text-meta + text-muted, not text-2xs + text-subtle: it is the one
           branch READ as a sentence rather than scanned as a legend, and subtle-at-tiny is the
           sub-AA pairing the adoption ratchet tracks. */}
       {empty ? (

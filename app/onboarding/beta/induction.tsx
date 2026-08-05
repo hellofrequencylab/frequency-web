@@ -596,7 +596,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                 <h1 className={`mx-auto mt-3 max-w-4xl text-balance text-6xl sm:text-7xl ${heading}`}>
                   {accent(VERA.oath.heading)}
                 </h1>
-                <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-muted">{VERA.oath.body}</p>
+                <p className="mx-auto mt-4 max-w-xl text-body-lg leading-relaxed text-muted">{VERA.oath.body}</p>
 
                 {/* Agreements + I'm in, in a 2×2 grid (two rows). */}
                 <div className="mx-auto mt-7 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
@@ -611,7 +611,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                         onChange={(e) => setOaths((prev) => ({ ...prev, [o.id]: e.target.checked }))}
                         className="h-5 w-5 shrink-0 accent-primary"
                       />
-                      <span className={`text-base font-medium ${oaths[o.id] ? 'text-text' : 'text-muted'}`}>{o.label}</span>
+                      <span className={`text-body font-medium ${oaths[o.id] ? 'text-text' : 'text-muted'}`}>{o.label}</span>
                     </label>
                   ))}
                   <button disabled={!allOathsChecked || accepting} onClick={passOath} className={`${btnPrimary} h-full`}>
@@ -779,7 +779,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                     {/* caption + dots + action, right */}
                     <div className="max-w-xs text-center md:text-left">
                       <p className="text-3xl font-bold text-text">{slide.title}</p>
-                      <p className="mt-2 text-lg leading-relaxed text-muted">{slide.line}</p>
+                      <p className="mt-2 text-body-lg leading-relaxed text-muted">{slide.line}</p>
                       <div className="mt-5 flex items-center justify-center gap-2 md:justify-start">
                         {reel.map((s, i) => (
                           <button
@@ -921,7 +921,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                     </button>
                     <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                     {uploadError && <p className="text-meta text-danger">{uploadError}</p>}
-                    <p className="text-lg leading-relaxed text-muted">{VERA.identity.body}</p>
+                    <p className="text-body-lg leading-relaxed text-muted">{VERA.identity.body}</p>
                     <div className="mt-2 flex flex-col items-center gap-3 md:items-start">
                       <button disabled={!identityValid || uploading} onClick={advanceFromIdentity} className={btnPrimary}>
                         {uploading ? 'Uploading…' : 'Continue'}{!uploading && <ArrowRight />}
@@ -952,7 +952,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
 
                   {/* copy + button under it, right */}
                   <div className="w-full max-w-xs text-center md:text-left">
-                    <p className="text-lg leading-relaxed text-muted">{VERA.enter.body}</p>
+                    <p className="text-body-lg leading-relaxed text-muted">{VERA.enter.body}</p>
                     {submitError && <p className="mt-3 text-body-sm text-danger">{submitError}</p>}
                     <div className="mt-6 flex flex-col items-center gap-3 md:items-start">
                       <button onClick={submit} disabled={submitting} className={btnPrimary}>
@@ -984,7 +984,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
 
                   {/* lock it in: sign in to save, then straight to the feed */}
                   <div className="w-full max-w-xs text-left">
-                    <p className="text-lg leading-relaxed text-muted">
+                    <p className="text-body-lg leading-relaxed text-muted">
                       You’re almost in. Sign in and everything you just set up is saved.
                     </p>
 

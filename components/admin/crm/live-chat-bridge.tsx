@@ -47,7 +47,7 @@ export function LiveChatBridge({ chatRef, token }: { chatRef: string; token: str
         {messages.map((m) => (
           <div key={m.id} className={m.author === 'staff' ? 'flex justify-end' : 'flex justify-start'}>
             <div
-              className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm ${
+              className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-body-sm ${
                 m.author === 'staff' ? 'bg-primary/10 text-text' : 'bg-surface-elevated text-text'
               }`}
             >

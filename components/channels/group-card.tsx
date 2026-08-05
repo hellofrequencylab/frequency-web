@@ -28,7 +28,7 @@ export function GroupCard({ group }: { group: GroupCardData }) {
     >
       <div className="flex items-center justify-between gap-2">
         <span className="text-body-sm font-medium text-text truncate">{group.name}</span>
-        <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium shrink-0 ${
+        <span className={`text-meta px-1.5 py-0.5 rounded-md font-medium shrink-0 ${
           group.type === 'in-person'
             ? 'bg-success-bg text-success'
             : 'bg-signal-bg text-signal-strong'

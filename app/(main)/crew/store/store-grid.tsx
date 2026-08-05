@@ -86,7 +86,7 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
             </span>
 
             {result ? (
-              <span className={`text-xs font-semibold ${result.ok ? 'text-signal-strong' : 'text-danger'}`}>
+              <span className={`text-meta font-semibold ${result.ok ? 'text-signal-strong' : 'text-danger'}`}>
                 {result.text}
               </span>
             ) : item.owned ? (
@@ -101,7 +101,7 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
               <button
                 onClick={handleRedeem}
                 disabled={!canAfford || isPending}
-                className={`flex min-h-11 items-center gap-1 rounded-lg px-3 py-1 text-xs font-semibold transition-colors motion-reduce:transition-none ${
+                className={`flex min-h-11 items-center gap-1 rounded-lg px-3 py-1 text-meta font-semibold transition-colors motion-reduce:transition-none ${
                   canAfford
                     ? 'bg-primary text-on-primary hover:bg-primary-hover disabled:opacity-50'
                     : 'bg-surface-elevated text-subtle cursor-not-allowed'

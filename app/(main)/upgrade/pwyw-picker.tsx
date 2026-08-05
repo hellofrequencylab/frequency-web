@@ -98,7 +98,7 @@ export function PwywPicker({
                 setCustom('')
                 setError(null)
               }}
-              className={`rounded-xl border px-3 py-3 text-sm font-semibold transition-colors ${
+              className={`rounded-xl border px-3 py-3 text-body-sm font-semibold transition-colors ${
                 selected
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border text-text hover:border-primary/50'

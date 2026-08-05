@@ -160,7 +160,7 @@ export function EmailStyleEditor({
           {note && (
             <span
               role="status"
-              className={`text-xs font-medium ${note.kind === 'ok' ? 'text-success' : 'text-danger'}`}
+              className={`text-meta font-medium ${note.kind === 'ok' ? 'text-success' : 'text-danger'}`}
             >
               {note.text}
             </span>
@@ -176,7 +176,7 @@ export function EmailStyleEditor({
             className="mx-auto max-w-[18rem] rounded-xl p-5"
             style={{ background: preview.surface, border: `1px solid ${preview.border}` }}
           >
-            <p className="text-lg font-black lowercase" style={{ color: preview.primaryStrong }}>
+            <p className="text-body-lg font-black lowercase" style={{ color: preview.primaryStrong }}>
               frequency
             </p>
             <p className="mt-3 text-body-sm font-bold" style={{ color: preview.primaryStrong }}>

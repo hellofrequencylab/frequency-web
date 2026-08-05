@@ -10,6 +10,7 @@ import type { ExtractedEvent } from '@/lib/events/types'
 import { sparkEventAction } from './create-actions'
 import { saveDraft, scanPoster } from './scan/actions'
 import { downscaleForScan } from './scan/image-tools'
+import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { EventForm, type EventFormInitial } from './new/event-form'
 
 // The PRIVATE bucket the poster scanner uploads to (owner-scoped RLS, path `${uid}/...`).
@@ -242,6 +243,10 @@ export function EventSpark({
           { title: 'Anything else?', description: 'Who it is for, the price, what to bring. Optional.' },
         ][step - 1]
 
+  // Same allowlist the other upload previews use; a rejected URL renders no thumb rather
+  // than an <img> with an empty src.
+  const thumbSrc = safeUploadPreviewSrc(thumbUrl)
+
   return (
     <div className="mx-auto w-full max-w-lg px-4 py-10">
       <WizardProgress current={current} total={total} label={label} />
@@ -264,10 +269,10 @@ export function EventSpark({
                 placeholder="Paste the full event write-up, page, or post here…"
               />
 
-              {thumbUrl ? (
+              {thumbSrc ? (
                 <div className="flex items-center gap-3 rounded-card border border-border bg-surface p-2.5">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={thumbUrl} alt="" className="h-14 w-14 shrink-0 rounded-lg border border-border object-cover" />
+                  <img src={thumbSrc} alt="" className="h-14 w-14 shrink-0 rounded-lg border border-border object-cover" />
                   <span className="min-w-0 flex-1 text-meta text-muted">
                     Photo attached. Vera reads it with the text and keeps it as the cover.
                   </span>
@@ -287,7 +292,7 @@ export function EventSpark({
                     type="button"
                     onClick={() => fileRef.current?.click()}
                     disabled={pending}
-                    className={`${wizardSecondaryClass} !px-3 !py-2 text-sm`}
+                    className={`${wizardSecondaryClass} !px-3 !py-2 text-body-sm`}
                   >
                     <ImagePlus className="h-4 w-4" /> Add a photo
                   </button>

@@ -129,7 +129,7 @@ export default function BetaPage() {
               <span className="font-display text-3xl text-border-strong" aria-hidden>
                 {s.n}
               </span>
-              <p className="mt-3 text-lg font-bold text-text">{s.t}</p>
+              <p className="mt-3 text-body-lg font-bold text-text">{s.t}</p>
               <p className="mt-1.5 text-body-sm text-muted leading-relaxed">{s.b}</p>
             </li>
           ))}

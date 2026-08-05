@@ -102,7 +102,7 @@ const STEP_LABELS = ['Goal', 'A few questions', 'How to build']
 function GoalStep({ onPick, selected }: { onPick: (key: string) => void; selected: string | null }) {
   return (
     <div>
-      <h2 className="text-lg font-bold text-text">What are you trying to do?</h2>
+      <h2 className="text-body-lg font-bold text-text">What are you trying to do?</h2>
       <p className="mt-0.5 text-body-sm text-muted">Pick a goal. Each one starts you from a best-practice shape.</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         {MESSAGING_GOALS.map((g) => {
@@ -167,7 +167,7 @@ function QuestionsStep({
     'mt-1 w-full rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
   return (
     <div>
-      <h2 className="text-lg font-bold text-text">{goal.label}</h2>
+      <h2 className="text-body-lg font-bold text-text">{goal.label}</h2>
       <p className="mt-0.5 text-body-sm text-muted">A few plain questions. You can change all of this later.</p>
 
       <div className="mt-4 space-y-4">
@@ -304,7 +304,7 @@ function BuildStep({
   const manualBusy = pending && buildMode === 'manual'
   return (
     <div>
-      <h2 className="text-lg font-bold text-text">How do you want to build it?</h2>
+      <h2 className="text-body-lg font-bold text-text">How do you want to build it?</h2>
       <p className="mt-0.5 text-body-sm text-muted">
         Let Vera write the first draft, or start from the {isSequence ? 'best-practice series' : 'template'} for{' '}
         {name || goal.suggestedName}. Either way you review and edit before anything sends.

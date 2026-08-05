@@ -137,7 +137,7 @@ export function NewRoomCompose({
                   >
                     <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${visibility === v ? 'text-primary-strong' : 'text-subtle'}`} />
                     <span className="min-w-0">
-                      <span className={`block text-xs font-semibold ${visibility === v ? 'text-primary-strong' : 'text-text'}`}>{title}</span>
+                      <span className={`block text-meta font-semibold ${visibility === v ? 'text-primary-strong' : 'text-text'}`}>{title}</span>
                       <span className="block text-2xs text-muted">{sub}</span>
                     </span>
                   </button>

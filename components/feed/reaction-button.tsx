@@ -156,7 +156,7 @@ export function ReactionInlinePicker({ base, toggle, pending, quickCount = 5 }: 
 
   const quick = REACTIONS.slice(0, quickCount)
   const emojiBtn = (mine: boolean | undefined) =>
-    `flex h-7 w-7 items-center justify-center rounded-pill text-base transition-transform hover:scale-110 hover:bg-surface-elevated ${
+    `flex h-7 w-7 items-center justify-center rounded-pill text-body transition-transform hover:scale-110 hover:bg-surface-elevated ${
       mine ? 'bg-primary-bg/60' : ''
     }`
 

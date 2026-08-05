@@ -396,7 +396,7 @@ function Splash({
             kicker="It does not take a big personality. It takes a standing time and a door someone holds open."
           />
         </Reveal>
-        <Reveal delay={100} className="space-y-5 text-lg text-muted leading-relaxed">
+        <Reveal delay={100} className="space-y-5 text-body-lg text-muted leading-relaxed">
           <p>
             Most of a generation reports feeling lonely, not for lack of people, but for lack of{' '}
             <em>places</em>. The corner café, the town square, the gathering ground all quietly
@@ -525,7 +525,7 @@ function Splash({
           </Reveal>
           <div className="mt-12 grid gap-10 lg:grid-cols-12">
             <Reveal as="div" delay={100} className="lg:col-span-7 lg:col-start-6">
-              <div className="space-y-5 text-lg sm:text-xl text-on-ink/85 leading-relaxed">
+              <div className="space-y-5 text-body-lg sm:text-lead text-on-ink/85 leading-relaxed">
                 <p>
                   A few people started gathering on the cliffs at Moonlight Beach to meditate, every
                   single morning. They kept showing up for more than 500 days straight.
@@ -590,7 +590,7 @@ function Splash({
             kicker="Leaderful, never leader-dependent."
           />
         </Reveal>
-        <Reveal delay={100} className="space-y-5 text-lg text-muted leading-relaxed">
+        <Reveal delay={100} className="space-y-5 text-body-lg text-muted leading-relaxed">
           <p>
             No guru, no franchise. Leaders rise from the people who simply keep showing up. Circles
             fill and split, neighborhoods multiply, and where enough people gather in one place, the
@@ -628,7 +628,7 @@ function Splash({
             </h2>
           </Reveal>
           <Reveal delay={100}>
-            <div className="mx-auto max-w-xl space-y-4 text-lg text-on-ink-muted leading-relaxed">
+            <div className="mx-auto max-w-xl space-y-4 text-body-lg text-on-ink-muted leading-relaxed">
               <p>
                 We won&apos;t pretend there are Circles on every corner yet. There aren&apos;t. The
                 first ones are forming in {FOUNDING_PLACE}, and the rest of the map is open.
@@ -763,7 +763,7 @@ async function LiveProof() {
           </Reveal>
           {hasProof ? (
             <Reveal delay={100}>
-              <p className="text-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto mb-12">
+              <p className="text-body-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto mb-12">
                 Real people, real Circles, real gatherings, taking root in {FOUNDING_PLACE} right now.
               </p>
               <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
@@ -774,7 +774,7 @@ async function LiveProof() {
             </Reveal>
           ) : (
             <Reveal delay={100}>
-              <p className="text-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto">
+              <p className="text-body-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto">
                 The first Circles are forming in {FOUNDING_PLACE}. The early members are shaping what
                 this becomes. Come be one of them.
               </p>

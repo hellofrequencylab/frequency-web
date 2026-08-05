@@ -77,7 +77,7 @@ export async function PlanSection({
 
       <div className="rounded-card border border-border bg-surface p-5 lift-1">
         <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Current plan</p>
-        <p className="mt-1 text-lg font-bold text-text">
+        <p className="mt-1 text-body-lg font-bold text-text">
           {ENTITLEMENT_LABEL[tier]}
           {paid ? '' : <span className="font-normal text-muted"> · free tier</span>}
         </p>
@@ -120,7 +120,7 @@ export async function PlanSection({
             </p>
           ) : payout.ready ? (
             <>
-              <p className="mt-1 inline-flex items-center gap-1.5 text-lg font-bold text-success">
+              <p className="mt-1 inline-flex items-center gap-1.5 text-body-lg font-bold text-success">
                 <Check className="h-4 w-4" /> Payouts active
               </p>
               <p className="mt-1 text-body-sm leading-relaxed text-muted">
@@ -133,7 +133,7 @@ export async function PlanSection({
             </>
           ) : payout.onboarded ? (
             <>
-              <p className="mt-1 text-lg font-bold text-text">Almost there</p>
+              <p className="mt-1 text-body-lg font-bold text-text">Almost there</p>
               <p className="mt-1 text-body-sm leading-relaxed text-muted">
                 Stripe is reviewing your details. This usually clears quickly. Check back, or open
                 your dashboard to finish anything outstanding.

@@ -81,7 +81,7 @@ function PainPointCard({ pain }: { pain: PainPoint }) {
             </StatusChip>
             <StatusChip tone="info" size="sm">{pain.persona}</StatusChip>
           </div>
-          <p className="mt-2 text-lg font-semibold text-text leading-snug text-balance">“{pain.ache}”</p>
+          <p className="mt-2 text-body-lg font-semibold text-text leading-snug text-balance">“{pain.ache}”</p>
           <p className="mt-2 text-body-sm text-muted leading-relaxed">{pain.evidence}</p>
         </div>
       </div>

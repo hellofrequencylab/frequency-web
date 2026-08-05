@@ -86,7 +86,7 @@ export function ModeSettings({
       {/* Current Mode + Focus */}
       <section className="rounded-2xl border border-border bg-surface p-5 lift-1">
         <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Starter preset</p>
-        <h2 className="mt-1 text-lg font-semibold text-text">
+        <h2 className="mt-1 text-body-lg font-semibold text-text">
           {view.modeLabel}: {view.focusLabel}
         </h2>
         <p className="mt-1 text-body-sm text-muted">{view.tagline}</p>

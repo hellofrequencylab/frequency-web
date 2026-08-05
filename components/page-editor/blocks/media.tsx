@@ -161,7 +161,7 @@ export function ImageBlock({
   const ar = aspectValue(aspect)
   const frame = `overflow-hidden border border-border ${radiusClass(radius)} ${shadowClass(shadow)}`
   const captionEl = caption ? (
-    <p className={`mt-3 text-sm text-center ${isInk(tone) ? 'text-on-ink-muted' : 'text-subtle'}`}>{caption}</p>
+    <p className={`mt-3 text-body-sm text-center ${isInk(tone) ? 'text-on-ink-muted' : 'text-subtle'}`}>{caption}</p>
   ) : null
   // `size` caps the width; `align` justifies it within the band (left / center).
   const justify = align === 'left' ? 'mr-auto' : 'mx-auto'
@@ -281,8 +281,8 @@ export function GalleryMediaBlock({
                 sizes="(min-width: 640px) 40rem, 100vw"
               />
               <div className={itemPad}>
-                {f.title && <h3 className={`text-xl font-bold mb-1.5 ${ink ? 'text-on-ink' : 'text-text'}`}>{f.title}</h3>}
-                {f.body && <p className={`text-base leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{f.body}</p>}
+                {f.title && <h3 className={`text-lead font-bold mb-1.5 ${ink ? 'text-on-ink' : 'text-text'}`}>{f.title}</h3>}
+                {f.body && <p className={`text-body leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{f.body}</p>}
               </div>
             </article>
           ))}

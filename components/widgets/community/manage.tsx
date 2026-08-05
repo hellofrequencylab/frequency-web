@@ -130,7 +130,7 @@ export async function CommunityManage() {
               <p className="mt-0.5 text-meta leading-snug text-muted">{card.desc}</p>
             </div>
             <p className="mt-auto flex items-baseline gap-1.5">
-              {card.stat && <span className="text-lg font-bold tabular-nums text-text">{card.stat}</span>}
+              {card.stat && <span className="text-body-lg font-bold tabular-nums text-text">{card.stat}</span>}
               <span className="text-2xs font-medium uppercase tracking-wide text-muted">{card.statLabel}</span>
             </p>
           </Link>

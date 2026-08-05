@@ -110,48 +110,50 @@ export function PracticePrompt({
             </p>
           </div>
         </div>
+        {/* Collapsed state returns its own tree above, so everything from here down is the
+            EXPANDED render and `collapsed` is provably false. The conditionals that used to
+            be here (`collapsed ? … :`, `aria-expanded={!collapsed}`) were left over from the
+            single-tree version and read as though this branch still handled both states. */}
         <button
           type="button"
           onClick={toggle}
-          aria-label={collapsed ? 'Expand streak' : 'Collapse streak'}
-          aria-expanded={!collapsed}
+          aria-label="Collapse streak"
+          aria-expanded
           className="shrink-0 rounded-md p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
         >
-          <ChevronDown className={`h-4 w-4 transition-transform ${collapsed ? '' : 'rotate-180'}`} />
+          <ChevronDown className="h-4 w-4 rotate-180 transition-transform" />
         </button>
       </div>
 
-      {/* Progress bar — always shown (slim); checkpoints only when expanded. */}
+      {/* Progress bar + the milestone checkpoints. Both are unconditional here: the slim
+          collapsed variant of this bar lives in the early return above. */}
       <div className="mt-2.5">
         <ProgressTrack value={p.pct} label="Streak progress" size="lg" track="surface" animate className="w-full" />
 
-        {!collapsed && (
-          <div className="mt-2.5 flex items-center justify-between gap-1">
-            {STREAK_MILESTONES.map((m) => {
-              const hit = m.day <= streak
-              const isNext = p.next?.day === m.day
-              return (
-                <div key={m.day} className="flex flex-col items-center gap-1" title={`${m.label} · ${m.day} days`}>
-                  <span
-                    className={`inline-flex h-6 w-6 items-center justify-center rounded-pill text-3xs font-bold transition-colors ${
-                      hit
-                        ? 'bg-primary text-on-primary'
-                        : isNext
-                          ? 'bg-surface text-primary-strong ring-2 ring-primary'
-                          : 'bg-surface text-muted'
-                    }`}
-                  >
-                    {hit ? <Check className="h-3 w-3" strokeWidth={3} /> : m.day}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        )}
+        <div className="mt-2.5 flex items-center justify-between gap-1">
+          {STREAK_MILESTONES.map((m) => {
+            const hit = m.day <= streak
+            const isNext = p.next?.day === m.day
+            return (
+              <div key={m.day} className="flex flex-col items-center gap-1" title={`${m.label} · ${m.day} days`}>
+                <span
+                  className={`inline-flex h-6 w-6 items-center justify-center rounded-pill text-3xs font-bold transition-colors ${
+                    hit
+                      ? 'bg-primary text-on-primary'
+                      : isNext
+                        ? 'bg-surface text-primary-strong ring-2 ring-primary'
+                        : 'bg-surface text-muted'
+                  }`}
+                >
+                  {hit ? <Check className="h-3 w-3" strokeWidth={3} /> : m.day}
+                </span>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
-      {/* Reminders — hidden when collapsed so the box drops to ~half height. */}
-      {!collapsed && (
+      {/* Reminders. Also unconditional: the collapsed tree above never renders them. */}
       <div className="mt-3 border-t border-primary-bg pt-3">
         {hasReminders ? (
           <ul className="space-y-2">
@@ -207,7 +209,6 @@ export function PracticePrompt({
           </div>
         )}
       </div>
-      )}
     </div>
   )
 }

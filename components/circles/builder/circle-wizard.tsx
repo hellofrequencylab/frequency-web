@@ -239,7 +239,7 @@ export function CircleWizard() {
                   type="button"
                   onClick={() => fileRef.current?.click()}
                   disabled={extracting || pending}
-                  className={`${wizardSecondaryClass} !px-3 !py-2 text-sm`}
+                  className={`${wizardSecondaryClass} !px-3 !py-2 text-body-sm`}
                 >
                   {extracting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Upload className="h-4 w-4" aria-hidden />}{' '}
                   Upload a file
@@ -293,7 +293,7 @@ export function CircleWizard() {
                       type="button"
                       aria-pressed={primaryPillar === p}
                       onClick={() => setPrimaryPillar((cur) => (cur === p ? null : p))}
-                      className={`rounded-pill border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                      className={`rounded-pill border px-3.5 py-1.5 text-body-sm font-medium transition-colors ${
                         primaryPillar === p
                           ? 'border-primary/50 bg-primary-bg text-primary-strong'
                           : 'border-border bg-surface text-muted hover:text-text'

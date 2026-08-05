@@ -30,7 +30,7 @@ export function ProfileAwards({ awards, firstName, isOwner }: { awards: ProfileA
               <span
                 key={a.slug}
                 title={a.description ?? a.name}
-                className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-xs font-medium ${tierStyle(a.tier)}`}
+                className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-meta font-medium ${tierStyle(a.tier)}`}
               >
                 <Award className="h-3.5 w-3.5" />
                 {a.name}

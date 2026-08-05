@@ -102,7 +102,7 @@ function EventRow({ event }: { event: AdminEvent }) {
         <span className="text-meta font-semibold uppercase leading-none text-subtle">
           {new Date(event.starts_at).toLocaleDateString('en-US', { month: 'short' })}
         </span>
-        <span className="mt-0.5 text-lg font-black leading-none text-text">
+        <span className="mt-0.5 text-body-lg font-black leading-none text-text">
           {new Date(event.starts_at).getDate()}
         </span>
       </div>

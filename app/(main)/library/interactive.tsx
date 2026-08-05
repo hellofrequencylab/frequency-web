@@ -29,7 +29,7 @@ export function RateButton({ type, id, count, rated }: { type: ContentType; id: 
         })
       }
       aria-pressed={on}
-      className={`inline-flex items-center gap-1 rounded-pill border px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
+      className={`inline-flex items-center gap-1 rounded-pill border px-2.5 py-1 text-meta font-semibold transition-colors disabled:opacity-50 ${
         on ? 'border-primary bg-primary-bg text-primary-strong' : 'border-border text-muted hover:text-text'
       }`}
       title={on ? 'Remove your rating' : 'Rate this'}

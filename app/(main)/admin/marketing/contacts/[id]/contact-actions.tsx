@@ -132,7 +132,7 @@ export function EditContactFields({
         <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={pending}>
           Cancel
         </Button>
-        {msg && <span className={`text-xs ${msg.ok ? 'text-success' : 'text-muted'}`}>{msg.text}</span>}
+        {msg && <span className={`text-meta ${msg.ok ? 'text-success' : 'text-muted'}`}>{msg.text}</span>}
       </div>
     </div>
   )
@@ -171,7 +171,7 @@ export function AddNote({ contactId }: { contactId: string }) {
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <StickyNote className="h-4 w-4" />}
           Add note
         </Button>
-        {msg && <span className={`text-xs ${msg.ok ? 'text-success' : 'text-muted'}`}>{msg.text}</span>}
+        {msg && <span className={`text-meta ${msg.ok ? 'text-success' : 'text-muted'}`}>{msg.text}</span>}
       </div>
     </div>
   )

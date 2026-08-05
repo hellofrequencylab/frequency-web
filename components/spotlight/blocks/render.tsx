@@ -131,7 +131,7 @@ export function BlockView({
       return block.level === 3 ? (
         <h3 className="mt-4 text-body font-bold text-text" style={{ fontFamily: headingFont, ...tintStyle(block.tint) }}>{block.text}</h3>
       ) : (
-        <h2 className="mt-6 text-lg font-bold text-text" style={{ fontFamily: headingFont, ...tintStyle(block.tint) }}>{block.text}</h2>
+        <h2 className="mt-6 text-body-lg font-bold text-text" style={{ fontFamily: headingFont, ...tintStyle(block.tint) }}>{block.text}</h2>
       )
     case 'text':
       return <p className="whitespace-pre-wrap text-pretty text-body-sm leading-relaxed text-text" style={tintStyle(block.tint)}>{block.text}</p>

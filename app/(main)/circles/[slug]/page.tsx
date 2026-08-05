@@ -423,7 +423,7 @@ export default async function CirclePage({
 
             {/* Status / mode chips — the rounded-pill chip grammar the event + Journey bands use. */}
             <span className="inline-flex flex-wrap items-center gap-1.5">
-              <span className={`inline-flex items-center rounded-pill px-2 py-0.5 text-xs font-semibold ${statusPill.cls}`}>
+              <span className={`inline-flex items-center rounded-pill px-2 py-0.5 text-meta font-semibold ${statusPill.cls}`}>
                 {statusPill.label}
               </span>
               <span className="inline-flex items-center rounded-pill bg-signal-bg px-2 py-0.5 text-meta font-medium text-signal-strong">

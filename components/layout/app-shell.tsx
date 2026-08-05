@@ -833,7 +833,7 @@ function NavLinkList({
   const nestClass = (depth?: number) => (depth ? 'ml-3 border-l border-border ' : '')
 
   const itemClass = (active: boolean, emphasize = false, depth = 0) =>
-    `${nestClass(depth)}flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+    `${nestClass(depth)}flex items-center gap-2.5 px-3 py-2 rounded-lg text-body-sm transition-colors ${
       emphasize
         ? `font-bold text-[var(--brand-mark)] ${active ? 'bg-primary-bg' : 'hover:bg-surface-elevated'}`
         : active
@@ -909,7 +909,7 @@ function NavLinkList({
                     ghostTier={item.ghostTier}
                     ghostMessage={item.ghostMessage}
                     ariaLabel={label}
-                    className={`${nest}flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-subtle`}
+                    className={`${nest}flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm font-medium text-subtle`}
                   >
                     <Icon className="h-[18px] w-[18px] shrink-0 text-subtle" strokeWidth={2} aria-hidden />
                     {label}
@@ -995,7 +995,7 @@ function NavLinkList({
                   href={href}
                   onClick={onNavigate}
                   title="Preview. Sign in or upgrade to engage"
-                  className={`${nest}flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  className={`${nest}flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm font-medium transition-colors ${
                     active ? 'bg-surface-elevated text-muted' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
                   }`}
                 >
@@ -1011,7 +1011,7 @@ function NavLinkList({
                   key={href}
                   aria-disabled="true"
                   title="You don't have access to this yet"
-                  className={`${nest}flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-subtle opacity-50 cursor-not-allowed select-none`}
+                  className={`${nest}flex items-center gap-2.5 px-3 py-2 rounded-lg text-body-sm font-medium text-subtle opacity-50 cursor-not-allowed select-none`}
                 >
                   <Icon className="w-[18px] h-[18px] shrink-0 text-subtle" strokeWidth={2} />
                   {label}
@@ -1750,7 +1750,7 @@ export default function AppShell({
           Bypass Blocks). Placed before the top bar so it wins tab order even on an editor takeover. */}
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-text focus:shadow-pop"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-body-sm focus:font-semibold focus:text-text focus:shadow-pop"
       >
         Skip to content
       </a>

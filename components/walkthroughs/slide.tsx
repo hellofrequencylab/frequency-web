@@ -74,12 +74,12 @@ export function WalkthroughSlide({ step }: { step: WalkthroughStep }) {
     </span>
   ) : null
   const cta = step.ctaLabel ? (
-    <span className={`mt-5 inline-flex items-center gap-1.5 rounded-xl ${a.solid} px-5 py-2.5 text-sm font-semibold ${a.onSolid}`}>
+    <span className={`mt-5 inline-flex items-center gap-1.5 rounded-xl ${a.solid} px-5 py-2.5 text-body-sm font-semibold ${a.onSolid}`}>
       {step.ctaLabel} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
     </span>
   ) : null
   const zaps = step.zaps ? (
-    <p className={`mt-4 inline-flex items-center gap-1.5 rounded-pill ${a.soft} px-3 py-1.5 text-xs font-semibold ${a.text}`}>
+    <p className={`mt-4 inline-flex items-center gap-1.5 rounded-pill ${a.soft} px-3 py-1.5 text-meta font-semibold ${a.text}`}>
       <Gem className="h-3.5 w-3.5" aria-hidden /> +{step.zaps} Zaps
     </p>
   ) : null

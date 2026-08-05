@@ -157,15 +157,15 @@ export function SeasonTimelineBlock({
                   <span className={`font-display text-3xl leading-none ${a.text}`}>{i + 1}</span>
                   <div className="flex items-center gap-1.5">
                     <PillarDot className={a.dot} />
-                    <span className={`font-display uppercase text-2xl leading-none ${headingColor}`}>
+                    <span className={`font-display uppercase text-page-title leading-none ${headingColor}`}>
                       {leg.pillar} Journey
                     </span>
                   </div>
                 </div>
                 {leg.weeks && (
-                  <p className={`text-xs font-bold uppercase tracking-widest mb-3 ${subColor}`}>{leg.weeks}</p>
+                  <p className={`text-meta font-bold uppercase tracking-widest mb-3 ${subColor}`}>{leg.weeks}</p>
                 )}
-                {leg.blurb && <p className={`text-sm leading-relaxed ${bodyColor}`}>{leg.blurb}</p>}
+                {leg.blurb && <p className={`text-body-sm leading-relaxed ${bodyColor}`}>{leg.blurb}</p>}
 
                 {/* The Expression Challenge capstone node that closes the leg. */}
                 <div className={`mt-4 pt-4 border-t ${ink ? 'border-on-ink/10' : 'border-border'}`}>
@@ -183,7 +183,7 @@ export function SeasonTimelineBlock({
         </ol>
 
         {capstoneNote && (
-          <p className={`mt-6 text-sm leading-relaxed ${bodyColor}`}>{capstoneNote}</p>
+          <p className={`mt-6 text-body-sm leading-relaxed ${bodyColor}`}>{capstoneNote}</p>
         )}
       </MockFrame>
     </div>
@@ -243,7 +243,7 @@ export function CircleFirstNightBlock({
         )}
         {kicker && <Kicker ink={ink}>{kicker}</Kicker>}
         {footnote && (
-          <p className={`mt-6 text-base leading-relaxed ${bodyColor}`}>{footnote}</p>
+          <p className={`mt-6 text-body leading-relaxed ${bodyColor}`}>{footnote}</p>
         )}
       </div>
 
@@ -252,12 +252,12 @@ export function CircleFirstNightBlock({
         <div className="flex items-center justify-between mb-5">
           <div>
             {cardLabel && (
-              <p className={`text-xs font-bold uppercase tracking-widest ${ink ? 'text-primary' : 'text-primary-strong'}`}>
+              <p className={`text-meta font-bold uppercase tracking-widest ${ink ? 'text-primary' : 'text-primary-strong'}`}>
                 {cardLabel}
               </p>
             )}
             {cardTitle && (
-              <p className={`mt-1 font-display uppercase text-2xl leading-none ${headingColor}`}>{cardTitle}</p>
+              <p className={`mt-1 font-display uppercase text-page-title leading-none ${headingColor}`}>{cardTitle}</p>
             )}
           </div>
           {/* A small ring-of-people mark, the Circle motif. */}
@@ -282,12 +282,12 @@ export function CircleFirstNightBlock({
                 ink ? 'bg-on-ink/5' : 'bg-surface border border-border'
               }`}
             >
-              <span className={`shrink-0 w-14 text-sm font-bold tabular-nums ${ink ? 'text-primary' : 'text-primary-strong'}`}>
+              <span className={`shrink-0 w-14 text-body-sm font-bold tabular-nums ${ink ? 'text-primary' : 'text-primary-strong'}`}>
                 {row.time}
               </span>
               <span className="min-w-0">
-                <span className={`block text-base font-semibold leading-snug ${headingColor}`}>{row.title}</span>
-                {row.note && <span className={`block text-sm leading-snug ${subColor}`}>{row.note}</span>}
+                <span className={`block text-body font-semibold leading-snug ${headingColor}`}>{row.title}</span>
+                {row.note && <span className={`block text-body-sm leading-snug ${subColor}`}>{row.note}</span>}
               </span>
             </li>
           ))}
@@ -362,15 +362,15 @@ export function RolesPathBlock({
             >
               <div className="flex items-center gap-2 mb-2">
                 <span
-                  className={`flex items-center justify-center w-7 h-7 rounded-pill text-xs font-black ${
+                  className={`flex items-center justify-center w-7 h-7 rounded-pill text-meta font-black ${
                     ink ? 'bg-primary/20 text-primary' : 'bg-primary-bg text-primary-strong'
                   }`}
                 >
                   {i + 1}
                 </span>
-                <span className={`font-display uppercase text-xl leading-none ${headingColor}`}>{rung.name}</span>
+                <span className={`font-display uppercase text-lead leading-none ${headingColor}`}>{rung.name}</span>
               </div>
-              {rung.blurb && <p className={`text-sm leading-relaxed ${bodyColor}`}>{rung.blurb}</p>}
+              {rung.blurb && <p className={`text-body-sm leading-relaxed ${bodyColor}`}>{rung.blurb}</p>}
               {/* Forward arrow rail between rungs (hidden on the last one). */}
               {!last && (
                 <ArrowRight
@@ -392,7 +392,7 @@ export function RolesPathBlock({
             ink ? 'bg-primary/10 border border-primary/30' : 'bg-primary-bg/50 border border-primary/30'
           }`}
         >
-          <p className={`text-base leading-relaxed ${ink ? 'text-on-ink' : 'text-text'}`}>{safetyNet}</p>
+          <p className={`text-body leading-relaxed ${ink ? 'text-on-ink' : 'text-text'}`}>{safetyNet}</p>
         </div>
       )}
     </div>
@@ -465,8 +465,8 @@ export function QuestLoopBlock({
                 <span className={`font-display text-4xl leading-none mb-3 ${ink ? 'text-primary' : 'text-primary-strong'}`}>
                   {String(i + 1).padStart(2, '0')}
                 </span>
-                <span className={`font-display uppercase text-xl leading-none mb-2 ${headingColor}`}>{stage.label}</span>
-                {stage.blurb && <span className={`text-sm leading-relaxed ${bodyColor}`}>{stage.blurb}</span>}
+                <span className={`font-display uppercase text-lead leading-none mb-2 ${headingColor}`}>{stage.label}</span>
+                {stage.blurb && <span className={`text-body-sm leading-relaxed ${bodyColor}`}>{stage.blurb}</span>}
               </div>
               {!last && (
                 <div className="flex items-center justify-center py-2 sm:py-0 sm:px-2">
@@ -482,7 +482,7 @@ export function QuestLoopBlock({
       </div>
 
       {ratioNote && (
-        <p className={`mt-6 text-sm leading-relaxed ${bodyColor}`}>{ratioNote}</p>
+        <p className={`mt-6 text-body-sm leading-relaxed ${bodyColor}`}>{ratioNote}</p>
       )}
     </div>
   )
@@ -545,7 +545,7 @@ export function BackTheBuildBlock({
             </h2>
           )}
           {body && (
-            <div className="mt-6 text-lg leading-relaxed space-y-4 text-on-ink-muted">
+            <div className="mt-6 text-body-lg leading-relaxed space-y-4 text-on-ink-muted">
               {richParagraphs(body)}
             </div>
           )}
@@ -559,9 +559,9 @@ export function BackTheBuildBlock({
                   <span className="font-display uppercase text-primary text-3xl leading-none mb-2">{tier.amount}</span>
                 )}
                 {tier.name && (
-                  <span className="font-display uppercase text-on-ink text-xl leading-none mb-3">{tier.name}</span>
+                  <span className="font-display uppercase text-on-ink text-lead leading-none mb-3">{tier.name}</span>
                 )}
-                {tier.blurb && <span className="text-sm leading-relaxed text-on-ink-muted">{tier.blurb}</span>}
+                {tier.blurb && <span className="text-body-sm leading-relaxed text-on-ink-muted">{tier.blurb}</span>}
               </li>
             ))}
           </ul>
@@ -570,7 +570,7 @@ export function BackTheBuildBlock({
         {ctaLabel && ctaHref && (
           <div className="mt-12 flex flex-col items-center gap-4">
             <CtaButton href={ctaHref} label={ctaLabel} variant="primary" onInk />
-            {secondaryNote && <p className="text-sm text-on-ink-subtle">{secondaryNote}</p>}
+            {secondaryNote && <p className="text-body-sm text-on-ink-subtle">{secondaryNote}</p>}
           </div>
         )}
       </div>

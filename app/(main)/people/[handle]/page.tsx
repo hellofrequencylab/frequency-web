@@ -795,7 +795,7 @@ function AchievementChip({
   return (
     <span
       title={earned ? `${label} (earned)` : showProgress ? `${label} (${current}/${target})` : label}
-      className={`inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs font-medium ${
+      className={`inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-meta font-medium ${
         earned ? 'bg-warning-bg text-primary' : 'border border-border text-muted'
       }`}
     >

@@ -24,7 +24,7 @@ export default function PrivacyPage() {
         >
           <div className="prose prose-sm prose-gray dark:prose-invert max-w-none space-y-8">
           <section>
-            <h2 className="text-lg font-semibold text-text">1. Who we are</h2>
+            <h2 className="text-body-lg font-semibold text-text">1. Who we are</h2>
             <p className="text-muted leading-relaxed">
               Frequency is operated by Frequency Labs Holdings (&quot;Frequency,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;).
               This policy describes how we collect, use, and protect your personal information when
@@ -33,7 +33,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">2. Information we collect</h2>
+            <h2 className="text-body-lg font-semibold text-text">2. Information we collect</h2>
             <p className="text-muted leading-relaxed">
               <strong className="text-text">Account information:</strong> When you sign up,
               we collect your email address, display name, and optional profile details (bio, avatar, location).
@@ -60,7 +60,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">3. How we use your information</h2>
+            <h2 className="text-body-lg font-semibold text-text">3. How we use your information</h2>
             <ul className="text-muted space-y-2 list-disc list-inside">
               <li>To create and maintain your account</li>
               <li>To display your profile to other community members</li>
@@ -71,7 +71,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">4. How we share your information</h2>
+            <h2 className="text-body-lg font-semibold text-text">4. How we share your information</h2>
             <p className="text-muted leading-relaxed">
               We do not sell your personal information. We share data only with service providers
               that help us operate the platform:
@@ -86,7 +86,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">5. Google user data</h2>
+            <h2 className="text-body-lg font-semibold text-text">5. Google user data</h2>
             <p className="text-muted leading-relaxed">
               When you connect Google to import contacts, Frequency uses the read-only Google Contacts
               scope (contacts.readonly) for one purpose only: to copy the contacts you choose into your
@@ -108,7 +108,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">6. Data security</h2>
+            <h2 className="text-body-lg font-semibold text-text">6. Data security</h2>
             <p className="text-muted leading-relaxed">
               We use industry-standard security measures including encrypted connections (HTTPS),
               secure authentication tokens, and row-level database security policies. Your data is
@@ -117,7 +117,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">7. Your rights</h2>
+            <h2 className="text-body-lg font-semibold text-text">7. Your rights</h2>
             <p className="text-muted leading-relaxed">
               You can update or delete your profile information at any time from your account settings.
               To request a full data export or account deletion, contact us at hello@frequencylocal.com.
@@ -125,7 +125,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">8. Cookies</h2>
+            <h2 className="text-body-lg font-semibold text-text">8. Cookies</h2>
             <p className="text-muted leading-relaxed">
               We use essential cookies to maintain your login session, and Google Analytics to
               understand aggregate, anonymized usage so we can improve the platform. We configure
@@ -135,7 +135,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">9. Changes to this policy</h2>
+            <h2 className="text-body-lg font-semibold text-text">9. Changes to this policy</h2>
             <p className="text-muted leading-relaxed">
               We may update this policy from time to time. We will notify members of material changes
               via email or an in-app announcement.
@@ -143,7 +143,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">10. Contact</h2>
+            <h2 className="text-body-lg font-semibold text-text">10. Contact</h2>
             <p className="text-muted leading-relaxed">
               Questions about this policy? Email us at{' '}
               <a href="mailto:hello@frequencylocal.com" className="text-primary-strong hover:underline">

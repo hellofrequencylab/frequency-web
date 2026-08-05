@@ -6,7 +6,7 @@ function HealthStat({ label, value, Icon }: { label: string; value: string; Icon
   return (
     <div className="rounded-2xl bg-surface-elevated/60 px-3 py-2.5 text-center">
       <Icon className="w-3.5 h-3.5 text-subtle mx-auto mb-1" />
-      <div className="text-lg font-bold text-text leading-none tabular-nums">{value}</div>
+      <div className="text-body-lg font-bold text-text leading-none tabular-nums">{value}</div>
       <div className="text-meta text-subtle mt-1">{label}</div>
     </div>
   )

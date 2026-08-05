@@ -187,7 +187,7 @@ function ChannelUpcoming({
   )
 }
 
-/** Dimension-matched placeholder: the widget's SectionHeader row (text-sm heading, mb-3)
+/** Dimension-matched placeholder: the widget's SectionHeader row (text-body-sm heading, mb-3)
  *  plus one event row. */
 function UpcomingSkeleton() {
   return (

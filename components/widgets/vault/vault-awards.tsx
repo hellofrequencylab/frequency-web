@@ -134,10 +134,10 @@ function AwardsCollection({
 
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className={`text-sm font-semibold ${a.earned ? 'text-text' : 'text-muted'}`}>
+                            <span className={`text-body-sm font-semibold ${a.earned ? 'text-text' : 'text-muted'}`}>
                               {isSecret ? '???' : a.name}
                             </span>
-                            <span className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ${tier.bg} ${tier.color}`}>
+                            <span className={`rounded-md px-1.5 py-0.5 text-meta font-semibold ${tier.bg} ${tier.color}`}>
                               {tier.label}
                             </span>
                           </div>

@@ -306,7 +306,7 @@ export function ReviewQueuePanel({ rows }: { rows: ReviewRow[] }) {
       {feedback && (
         <p
           role="status"
-          className={`text-xs font-medium ${feedback.tone === 'danger' ? 'text-danger' : 'text-success'}`}
+          className={`text-meta font-medium ${feedback.tone === 'danger' ? 'text-danger' : 'text-success'}`}
         >
           {feedback.text}
         </p>

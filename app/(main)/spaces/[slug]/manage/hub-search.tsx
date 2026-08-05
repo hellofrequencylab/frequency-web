@@ -38,7 +38,7 @@ export function HubSearch({ items }: { items: HubSearchItem[] }) {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search this space's tools and settings"
           aria-label="Search this space's tools and settings"
-          className="w-full bg-transparent text-body text-text outline-none placeholder:text-subtle sm:text-sm"
+          className="w-full bg-transparent text-body text-text outline-none placeholder:text-subtle sm:text-body-sm"
         />
       </div>
       {q && (

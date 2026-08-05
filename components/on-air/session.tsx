@@ -1607,7 +1607,7 @@ export function OnAirSession({
         // Standalone /on-air route: no toggle, the sit's own masthead (unchanged).
         <>
           <div className="relative flex items-center justify-center pb-2">
-            <p className="flex items-center gap-2.5 text-body font-bold uppercase tracking-[0.35em] text-primary-strong lg:text-lg">
+            <p className="flex items-center gap-2.5 text-body font-bold uppercase tracking-[0.35em] text-primary-strong lg:text-body-lg">
               <LotusIcon className="h-6 w-6 lg:h-7 lg:w-7" /> Mindless
             </p>
             <button
@@ -1706,7 +1706,7 @@ export function OnAirSession({
                   type="button"
                   onClick={() => setPatternSlug(p.slug)}
                   title={p.blurb}
-                  className={`rounded-xl border px-2 py-1.5 text-sm transition-colors ${
+                  className={`rounded-xl border px-2 py-1.5 text-body-sm transition-colors ${
                     p.slug === patternSlug
                       ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                       : 'border-border text-muted hover:bg-surface-elevated'
@@ -1719,7 +1719,7 @@ export function OnAirSession({
                 type="button"
                 onClick={() => setPatternSlug('custom')}
                 title="Your counts. Set each phase to what fits."
-                className={`rounded-xl border px-2 py-1.5 text-sm transition-colors ${
+                className={`rounded-xl border px-2 py-1.5 text-body-sm transition-colors ${
                   patternSlug === 'custom'
                     ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                     : 'border-border text-muted hover:bg-surface-elevated'
@@ -1773,7 +1773,7 @@ export function OnAirSession({
                   key={m}
                   type="button"
                   onClick={() => setMinutes(m)}
-                  className={`rounded-xl border px-2 py-1.5 text-sm tabular-nums transition-colors ${
+                  className={`rounded-xl border px-2 py-1.5 text-body-sm tabular-nums transition-colors ${
                     m === minutes
                       ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                       : 'border-border text-muted hover:bg-surface-elevated'
@@ -1853,7 +1853,7 @@ export function OnAirSession({
                     type="button"
                     aria-pressed={w === warmupSec}
                     onClick={() => setWarmupSec(w)}
-                    className={`rounded-xl border px-2 py-1.5 text-xs tabular-nums transition-colors ${
+                    className={`rounded-xl border px-2 py-1.5 text-meta tabular-nums transition-colors ${
                       w === warmupSec
                         ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                         : 'border-border text-muted hover:bg-surface-elevated'
@@ -1874,7 +1874,7 @@ export function OnAirSession({
                     <button
                       type="button"
                       onClick={() => selectAmbient(null)}
-                      className={`rounded-xl border px-2 py-1.5 text-xs transition-colors ${
+                      className={`rounded-xl border px-2 py-1.5 text-meta transition-colors ${
                         ambientSlug === null
                           ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                           : 'border-border text-muted hover:bg-surface-elevated'
@@ -1887,7 +1887,7 @@ export function OnAirSession({
                         key={t.slug}
                         type="button"
                         onClick={() => selectAmbient(t.slug)}
-                        className={`rounded-xl border px-2 py-1.5 text-xs transition-colors ${
+                        className={`rounded-xl border px-2 py-1.5 text-meta transition-colors ${
                           ambientSlug === t.slug
                             ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                             : 'border-border text-muted hover:bg-surface-elevated'
@@ -1939,7 +1939,7 @@ export function OnAirSession({
                             // preview is a nicety
                           }
                         }}
-                        className={`rounded-xl border px-2 py-1.5 text-xs transition-colors ${
+                        className={`rounded-xl border px-2 py-1.5 text-meta transition-colors ${
                           t.slug === bellToneSlug
                             ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                             : 'border-border text-muted hover:bg-surface-elevated'
@@ -1991,7 +1991,7 @@ export function OnAirSession({
                           key={iv.value}
                           type="button"
                           onClick={() => setBellEveryMin(iv.value)}
-                          className={`rounded-xl border px-2 py-1.5 text-xs tabular-nums transition-colors ${
+                          className={`rounded-xl border px-2 py-1.5 text-meta tabular-nums transition-colors ${
                             iv.value === bellEveryMin
                               ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                               : 'border-border text-muted hover:bg-surface-elevated'
@@ -2010,7 +2010,7 @@ export function OnAirSession({
                   aria-pressed={endBell}
                   onClick={() => setEndBell(!endBell)}
                   title="A double strike when the sit ends."
-                  className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-xs transition-colors ${
+                  className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-meta transition-colors ${
                     endBell
                       ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                       : 'border-border text-muted hover:bg-surface-elevated'
@@ -2160,7 +2160,7 @@ function InstructionsPopup({
         >
           <X className="h-4 w-4" />
         </button>
-        <h2 className="pr-6 text-lg font-semibold text-text">{pattern.name}</h2>
+        <h2 className="pr-6 text-body-lg font-semibold text-text">{pattern.name}</h2>
         <p className="mt-3 text-body-sm leading-relaxed text-muted">{pattern.instructions}</p>
         <button
           type="button"
@@ -2202,7 +2202,7 @@ function ModeButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+      className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2 text-meta transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
         active
           ? 'border-primary bg-primary-bg/40 font-semibold text-text'
           : 'border-border text-muted hover:bg-surface-elevated disabled:hover:bg-transparent'
@@ -2233,7 +2233,7 @@ function ToggleChip({
       aria-pressed={active}
       onClick={onClick}
       title={title}
-      className={`flex items-center justify-center gap-2 rounded-xl border px-2 py-2 text-xs transition-colors ${
+      className={`flex items-center justify-center gap-2 rounded-xl border px-2 py-2 text-meta transition-colors ${
         active
           ? 'border-primary bg-primary-bg/40 font-semibold text-text'
           : 'border-border text-muted hover:bg-surface-elevated'

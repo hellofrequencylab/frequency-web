@@ -149,7 +149,7 @@ function Choice({
       aria-checked={active}
       disabled={disabled}
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
+      className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors disabled:opacity-50 ${
         active
           ? 'border-primary bg-primary-bg text-primary-strong'
           : 'border-border-strong text-text hover:bg-surface-elevated'

@@ -239,7 +239,7 @@ export function EditorControlsShowcase() {
   return (
     <main className="mx-auto max-w-5xl space-y-6 p-6">
       <header className="space-y-1">
-        <h1 className="text-lg font-bold text-text">Editor control system</h1>
+        <h1 className="text-body-lg font-bold text-text">Editor control system</h1>
         <p className="text-body-sm text-muted">
           Dev-only showcase of the reusable block-editor control primitives and the redesigned inspector
           panel. Every control is token-driven and keyboard-operable. Not linked, noindex, dev-only.

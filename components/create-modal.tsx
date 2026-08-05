@@ -103,7 +103,7 @@ export function CreateModal({
             <div className={`w-9 h-9 shrink-0 rounded-xl ${colors.bg} flex items-center justify-center`}>
               <Icon className={`w-[18px] h-[18px] ${colors.text}`} />
             </div>
-            <h2 className="text-lg font-bold text-text truncate">{title}</h2>
+            <h2 className="text-body-lg font-bold text-text truncate">{title}</h2>
           </div>
           <button
             type="button"

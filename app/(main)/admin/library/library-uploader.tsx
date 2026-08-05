@@ -47,7 +47,7 @@ export function LibraryUploader() {
   return (
     <div className="flex flex-col items-end gap-1">
       <label
-        className={`inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-primary px-4 py-2 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover ${
+        className={`inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-primary px-4 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover ${
           pending ? 'pointer-events-none opacity-70' : ''
         }`}
       >

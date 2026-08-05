@@ -257,7 +257,7 @@ export function ProfileForm({
                 onClick={() => setOverlayStyle(v)}
                 aria-pressed={active}
                 disabled={isPending}
-                className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60 ${
+                className={`rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors disabled:opacity-60 ${
                   active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-border-strong'
                 }`}
               >
@@ -376,7 +376,7 @@ export function ProfileForm({
           disabled={isPending}
           className={`${input} resize-none`}
         />
-        <p className={`mt-1 text-xs text-right tabular-nums ${bio.length >= 260 ? 'text-primary' : 'text-subtle'}`}>
+        <p className={`mt-1 text-meta text-right tabular-nums ${bio.length >= 260 ? 'text-primary' : 'text-subtle'}`}>
           {bio.length} / 280
         </p>
       </div>
@@ -508,7 +508,7 @@ export function ProfileForm({
               type="button"
               onClick={handleTogglePublish}
               disabled={spotPending}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-body-sm font-medium transition-colors disabled:opacity-50 ${
                 spotPublished
                   ? 'border border-border-strong text-text hover:bg-surface-elevated'
                   : 'bg-primary text-on-primary hover:bg-primary-hover'

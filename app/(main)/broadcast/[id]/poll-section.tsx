@@ -94,7 +94,7 @@ export function PollSection({
                 />
               )}
               <span className="relative flex items-center justify-between gap-2">
-                <span className={`text-sm font-medium ${isMyVote ? 'text-broadcast-strong' : 'text-text'}`}>
+                <span className={`text-body-sm font-medium ${isMyVote ? 'text-broadcast-strong' : 'text-text'}`}>
                   {opt.label}
                   {isMyVote && <span className="ml-1 text-meta">✓</span>}
                 </span>

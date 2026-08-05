@@ -100,7 +100,7 @@ export function EventHeaderControls({
                   onClick={() => pickHeight(o.value)}
                   disabled={heightPending}
                   aria-pressed={active}
-                  className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60 ${
+                  className={`rounded-lg border px-3 py-1.5 text-meta font-semibold transition-colors disabled:opacity-60 ${
                     active
                       ? 'border-primary-strong bg-primary-bg text-primary-strong'
                       : 'border-border bg-surface text-text hover:border-border-strong'

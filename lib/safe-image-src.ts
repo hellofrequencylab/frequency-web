@@ -52,10 +52,16 @@ export function safeImageSrc(src: string | null | undefined): string | null {
 }
 
 // The narrow sibling, for the ONE case that recurs across the product: a local upload
-// preview. Three surfaces paint one (the Beta induction avatar, the onboarding avatar
-// step, the feed composer attachment) and until now each guarded it differently — one
-// used safeImageSrc, one an ad-hoc /^(?:blob:|https?:\/\/)/i regex, and one nothing at
-// all. Three guards for one shape is how the unguarded one happens.
+// preview. SEVEN surfaces paint one — the Beta induction avatar, the onboarding avatar
+// step, the feed composer attachment, the report-dialog screenshot, the connection
+// creator's avatar and logo, the poster-scan preview, and the event-spark thumb — and
+// until this helper each guarded it differently: one used safeImageSrc, one an ad-hoc
+// /^(?:blob:|https?:\/\/)/i regex, and the rest nothing at all.
+//
+// The first version of this comment claimed THREE surfaces and named the onboarding step
+// as covered. It was not: `app/onboarding/form.tsx` still rendered the raw state value,
+// and CodeQL flagged it. Counting the shape by memory instead of by grep is exactly how
+// the unguarded one happens, which is the thing this helper exists to stop.
 //
 // An upload preview is only ever a blob: URL from createObjectURL, or the http(s) URL
 // the file got after it uploaded. Nothing else is reachable, so nothing else is allowed:

@@ -53,7 +53,7 @@ export function EconomyPanel({ profileId, displayName }: Props) {
       </p>
 
       {status && (
-        <p className={`text-xs px-2 py-1.5 rounded-lg ${status.ok ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'}`}>
+        <p className={`text-meta px-2 py-1.5 rounded-lg ${status.ok ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'}`}>
           {status.msg}
         </p>
       )}
@@ -120,7 +120,7 @@ export function EconomyPanel({ profileId, displayName }: Props) {
           type="submit"
           disabled={isPending}
           // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
-          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-colors disabled:opacity-50 ${op === 'grant' ? 'bg-success hover:bg-success' : 'bg-danger hover:bg-danger'}`}
+          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-meta font-semibold text-white transition-colors disabled:opacity-50 ${op === 'grant' ? 'bg-success hover:bg-success' : 'bg-danger hover:bg-danger'}`}
         >
           {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : (op === 'grant' ? <PlusCircle className="w-3 h-3" /> : <MinusCircle className="w-3 h-3" />)}
           {op === 'grant' ? `Grant ${currency}` : `Revoke ${currency}`}

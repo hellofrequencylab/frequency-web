@@ -152,7 +152,7 @@ function routeActive(pathname: string, href: string) {
 
 function triggerClass(variant: Variant, highlighted: boolean) {
   const dark = variant === 'dark'
-  return `inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors motion-reduce:transition-none ${
+  return `inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-body-sm font-semibold transition-colors motion-reduce:transition-none ${
     dark
       ? highlighted
         ? 'text-on-ink bg-on-ink/10'
@@ -363,7 +363,7 @@ export function MegaBar({
           itemActive ? 'bg-primary-bg' : 'hover:bg-surface-elevated'
         }`}
       >
-        <span className={`block text-sm font-semibold ${itemActive ? 'text-primary-strong' : 'text-text'}`}>
+        <span className={`block text-body-sm font-semibold ${itemActive ? 'text-primary-strong' : 'text-text'}`}>
           {item.label}
         </span>
         {item.subheading && (

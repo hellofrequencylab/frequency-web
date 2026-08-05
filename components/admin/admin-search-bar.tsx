@@ -118,7 +118,7 @@ export function AdminSearchBar({ role, webRole = 'none', staffRole = null }: Pro
                       href={l.href}
                       onClick={reset}
                       onMouseEnter={() => setActive(i)}
-                      className={`flex items-center gap-2.5 px-3 py-2 text-sm ${
+                      className={`flex items-center gap-2.5 px-3 py-2 text-body-sm ${
                         i === active ? 'bg-surface-elevated' : 'hover:bg-surface-elevated'
                       }`}
                     >
@@ -140,7 +140,7 @@ export function AdminSearchBar({ role, webRole = 'none', staffRole = null }: Pro
               type="button"
               onClick={openFullSearch}
               onMouseEnter={() => setActive(lastIndex)}
-              className={`flex w-full items-center gap-2 border-t border-border px-3 py-2 text-left text-sm font-medium text-primary-strong ${
+              className={`flex w-full items-center gap-2 border-t border-border px-3 py-2 text-left text-body-sm font-medium text-primary-strong ${
                 active === lastIndex ? 'bg-surface-elevated' : 'hover:bg-surface-elevated'
               }`}
             >

@@ -266,7 +266,7 @@ function LegacyTheQuest() {
           title="Ranks you earn by finishing."
           kicker="Not a leaderboard. A record of how many Journeys you completed this season."
         />
-        <p className="text-lg text-muted leading-relaxed mb-9">
+        <p className="text-body-lg text-muted leading-relaxed mb-9">
           Each season has three Journeys: Mind, Body, Spirit. Finish one and
           you become an Initiate. Finish two and you are Adept. Finish all
           three and you reach Master. There is no points threshold to cross,
@@ -471,7 +471,7 @@ function Guard({
     <Card tone="feature">
       <div className="flex items-center gap-2.5 mb-3">
         <Icon className="w-5 h-5 text-primary-strong" aria-hidden />
-        <h3 className="font-bold text-text text-lg leading-snug">{title}</h3>
+        <h3 className="font-bold text-text text-body-lg leading-snug">{title}</h3>
       </div>
       <p className="text-body-sm text-muted leading-relaxed">{text}</p>
     </Card>

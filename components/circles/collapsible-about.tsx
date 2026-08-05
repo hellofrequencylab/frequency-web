@@ -21,7 +21,7 @@ export function CollapsibleAbout({ text }: { text: string }) {
   return (
     <div className="max-w-2xl">
       <p
-        className={`text-sm text-muted leading-relaxed whitespace-pre-wrap ${
+        className={`text-body-sm text-muted leading-relaxed whitespace-pre-wrap ${
           expanded ? '' : 'line-clamp-2'
         }`}
       >

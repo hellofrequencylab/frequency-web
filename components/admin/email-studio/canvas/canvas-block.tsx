@@ -248,7 +248,7 @@ function ProductCardCanvas({ props }: { props: Record<string, unknown> }) {
         <img src={image} alt={title} style={{ display: 'block', width: '100%', maxHeight: 240, objectFit: 'cover' }} />
       )}
       <div style={{ padding: 16 }}>
-        <div className="text-lg font-bold" style={{ color: C.text }}>{title || 'Product title'}</div>
+        <div className="text-body-lg font-bold" style={{ color: C.text }}>{title || 'Product title'}</div>
         {price && <div className="mt-0.5 text-body font-bold" style={{ color: C.primaryStrong }}>{price}</div>}
         <span className="mt-3 inline-flex rounded-lg px-5 py-2.5 text-body-sm font-bold" style={{ background: C.primary, color: C.onPrimary }}>
           {cta}
@@ -337,7 +337,7 @@ export function CanvasBlock({
       case 'quote':
         return (
           <div key={key} style={{ borderLeft: `3px solid ${C.primary}`, paddingLeft: 16, color: C.text }}>
-            <EditableSlot value={value} placeholder={f.label} rich className="text-lg italic leading-snug" onChange={set(key)} />
+            <EditableSlot value={value} placeholder={f.label} rich className="text-body-lg italic leading-snug" onChange={set(key)} />
           </div>
         )
       case 'attribution':

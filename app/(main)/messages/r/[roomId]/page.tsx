@@ -209,7 +209,7 @@ export default async function RoomPage({
         {roomGlyph}
         {/* Compact takeover register: PageHeading carries the title/meta semantics, but
             the bar tones its page-band scale down (no bottom margin, base title, xs meta). */}
-        <div className="min-w-0 flex-1 [&>div]:mb-0 [&_h1]:mb-0 [&_h1]:truncate [&_h1]:text-base [&_h1]:sm:text-base [&_p]:text-xs">
+        <div className="min-w-0 flex-1 [&>div]:mb-0 [&_h1]:mb-0 [&_h1]:truncate [&_h1]:text-body [&_h1]:sm:text-body [&_p]:text-meta">
           <PageHeading
             title={titleNode}
             description={subtitle}

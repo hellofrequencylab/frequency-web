@@ -10,6 +10,7 @@ import { deskewCardCanvas } from '@/lib/connections/deskew'
 import { DetailsEditor } from '@/components/connections/contact-details-fields'
 import type { ExtractedContact, ContactDetails, ContactSource, Visibility } from '@/lib/connections/types'
 import { scanCard, veraAssist, createProfile } from '../actions'
+import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
 const BUCKET = 'network-contacts'
 const input = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50'
@@ -477,6 +478,11 @@ export function Creator({ userId }: { userId: string }) {
         ? 'border-primary/40 bg-primary-bg text-primary-strong'
         : 'border-danger/40 bg-danger-bg text-danger')
 
+  // Resolved once rather than called in both the guard and the `src`: the same allowlist
+  // the Beta induction, the onboarding step, the composer and the report dialog use.
+  const avatarSrc = safeUploadPreviewSrc(avatarPreview)
+  const logoSrc = safeUploadPreviewSrc(logoPreview)
+
   return (
     <div className="space-y-5">
       {/* Tabs */}
@@ -485,7 +491,7 @@ export function Creator({ userId }: { userId: string }) {
         <TabBtn active={tab === 'manual'} onClick={() => setTab('manual')} icon={Pencil} label="Manual entry" />
       </div>
 
-      {msg && <p className={`rounded-lg border px-3 py-2 text-sm ${banner}`}>{msg.text}</p>}
+      {msg && <p className={`rounded-lg border px-3 py-2 text-body-sm ${banner}`}>{msg.text}</p>}
 
       {tab === 'scan' ? (
         <div className="space-y-3">
@@ -674,9 +680,9 @@ export function Creator({ userId }: { userId: string }) {
 
           {/* Photo */}
           <div className="flex items-center gap-4">
-            {avatarPreview ? (
+            {avatarSrc ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarPreview} alt="" className="h-16 w-16 shrink-0 rounded-pill object-cover ring-2 ring-surface" />
+              <img src={avatarSrc} alt="" className="h-16 w-16 shrink-0 rounded-pill object-cover ring-2 ring-surface" />
             ) : (
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-muted">
                 <User className="h-6 w-6" />
@@ -697,10 +703,10 @@ export function Creator({ userId }: { userId: string }) {
               )}
               <p className="text-meta text-subtle">Private. Stored just for you.</p>
             </div>
-            {logoPreview && (
+            {logoSrc && (
               <div className="ml-auto flex flex-col items-center gap-1">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={logoPreview} alt="" className="h-12 w-12 shrink-0 rounded-lg border border-border object-cover" />
+                <img src={logoSrc} alt="" className="h-12 w-12 shrink-0 rounded-lg border border-border object-cover" />
                 <span className="text-meta text-subtle">Logo</span>
               </div>
             )}
@@ -860,7 +866,7 @@ function TabBtn({ active, onClick, icon: Icon, label }: { active: boolean; onCli
     <button
       type="button"
       onClick={onClick}
-      className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+      className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-body-sm font-medium transition-colors ${
         active ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
       }`}
     >

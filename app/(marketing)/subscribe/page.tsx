@@ -87,7 +87,7 @@ export default function SubscribePage() {
               <span className="inline-flex w-10 h-10 rounded-2xl bg-primary-bg items-center justify-center mb-4">
                 <Icon className="w-5 h-5 text-primary-strong" aria-hidden />
               </span>
-              <p className="text-lg font-bold text-text">{t}</p>
+              <p className="text-body-lg font-bold text-text">{t}</p>
               <p className="mt-1.5 text-body-sm text-muted leading-relaxed">{b}</p>
             </li>
           ))}

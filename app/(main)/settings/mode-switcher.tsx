@@ -77,7 +77,7 @@ export function ModeSwitcher() {
                 <Icon className={`w-4 h-4 ${active ? 'text-primary-strong' : 'text-muted'}`} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
+                <p className={`text-body-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
                   {label}
                 </p>
                 <p className="text-meta text-muted mt-0.5">{description}</p>

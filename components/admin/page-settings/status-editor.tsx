@@ -69,7 +69,7 @@ export function StatusEditor({ spaceId }: { spaceId?: string }) {
             type="button"
             onClick={() => setStatus(s)}
             disabled={pending}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+            className={`rounded-lg px-3 py-1.5 text-meta font-semibold transition-colors ${
               status === s ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:text-text'
             }`}
           >

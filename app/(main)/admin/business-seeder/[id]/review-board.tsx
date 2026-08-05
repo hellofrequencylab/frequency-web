@@ -480,7 +480,7 @@ function FieldRow({
               autoFocus
             />
           ) : (
-            <p className={`mt-1 whitespace-pre-wrap break-words text-sm ${field.value ? 'text-text' : 'italic text-subtle'}`}>
+            <p className={`mt-1 whitespace-pre-wrap break-words text-body-sm ${field.value ? 'text-text' : 'italic text-subtle'}`}>
               {field.value || 'Not set'}
             </p>
           )}

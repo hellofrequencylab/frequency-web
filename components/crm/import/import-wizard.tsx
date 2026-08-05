@@ -432,7 +432,7 @@ export function ImportWizard({
         ))}
       </ol>
 
-      {banner && <p className={`rounded-lg border px-3 py-2 text-sm ${bannerClass}`}>{banner.text}</p>}
+      {banner && <p className={`rounded-lg border px-3 py-2 text-body-sm ${bannerClass}`}>{banner.text}</p>}
 
       {step === 'upload' && (
         <div className="space-y-4">
@@ -635,7 +635,7 @@ export function ImportWizard({
                             <input
                               type="text"
                               list="known-custom-fields"
-                              className={`${input} py-1 text-xs`}
+                              className={`${input} py-1 text-meta`}
                               value={m.customLabel ?? m.header}
                               onChange={(e) => setColumnCustomLabel(m.header, e.target.value)}
                               placeholder="Custom field name"
@@ -694,7 +694,7 @@ export function ImportWizard({
                   key={k}
                   type="button"
                   onClick={() => setMergeStrategy(k)}
-                  className={`rounded-control border p-3 text-left text-xs transition-colors ${mergeStrategy === k ? 'border-primary bg-primary-bg' : 'border-border hover:bg-surface-elevated'}`}
+                  className={`rounded-control border p-3 text-left text-meta transition-colors ${mergeStrategy === k ? 'border-primary bg-primary-bg' : 'border-border hover:bg-surface-elevated'}`}
                 >
                   <span className="block font-semibold text-text">{MERGE_LABEL[k].label}</span>
                   <span className="mt-0.5 block text-subtle">{MERGE_LABEL[k].help}</span>
@@ -855,7 +855,7 @@ function rowDetail(r: PreviewRow): string {
 function Stat({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
     <div className="rounded-card border border-border bg-surface p-4 text-center">
-      <p className={`text-2xl font-semibold ${tone}`}>{value}</p>
+      <p className={`text-page-title font-semibold ${tone}`}>{value}</p>
       <p className="mt-0.5 text-meta text-muted">{label}</p>
     </div>
   )

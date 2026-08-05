@@ -104,12 +104,12 @@ export function HostPersonCredit({
                 style={avatarFocusStyle(host.avatar_url)}
               />
             ) : (
-              <div className="flex h-16 w-16 select-none items-center justify-center rounded-pill bg-primary-bg text-lg font-semibold text-primary-strong">
+              <div className="flex h-16 w-16 select-none items-center justify-center rounded-pill bg-primary-bg text-body-lg font-semibold text-primary-strong">
                 {getInitials(host.display_name)}
               </div>
             )}
             <div className="min-w-0">
-              <h2 className="truncate text-lg font-bold text-text">{host.display_name}</h2>
+              <h2 className="truncate text-body-lg font-bold text-text">{host.display_name}</h2>
               <Link href={`/people/${host.handle}`} className="text-body-sm text-subtle hover:text-text">
                 @{host.handle}
               </Link>

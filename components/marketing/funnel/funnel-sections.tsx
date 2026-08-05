@@ -74,7 +74,7 @@ export function FunnelHero({ config }: { config: FunnelConfig }) {
           <h1 className="mt-4 font-display text-4xl uppercase leading-[1.02] text-text sm:text-5xl lg:text-6xl">
             {hero.h1}
           </h1>
-          <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted">{hero.subhead}</p>
+          <p className="mt-5 max-w-xl text-body-lg leading-relaxed text-muted">{hero.subhead}</p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button href={FUNNEL_START_HREF} size="lg" className="whitespace-nowrap">
               {FUNNEL_CTA_LABEL}
@@ -104,7 +104,7 @@ export function AssuranceBar({ config }: { config: FunnelConfig }) {
     <div className="border-y border-border bg-surface">
       <ul className="mx-auto grid max-w-5xl grid-cols-2 divide-x divide-y divide-border sm:grid-cols-4 sm:divide-y-0">
         {items.map((it) => (
-          <li key={it} className="flex items-center justify-center gap-2 px-4 py-4 text-center text-meta font-semibold text-muted sm:text-sm">
+          <li key={it} className="flex items-center justify-center gap-2 px-4 py-4 text-center text-meta font-semibold text-muted sm:text-body-sm">
             <span className="h-1.5 w-1.5 shrink-0 rounded-pill bg-primary" aria-hidden />
             {it}
           </li>
@@ -123,7 +123,7 @@ export function ProblemSection({ config }: { config: FunnelConfig }) {
       <div className="grid items-center gap-10 lg:grid-cols-2">
         <div>
           <h2 className="font-display text-3xl uppercase leading-tight text-text sm:text-4xl">{problem.header}</h2>
-          <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted">{problem.body}</p>
+          <p className="mt-5 max-w-xl text-body-lg leading-relaxed text-muted">{problem.body}</p>
         </div>
         <figure className="m-0">
           <ScatteredStackGraphic />
@@ -193,7 +193,7 @@ export function FeatureBlocks({ config }: { config: FunnelConfig }) {
                 <FeatureIcon name={f.icon} />
               </div>
               <div className={i % 2 === 1 ? 'sm:text-right' : ''}>
-                <h3 className={`font-display text-2xl uppercase ${f.soft ? 'text-muted' : spine ? 'text-primary-strong' : 'text-text'}`}>
+                <h3 className={`font-display text-page-title uppercase ${f.soft ? 'text-muted' : spine ? 'text-primary-strong' : 'text-text'}`}>
                   {f.title}
                 </h3>
                 <p className="mt-2 max-w-2xl text-body leading-relaxed text-muted">{f.body}</p>
@@ -217,7 +217,7 @@ export function LoopSection({ config, prominent = false, echo = false }: { confi
     <Section tone="ink" pad={echo ? 'py-12' : prominent ? 'py-20 sm:py-28' : 'py-16 sm:py-24'}>
       <div className="mx-auto max-w-2xl text-center">
         <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl">{header}</h2>
-        {intro && <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-on-ink-muted">{intro}</p>}
+        {intro && <p className="mx-auto mt-4 max-w-xl text-body-lg leading-relaxed text-on-ink-muted">{intro}</p>}
       </div>
       <div className={`mx-auto mt-10 ${prominent ? 'max-w-2xl' : echo ? 'max-w-sm' : 'max-w-lg'}`}>
         <LoopGraphic />
@@ -254,7 +254,7 @@ export function PricingBeat({ config }: { config: FunnelConfig }) {
     <Section tone="canvas">
       <div className="mx-auto max-w-2xl text-center">
         <h2 className="font-display text-3xl uppercase text-text sm:text-4xl">{pricing.header}</h2>
-        <p className="mt-4 text-lg leading-relaxed text-muted">{pricing.intro}</p>
+        <p className="mt-4 text-body-lg leading-relaxed text-muted">{pricing.intro}</p>
       </div>
 
       <div className="mx-auto mt-10 max-w-2xl overflow-hidden rounded-2xl border border-border">
@@ -268,7 +268,7 @@ export function PricingBeat({ config }: { config: FunnelConfig }) {
               } ${row.kind !== 'free' ? 'border-t border-border' : ''}`}
             >
               <div>
-                <p className={`font-display text-xl uppercase ${row.featured ? 'text-primary-strong' : 'text-text'}`}>
+                <p className={`font-display text-lead uppercase ${row.featured ? 'text-primary-strong' : 'text-text'}`}>
                   {row.name}
                 </p>
                 <p className="mt-0.5 text-body-sm text-muted">{row.detail}</p>
@@ -276,7 +276,7 @@ export function PricingBeat({ config }: { config: FunnelConfig }) {
               <div className="shrink-0 text-right">
                 <span className="flex items-baseline justify-end gap-2">
                   {anchor && <span className="text-body text-subtle line-through">{anchor}</span>}
-                  <span className={`font-display text-2xl ${row.featured ? 'text-primary-strong' : 'text-text'}`}>{price}</span>
+                  <span className={`font-display text-page-title ${row.featured ? 'text-primary-strong' : 'text-text'}`}>{price}</span>
                 </span>
                 {row.kind !== 'free' && <span className="text-meta text-subtle">/mo</span>}
               </div>
@@ -339,7 +339,7 @@ export function MissionSection() {
     <Section tone="canvas">
       <div className="mx-auto max-w-2xl text-center">
         <h2 className="font-display text-3xl uppercase text-text sm:text-4xl">{MISSION_COPY.header}</h2>
-        <p className="mt-5 text-lg leading-relaxed text-muted">{MISSION_COPY.body}</p>
+        <p className="mt-5 text-body-lg leading-relaxed text-muted">{MISSION_COPY.body}</p>
       </div>
     </Section>
   )
@@ -378,7 +378,7 @@ export function FinalCta({ config }: { config: FunnelConfig }) {
     <Section tone="ink" pad="py-20 sm:py-24">
       <div className="mx-auto max-w-2xl text-center">
         <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl">{finalCta.header}</h2>
-        <p className="mt-4 text-lg leading-relaxed text-on-ink-muted">{finalCta.subhead}</p>
+        <p className="mt-4 text-body-lg leading-relaxed text-on-ink-muted">{finalCta.subhead}</p>
         <div className="mt-8 flex justify-center">
           <Button href={FUNNEL_START_HREF} size="lg">
             {FUNNEL_CTA_LABEL}

@@ -320,7 +320,7 @@ export function PillarBalanceBlock({
           return (
             <span
               key={pl.slug}
-              className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-xs font-medium ${
+              className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-meta font-medium ${
                 n > 0 ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-subtle'
               }`}
             >

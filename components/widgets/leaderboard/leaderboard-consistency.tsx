@@ -153,7 +153,7 @@ export async function LeaderboardConsistency() {
                       return (
                         <div key={m} className="flex flex-1 flex-col items-center gap-1">
                           <div className={`h-1.5 w-full rounded-pill ${reached ? 'bg-primary' : 'bg-surface-elevated'}`} />
-                          <span className={`text-xs font-semibold ${reached ? 'text-primary-strong' : 'text-subtle'}`}>{m}w</span>
+                          <span className={`text-meta font-semibold ${reached ? 'text-primary-strong' : 'text-subtle'}`}>{m}w</span>
                         </div>
                       )
                     })}

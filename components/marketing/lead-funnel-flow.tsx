@@ -65,7 +65,7 @@ function StepCard({
         <Illustration name={step.illustration} className="h-full" animate />
         {showNumbers && <span className={BADGE}>{n}</span>}
       </div>
-      <h3 className="font-display text-lg uppercase leading-tight text-text">{step.label}</h3>
+      <h3 className="font-display text-body-lg uppercase leading-tight text-text">{step.label}</h3>
       <p className="mt-1 text-body-sm leading-relaxed text-muted">{step.caption}</p>
     </div>
   )

@@ -371,7 +371,7 @@ export function JourneyBuilder({
           autoFocus={draft}
           ariaLabel="Journey title"
           onSave={draft ? createFromTitle : (t) => meta({ title: t })}
-          inputClassName="text-lead font-bold text-text sm:text-2xl"
+          inputClassName="text-lead font-bold text-text sm:text-page-title"
         />
       </span>
     </span>

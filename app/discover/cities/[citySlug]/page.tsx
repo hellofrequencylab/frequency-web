@@ -193,7 +193,7 @@ export default async function DiscoverCityPage({
           <h2 className="mb-4 font-display text-3xl uppercase text-text sm:text-4xl">
             Want to start one in {city}?
           </h2>
-          <p className="text-lg leading-relaxed text-muted">
+          <p className="text-body-lg leading-relaxed text-muted">
             You do not have to build a community. Host one Circle. Pick one thing, set a
             standing time, and invite a few people. We hand you the format and the
             first-night script.

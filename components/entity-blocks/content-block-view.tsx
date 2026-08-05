@@ -536,7 +536,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       const by = s(props, 'by')
       return (
         <figure className="max-w-prose border-l-2 border-primary pl-4">
-          <InlineRichText as="blockquote" value={text} className="text-lg font-medium italic text-text" />
+          <InlineRichText as="blockquote" value={text} className="text-body-lg font-medium italic text-text" />
           {by && <InlineRichText as="figcaption" value={by} className="mt-2 text-body-sm text-muted" />}
         </figure>
       )

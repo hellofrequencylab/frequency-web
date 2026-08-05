@@ -116,7 +116,7 @@ export default async function MyJourneysPage({ searchParams }: { searchParams: P
                 <Link
                   key={f.key}
                   href={f.key === 'all' ? '/journeys/mine' : `/journeys/mine?filter=${f.key}`}
-                  className={`inline-flex items-center gap-1.5 rounded-pill border px-3 py-1.5 text-sm font-medium transition-colors ${
+                  className={`inline-flex items-center gap-1.5 rounded-pill border px-3 py-1.5 text-body-sm font-medium transition-colors ${
                     active ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'
                   }`}
                 >

@@ -372,7 +372,7 @@ function DueChip({ dueAt }: { dueAt: string | null }) {
         : 'bg-surface-elevated text-muted'
   const prefix = tone === 'overdue' ? 'Overdue ' : 'Due '
   return (
-    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${cls}`}>
+    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-meta font-medium ${cls}`}>
       {prefix}
       {label}
     </span>

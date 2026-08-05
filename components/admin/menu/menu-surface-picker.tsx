@@ -60,7 +60,7 @@ export function MenuSurfacePicker({
               aria-selected={isActive}
               disabled={isPending}
               onClick={() => pick(s.key)}
-              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors disabled:opacity-60 ${
+              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-body-sm font-medium transition-colors disabled:opacity-60 ${
                 isActive
                   ? 'border-primary bg-primary-bg text-primary-strong'
                   : 'border-border bg-surface text-muted hover:bg-surface-elevated hover:text-text'

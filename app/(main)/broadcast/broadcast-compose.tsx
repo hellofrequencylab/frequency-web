@@ -119,7 +119,7 @@ export function BroadcastCompose({
                 key={t}
                 type="button"
                 onClick={() => setType(t)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                className={`px-3 py-1.5 rounded-lg text-meta font-semibold border transition-colors ${
                   type === t
                     ? 'border-primary bg-primary text-on-primary'
                     : 'border-border bg-surface text-text hover:border-primary'
@@ -142,7 +142,7 @@ export function BroadcastCompose({
             rows={8}
             required
             disabled={isPending}
-            className={`${cmInput} resize-y font-mono text-xs leading-relaxed`}
+            className={`${cmInput} resize-y font-mono text-meta leading-relaxed`}
           />
         </div>
 

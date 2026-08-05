@@ -189,7 +189,7 @@ function LaneTab({ active, onClick, children }: { active: boolean; onClick: () =
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`rounded-pill border px-3 py-1 text-xs font-semibold transition-colors ${
+      className={`rounded-pill border px-3 py-1 text-meta font-semibold transition-colors ${
         active ? 'border-primary bg-primary-bg text-primary-strong' : 'border-border text-muted hover:text-text'
       }`}
     >

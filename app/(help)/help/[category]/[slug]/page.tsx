@@ -77,7 +77,7 @@ export default async function HelpArticlePage({ params }: Params) {
       }
     >
       <div className="max-w-3xl">
-        {article.description && <p className="text-lg text-muted">{article.description}</p>}
+        {article.description && <p className="text-body-lg text-muted">{article.description}</p>}
 
         <div className="mt-8">
           <HelpMarkdown>{article.body}</HelpMarkdown>

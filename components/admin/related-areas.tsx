@@ -26,7 +26,7 @@ export function RelatedAreas({
 
   return (
     <section className="border-t border-border/70 pt-7 sm:pt-8">
-      <h2 className="text-lg font-bold text-text">Related areas</h2>
+      <h2 className="text-body-lg font-bold text-text">Related areas</h2>
       <p className="mt-1 text-body-sm text-muted">Jump to a neighboring workspace.</p>
       <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {groups.map((g) => (

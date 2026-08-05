@@ -162,7 +162,7 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
               <span className="text-meta px-2 py-0.5 rounded-md bg-primary-bg text-primary-strong dark:bg-primary-bg dark:text-primary-strong font-medium">
                 {targetLabel}
               </span>
-              <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${reasonInfo.cls}`}>
+              <span className={`text-meta px-2 py-0.5 rounded-md font-medium ${reasonInfo.cls}`}>
                 {reasonInfo.label}
               </span>
               {report.target_type === 'member' && (report.priorReports ?? 0) > 1 && (

@@ -56,7 +56,7 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
           <button
             key={c}
             onClick={() => { setAmountCents(c); setCustom('') }}
-            className={`rounded-xl px-3 py-1.5 text-sm font-semibold transition-colors ${
+            className={`rounded-xl px-3 py-1.5 text-body-sm font-semibold transition-colors ${
               !custom.trim() && amountCents === c
                 ? 'bg-primary text-on-primary'
                 : 'border border-border text-text hover:bg-surface-elevated'

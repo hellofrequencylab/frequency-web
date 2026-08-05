@@ -101,7 +101,7 @@ function KnowledgeCheck({ config }: { config: CheckConfig }) {
               type="button"
               onClick={() => setPicked(i)}
               disabled={correct}
-              className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${state}`}
+              className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left text-body-sm transition-colors ${state}`}
             >
               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-pill border border-current text-2xs font-bold">
                 {String.fromCharCode(65 + i)}
@@ -382,7 +382,7 @@ export function LearnPlayer({
                                   type="button"
                                   onClick={() => goTo(l.id)}
                                   aria-current={active ? 'true' : undefined}
-                                  className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors ${
+                                  className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-body-sm transition-colors ${
                                     active ? 'bg-primary-bg font-medium text-primary-strong' : 'text-text hover:bg-surface-elevated'
                                   }`}
                                 >
@@ -493,7 +493,7 @@ export function LearnPlayer({
                 </div>
               )}
 
-              {/* Prose body — only when it isn't a bare video URL; constrained measure + text-base.
+              {/* Prose body — only when it isn't a bare video URL; constrained measure + text-body.
                   (Lesson / extra-credit blocks carry their own body here; practice steps render
                   their full library write-up in the pre-rendered detail node below.) */}
               {lesson.body && !video && (

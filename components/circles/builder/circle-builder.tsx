@@ -227,7 +227,7 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
                         setType(t)
                         saveIfChanged('type', t, draft.type)
                       }}
-                      className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                      className={`flex-1 rounded-lg border px-3 py-2 text-body-sm font-medium transition-colors ${
                         type === t
                           ? 'border-primary/50 bg-primary-bg text-primary-strong'
                           : 'border-border bg-surface text-muted hover:text-text'
@@ -266,7 +266,7 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
                       setPrimaryPillar(next)
                       saveIfChanged('primaryPillar', next, draft.primaryPillar)
                     }}
-                    className={`rounded-pill border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                    className={`rounded-pill border px-3.5 py-1.5 text-body-sm font-medium transition-colors ${
                       primaryPillar === p
                         ? 'border-primary/50 bg-primary-bg text-primary-strong'
                         : 'border-border bg-surface text-muted hover:text-text'

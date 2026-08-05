@@ -82,7 +82,7 @@ export default async function SpaceShopTabPage({ params }: { params: Promise<{ s
       {banner}
       {sections.map((s) => (
         <section key={s.group}>
-          <h2 className="mb-4 text-lg font-bold text-text">{GROUP_LABEL[s.group]}</h2>
+          <h2 className="mb-4 text-body-lg font-bold text-text">{GROUP_LABEL[s.group]}</h2>
           <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3">
             {s.items.map((p) => (
               <ProductCard

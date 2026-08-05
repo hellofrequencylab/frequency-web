@@ -131,7 +131,7 @@ export function PracticeDuplicatesButton({ id, title }: { id: string; title: str
           one in to keep this as the canonical.
         </p>
         {feedback && (
-          <p role="status" className={`mt-2 text-sm font-medium ${feedback.ok ? 'text-success' : 'text-danger'}`}>
+          <p role="status" className={`mt-2 text-body-sm font-medium ${feedback.ok ? 'text-success' : 'text-danger'}`}>
             {feedback.text}
           </p>
         )}

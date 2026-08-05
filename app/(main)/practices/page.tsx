@@ -45,7 +45,7 @@ function Chip({ label, href, active }: { label: string; href: string; active: bo
     <Link
       href={href}
       scroll={false}
-      className={`rounded-pill px-3 py-1 text-xs font-medium transition-colors ${
+      className={`rounded-pill px-3 py-1 text-meta font-medium transition-colors ${
         active ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-muted hover:text-text'
       }`}
     >
@@ -161,7 +161,7 @@ export default async function PracticesPage({
             {isAdmin && (
               <Link
                 href={href({ hidden: showHidden ? undefined : '1' })}
-                className={`ml-1 inline-flex items-center gap-1 rounded-pill px-3 py-1 text-xs font-semibold transition-colors ${
+                className={`ml-1 inline-flex items-center gap-1 rounded-pill px-3 py-1 text-meta font-semibold transition-colors ${
                   showHidden ? 'bg-danger/10 text-danger' : 'bg-surface-elevated text-muted hover:text-text'
                 }`}
                 title="Admin: include hidden practices"

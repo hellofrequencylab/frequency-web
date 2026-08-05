@@ -110,7 +110,7 @@ export function PriceInput({
   // ── fixed ──
   if (price.mode === 'fixed') {
     return (
-      <p className="text-lg font-bold text-text">
+      <p className="text-body-lg font-bold text-text">
         {price.amountCents ? formatPriceCents(price.amountCents) : 'No price set yet'}
       </p>
     )
@@ -118,7 +118,7 @@ export function PriceInput({
 
   // ── free ──
   if (price.mode === 'free') {
-    return <p className="text-lg font-bold text-text">Free</p>
+    return <p className="text-body-lg font-bold text-text">Free</p>
   }
 
   // ── contact ──
@@ -154,7 +154,7 @@ export function PriceInput({
                 onClick={() => pickChip(amount)}
                 disabled={disabled}
                 aria-pressed={active}
-                className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors disabled:opacity-50 ${
+                className={`rounded-lg border px-3 py-1.5 text-body-sm font-semibold transition-colors disabled:opacity-50 ${
                   active
                     ? 'border-primary bg-primary-bg text-text'
                     : 'border-border bg-surface text-text hover:border-border-strong'

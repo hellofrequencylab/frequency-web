@@ -37,7 +37,7 @@ export function EventsMapToggle({
           type="button"
           onClick={() => setView('list')}
           aria-pressed={view === 'list'}
-          className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+          className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-body-sm font-medium transition-colors ${
             view === 'list' ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
           }`}
         >
@@ -48,7 +48,7 @@ export function EventsMapToggle({
           type="button"
           onClick={() => setView('map')}
           aria-pressed={view === 'map'}
-          className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+          className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-body-sm font-medium transition-colors ${
             view === 'map' ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
           }`}
         >

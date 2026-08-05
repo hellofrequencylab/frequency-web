@@ -86,7 +86,7 @@ export async function AppsLaneView({
       <AdminSection>
         <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-3">
           <div className="flex items-baseline gap-2">
-            <h2 className="font-display text-lg uppercase text-text">{activeLabel}</h2>
+            <h2 className="font-display text-body-lg uppercase text-text">{activeLabel}</h2>
             <span className="text-body-sm text-subtle">
               {items.length} App{items.length === 1 ? '' : 's'}
             </span>

@@ -501,7 +501,7 @@ export function Composer({
                 key={p.id}
                 type="button"
                 onClick={() => insertMention(p)}
-                className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors ${
+                className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-body-sm transition-colors ${
                   i === activeSuggestion ? 'bg-primary-bg' : 'hover:bg-surface-elevated'
                 }`}
               >

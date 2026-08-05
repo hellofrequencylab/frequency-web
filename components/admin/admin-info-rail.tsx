@@ -122,7 +122,7 @@ function AttentionRow({ item }: { item: AttentionDef & { count: number; risk: bo
         {item.label}
       </span>
       <span
-        className={`inline-flex min-w-[1.5rem] items-center justify-center rounded-pill px-2 py-0.5 text-xs font-bold tabular-nums ${
+        className={`inline-flex min-w-[1.5rem] items-center justify-center rounded-pill px-2 py-0.5 text-meta font-bold tabular-nums ${
           item.risk ? 'bg-danger-bg text-danger' : 'bg-warning-bg text-warning'
         }`}
       >

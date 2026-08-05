@@ -171,7 +171,7 @@ export function JourneyAdvanced({
               <button
                 type="button"
                 onClick={() => saveOfficial({ official: !official })}
-                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors ${
                   official ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-canvas text-muted hover:bg-surface-elevated'
                 }`}
                 aria-pressed={official}
@@ -217,7 +217,7 @@ export function JourneyAdvanced({
                     min={windowStart || undefined}
                     onChange={(e) => saveWindowEnd(e.target.value)}
                     aria-invalid={windowInvalid}
-                    className={`min-h-11 rounded-lg border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary ${
+                    className={`min-h-11 rounded-lg border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary ${
                       windowInvalid ? 'border-danger' : 'border-border'
                     }`}
                   />

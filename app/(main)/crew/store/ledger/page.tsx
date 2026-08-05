@@ -147,7 +147,7 @@ export default async function VaultLedgerPage() {
                           <p className="text-meta text-subtle">{clockLabel(e.createdAt)}</p>
                         </div>
                         <span
-                          className={`shrink-0 text-sm font-bold tabular-nums ${
+                          className={`shrink-0 text-body-sm font-bold tabular-nums ${
                             isZap ? 'text-primary' : 'text-signal-strong'
                           }`}
                         >

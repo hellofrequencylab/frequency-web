@@ -40,7 +40,7 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
             <span className="flex h-9 w-9 items-center justify-center rounded-pill bg-primary-bg text-primary-strong">
               <Wand2 className="h-4 w-4" />
             </span>
-            <h2 className="text-lg font-bold text-text">Remix this practice?</h2>
+            <h2 className="text-body-lg font-bold text-text">Remix this practice?</h2>
           </div>
           <p className="text-body-sm text-muted">
             Remix makes a new practice you own, starting from this one. Don&apos;t just rework it.

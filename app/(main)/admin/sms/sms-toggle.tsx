@@ -35,7 +35,7 @@ export function SmsToggle({ enabled, provisioned }: { enabled: boolean; provisio
   return (
     <div>
       <div className="flex items-center justify-between gap-4">
-        <span className={`text-sm font-semibold ${on ? 'text-success' : 'text-subtle'}`}>
+        <span className={`text-body-sm font-semibold ${on ? 'text-success' : 'text-subtle'}`}>
           {on ? 'SMS is ON' : 'SMS is OFF'}
         </span>
         <Toggle

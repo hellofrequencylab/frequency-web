@@ -422,7 +422,7 @@ function BulkBar({
                         type="button"
                         onClick={() => setStyleLane(l)}
                         aria-pressed={styleLane === l}
-                        className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${
+                        className={`rounded-lg px-2.5 py-1 text-meta font-semibold ${
                           styleLane === l ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'
                         }`}
                       >
@@ -696,7 +696,7 @@ function DetailDrawer({
       />
       <div className="relative flex h-full w-full max-w-md flex-col overflow-y-auto bg-surface shadow-pop">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h2 className="font-display text-lg uppercase text-text">Asset</h2>
+          <h2 className="font-display text-body-lg uppercase text-text">Asset</h2>
           <button type="button" onClick={onClose} className="rounded-pill p-1 text-subtle hover:bg-surface-elevated" aria-label="Close">
             <X className="h-5 w-5" />
           </button>

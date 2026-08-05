@@ -101,7 +101,7 @@ export function InviteFriendButton({
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-on-primary">
                 <Gift className="h-5 w-5" aria-hidden />
               </span>
-              <h2 className="mt-3 text-lg font-bold text-text">Invite a friend, earn Zaps</h2>
+              <h2 className="mt-3 text-body-lg font-bold text-text">Invite a friend, earn Zaps</h2>
               <p className="mt-1 text-body-sm leading-relaxed text-muted">
                 Share your link or code. When a friend joins Frequency and gets started, you earn Zaps ⚡
               </p>

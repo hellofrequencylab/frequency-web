@@ -114,7 +114,7 @@ async function RsvpInvite({ params }: { params: Promise<{ token: string }> }) {
             </p>
           )}
           <h1 className="mb-3 font-display uppercase text-text text-4xl sm:text-5xl">{invite.eventTitle}</h1>
-          {invite.eventWhen && <p className="text-lg leading-relaxed text-muted">{invite.eventWhen}</p>}
+          {invite.eventWhen && <p className="text-body-lg leading-relaxed text-muted">{invite.eventWhen}</p>}
           {invite.eventLocation && <p className="text-body leading-relaxed text-muted">{invite.eventLocation}</p>}
         </div>
         <RsvpForm token={token} />

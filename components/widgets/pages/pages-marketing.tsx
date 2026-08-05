@@ -43,7 +43,7 @@ export async function PagesMarketing() {
                   <td className="px-4 py-3 font-medium text-text">{p.title}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`rounded-md px-1.5 py-0.5 text-xs font-medium ${
+                      className={`rounded-md px-1.5 py-0.5 text-meta font-medium ${
                         published ? 'bg-success-bg text-success' : 'bg-surface-elevated text-muted'
                       }`}
                     >

@@ -88,7 +88,7 @@ export function DealDetail({
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full min-w-0 bg-transparent text-lead font-bold text-text focus:outline-none sm:text-2xl"
+            className="w-full min-w-0 bg-transparent text-lead font-bold text-text focus:outline-none sm:text-page-title"
             aria-label="Card title"
           />
         }
@@ -288,7 +288,7 @@ export function DealDetail({
                     )}
                     {done && <StatusChip tone="success" size="sm">done</StatusChip>}
                   </div>
-                  {a.body && <p className={`mt-0.5 whitespace-pre-wrap text-sm ${done ? 'text-subtle line-through' : 'text-text'}`}>{a.body}</p>}
+                  {a.body && <p className={`mt-0.5 whitespace-pre-wrap text-body-sm ${done ? 'text-subtle line-through' : 'text-text'}`}>{a.body}</p>}
                   <p className="mt-0.5 text-meta text-subtle">
                     {a.author?.display_name ? `${a.author.display_name} · ` : ''}
                     {relativeTime(a.created_at)}

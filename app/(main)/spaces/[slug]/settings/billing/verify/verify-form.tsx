@@ -63,7 +63,7 @@ export function VerifyForm({ slug, readOnly }: { slug: string; readOnly: boolean
         readOnly
         tabIndex={-1}
         value="A person on our team checks your 501(c)(3) status against public records. You'll see the result here, usually within a few business days. Nothing changes on your plan until you're approved."
-        className={`${fieldClasses} pointer-events-none resize-none text-xs text-muted`}
+        className={`${fieldClasses} pointer-events-none resize-none text-meta text-muted`}
         rows={3}
       />
 

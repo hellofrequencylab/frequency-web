@@ -390,7 +390,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                 type="button"
                 aria-pressed={active}
                 onClick={() => toggleFocus(p.id)}
-                className={`min-h-11 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                className={`min-h-11 rounded-lg border px-3 py-2 text-body-sm font-medium transition-colors ${
                   active
                     ? 'border-primary/50 bg-primary-bg text-primary-strong'
                     : 'border-border bg-surface text-muted hover:bg-surface-elevated'
@@ -531,7 +531,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                 disabled={!allowed}
                 title={allowed ? undefined : `Needs a ${floor}+ min practice`}
                 onClick={() => { if (!allowed) return; setWeightClass(w.value); queueSave({ weight_class: w.value }) }}
-                className={`flex min-h-11 flex-col items-center justify-center rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                className={`flex min-h-11 flex-col items-center justify-center rounded-lg border px-3 py-2 text-body-sm font-medium transition-colors ${
                   active
                     ? 'border-primary/50 bg-primary-bg text-primary-strong'
                     : !allowed
@@ -590,7 +590,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                     queueSave({ timer_kind: 'none', movement_config: null })
                   }
                 }}
-                className={`flex min-h-11 flex-col items-start justify-center rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                className={`flex min-h-11 flex-col items-start justify-center rounded-lg border px-3 py-2 text-body-sm font-medium transition-colors ${
                   active ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
                 }`}
               >
@@ -625,7 +625,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                       setMovementMode(m.mode)
                       saveMovement({}, m.mode)
                     }}
-                    className={`flex min-h-11 items-center justify-center rounded-lg border px-2 py-2 text-sm font-medium transition-colors ${
+                    className={`flex min-h-11 items-center justify-center rounded-lg border px-2 py-2 text-body-sm font-medium transition-colors ${
                       active ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
                     }`}
                   >
@@ -981,7 +981,7 @@ function MoveChip({ active, onClick, title, children }: { active: boolean; onCli
       aria-checked={active}
       title={title}
       onClick={onClick}
-      className={`min-h-9 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+      className={`min-h-9 rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors ${
         active ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
       }`}
     >

@@ -74,7 +74,7 @@ export function BoardControls({
               href={href(key, track)}
               role="tab"
               aria-selected={active}
-              className={`inline-flex min-h-11 items-center rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors motion-reduce:transition-none ${
+              className={`inline-flex min-h-11 items-center rounded-lg px-3 py-1.5 text-meta font-semibold transition-colors motion-reduce:transition-none ${
                 active ? 'bg-surface text-text lift-1' : 'text-muted hover:text-text'
               }`}
             >
@@ -98,7 +98,7 @@ export function BoardControls({
               href={href(scope, key)}
               role="tab"
               aria-selected={active}
-              className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors motion-reduce:transition-none ${
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 py-1.5 text-meta font-semibold transition-colors motion-reduce:transition-none ${
                 active ? 'bg-surface text-text lift-1' : 'text-muted hover:text-text'
               }`}
             >

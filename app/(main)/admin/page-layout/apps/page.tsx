@@ -73,7 +73,7 @@ export default async function AppOverridesAdminPage({
                 key={s.key}
                 href={`/admin/page-layout/apps?scope=${s.key}`}
                 aria-current={active ? 'true' : undefined}
-                className={`rounded-pill border px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`rounded-pill border px-3 py-1.5 text-body-sm font-medium transition-colors ${
                   active
                     ? 'border-primary-strong bg-primary-strong text-on-primary'
                     : 'border-border bg-surface text-muted hover:text-text'

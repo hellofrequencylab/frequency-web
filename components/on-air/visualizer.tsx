@@ -126,7 +126,7 @@ export function BreathVisualizer({
       </div>
       <p
         key={label}
-        className="text-lg font-medium tracking-wide text-muted"
+        className="text-body-lg font-medium tracking-wide text-muted"
         aria-live="polite"
       >
         {label}

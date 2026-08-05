@@ -243,8 +243,8 @@ describe('the layer behaves as a bottom sheet on a phone, not a desktop panel', 
   it('the rename input does not trigger the iOS focus zoom', () => {
     // Safari zooms the viewport for any input under 16px; inside a 68dvh sheet the
     // zoom-and-restore jump is worse than on a full page.
-    expect(details).toContain('text-base')
-    expect(details).toContain('sm:text-sm')
+    expect(details).toContain('text-body')
+    expect(details).toContain('sm:text-body-sm')
   })
 
   it('touch targets are real ones', () => {

@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { completeOnboarding } from './actions'
 import { getInitials } from '@/lib/utils'
+import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { WizardShell } from '@/components/templates'
 
 type Region = { id: string; name: string }
@@ -183,11 +184,17 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
 
   function renderAvatar(size: 'md' | 'lg' = 'md') {
     const dim = size === 'lg' ? 'w-20 h-20 text-page-title' : 'w-16 h-16 text-lead'
-    if (avatarPreview) {
+    // Guarded like its three siblings. This is the site the helper's own comment claimed
+    // was covered and was not: `safeUploadPreviewSrc` was written for "the onboarding
+    // avatar step" and then applied to the Beta induction, the composer and the report
+    // dialog, never here. A rejected URL falls through to initials, which is the honest
+    // failure for an image.
+    const previewSrc = safeUploadPreviewSrc(avatarPreview)
+    if (previewSrc) {
       return (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={avatarPreview}
+          src={previewSrc}
           alt="Avatar preview"
           className={`${dim} rounded-pill object-cover shrink-0 ring-2 ring-primary-bg`}
         />
@@ -388,7 +395,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                       rows={4}
                       className={`${inputBase} resize-none`}
                     />
-                    <p className={`mt-1.5 text-right text-xs tabular-nums ${bio.length >= 260 ? 'text-primary' : 'text-subtle'}`}>
+                    <p className={`mt-1.5 text-right text-meta tabular-nums ${bio.length >= 260 ? 'text-primary' : 'text-subtle'}`}>
                       {bio.length} / 280
                     </p>
                   </div>
@@ -429,7 +436,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                   <div className="flex items-center gap-4 p-5">
                     {renderAvatar('lg')}
                     <div className="min-w-0">
-                      <p className="truncate text-lg font-semibold text-text">{displayName}</p>
+                      <p className="truncate text-body-lg font-semibold text-text">{displayName}</p>
                       <p className="text-body-sm text-muted">@{handle}</p>
                     </div>
                   </div>

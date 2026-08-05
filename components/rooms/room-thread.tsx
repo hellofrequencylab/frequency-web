@@ -163,7 +163,7 @@ export function RoomThread({
                 <div className="flex-1 min-w-0">
                   {showAuthor && (
                     <div className="flex items-baseline gap-2 mb-0.5">
-                      <span className={`text-sm font-semibold ${isOwn ? 'text-primary-strong' : 'text-text'}`}>
+                      <span className={`text-body-sm font-semibold ${isOwn ? 'text-primary-strong' : 'text-text'}`}>
                         {a?.display_name ?? 'Unknown'}
                       </span>
                       <span className="text-3xs text-muted">{formatTime(m.created_at)}</span>
@@ -206,7 +206,7 @@ export function RoomThread({
                       type="button"
                       aria-pressed={on}
                       onClick={() => setKind(on ? null : k)}
-                      className={`rounded-pill border px-2.5 py-1 text-xs font-medium transition-colors ${
+                      className={`rounded-pill border px-2.5 py-1 text-meta font-medium transition-colors ${
                         on
                           ? 'border-primary/40 bg-primary-bg text-primary-strong'
                           : 'border-border text-muted hover:text-text'

@@ -213,7 +213,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                 onClick={() => pickType(t)}
                 aria-pressed={active}
                 title={disabled ? 'Needs the Image Studio (set RECRAFT_API_KEY)' : TYPES[t].hint}
-                className={`rounded-pill border px-3 py-1.5 text-sm font-semibold transition-colors disabled:opacity-40 ${
+                className={`rounded-pill border px-3 py-1.5 text-body-sm font-semibold transition-colors disabled:opacity-40 ${
                   active
                     ? 'border-primary bg-primary text-on-primary'
                     : 'border-border text-muted hover:bg-surface-elevated'
@@ -260,7 +260,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                 }}
                 aria-pressed={engine === 'vera'}
                 title="Vera draws a clean house-style line mark, instant, no cost"
-                className={`inline-flex items-center gap-1 rounded-[14px] px-3 py-1.5 text-sm font-semibold ${
+                className={`inline-flex items-center gap-1 rounded-[14px] px-3 py-1.5 text-body-sm font-semibold ${
                   engine === 'vera' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'
                 }`}
               >
@@ -274,7 +274,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                 }}
                 aria-pressed={engine === 'studio'}
                 title="The Image Studio generates a richer result (uses the paid engine)"
-                className={`inline-flex items-center gap-1 rounded-[14px] px-3 py-1.5 text-sm font-semibold ${
+                className={`inline-flex items-center gap-1 rounded-[14px] px-3 py-1.5 text-body-sm font-semibold ${
                   engine === 'studio' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'
                 }`}
               >

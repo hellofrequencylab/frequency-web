@@ -149,7 +149,7 @@ function StatGrid({ stats }: { stats: NonNullable<MemberDetail['engagementStats'
       {stats.map((s) => (
         <div key={s.label} className="rounded-card border border-border bg-surface p-3">
           <dt className="text-2xs font-medium uppercase tracking-wide text-muted">{s.label}</dt>
-          <dd className="mt-0.5 text-lg font-bold text-text">{s.value}</dd>
+          <dd className="mt-0.5 text-body-lg font-bold text-text">{s.value}</dd>
           {s.hint && <p className="mt-0.5 text-2xs text-muted">{s.hint}</p>}
         </div>
       ))}

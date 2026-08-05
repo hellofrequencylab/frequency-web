@@ -87,7 +87,7 @@ export default async function PublicPracticePage({
         }
       >
         {(practice.summary || practice.description) && (
-          <p className="mb-8 max-w-2xl text-lg leading-relaxed text-muted">
+          <p className="mb-8 max-w-2xl text-body-lg leading-relaxed text-muted">
             {practice.summary ?? practice.description}
           </p>
         )}

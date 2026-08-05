@@ -104,7 +104,7 @@ export async function QuestTasks() {
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={`text-sm font-medium ${isDone ? 'text-success' : 'text-text'}`}>
+                      <span className={`text-body-sm font-medium ${isDone ? 'text-success' : 'text-text'}`}>
                         {task.name}
                       </span>
                       <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-meta font-medium text-muted">
@@ -143,7 +143,7 @@ export async function QuestTasks() {
                   <div className="flex shrink-0 items-center gap-2">
                     <div className="flex items-center gap-0.5">
                       <Zap className={`h-3.5 w-3.5 ${isDone ? 'text-success' : 'text-primary'}`} />
-                      <span className={`text-sm font-semibold ${isDone ? 'text-success' : 'text-muted'}`}>
+                      <span className={`text-body-sm font-semibold ${isDone ? 'text-success' : 'text-muted'}`}>
                         +{task.zaps_value}
                       </span>
                     </div>

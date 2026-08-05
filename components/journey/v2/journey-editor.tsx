@@ -359,7 +359,7 @@ export function JourneyEditor({
                 type="button"
                 onClick={() => togglePillar(pl.id)}
                 aria-pressed={on}
-                className={`rounded-pill border px-2.5 py-1 text-xs font-medium transition-colors ${
+                className={`rounded-pill border px-2.5 py-1 text-meta font-medium transition-colors ${
                   on
                     ? 'border-primary/40 bg-primary-bg text-primary-strong'
                     : 'border-border bg-surface text-subtle opacity-60 hover:opacity-100 hover:text-text'
@@ -576,7 +576,7 @@ export function JourneyEditor({
                     onClick={() => toggleAnchor(l.id, !anchored)}
                     aria-pressed={anchored}
                     title="Anchor: the one daily practice that runs through the whole Journey"
-                    className={`inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium transition-colors disabled:opacity-60 ${anchored ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'}`}
+                    className={`inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-meta font-medium transition-colors disabled:opacity-60 ${anchored ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'}`}
                   >
                     <Anchor className="h-3.5 w-3.5" /> {anchored ? 'Anchor (daily through-line)' : 'Make this the Anchor'}
                   </button>

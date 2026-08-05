@@ -568,7 +568,7 @@ export function EventForm({
                           : 'border-border bg-surface hover:border-border-strong'
                       } disabled:opacity-60`}
                     >
-                      <p className={`text-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
+                      <p className={`text-body-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
                         {label}
                       </p>
                       <p className="mt-0.5 text-2xs text-muted">{helper}</p>
@@ -616,7 +616,7 @@ export function EventForm({
                   key={value}
                   onClick={() => setAttendanceMode(value)}
                   disabled={isPending}
-                  className={`rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors ${
+                  className={`rounded-lg border px-3 py-2 text-center text-body-sm font-medium transition-colors ${
                     active
                       ? 'border-primary bg-primary-bg text-primary-strong ring-2 ring-primary/30'
                       : 'border-border bg-surface text-text hover:border-border-strong'
@@ -891,7 +891,7 @@ export function EventForm({
                     key={value}
                     onClick={() => setPriceMode(value)}
                     disabled={isPending}
-                    className={`rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors ${
+                    className={`rounded-lg border px-3 py-2 text-center text-body-sm font-medium transition-colors ${
                       active
                         ? 'border-primary bg-primary-bg text-primary-strong ring-2 ring-primary/30'
                         : 'border-border bg-surface text-text hover:border-border-strong'

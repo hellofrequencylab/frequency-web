@@ -40,7 +40,7 @@ export function PayoutsToggle({
   return (
     <div>
       <div className="flex items-center justify-between gap-4">
-        <span className={`text-sm font-semibold ${on ? 'text-success' : 'text-subtle'}`}>
+        <span className={`text-body-sm font-semibold ${on ? 'text-success' : 'text-subtle'}`}>
           {on ? 'Payouts are ON' : 'Payouts are OFF'}
         </span>
         <Toggle

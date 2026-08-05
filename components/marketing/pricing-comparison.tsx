@@ -117,7 +117,7 @@ export function PricingComparison() {
 
       {/* The saving line + the honesty caveat. */}
       <div className="mx-auto mt-8 max-w-3xl text-center">
-        <p className="text-lg leading-relaxed text-text sm:text-xl">
+        <p className="text-body-lg leading-relaxed text-text sm:text-lead">
           That is <span className="font-bold text-primary-strong">{money(saveMonth)} a month</span>, about{' '}
           <span className="font-bold text-primary-strong">{money(saveYear)} a year</span>, and {tools} fewer
           logins. All of it runs together on Frequency, from {money(FREQUENCY_BUSINESS_MONTHLY)} a month.

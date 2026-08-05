@@ -115,7 +115,7 @@ export function WizardShell({
         {/* Brand mark — quiet, app register (not the marketing display lockup). */}
         <div className="mb-8 flex items-center gap-2">
           <span className="h-7 w-7 rounded-lg bg-primary" aria-hidden />
-          <span className="font-display text-lg uppercase tracking-tight text-text">Frequency</span>
+          <span className="font-display text-body-lg uppercase tracking-tight text-text">Frequency</span>
         </div>
 
         <WizardProgress current={step} total={totalSteps} label={stepLabel} variant={progressVariant} />

@@ -134,7 +134,7 @@ export function MarketGrid({
           type="button"
           onClick={nearMe}
           disabled={locating}
-          className={`inline-flex shrink-0 items-center gap-1.5 rounded-pill px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60 motion-reduce:transition-none ${coords ? 'bg-primary text-on-primary' : 'border border-border text-text hover:bg-surface-elevated'}`}
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-pill px-3 py-1.5 text-body-sm font-medium transition-colors disabled:opacity-60 motion-reduce:transition-none ${coords ? 'bg-primary text-on-primary' : 'border border-border text-text hover:bg-surface-elevated'}`}
         >
           {locating ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Navigation className="h-4 w-4" aria-hidden />}
           {coords ? 'Sorted by distance' : 'Near me'}

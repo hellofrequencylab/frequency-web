@@ -88,7 +88,7 @@ export function BottomSheet({
           <span className="h-1 w-10 rounded-pill bg-border" aria-hidden />
         </div>
         <div className="flex shrink-0 items-center justify-between gap-3 px-5 pb-3 pt-2">
-          <h2 className="text-base font-semibold text-text">{title}</h2>
+          <h2 className="text-body font-semibold text-text">{title}</h2>
           {headerAction}
         </div>
         <div className={cn('overflow-y-auto px-5 pb-6', tall ? 'min-h-0 flex-1' : 'max-h-[70vh]')}>

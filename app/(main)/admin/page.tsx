@@ -571,7 +571,7 @@ const DAY = 24 * 60 * 60 * 1000
 function DashSkeleton({ title }: { title: string }) {
   return (
     <section className="border-t border-border/70 pt-7 first:border-t-0 first:pt-0 sm:pt-8">
-      <h2 className="text-lg font-bold text-text">{title}</h2>
+      <h2 className="text-body-lg font-bold text-text">{title}</h2>
       <div className="mt-2 h-4 w-2/3 animate-pulse rounded bg-surface-elevated" />
       <div className="mt-5 grid grid-cols-2 gap-3.5 lg:grid-cols-3">
         <div className="h-28 animate-pulse rounded-2xl bg-surface-elevated/70" />

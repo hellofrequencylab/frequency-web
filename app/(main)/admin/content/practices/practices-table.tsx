@@ -95,7 +95,7 @@ const GRID_MIN = 'lg:min-w-[860px]'
 
 function PlainHeader({ children, center = false }: { children: React.ReactNode; center?: boolean }) {
   return (
-    <span className={`block text-xs font-semibold uppercase tracking-wide text-muted ${center ? 'text-center' : ''}`}>
+    <span className={`block text-meta font-semibold uppercase tracking-wide text-muted ${center ? 'text-center' : ''}`}>
       {children}
     </span>
   )
@@ -444,7 +444,7 @@ export function PracticesTable({
       {feedback && (
         <p
           role="status"
-          className={`text-xs font-medium ${feedback.tone === 'danger' ? 'text-danger' : 'text-success'}`}
+          className={`text-meta font-medium ${feedback.tone === 'danger' ? 'text-danger' : 'text-success'}`}
         >
           {feedback.text}
         </p>

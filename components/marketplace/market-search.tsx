@@ -93,7 +93,7 @@ export function InstantSection({
   return (
     <section>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-text">{title}</h2>
+        <h2 className="text-body-lg font-bold text-text">{title}</h2>
         {seeAllHref && (
           <a href={seeAllHref} className="text-body-sm font-medium text-primary-strong hover:underline">
             See all

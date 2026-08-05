@@ -40,7 +40,7 @@ export function PersonaToggle({ persona, state }: { persona: PartnerPersona; sta
   return (
     <div className="inline-flex items-center gap-2">
       <span
-        className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold ${
+        className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-meta font-semibold ${
           pending ? 'bg-warning-bg/50 text-warning' : 'bg-success-bg/40 text-success'
         }`}
       >

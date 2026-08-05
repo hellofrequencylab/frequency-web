@@ -132,7 +132,7 @@ export async function SpaceContactDetail({
             <User className="h-5 w-5" aria-hidden />
           </span>
           <div className="min-w-0">
-            <h2 className="truncate text-lg font-bold text-text">{name}</h2>
+            <h2 className="truncate text-body-lg font-bold text-text">{name}</h2>
             <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-meta text-subtle">
               {identity.createdAt && <span>Added {whenFmt.format(new Date(identity.createdAt))}</span>}
               {/* At-a-glance recency from the existing timeline: when you last reached this person. */}

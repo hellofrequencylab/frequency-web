@@ -63,7 +63,7 @@ export async function SequenceLaneView({ q = '', editId = '' }: { q?: string; ed
       <AdminSection>
         <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="flex items-baseline gap-2">
-            <h2 className="font-display text-lg uppercase text-text">Flows</h2>
+            <h2 className="font-display text-body-lg uppercase text-text">Flows</h2>
             <span className="text-body-sm text-subtle">
               {page.total} flow{page.total === 1 ? '' : 's'}
             </span>
@@ -108,7 +108,7 @@ export async function SequenceLaneView({ q = '', editId = '' }: { q?: string; ed
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="truncate text-body-sm font-semibold text-text">{item.title || 'Untitled flow'}</span>
                         <span
-                          className={`rounded-pill px-2 py-0.5 text-xs font-medium ${
+                          className={`rounded-pill px-2 py-0.5 text-meta font-medium ${
                             live ? 'bg-primary text-on-primary' : 'border border-border text-muted'
                           }`}
                         >

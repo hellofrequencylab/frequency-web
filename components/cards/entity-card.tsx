@@ -116,7 +116,7 @@ export function EntityCard({
           )}
           {meta && (
             <div
-              className={`mt-auto flex items-center pt-3 text-xs text-subtle ${
+              className={`mt-auto flex items-center pt-3 text-meta text-subtle ${
                 metaNoWrap ? 'flex-nowrap gap-x-2.5 overflow-hidden' : 'flex-wrap gap-x-3 gap-y-1'
               }`}
             >

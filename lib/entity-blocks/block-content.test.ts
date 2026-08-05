@@ -432,7 +432,7 @@ describe('style → class mapping (ADR-569)', () => {
     // block's own hardcoded utilities); shadow inherits, so it stays a plain wrapper class.
     const tags = 'h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em'
     expect(textStyleClass({ size: 'lg', weight: 'bold', color: 'accent', shadow: 'soft' })).toBe(
-      `[&_:where(${tags})]:!text-lg [&_:where(${tags})]:!font-bold [&_:where(${tags})]:!text-primary-strong text-shadow-soft`,
+      `[&_:where(${tags})]:!text-body-lg [&_:where(${tags})]:!font-bold [&_:where(${tags})]:!text-primary-strong text-shadow-soft`,
     )
     // size:md is the neutral default → no size class
     expect(textStyleClass({ size: 'md' })).toBe('')
@@ -509,7 +509,7 @@ describe('textByRoleClass (role-scoped utilities, item 4)', () => {
   })
   it('heading targets heading tags; body targets paragraph tags excluding the eyebrow', () => {
     expect(textByRoleClass({ heading: { size: 'lg', weight: 'bold' } })).toBe(
-      '[&_:where(h1,h2,h3,h4,h5,h6)]:!text-lg [&_:where(h1,h2,h3,h4,h5,h6)]:!font-bold',
+      '[&_:where(h1,h2,h3,h4,h5,h6)]:!text-body-lg [&_:where(h1,h2,h3,h4,h5,h6)]:!font-bold',
     )
     expect(textByRoleClass({ body: { color: 'muted' } })).toBe(
       '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!text-muted',
@@ -517,7 +517,7 @@ describe('textByRoleClass (role-scoped utilities, item 4)', () => {
   })
   it('eyebrow targets the marked element', () => {
     expect(textByRoleClass({ eyebrow: { size: 'sm', shadow: 'soft' } })).toBe(
-      '[&_[data-text-role=eyebrow]]:!text-sm [&_[data-text-role=eyebrow]]:text-shadow-soft',
+      '[&_[data-text-role=eyebrow]]:!text-body-sm [&_[data-text-role=eyebrow]]:text-shadow-soft',
     )
   })
 })

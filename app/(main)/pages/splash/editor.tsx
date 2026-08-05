@@ -564,7 +564,7 @@ export function SplashCopyEditor({
                   type="button"
                   aria-pressed={destMode === 'waitlist'}
                   onClick={() => { setDestMode('waitlist'); setSaved(false) }}
-                  className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+                  className={`rounded-lg px-3 py-2 text-meta font-semibold transition-colors ${
                     destMode === 'waitlist'
                       ? 'bg-primary text-on-primary'
                       : 'border border-border bg-surface text-subtle hover:bg-surface-elevated'
@@ -576,7 +576,7 @@ export function SplashCopyEditor({
                   type="button"
                   aria-pressed={destMode === 'direct'}
                   onClick={() => { setDestMode('direct'); setSaved(false) }}
-                  className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+                  className={`rounded-lg px-3 py-2 text-meta font-semibold transition-colors ${
                     destMode === 'direct'
                       ? 'bg-primary text-on-primary'
                       : 'border border-border bg-surface text-subtle hover:bg-surface-elevated'

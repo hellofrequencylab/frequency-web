@@ -141,7 +141,7 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
             className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-border bg-surface p-5 lift-3 sm:rounded-2xl"
           >
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-lg font-bold text-text">
+              <h2 className="flex items-center gap-2 text-body-lg font-bold text-text">
                 <Wand2 className="h-5 w-5 text-primary" />
                 {step === 1 ? 'Make it yours' : 'Your practice'}
               </h2>

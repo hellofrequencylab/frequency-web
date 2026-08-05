@@ -238,7 +238,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
             onClick={() => chooseScope(s.choice)}
             disabled={pending}
             aria-pressed={s.choice === choice}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-40 ${
+            className={`rounded-lg px-3 py-1.5 text-meta font-semibold transition-colors disabled:opacity-40 ${
               s.choice === choice ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:text-text'
             }`}
           >
@@ -351,7 +351,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
                               {item.enabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                             </button>
                             <div className="min-w-0 flex-1">
-                              <p className={`truncate text-sm font-semibold ${item.enabled ? 'text-text' : 'text-muted'}`}>
+                              <p className={`truncate text-body-sm font-semibold ${item.enabled ? 'text-text' : 'text-muted'}`}>
                                 {item.label}
                               </p>
                               {item.description && <p className="truncate text-meta text-muted">{item.description}</p>}

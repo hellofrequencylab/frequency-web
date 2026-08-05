@@ -49,7 +49,7 @@ function Row({
       <Link
         href={href}
         aria-current={active ? 'true' : undefined}
-        className={`flex min-w-0 flex-1 items-center gap-1.5 rounded-xl px-2 py-1.5 text-xs transition-colors sm:gap-2 sm:px-2.5 sm:text-sm ${
+        className={`flex min-w-0 flex-1 items-center gap-1.5 rounded-xl px-2 py-1.5 text-meta transition-colors sm:gap-2 sm:px-2.5 sm:text-body-sm ${
           active ? 'bg-primary-bg font-semibold text-primary-strong' : 'text-muted hover:bg-surface-elevated'
         }`}
       >

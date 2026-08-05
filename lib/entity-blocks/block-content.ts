@@ -1355,8 +1355,8 @@ export function marginBottomClass(step: MarginStep | undefined): string {
 }
 
 // The text-style bag is applied on a WRAPPER around the block. A block's own renderers hardcode their text
-// utilities (e.g. `text-base text-muted`) directly on the <p>/<h2>, and an element's own class beats an
-// inherited value — so a bare `text-lg` on the wrapper would silently no-op (the Size / Color bug). To make
+// utilities (e.g. `text-body text-muted`) directly on the <p>/<h2>, and an element's own class beats an
+// inherited value — so a bare `text-body-lg` on the wrapper would silently no-op (the Size / Color bug). To make
 // Size and Color actually take effect, size + color + weight target the wrapper's descendant TEXT elements
 // with an `!important` child variant (`[&_:where(<tags>)]:!<util>`), so the operator's chosen value
 // overrides the block's hardcoded one. The `:where()` keeps specificity flat; `!` is what wins. Shadow
@@ -1368,10 +1368,10 @@ export function marginBottomClass(step: MarginStep | undefined): string {
 // literal) is: h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em. Scoped to text tags,
 // so icons / buttons / media are untouched.
 const TEXT_SIZE_CLASS: Record<TextSizeStep, string> = {
-  sm: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!text-sm',
+  sm: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!text-body-sm',
   md: '',
-  lg: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!text-lg',
-  xl: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!text-xl',
+  lg: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!text-body-lg',
+  xl: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!text-lead',
 }
 const TEXT_WEIGHT_CLASS: Record<TextWeightStep, string> = {
   normal: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!font-normal',
@@ -1428,19 +1428,19 @@ export function textStyleClass(text: TextStyle | undefined): string {
 //               inherits, so it needs no `!`.
 const ROLE_SIZE_CLASS: Record<TextRole, Partial<Record<TextSizeStep, string>>> = {
   eyebrow: {
-    sm: '[&_[data-text-role=eyebrow]]:!text-sm',
-    lg: '[&_[data-text-role=eyebrow]]:!text-lg',
-    xl: '[&_[data-text-role=eyebrow]]:!text-xl',
+    sm: '[&_[data-text-role=eyebrow]]:!text-body-sm',
+    lg: '[&_[data-text-role=eyebrow]]:!text-body-lg',
+    xl: '[&_[data-text-role=eyebrow]]:!text-lead',
   },
   heading: {
-    sm: '[&_:where(h1,h2,h3,h4,h5,h6)]:!text-sm',
-    lg: '[&_:where(h1,h2,h3,h4,h5,h6)]:!text-lg',
-    xl: '[&_:where(h1,h2,h3,h4,h5,h6)]:!text-xl',
+    sm: '[&_:where(h1,h2,h3,h4,h5,h6)]:!text-body-sm',
+    lg: '[&_:where(h1,h2,h3,h4,h5,h6)]:!text-body-lg',
+    xl: '[&_:where(h1,h2,h3,h4,h5,h6)]:!text-lead',
   },
   body: {
-    sm: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!text-sm',
-    lg: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!text-lg',
-    xl: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!text-xl',
+    sm: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!text-body-sm',
+    lg: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!text-body-lg',
+    xl: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!text-lead',
   },
 }
 const ROLE_WEIGHT_CLASS: Record<TextRole, Record<TextWeightStep, string>> = {

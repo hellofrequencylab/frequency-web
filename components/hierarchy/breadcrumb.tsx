@@ -18,7 +18,7 @@ export function HierarchyBreadcrumb({
   return (
     <nav
       aria-label="Hierarchy"
-      className={`flex items-center gap-1 flex-wrap text-xs text-subtle ${className}`}
+      className={`flex items-center gap-1 flex-wrap text-meta text-subtle ${className}`}
     >
       {crumbs.map((crumb, i) => {
         const isLast = i === crumbs.length - 1

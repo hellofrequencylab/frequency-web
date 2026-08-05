@@ -33,7 +33,7 @@ export function BrandMark({
   if (name) {
     return (
       <Link href="/feed" aria-label={`${name}, home feed`} className={linkClass}>
-        <span className="font-display text-lg md:text-xl uppercase tracking-tight text-text">
+        <span className="font-display text-body-lg md:text-lead uppercase tracking-tight text-text">
           {name}
         </span>
       </Link>

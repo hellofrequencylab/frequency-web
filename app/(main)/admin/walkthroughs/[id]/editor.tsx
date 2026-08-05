@@ -307,7 +307,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
                       dragId.current = null
                     }}
                     onClick={() => setSelected(i)}
-                    className={`flex cursor-pointer items-center gap-2 rounded-xl border px-2.5 py-2 text-sm transition-colors ${
+                    className={`flex cursor-pointer items-center gap-2 rounded-xl border px-2.5 py-2 text-body-sm transition-colors ${
                       i === selected ? 'border-primary bg-primary-bg/40' : 'border-border bg-surface hover:bg-surface-elevated'
                     }`}
                   >
@@ -413,7 +413,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
                       key={l}
                       type="button"
                       onClick={() => setStep(selected, { layout: l as StepLayout })}
-                      className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      className={`rounded-md px-3 py-1.5 text-meta font-semibold transition-colors ${
                         step.layout === l ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
                       }`}
                     >

@@ -61,7 +61,7 @@ function GenerateButton({
 
   return (
     <div className="flex items-center gap-2">
-      {message && <span className={`text-xs ${error ? 'text-danger' : 'text-muted'}`}>{message}</span>}
+      {message && <span className={`text-meta ${error ? 'text-danger' : 'text-muted'}`}>{message}</span>}
       <Button size="sm" onClick={generate} disabled={pending}>
         <Icon className="h-3.5 w-3.5" /> {pending ? busyLabel : label}
       </Button>

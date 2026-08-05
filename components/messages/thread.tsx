@@ -245,7 +245,7 @@ export function MessageThread({
                         </span>
                       )}
                       <div
-                        className={`px-3 py-2 text-sm leading-relaxed break-words ${
+                        className={`px-3 py-2 text-body-sm leading-relaxed break-words ${
                           isMine
                             ? 'bg-primary text-on-primary rounded-2xl rounded-br-md'
                             : 'bg-surface-elevated text-text rounded-2xl rounded-bl-md'

@@ -87,7 +87,7 @@ export function DataTable<T>({
                   key={c.key}
                   scope="col"
                   style={c.width ? { width: c.width } : undefined}
-                  className={`${pad} text-xs font-semibold uppercase tracking-wide text-muted ${ALIGN[c.align ?? 'left']}`}
+                  className={`${pad} text-meta font-semibold uppercase tracking-wide text-muted ${ALIGN[c.align ?? 'left']}`}
                 >
                   {c.header}
                 </th>

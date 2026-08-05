@@ -244,7 +244,7 @@ export default async function SplashFunnelsPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-body font-bold text-text">{seq.audience}</h3>
                       <span
-                        className={`rounded-md px-1.5 py-0.5 text-xs font-medium ${
+                        className={`rounded-md px-1.5 py-0.5 text-meta font-medium ${
                           status === 'published'
                             ? 'bg-success-bg text-success'
                             : 'bg-surface-elevated text-muted'
@@ -340,7 +340,7 @@ export default async function SplashFunnelsPage() {
                         </span>
                         <h3 className="text-body font-bold text-text">{seq.audience}</h3>
                         <span
-                          className={`rounded-md px-1.5 py-0.5 text-xs font-medium ${
+                          className={`rounded-md px-1.5 py-0.5 text-meta font-medium ${
                             status === 'published' ? 'bg-success-bg text-success' : 'bg-surface-elevated text-muted'
                           }`}
                         >

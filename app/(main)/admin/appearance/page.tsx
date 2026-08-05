@@ -54,7 +54,7 @@ function ThemeRowCard({ t }: { t: ThemeRow }) {
           </span>
           {/* Status badge */}
           <span
-            className={`inline-flex items-center rounded-pill px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE[t.status]}`}
+            className={`inline-flex items-center rounded-pill px-2 py-0.5 text-meta font-semibold ${STATUS_BADGE[t.status]}`}
           >
             {STATUS_LABEL[t.status]}
           </span>

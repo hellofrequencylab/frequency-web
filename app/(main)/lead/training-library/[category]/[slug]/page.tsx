@@ -43,7 +43,7 @@ export default async function LeaderTrainingDocPage({ params }: Params) {
       back={{ href: TRAINING_BASE, label: 'Leader Training' }}
     >
       <div className="max-w-3xl">
-        {doc.description && <p className="text-lg text-muted">{doc.description}</p>}
+        {doc.description && <p className="text-body-lg text-muted">{doc.description}</p>}
 
         <div className="mt-8">
           <HelpMarkdown>{doc.body}</HelpMarkdown>

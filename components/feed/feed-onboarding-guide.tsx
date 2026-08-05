@@ -203,7 +203,7 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
               ) : (
                 <Link
                   href={step.href}
-                  className={`flex-1 text-sm ${isCurrent ? 'font-semibold text-text' : 'text-muted hover:text-text'}`}
+                  className={`flex-1 text-body-sm ${isCurrent ? 'font-semibold text-text' : 'text-muted hover:text-text'}`}
                 >
                   {step.label}
                 </Link>

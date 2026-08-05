@@ -325,7 +325,7 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
             {store.rows.map((row) => (
               <section key={row.id} className="space-y-4">
                 {row.title && (
-                  <h2 className="font-display text-lead font-bold uppercase tracking-tight text-text sm:text-2xl">
+                  <h2 className="font-display text-lead font-bold uppercase tracking-tight text-text sm:text-page-title">
                     {row.title}
                   </h2>
                 )}

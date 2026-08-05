@@ -81,7 +81,7 @@ export function EntryPointShare({
       type="button"
       onClick={() => pick(m)}
       aria-pressed={mode === m}
-      className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+      className={`rounded-md px-3 py-1.5 text-meta font-semibold transition-colors ${
         mode === m ? 'bg-surface text-text lift-1' : 'text-muted hover:text-text'
       }`}
     >

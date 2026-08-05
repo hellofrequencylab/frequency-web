@@ -43,7 +43,7 @@ export function ThemePreview({ tokens }: { tokens: ThemeTokens }) {
             type="button"
             aria-pressed={mode === 'light'}
             onClick={() => setMode('light')}
-            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
+            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-meta font-semibold transition-colors ${
               mode === 'light' ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
             }`}
           >
@@ -53,7 +53,7 @@ export function ThemePreview({ tokens }: { tokens: ThemeTokens }) {
             type="button"
             aria-pressed={mode === 'dark'}
             onClick={() => setMode('dark')}
-            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
+            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-meta font-semibold transition-colors ${
               mode === 'dark' ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
             }`}
           >

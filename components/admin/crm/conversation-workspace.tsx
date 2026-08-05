@@ -112,7 +112,7 @@ export function ConversationWorkspace({
             <Link
               key={s.key}
               href={hrefWith(basePath, { status }, { scope: s.key })}
-              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+              className={`rounded-lg px-2.5 py-1 text-meta font-semibold transition-colors ${
                 scope === s.key ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:bg-surface-elevated'
               }`}
             >
@@ -122,7 +122,7 @@ export function ConversationWorkspace({
         {showScopes && <span className="mx-1 h-4 w-px bg-border" aria-hidden />}
         <Link
           href={hrefWith(basePath, { scope }, { status: undefined })}
-          className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+          className={`rounded-lg px-2.5 py-1 text-meta font-semibold transition-colors ${
             !status ? 'bg-surface-elevated text-text' : 'text-muted hover:bg-surface-elevated'
           }`}
         >
@@ -132,7 +132,7 @@ export function ConversationWorkspace({
           <Link
             key={st}
             href={hrefWith(basePath, { scope }, { status: st })}
-            className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+            className={`rounded-lg px-2.5 py-1 text-meta font-semibold transition-colors ${
               status === st ? 'bg-surface-elevated text-text' : 'text-muted hover:bg-surface-elevated'
             }`}
           >

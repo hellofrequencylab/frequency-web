@@ -259,7 +259,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                   role="tab"
                   aria-selected={tab === 'chat'}
                   onClick={() => setTab('chat')}
-                  className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${tab === 'chat' ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:text-text'}`}
+                  className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-body-sm font-medium transition-colors ${tab === 'chat' ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:text-text'}`}
                 >
                   <MessageSquare className="h-4 w-4" aria-hidden /> Messages
                   {unread > 0 && (
@@ -271,7 +271,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                   role="tab"
                   aria-selected={tab === 'vera'}
                   onClick={() => setTab('vera')}
-                  className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${tab === 'vera' ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:text-text'}`}
+                  className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-body-sm font-medium transition-colors ${tab === 'vera' ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:text-text'}`}
                 >
                   <Sparkles className="h-4 w-4" aria-hidden /> Vera
                 </button>

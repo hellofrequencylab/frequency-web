@@ -12,7 +12,7 @@ function MomentumStat({ label, value, Icon }: { label: string; value: string; Ic
   return (
     <div className="rounded-2xl bg-surface-elevated/60 px-3 py-2.5 text-center">
       <Icon className="mx-auto mb-1 h-3.5 w-3.5 text-subtle" />
-      <div className="text-lg font-bold leading-none tabular-nums text-text">{value}</div>
+      <div className="text-body-lg font-bold leading-none tabular-nums text-text">{value}</div>
       <div className="mt-1 text-meta text-subtle">{label}</div>
     </div>
   )

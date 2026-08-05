@@ -86,7 +86,7 @@ export default async function DiscoverJourneysPage() {
               title={<>The first Journeys are <span className="text-primary">being mapped</span></>}
               kicker="Every Journey starts as one person's daily Practice, written down."
             />
-            <p className="mt-6 text-lg text-muted leading-relaxed">
+            <p className="mt-6 text-body-lg text-muted leading-relaxed">
               The library is quiet for now. Join the beta and you can build the first ones:
               a handful of small Practices, in order, with a five-minute way in. Share one, and
               your Circle can run it beside you.
@@ -111,7 +111,7 @@ export default async function DiscoverJourneysPage() {
                   title={<>What you can <span className="text-primary">practice</span></>}
                   kicker="Pick one, start small, and keep it up for a season."
                 />
-                <p className="mt-5 text-lg text-muted leading-relaxed">
+                <p className="mt-5 text-body-lg text-muted leading-relaxed">
                   Each Journey is a few Practices in order, with an honest time ask and a
                   forgiving finish line. Find the one that sounds like your mornings.
                 </p>

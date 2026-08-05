@@ -94,14 +94,14 @@ function GalleryImagesField({
             }
           }}
           placeholder="Image URL"
-          className="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+          className="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-body-sm"
         />
         <button
           type="button"
           onClick={addUrl}
           disabled={!url.trim()}
           aria-label="Add image by URL"
-          className="shrink-0 inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-sm transition-colors hover:bg-surface-elevated disabled:opacity-50"
+          className="shrink-0 inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-body-sm transition-colors hover:bg-surface-elevated disabled:opacity-50"
         >
           <Plus className="h-3.5 w-3.5" aria-hidden />
           Add
@@ -111,7 +111,7 @@ function GalleryImagesField({
       <button
         type="button"
         onClick={() => setLoomOpen(true)}
-        className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border px-2 py-2 text-sm text-muted transition-colors hover:border-border-strong hover:bg-surface"
+        className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border px-2 py-2 text-body-sm text-muted transition-colors hover:border-border-strong hover:bg-surface"
       >
         <ImagePlus className="h-3.5 w-3.5" aria-hidden />
         Choose from your Loom

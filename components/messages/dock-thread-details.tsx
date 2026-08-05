@@ -175,9 +175,9 @@ export function DockThreadDetails({
                   autoFocus
                   disabled={renaming}
                   aria-busy={renaming}
-                  // text-base below sm: iOS Safari zooms the viewport for any input under 16px,
+                  // text-body below sm: iOS Safari zooms the viewport for any input under 16px,
                   // and a zoom-and-restore jump inside a 68dvh sheet is far worse than on a page.
-                  className="mt-1 w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-body text-text outline-none focus:border-border-strong focus:ring-1 focus:ring-border-strong/30 sm:text-sm"
+                  className="mt-1 w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-body text-text outline-none focus:border-border-strong focus:ring-1 focus:ring-border-strong/30 sm:text-body-sm"
                 />
                 <p className="mt-1 text-3xs text-muted">Leave it blank to go back to the members&rsquo; names.</p>
                 {renameError && <p role="alert" className="mt-1 text-meta text-danger">{renameError}</p>}

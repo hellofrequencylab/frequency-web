@@ -79,7 +79,7 @@ export function PageHeading({
           {/* `eyebrow` is the kit utility now, not four hand-rolled Tailwind classes.
               Same rendered size; the change is tracking, 0.1em -> DAWN's 0.18em. */}
           {eyebrow && <p className="eyebrow mb-1.5 text-primary-strong">{eyebrow}</p>}
-          {/* THE page title role. Was `text-lead sm:text-2xl` — 1.25rem on mobile, where
+          {/* THE page title role. Was `text-lead sm:text-page-title` — 1.25rem on mobile, where
               DAWN's page title is 1.5rem at every width, so small screens got a heading
               a fifth smaller than the design and headings stepped at an arbitrary
               breakpoint instead of holding one role. `--text-page-title` rides

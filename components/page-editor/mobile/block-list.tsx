@@ -49,7 +49,7 @@ function SwipeRow({
   return (
     <div className="relative overflow-hidden">
       {/* Delete affordance revealed behind the row as it slides left. */}
-      <div className="absolute inset-y-0 right-0 flex w-24 items-center justify-center bg-danger text-sm font-semibold text-white">
+      <div className="absolute inset-y-0 right-0 flex w-24 items-center justify-center bg-danger text-body-sm font-semibold text-white">
         Delete
       </div>
       <div
@@ -117,8 +117,8 @@ export function BlockList({
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center px-6 py-24 text-center">
-        <p className="text-base font-medium text-text">Nothing here yet.</p>
-        <p className="mt-1 text-sm text-muted">Add your first block.</p>
+        <p className="text-body font-medium text-text">Nothing here yet.</p>
+        <p className="mt-1 text-body-sm text-muted">Add your first block.</p>
       </div>
     )
   }
@@ -174,7 +174,7 @@ export function BlockList({
                 >
                   <GripVertical className="h-6 w-6" aria-hidden />
                 </button>
-                <span className="truncate text-sm font-medium text-text">{title}</span>
+                <span className="truncate text-body-sm font-medium text-text">{title}</span>
               </div>
             </li>
           )
@@ -208,9 +208,9 @@ export function BlockList({
                 }`}
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-text">{title}</span>
+                  <span className="block text-body-sm font-semibold text-text">{title}</span>
                   {blockSummary(item) && (
-                    <span className="mt-0.5 block truncate text-xs text-muted">{blockSummary(item)}</span>
+                    <span className="mt-0.5 block truncate text-meta text-muted">{blockSummary(item)}</span>
                   )}
                   <span className="mt-2 block rounded-lg border border-border bg-surface">
                     <BlockPreview config={config} item={item} metadata={metadata} />

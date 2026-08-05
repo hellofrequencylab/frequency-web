@@ -291,7 +291,7 @@ export async function LeaderboardPanel() {
             href={`/people/${member.handle}`}
             className="flex items-center gap-2.5 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
           >
-            <span className={`text-sm font-bold w-4 shrink-0 tabular-nums ${rankColors[i]}`}>{i + 1}</span>
+            <span className={`text-body-sm font-bold w-4 shrink-0 tabular-nums ${rankColors[i]}`}>{i + 1}</span>
             {member.avatar_url ? (
               <Image src={avatarSrc(member.avatar_url)} alt={member.display_name} width={32} height={32} style={avatarFocusStyle(member.avatar_url)} className="w-8 h-8 rounded-pill object-cover shrink-0" />
             ) : (
@@ -655,7 +655,7 @@ export async function PulsePanel() {
             className="flex flex-col items-center gap-0.5 rounded-lg px-1 py-2 text-center transition-colors hover:bg-surface-elevated"
           >
             <Icon className="h-4 w-4 text-primary-strong" aria-hidden />
-            <span className="text-lg font-bold leading-none tabular-nums text-text">{value.toLocaleString()}</span>
+            <span className="text-body-lg font-bold leading-none tabular-nums text-text">{value.toLocaleString()}</span>
             <span className="text-2xs text-muted">{label}</span>
           </Link>
         ))}

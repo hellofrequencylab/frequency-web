@@ -197,7 +197,7 @@ export function PracticeSpark() {
                 <div className="flex flex-wrap items-center gap-2">
                   {CADENCE_CHOICES.map((c) => (
                     <button key={c.key} type="button" onClick={() => setCadence(c.key)} aria-pressed={cadence === c.key}
-                      className={`rounded-pill border px-3.5 py-1.5 text-sm font-medium transition-colors ${cadence === c.key ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}>
+                      className={`rounded-pill border px-3.5 py-1.5 text-body-sm font-medium transition-colors ${cadence === c.key ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}>
                       {c.label}
                     </button>
                   ))}
@@ -252,7 +252,7 @@ export function PracticeSpark() {
                           type="button"
                           onClick={() => setPillars((prev) => (prev.includes(p.key) ? prev.filter((x) => x !== p.key) : [...prev, p.key]))}
                           aria-pressed={pillars.includes(p.key)}
-                          className={`rounded-pill border px-3 py-1 text-xs font-medium transition-colors ${pillars.includes(p.key) ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}
+                          className={`rounded-pill border px-3 py-1 text-meta font-medium transition-colors ${pillars.includes(p.key) ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}
                         >
                           {p.label}
                         </button>

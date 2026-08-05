@@ -166,7 +166,7 @@ export function DesktopEditor({
       <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-canvas text-text">
         {/* Top bar: title + surface chrome (Publish/Save/etc.). */}
         <header className="flex shrink-0 items-center gap-3 border-b border-border bg-surface px-4 py-2.5">
-          <h1 className="min-w-0 flex-1 truncate text-sm font-semibold text-text">
+          <h1 className="min-w-0 flex-1 truncate text-body-sm font-semibold text-text">
             {headerTitle ?? 'Editing'}
           </h1>
           <div className="flex items-center gap-2">{headerActions}</div>
@@ -176,20 +176,20 @@ export function DesktopEditor({
           {/* LEFT — block outline + add. */}
           <aside className="flex w-72 shrink-0 flex-col border-r border-border bg-surface">
             <div className="flex items-center justify-between border-b border-border px-3 py-2">
-              <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-subtle">
+              <span className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wide text-subtle">
                 <Layers className="h-4 w-4" aria-hidden /> Blocks
               </span>
               <button
                 type="button"
                 onClick={() => setPalette(null)}
-                className="inline-flex min-h-[32px] items-center gap-1 rounded-lg bg-primary px-2.5 text-xs font-semibold text-on-primary hover:bg-primary-hover"
+                className="inline-flex min-h-[32px] items-center gap-1 rounded-lg bg-primary px-2.5 text-meta font-semibold text-on-primary hover:bg-primary-hover"
               >
                 <Plus className="h-3.5 w-3.5" aria-hidden /> Add block
               </button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-2">
               {outline.length === 0 ? (
-                <p className="px-2 py-8 text-center text-sm text-muted">
+                <p className="px-2 py-8 text-center text-body-sm text-muted">
                   Nothing here yet. Add your first block.
                 </p>
               ) : (
@@ -237,7 +237,7 @@ export function DesktopEditor({
               />
             ) : (
               <div className="flex flex-1 items-center justify-center p-6 text-center">
-                <p className="text-sm text-muted">Select a block to edit its content.</p>
+                <p className="text-body-sm text-muted">Select a block to edit its content.</p>
               </div>
             )}
           </aside>
@@ -327,8 +327,8 @@ function OutlineTree({
               onClick={() => onSelect(node.id)}
               className="flex min-w-0 flex-1 flex-col items-start text-left"
             >
-              <span className="truncate text-sm font-medium text-text">{node.label}</span>
-              {node.summary && <span className="truncate text-xs text-muted">{node.summary}</span>}
+              <span className="truncate text-body-sm font-medium text-text">{node.label}</span>
+              {node.summary && <span className="truncate text-meta text-muted">{node.summary}</span>}
             </button>
             <div className="flex shrink-0 items-center opacity-60 transition-opacity group-hover:opacity-100">
               <IconBtn label="Move up" onClick={() => onNudge(node.id, -1)}>
@@ -373,7 +373,7 @@ function OutlineTree({
                         if (id) onDropMove(id, node.id, slot.key, 0)
                         onDragEndId()
                       }}
-                      className="rounded-lg border border-dashed border-border px-2 py-2 text-center text-xs text-subtle"
+                      className="rounded-lg border border-dashed border-border px-2 py-2 text-center text-meta text-subtle"
                     >
                       Empty. Drop or add a block.
                     </div>
@@ -471,7 +471,7 @@ function Inspector({
             <ChevronLeft className="h-5 w-5" aria-hidden />
           </IconButton>
         )}
-        <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-text">{heading}</h2>
+        <h2 className="min-w-0 flex-1 truncate text-body-sm font-semibold text-text">{heading}</h2>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -523,7 +523,7 @@ function PalettePopover({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <h2 className="text-sm font-semibold text-text">Add a block</h2>
+          <h2 className="text-body-sm font-semibold text-text">Add a block</h2>
           <IconButton label="Close" onClick={onClose}>
             <X className="h-5 w-5" aria-hidden />
           </IconButton>
@@ -531,7 +531,7 @@ function PalettePopover({
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
           {groups.map((group) => (
             <div key={group.key}>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-subtle">{group.title}</h3>
+              <h3 className="mb-2 text-meta font-semibold uppercase tracking-wide text-subtle">{group.title}</h3>
               <div className="grid grid-cols-2 gap-2">
                 {group.items.map((b) =>
                   b.disabled ? (
@@ -540,7 +540,7 @@ function PalettePopover({
                       key={b.type}
                       title={b.reason}
                       aria-disabled="true"
-                      className="flex min-h-[48px] cursor-not-allowed items-center rounded-lg border border-border bg-surface-elevated px-3 py-2 text-left text-sm font-medium text-subtle opacity-60"
+                      className="flex min-h-[48px] cursor-not-allowed items-center rounded-lg border border-border bg-surface-elevated px-3 py-2 text-left text-body-sm font-medium text-subtle opacity-60"
                     >
                       <span className="line-clamp-2">{b.label}</span>
                     </div>
@@ -549,7 +549,7 @@ function PalettePopover({
                       key={b.type}
                       type="button"
                       onClick={() => onPick(b.type)}
-                      className="flex min-h-[48px] items-center rounded-lg border border-border bg-canvas px-3 py-2 text-left text-sm font-medium text-text hover:border-primary hover:bg-surface-elevated"
+                      className="flex min-h-[48px] items-center rounded-lg border border-border bg-canvas px-3 py-2 text-left text-body-sm font-medium text-text hover:border-primary hover:bg-surface-elevated"
                     >
                       <span className="line-clamp-2">{b.label}</span>
                     </button>

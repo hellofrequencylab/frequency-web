@@ -31,7 +31,7 @@ export function Snackbar({ state, onDismiss }: { state: SnackbarState; onDismiss
       aria-live="polite"
       className="pointer-events-none fixed inset-x-0 bottom-24 z-[65] flex justify-center px-4"
     >
-      <div className="pointer-events-auto flex items-center gap-3 rounded-xl bg-slat px-4 py-3 text-sm text-on-ink shadow-xl motion-safe:animate-[slideUp_0.25s_ease-out]">
+      <div className="pointer-events-auto flex items-center gap-3 rounded-xl bg-slat px-4 py-3 text-body-sm text-on-ink shadow-xl motion-safe:animate-[slideUp_0.25s_ease-out]">
         <span>{state.message}</span>
         {state.kind === 'undo' && (
           <button

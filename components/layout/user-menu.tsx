@@ -25,7 +25,7 @@ export function AuthButtons({ dark = false }: { dark?: boolean }) {
     <div className="flex items-center gap-2">
       <Link
         href="/sign-in"
-        className={`text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${
+        className={`text-body-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${
           dark
             ? 'text-on-ink-muted hover:text-on-ink hover:bg-on-ink/10'
             : 'text-muted hover:text-text hover:bg-surface-elevated'
@@ -35,7 +35,7 @@ export function AuthButtons({ dark = false }: { dark?: boolean }) {
       </Link>
       <Link
         href={BETA_CTA_HREF}
-        className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors whitespace-nowrap ${
+        className={`rounded-lg px-3 py-1.5 text-body-sm font-semibold transition-colors whitespace-nowrap ${
           dark
             ? 'bg-on-ink text-ink hover:bg-surface-elevated'
             : 'bg-primary text-on-primary hover:bg-primary-hover'

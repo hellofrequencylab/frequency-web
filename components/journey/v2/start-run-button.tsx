@@ -81,7 +81,7 @@ export function StartRunButton({ circleId, journeys }: { circleId: string; journ
         <Rocket className="h-4 w-4" /> {pending ? 'Starting…' : 'Start the run'}
       </button>
       {msg && (
-        <p className={`mt-2 text-xs ${msg.ok ? 'text-success' : 'text-danger'}`}>
+        <p className={`mt-2 text-meta ${msg.ok ? 'text-success' : 'text-danger'}`}>
           {msg.text}
           {msg.ok && msg.slug && (
             <>

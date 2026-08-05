@@ -90,7 +90,7 @@ export function EmojiPicker({ onSelect, disabled }: { onSelect: (emoji: string) 
                       onSelect(emoji)
                       setOpen(false)
                     }}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg text-lg leading-none transition-colors hover:bg-surface-elevated"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-body-lg leading-none transition-colors hover:bg-surface-elevated"
                   >
                     {emoji}
                   </button>

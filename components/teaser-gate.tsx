@@ -137,7 +137,7 @@ export function TeaserGate({
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-bg">
               <Lock className="h-6 w-6 text-primary-strong" />
             </div>
-            <h2 className="text-lg font-bold text-text">{title}</h2>
+            <h2 className="text-body-lg font-bold text-text">{title}</h2>
             <p className="mt-2 text-body-sm leading-relaxed text-muted">{body}</p>
             <Link
               href="/upgrade"

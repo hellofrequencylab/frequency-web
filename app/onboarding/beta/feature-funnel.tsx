@@ -308,14 +308,14 @@ function DemoStep({
       </h1>
 
       {!nudge && (
-        <p className="mx-auto mt-4 max-w-md text-body leading-relaxed text-muted md:mx-0 md:text-lg">
+        <p className="mx-auto mt-4 max-w-md text-body leading-relaxed text-muted md:mx-0 md:text-body-lg">
           In as it grows. Hold at the top. Out as it settles. Let your shoulders drop.
         </p>
       )}
 
       {nudge && !showFields && (
         <div className="mt-4">
-          <p className="text-lg font-semibold text-text">Keep going. You are doing it.</p>
+          <p className="text-body-lg font-semibold text-text">Keep going. You are doing it.</p>
           <p className="mx-auto mt-1 max-w-md text-body text-muted md:mx-0">
             This timer is your invitation into the Frequency beta. Grab it and your streak starts today.
           </p>

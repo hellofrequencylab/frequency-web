@@ -471,7 +471,7 @@ export function PickerControl({
                 type="button"
                 aria-pressed={on}
                 onClick={() => toggle(it.id)}
-                className={`flex min-w-0 flex-1 items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-xs font-medium transition-colors ${
+                className={`flex min-w-0 flex-1 items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-meta font-medium transition-colors ${
                   on
                     ? 'border-primary bg-primary-bg text-text'
                     : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text'
@@ -621,7 +621,7 @@ export function IconPicker({
                       aria-label={e.keywords.split(' ')[0]}
                       title={e.keywords.split(' ')[0]}
                       onClick={() => pick(e.char)}
-                      className={`flex h-8 w-8 items-center justify-center rounded-md border text-lg leading-none transition-colors hover:bg-surface-elevated ${
+                      className={`flex h-8 w-8 items-center justify-center rounded-md border text-body-lg leading-none transition-colors hover:bg-surface-elevated ${
                         value === e.char ? 'border-primary bg-primary-bg' : 'border-transparent'
                       }`}
                     >

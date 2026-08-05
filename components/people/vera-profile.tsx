@@ -64,7 +64,7 @@ export function VeraProfile({
               style={avatarFocusStyle(avatarUrl)}
             />
           ) : (
-            <span className="flex h-14 w-14 items-center justify-center rounded-pill bg-primary-bg text-lg font-bold text-primary-strong">
+            <span className="flex h-14 w-14 items-center justify-center rounded-pill bg-primary-bg text-body-lg font-bold text-primary-strong">
               {getInitials(name)}
             </span>
           )}

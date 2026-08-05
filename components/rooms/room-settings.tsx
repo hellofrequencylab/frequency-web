@@ -129,7 +129,7 @@ export function RoomSettings({
                     type="button"
                     onClick={() => setVis(v)}
                     aria-pressed={vis === v}
-                    className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                    className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-body-sm font-medium transition-colors ${
                       vis === v
                         ? 'border-primary bg-primary-bg text-primary-strong ring-2 ring-primary/30'
                         : 'border-border bg-surface text-muted hover:border-border-strong'

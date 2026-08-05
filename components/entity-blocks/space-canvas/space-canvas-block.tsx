@@ -65,8 +65,8 @@ const HEADING_LG_CLS = 'font-display text-[clamp(2rem,7vw,4.5rem)] uppercase lea
 const HEADING_LG_INK_CLS = 'font-display text-[clamp(2rem,7vw,4.5rem)] uppercase leading-[0.95] text-on-ink'
 /** The big standalone Display heading block, at the published display clamp (parity fix 6). */
 const DISPLAY_CLS = 'font-display text-[clamp(2rem,6vw,3.75rem)] uppercase leading-[0.95] text-balance text-text'
-const BODY_CLS = 'text-lg leading-relaxed text-muted'
-const BODY_INK_CLS = 'text-lg leading-relaxed text-on-ink-muted'
+const BODY_CLS = 'text-body-lg leading-relaxed text-muted'
+const BODY_INK_CLS = 'text-body-lg leading-relaxed text-on-ink-muted'
 
 // The Banner OVERLAY height + scrim, copied verbatim from the published PhotoHero (design.tsx) so the canvas
 // overlay sizes by the `height` control and veils on the `scrim` step instead of a hardcoded 16/9 + fixed scrim
@@ -124,7 +124,7 @@ function ImageSlot({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`group relative flex w-full items-center justify-center overflow-hidden rounded-control border border-border bg-surface-elevated text-sm font-medium text-subtle ${
+        className={`group relative flex w-full items-center justify-center overflow-hidden rounded-control border border-border bg-surface-elevated text-body-sm font-medium text-subtle ${
           fill ? 'h-full' : ''
         } ${className ?? ''}`}
         style={{ minHeight: url ? undefined : 128 }}
@@ -518,7 +518,7 @@ function FeaturesItemsCanvas({
     )
   }
   if (layout === 'stats') {
-    // Parity fix 3: published stats render the headline value as `price || title` at text-4xl (not text-2xl). A
+    // Parity fix 3: published stats render the headline value as `price || title` at text-4xl (not text-page-title). A
     // set price is the read-only big number and the editable title drops to the label; with no price the
     // editable title IS the big number. Text stays an editable secondary label. Both fields stay authorable.
     return (
@@ -786,7 +786,7 @@ export function SpaceCanvasBlock({
   if (id === 'quote') {
     return (
       <figure className="max-w-prose border-l-2 border-primary pl-4">
-        {textSlot('text', 'text-lg font-medium italic text-text')}
+        {textSlot('text', 'text-body-lg font-medium italic text-text')}
         {textSlot('by', 'mt-2 text-body-sm text-muted')}
       </figure>
     )
@@ -1019,7 +1019,7 @@ function designCanvas(
       // The accent beat is a centered CTA on an accent-wash card; mirror the card + button on the canvas so a
       // styled block reads TRUE while editing (not as plain text). Parity fix 7: published wraps the copy in
       // max-w-2xl with generous vertical padding (py-16 sm:py-20) and uses the kit CtaButton (rounded-2xl px-8
-      // py-3.5 text-base font-bold shadow-pop + a trailing arrow). Match the button style + padding; the button
+      // py-3.5 text-body font-bold shadow-pop + a trailing arrow). Match the button style + padding; the button
       // label edits inline like the copy.
       return (
         <div className="rounded-2xl bg-primary-bg px-6 py-16 text-center sm:py-20">

@@ -105,7 +105,7 @@ export function RsvpForm({ token }: { token: string }) {
               type="button"
               onClick={() => setRsvp(o.value)}
               aria-pressed={rsvp === o.value}
-              className={`flex-1 rounded-2xl border px-4 py-3 text-sm font-bold transition-colors ${
+              className={`flex-1 rounded-2xl border px-4 py-3 text-body-sm font-bold transition-colors ${
                 rsvp === o.value
                   ? 'border-primary bg-primary text-on-primary'
                   : 'border-border bg-surface text-text hover:border-primary'

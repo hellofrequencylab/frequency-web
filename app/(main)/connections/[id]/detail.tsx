@@ -464,7 +464,7 @@ function FollowUp({ contactId, reminders }: { contactId: string; reminders: Cont
           <li key={r.id} className="group flex items-center gap-2 rounded-card bg-surface-elevated/50 p-3">
             <CalendarClock className="h-4 w-4 shrink-0 text-subtle" />
             <div className="min-w-0 flex-1">
-              <p className={`text-sm font-medium ${isOverdue(r.dueAt) ? 'text-danger' : 'text-text'}`}>
+              <p className={`text-body-sm font-medium ${isOverdue(r.dueAt) ? 'text-danger' : 'text-text'}`}>
                 {dueLabel(r.dueAt)}
               </p>
               {r.note && <p className="truncate text-meta text-muted">{r.note}</p>}

@@ -134,10 +134,10 @@ export function RolePickerBlock({
               <Illustration name={asIllustration(card.illustration)} className="h-full" />
             </div>
             {card.label && (
-              <h3 className={`font-display uppercase text-2xl mb-2 ${headingColor}`}>{card.label}</h3>
+              <h3 className={`font-display uppercase text-page-title mb-2 ${headingColor}`}>{card.label}</h3>
             )}
             {card.blurb && (
-              <p className={`text-base leading-relaxed mb-6 ${bodyColor}`}>{card.blurb}</p>
+              <p className={`text-body leading-relaxed mb-6 ${bodyColor}`}>{card.blurb}</p>
             )}
             {card.ctaLabel && card.ctaHref && (
               <div className="mt-auto">
@@ -211,7 +211,7 @@ export function IllustratedFeatureBlock({
             </h2>
           )}
           {body && (
-            <div className={`mt-5 text-lg leading-relaxed space-y-4 ${bodyColor}`}>
+            <div className={`mt-5 text-body-lg leading-relaxed space-y-4 ${bodyColor}`}>
               {richParagraphs(body)}
             </div>
           )}
@@ -317,7 +317,7 @@ export function LeadFunnelBlock({
       )}
       <LeadFunnelFlow steps={list} orientation={orientation} showNumbers={showNumbers} />
       {footnote && (
-        <p className={`mx-auto mt-8 max-w-2xl text-center text-sm ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
+        <p className={`mx-auto mt-8 max-w-2xl text-center text-body-sm ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
           {footnote}
         </p>
       )}

@@ -95,7 +95,7 @@ export function SpotlightAssetField({
               type="button"
               onClick={() => inputRef.current?.click()}
               disabled={busy}
-              className="min-h-[32px] rounded-lg bg-canvas/90 px-2.5 py-1 text-xs font-medium text-text shadow-sm backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60"
+              className="min-h-[32px] rounded-lg bg-canvas/90 px-2.5 py-1 text-meta font-medium text-text shadow-sm backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60"
             >
               {busy ? 'Uploading…' : 'Replace'}
             </button>
@@ -115,14 +115,14 @@ export function SpotlightAssetField({
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={busy}
-          className={`flex ${aspect} w-full flex-col items-center justify-center gap-1.5 rounded-control border border-dashed border-border bg-surface/60 px-3 text-center text-sm font-medium text-muted transition-colors hover:border-border-strong hover:bg-surface disabled:opacity-60`}
+          className={`flex ${aspect} w-full flex-col items-center justify-center gap-1.5 rounded-control border border-dashed border-border bg-surface/60 px-3 text-center text-body-sm font-medium text-muted transition-colors hover:border-border-strong hover:bg-surface disabled:opacity-60`}
         >
           <Upload className="h-5 w-5" aria-hidden />
           {busy ? 'Uploading…' : 'Upload image'}
           <span className="text-2xs font-normal text-subtle">JPEG, PNG, GIF, or WebP up to 5 MB</span>
         </button>
       )}
-      {err && <p className="text-xs text-danger">{err}</p>}
+      {err && <p className="text-meta text-danger">{err}</p>}
     </div>
   )
 }

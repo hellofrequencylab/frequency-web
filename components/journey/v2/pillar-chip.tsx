@@ -11,7 +11,7 @@ export function PillarChip({ slug, name }: { slug: string | null; name: string |
   const tint = pillarTint(slug)
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-1 text-xs font-medium ${tint}`}
+      className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-1 text-meta font-medium ${tint}`}
       title={name ? `${name} practice` : 'A library practice'}
     >
       {name ?? 'Practice'}

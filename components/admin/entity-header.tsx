@@ -48,7 +48,7 @@ export function EntityHeader({
               <p className="text-meta font-semibold uppercase tracking-wide text-primary-strong">{eyebrow}</p>
             )}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <h1 className="text-balance text-lead font-bold text-text sm:text-2xl">{title}</h1>
+              <h1 className="text-balance text-lead font-bold text-text sm:text-page-title">{title}</h1>
               {badges}
             </div>
           </div>

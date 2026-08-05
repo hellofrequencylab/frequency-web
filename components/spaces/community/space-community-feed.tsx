@@ -320,7 +320,7 @@ function PostCard({
           )}
         </span>
       </header>
-      {update.title && <h3 className="text-lg font-bold text-text">{update.title}</h3>}
+      {update.title && <h3 className="text-body-lg font-bold text-text">{update.title}</h3>}
       {update.body && <PostBody body={update.body} className="text-body-sm leading-relaxed text-muted" />}
       {update.imageUrl && (
         <Image src={update.imageUrl} alt="" width={800} height={450} unoptimized className="w-full rounded-xl object-cover" />
@@ -340,7 +340,7 @@ function PostCard({
               aria-pressed={mine}
               aria-label={reactionLabel(r.key)}
               title={reactionLabel(r.key)}
-              className={`inline-flex items-center gap-1 rounded-pill border px-2.5 py-1 text-sm transition-colors disabled:cursor-default ${
+              className={`inline-flex items-center gap-1 rounded-pill border px-2.5 py-1 text-body-sm transition-colors disabled:cursor-default ${
                 mine ? 'border-primary bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted'
               } ${canInteract && anchorId ? 'hover:border-border-strong' : ''}`}
             >

@@ -76,7 +76,7 @@ export function AdoptPracticeButton({
     }
   }, [panel])
 
-  const base = `inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors disabled:opacity-60 ${
+  const base = `inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-body-sm font-semibold transition-colors disabled:opacity-60 ${
     fullWidth ? 'w-full' : ''
   }`
 
@@ -208,7 +208,7 @@ export function AdoptPracticeButton({
                 type="button"
                 title={p.hint}
                 onClick={() => adoptWith(p.weeks)}
-                className={`rounded-lg border px-2 py-1.5 text-xs font-semibold transition-colors ${
+                className={`rounded-lg border px-2 py-1.5 text-meta font-semibold transition-colors ${
                   p.default
                     ? 'border-primary bg-primary-bg/40 text-text hover:bg-primary-bg/60'
                     : 'border-border text-muted hover:border-primary hover:text-text'

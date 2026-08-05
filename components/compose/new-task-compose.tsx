@@ -89,7 +89,7 @@ export function NewTaskCompose({
                   aria-checked={active}
                   disabled={isPending}
                   onClick={() => setZapsValue(zaps)}
-                  className={`flex min-h-10 flex-col items-center justify-center rounded-lg border px-2 py-1.5 text-sm font-medium transition-colors ${
+                  className={`flex min-h-10 flex-col items-center justify-center rounded-lg border px-2 py-1.5 text-body-sm font-medium transition-colors ${
                     active
                       ? 'border-primary/50 bg-primary-bg text-primary-strong'
                       : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text'

@@ -118,7 +118,7 @@ export default async function HubPage({
             <InlineText
               value={hub.name}
               save={updateHubField.bind(null, hub.id, slug, 'name')}
-              inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-lead sm:text-2xl font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
+              inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-lead sm:text-page-title font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
             />
           ) : (
             hub.name

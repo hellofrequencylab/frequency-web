@@ -61,7 +61,7 @@ export async function QuestLeaderboard() {
                 isSelf ? 'bg-primary-bg/60 dark:bg-primary-bg' : ''
               }`}
             >
-              <span className={`w-5 shrink-0 text-sm font-bold ${rankColor}`}>{i + 1}</span>
+              <span className={`w-5 shrink-0 text-body-sm font-bold ${rankColor}`}>{i + 1}</span>
 
               {member.avatarUrl ? (
                 <Image
@@ -81,7 +81,7 @@ export async function QuestLeaderboard() {
               <div className="min-w-0 flex-1">
                 <Link
                   href={`/people/${member.handle}`}
-                  className={`truncate text-xs font-medium hover:underline ${
+                  className={`truncate text-meta font-medium hover:underline ${
                     isSelf ? 'text-primary-strong' : 'text-text'
                   }`}
                 >
@@ -91,7 +91,7 @@ export async function QuestLeaderboard() {
               </div>
 
               <div className="flex shrink-0 items-center gap-1.5">
-                <span className={`rounded-md px-1.5 py-0.5 text-xs font-bold text-white ${memberRankDef.color}`}>
+                <span className={`rounded-md px-1.5 py-0.5 text-meta font-bold text-white ${memberRankDef.color}`}>
                   {memberRankDef.label}
                 </span>
                 <div className="flex items-center gap-0.5">

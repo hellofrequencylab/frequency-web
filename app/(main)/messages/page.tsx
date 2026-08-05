@@ -349,7 +349,7 @@ export default async function MessagesPage({
         <Link
           key={f.value}
           href={threadsHref(f.value, sort)}
-          className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+          className={`rounded-md px-2.5 py-1 text-meta font-medium transition-colors ${
             filter === f.value ? 'bg-surface text-text lift-1' : 'text-muted hover:text-text'
           }`}
         >
@@ -365,7 +365,7 @@ export default async function MessagesPage({
         <Link
           key={s.value}
           href={threadsHref(filter, s.value)}
-          className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+          className={`rounded-md px-2.5 py-1 text-meta font-medium transition-colors ${
             sort === s.value ? 'bg-surface text-text lift-1' : 'text-muted hover:text-text'
           }`}
         >
@@ -585,7 +585,7 @@ async function DMRowItem({ conv, myProfileId, onlineIds }: { conv: ConversationR
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <span className={`text-sm truncate ${hasUnread ? 'font-semibold text-text' : 'font-medium text-text'}`}>
+          <span className={`text-body-sm truncate ${hasUnread ? 'font-semibold text-text' : 'font-medium text-text'}`}>
             {display}
           </span>
           {conv.lastMessage && (
@@ -593,7 +593,7 @@ async function DMRowItem({ conv, myProfileId, onlineIds }: { conv: ConversationR
           )}
         </div>
         <div className="flex items-center gap-1.5 mt-0.5">
-          <p className={`text-xs truncate flex-1 ${hasUnread ? 'text-text font-medium' : 'text-subtle'}`}>
+          <p className={`text-meta truncate flex-1 ${hasUnread ? 'text-text font-medium' : 'text-subtle'}`}>
             {conv.lastMessage
               ? conv.lastMessage.sender_id === myProfileId ? `You: ${conv.lastMessage.body}` : conv.lastMessage.body
               : 'No messages yet'}
@@ -620,7 +620,7 @@ function GroupAvatars({ participants }: { participants: Profile[] }) {
             className={`${size} ${pos} rounded-pill object-cover ring-2 ring-surface`} />
         ) : (
           <div key={p.id}
-            className={`${size} ${pos} rounded-pill bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center ring-2 ring-surface`}>
+            className={`${size} ${pos} rounded-pill bg-primary-bg text-primary-strong text-meta font-semibold flex items-center justify-center ring-2 ring-surface`}>
             {getInitials(p.display_name)}
           </div>
         )

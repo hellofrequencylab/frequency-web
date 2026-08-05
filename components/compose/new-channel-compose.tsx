@@ -127,7 +127,7 @@ export function NewChannelCompose({
                     onClick={() => setType(t)}
                     disabled={isPending}
                     aria-pressed={type === t}
-                    className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium capitalize transition-colors ${
+                    className={`flex-1 rounded-lg border px-3 py-2 text-meta font-medium capitalize transition-colors ${
                       type === t
                         ? 'border-primary bg-primary-bg text-primary-strong'
                         : 'border-border text-muted hover:bg-surface-elevated'

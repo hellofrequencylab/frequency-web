@@ -184,7 +184,7 @@ export function PersonalAppearanceModule() {
                 disabled={pending}
                 aria-pressed={active}
                 title={s.description}
-                className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 motion-reduce:transition-none ${
+                className={`rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors disabled:opacity-50 motion-reduce:transition-none ${
                   active
                     ? 'border-primary bg-primary-bg text-primary-strong'
                     : 'border-border text-text hover:bg-surface-elevated'

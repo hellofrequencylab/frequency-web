@@ -40,7 +40,7 @@ export default async function TrainingPage() {
               <GraduationCap className="h-6 w-6" aria-hidden />
             </span>
             <div>
-              <h2 className="text-lg font-bold text-text">{active.title}</h2>
+              <h2 className="text-body-lg font-bold text-text">{active.title}</h2>
               <p className="mt-1 text-body-sm leading-relaxed text-muted">{active.blurb}</p>
             </div>
           </div>

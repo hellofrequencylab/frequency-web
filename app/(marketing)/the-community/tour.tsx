@@ -62,7 +62,10 @@ export function ProductTour() {
   // Home/End jump to the ends. Pairs with the roving tabIndex below.
   function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     const i = STEPS.findIndex((s) => s.key === active)
-    let next = i
+    // No initialiser: every branch that reaches the assignment below sets it, and the
+    // `else` returns. Seeding it with `i` looked like a safe default but was dead — it
+    // could never survive to be read, so it only hid which keys the handler answers to.
+    let next: number
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (i + 1) % STEPS.length
     else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (i - 1 + STEPS.length) % STEPS.length
     else if (e.key === 'Home') next = 0
@@ -94,7 +97,7 @@ export function ProductTour() {
               aria-controls={`${baseId}-panel-${step.key}`}
               tabIndex={selected ? 0 : -1}
               onClick={() => setActive(step.key)}
-              className={`inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-bold uppercase tracking-wide transition-colors ${
+              className={`inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-body-sm font-bold uppercase tracking-wide transition-colors ${
                 selected
                   ? 'bg-primary text-on-primary'
                   : 'border border-border text-muted hover:border-border-strong hover:text-text'
@@ -157,7 +160,7 @@ export function PhoneFrame({ children }: { children: React.ReactNode }) {
         <div className="overflow-hidden rounded-[2rem] border border-border bg-canvas">
           {/* Status / app bar */}
           <div className="flex items-center justify-between px-5 pt-4 pb-3 bg-surface border-b border-border">
-            <span className="font-display uppercase text-lg text-text leading-none">
+            <span className="font-display uppercase text-body-lg text-text leading-none">
               Frequency
             </span>
             <span className="inline-flex items-center gap-1.5 text-2xs font-bold uppercase tracking-widest text-primary-strong">
@@ -183,7 +186,7 @@ function Avatar({ initials, role }: { initials: string; role: 'jade' | 'teal' | 
         : 'bg-surface-elevated text-muted'
   return (
     <div
-      className={`w-10 h-10 rounded-pill ${tint} text-xs font-bold flex items-center justify-center shrink-0 select-none`}
+      className={`w-10 h-10 rounded-pill ${tint} text-meta font-bold flex items-center justify-center shrink-0 select-none`}
       aria-hidden
     >
       {initials}

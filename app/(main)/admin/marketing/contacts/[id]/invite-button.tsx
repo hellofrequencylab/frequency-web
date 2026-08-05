@@ -34,7 +34,7 @@ export function InviteButton({ contactId, disabled }: { contactId: string; disab
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         Invite to join
       </Button>
-      {msg && <span className={`text-xs ${msg.ok ? 'text-success' : 'text-muted'}`}>{msg.text}</span>}
+      {msg && <span className={`text-meta ${msg.ok ? 'text-success' : 'text-muted'}`}>{msg.text}</span>}
     </div>
   )
 }

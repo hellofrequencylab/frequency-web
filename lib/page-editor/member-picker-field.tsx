@@ -108,7 +108,7 @@ function MemberPickerField({
               <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-subtle" aria-hidden />
               <Avatar member={m} />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-text">{m.displayName}</span>
+                <span className="block truncate text-body-sm font-medium text-text">{m.displayName}</span>
                 <span className="block truncate text-2xs text-subtle">@{m.handle}</span>
               </span>
               <button
@@ -132,16 +132,16 @@ function MemberPickerField({
           onChange={(e) => setQ(e.target.value)}
           placeholder={slug ? 'Search members by name or @handle' : 'Open this from your space editor'}
           disabled={!slug}
-          className="w-full bg-transparent py-1.5 text-sm outline-none disabled:opacity-60"
+          className="w-full bg-transparent py-1.5 text-body-sm outline-none disabled:opacity-60"
         />
       </div>
 
       {slug && q.trim().length >= 2 && (
         <div className="rounded-card border border-border bg-surface p-1">
           {searching ? (
-            <p className="px-2 py-4 text-center text-xs text-subtle">Searching…</p>
+            <p className="px-2 py-4 text-center text-meta text-subtle">Searching…</p>
           ) : results.length === 0 ? (
-            <p className="px-2 py-4 text-center text-xs text-subtle">No members match that search.</p>
+            <p className="px-2 py-4 text-center text-meta text-subtle">No members match that search.</p>
           ) : (
             <ul className="max-h-56 overflow-y-auto">
               {results.map((m) => {
@@ -156,7 +156,7 @@ function MemberPickerField({
                     >
                       <Avatar member={m} />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-text">{m.displayName}</span>
+                        <span className="block truncate text-body-sm font-medium text-text">{m.displayName}</span>
                         <span className="block truncate text-2xs text-subtle">@{m.handle}</span>
                       </span>
                       {already ? (

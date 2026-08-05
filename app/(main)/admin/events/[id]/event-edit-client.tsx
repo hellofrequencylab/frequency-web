@@ -253,7 +253,7 @@ export function EventEditClient({
             type="button"
             onClick={handleCancel}
             disabled={isCancelPending}
-            className={`shrink-0 rounded-lg border px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50 ${
+            className={`shrink-0 rounded-lg border px-4 py-2 text-body-sm font-semibold transition-colors disabled:opacity-50 ${
               event.is_cancelled
                 ? 'border-success text-success hover:bg-success-bg'
                 : 'border-danger text-danger hover:bg-danger-bg'

@@ -630,7 +630,7 @@ function BetaFlagRow({ flagKey, initial, label }: { flagKey: string; initial: bo
 
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className={`text-sm font-semibold ${on ? 'text-success' : 'text-subtle'}`}>{label}</span>
+      <span className={`text-body-sm font-semibold ${on ? 'text-success' : 'text-subtle'}`}>{label}</span>
       <div className="flex items-center gap-3">
         {error && <span className="text-meta text-danger">{error}</span>}
         <Toggle
@@ -870,7 +870,7 @@ function FlagRow({
 
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className={`text-sm font-semibold ${on ? 'text-success' : 'text-subtle'}`}>
+      <span className={`text-body-sm font-semibold ${on ? 'text-success' : 'text-subtle'}`}>
         {label ?? (on ? onLabel ?? 'On' : offLabel ?? 'Off')}
       </span>
       <div className="flex items-center gap-3">

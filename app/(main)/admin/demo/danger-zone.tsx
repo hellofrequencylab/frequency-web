@@ -70,7 +70,7 @@ export function DangerZone({
     })
   }
 
-  // The canonical outlined-danger tokens (ui/button); sm scale with the panel's text-sm.
+  // The canonical outlined-danger tokens (ui/button); sm scale with the panel's text-body-sm.
   const dangerBtn = buttonClasses('dangerOutline', 'sm', 'text-body-sm')
 
   return (

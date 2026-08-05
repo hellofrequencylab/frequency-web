@@ -395,7 +395,7 @@ export function JourneyGuide({
                         type="button"
                         onClick={() => setDrip(days)}
                         aria-pressed={drip === days}
-                        className={`rounded-pill border px-3 py-1.5 text-xs font-medium transition-colors ${
+                        className={`rounded-pill border px-3 py-1.5 text-meta font-medium transition-colors ${
                           drip === days
                             ? 'border-primary/50 bg-primary-bg text-primary-strong'
                             : 'border-border bg-surface text-muted hover:text-text'

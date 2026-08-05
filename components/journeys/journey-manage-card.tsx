@@ -280,7 +280,7 @@ export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
                 role="menuitem"
                 disabled={pending}
                 onClick={() => move(t.id)}
-                className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors hover:bg-surface-elevated disabled:opacity-60 ${active ? 'bg-surface-elevated' : ''}`}
+                className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-body-sm transition-colors hover:bg-surface-elevated disabled:opacity-60 ${active ? 'bg-surface-elevated' : ''}`}
               >
                 <TIcon className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
                 <span className="min-w-0 flex-1 truncate font-medium text-text">{t.label}</span>

@@ -50,7 +50,7 @@ export function OutreachForm({ scope }: { scope: string }) {
         </button>
       </div>
       {result && (
-        <p className={`mt-3 inline-flex items-center gap-1.5 text-sm ${result.ok ? 'text-success' : 'text-danger'}`}>
+        <p className={`mt-3 inline-flex items-center gap-1.5 text-body-sm ${result.ok ? 'text-success' : 'text-danger'}`}>
           {result.ok && <Check className="h-4 w-4 shrink-0" />} {result.text}
         </p>
       )}

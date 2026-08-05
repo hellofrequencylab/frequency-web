@@ -70,7 +70,7 @@ export function ListingForm({ initial }: { initial: Partial<Record<keyof Listing
 
       <div className="flex items-center justify-between gap-3">
         {result && (
-          <p className={`inline-flex items-center gap-1.5 text-sm ${result.ok ? 'text-success' : 'text-danger'}`}>
+          <p className={`inline-flex items-center gap-1.5 text-body-sm ${result.ok ? 'text-success' : 'text-danger'}`}>
             {result.ok && <Check className="h-4 w-4 shrink-0" />} {result.text}
           </p>
         )}

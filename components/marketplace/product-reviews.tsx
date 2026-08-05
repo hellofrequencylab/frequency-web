@@ -50,7 +50,7 @@ export function ProductReviews({
 }) {
   return (
     <div className="mt-6 space-y-5">
-      <h2 className="text-lg font-bold text-text">Reviews</h2>
+      <h2 className="text-body-lg font-bold text-text">Reviews</h2>
 
       {/* Summary */}
       <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-4 lift-1">

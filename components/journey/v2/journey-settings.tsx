@@ -268,7 +268,7 @@ export function JourneySettings(props: JourneySettingsProps) {
                     type="button"
                     onClick={() => { setOverlayStyle(v); meta({ headerOverlayStyle: v }) }}
                     aria-pressed={active}
-                    className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                    className={`rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors ${
                       active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-canvas text-muted hover:border-border-strong'
                     }`}
                   >
@@ -391,7 +391,7 @@ export function JourneySettings(props: JourneySettingsProps) {
                 type="button"
                 onClick={() => { const next = difficulty === d ? '' : d; setDifficulty(next); attrs({ difficulty: next || null }) }}
                 aria-pressed={difficulty === d}
-                className={`rounded-pill border px-2.5 py-1 text-xs font-medium capitalize transition-colors ${difficulty === d ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-canvas text-muted hover:text-text'}`}
+                className={`rounded-pill border px-2.5 py-1 text-meta font-medium capitalize transition-colors ${difficulty === d ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-canvas text-muted hover:text-text'}`}
               >
                 {d}
               </button>
@@ -527,7 +527,7 @@ function TouchpointForm({
               type="button"
               onClick={() => onCommit({ format: format === value ? null : value })}
               aria-pressed={format === value}
-              className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-xs font-medium transition-colors ${format === value ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-canvas text-muted hover:text-text'}`}
+              className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-meta font-medium transition-colors ${format === value ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-canvas text-muted hover:text-text'}`}
             >
               <Icon className="h-3.5 w-3.5" /> {label}
             </button>
@@ -667,7 +667,7 @@ function VeraRankPanel({
 
   return (
     <div className={`space-y-3 rounded-xl border ${tone.border} ${tone.bg} px-4 py-3`}>
-      <p className={`flex items-start gap-2 text-sm font-medium ${tone.text}`}>
+      <p className={`flex items-start gap-2 text-body-sm font-medium ${tone.text}`}>
         <tone.Icon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden /> {headline}
       </p>
       {review.feedback.length > 0 && (

@@ -32,7 +32,7 @@ export function TeamBlock({
         {/* font-section / font-eyebrow: the page theme's per-role hooks (ADR-578); a computed no-op
             for the default `bold` look. */}
         <p className="font-eyebrow text-2xs font-bold uppercase tracking-[0.2em] text-primary-strong">{header?.eyebrow ?? 'The people'}</p>
-        <h2 className="font-section mt-1.5 text-lead font-bold tracking-tight text-text sm:text-2xl">{header?.heading ?? 'Team'}</h2>
+        <h2 className="font-section mt-1.5 text-lead font-bold tracking-tight text-text sm:text-page-title">{header?.heading ?? 'Team'}</h2>
         {/* auto-fill/minmax, NOT a profile-width container query: the old `@sm/profile:grid-cols-2` keyed
             off the WHOLE profile width, so in a narrow Main/Side column it still split into 2-3 columns and
             crushed each card to a sliver (the name vanished). auto-fill gives every card a real minimum

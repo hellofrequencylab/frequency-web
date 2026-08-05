@@ -193,7 +193,7 @@ export function VeraLightbox({
             <h2 id="vera-lightbox-title" className="mt-4 text-balance text-page-title font-bold leading-tight text-text sm:text-3xl">
               {current.title}
             </h2>
-            <p className="mx-auto mt-3 max-w-md text-pretty text-body-sm leading-relaxed text-muted sm:text-base">{current.body}</p>
+            <p className="mx-auto mt-3 max-w-md text-pretty text-body-sm leading-relaxed text-muted sm:text-body">{current.body}</p>
 
             {/* progress dots */}
             <div className="mt-7 flex items-center justify-center gap-2">

@@ -163,7 +163,7 @@ export async function ChannelsList() {
           {unsorted.length > 0 && (
             <section>
               <div className="mb-3">
-                <h2 className="text-lg font-bold tracking-tight text-text">Unsorted</h2>
+                <h2 className="text-body-lg font-bold tracking-tight text-text">Unsorted</h2>
                 <p className="mt-0.5 text-body-sm text-muted leading-relaxed">
                   Channels not yet sorted into a Pillar.
                 </p>
@@ -225,7 +225,7 @@ function DomainSection({
   return (
     <section id={`channel-${domain.slug}`} className="scroll-mt-20">
       <div className="mb-4">
-        <h2 className="text-lg font-bold tracking-tight text-text">{domain.name}</h2>
+        <h2 className="text-body-lg font-bold tracking-tight text-text">{domain.name}</h2>
         {domain.description && (
           <p className="mt-0.5 text-body-sm text-muted leading-relaxed">{domain.description}</p>
         )}

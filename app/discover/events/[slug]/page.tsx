@@ -145,13 +145,13 @@ export default async function EventPage({
             {/* Description */}
             {event.description ? (
               <section className="mb-8">
-                <p className="text-lg text-muted leading-relaxed whitespace-pre-line">
+                <p className="text-body-lg text-muted leading-relaxed whitespace-pre-line">
                   {event.description}
                 </p>
               </section>
             ) : (
               <section className="mb-8">
-                <p className="text-lg text-muted leading-relaxed">
+                <p className="text-body-lg text-muted leading-relaxed">
                   A real-world gathering near you: a standing time, a handful of regulars, and a seat
                   that gets noticed when it&apos;s empty. The kind of plan that pulls you off the couch
                   and into a room where people are glad you came.

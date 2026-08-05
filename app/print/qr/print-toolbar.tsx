@@ -15,7 +15,7 @@ export function PrintToolbar({
   const tab = (value: 'tent' | 'stickers' | 'poster', label: string) => (
     <a
       href={`${base}&layout=${value}`}
-      className={`rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors ${
+      className={`rounded-md border px-3 py-1.5 text-meta font-semibold transition-colors ${
         layout === value
           ? 'border-primary bg-primary text-on-primary'
           : 'border-border text-muted hover:bg-surface-elevated hover:text-text'

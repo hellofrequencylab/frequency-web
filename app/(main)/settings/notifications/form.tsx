@@ -124,7 +124,7 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
           {CHANNELS.map(({ key, label, Icon, disabled }) => (
             <div key={key} className="flex items-center gap-1.5 w-16 justify-center">
               <Icon className={`w-3.5 h-3.5 ${disabled ? 'text-subtle' : 'text-muted'}`} />
-              <span className={`text-xs font-semibold uppercase tracking-wide ${disabled ? 'text-subtle' : 'text-muted'}`}>
+              <span className={`text-meta font-semibold uppercase tracking-wide ${disabled ? 'text-subtle' : 'text-muted'}`}>
                 {label}
               </span>
             </div>

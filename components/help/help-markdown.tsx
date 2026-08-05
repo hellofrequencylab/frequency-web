@@ -19,7 +19,7 @@ export function HelpMarkdown({ children }: { children: string }) {
             <h2 className="font-display text-lead text-text mt-10 mb-3">{children}</h2>
           ),
           h3: ({ children }: Kids) => (
-            <h3 className="text-lg font-semibold text-text mt-6 mb-2">{children}</h3>
+            <h3 className="text-body-lg font-semibold text-text mt-6 mb-2">{children}</h3>
           ),
           // break-words on the three inline elements that can carry an unbreakable string:
           // a bare URL, a long env-var name, a hyphen-free compound. <pre> below already had

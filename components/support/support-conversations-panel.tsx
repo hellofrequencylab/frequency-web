@@ -150,7 +150,7 @@ function SupportThread({ refId, onBack }: { refId: string; onBack: () => void })
         ) : (
           detail.messages.map((m) => (
             <div key={m.id} className={m.author === 'visitor' ? 'flex justify-end' : 'flex justify-start'}>
-              <span className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm ${m.author === 'visitor' ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-text'}`}>
+              <span className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-body-sm ${m.author === 'visitor' ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-text'}`}>
                 {m.body}
               </span>
             </div>

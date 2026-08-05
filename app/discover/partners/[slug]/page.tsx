@@ -111,7 +111,7 @@ export default async function PublicPartnerPage({
         }
       >
         {partner.description && (
-          <p className="mb-8 max-w-2xl text-lg leading-relaxed text-muted whitespace-pre-line">
+          <p className="mb-8 max-w-2xl text-body-lg leading-relaxed text-muted whitespace-pre-line">
             {partner.description}
           </p>
         )}

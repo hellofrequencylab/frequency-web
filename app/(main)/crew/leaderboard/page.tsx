@@ -402,7 +402,7 @@ async function EntryPointsBoard({ profileId }: { profileId: string }) {
                     </span>
                   )}
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className={`text-sm leading-tight ${isSelf ? 'font-bold text-primary-strong' : 'font-semibold text-text'}`}>
+                    <span className={`text-body-sm leading-tight ${isSelf ? 'font-bold text-primary-strong' : 'font-semibold text-text'}`}>
                       {entry.displayName}
                       {isSelf && <span className="ml-1.5 text-meta font-medium text-primary-strong">you</span>}
                     </span>

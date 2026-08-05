@@ -279,7 +279,7 @@ export function JourneySpark({
                   type="button"
                   onClick={() => fileRef.current?.click()}
                   disabled={extracting || pending}
-                  className={`${wizardSecondaryClass} !px-3 !py-2 text-sm`}
+                  className={`${wizardSecondaryClass} !px-3 !py-2 text-body-sm`}
                 >
                   {extracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Upload files
                 </button>
@@ -315,7 +315,7 @@ export function JourneySpark({
                 <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Weeks</span>
                 {WEEK_CHOICES.map((w) => (
                   <button key={w} type="button" onClick={() => setWeeks(w)} aria-pressed={weeks === w}
-                    className={`rounded-pill border px-3 py-1 text-xs font-medium transition-colors ${weeks === w ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}>
+                    className={`rounded-pill border px-3 py-1 text-meta font-medium transition-colors ${weeks === w ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}>
                     {w}
                   </button>
                 ))}
@@ -375,7 +375,7 @@ export function JourneySpark({
                 <div className="flex flex-wrap items-center gap-2">
                   {WEEK_CHOICES.map((w) => (
                     <button key={w} type="button" onClick={() => setWeeks(w)} aria-pressed={weeks === w}
-                      className={`rounded-pill border px-3.5 py-1.5 text-sm font-medium transition-colors ${weeks === w ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}>
+                      className={`rounded-pill border px-3.5 py-1.5 text-body-sm font-medium transition-colors ${weeks === w ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}>
                       {w} weeks
                     </button>
                   ))}
@@ -443,7 +443,7 @@ export function JourneySpark({
                           type="button"
                           onClick={() => patchMeeting({ format: meeting.format === value ? null : value })}
                           aria-pressed={meeting.format === value}
-                          className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-xs font-medium transition-colors ${meeting.format === value ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}
+                          className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-meta font-medium transition-colors ${meeting.format === value ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}
                         >
                           <Icon className="h-3.5 w-3.5" /> {lbl}
                         </button>

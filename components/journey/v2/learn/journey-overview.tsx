@@ -126,7 +126,7 @@ export function AboutThisJourneyHero({
               {pillarBalance.map(({ pillar, count }) => (
                 <span
                   key={pillar.slug}
-                  className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-xs font-medium ${
+                  className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-meta font-medium ${
                     count > 0 ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-subtle'
                   }`}
                 >
@@ -227,7 +227,7 @@ function TouchpointDetails({
         (event ? (
           <Link
             href={`/events/${event.slug}`}
-            className={`flex items-center gap-2 rounded-control border border-border bg-surface-elevated/40 px-3 py-2.5 text-sm transition-colors hover:border-primary ${
+            className={`flex items-center gap-2 rounded-control border border-border bg-surface-elevated/40 px-3 py-2.5 text-body-sm transition-colors hover:border-primary ${
               rows.length > 0 ? 'mt-3' : ''
             }`}
           >
@@ -249,7 +249,7 @@ function TouchpointDetails({
             <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
           </Link>
         ) : (
-          <p className={`flex items-center gap-2 text-sm text-muted ${rows.length > 0 ? 'mt-3' : ''}`}>
+          <p className={`flex items-center gap-2 text-body-sm text-muted ${rows.length > 0 ? 'mt-3' : ''}`}>
             <CalendarClock className="h-4 w-4 shrink-0 text-subtle" aria-hidden /> Linked event
           </p>
         ))}

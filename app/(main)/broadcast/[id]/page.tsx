@@ -156,7 +156,7 @@ export default async function DispatchDetailPage({ params }: Props) {
                 <Megaphone className="w-3.5 h-3.5" />
                 {dispatch.audience_scope} broadcast
               </span>
-              <span className={`text-xs px-2 py-0.5 rounded-md font-semibold ${TYPE_COLORS[dispType]}`}>
+              <span className={`text-meta px-2 py-0.5 rounded-md font-semibold ${TYPE_COLORS[dispType]}`}>
                 {TYPE_LABELS[dispType] ?? dispType}
               </span>
             </>

@@ -83,7 +83,7 @@ function HeaderPreview() {
             key={s}
             type="button"
             onClick={() => setSort(s)}
-            className={`rounded-md px-2 py-0.5 text-xs font-medium capitalize transition-colors ${sort === s ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'}`}
+            className={`rounded-md px-2 py-0.5 text-meta font-medium capitalize transition-colors ${sort === s ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'}`}
           >
             {s}
           </button>

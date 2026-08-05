@@ -79,7 +79,7 @@ export default async function BetaSequenceSplash({ params }: { params: Promise<{
       <Statement tone="canvas">{accent(splash.statement)}</Statement>
 
       <section className="bg-surface px-6 py-16 text-center sm:py-20">
-        <p className="mx-auto max-w-xl text-lg leading-relaxed text-muted">
+        <p className="mx-auto max-w-xl text-body-lg leading-relaxed text-muted">
           Two minutes to step in. You’ll take the founder’s oath, claim your handle, and meet your people.
         </p>
         <div className="mt-7">

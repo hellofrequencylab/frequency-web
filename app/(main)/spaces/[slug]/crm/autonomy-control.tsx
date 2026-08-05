@@ -82,7 +82,7 @@ export function AutonomyControl({ slug, level }: { slug: string; level: Autonomy
                   : 'border-border bg-canvas hover:bg-surface-elevated'
               }`}
             >
-              <span className={`inline-flex items-center gap-1.5 text-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
+              <span className={`inline-flex items-center gap-1.5 text-body-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
                 <Icon className="h-4 w-4" /> {opt.label}
               </span>
               <span className="mt-1 block text-meta text-muted">{opt.help}</span>

@@ -188,7 +188,7 @@ export default async function DiscoverJourneyPage({
             <JourneyFaq plan={plan} />
 
             <div className="rounded-2xl border border-border bg-surface p-5 text-center lift-1">
-              <p className="mb-1 text-lg font-bold text-text">Start this Journey</p>
+              <p className="mb-1 text-body-lg font-bold text-text">Start this Journey</p>
               <p className="mx-auto mb-4 max-w-sm text-body-sm leading-relaxed text-muted">
                 Sign up free to start it. Its phases drip one per week, your Circle can run it
                 with you, and finishing earns the completion gems.

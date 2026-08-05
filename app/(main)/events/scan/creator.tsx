@@ -22,6 +22,7 @@ import type { ExtractedEvent, EventLink } from '@/lib/events/types'
 import type { DetailsMedia, EventDetailsWithMedia } from '@/lib/events/details-media'
 import { decodePosterLinks } from '@/lib/events/qr-scan'
 import { scanPoster, saveDraft, discardScan } from './actions'
+import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import {
   downscaleForScan, fileToImage, cropBoxToJpeg, deskewPoster, canvasToJpeg,
   mapBoxThroughHomography, type DeskewResult,
@@ -313,10 +314,10 @@ export function Creator({ userId }: { userId: string }) {
 
   // ── Review: quality gate + deskew toggle + confirm ──────────────────────────
   if (stage === 'review' && extraction) {
-    const previewSrc = showOriginal ? originalUrl : (deskewedUrl ?? originalUrl)
+    const previewSrc = safeUploadPreviewSrc(showOriginal ? originalUrl : (deskewedUrl ?? originalUrl))
     return (
       <div className="space-y-4">
-        {msg && <p className={`rounded-lg border px-3 py-2 text-sm ${banner}`}>{msg.text}</p>}
+        {msg && <p className={`rounded-lg border px-3 py-2 text-body-sm ${banner}`}>{msg.text}</p>}
 
         {unreadable && (
           <div className="rounded-2xl border border-primary/40 bg-primary-bg p-4">
@@ -421,7 +422,7 @@ export function Creator({ userId }: { userId: string }) {
   // ── Pick: tip card + capture ────────────────────────────────────────────────
   return (
     <div className="space-y-4">
-      {msg && <p className={`rounded-lg border px-3 py-2 text-sm ${banner}`}>{msg.text}</p>}
+      {msg && <p className={`rounded-lg border px-3 py-2 text-body-sm ${banner}`}>{msg.text}</p>}
 
       {/* The capture tip, up front — a good shot saves a retake. */}
       <div className="flex items-start gap-2.5 rounded-2xl border border-border bg-surface-elevated/40 p-3">

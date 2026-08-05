@@ -154,7 +154,7 @@ export function ContactsTable({ contacts }: { contacts: ContactCore[] }) {
         </div>
       )}
       {msg && !pending && selected.size === 0 && (
-        <p role={msg.ok ? undefined : 'alert'} className={`text-xs ${msg.ok ? 'text-success' : 'text-danger'}`}>
+        <p role={msg.ok ? undefined : 'alert'} className={`text-meta ${msg.ok ? 'text-success' : 'text-danger'}`}>
           {msg.text}
         </p>
       )}

@@ -154,7 +154,7 @@ function TabButton({
       type="button"
       onClick={onClick}
       aria-current={active ? 'true' : undefined}
-      className={`-mb-px flex items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors motion-reduce:transition-none ${
+      className={`-mb-px flex items-center gap-2 border-b-2 px-3 py-2.5 text-body-sm font-semibold transition-colors motion-reduce:transition-none ${
         active
           ? 'border-primary-strong text-text'
           : 'border-transparent text-muted hover:border-border-strong hover:text-text'

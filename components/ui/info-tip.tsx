@@ -30,7 +30,7 @@ export function InfoTip({ label, side = 'top' }: { label: string; side?: 'top' |
         // `group-focus-within/it` opens it on TAB, not only on click: the (i) is the whole
         // affordance, so a keyboard member reaching it should see the guidance without having
         // to guess that Enter reveals more (docs/INTERACTION-STATES.md §2, "tips only").
-        className={`pointer-events-none absolute left-1/2 z-50 w-64 -translate-x-1/2 rounded-control bg-text px-3 py-2 text-xs font-medium leading-relaxed text-on-primary opacity-0 shadow-lg transition-opacity duration-100 ease-out motion-reduce:transition-none group-hover/it:opacity-100 group-focus-within/it:opacity-100 ${open ? 'opacity-100' : ''} ${pos}`}
+        className={`pointer-events-none absolute left-1/2 z-50 w-64 -translate-x-1/2 rounded-control bg-text px-3 py-2 text-meta font-medium leading-relaxed text-on-primary opacity-0 shadow-lg transition-opacity duration-100 ease-out motion-reduce:transition-none group-hover/it:opacity-100 group-focus-within/it:opacity-100 ${open ? 'opacity-100' : ''} ${pos}`}
       >
         {label}
       </span>

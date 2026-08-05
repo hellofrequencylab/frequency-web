@@ -132,7 +132,7 @@ export function EventCalendar({
     <div className="rounded-card border border-border bg-surface">
       {/* Header: month label (grid) or "Upcoming" (list) + the view toggle, and month nav in grid view. */}
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-        <h2 className="text-lg font-semibold text-text">{view === 'grid' ? monthLabel(year, month1) : 'Upcoming'}</h2>
+        <h2 className="text-body-lg font-semibold text-text">{view === 'grid' ? monthLabel(year, month1) : 'Upcoming'}</h2>
         <div className="flex items-center gap-2">
           {view === 'grid' && (
             <div className="flex items-center gap-1">

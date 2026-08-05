@@ -269,7 +269,7 @@ function PerformerList({
             <p className="text-meta text-subtle">{r.adopters} adopters</p>
           </div>
           <div className="shrink-0 text-right">
-            <p className={`text-sm font-bold tabular-nums ${idle ? 'text-subtle' : 'text-text'}`}>
+            <p className={`text-body-sm font-bold tabular-nums ${idle ? 'text-subtle' : 'text-text'}`}>
               {idle ? r.logs_total : r.logs_30d}
             </p>
             <p className="text-2xs text-muted">logs {metric}</p>
@@ -283,7 +283,7 @@ function PerformerList({
 function SlaBucket({ label, sub, value, tone }: { label: string; sub: string; value: number; tone: string }) {
   return (
     <div className="rounded-card bg-surface-elevated/60 px-2 py-3">
-      <p className={`text-xl font-extrabold tabular-nums ${tone}`}>{value}</p>
+      <p className={`text-lead font-extrabold tabular-nums ${tone}`}>{value}</p>
       <p className="mt-0.5 text-meta font-medium text-muted">{label}</p>
       <p className="text-2xs text-muted">{sub}</p>
     </div>

@@ -1745,7 +1745,7 @@ export default async function EventDetailPage({
       }
       // [A2] attendance-mode pill.
       badges={
-        <span className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-xs font-semibold ${mode.cls}`}>
+        <span className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-meta font-semibold ${mode.cls}`}>
           <mode.Icon className="h-3.5 w-3.5" /> {mode.label}
         </span>
       }
@@ -1914,7 +1914,7 @@ export default async function EventDetailPage({
         claim && isUnclaimedPosted && extra?.claim_token && claim === extra.claim_token ? (
           <div className="mb-5 flex flex-col gap-4 rounded-2xl border border-primary/40 bg-primary-bg/60 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <p className="flex items-center gap-1.5 text-lg font-bold text-text">
+              <p className="flex items-center gap-1.5 text-body-lg font-bold text-text">
                 <Zap className="h-5 w-5 shrink-0 text-primary" aria-hidden /> Is this your event?
               </p>
               <p className="mt-1 text-body-sm text-muted">

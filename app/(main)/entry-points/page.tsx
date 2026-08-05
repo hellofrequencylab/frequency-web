@@ -33,7 +33,7 @@ export default async function EntryPointsPage() {
       <DashboardTemplate eyebrow="Entry points" title="Bring people in" width="default">
         <div className="rounded-2xl border border-border bg-surface p-8 text-center lift-1">
           <Megaphone className="mx-auto h-8 w-8 text-primary-strong" aria-hidden />
-          <p className="mt-3 text-lg font-bold text-text">Entry points are a Crew feature</p>
+          <p className="mt-3 text-body-lg font-bold text-text">Entry points are a Crew feature</p>
           <p className="mx-auto mt-1.5 max-w-md text-body-sm text-muted">
             Crew can spin up a branded flyer with a QR code in under a minute, and earn for every
             person it brings in. Join Crew to start your own.

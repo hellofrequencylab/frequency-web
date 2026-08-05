@@ -290,7 +290,7 @@ export default async function FeedPage({
               {hasHome && (
                 <Link
                   href="?sort=nearby"
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  className={`px-2.5 py-1 rounded-md text-meta font-medium transition-colors ${
                     sort === 'nearby'
                       ? 'bg-surface text-text lift-1'
                       : 'text-muted hover:text-text'
@@ -301,7 +301,7 @@ export default async function FeedPage({
               )}
               <Link
                 href="?sort=relevant"
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                className={`px-2.5 py-1 rounded-md text-meta font-medium transition-colors ${
                   sort === 'relevant'
                     ? 'bg-surface text-text lift-1'
                     : 'text-muted hover:text-text'
@@ -311,7 +311,7 @@ export default async function FeedPage({
               </Link>
               <Link
                 href="?sort=recent"
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                className={`px-2.5 py-1 rounded-md text-meta font-medium transition-colors ${
                   sort === 'recent'
                     ? 'bg-surface text-text lift-1'
                     : 'text-muted hover:text-text'
@@ -321,7 +321,7 @@ export default async function FeedPage({
               </Link>
               <Link
                 href="?sort=popular"
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                className={`px-2.5 py-1 rounded-md text-meta font-medium transition-colors ${
                   sort === 'popular'
                     ? 'bg-surface text-text lift-1'
                     : 'text-muted hover:text-text'
@@ -331,7 +331,7 @@ export default async function FeedPage({
               </Link>
               <Link
                 href="?sort=story"
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                className={`px-2.5 py-1 rounded-md text-meta font-medium transition-colors ${
                   sort === 'story'
                     ? 'bg-surface text-text lift-1'
                     : 'text-muted hover:text-text'

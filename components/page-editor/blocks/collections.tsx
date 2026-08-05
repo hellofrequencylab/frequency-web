@@ -147,10 +147,10 @@ export function FeatureGridBlock({
                   />
                 )}
                 <div className={pad}>
-                  {item.title && <h3 className={`text-xl font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
-                  {item.body && <div className={`text-base leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
+                  {item.title && <h3 className={`text-lead font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
+                  {item.body && <div className={`text-body leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
                   {item.href && (
-                    <Link href={safeHref(item.href) ?? '#'} className={`mt-4 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
+                    <Link href={safeHref(item.href) ?? '#'} className={`mt-4 inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
                       Learn more <ArrowRight className="w-3.5 h-3.5" aria-hidden />
                     </Link>
                   )}
@@ -164,10 +164,10 @@ export function FeatureGridBlock({
             return (
               <article key={i} className={`${cardBase} ${pad}`}>
                 <p className={`font-display text-5xl mb-5 ${ink ? 'text-on-ink/20' : 'text-text/10'}`}>{num}</p>
-                {item.title && <h3 className={`text-xl font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
-                {item.body && <div className={`text-base leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
+                {item.title && <h3 className={`text-lead font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
+                {item.body && <div className={`text-body leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
                 {item.href && (
-                  <Link href={safeHref(item.href) ?? '#'} className={`mt-4 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
+                  <Link href={safeHref(item.href) ?? '#'} className={`mt-4 inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
                     Learn more <ArrowRight className="w-3.5 h-3.5" aria-hidden />
                   </Link>
                 )}
@@ -183,10 +183,10 @@ export function FeatureGridBlock({
                   <IconComp className="w-5 h-5" aria-hidden />
                 </div>
               )}
-              {item.title && <h3 className={`text-xl font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
-              {item.body && <div className={`text-base leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
+              {item.title && <h3 className={`text-lead font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
+              {item.body && <div className={`text-body leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
               {item.href && (
-                <Link href={safeHref(item.href) ?? '#'} className={`mt-4 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
+                <Link href={safeHref(item.href) ?? '#'} className={`mt-4 inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
                   Learn more <ArrowRight className="w-3.5 h-3.5" aria-hidden />
                 </Link>
               )}
@@ -338,7 +338,7 @@ export function ChecklistBlock({
             <span className="mt-0.5 shrink-0 w-6 h-6 rounded-lg bg-primary-bg text-primary-strong flex items-center justify-center">
               <Check className="w-3.5 h-3.5" aria-hidden />
             </span>
-            <span className={`text-base leading-relaxed ${textColor}`}>{item.text}</span>
+            <span className={`text-body leading-relaxed ${textColor}`}>{item.text}</span>
           </li>
         ))}
       </ul>
@@ -395,9 +395,9 @@ export function ShowcaseBlock({
                   {p.title}
                 </h3>
                 <div className="bg-surface rounded-3xl p-8 shadow-pop">
-                  <div className="text-base text-muted leading-relaxed space-y-3">{richParagraphs(p.body)}</div>
+                  <div className="text-body text-muted leading-relaxed space-y-3">{richParagraphs(p.body)}</div>
                   {p.href && (
-                    <Link href={safeHref(p.href) ?? '#'} className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-primary-strong hover:underline">
+                    <Link href={safeHref(p.href) ?? '#'} className="mt-5 inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide text-primary-strong hover:underline">
                       Learn more <ArrowRight className="w-4 h-4" aria-hidden />
                     </Link>
                   )}
@@ -515,13 +515,13 @@ export function TiersBlock({
           return (
             <article key={i} className={`relative flex flex-col h-full ${pad} ${cardTone}`}>
               {featured && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-pill bg-primary text-on-primary px-4 py-1 text-xs font-black uppercase tracking-widest shadow-md">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-pill bg-primary text-on-primary px-4 py-1 text-meta font-black uppercase tracking-widest shadow-md">
                   <Star className="w-3.5 h-3.5 fill-current" aria-hidden /> Most popular
                 </span>
               )}
 
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <h3 className="font-display uppercase text-text text-2xl">{tier.name}</h3>
+                <h3 className="font-display uppercase text-text text-page-title">{tier.name}</h3>
                 {tier.badge === 'founder' && (
                   <span className="inline-flex items-center gap-1 rounded-md bg-signal-bg px-2 py-0.5 text-3xs font-bold uppercase tracking-wider text-signal-strong">
                     <Award className="w-3 h-3" aria-hidden /> Founder
@@ -540,21 +540,21 @@ export function TiersBlock({
               </div>
 
               {tier.tagline && (
-                <p className="text-sm text-muted leading-relaxed mb-5 min-h-[2.5rem]">{tier.tagline}</p>
+                <p className="text-body-sm text-muted leading-relaxed mb-5 min-h-[2.5rem]">{tier.tagline}</p>
               )}
 
               {/* Price block */}
               <div className="mb-6">
                 <div className="flex items-baseline gap-2 flex-wrap">
                   {tier.strikePrice && (
-                    <span className="text-2xl font-black text-subtle line-through">{tier.strikePrice}</span>
+                    <span className="text-page-title font-black text-subtle line-through">{tier.strikePrice}</span>
                   )}
                   <span className="font-display uppercase text-text text-4xl leading-none">{tier.price}</span>
                   {tier.cadence && (
-                    <span className="text-base text-muted">{tier.cadence}</span>
+                    <span className="text-body text-muted">{tier.cadence}</span>
                   )}
                 </div>
-                {tier.priceNote && <p className="mt-1.5 text-xs text-subtle">{tier.priceNote}</p>}
+                {tier.priceNote && <p className="mt-1.5 text-meta text-subtle">{tier.priceNote}</p>}
               </div>
 
               {/* Features */}
@@ -564,7 +564,7 @@ export function TiersBlock({
                     <span className={`shrink-0 w-6 h-6 mt-0.5 rounded-lg flex items-center justify-center ${featured ? 'bg-primary-bg/60' : 'bg-success-bg/30'}`}>
                       <Check className={`w-3.5 h-3.5 ${featured ? 'text-primary-strong' : 'text-success'}`} aria-hidden />
                     </span>
-                    <span className="text-sm text-text leading-snug">{f.text}</span>
+                    <span className="text-body-sm text-text leading-snug">{f.text}</span>
                   </li>
                 ))}
               </ul>
@@ -575,14 +575,14 @@ export function TiersBlock({
                 (tier.ctaStyle === 'disabled' ? (
                   <span
                     aria-disabled="true"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-card px-6 py-3.5 text-base font-bold border border-border bg-surface-elevated text-subtle cursor-default select-none"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-card px-6 py-3.5 text-body font-bold border border-border bg-surface-elevated text-subtle cursor-default select-none"
                   >
                     {tier.ctaLabel}
                   </span>
                 ) : (
                   <Link
                     href={safeHref(tier.ctaHref) ?? '#'}
-                    className={`inline-flex w-full items-center justify-center gap-2 rounded-control px-6 py-3.5 text-base font-bold transition-colors ${
+                    className={`inline-flex w-full items-center justify-center gap-2 rounded-control px-6 py-3.5 text-body font-bold transition-colors ${
                       tier.ctaStyle === 'primary'
                         ? 'bg-primary text-on-primary hover:bg-primary-hover shadow-pop'
                         : 'border border-border-strong text-text hover:bg-surface-elevated'
@@ -597,7 +597,7 @@ export function TiersBlock({
         })}
       </div>
       {footnote && (
-        <p className={`mt-8 text-center text-sm leading-relaxed max-w-xl mx-auto ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
+        <p className={`mt-8 text-center text-body-sm leading-relaxed max-w-xl mx-auto ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
           {footnote}
         </p>
       )}

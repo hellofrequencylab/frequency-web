@@ -243,13 +243,13 @@ export function PageHero({
               {leading && <span className="shrink-0">{leading}</span>}
               <div className={`min-w-0${adaptiveText ? ' hero-zone' : ''}`} {...zoneProps('lockup', adaptiveText, initialZoneTones)}>
                 {eyebrow && (
-                  <div className="mb-1.5 flex flex-wrap items-center gap-2 text-meta font-bold uppercase tracking-[0.2em] text-primary sm:text-sm">{eyebrow}</div>
+                  <div className="mb-1.5 flex flex-wrap items-center gap-2 text-meta font-bold uppercase tracking-[0.2em] text-primary sm:text-body-sm">{eyebrow}</div>
                 )}
                 <h1 className={`font-display uppercase leading-[1] text-balance ${titleTone} text-[clamp(1.25rem,3vw,2rem)] break-words`}>
                   {title}
                 </h1>
                 {subtitle && (
-                  <div className={`mt-1.5 max-w-xl text-sm leading-relaxed ${subtitleTone}`}>{subtitle}</div>
+                  <div className={`mt-1.5 max-w-xl text-body-sm leading-relaxed ${subtitleTone}`}>{subtitle}</div>
                 )}
               </div>
             </div>
@@ -298,7 +298,7 @@ export function PageHero({
               {title}
             </h1>
             {subtitle && (
-              <p className={`mx-auto mt-3 max-w-2xl text-base leading-relaxed ${adaptiveText ? 'text-on-media/85' : fade ? 'text-text/80' : 'text-on-ink/80'} sm:mt-5 sm:text-lg`}>{subtitle}</p>
+              <p className={`mx-auto mt-3 max-w-2xl text-body leading-relaxed ${adaptiveText ? 'text-on-media/85' : fade ? 'text-text/80' : 'text-on-ink/80'} sm:mt-5 sm:text-body-lg`}>{subtitle}</p>
             )}
           </div>
           {search && <div className="mt-4 w-full max-w-lg sm:mt-6">{search}</div>}

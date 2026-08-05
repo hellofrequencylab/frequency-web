@@ -131,7 +131,7 @@ export function ProfileSettingsDrawer({
                     type="button"
                     disabled={pending}
                     onClick={() => run(async () => { await toggleSpotlightEnabled(profileId, !spotOn); setSpotOn(!spotOn) }, spotOn ? 'Spotlight turned off' : 'Spotlight turned on')}
-                    className={`w-full rounded-lg border px-3 py-2 text-left text-sm font-medium transition-colors disabled:opacity-50 ${spotOn ? 'border-success/40 text-success hover:bg-success-bg/30' : 'border-border text-text hover:bg-surface-elevated'}`}
+                    className={`w-full rounded-lg border px-3 py-2 text-left text-body-sm font-medium transition-colors disabled:opacity-50 ${spotOn ? 'border-success/40 text-success hover:bg-success-bg/30' : 'border-border text-text hover:bg-surface-elevated'}`}
                   >
                     {spotOn ? 'Spotlight is on — turn off' : 'Turn on Spotlight'}
                   </button>

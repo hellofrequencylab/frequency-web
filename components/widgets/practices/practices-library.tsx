@@ -36,7 +36,7 @@ function Chip({ label, href, active }: { label: string; href: string; active: bo
     <Link
       href={href}
       scroll={false}
-      className={`rounded-pill px-3 py-1 text-xs font-medium transition-colors ${
+      className={`rounded-pill px-3 py-1 text-meta font-medium transition-colors ${
         active ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-muted hover:text-text'
       }`}
     >

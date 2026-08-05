@@ -52,7 +52,7 @@ function Row({ t }: { t: TemplateGov }) {
       <button
         onClick={toggle}
         disabled={pending}
-        className={`rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-60 ${
+        className={`rounded-md border px-2.5 py-1 text-meta font-semibold transition-colors disabled:opacity-60 ${
           t.enabled ? 'border-success/40 text-success' : 'border-border text-muted hover:text-text'
         }`}
       >

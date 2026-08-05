@@ -54,7 +54,7 @@ export function NexusPeopleModule() {
             },
           ].map((s) => (
             <div key={s.label} className="rounded-card border border-border bg-surface p-3">
-              <div className="text-lg font-bold text-text">{s.value}</div>
+              <div className="text-body-lg font-bold text-text">{s.value}</div>
               <div className="text-2xs font-medium uppercase tracking-wide text-muted">{s.label}</div>
             </div>
           ))}

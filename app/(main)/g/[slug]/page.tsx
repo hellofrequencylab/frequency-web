@@ -51,7 +51,7 @@ export default async function GiftPage({ params }: { params: Promise<{ slug: str
             // eslint-disable-next-line @next/next/no-img-element
             <img src={avatarSrc(owner.avatar_url)} alt="" className="h-full w-full object-cover" style={avatarFocusStyle(owner.avatar_url)} />
           ) : (
-            <span className="text-lg font-bold">{getInitials(name)}</span>
+            <span className="text-body-lg font-bold">{getInitials(name)}</span>
           )}
         </div>
 

@@ -76,7 +76,7 @@ export default function ComparisonsIndexPage() {
               className="group flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-6 py-5 lift-1 transition-colors hover:border-primary"
             >
               <span>
-                <span className="block text-lg font-semibold text-text">
+                <span className="block text-body-lg font-semibold text-text">
                   Frequency vs {c.name}
                 </span>
                 <span className="mt-0.5 block text-body-sm text-muted">{c.category}</span>

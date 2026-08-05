@@ -118,7 +118,7 @@ function StatusBadge({ status }: { status: string }) {
   const live = LIVE.has(status)
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-0.5 text-xs font-medium ${
+      className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-0.5 text-meta font-medium ${
         live ? 'bg-primary text-on-primary' : 'border border-border text-muted'
       }`}
     >
@@ -263,7 +263,7 @@ export function SequenceEditor({
             type="button"
             onClick={togglePublish}
             disabled={pending}
-            className={`inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 text-sm font-semibold disabled:opacity-60 ${
+            className={`inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 text-body-sm font-semibold disabled:opacity-60 ${
               live
                 ? 'border border-border-strong text-text hover:bg-surface-elevated'
                 : 'bg-primary text-on-primary hover:opacity-90'
@@ -426,7 +426,7 @@ export function SequenceEditor({
                       setSaved(false)
                     }}
                     aria-pressed={on}
-                    className={`rounded-pill px-3 py-1.5 text-sm font-medium ${
+                    className={`rounded-pill px-3 py-1.5 text-body-sm font-medium ${
                       on ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:bg-surface-elevated'
                     }`}
                   >

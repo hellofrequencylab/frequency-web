@@ -112,7 +112,7 @@ export function LeaderboardList({
               {/* Name — wraps rather than truncating into oblivion; the rank badge
                   rides beneath it so identity reads on one stacked block. */}
               <span className="flex min-w-0 flex-1 flex-col gap-1">
-                <span className={`text-sm leading-tight ${isSelf ? 'font-bold text-primary-strong' : 'font-semibold text-text'}`}>
+                <span className={`text-body-sm leading-tight ${isSelf ? 'font-bold text-primary-strong' : 'font-semibold text-text'}`}>
                   {entry.displayName}
                   {isSelf && <span className="ml-1.5 text-meta font-medium text-primary-strong">you</span>}
                 </span>

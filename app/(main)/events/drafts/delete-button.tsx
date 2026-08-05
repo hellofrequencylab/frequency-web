@@ -30,7 +30,7 @@ export function DeleteDraftButton({ id }: { id: string }) {
       type="button"
       onClick={handleClick}
       aria-label={armed ? 'Confirm delete' : 'Delete draft'}
-      className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-semibold transition-colors ${
+      className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1.5 text-meta font-semibold transition-colors ${
         armed
           ? 'border-danger/40 bg-danger-bg text-danger'
           : 'border-border bg-surface text-subtle hover:text-danger'

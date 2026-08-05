@@ -84,7 +84,7 @@ export function DisputeButton({
             key={r}
             type="button"
             onClick={() => setReason(r)}
-            className={`rounded-pill border px-2.5 py-1 text-xs transition-colors ${
+            className={`rounded-pill border px-2.5 py-1 text-meta transition-colors ${
               reason === r
                 ? 'border-primary bg-primary-bg text-primary-strong'
                 : 'border-border text-muted hover:bg-surface-elevated hover:text-text'

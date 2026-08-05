@@ -91,7 +91,7 @@ export function PhotoHero({
         {eyebrow && (
           <p
             className={`font-bold uppercase tracking-[0.25em] text-primary ${
-              isScreen ? 'text-body-sm sm:text-base mb-4' : 'text-body-sm mb-5'
+              isScreen ? 'text-body-sm sm:text-body mb-4' : 'text-body-sm mb-5'
             }`}
           >
             {eyebrow}
@@ -107,7 +107,7 @@ export function PhotoHero({
         {subtitle && (
           <p
             className={`text-on-ink-muted leading-relaxed mx-auto max-w-2xl ${
-              isScreen ? 'mt-5 text-lg sm:text-xl' : 'mt-6 text-body sm:text-lg'
+              isScreen ? 'mt-5 text-body-lg sm:text-lead' : 'mt-6 text-body sm:text-body-lg'
             }`}
           >
             {subtitle}
@@ -237,7 +237,7 @@ export function SectionHeading({
     <div className={`mb-9 ${centered ? 'text-center' : ''}`}>
       {eyebrow && (
         <p
-          className={`text-sm font-bold uppercase tracking-[0.25em] mb-4 ${
+          className={`text-body-sm font-bold uppercase tracking-[0.25em] mb-4 ${
             isInk ? 'text-primary' : 'text-primary-strong'
           }`}
         >
@@ -253,7 +253,7 @@ export function SectionHeading({
       </h2>
       {kicker && (
         <p
-          className={`mt-4 text-lg sm:text-xl italic ${isInk ? 'text-on-ink-muted' : 'text-muted'} ${
+          className={`mt-4 text-body-lg sm:text-lead italic ${isInk ? 'text-on-ink-muted' : 'text-muted'} ${
             centered ? 'mx-auto max-w-2xl' : ''
           }`}
         >
@@ -302,7 +302,7 @@ export function PullQuote({
         </blockquote>
         {cite && (
           <figcaption
-            className={`mt-7 text-sm font-bold uppercase tracking-[0.25em] ${
+            className={`mt-7 text-body-sm font-bold uppercase tracking-[0.25em] ${
               isInk ? 'text-on-ink-subtle' : 'text-subtle'
             }`}
           >
@@ -331,7 +331,7 @@ export function Stat({
         {value}
       </p>
       <p
-        className={`text-xs uppercase tracking-widest font-bold mt-3 ${
+        className={`text-meta uppercase tracking-widest font-bold mt-3 ${
           isInk ? 'text-on-ink-subtle' : 'text-subtle'
         }`}
       >
@@ -350,7 +350,7 @@ export function Faq({ q, children }: { q: string; children: React.ReactNode }) {
     // shapes the FAQ card (ADR-578); everywhere else the token resolves exactly as before.
     <details className="group rounded-card border border-border bg-surface px-6 py-5 lift-1 [&_summary]:list-none">
       <summary className="flex cursor-pointer items-center justify-between gap-4 text-left select-none">
-        <span className="text-lg font-semibold text-text leading-snug">{q}</span>
+        <span className="text-body-lg font-semibold text-text leading-snug">{q}</span>
         <ChevronDown
           className="h-5 w-5 shrink-0 text-subtle transition-transform group-open:rotate-180"
           aria-hidden
@@ -384,7 +384,7 @@ type ButtonSize = 'sm' | 'md' | 'lg'
 const BUTTON_SIZES: Record<ButtonSize, string> = {
   sm: 'px-5 py-2.5 text-body-sm gap-1.5',
   md: 'px-8 py-3.5 text-body gap-2',
-  lg: 'px-10 py-4 text-lg gap-2',
+  lg: 'px-10 py-4 text-body-lg gap-2',
 }
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
   primary: 'text-emboss bg-primary text-on-primary hover:bg-primary-hover shadow-pop',
@@ -481,7 +481,7 @@ export function OutcomePanel({
       >
         {title}
       </Heading>
-      {children && <div className="mt-4 text-lg leading-relaxed text-muted">{children}</div>}
+      {children && <div className="mt-4 text-body-lg leading-relaxed text-muted">{children}</div>}
       {action && <div className="mt-8">{action}</div>}
     </div>
   )
@@ -572,11 +572,11 @@ export function Steps({
             {String(i + 1).padStart(2, '0')}
           </span>
           <h3
-            className={`mt-3 font-display uppercase text-2xl ${isInk ? 'text-on-ink' : 'text-text'}`}
+            className={`mt-3 font-display uppercase text-page-title ${isInk ? 'text-on-ink' : 'text-text'}`}
           >
             {s.title}
           </h3>
-          <p className={`mt-2 text-base leading-relaxed ${isInk ? 'text-on-ink-muted' : 'text-muted'}`}>
+          <p className={`mt-2 text-body leading-relaxed ${isInk ? 'text-on-ink-muted' : 'text-muted'}`}>
             {s.body}
           </p>
         </div>
@@ -587,7 +587,7 @@ export function Steps({
 
 
 export function Body({ children }: { children: React.ReactNode }) {
-  return <p className="text-lg text-muted leading-relaxed mb-6">{children}</p>
+  return <p className="text-body-lg text-muted leading-relaxed mb-6">{children}</p>
 }
 
 // Big full-width typographic interstitial. Wrap accent words in
@@ -656,7 +656,7 @@ export function PhotoBeat({
           {line}
         </p>
         {note && (
-          <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-on-ink-muted">{note}</p>
+          <p className="mx-auto mt-5 max-w-2xl text-body-lg leading-relaxed text-on-ink-muted">{note}</p>
         )}
       </div>
       <div className="light-strip absolute inset-x-0 top-0 z-10" />
@@ -770,7 +770,7 @@ export function ZigZag({
         <div className="max-w-prose">
           {eyebrow && (
             <p
-              className={`text-sm font-bold uppercase tracking-[0.25em] mb-4 ${
+              className={`text-body-sm font-bold uppercase tracking-[0.25em] mb-4 ${
                 isInk ? 'text-primary' : 'text-primary-strong'
               }`}
             >
@@ -786,13 +786,13 @@ export function ZigZag({
           </h2>
           {kicker && (
             <p
-              className={`mt-3 mb-6 text-xl italic ${isInk ? 'text-on-ink-muted' : 'text-muted'}`}
+              className={`mt-3 mb-6 text-lead italic ${isInk ? 'text-on-ink-muted' : 'text-muted'}`}
             >
               {kicker}
             </p>
           )}
           <div
-            className={`text-lg leading-relaxed space-y-4 ${kicker ? '' : 'mt-6'} ${
+            className={`text-body-lg leading-relaxed space-y-4 ${kicker ? '' : 'mt-6'} ${
               isInk ? 'text-on-ink-muted' : 'text-muted'
             }`}
           >
@@ -801,7 +801,7 @@ export function ZigZag({
           {cta && (
             <Link
               href={safeHref(cta.href) ?? '#'}
-              className={`mt-6 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide hover:underline ${
+              className={`mt-6 inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide hover:underline ${
                 isInk ? 'text-primary' : 'text-primary-strong'
               }`}
             >
@@ -855,7 +855,7 @@ export function PillarNav({
     <section className={`${bg} px-6 py-16 sm:py-20`}>
       <div className="max-w-5xl mx-auto">
         <p
-          className={`text-center text-sm font-bold uppercase tracking-[0.25em] mb-8 ${
+          className={`text-center text-body-sm font-bold uppercase tracking-[0.25em] mb-8 ${
             isInk ? 'text-primary' : 'text-primary-strong'
           }`}
         >
@@ -920,8 +920,8 @@ function PillarFace({
         {n}
       </span>
       <div>
-        <p className={`font-display uppercase text-2xl leading-none ${head}`}>{label}</p>
-        <p className={`mt-1.5 text-xs font-bold uppercase tracking-widest ${active ? accent : sub}`}>
+        <p className={`font-display uppercase text-page-title leading-none ${head}`}>{label}</p>
+        <p className={`mt-1.5 text-meta font-bold uppercase tracking-widest ${active ? accent : sub}`}>
           {active ? 'You are here' : tag}
         </p>
       </div>

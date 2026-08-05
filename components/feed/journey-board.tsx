@@ -338,7 +338,7 @@ export function JourneyBoard({
                   p.count > 0 ? 'bg-surface' : 'bg-surface/50'
                 }`}
               >
-                <p className={`text-sm font-bold tabular-nums ${p.count > 0 ? 'text-text' : 'text-subtle'}`}>
+                <p className={`text-body-sm font-bold tabular-nums ${p.count > 0 ? 'text-text' : 'text-subtle'}`}>
                   {p.count}
                 </p>
                 <p className="text-3xs text-muted">{p.name}</p>

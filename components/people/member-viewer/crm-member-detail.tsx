@@ -86,7 +86,7 @@ function Avatar({ detail }: { detail: CrmMemberDetail }) {
     )
   }
   return (
-    <div className="flex h-14 w-14 items-center justify-center rounded-pill bg-primary-bg text-lg font-semibold text-primary-strong select-none">
+    <div className="flex h-14 w-14 items-center justify-center rounded-pill bg-primary-bg text-body-lg font-semibold text-primary-strong select-none">
       {getInitials(detail.displayName)}
     </div>
   )

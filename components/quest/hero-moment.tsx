@@ -213,7 +213,7 @@ function FinishMoment({
           <p className="text-2xs font-semibold uppercase tracking-widest text-rank-gold">
             Journey finished
           </p>
-          <p className="mt-0.5 text-lg font-bold leading-tight text-text">
+          <p className="mt-0.5 text-body-lg font-bold leading-tight text-text">
             You finished {journeyTitle}.
           </p>
 

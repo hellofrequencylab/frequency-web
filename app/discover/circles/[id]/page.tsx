@@ -117,11 +117,11 @@ export default async function CirclePage({
         {/* About */}
         {circle.about ? (
           <section className="mb-10">
-            <p className="text-lg text-muted leading-relaxed whitespace-pre-line">{circle.about}</p>
+            <p className="text-body-lg text-muted leading-relaxed whitespace-pre-line">{circle.about}</p>
           </section>
         ) : (
           <section className="mb-10">
-            <p className="text-lg text-muted leading-relaxed">
+            <p className="text-body-lg text-muted leading-relaxed">
               A small standing group of neighbors gathering in person around what they share.
               Up to fifty people, close enough to walk to, small enough that the regulars learn
               your name and notice the week you go missing.

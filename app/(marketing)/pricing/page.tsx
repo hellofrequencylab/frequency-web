@@ -354,7 +354,7 @@ export default async function PricingPage() {
         <div className="mx-auto mb-6 h-28 w-full max-w-xs">
           <Illustration name="earn-together" className="h-full" />
         </div>
-        <p className="text-center text-lg leading-relaxed text-muted sm:text-xl">{MISSION_FRAMING}</p>
+        <p className="text-center text-body-lg leading-relaxed text-muted sm:text-lead">{MISSION_FRAMING}</p>
       </Section>
 
       {/* The CSS that drives the monthly/yearly toggle island: hide the interval the wrapper is not on.
@@ -522,7 +522,7 @@ export default async function PricingPage() {
           title="Host, Guide, and Mentor are earned, not bought."
           kicker="You cannot buy your way to the front of the room."
         />
-        <p className="text-lg leading-relaxed text-muted">
+        <p className="text-body-lg leading-relaxed text-muted">
           A plan is how you run a Space. Leadership in the community is something you grow into. Host,
           Guide, and Mentor come from showing up and looking after the people around you, never from a
           checkout page.
@@ -586,19 +586,19 @@ function PlanCard({
       >
         {offering.label}
       </h3>
-      <p className={`mt-1 text-sm font-semibold ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
+      <p className={`mt-1 text-body-sm font-semibold ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
         {offering.tagline}
       </p>
 
       <PlanPrice offering={offering} ink={ink} featured={featured} />
 
-      <p className={`mt-3 text-sm ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{offering.billing}</p>
+      <p className={`mt-3 text-body-sm ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{offering.billing}</p>
       {offering.trial && (
-        <p className={`mt-1 text-sm font-semibold ${ink ? 'text-on-ink' : 'text-text'}`}>
+        <p className={`mt-1 text-body-sm font-semibold ${ink ? 'text-on-ink' : 'text-text'}`}>
           {offering.trial}
         </p>
       )}
-      <p className={`mt-3 flex-1 text-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
+      <p className={`mt-3 flex-1 text-body-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
         {offering.forWho}
       </p>
 
@@ -621,7 +621,7 @@ function RateLine({ takeRate, ink = false }: { takeRate: string; ink?: boolean }
   const network = rest.join(', ')
   return (
     <p
-      className={`mt-4 border-t pt-3 text-sm leading-relaxed ${
+      className={`mt-4 border-t pt-3 text-body-sm leading-relaxed ${
         ink ? 'border-on-ink/10' : 'border-border'
       }`}
     >
@@ -668,7 +668,7 @@ function PlanPrice({
         <span key={key} data-interval-show={key}>
           {anchor && (
             <span className="flex items-baseline gap-2">
-              <span className={`text-sm line-through ${ink ? 'text-on-ink-subtle' : 'text-subtle'}`}>
+              <span className={`text-body-sm line-through ${ink ? 'text-on-ink-subtle' : 'text-subtle'}`}>
                 {anchor}/mo
               </span>
               <span
@@ -691,7 +691,7 @@ function PlanPrice({
       ))}
       {offering.betaNote && (
         <span
-          className={`mt-2 block text-xs font-semibold ${
+          className={`mt-2 block text-meta font-semibold ${
             ink ? 'text-primary' : 'text-primary-strong'
           }`}
         >
