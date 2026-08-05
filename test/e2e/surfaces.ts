@@ -343,6 +343,40 @@ export async function assertNotProtectionWall(page: Page): Promise<void> {
   }
 }
 
+/**
+ * Fail LOUDLY when a MEMBER surface lands on /sign-in.
+ *
+ * Two different silences hide here, and neither may be allowed to pass as a result:
+ *
+ *  · The storage state is present but DEAD — an expired access token whose refresh token has
+ *    already been rotated, or (the one that bites in CI) a session minted for a different
+ *    host, because a Supabase auth cookie is domain-scoped and every PR gets a new preview
+ *    hostname. Nothing about that is visible from the outside: Playwright would happily
+ *    photograph the sign-in page under the name `/feed`, and the a11y suite would audit it
+ *    and report on the sign-in form's contrast as if it were the shell's.
+ *  · The account exists but cannot reach the surface (onboarding not finished, no Space
+ *    membership). Same photograph-the-wrong-page outcome.
+ *
+ * A skip would be wrong here. The anon path skips because "this route has no public view" is
+ * a true and permanent fact; this is a broken credential, which is a thing someone must fix,
+ * so it throws.
+ */
+export function assertMemberSession(page: Page, surface: Surface): void {
+  if (surface.audience !== 'member') return
+  const landed = currentPathname(page)
+  if (!landed.startsWith('/sign-in')) return
+  throw new Error(
+    [
+      `${surface.path} redirected to ${landed} WITH a member session configured.`,
+      'PW_STORAGE_STATE is set, so this is a dead credential rather than the known blind spot:',
+      '  · the session expired, or its refresh token was already rotated by an earlier run; or',
+      '  · it was minted for a different host (auth cookies are domain-scoped, and every PR',
+      '    preview gets a new hostname), so re-mint it against THIS PW_BASE_URL.',
+      'Re-mint with `pnpm e2e:session` — see test/e2e/README.md § The member shell.',
+    ].join('\n'),
+  )
+}
+
 /** Did an anonymous visit get bounced to sign-in? Returns the landing pathname. */
 export function currentPathname(page: Page): string {
   try {

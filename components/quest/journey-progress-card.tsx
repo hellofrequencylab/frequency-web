@@ -4,6 +4,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { ExpressionAction } from '@/app/(main)/crew/challenges/expression-action'
 import { ExpressionIcon, expressionPillarStyle } from '@/lib/quest/expression-pillar'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { cn } from '@/lib/utils'
 
 // JourneyProgressCard — the honest arc for one active Journey on the Journey page.
 // A Journey is finished by logging its Practices on 14 DISTINCT days inside its
@@ -196,11 +197,29 @@ function ExpressionPillarLine({ expressionDone }: { expressionDone: boolean }) {
       className="inline-flex items-center gap-1.5 text-meta font-medium"
       style={expressionPillarStyle()}
     >
+      {/* The done pip paints a glyph ON the rank CORE, so it is governed by WCAG 1.4.11 (3:1),
+          not the 4.5 text bar — and it is now measured: `text-on-primary on rank-plum` in the
+          contrast gate's rank family, 4.46:1.
+          IT USED TO PAINT NOTHING. The ink was `var(--color-on-primary)`, and `--color-on-primary`
+          is declared in globals.css's `@theme inline` block — which INLINES the value into the
+          `text-on-primary` utility and does NOT emit the custom property to :root. So the var was
+          undefined, the declaration was invalid at computed-value time, and the check glyph fell
+          back to the INHERITED --color-text: 2.90:1 on plum in DAWN light, under the 3:1 floor.
+          The four other rank crests (standing-hero, season-map, hero-moment ×2) get this right by
+          using the `text-on-primary` UTILITY; this one reached for the raw var. Same fix as the
+          `--color-rank-*` note in standing-hero.tsx: name the token that actually resolves.
+          The core (not `--rank-deep`) stays the fill on purpose — a deep-step pip measures
+          1.80:1 against the dark surface and would vanish in dark mode, where the core holds
+          4.10:1. Deep is the ground for TEXT (see `solid` in lib/season-ranks.ts), not for a
+          small pip that has to be findable on both canvases. */}
       <span
-        className="inline-flex h-5 w-5 items-center justify-center rounded-pill"
+        className={cn(
+          'inline-flex h-5 w-5 items-center justify-center rounded-pill',
+          expressionDone && 'text-on-primary',
+        )}
         style={
           expressionDone
-            ? { background: 'var(--rank)', color: 'var(--color-on-primary)' }
+            ? { background: 'var(--rank)' }
             : { background: 'color-mix(in srgb, var(--rank) 14%, var(--color-surface))', color: 'var(--rank-deep)' }
         }
         aria-hidden

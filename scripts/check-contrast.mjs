@@ -24,7 +24,9 @@
 // THE PAIR TABLE lives in this file, below, with a minimum per ROLE:
 //   body  4.5  — text at normal weight/size (WCAG 1.4.3 AA)
 //   large 3.0  — type only used at ≥18.66px bold / ≥24px, plus decorative accents (1.4.3 large)
-//   edge  3.0  — non-text boundaries that identify a control or state (WCAG 1.4.11)
+//   edge  3.0  — non-text boundaries, GLYPHS and indicators that identify a control or state
+//                (WCAG 1.4.11). This is how the table expresses an icon-only minimum: a chip
+//                carrying an icon rather than a label is `edge`, not `body`.
 // A pair may carry a `waiver`: a pair that fails its role minimum TODAY and cannot be fixed
 // without a palette decision by the owner. A waiver freezes the CURRENT ratio as a floor, so the
 // pair is still regression-proof (it may improve, never worsen) and stays visible in every run's
@@ -261,6 +263,21 @@ export const WAIVERS = [
     bg: '--color-surface',
     floors: { 'Light-lock on a dark device': 2.52, 'DAWN light': 2.52, 'Midnight light': 2.86 },
     why: 'The amber brand fill on white is 2.52:1. Fine for a decorative fill; listed because the same token is the fill under button labels (see the first waiver).',
+  },
+  {
+    fg: '#FFFFFF',
+    bg: '--rank-gold',
+    floors: {
+      'DAWN light': 2.46, 'DAWN dark': 2.46, 'Midnight light': 2.46, 'Midnight dark': 2.46,
+      'Light-lock on a dark device': 2.46,
+    },
+    why:
+      'White on the GOLD core is 2.46:1 — under even the 3:1 non-text bar, and the only rank of the ' +
+      'ten that misses it. Not shipped debt: NOTHING paints it today, and the fix is not a palette ' +
+      'edit — gold is the brand light and is meant to be the lightest core in the spectrum, so it ' +
+      'cannot carry a light glyph by construction. The pair is kept at a frozen floor so (a) the ' +
+      'fact stays printed in every run instead of being deleted, and (b) gold cannot drift lighter. ' +
+      'Anything gold-cored that needs a glyph uses --color-text-on-primary (7.54:1) or the deep step.',
   },
   {
     fg: '--color-border-strong',
