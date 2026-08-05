@@ -180,14 +180,15 @@ export function BookingServiceTypesForm({
                   ))}
                 </select>
               </label>
-              <button
-                type="button"
+              <IconButton
+                variant="bordered"
+                tone="danger"
+                label="Remove this service"
                 onClick={() => removeRow(i)}
-                aria-label="Remove this service"
-                className="mb-1 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-danger/40 hover:text-danger"
+                className="mb-1"
               >
                 <Trash2 className="h-4 w-4" aria-hidden />
-              </button>
+              </IconButton>
             </div>
             <label className="flex flex-col gap-1">
               <span className="text-meta font-medium text-muted">Description (optional)</span>

@@ -49,14 +49,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 3738,
+      "baseline": 3706,
       "frozen": {
         "at": "2026-08-05",
-        "value": 3738,
+        "value": 3706,
         "direction": "lowered",
         "basis": "6a00b952da5c",
-        "reason": "Side effect of the monochrome sweep and the Avatar/Toast consolidation: five literal radius steps moved onto role tokens while their surrounding markup was already being edited.",
-        "from": 3743
+        "reason": "Side effect of the icon-button sweep and the dock geometry fix: literal radius steps moved onto role tokens while the surrounding markup was already being rewritten.",
+        "from": 3738
       },
       "history": [
         {
@@ -128,6 +128,13 @@
           "to": 3738,
           "direction": "lowered",
           "reason": "Side effect of the monochrome sweep and the Avatar/Toast consolidation: five literal radius steps moved onto role tokens while their surrounding markup was already being edited."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 3738,
+          "to": 3706,
+          "direction": "lowered",
+          "reason": "Side effect of the icon-button sweep and the dock geometry fix: literal radius steps moved onto role tokens while the surrounding markup was already being rewritten."
         }
       ]
     },
@@ -739,13 +746,13 @@
         "**/*.{test,spec}.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 37,
+      "baseline": 12,
       "frozen": {
         "at": "2026-08-05",
-        "value": 37,
-        "direction": "rebased",
+        "value": 12,
+        "direction": "lowered",
         "basis": "3b1142ddb186",
-        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
+        "reason": "Phase 3's first slice, unblocked by the primitives landing: 25 icon-only controls moved onto components/ui/icon-button.tsx, which owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance. Each hand-rolled control had been re-deriving all four and some got it wrong - rsvp-controls shipped a 28px stepper, under BOTH floors. 37 -> 12.",
         "from": 37
       },
       "history": [
@@ -762,6 +769,13 @@
           "to": 37,
           "direction": "rebased",
           "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 37,
+          "to": 12,
+          "direction": "lowered",
+          "reason": "Phase 3's first slice, unblocked by the primitives landing: 25 icon-only controls moved onto components/ui/icon-button.tsx, which owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance. Each hand-rolled control had been re-deriving all four and some got it wrong - rsvp-controls shipped a 28px stepper, under BOTH floors. 37 -> 12."
         }
       ]
     }

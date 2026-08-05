@@ -159,7 +159,11 @@ function Segment<T extends number>({
             aria-label={`${n} ${n === 1 ? 'column' : 'columns'}`}
             title={`${n} ${n === 1 ? 'column' : 'columns'}`}
             onClick={() => onChange(n)}
-            className={`inline-flex h-8 w-8 items-center justify-center rounded-pill transition-colors motion-reduce:transition-none ${
+            // Same call as the calendar view toggle: the checked radio carries a bg-primary
+            // fill, which IconButton has no variant for, so this stays hand-rolled and takes
+            // the kit's `tap-target` instead. 32px cleared the density floor but not the 44px
+            // coarse-pointer one, and this is a phone-first storefront control.
+            className={`tap-target inline-flex h-8 w-8 items-center justify-center rounded-pill transition-colors motion-reduce:transition-none ${
               on ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated hover:text-text'
             }`}
           >

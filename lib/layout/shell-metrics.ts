@@ -21,8 +21,23 @@
 // width already lives in SHELL_ROW_CLASS at the bottom of this file, which is what pages actually
 // use; a second, unused spelling of the same number is a place for the two to disagree.)
 
-/** Left navigation rail: `w-48` = 12rem. `hidden md:flex`, so it costs nothing below `md`. */
+/** Left navigation rail: `w-48` = 12rem. `hidden md:flex`, so it costs nothing below `md`.
+ *
+ *  This is the OPEN rail, and open is what the claim page must match. Both rails now run DAWN's
+ *  three-position fold ladder (lib/layout/rail-fold.ts), so a member can fold either one to a
+ *  56px strip — but that is a PER-VIEWER standing instruction, not the shell's geometry. The
+ *  claim page renders for a visitor who has no rails at all and no instruction to read, so it
+ *  keeps deriving from the open widths. (Same reasoning the right rail already used: its folded
+ *  56 has never been part of RIGHT_RAIL_PX either.) */
 export const LEFT_RAIL = 12 // rem
+
+/** Either rail, FOLDED: the `w-14` strip. Deliberately NOT a number here — it is not part of any
+ *  claim-page calc, and stating it as "56" would repeat the unit mistake this file exists to end:
+ *  `w-14` is 3.5rem, which is 59.5px at this app's 17px root, while the right rail's COLUMN
+ *  carries a literal inline `56`. The left rail's strip uses the same `w-14` class the right
+ *  rail's strip has always used, so the two sides fold to the same STEP; the column's 56 is a
+ *  separate, pre-existing inline value. shell-metrics.test.ts pins both spellings. */
+export const RAIL_STRIP_CLASS = 'w-14'
 
 /** Right rail column, in PIXELS. Its width is an INLINE STYLE, not a Tailwind class:
  *  `settings.open ? settings.width : railCollapsed ? 56 : 288`.

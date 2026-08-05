@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { ArrowRight, Loader2, Lock, Minus, Plus } from 'lucide-react'
 import { isError } from '@/lib/action-result'
+import { IconButton } from '@/components/ui/icon-button'
 import { startSpaceLoadoutCheckout } from './actions'
 
 // GO BUSINESS CTA (client · ADR-552). The single upgrade action on the billing surface: a free Space
@@ -76,27 +77,23 @@ export function GoBusinessCta({
             <div className="mt-3 flex items-center gap-3">
               <span className="text-meta font-semibold text-text">Extra operator seats</span>
               <div className="inline-flex items-center gap-1 rounded-lg border border-border">
-                <button
-                  type="button"
-                  aria-label="Remove a seat"
+                <IconButton
+                  label="Remove a seat"
                   onClick={() => setExtraSeats((n) => Math.max(0, n - 1))}
                   disabled={pending || extraSeats <= 0}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-l-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-40"
                 >
                   <Minus className="h-3.5 w-3.5" aria-hidden />
-                </button>
+                </IconButton>
                 <span className="min-w-8 text-center text-body-sm font-semibold tabular-nums text-text" aria-live="polite">
                   {extraSeats}
                 </span>
-                <button
-                  type="button"
-                  aria-label="Add a seat"
+                <IconButton
+                  label="Add a seat"
                   onClick={() => setExtraSeats((n) => Math.min(MAX_EXTRA_SEATS, n + 1))}
                   disabled={pending || extraSeats >= MAX_EXTRA_SEATS}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-r-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-40"
                 >
                   <Plus className="h-3.5 w-3.5" aria-hidden />
-                </button>
+                </IconButton>
               </div>
               <span className="text-2xs text-muted">Your own seat is included.</span>
             </div>

@@ -17,6 +17,7 @@ import type { RevealPayload } from '@/lib/on-air'
 import { achievedTier, TIER_LABELS, TIER_ORDER, TIER_FLOOR_MIN } from '@/lib/practices/tiers'
 import { depthStreakLine } from '@/lib/practices/depth-streak'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { IconButton } from '@/components/ui/icon-button'
 
 const fmtMin = (sec: number) => {
   const m = Math.round(sec / 60)
@@ -261,15 +262,9 @@ export function Reveal({
       {/* Swipe rail: chevrons flank the dots; the right one walks the cards and,
           from the last card, swipes it off and closes the mode. */}
       <div className="flex items-center justify-center gap-5 py-4">
-        <button
-          type="button"
-          onClick={prev}
-          disabled={panel === 0}
-          aria-label="Previous card"
-          className="flex h-8 w-8 items-center justify-center rounded-pill border border-border text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-30"
-        >
+        <IconButton variant="bordered" label="Previous card" onClick={prev} disabled={panel === 0}>
           <ChevronLeft className="h-4 w-4" />
-        </button>
+        </IconButton>
         <div className="flex items-center gap-1.5">
           {[0, 1, 2, 3].map((i) => (
             <span
@@ -280,14 +275,9 @@ export function Reveal({
             />
           ))}
         </div>
-        <button
-          type="button"
-          onClick={next}
-          aria-label={panel >= 3 ? 'Tune back in' : 'Next card'}
-          className="flex h-8 w-8 items-center justify-center rounded-pill border border-border text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-        >
+        <IconButton variant="bordered" label={panel >= 3 ? 'Tune back in' : 'Next card'} onClick={next}>
           <ChevronRight className="h-4 w-4" />
-        </button>
+        </IconButton>
       </div>
     </div>
   )

@@ -405,6 +405,9 @@ function OutlineTree({
   )
 }
 
+// The tree's row actions. This used to hand-roll a 28px box that cleared neither the 32px
+// density floor nor the 44px coarse-pointer target and had no focus ring; it is now a thin
+// naming shim over IconButton, which the same file already composes for Back and Close.
 function IconBtn({
   label,
   danger = false,
@@ -417,17 +420,9 @@ function IconBtn({
   children: React.ReactNode
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-      className={`flex h-7 w-7 items-center justify-center rounded-md hover:bg-surface ${
-        danger ? 'text-danger hover:bg-danger-bg' : 'text-muted hover:text-text'
-      }`}
-    >
+    <IconButton label={label} tone={danger ? 'danger' : 'default'} onClick={onClick}>
       {children}
-    </button>
+    </IconButton>
   )
 }
 

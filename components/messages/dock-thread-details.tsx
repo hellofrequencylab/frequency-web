@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { X, Loader2, LogOut, Pencil } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
+import { IconButton } from '@/components/ui/icon-button'
 
 // ── The conversation console the dock was missing (ADR-896 parity) ────────────────────────
 // Rename, leave and the participant roster lived ONLY on app/(main)/messages/[id]/page.tsx,
@@ -146,14 +147,9 @@ export function DockThreadDetails({
     >
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
         <h2 className="text-body-sm font-semibold text-text">Details</h2>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close details"
-          className="-mr-1 inline-flex h-10 w-10 items-center justify-center rounded-lg text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
-        >
+        <IconButton label="Close details" onClick={onClose} className="-mr-1">
           <X className="h-4 w-4" aria-hidden />
-        </button>
+        </IconButton>
       </div>
 
       {/* min-h-0 + a single scrolling child: the roster is the only thing that scrolls, so a

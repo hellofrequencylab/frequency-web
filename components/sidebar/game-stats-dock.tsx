@@ -104,10 +104,17 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
   return (
     <div
       ref={rootRef}
-      // Positioning belongs to DockBar now, not here. This is a SEGMENT of the anchored bar
-      // (components/layout/dock-bar.tsx) rather than its own floating object, so it carries
-      // only its surface: the top-rounded crest, the border and the blur.
-      className="w-full rounded-t-2xl border-x border-t border-border/70 bg-[var(--color-canvas)]/95 px-2 pt-1 backdrop-blur-sm"
+      // Positioning AND surface belong to DockBar, not here. This is a SEGMENT of the anchored
+      // bar (components/layout/dock-bar.tsx), so it draws NO crest, NO border and NO blur — the
+      // bar already draws all three around both segments.
+      //
+      // It used to keep its own `rounded-t-2xl border-x border-t bg-canvas/95 backdrop-blur-sm`
+      // INSIDE the bar's `rounded-t-card` + border + blur. Two nested crests, two hairlines, two
+      // blurs: the Vault read as a separate rounded pill sitting in a tray, while the chat side
+      // was correctly flush (`rounded-none h-full`). That mismatch is the whole reason the two
+      // halves looked like different objects. A split button shares one surface; only the
+      // divider between the halves says there are two.
+      className="w-full px-2 pt-1"
     >
       {/* The panel reveals INSIDE the tab (grid-rows 0fr -> 1fr) rather than as a sibling above
           it, so the tab's bottom edge stays pinned to 0 and the corner never lifts off. */}

@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { isError } from '@/lib/action-result'
 import { addClientNote, deleteClientNote } from '@/lib/crm/client-notes-actions'
 import type { ClientNote } from '@/lib/crm/client-notes'
+import { IconButton } from '@/components/ui/icon-button'
 
 // CLIENT NOTES PANEL (client, ENTITY-SPACES-BUILD Phase 2). The interactive read/add/delete surface
 // for a Space owner's PERSONAL-DATA notes on one contact. The notes are fetched server-side
@@ -144,15 +145,15 @@ export function ClientNotesPanel({
                   {sinceFmt.format(new Date(note.createdAt))}
                 </p>
                 {!readOnly && (
-                  <button
-                    type="button"
+                  <IconButton
+                    variant="bordered"
+                    tone="danger"
+                    label="Delete this note"
                     onClick={() => remove(note.id)}
                     disabled={pending}
-                    aria-label="Delete this note"
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-danger/40 hover:text-danger disabled:opacity-40"
                   >
                     <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                  </button>
+                  </IconButton>
                 )}
               </div>
             </li>

@@ -124,7 +124,16 @@ export function DockBar({ vault }: { vault: React.ReactNode }) {
       // exists to measure. At lg+ the inline span overrides both. It must not be `invisible`
       // while unmeasured: on a tablet there is no rail and there never will be, so hiding on a
       // null span would delete the score from that whole range.
-      className="pointer-events-none fixed bottom-0 right-3 z-40 hidden w-72 items-stretch overflow-hidden rounded-t-card border-x border-t border-chrome-border bg-chrome/95 backdrop-blur-sm md:flex print:hidden"
+      // The crest is ASYMMETRIC by design: `rounded-tl-card` on the outer LEFT where the bar
+      // meets open canvas, `rounded-tr-control` on the outer RIGHT where it meets the viewport
+      // edge. Both are role tokens, so a skin retunes them together. A corner that turns into
+      // open space wants the softer card radius; one that dies against an edge wants the
+      // tighter control radius, or it reads as a bubble floating off the side of the screen.
+      //
+      // The INNER edges either side of the divider stay square — that is what makes this one
+      // split button rather than two tabs. `overflow-hidden` enforces it: neither segment can
+      // round a corner the bar has not granted it.
+      className="pointer-events-none fixed bottom-0 right-3 z-40 hidden w-72 items-stretch overflow-hidden rounded-tl-card rounded-tr-control border-x border-t border-chrome-border bg-chrome/95 backdrop-blur-sm md:flex print:hidden"
     >
       {/* The Vault segment. min-w-0 so its head can shrink rather than push the chat off. */}
       <div className="pointer-events-auto min-w-0 flex-1">{vault}</div>

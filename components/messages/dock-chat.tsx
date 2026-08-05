@@ -19,6 +19,7 @@ import { RoomThread } from '@/components/rooms/room-thread'
 import { DockThreadDetails } from '@/components/messages/dock-thread-details'
 import { DOCK_BACK_EVENT, type DockOpenDetail } from '@/lib/messages/dock-open'
 import { dmTitle } from '@/lib/messages/dm-title'
+import { IconButton } from '@/components/ui/icon-button'
 
 // Module-level cache so reopening the dock is INSTANT (the summary is a few RPCs, which
 // is what felt slow). Warmed by the launcher on mount (prefetchDockSummary) and refreshed
@@ -246,11 +247,11 @@ export function DockChat({
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
-          {/* p-1 on a 20px icon is a ~28px target. Padding to a 40px hit area WITHOUT changing
-              the rendered glyph, so the desktop card looks identical and a thumb can find it. */}
-          <button type="button" onClick={back} aria-label="Back to inbox" className="-ml-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-subtle transition-colors hover:bg-surface-elevated hover:text-text">
+          {/* IconButton owns the density here: 32px for a mouse, 44px on a coarse pointer, so
+              the dock header keeps its thumb-reachable back control without a hand-rolled box. */}
+          <IconButton label="Back to inbox" onClick={back} className="-ml-1 shrink-0">
             <ChevronLeft className="h-5 w-5" aria-hidden />
-          </button>
+          </IconButton>
           {/* Parity with the page's title: a 1:1 thread is a route to the person you are
               talking to. From the dock there was no way to reach their profile at all. */}
           {open.kind === 'dm' && peer ? (
@@ -261,19 +262,18 @@ export function DockChat({
             <span className="min-w-0 flex-1 truncate text-body-sm font-semibold text-text">{heading}</span>
           )}
           {open.kind === 'dm' && dm && (
-            <button
+            <IconButton
               ref={detailsButtonRef}
-              type="button"
+              label="Conversation details"
               onClick={() => setDetailsOpen((v) => !v)}
               aria-expanded={detailsOpen}
               // Only while the layer exists: aria-controls pointing at an id that is not in
               // the document is a dangling reference, and the layer is mounted on open.
               aria-controls={detailsOpen ? 'dock-thread-details' : undefined}
-              aria-label="Conversation details"
-              className="-mr-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+              className="-mr-1 shrink-0"
             >
               <Info className="h-4 w-4" aria-hidden />
-            </button>
+            </IconButton>
           )}
         </div>
         <div className="relative min-h-0 flex-1 overflow-hidden">

@@ -5,7 +5,7 @@ import { Hammer, Plus, Wallet, CheckCircle2, Rocket, PackageX, EyeOff, Trash2 } 
 import { IndexTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { IconButton } from '@/components/ui/icon-button'
 import { getMyProfileId } from '@/lib/auth'
 import { listMyMakerProducts } from '@/lib/commerce/products'
 import { listOrdersForSeller } from '@/lib/commerce/orders'
@@ -27,22 +27,17 @@ const STATUS_LABEL: Record<string, string> = {
   draft: 'Draft', active: 'Live', sold_out: 'Sold out', archived: 'Archived',
 }
 
-// A compact icon-only submit control (the storefront row-actions read as a tight
-// icon cluster, not a wrap of labelled buttons). The label is the accessible name
-// AND the hover tooltip, so nothing is lost by dropping the visible text.
+// A compact icon-only SUBMIT control (the storefront row-actions read as a tight icon
+// cluster, not a wrap of labelled buttons). This page is where the density was designed,
+// and IconButton was extracted FROM it -- so the shape now comes back the other way: the
+// only thing left here is `type="submit"`, because each action is its own server-action
+// form. Everything else (the 32px floor, the 44px coarse target, the focus ring, the
+// press) belongs to the primitive.
 function IconSubmit({ label, danger = false, children }: { label: string; danger?: boolean; children: ReactNode }) {
   return (
-    <button
-      type="submit"
-      aria-label={label}
-      title={label}
-      className={cn(
-        'inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-        danger ? 'hover:text-danger' : 'hover:text-text',
-      )}
-    >
+    <IconButton type="submit" label={label} tone={danger ? 'danger' : 'default'}>
       {children}
-    </button>
+    </IconButton>
   )
 }
 

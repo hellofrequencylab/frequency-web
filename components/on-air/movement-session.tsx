@@ -39,6 +39,7 @@ import {
   Volleyball,
 } from 'lucide-react'
 import { OnAirIcon } from './icons'
+import { IconButton } from '@/components/ui/icon-button'
 import { MovementArt } from '@/components/feed/zap-menu-art'
 import { Reveal } from './reveal'
 import { MindlessMasthead } from './mode-toggle'
@@ -1567,23 +1568,13 @@ function Stepper({
 }) {
   return (
     <div className={`flex items-center justify-between rounded-card border border-border px-1.5 ${className}`}>
-      <button
-        type="button"
-        onClick={onLess}
-        aria-label="Less"
-        className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-      >
+      <IconButton label="Less" onClick={onLess}>
         <Minus className="h-3.5 w-3.5" />
-      </button>
+      </IconButton>
       <span className="text-body-sm font-semibold tabular-nums text-text">{label}</span>
-      <button
-        type="button"
-        onClick={onMore}
-        aria-label="More"
-        className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-      >
+      <IconButton label="More" onClick={onMore}>
         <Plus className="h-3.5 w-3.5" />
-      </button>
+      </IconButton>
     </div>
   )
 }

@@ -151,7 +151,11 @@ export function EventCalendar({
               </IconButton>
             </div>
           )}
-          {/* Grid / list view toggle. */}
+          {/* Grid / list view toggle. Deliberately NOT IconButton: the selected half carries a
+              bg-primary fill and IconButton has no filled variant, and `cn` is a plain join, so a
+              className fill would be settled by stylesheet order rather than by the call site.
+              What was wrong was the SIZE -- 28px, under both the 32px density floor and the 44px
+              coarse-pointer target -- so both halves take the same `tap-target` the kit uses. */}
           <div className="inline-flex items-center rounded-lg border border-border p-0.5" role="group" aria-label="Calendar view">
             <button
               type="button"
@@ -159,7 +163,7 @@ export function EventCalendar({
               aria-pressed={view === 'grid'}
               aria-label="Grid view"
               className={cn(
-                'inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+                'tap-target inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors',
                 view === 'grid' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated hover:text-text',
               )}
             >
@@ -171,7 +175,7 @@ export function EventCalendar({
               aria-pressed={view === 'list'}
               aria-label="List view"
               className={cn(
-                'inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+                'tap-target inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors',
                 view === 'list' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated hover:text-text',
               )}
             >

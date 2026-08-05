@@ -9,6 +9,7 @@ import { isError } from '@/lib/action-result'
 import { setSpaceAvailability } from '@/lib/spaces/booking-actions'
 import type { AvailabilityWindow } from '@/lib/spaces/booking'
 import { cn } from '@/lib/utils'
+import { IconButton } from '@/components/ui/icon-button'
 
 // OWNER AVAILABILITY EDITOR (client). The Practitioner sets one or more weekly windows (weekday,
 // start, end, slot length) plus the Space's timezone, saved through the canEditProfile-gated
@@ -216,14 +217,15 @@ export function BookingAvailabilityForm({
                 ))}
               </select>
             </label>
-            <button
-              type="button"
+            <IconButton
+              variant="bordered"
+              tone="danger"
+              label="Remove this window"
               onClick={() => removeRow(i)}
-              aria-label="Remove this window"
-              className="mb-1 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-danger/40 hover:text-danger"
+              className="mb-1"
             >
               <Trash2 className="h-4 w-4" aria-hidden />
-            </button>
+            </IconButton>
           </div>
         ))}
         <button
