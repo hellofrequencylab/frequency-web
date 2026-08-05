@@ -200,11 +200,22 @@ The order matters; see ADR-948's amendment and ADR-950.
    than the induction flow. Give it membership of one Space it can manage if you
    want the Space console covered. It should look like a normal, slightly boring
    member: its avatar and any live counts are masked, but its content is not.
-2. **Add three repo secrets** (Settings → Secrets and variables → Actions):
-   `PW_MEMBER_EMAIL`, plus `SUPABASE_SERVICE_ROLE_KEY` and
-   `NEXT_PUBLIC_SUPABASE_URL` if they are not already there (`help-index.yml`
-   uses both today, so they usually are). Optionally add repo **variables**
+2. **Add four repo secrets** (Settings → Secrets and variables → Actions):
+   `PW_MEMBER_EMAIL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   and `SUPABASE_SERVICE_ROLE_KEY`. Optionally add repo **variables**
    `PW_ROOM_PATH` and `PW_SPACE_SLUG`.
+
+   > 🔴 **Check the secrets page, do not infer from a workflow file.** An earlier
+   > revision of this runbook said three of these "usually are" already present
+   > because `help-index.yml` references them. Referencing is not existing —
+   > checked against the live settings page on 2026-08-05, the repository held
+   > only `ANTHROPIC_API_KEY` and `VERCEL_AUTOMATION_BYPASS_SECRET`.
+   >
+   > That is worth knowing beyond this runbook: **GitHub substitutes an absent
+   > secret with the empty string and does not fail.** So `help-index.yml` has
+   > been running with an empty Supabase URL and service key — a workflow that
+   > looks configured, runs green, and does nothing. Any workflow reading a
+   > secret should assert it is non-empty rather than trusting the reference.
 3. **Take the first baselines, deliberately.** Dispatch `e2e-manual.yml` with
    `base_url` = a preview, **`capture_shell` ✔**, **`update_baselines` ✔**. This
    writes 12 brand-new PNGs (16 with a Space slug) and commits them. They have
