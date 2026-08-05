@@ -71,6 +71,11 @@ export function ElementEditor({ def, resolved }: { def: ElementDef; resolved: Re
               </button>
             ) : (
               <select
+                // Named by the same feature label the toggle branch uses. Both branches render
+                // into the same row beside the same <p>, so a name on one and not the other left
+                // half these controls announcing as an unnamed combobox depending only on which
+                // kind the element happened to declare.
+                aria-labelledby={`${cardId}-${f.key}`}
                 value={String(settings[f.key] ?? '')}
                 onChange={(e) => setSettings((s) => ({ ...s, [f.key]: e.target.value }))}
                 className={inputSm}
