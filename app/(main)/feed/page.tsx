@@ -307,6 +307,7 @@ export default async function FeedPage({
       <section className="mt-8" aria-label={sortLabel}>
         <div className="mb-4">
           <UnderlineTabs
+            label="Sort the feed"
             activeHref={`?sort=${sort}`}
             tabs={[
               ...(hasHome ? [{ href: '?sort=nearby', label: 'Nearby' }] : []),

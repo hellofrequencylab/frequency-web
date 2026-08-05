@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import {
   LEFT_RAIL,
   RIGHT_RAIL_PX,
@@ -11,6 +12,10 @@ import {
   RAIL_STRIP_CLASS,
   SHELL_ROW_CLASS,
   SHELL_CONTENT_WIDTH_CLASS,
+  DOCK_BAR_H_PX,
+  RAIL_FOLD_STICKY_CLASS,
+  RAIL_FOLD_STICKY_PX,
+  railFoldClearsDock,
 } from './shell-metrics'
 
 // ── The claim page must be as wide as the shell's content column ───────────────────────────
@@ -134,5 +139,41 @@ describe('the claim page consumes it instead of restating it', () => {
     // ClaimBarContent, which carries the column class once.
     expect(code.match(/className=\{CLAIM_ROW\}/g)?.length).toBe(4)
     expect(code.match(/CLAIM_COLUMN/g)?.length).toBe(4) // 1 definition + 3 uses
+  })
+})
+
+describe('right rail fold control vs the dock bar', () => {
+  it('clears the bar rather than hiding behind it', () => {
+    // The defect this pins: `sticky bottom-4` (17px) inside a rail whose bottom-right corner is
+    // covered by a `fixed bottom-0` bar ~48px tall. Sticky and fixed resolve against different
+    // containing blocks, so they never stack — the control was simply underneath.
+    expect(railFoldClearsDock()).toBe(true)
+    expect(RAIL_FOLD_STICKY_PX).toBeGreaterThan(DOCK_BAR_H_PX)
+  })
+
+  it('spells the offset the same way in the shell as in the constant', () => {
+    const shell = readFileSync(
+      join(process.cwd(), 'components/layout/app-shell.tsx'),
+      'utf8',
+    )
+    // A class string, because Tailwind generates utilities by scanning source text. If someone
+    // retunes the constant without retuning the class, the layout silently reverts and only this
+    // assertion notices.
+    expect(shell).toContain(`sticky ${RAIL_FOLD_STICKY_CLASS} mt-2 flex justify-end`)
+  })
+
+  it('puts the rail-end sentinel after the fold control, not before it', () => {
+    const shell = readFileSync(
+      join(process.cwd(), 'components/layout/app-shell.tsx'),
+      'utf8',
+    )
+    const control = shell.indexOf(`sticky ${RAIL_FOLD_STICKY_CLASS} mt-2 flex justify-end`)
+    const sentinel = shell.indexOf('id={RAIL_END_SENTINEL_ID}')
+    expect(control).toBeGreaterThan(-1)
+    expect(sentinel).toBeGreaterThan(-1)
+    // The control is the last thing IN the rail, so the ruler that marks the rail's end belongs
+    // after it. Above it, the bar is told the rail ends one control early and comes to rest on
+    // top of the affordance it should be resting under.
+    expect(sentinel).toBeGreaterThan(control)
   })
 })

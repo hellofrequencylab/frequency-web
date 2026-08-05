@@ -6,8 +6,7 @@ import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { setSpaceEventAccess, type SpaceEventAccessRow } from '@/lib/events/space-event-access'
-import { cn } from '@/lib/utils'
-import { fieldClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 
 // EVENT ACCESS panel (ADR-824): which of the Space's upcoming events a membership includes.
 // One row per event with an audience select; a change saves immediately through the gated
@@ -88,11 +87,11 @@ export function MembershipEventAccess({
             </div>
             <label className="flex items-center gap-2">
               <span className="text-meta font-medium text-muted">Included for</span>
-              <select
+              <Select
                 value={r.audience}
                 onChange={(e) => save(r.eventId, e.target.value)}
                 disabled={isPending}
-                className={cn(fieldClasses, 'w-56')}
+                wrapperClassName="inline-block w-max max-w-full"
               >
                 <option value="none">Nobody (tickets only)</option>
                 <option value="members">All members</option>
@@ -101,7 +100,7 @@ export function MembershipEventAccess({
                     {t.name} members
                   </option>
                 ))}
-              </select>
+              </Select>
               {savingId === r.eventId && isPending && (
                 <Loader2 className="h-4 w-4 animate-spin text-muted" aria-hidden />
               )}

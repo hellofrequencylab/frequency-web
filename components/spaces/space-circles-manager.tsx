@@ -16,6 +16,7 @@ import {
 } from '@/app/(main)/spaces/[slug]/circles/actions'
 import { isError } from '@/lib/action-result'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Select } from '@/components/ui/select'
 
 // The Space's Circles, each with the Journey it is running (ADR-842). Two jobs: make a new Circle
 // under this Space, and start a Run of one of the Space's Journeys for a Circle that is not
@@ -277,20 +278,20 @@ export function SpaceCirclesManager({
               </p>
             ) : (
               <div className="flex flex-wrap items-center gap-2">
-                <select
+                <Select
                   id="attach-circle-pick"
                   value={pickedCircle}
                   onChange={(e) => setPickedCircle(e.target.value)}
                   disabled={pending}
-                  className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text outline-none disabled:opacity-60"
+                  emptyLabel="Pick a circle…"
+                  wrapperClassName="min-w-0 flex-1"
                 >
-                  <option value="">Pick a circle…</option>
                   {attachable.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
                   ))}
-                </select>
+                </Select>
                 <button
                   type="button"
                   onClick={attach}
@@ -424,21 +425,20 @@ export function SpaceCirclesManager({
                   <label htmlFor={`move-${c.id}`} className="block text-2xs font-semibold uppercase tracking-wide text-muted">
                     Where it should live
                   </label>
-                  <select
+                  <Select
                     id={`move-${c.id}`}
                     value={pickedTarget}
                     onChange={(e) => setPickedTarget(e.target.value)}
                     disabled={pending}
-                    className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text outline-none disabled:opacity-60"
+                    emptyLabel="Pick a destination"
                   >
-                    <option value="">Pick a destination</option>
                     <option value="me">Me, as my own circle</option>
                     {targets.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
@@ -508,21 +508,20 @@ export function SpaceCirclesManager({
                   <label htmlFor={`plan-${c.id}`} className="block text-2xs font-semibold uppercase tracking-wide text-muted">
                     Which Journey
                   </label>
-                  <select
+                  <Select
                     id={`plan-${c.id}`}
                     value={pickedPlan}
                     onChange={(e) => setPickedPlan(e.target.value)}
                     disabled={pending}
-                    className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text outline-none disabled:opacity-60"
+                    emptyLabel="Pick a Journey"
                   >
-                    <option value="">Pick a Journey</option>
                     {journeys.map((j) => (
                       <option key={j.id} value={j.id}>
                         {j.emoji ? `${j.emoji} ` : ''}
                         {j.title}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"

@@ -4,13 +4,13 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { FileText, Save, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, fieldClasses } from '@/components/ui/field'
+import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import {
   createSpaceEmailTemplate,
   deleteSpaceEmailTemplate,
 } from '@/lib/spaces/email-templates-actions'
 import { isError } from '@/lib/action-result'
-import { cn } from '@/lib/utils'
 
 // TEMPLATE PICKER (ADR-380). Lets the owner reuse a saved subject + body: pick a template to PREFILL
 // the composer (onLoadTemplate(subject, body) sets the composer's state), save the current draft as a
@@ -97,19 +97,19 @@ export function TemplatePicker({
         <div className="flex flex-wrap items-end gap-2">
           <label className="flex flex-col gap-1">
             <span className="text-meta font-medium text-muted">Load a template</span>
-            <select
+            <Select
               value={selectedId}
               disabled={disabled}
               onChange={(e) => handleLoad(e.target.value)}
-              className={cn(fieldClasses, 'max-w-xs')}
+              emptyLabel="Pick a template"
+              wrapperClassName="max-w-xs"
             >
-              <option value="">Pick a template</option>
               {templates.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           {selected && (

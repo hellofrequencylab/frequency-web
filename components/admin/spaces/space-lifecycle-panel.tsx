@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { AlertTriangle, ArrowLeftRight, Check, Loader2, PauseCircle, PlayCircle, Archive } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
+import { Select } from '@/components/ui/select'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { isError } from '@/lib/action-result'
 import type { SpaceStatus } from '@/lib/spaces/types'
@@ -288,21 +289,20 @@ export function SpaceLifecyclePanel({
             <label htmlFor="new-owner" className="mb-1 block text-meta font-semibold uppercase tracking-wide text-muted">
               New owner
             </label>
-            <select
+            <Select
               id="new-owner"
               value={selectedOwner}
               onChange={(e) => setSelectedOwner(e.target.value)}
               disabled={pending}
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary"
+              emptyLabel="Choose a member…"
             >
-              <option value="">Choose a member…</option>
               {candidates.map((c) => (
                 <option key={c.profileId} value={c.profileId}>
                   {c.name}
                   {c.handle ? ` (@${c.handle})` : ''} · {c.role}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {selected && (

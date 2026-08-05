@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { ArrowDown, ArrowUp, Check, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Label, Textarea, fieldClasses } from '@/components/ui/field'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { setMembershipTiers } from '@/lib/spaces/memberships-actions'
 import type { MembershipInterval, MembershipTier } from '@/lib/spaces/memberships'
@@ -256,30 +258,29 @@ export function MembershipTierForm({
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-meta font-medium text-muted">Interval</span>
-                <select
+                <Select
                   value={r.interval}
                   onChange={(e) => update(i, { interval: e.target.value as MembershipInterval })}
-                  className={cn(fieldClasses, 'w-40')}
                 >
                   {INTERVALS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
-              <label className="flex flex-col justify-end gap-1">
+              {/* A <div>, not a <label>: Checkbox brings its own wrapping label, and a label inside
+                  a label is invalid. The heading stays as visual context. */}
+              <div className="flex flex-col justify-end gap-1">
                 <span className="text-meta font-medium text-muted">Active</span>
-                <span className="flex h-[38px] items-center gap-2">
-                  <input
-                    type="checkbox"
+                <span className="flex h-[38px] items-center">
+                  <Checkbox
                     checked={r.isActive}
                     onChange={(e) => update(i, { isActive: e.target.checked })}
-                    className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
+                    label="Show to members"
                   />
-                  <span className="text-body-sm text-muted">Show to members</span>
                 </span>
-              </label>
+              </div>
             </div>
 
             <div>
@@ -328,18 +329,16 @@ export function MembershipTierForm({
                   className={cn(fieldClasses, 'w-32')}
                 />
               </label>
-              <label className="flex flex-col justify-end gap-1">
+              <div className="flex flex-col justify-end gap-1">
                 <span className="text-meta font-medium text-muted">When full</span>
-                <span className="flex h-[38px] items-center gap-2">
-                  <input
-                    type="checkbox"
+                <span className="flex h-[38px] items-center">
+                  <Checkbox
                     checked={r.waitlist}
                     onChange={(e) => update(i, { waitlist: e.target.checked })}
-                    className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
+                    label="Take a waitlist"
                   />
-                  <span className="text-body-sm text-muted">Take a waitlist</span>
                 </span>
-              </label>
+              </div>
             </div>
           </div>
         ))}

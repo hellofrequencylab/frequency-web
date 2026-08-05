@@ -476,6 +476,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
           slot={slot}
           slotChecked={slotChecked}
           open={open}
+          panelMounted={render}
           atRailEnd={atRailEnd}
           waiting={pulse || unread > 0}
           unread={unread}
@@ -712,6 +713,7 @@ function ChatTrigger({
   slot,
   slotChecked,
   open,
+  panelMounted,
   atRailEnd,
   waiting,
   unread,
@@ -721,6 +723,10 @@ function ChatTrigger({
   slot: HTMLElement | null
   slotChecked: boolean
   open: boolean
+  /** Whether `#fq-dock-panel` is in the document right now. NOT the same as `open`: the panel
+   *  outlives its own close by PANEL_COLLAPSE_MS so the collapse can animate, and it has never
+   *  been mounted at all before the first open. aria-controls must follow the DOM, not intent. */
+  panelMounted: boolean
   atRailEnd: boolean
   waiting: boolean
   unread: number
@@ -753,7 +759,12 @@ function ChatTrigger({
       type="button"
       onClick={onOpen}
       aria-expanded={open}
-      aria-controls="fq-dock-panel"
+      // Only while the panel is actually in the document. `id="fq-dock-panel"` lives behind
+      // `{render && …}` and unmounts PANEL_COLLAPSE_MS after every close, so an unconditional
+      // aria-controls points at nothing before the first open and again after each close — a
+      // dangling reference a screen reader cannot follow. Same rule dock-chat.tsx already
+      // applies to its details panel one file over.
+      aria-controls={panelMounted ? 'fq-dock-panel' : undefined}
       aria-label="Open messages, Vera, and help"
       title="Messages, Vera and help"
       className={buttonClasses(

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Check, Loader2, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { importContactsToSpace } from '@/lib/crm/graduation-actions'
 
@@ -74,18 +75,13 @@ export function ImportContactsForm({ spaceId }: { spaceId: string }) {
           <Label htmlFor="grad-status" className="text-meta font-semibold">
             Status
           </Label>
-          <select
+          <Select
             id="grad-status"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="mt-1 rounded-lg border border-border-strong bg-surface px-2 py-1.5 text-body-sm text-text focus:border-border-strong focus:outline-none"
-          >
-            {STATUS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+            options={STATUS_OPTIONS}
+            wrapperClassName="mt-1 inline-block w-max max-w-full"
+          />
         </div>
 
         <div>

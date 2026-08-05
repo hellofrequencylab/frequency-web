@@ -2233,20 +2233,33 @@ export default function AppShell({
                   // rail did not, so folding the rail was the only way to see where it began.
                   <aside className="flex w-72 shrink-0 flex-col border-l border-chrome-border bg-chrome py-6">
                     {sidebar}
-                    {/* The rail's end. DockBar measures this to know when to stop being pinned to
-                        the window and come to rest against the last rail card instead. Zero-height
-                        and aria-hidden: it is a ruler, not content. */}
-                    <div id={RAIL_END_SENTINEL_ID} aria-hidden className="h-0" />
                     {/* The fold TOGGLE at the BOTTOM, sticky so it stays visible as the rail
                         scrolls. Rail-control law (DAWN 2026-08-03): one affordance at the FOOT,
                         a small borderless glyph, subtle -> muted on hover — never a bordered
                         button, which competed with real rows.
                         Shown on EVERY rail page now, not only the builder surfaces it used to be
                         gated to: "either rail collapsible by user control" is the law, and a rail
-                        that can only be folded on two routes is not a ladder. */}
-                    <div className="sticky bottom-4 mt-2 flex justify-end pr-1">
+                        that can only be folded on two routes is not a ladder.
+
+                        `bottom-14` (3.5rem = 59.5px at this app's 17px root), NOT the bottom-4 it
+                        shipped as: DockBar is `fixed bottom-0` and ~48px tall (h-10 head + pt-1 +
+                        border), so a control pinned 17px off the bottom sits INSIDE it — invisible
+                        and unclickable on every rail page, which is every page now that the gate
+                        is gone. Sticky offsets do not stack against fixed siblings; only a literal
+                        clearance works, and railFoldClearsDock() in shell-metrics pins the pair so
+                        a future change to either height fails a test rather than the layout. */}
+                    <div className="sticky bottom-14 mt-2 flex justify-end pr-1">
                       <RailFoldControl side="right" showing="open" onPress={toggleRail} />
                     </div>
+                    {/* The rail's end. DockBar measures this to know when to stop being pinned to
+                        the window and come to rest against the last rail card instead. Zero-height
+                        and aria-hidden: it is a ruler, not content.
+
+                        AFTER the fold control, not before it. The control is rail content — the
+                        last thing in the rail — so a sentinel above it tells the bar the rail ends
+                        one control too early, and the bar comes to rest on top of the affordance
+                        it should be resting under. */}
+                    <div id={RAIL_END_SENTINEL_ID} aria-hidden className="h-0" />
                   </aside>
                 )}
                 {/* The settings drawer slides over THIS column (absolute, full height) on the

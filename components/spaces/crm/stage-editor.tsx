@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, ChevronDown, ChevronUp, GripVertical, Loader2, Plus, Settings2, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { isError } from '@/lib/action-result'
 import type { StageKind } from '@/lib/crm/pipeline'
@@ -266,19 +267,14 @@ export function StageEditor({
               <label className="sr-only" htmlFor={`kind-${stage.id}`}>
                 Stage type for {stage.name}
               </label>
-              <select
+              <Select
                 id={`kind-${stage.id}`}
                 value={stage.kind}
                 disabled={pending}
                 onChange={(e) => changeKind(stage, e.target.value as StageKind)}
-                className="rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text outline-none focus:border-primary"
-              >
-                {KIND_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+                options={KIND_OPTIONS}
+                wrapperClassName="inline-block w-max max-w-full"
+              />
 
               <button
                 type="button"
@@ -315,19 +311,14 @@ export function StageEditor({
         <label className="sr-only" htmlFor="new-stage-kind">
           New stage type
         </label>
-        <select
+        <Select
           id="new-stage-kind"
           value={newKind}
           disabled={pending}
           onChange={(e) => setNewKind(e.target.value as StageKind)}
-          className="rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text outline-none focus:border-primary"
-        >
-          {KIND_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+          options={KIND_OPTIONS}
+          wrapperClassName="inline-block w-max max-w-full"
+        />
         <Button type="button" variant="secondary" size="sm" disabled={pending} onClick={addStage}>
           <Plus className="h-3.5 w-3.5" aria-hidden /> Add
         </Button>

@@ -1,6 +1,8 @@
 'use client'
 
-import { fieldClasses, Label } from '@/components/ui/field'
+import { useId } from 'react'
+import { Label } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import type { AudienceFilter } from '@/lib/spaces/audiences'
 
 // A LIGHT audience selector for the automation editors: everyone, a tag, or a saved segment. Distinct
@@ -29,6 +31,10 @@ export function AudienceSelect({
   label?: string
   id?: string
 }) {
+  // `id` is optional, and without one the <Label htmlFor> named nothing. A generated fallback
+  // keeps the control labelled however the caller uses it.
+  const autoId = useId()
+  const selectId = id ?? autoId
   const value = filter.segmentId
     ? `${SEGMENT_PREFIX}${filter.segmentId}`
     : filter.tag
@@ -37,10 +43,9 @@ export function AudienceSelect({
 
   return (
     <div className="space-y-1">
-      <Label htmlFor={id}>{label}</Label>
-      <select
-        id={id}
-        className={fieldClasses}
+      <Label htmlFor={selectId}>{label}</Label>
+      <Select
+        id={selectId}
         value={value}
         disabled={disabled}
         onChange={(e) => {
@@ -69,7 +74,7 @@ export function AudienceSelect({
             ))}
           </optgroup>
         )}
-      </select>
+      </Select>
     </div>
   )
 }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Check, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Label, fieldClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { setSpaceAvailability } from '@/lib/spaces/booking-actions'
 import type { AvailabilityWindow } from '@/lib/spaces/booking'
@@ -173,17 +174,16 @@ export function BookingAvailabilityForm({
           >
             <label className="flex flex-col gap-1">
               <span className="text-meta font-medium text-muted">Day</span>
-              <select
+              <Select
                 value={r.weekday}
                 onChange={(e) => update(i, { weekday: Number(e.target.value) })}
-                className={cn(fieldClasses, 'w-36')}
               >
                 {WEEKDAYS.map((d) => (
                   <option key={d.value} value={d.value}>
                     {d.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-meta font-medium text-muted">Start</span>
@@ -205,17 +205,16 @@ export function BookingAvailabilityForm({
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-meta font-medium text-muted">Slot length</span>
-              <select
+              <Select
                 value={r.slotMinutes}
                 onChange={(e) => update(i, { slotMinutes: Number(e.target.value) })}
-                className={cn(fieldClasses, 'w-32')}
               >
                 {SLOT_LENGTHS.map((m) => (
                   <option key={m} value={m}>
                     {m} min
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <IconButton
               variant="bordered"

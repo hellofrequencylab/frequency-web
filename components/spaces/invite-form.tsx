@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Check, Copy, Loader2, Mail, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Label, fieldClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { createInvite, revokeInvite } from '@/lib/spaces/invites-actions'
 // The type + the pure accept-link helper come from the client-safe shared module, NOT from
@@ -164,18 +165,13 @@ export function InviteForm({
             <Label htmlFor="invite-role" className="font-semibold">
               Role
             </Label>
-            <select
+            <Select
               id="invite-role"
               value={role}
               onChange={(e) => setRole(e.target.value as SpaceRole)}
-              className={cn(fieldClasses, 'mt-1')}
-            >
-              {ROLE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+              options={ROLE_OPTIONS}
+              wrapperClassName="mt-1"
+            />
           </div>
           <Button type="submit" disabled={pending} className="shrink-0">
             {pending ? (

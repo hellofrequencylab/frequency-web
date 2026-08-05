@@ -4,11 +4,12 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, Label, Textarea, fieldClasses } from '@/components/ui/field'
+import { Input, Label, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { isError } from '@/lib/action-result'
 import { setSpaceServiceTypes } from '@/lib/spaces/booking-actions'
 import type { ServiceType, ServiceTypeInput, BookingQuestion } from '@/lib/spaces/booking'
-import { cn } from '@/lib/utils'
 import { IconButton } from '@/components/ui/icon-button'
 
 // OWNER SERVICE TYPES EDITOR (client, P1, ADR-605). The Practitioner defines the reusable bookable
@@ -168,17 +169,16 @@ export function BookingServiceTypesForm({
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-meta font-medium text-muted">Length</span>
-                <select
+                <Select
                   value={r.durationMinutes}
                   onChange={(e) => update(i, { durationMinutes: Number(e.target.value) })}
-                  className={cn(fieldClasses, 'w-32')}
                 >
                   {DURATIONS.map((m) => (
                     <option key={m} value={m}>
                       {m} min
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
               <IconButton
                 variant="bordered"
@@ -213,22 +213,23 @@ export function BookingServiceTypesForm({
                     maxLength={200}
                     className="min-w-40 flex-1"
                   />
-                  <select
+                  {/* aria-label added with the primitive: this select sat bare in the row with
+                      no label of any kind. */}
+                  <Select
+                    aria-label="Answer length"
                     value={q.type}
                     onChange={(e) => updateQuestion(i, j, { type: e.target.value === 'long' ? 'long' : 'short' })}
-                    className={cn(fieldClasses, 'w-28')}
-                  >
-                    <option value="short">Short</option>
-                    <option value="long">Long</option>
-                  </select>
-                  <label className="flex items-center gap-1.5 text-meta font-medium text-muted">
-                    <input
-                      type="checkbox"
-                      checked={q.required}
-                      onChange={(e) => updateQuestion(i, j, { required: e.target.checked })}
-                    />
-                    Required
-                  </label>
+                    wrapperClassName="inline-block w-max max-w-full"
+                    options={[
+                      { value: 'short', label: 'Short' },
+                      { value: 'long', label: 'Long' },
+                    ]}
+                  />
+                  <Checkbox
+                    label="Required"
+                    checked={q.required}
+                    onChange={(e) => updateQuestion(i, j, { required: e.target.checked })}
+                  />
                   <IconButton
                     variant="bordered"
                     tone="danger"
