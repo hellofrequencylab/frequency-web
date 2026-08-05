@@ -3,7 +3,7 @@
 //
 // DAWN caught an AA failure we shipped (rail labels at 3.6:1). A design system should catch its
 // own. This gate reads app/globals.css — the one file allowed to hold raw hex — resolves every
-// declared token in ALL FOUR render states, and computes the WCAG 2.1 contrast ratio for the
+// declared token in EVERY render state, and computes the WCAG 2.1 contrast ratio for the
 // declared PAIRS. A palette edit that darkens a surface or lightens an ink now fails before a
 // human sees it, on every skin and both modes at once.
 //
@@ -40,14 +40,22 @@ import { pathToFileURL } from 'node:url'
 const CSS = join('app', 'globals.css')
 
 // ═══════════════════════════════════════════════════════════════════════════════════════════
-// The four render states
+// The five render states
 // ═══════════════════════════════════════════════════════════════════════════════════════════
-
+//
+// The fifth is the one that was missing, and its absence hid a live 1.77:1 pair. A page can
+// wrap itself in `.theme-light-lock` to force cream regardless of the device (the beta funnel
+// does). On a DARK-MODE device that produces a state none of the other four describe: `.dark`
+// is on <html>, the lock is on a descendant, and for custom properties the nearest declaring
+// ancestor wins — so the lock's roles beat the dark ones no matter the specificity. Anything
+// the lock FORGOT to re-assert stays dark on a light page. Modelling it here is what makes
+// "the lock must be total" a checked property instead of a comment.
 export const STATES = [
   { key: 'DAWN light', mode: 'light', skin: 'default' },
   { key: 'DAWN dark', mode: 'dark', skin: 'default' },
   { key: 'Midnight light', mode: 'light', skin: 'midnight' },
   { key: 'Midnight dark', mode: 'dark', skin: 'midnight' },
+  { key: 'Light-lock on a dark device', mode: 'dark', skin: 'default', lightLock: true },
 ]
 
 // ═══════════════════════════════════════════════════════════════════════════════════════════
@@ -134,65 +142,72 @@ export const PAIRS = [
 // `floors` is per state and holds the ratio MEASURED on 2026-08-04. Every one of these is real
 // AA debt in the shipped palette, surfaced by this gate on its first run; none can be fixed
 // without an owner palette call, and app/globals.css is the only file that could fix them.
+// Waivers carry a floor PER STATE. 'Light-lock on a dark device' shares DAWN light's numbers
+// wherever it appears, and that is not a copy-paste convenience — it is the assertion that the
+// lock is TOTAL. `.theme-light-lock` is supposed to reproduce the DAWN light palette exactly on
+// a dark device; if a pair ever measures differently in the two, the lock has stopped
+// re-asserting some role and this gate will fail on the difference. Before 2026-08-05 the lock
+// covered 29 of 57 roles and a live funnel rendered warning text at 1.77:1; the fifth state
+// exists so that cannot recur silently.
 export const WAIVERS = [
   {
     fg: '--color-text-on-signal',
     bg: '--color-signal',
-    floors: { 'DAWN light': 4.08, 'Midnight light': 4.08 },
+    floors: { 'Light-lock on a dark device': 4.08, 'DAWN light': 4.08, 'Midnight light': 4.08 },
     why: 'Near miss: 4.08:1 against 4.5. A small darkening of --color-signal (or of --color-text-on-signal) clears it; grouped with the brand-fill decision above.',
   },
   {
     fg: '--color-text-on-move',
     bg: '--color-move',
-    floors: { 'DAWN light': 4.42, 'Midnight light': 4.42 },
+    floors: { 'Light-lock on a dark device': 4.42, 'DAWN light': 4.42, 'Midnight light': 4.42 },
     why: 'Near miss: 4.42:1 against 4.5 — eight hundredths. One step darker on --color-move clears it.',
   },
   {
     fg: '--color-broadcast-strong',
     bg: '--color-broadcast-bg',
-    floors: { 'DAWN light': 3.99, 'Midnight light': 3.99 },
+    floors: { 'Light-lock on a dark device': 3.99, 'DAWN light': 3.99, 'Midnight light': 3.99 },
     why: 'Tinted chip text at 3.99:1. Chips are small type, so the 4.5 bar is the right one; the -strong step needs to go one notch deeper in light mode.',
   },
   {
     fg: '--color-success',
     bg: '--color-success-bg',
-    floors: { 'DAWN light': 3.87, 'Midnight light': 3.87 },
+    floors: { 'Light-lock on a dark device': 3.87, 'DAWN light': 3.87, 'Midnight light': 3.87 },
     why: 'Success chip text at 3.87:1. Same fix shape as broadcast-strong: the tinted chips want a -strong step in light mode instead of the base tone.',
   },
   {
     fg: '--color-warning',
     bg: '--color-warning-bg',
-    floors: { 'DAWN light': 3.32, 'Midnight light': 3.32 },
+    floors: { 'Light-lock on a dark device': 3.32, 'DAWN light': 3.32, 'Midnight light': 3.32 },
     why: 'Warning chip text at 3.32:1 — the weakest of the chip set.',
   },
   {
     fg: '--color-info',
     bg: '--color-info-bg',
-    floors: { 'DAWN light': 4.41, 'Midnight light': 4.41 },
+    floors: { 'Light-lock on a dark device': 4.41, 'DAWN light': 4.41, 'Midnight light': 4.41 },
     why: 'Info chip text at 4.41:1 — a near miss.',
   },
   {
     fg: '--color-warning',
     bg: '--color-surface',
-    floors: { 'DAWN light': 3.89, 'Midnight light': 3.89 },
+    floors: { 'Light-lock on a dark device': 3.89, 'DAWN light': 3.89, 'Midnight light': 3.89 },
     why: 'Warning text on a plain card at 3.89:1. Warning is the only status tone that misses on the plain surfaces; danger/success/info clear it.',
   },
   {
     fg: '--color-primary',
     bg: '--color-surface',
-    floors: { 'DAWN light': 2.52, 'Midnight light': 2.86 },
+    floors: { 'Light-lock on a dark device': 2.52, 'DAWN light': 2.52, 'Midnight light': 2.86 },
     why: 'The amber brand fill on white is 2.52:1. Fine for a decorative fill; listed because the same token is the fill under button labels (see the first waiver).',
   },
   {
     fg: '--color-border-strong',
     bg: '--color-canvas',
-    floors: { 'DAWN light': 1.4, 'DAWN dark': 1.93, 'Midnight light': 1.53, 'Midnight dark': 1.99 },
+    floors: { 'Light-lock on a dark device': 1.4, 'DAWN light': 1.4, 'DAWN dark': 1.93, 'Midnight light': 1.53, 'Midnight dark': 1.99 },
     why: 'By design, not debt: the "strong" hairline is a tone step, not a control outline — controls are identified by fill + label + focus ring, which 1.4.11 accepts. Kept in the table with a frozen floor so a palette edit cannot flatten the tone step away.',
   },
   {
     fg: '--color-border-strong',
     bg: '--color-surface',
-    floors: { 'DAWN light': 1.49, 'DAWN dark': 1.79, 'Midnight light': 1.74, 'Midnight dark': 1.79 },
+    floors: { 'Light-lock on a dark device': 1.49, 'DAWN light': 1.49, 'DAWN dark': 1.79, 'Midnight light': 1.74, 'Midnight dark': 1.79 },
     why: 'Same hairline, on a card. See above.',
   },
 ]
@@ -257,6 +272,10 @@ export function selectorWeight(selector, state) {
   if (s === '.dark') return state.mode === 'dark' ? 10 : null
   const darkSkin = s.match(/^\.dark \[data-skin="([a-z-]+)"\]$/)
   if (darkSkin) return state.mode === 'dark' && darkSkin[1] === state.skin ? 20 : null
+  // 30, above every skin/mode rule: the lock sits on a DESCENDANT of <html>, and the nearest
+  // declaring ancestor wins for custom properties, so it outranks .dark by position rather
+  // than by specificity. Only the light-lock state sees it at all.
+  if (s === '.theme-light-lock') return state.lightLock ? 30 : null
   return null
 }
 
@@ -431,7 +450,7 @@ function main() {
       return `${s.key} ${min.ratio.toFixed(2)}:1 (${min.pair})`
     })
     console.log(
-      `✓ Contrast gate: ${rows.length} token pairs across 4 render states meet their role minimum` +
+      `✓ Contrast gate: ${rows.length} token pairs across ${STATES.length} render states meet their role minimum` +
         `${waived.length ? `, ${waived.length} on a frozen waiver floor` : ''}.`,
     )
     console.log(`  Worst non-waived pair per state:\n${worst.map((w) => `    • ${w}`).join('\n')}`)

@@ -111,8 +111,29 @@ describe('check-contrast — the gate', () => {
 
   it('passes a good pair in every state', () => {
     const rows = evaluateContrast(FIXTURE, { pairs: pair })
-    expect(rows).toHaveLength(4)
+    // Derived, not the literal 4. This assertion hardcoded the state count and so failed the
+    // moment a fifth state was added — which is the guard working, but the guard should be
+    // "one row per state", not "there are exactly four states".
+    expect(rows).toHaveLength(STATES.length)
     expect(rows.every((r) => r.pass)).toBe(true)
+  })
+
+  it('covers the light-lock, and it resolves to the DAWN light palette', () => {
+    // The regression this state exists for: `.theme-light-lock` force-lights a page on a DARK
+    // device, and before 2026-08-05 it re-asserted 29 of 57 roles — so anything it forgot kept
+    // its dark value on a cream page (a live funnel rendered warning text at 1.77:1).
+    // If the lock is TOTAL, every token resolves identically in the two states. Comparing them
+    // is what makes a future half-lock fail here instead of shipping.
+    const lock = STATES.find((s) => s.key === 'Light-lock on a dark device')
+    expect(lock, 'the light-lock render state must exist').toBeTruthy()
+
+    const css = readFileSync('app/globals.css', 'utf8')
+    const light = resolveTokens(css, STATES.find((s) => s.key === 'DAWN light')!)
+    const locked = resolveTokens(css, lock!)
+    const drift = [...light.keys()]
+      .filter((k) => k.startsWith('--color-') || k.startsWith('--brand-'))
+      .filter((k) => deref(light, k) !== deref(locked, k))
+    expect(drift, `roles the light-lock fails to re-assert: ${drift.join(', ')}`).toEqual([])
   })
 
   it('FAILS a deliberately bad pair, and reports the shortfall', () => {
