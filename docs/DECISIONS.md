@@ -17143,6 +17143,20 @@ Three consequential moves fall out of the arithmetic, and each is load-bearing r
 
 The durable rule: **two floating objects in one corner compete no matter how far apart you push them — the fix is to stop one of them from floating.**
 
+> **AMENDED 2026-08-05 — two of this ADR's three named geometric consequences were reversed in
+> code, by two merges that carried no ADR of their own (`43613ed` "Split the bottom dock",
+> `46605e7` "Show the score properly in the dock"). The code amended itself; the ledger did not.
+> Corrected here:**
+> - **The head does NOT carry rank at rest.** `components/sidebar/game-stats-dock.tsx` says so in
+>   its own header: the head is ~240px and carries zaps, gems and streak. Rank moved into the
+>   panel, where it leads.
+> - **The chat pill did not move to `top-1/2` of the right edge — it was retired.** The chat and
+>   the Vault are two segments of ONE anchored bar now (`components/layout/dock-bar.tsx`), which
+>   also rides up to meet a rail-end sentinel. Neither behaviour is described anywhere above.
+> - **Still true:** `VaultPanel` is gone from the rail, the score renders once per viewport
+>   (`isQuestSurface`), and the operator dock keeps `bottom-0 right-3 … w-72`. The `right-3 w-72`
+>   geometry now belongs to `DockBar`; the Vault is `flex-1` inside it.
+
 ## ADR-933 — The Beta waitlist is removed, and the door is simply open (2026-08-04)
 
 **Status.** Accepted. Owner ruling: *"We're in Beta until September 1st, we can keep the language but delete the waitlist functions and surfaces."*
@@ -17554,6 +17568,22 @@ mistake, not an intention.
 `literal-type` is seeded at **376** on the existing `check:adoption` harness rather than as a
 new script, so it inherits provenance integrity, the basis fingerprint, and the asymmetric
 merge for free.
+
+> **AMENDED 2026-08-05 — three of this ADR's numbers were invalidated by the very next commit, and
+> the ledger did not follow.** Recording the corrections here rather than editing the text above,
+> so the original reasoning stays legible:
+> - **`literal-type` is at 0, not 376.** Pass 2a (`43613ed`) swept the population and re-froze the
+>   floor. It shipped with no ADR of its own.
+> - **`text-lg` IS in the ratchet pattern.** This ADR listed it among the sizes deliberately left
+>   out; the live pattern is `\btext-(?:xs|sm|base|lg|xl|2xl)\b`, and omitting it was later
+>   recorded in the JSON as a gate hole, not a decision.
+> - **`components/page-editor/**` is INSIDE the gate.** This ADR says it is excluded from the
+>   ratchet; the live `include` is `{app,components,lib}/**/*.{ts,tsx,mts}` with tests as the only
+>   exclusion. Correct while pass 1 held that tree out, wrong once pass 2a swept it.
+>
+> What still holds: *"visual baselines should NOT move"* for the type sweep — and they did not.
+> `test/e2e/__screenshots__` was untouched by it. They have since gone stale for an unrelated
+> reason (six rendering merges without a recapture), which is not this ADR's doing.
 
 **Consequences.** ✅ Three drift guards failed and were updated, which is them working: a
 source-level class assertion in `hero-contrast.test.ts` and two golden-markup snapshots in
