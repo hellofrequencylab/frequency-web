@@ -344,6 +344,28 @@ function main() {
       )
       process.exit(1)
     }
+    // ONE REASON PER ENTRY. `--update --reason "…"` writes that single sentence onto EVERY entry it
+    // touches, which is how literal-radius came to carry literal-type's sentence: a pass-2a run moved
+    // both, and the radius entry was stamped with "literal-type goes to 0 and the floor moves with it".
+    // A provenance record whose reason describes a different class is worse than a blank one, because
+    // it reads as an audited explanation. So a multi-entry update now has to be run per key.
+    const wouldChange = rows.filter((row) => {
+      const entry = config.entries.find((e) => e.key === row.key)
+      if (!entry) return false
+      const basisMoved = entry.frozen?.basis !== undefined && entry.frozen.basis !== basisFingerprint(entry)
+      return !(row.current === entry.baseline && !basisMoved && entry.frozen)
+    })
+    if (wouldChange.length > 1 && !only) {
+      console.error(
+        `✗ --update would re-freeze ${wouldChange.length} entries with ONE reason, and they did not move\n` +
+          '  for one reason. That sentence is the entry\'s whole audit trail; sharing it across classes\n' +
+          '  puts a sentence about one class into the record of another.\n\n' +
+          `    ${wouldChange.map((r) => r.key).join(', ')}\n\n` +
+          '  Re-run once per key, each with the reason that actually moved it:\n' +
+          `    node scripts/check-adoption.mjs --update --key ${wouldChange[0].key} --reason "<what moved it>"`,
+      )
+      process.exit(1)
+    }
     const allowRaise = process.argv.includes('--allow-raise')
     const result = mergeBaselines(config, rows, { allowRaise, reason })
     if (!result.written) {

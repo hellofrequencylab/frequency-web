@@ -281,3 +281,63 @@ describe('check-adoption — the shipped baselines file', () => {
     }
   })
 })
+
+describe('check-adoption — the corrected patterns measure what they name', () => {
+  const config = loadConfig()
+  const pattern = (key: string) => new RegExp(config.entries.find((e: { key: string }) => e.key === key)!.patterns[0], 'g')
+
+  // 🔴 THE BUG. The WCAG 2.5.5 allowlist did not work. The lookahead sat at a `\b`, and
+  // `min-h-[44px]` has a SECOND word boundary at its inner `h` — where the lookahead sees only
+  // `h-[44px]`, fails to match the allowlist, and lets it through. 12 tap-target floors were
+  // counted as debt, so a PR that ADDED a correct 44px target raised the class and failed CI.
+  it('raw-px-arbitrary exempts the 44px tap-target floor it says it exempts', () => {
+    const re = pattern('raw-px-arbitrary')
+    expect('min-h-[44px]'.match(re)).toBeNull()
+    expect('min-w-[44px]'.match(re)).toBeNull()
+    expect('top-[-9999px]'.match(re)).toBeNull()
+  })
+
+  it('raw-px-arbitrary still counts real arbitrary px, including negative utilities', () => {
+    const re = pattern('raw-px-arbitrary')
+    // Negative utilities are the trap in the FIX: anchoring at a token start with `(?<![-\w])`
+    // alone would have silently dropped `-mt-[2px]`, trading one blind spot for another.
+    for (const s of ['h-[18px]', 'md:h-[18px]', 'min-h-[180px]', '-mt-[2px]', '-top-[1px]', 'max-w-[180px]']) {
+      expect(s.match(re), `${s} should count as raw px`).not.toBeNull()
+    }
+  })
+
+  it('white-black-literals does not count font-black, which is a font WEIGHT', () => {
+    const re = pattern('white-black-literals')
+    expect('font-black'.match(re)).toBeNull()
+    for (const s of ['text-white', 'bg-black', 'white/50', 'border-black/10']) {
+      expect(s.match(re), `${s} is a monochrome literal`).not.toBeNull()
+    }
+  })
+
+  // The radius sweep retired `rounded-full` in favour of `rounded-pill` — including inside
+  // ProgressTrack itself — so this pattern's 0 meant "the class I name no longer exists",
+  // not "no bar is hand-rolled".
+  it('adhoc-progress catches a pill track, not only the retired full one', () => {
+    const re = pattern('adhoc-progress')
+    expect('<div className="rounded-pill bg-border"><div style={{ width: `${p}%` }} /></div>'.match(re)).not.toBeNull()
+    expect('<div className="rounded-full bg-border"><div style={{ width: `${p}%` }} /></div>'.match(re)).not.toBeNull()
+  })
+
+  it('handrolled-icon-button counts an icon-only button and not a text button', () => {
+    const re = pattern('handrolled-icon-button')
+    const iconOnly = '<button type="button" onClick={() => go()} className="flex h-8 w-8 rounded-lg"><X className="h-4 w-4" /></button>'
+    const withText = '<button type="button" onClick={() => go()} className="flex h-8 rounded-lg"><X className="h-4 w-4" />Delete</button>'
+    expect(iconOnly.match(re), 'icon-only button should count').not.toBeNull()
+    expect(withText.match(re), 'a text button is not an icon button').toBeNull()
+  })
+
+  it('raw-palette catches a raw Tailwind palette class and not a semantic role', () => {
+    const re = pattern('raw-palette')
+    for (const s of ['text-amber-700', 'bg-gray-50', 'shadow-violet-900/30', 'border-yellow-300']) {
+      expect(s.match(re), `${s} is a raw palette class`).not.toBeNull()
+    }
+    for (const s of ['text-primary', 'bg-surface', 'border-border-strong', 'text-on-primary']) {
+      expect(s.match(re), `${s} is a semantic role`).toBeNull()
+    }
+  })
+})
