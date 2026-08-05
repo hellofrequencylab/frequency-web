@@ -1,19 +1,18 @@
-import Link from 'next/link'
-import { ChevronDown } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { UnderlineTabs, type UnderlineTabItem } from '@/components/admin/underline-tabs'
 import type { PropertyType } from '@/lib/listings/types'
 
 // The Housing category sub-menu (owner ask): a trimmed tab row —
 //   All | House | Room | Apartment | Studio | Other (dropdown: Other / Condo / Townhouse) | Roommates
 // The four common types are top-level tabs; the long tail (other / condo / townhouse) folds into an
-// "Other" disclosure so the row stays short. Underline-tab styling matches the other marketplace
-// sub-menus (components/admin/underline-tabs). The dropdown is a native <details> so it needs no client
-// JS and closes on navigation. Each tab is a real URL (`?type=<slug>`), so the view stays server-rendered
-// and shareable. Tokens only, no hex.
-
-const TAB = 'flex shrink-0 items-center gap-1 border-b-2 px-3 py-2.5 text-body-sm font-semibold transition-colors'
-const ACTIVE = 'border-primary-strong text-text'
-const IDLE = 'border-transparent text-muted hover:border-border-strong hover:text-text'
+// "Other" disclosure so the row stays short.
+//
+// PATTERN: UnderlineTabs — the one tab vocabulary (DAWN readme §"The composition system":
+// "UnderlineTabs …, so pill tabs do not exist"), the SAME row the other marketplace sub-menus use
+// (see events-surface). WHY not the in-panel segment: this is member-facing browse navigation
+// between sibling views of the housing index, not a control that reshapes one panel. Each tab is a
+// real URL (`?type=<slug>`), so the view stays server-rendered, shareable, and crawlable — including
+// the three folded behind "Other", whose links sit in the markup whether the disclosure is open or
+// shut. This file is now pure data; the strip itself is composed, never authored.
 
 const TOP: { slug: PropertyType; label: string }[] = [
   { slug: 'house', label: 'House' },
@@ -26,66 +25,17 @@ const OTHER: { slug: PropertyType; label: string }[] = [
   { slug: 'condo', label: 'Condo' },
   { slug: 'townhouse', label: 'Townhouse' },
 ]
-const OTHER_SLUGS = OTHER.map((o) => o.slug) as string[]
 
-const typeHref = (slug?: string) =>
-  slug ? `/housing?type=${slug}` : '/housing'
+const typeHref = (slug?: string) => (slug ? `/housing?type=${slug}` : '/housing')
 
 export function HousingCategoryNav({ selectedType }: { selectedType: string }) {
-  const otherActive = OTHER_SLUGS.includes(selectedType)
-  return (
-    <nav
-      className="-mb-px flex items-center gap-1 overflow-x-auto border-b border-border"
-      aria-label="Housing categories"
-    >
-      <Link
-        href={typeHref()}
-        aria-current={!selectedType ? 'page' : undefined}
-        className={cn(TAB, !selectedType ? ACTIVE : IDLE)}
-      >
-        All
-      </Link>
-      {TOP.map((t) => (
-        <Link
-          key={t.slug}
-          href={typeHref(t.slug)}
-          aria-current={selectedType === t.slug ? 'page' : undefined}
-          className={cn(TAB, selectedType === t.slug ? ACTIVE : IDLE)}
-        >
-          {t.label}
-        </Link>
-      ))}
-      <details className="group relative shrink-0">
-        <summary
-          className={cn(
-            TAB,
-            'cursor-pointer list-none [&::-webkit-details-marker]:hidden',
-            otherActive ? ACTIVE : IDLE,
-          )}
-        >
-          Other
-          <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" aria-hidden />
-        </summary>
-        <div className="absolute left-0 z-20 mt-1 min-w-[9rem] rounded-lg border border-border bg-surface p-1 lift-3">
-          {OTHER.map((o) => (
-            <Link
-              key={o.slug}
-              href={typeHref(o.slug)}
-              className={cn(
-                'block rounded-md px-3 py-1.5 text-body-sm transition-colors',
-                selectedType === o.slug
-                  ? 'bg-primary-bg font-semibold text-primary-strong'
-                  : 'text-muted hover:bg-surface-elevated hover:text-text',
-              )}
-            >
-              {o.label}
-            </Link>
-          ))}
-        </div>
-      </details>
-      <Link href="/housing/roommates" className={cn(TAB, IDLE)}>
-        Roommates
-      </Link>
-    </nav>
-  )
+  const tabs: UnderlineTabItem[] = [
+    { href: typeHref(), label: 'All' },
+    ...TOP.map((t) => ({ href: typeHref(t.slug), label: t.label })),
+    { label: 'Other', menu: OTHER.map((o) => ({ href: typeHref(o.slug), label: o.label })) },
+    { href: '/housing/roommates', label: 'Roommates' },
+  ]
+  // Explicit active href: these are query-param views of ONE path, so pathname matching cannot
+  // tell them apart. An unset type is the "All" tab.
+  return <UnderlineTabs tabs={tabs} activeHref={typeHref(selectedType || undefined)} label="Housing categories" />
 }

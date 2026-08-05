@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, forwardRef, useEffect, useMemo, useRef, useState, type Ref } from 'react'
+import { Fragment, forwardRef, useEffect, useId, useMemo, useRef, useState, type Ref } from 'react'
 import Link from 'next/link'
 import { ArrowUpRight, Activity, Trash2, ChevronRight } from 'lucide-react'
 import { StatusChip } from '@/components/admin/status'
@@ -56,6 +56,30 @@ export function MessagingConsole({
 
   const onCampaigns = tab === 'campaigns'
 
+  // Stable ids so each tab names its own pane (and so two consoles on one page never collide).
+  const uid = useId()
+  const tabId = (t: Tab) => `${uid}-tab-${t}`
+  const paneId = (t: Tab) => `${uid}-pane-${t}`
+
+  // Roving focus across the segment (WAI-ARIA tabs, automatic activation): arrows move between the
+  // two, Home/End jump to the ends. Two tabs, so moving focus and selecting together is the least
+  // surprising behaviour.
+  function onSegmentKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return
+    const buttons = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'))
+    const from = buttons.indexOf(document.activeElement as HTMLButtonElement)
+    if (from < 0) return
+    e.preventDefault()
+    const to =
+      e.key === 'Home'
+        ? 0
+        : e.key === 'End'
+          ? buttons.length - 1
+          : (from + (e.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length
+    buttons[to].focus()
+    buttons[to].click()
+  }
+
   // The two panes sit side by side in one flex track (for the slide), so the track would otherwise reserve
   // the height of the TALLER pane — leaving dead space below a short Campaigns list when the empty Funnels
   // pane is taller. Measure the ACTIVE pane and clamp the viewport to it, animating the height on tab change.
@@ -85,10 +109,35 @@ export function MessagingConsole({
         ))}
       </div>
 
-      {/* Sub-tabs */}
-      <div className="flex items-center gap-1 border-b border-border">
-        <TabButton active={onCampaigns} onClick={() => setTab('campaigns')} label="Campaigns" count={campaigns.length} />
-        <TabButton active={!onCampaigns} onClick={() => setTab('funnels')} label="Funnels" count={funnels.length} />
+      {/* Campaigns / Funnels.
+          PATTERN: DAWN's in-panel segment (design_handoff/dawn/ui_kits/app/right-rail.jsx, the
+          Activity module) — borderless text buttons with NO wrapper track: active =
+          bg-surface-elevated + text-text + heavier weight on radius-control, inactive =
+          transparent + text-subtle. WHY not UnderlineTabs: this console already sits INSIDE a
+          titled section ("Everything you send"), the switch is client state with no URL of its
+          own, and it slides one pane track in place rather than navigating — UnderlineTabs is
+          real links between sibling routes, which these are not. A second underline strip under
+          the section title would also out-shout it. The `border-b` track and the underline this
+          replaces are precisely what made it read as a page-level tab row.
+          It is still a TAB SET (two panes, one shown), so it carries the real contract: tablist
+          / tab / tabpanel, aria-selected, and arrow-key movement. */}
+      <div className="inline-flex gap-0.5" role="tablist" aria-label="Messaging views" onKeyDown={onSegmentKeyDown}>
+        <TabButton
+          id={tabId('campaigns')}
+          controls={paneId('campaigns')}
+          active={onCampaigns}
+          onClick={() => setTab('campaigns')}
+          label="Campaigns"
+          count={campaigns.length}
+        />
+        <TabButton
+          id={tabId('funnels')}
+          controls={paneId('funnels')}
+          active={!onCampaigns}
+          onClick={() => setTab('funnels')}
+          label="Funnels"
+          count={funnels.length}
+        />
       </div>
 
       {/* Sliding sub-pane track. The viewport clips; the track holds both panes side by side and
@@ -107,7 +156,9 @@ export function MessagingConsole({
               whole width). Funnels are reached by the sub-tab above, which slides this track over. */}
           <section
             ref={campaignsPaneRef}
-            aria-label="Campaigns"
+            id={paneId('campaigns')}
+            role="tabpanel"
+            aria-labelledby={tabId('campaigns')}
             aria-hidden={!onCampaigns}
             inert={!onCampaigns || undefined}
             className="w-full shrink-0"
@@ -125,7 +176,9 @@ export function MessagingConsole({
           {/* Pane 2 — Funnels (full grid). The sub-tab slides here; no deep-select rail anymore. */}
           <section
             ref={funnelsPaneRef}
-            aria-label="Funnels"
+            id={paneId('funnels')}
+            role="tabpanel"
+            aria-labelledby={tabId('funnels')}
             aria-hidden={onCampaigns}
             inert={onCampaigns || undefined}
             className="w-full shrink-0"
@@ -139,11 +192,15 @@ export function MessagingConsole({
 }
 
 function TabButton({
+  id,
+  controls,
   active,
   onClick,
   label,
   count,
 }: {
+  id: string
+  controls: string
   active: boolean
   onClick: () => void
   label: string
@@ -152,22 +209,19 @@ function TabButton({
   return (
     <button
       type="button"
+      id={id}
+      role="tab"
+      aria-selected={active}
+      aria-controls={controls}
+      tabIndex={active ? 0 : -1}
       onClick={onClick}
-      aria-current={active ? 'true' : undefined}
-      className={`-mb-px flex items-center gap-2 border-b-2 px-3 py-2.5 text-body-sm font-semibold transition-colors motion-reduce:transition-none ${
-        active
-          ? 'border-primary-strong text-text'
-          : 'border-transparent text-muted hover:border-border-strong hover:text-text'
-      }`}
+      className={cn(
+        'flex items-center gap-1.5 rounded-control px-2.5 py-1 text-body-sm transition-colors motion-reduce:transition-none',
+        active ? 'bg-surface-elevated font-bold text-text' : 'font-semibold text-subtle hover:text-text',
+      )}
     >
       {label}
-      <span
-        className={`rounded-pill px-1.5 py-0.5 text-2xs font-bold tabular-nums ${
-          active ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-muted'
-        }`}
-      >
-        {count}
-      </span>
+      <span className={cn('tabular-nums font-semibold', active ? 'text-muted' : 'text-subtle')}>{count}</span>
     </button>
   )
 }
