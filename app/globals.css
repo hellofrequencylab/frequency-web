@@ -231,7 +231,7 @@
   --text-display-h2:   calc(clamp(2.25rem, 4vw, 3rem) * var(--type-scale, 1));
   --text-display-h3:   calc(clamp(1.75rem, 3vw, 2.25rem) * var(--type-scale, 1));
   --text-display-card: calc(1.5rem * var(--type-scale, 1));
-  /* THE FIXED DISPLAY ROLE, for surfaces that have no viewport (ADR-948).
+  /* THE FIXED DISPLAY ROLE, for surfaces that have no viewport (ADR-947).
      Every other display role above is a clamp with a `vw` term, and that is correct on
      screen and wrong on paper: in print, viewport units resolve against the PAGE BOX, so
      `--text-display-h3` on an A4 sheet at 12mm margins (≈186mm ≈ 703px of page area)
@@ -244,15 +244,16 @@
      Named for the artifact, exactly like `display-card`. */
   --text-display-poster: calc(2.25rem * var(--type-scale, 1));
   --text-stat:         calc(clamp(3.5rem, 6vw, 4.5rem) * var(--type-scale, 1));
-  /* THE TWO FIXED STAT STEPS BELOW IT (ADR-948). `--text-stat` is a HERO numeral: one per
+  /* THE TWO FIXED STAT STEPS BELOW IT (ADR-947). `--text-stat` is a HERO numeral: one per
      surface, 3.5rem floor, and its own `6vw` term. Two jobs the ladder had no answer for:
 
        stat-md  A price or headline figure. Fixed BECAUSE it is fixed: a fluid role shrinks
                 the conversion-critical number on exactly the device most people convert on
                 (`display-h3` prints it ~22% smaller on a phone than on a desktop), which is
                 the one direction a price must never move on its own.
-       stat-sm  A KPI in a dense strip — four numerals abreast inside a page header. The hero
-                `stat` cannot be used there at any width: its 3.5rem FLOOR breaks the row.
+       stat-sm  The same numeral where the row is dense — four KPIs abreast inside a page
+                header, or a long price label ("from $4.99/mo") that would wrap at stat-md. The
+                hero `stat` cannot serve either at any width: its 3.5rem FLOOR breaks the row.
 
      Suffixes follow the component vocabulary already in use (StatCard's `size: md | sm | xs`,
      where md is the larger), so the family reads stat > stat-md > stat-sm.
@@ -284,7 +285,7 @@
   --text-display-h3--line-height:   calc(2.5 / 2.25);
   --text-display-card--line-height: calc(2 / 1.5);
   --text-stat--line-height:         1;
-  /* The three roles added by ADR-948 take the SAME rule, and it is worth saying out loud why
+  /* The three roles added by ADR-947 take the SAME rule, and it is worth saying out loud why
      they do not inherit `--text-stat`'s flat 1: that 1 is not a house style for numerals, it
      is text-7xl's line-height. Tailwind only flattens to 1 from text-5xl up. All three of
      these replace a text-3xl/text-4xl literal, which still carry ratios — so copying stat's 1

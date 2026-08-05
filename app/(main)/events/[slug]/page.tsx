@@ -1699,6 +1699,10 @@ export default async function EventDetailPage({
       titleScale="display"
       title={
         canManage ? (
+          /* 🔴 The size chain here MIRRORS DetailTemplate's `titleScale="display"` h1 verbatim,
+             so the input matches the title it replaces. Change one and you must change both.
+             Left on literals with that h1 (ADR-947): it is a responsive ramp, and none of the
+             fixed roles reproduces one — see the note at components/templates/detail-template.tsx. */
           <InlineText
             value={event.title}
             save={updateEventField.bind(null, event.id, slug, 'title')}

@@ -13,11 +13,11 @@ import {
   SectionHeading,
   PhotoHero,
   PullQuote,
-  Stat,
   Steps,
   Card,
   Faq,
 } from '@/components/marketing/marketing-ui'
+import { Stat } from '@/components/ui/stat'
 import { Illustration, type IllustrationName } from '@/components/marketing/illustrations'
 import { Reveal, Parallax, CountUp, ScrollCue } from '@/components/marketing/motion'
 import { JsonLd } from '@/components/json-ld'

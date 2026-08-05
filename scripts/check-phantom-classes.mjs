@@ -73,7 +73,7 @@ const IGNORE = new Set([
 const DECLARED = [
   'text-display-hero', 'text-display-h1', 'text-display-h2', 'text-display-h3',
   'text-display-card',
-  // ADR-948 — the three roles a sweep proved were missing: a fixed poster/print display size
+  // ADR-947 — the three roles a sweep proved were missing: a fixed poster/print display size
   // (no `vw`, because print resolves viewport units against the page box), and the two fixed
   // stat steps under the fluid hero `stat` (a price that must not shrink, a KPI that must fit
   // four abreast in a header).

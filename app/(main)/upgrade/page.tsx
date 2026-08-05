@@ -175,12 +175,14 @@ export default async function UpgradePage({
             {live ? (
               <>
                 <span className="text-primary-strong text-body-sm mr-1">from</span>
-                <span className="text-4xl font-black text-on-primary">{formatCents(pwyw.minCents)}</span>
+                {/* text-stat-md is FIXED on purpose. A fluid display role shrinks the figure on
+                    phones, which is where this page converts. */}
+                <span className="text-stat-md font-black text-on-primary">{formatCents(pwyw.minCents)}</span>
                 <span className="text-primary-strong text-body-sm ml-1">/ month</span>
               </>
             ) : (
               <>
-                <span className="text-4xl font-black text-on-primary">Free</span>
+                <span className="text-stat-md font-black text-on-primary">Free</span>
                 <span className="text-primary-strong text-body-sm ml-1">during beta</span>
               </>
             )}

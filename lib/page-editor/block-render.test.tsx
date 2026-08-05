@@ -51,6 +51,32 @@ import { BlockRender } from './block-render'
 //     Re-baselining is deliberately an event: if a future diff here shows anything OTHER than
 //     a tracking class on an eyebrow, it is a real regression in the render path and this log
 //     is the evidence that nothing else was expected to move.
+//
+//   2026-08-05 (later still) · the zero-adopter sweep. `components/marketing/blocks.tsx`
+//     (LiveStats) stopped hand-rolling its stat trio and composed the kit primitive
+//     `components/ui/stat.tsx` instead — the twin the primitive's own header names as the
+//     duplicate to retire. TWO goldens moved (the two metadata-threading cases, which are the
+//     only ones that render LiveStats).
+//
+//     WHY PUCK-PARITY SURVIVES, checked against the invariant this file states above rather
+//     than assumed. The parity assertion these snapshots stand in for is about the RENDER PATH
+//     — "slot recursion, metadata threading, unknown-type skipping, root wrapping". Reading
+//     both diffs element by element:
+//       · Element structure is byte-identical. `<div><p>value</p><p>label</p></div>`, same
+//         tags, same nesting, same order, on all three stats, in both goldens. `<Stat>` renders
+//         no wrapper of its own and adds no attribute (its `className` is undefined here, so
+//         React omits `class` on the div exactly as the hand-rolled version did).
+//       · No attribute other than `class` changed anywhere, and no element moved.
+//       · Metadata threading — the actual subject of both tests — is demonstrably intact: the
+//         1,234 / 56 / 0 values still arrive from `puck.metadata.live` and still render.
+//       · The surrounding markup (root wrapper, Container/Columns slot recursion, the deeply
+//         nested eyebrow + heading) is untouched in both.
+//     What changed is two class STRINGS per stat: the numeral moved off the literal
+//     `text-6xl sm:text-7xl` pair onto the `text-stat` role (+ `tabular-nums leading-none`),
+//     and the label's class SET is the same set reordered. Same shape of diff as the two R7
+//     entries above — classes on leaves, render path untouched — so the golden is re-recorded
+//     rather than the conversion reverted. If a future LiveStats diff shows a changed element,
+//     a changed attribute, or a missing metadata-fed value, that is a real regression.
 // ─────────────────────────────────────────────────────────────────────────────
 
 type BlockItem = { type: string; props: Record<string, unknown> }
@@ -127,7 +153,7 @@ describe('BlockRender golden markup (frozen; was byte-identical to Puck rsc <Ren
     // The live counts change the rendered markup, so a threading regression would
     // surface as a snapshot diff here (and as a differing pair below).
     expect(withLive).not.toBe(withoutLive)
-    expect(withLive).toMatchInlineSnapshot(`"<section class="bg-surface px-6 py-24 sm:py-28 "><div class="max-w-3xl mx-auto text-center"><p class="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">Not a someday idea</p><h2 class="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)] mb-12">It’s already happening.</h2><div class="grid grid-cols-3 gap-6 max-w-xl mx-auto"><div><p class="font-display text-6xl sm:text-7xl text-text">1,234</p><p class="text-meta text-subtle mt-3 uppercase tracking-eyebrow font-bold">Members</p></div><div><p class="font-display text-6xl sm:text-7xl text-text">56</p><p class="text-meta text-subtle mt-3 uppercase tracking-eyebrow font-bold">Circles</p></div><div><p class="font-display text-6xl sm:text-7xl text-text">0</p><p class="text-meta text-subtle mt-3 uppercase tracking-eyebrow font-bold">Events soon</p></div></div></div></section>"`)
+    expect(withLive).toMatchInlineSnapshot(`"<section class="bg-surface px-6 py-24 sm:py-28 "><div class="max-w-3xl mx-auto text-center"><p class="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">Not a someday idea</p><h2 class="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)] mb-12">It’s already happening.</h2><div class="grid grid-cols-3 gap-6 max-w-xl mx-auto"><div><p class="font-display text-stat tabular-nums leading-none text-text">1,234</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Members</p></div><div><p class="font-display text-stat tabular-nums leading-none text-text">56</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Circles</p></div><div><p class="font-display text-stat tabular-nums leading-none text-text">0</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Events soon</p></div></div></div></section>"`)
   })
 
   it('nested slot: Container renders its `content` slot as nested items', () => {
@@ -198,7 +224,7 @@ describe('BlockRender golden markup (frozen; was byte-identical to Puck rsc <Ren
     const withoutLive = block(data, {})
     expect(withLive).not.toBe(withoutLive)
     expect(withLive).toContain('Deeply nested heading')
-    expect(withLive).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto"><div><section class="px-6 py-12 sm:py-16 bg-surface "><div class="max-w-5xl mx-auto grid gap-8 md:grid-cols-2 items-start"><div><section class="bg-surface px-6 py-24 sm:py-28 "><div class="max-w-3xl mx-auto text-center"><p class="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">Not a someday idea</p><h2 class="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)] mb-12">It’s already happening.</h2><div class="grid grid-cols-3 gap-6 max-w-xl mx-auto"><div><p class="font-display text-6xl sm:text-7xl text-text">1,234</p><p class="text-meta text-subtle mt-3 uppercase tracking-eyebrow font-bold">Members</p></div><div><p class="font-display text-6xl sm:text-7xl text-text">56</p><p class="text-meta text-subtle mt-3 uppercase tracking-eyebrow font-bold">Circles</p></div><div><p class="font-display text-6xl sm:text-7xl text-text">0</p><p class="text-meta text-subtle mt-3 uppercase tracking-eyebrow font-bold">Events soon</p></div></div></div></section></div><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Deeply nested heading</h2></div></section></div></div></section></div></div></section>"`)
+    expect(withLive).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto"><div><section class="px-6 py-12 sm:py-16 bg-surface "><div class="max-w-5xl mx-auto grid gap-8 md:grid-cols-2 items-start"><div><section class="bg-surface px-6 py-24 sm:py-28 "><div class="max-w-3xl mx-auto text-center"><p class="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">Not a someday idea</p><h2 class="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)] mb-12">It’s already happening.</h2><div class="grid grid-cols-3 gap-6 max-w-xl mx-auto"><div><p class="font-display text-stat tabular-nums leading-none text-text">1,234</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Members</p></div><div><p class="font-display text-stat tabular-nums leading-none text-text">56</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Circles</p></div><div><p class="font-display text-stat tabular-nums leading-none text-text">0</p><p class="mt-3 text-meta font-bold uppercase tracking-eyebrow text-subtle">Events soon</p></div></div></div></section></div><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Deeply nested heading</h2></div></section></div></div></section></div></div></section>"`)
   })
 
   it('skips unknown block types instead of throwing', () => {

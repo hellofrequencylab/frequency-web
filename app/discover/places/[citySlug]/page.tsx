@@ -9,10 +9,10 @@ import {
   PageHero,
   Section,
   SectionHeading,
-  Stat,
   BetaCTA,
   Button,
 } from '@/components/marketing/marketing-ui'
+import { Stat } from '@/components/ui/stat'
 import { createClient } from '@/lib/supabase/server'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, circleListSchema, eventListSchema } from '@/lib/jsonld'

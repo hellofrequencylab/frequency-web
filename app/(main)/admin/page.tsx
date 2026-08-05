@@ -211,7 +211,9 @@ function HeaderKpis({
           <p className="whitespace-nowrap text-meta font-semibold uppercase tracking-wide text-muted">
             {k.label}
           </p>
-          <p className="mt-1.5 text-3xl font-bold leading-none tabular-nums text-text">
+          {/* text-stat-sm, not text-stat: this is a four-up strip inside the page header, and
+              the hero stat role has a 3.5rem FLOOR that breaks the row at every width. */}
+          <p className="mt-1.5 text-stat-sm font-bold leading-none tabular-nums text-text">
             {k.value}
           </p>
         </div>

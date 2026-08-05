@@ -314,32 +314,22 @@ export function PullQuote({
   )
 }
 
-// Big display stat — promoted from the splash so counts look identical sitewide.
-export function Stat({
-  value,
-  label,
-  tone = 'light',
-}: {
-  value: number | string
-  label: string
-  tone?: 'light' | 'ink'
-}) {
-  const isInk = tone === 'ink'
-  return (
-    <div>
-      <p className={`font-display text-6xl sm:text-7xl ${isInk ? 'text-on-ink' : 'text-text'}`}>
-        {value}
-      </p>
-      <p
-        className={`text-meta uppercase tracking-eyebrow font-bold mt-3 ${
-          isInk ? 'text-on-ink-subtle' : 'text-subtle'
-        }`}
-      >
-        {label}
-      </p>
-    </div>
-  )
-}
+// Big display stat — RETIRED FROM THIS FILE (2026-08-05), and deliberately not re-exported.
+//
+// This was the one marketing "variant" that was not a variant. Unlike `Card` and `Button`
+// above — which differ from the in-app kit on purpose (editorial scale, the Anton face,
+// `shadow-pop`, the warm bands) — the stat exported here was the SAME component as
+// `components/ui/stat.tsx` twice: same `<div><p>value</p><p>label</p></div>` anatomy, same
+// two tone pairs, same `text-meta font-bold uppercase tracking-eyebrow mt-3` caption. Its
+// only real difference was the defect: the numeral was pinned to a literal `text-6xl
+// sm:text-7xl` pair, which stops responding the moment a member turns the type scale up,
+// while the kit primitive takes the `text-stat` ROLE (--text-stat, scaled by --type-scale).
+//
+// The three importers (app/page.tsx and the two /discover city hubs) now import `Stat` from
+// '@/components/ui/stat' directly. No re-export is left here on purpose: a barrel alias would
+// keep two import paths alive for one component, which is how the twin got written in the
+// first place. If you reached for a marketing stat and landed on this comment, that is the
+// intended outcome — the kit primitive is prop-compatible, `tone="ink"` included.
 
 // The one FAQ disclosure for marketing. Native <details>/<summary> so the
 // section stays a Server Component (no client JS), with the ChevronDown rotate

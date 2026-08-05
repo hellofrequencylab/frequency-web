@@ -17765,6 +17765,36 @@ exists for. ⚠️ `events/[slug]:1705` and `detail-template.tsx:133` are a pair
 inline-edit input mirroring the second's chain verbatim, and they must move together or the editor
 stops matching the title it edits.
 
+**Resolved (2026-08-05).** The three roles as shipped in `app/globals.css` — declared in `:root`,
+bridged into `@theme inline`, each with a paired line-height, each asserted in
+`scripts/check-phantom-classes.mjs`'s `DECLARED` list:
+
+| Role | Value | Line-height | Why that value |
+| --- | --- | --- | --- |
+| `--text-stat-sm` | `1.875rem × --type-scale` | `calc(2.25 / 1.875)` | The compact KPI / dense-row numeral. Exactly the `text-3xl` it retires, so adoption is zero-pixel. |
+| `--text-stat-md` | `2.25rem × --type-scale` | `calc(2.5 / 2.25)` | The price. Exactly the `text-4xl` it retires; fixed so a phone never shrinks the figure. |
+| `--text-display-poster` | `2.25rem × --type-scale` | `calc(2.5 / 2.25)` | No `vw` term at all. Equals `display-h3`'s **ceiling**, i.e. what that role was always meant to reach; on A4 at 12mm margins `3vw` ≈ 21px would drop it to its 1.75rem floor. |
+
+Naming follows the neighbours: `display-poster` is parallel to `display-card` (a display role named
+for its artifact), and `stat-md`/`stat-sm` follow StatCard's own `size: md | sm | xs` ordering, so
+the family reads `stat` > `stat-md` > `stat-sm`. `stat-md` and `display-poster` share a value and
+stay separate names — different families, different failure modes (one must not shrink on a phone,
+the other must not depend on a viewport at all), and merging them would put a price on the same
+token as a poster title.
+
+The line-heights deliberately do **not** copy `--text-stat`'s flat `1`. That `1` is text-7xl's
+line-height, not a house style for numerals; Tailwind only flattens from text-5xl up. All three of
+these replace a text-3xl/4xl literal that still carries a ratio, so copying `1` would tighten every
+adopting site 11–20% and smuggle a leading change inside a size change.
+
+Sites converted: `admin/page.tsx:214` (→ `text-stat-sm`), `upgrade/page.tsx` ×2 (→ `text-stat-md`),
+`print/qr/page.tsx` PosterSheet (→ `text-display-poster`; the route is confirmed print — it sets
+`@page { size: A4 portrait }`, uses `print:` variants and calls `window.print()`).
+The `events/[slug]` ⇄ `detail-template` pair is **left on literals, together**: it is a three-step
+responsive ramp (1.5 / 1.875 / 2.25rem), no fixed role reproduces a ramp, and the nearest fluid role
+(`display-h3`) floors at 1.75rem — it would grow every Detail title ~17% on phones and swap bold
+sans for Anton. Retiring it needs a fluid *page-title* role, which is a fourth decision.
+
 ---
 
 ## ADR-948 — `pr-compare` becomes a required check
