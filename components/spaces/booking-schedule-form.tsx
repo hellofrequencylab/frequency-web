@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Check, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Label, fieldClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { setSpaceSchedule } from '@/lib/spaces/booking-actions'
 import type { ScheduleSettings, SlotOverride } from '@/lib/spaces/booking'
@@ -160,71 +161,67 @@ export function BookingScheduleForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className="text-meta font-medium text-muted">Buffer before</span>
-          <select
+          <Select
             value={bufferBefore}
             onChange={(e) => {
               setBufferBefore(Number(e.target.value))
               setSaved(false)
             }}
-            className={cn(fieldClasses)}
           >
             {BUFFERS.map((b) => (
               <option key={b.value} value={b.value}>
                 {b.label}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-meta font-medium text-muted">Buffer after</span>
-          <select
+          <Select
             value={bufferAfter}
             onChange={(e) => {
               setBufferAfter(Number(e.target.value))
               setSaved(false)
             }}
-            className={cn(fieldClasses)}
           >
             {BUFFERS.map((b) => (
               <option key={b.value} value={b.value}>
                 {b.label}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-meta font-medium text-muted">Minimum notice</span>
-          <select
+          <Select
             value={minNotice}
             onChange={(e) => {
               setMinNotice(Number(e.target.value))
               setSaved(false)
             }}
-            className={cn(fieldClasses)}
           >
             {NOTICES.map((n) => (
               <option key={n.value} value={n.value}>
                 {n.label}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-meta font-medium text-muted">Booking window</span>
-          <select
+          <Select
             value={windowDays}
             onChange={(e) => {
               setWindowDays(Number(e.target.value))
               setSaved(false)
             }}
-            className={cn(fieldClasses)}
           >
             {WINDOWS.map((d) => (
               <option key={d} value={d}>
                 {d} days out
               </option>
             ))}
-          </select>
+          </Select>
         </label>
       </div>
 
@@ -254,14 +251,14 @@ export function BookingScheduleForm({
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-meta font-medium text-muted">Type</span>
-              <select
+              <Select
                 value={o.isBlackout ? 'off' : 'hours'}
                 onChange={(e) => updateOverride(i, { isBlackout: e.target.value === 'off' })}
-                className={cn(fieldClasses, 'w-36')}
-              >
-                <option value="off">Day off</option>
-                <option value="hours">Set hours</option>
-              </select>
+                options={[
+                  { value: 'off', label: 'Day off' },
+                  { value: 'hours', label: 'Set hours' },
+                ]}
+              />
             </label>
             {!o.isBlackout && (
               <>

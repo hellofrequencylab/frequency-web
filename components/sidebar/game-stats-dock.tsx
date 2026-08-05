@@ -130,7 +130,12 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
       {/* The panel reveals INSIDE the tab (grid-rows 0fr -> 1fr) rather than as a sibling above
           it, so the tab's bottom edge stays pinned to 0 and the corner never lifts off. */}
       <div
-        className={`grid overflow-hidden transition-[grid-template-rows] duration-200 ease-out ${
+        // The motion tokens, not literals. The reduced-motion block in globals.css zeroes the
+        // --motion-* vars rather than disabling transitions, so a hardcoded `duration-200`
+        // opts this dock out of the member's stated preference — the other two docks honour it
+        // and this one animated for 200ms regardless. The token also scales with the
+        // generation feel, which a literal cannot.
+        className={`grid overflow-hidden transition-[grid-template-rows] duration-[var(--motion-base)] ease-[var(--ease-out)] motion-reduce:transition-none ${
           open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         }`}
       >

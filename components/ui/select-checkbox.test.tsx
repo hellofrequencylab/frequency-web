@@ -289,11 +289,45 @@ describe('the shapes found in the wild convert without rewriting the call site',
 
   it('inline toolbar select shrinks to its options via wrapperClassName', () => {
     const c = mount(
-      <Select wrapperClassName="inline-block w-auto" options={['Newest', 'Near you']} defaultValue="Newest" />,
+      <Select
+        wrapperClassName="inline-block w-max max-w-full"
+        options={['Newest', 'Near you']}
+        defaultValue="Newest"
+      />,
     )
     const wrapper = c.firstElementChild as HTMLElement
-    expect(wrapper.className).toContain('w-auto')
+    expect(wrapper.className).toContain('w-max')
     expect(wrapper.className).toContain('relative')
+    // The base `w-full` is STILL in the attribute — `cn()` joins, it does not merge — so this
+    // assertion alone proves nothing about width. What settles it is emit order, pinned below.
+    expect(wrapper.className).toContain('w-full')
+  })
+
+  // 🔴 The assertion above used to read `toContain('w-auto')` and was green for months while the
+  // control it described stayed full width. `cn()` is a plain join, so BOTH classes reach the
+  // attribute and the compiled sheet decides — and `.w-auto` is emitted BEFORE `.w-full`, so the
+  // override lost. A test that greps the string it was handed can never catch that; it has to ask
+  // the compiler. This does, against the real globals.css, the same way check-phantom-classes does.
+  it('the recommended width override actually beats the base w-full in the cascade', async () => {
+    const { compile } = await import('tailwindcss')
+    const { readFileSync } = await import('node:fs')
+    const { resolve, join, dirname } = await import('node:path')
+    const compiler = await compile(readFileSync('app/globals.css', 'utf8'), {
+      base: process.cwd(),
+      loadStylesheet: async (id: string, base: string) => {
+        const target = id.startsWith('.') ? resolve(base, id) : resolve('node_modules', id)
+        const p = target.endsWith('.css') ? target : join(target, 'index.css')
+        return { path: p, base: dirname(p), content: readFileSync(p, 'utf8') }
+      },
+    })
+    const out = compiler.build(['w-full', 'w-auto', 'w-max', 'block', 'inline-block'])
+    const at = (c: string) => out.indexOf(c)
+    // Later wins. w-max must follow w-full, or the docstring is lying again.
+    expect(at('.w-max')).toBeGreaterThan(at('.w-full'))
+    // And the reason w-auto was wrong, kept as a live fact rather than a comment.
+    expect(at('.w-auto')).toBeLessThan(at('.w-full'))
+    // The display half of the recommendation was always sound.
+    expect(at('.inline-block')).toBeGreaterThan(at('.block'))
   })
 })
 

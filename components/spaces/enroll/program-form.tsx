@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Check, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Label, Textarea, fieldClasses } from '@/components/ui/field'
+import { Checkbox } from '@/components/ui/checkbox'
 import { isError } from '@/lib/action-result'
 import { setSpaceProgram } from '@/lib/spaces/enroll-actions'
 import type { SpaceProgram } from '@/lib/spaces/enroll'
@@ -204,15 +205,12 @@ export function ProgramForm({
           </label>
         </div>
 
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={draft.isPublished}
-            onChange={(e) => update({ isPublished: e.target.checked })}
-            className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
-          />
-          <span className="text-body-sm text-muted">Open for enrollment (members can enroll)</span>
-        </label>
+        <Checkbox
+          checked={draft.isPublished}
+          onChange={(e) => update({ isPublished: e.target.checked })}
+          label="Open for enrollment (members can enroll)"
+          wrapperClassName="flex"
+        />
       </div>
 
       <p className="text-meta text-subtle">

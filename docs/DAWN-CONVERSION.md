@@ -251,8 +251,33 @@ its own DAWN adoption decision; do not fold its debt into this app's scoreboard.
    > were pixel-identical. If a capture rewrites more files than the run reported failing, the
    > extra ones are the real regression and the diff is where to look.
    >
+   > **Third cycle, 2026-08-05 (#2047).** Predicted by the two above and arriving on schedule.
+   > #2046 merged Phase 4's type sweep; the next PR inherited 8 failures, all `/pricing`, all four
+   > theme states × both viewports, `18869px` vs `18864px`. Traced to **one line in the base
+   > branch** — `text-3xl` → `text-display-h3` on the featured plan title — where a fixed 1.875rem
+   > became a `clamp()` that resolves 5px shorter at both widths, shifting everything below it past
+   > the 2% pixel threshold. The PR itself touched nothing under `app/(marketing)/pricing`.
+   >
+   > The attribution property held again, and is now three-for-three: **56 of 64 shots passed, and
+   > the capture rewrote exactly the 8 that failed.** That is mechanical proof the other 56 surfaces
+   > were pixel-identical, and it is why a recapture is safe to run on a red `pr-compare` without
+   > laundering a real regression into the baseline — the capture can only move what already
+   > differs. Use the rule in both directions: **if a capture rewrites more files than the run
+   > reported failing, the extra ones are the regression.**
+   >
    > **Making `pr-compare` required is the fix.** Until then, budget one recapture cycle per
    > rendering merge and read a green `pr-compare` as "either nothing changed, or nobody looked."
+   >
+   > **Recapture procedure** (the trap is in step 3, and it is why this is written down):
+   > 1. Dispatch `e2e-manual.yml` with `base_url` = the PR's Vercel preview and
+   >    `update_baselines: true`. Capture takes ~5 min for all 64 shots.
+   > 2. Check the capture commit's file list against the failing-test list. They must match.
+   > 3. **Push a real commit afterward.** The runner commits with `GITHUB_TOKEN`, and GitHub
+   >    suppresses workflow runs from that token so an Action cannot recurse into itself — so the
+   >    baseline commit arrives with no `checks`, no `pr-compare`, no `analyze`. Re-running the
+   >    failed job does not help either: a re-run replays the old SHA and would judge the new
+   >    baselines against the old tree. Only a fresh push fires `pull_request: synchronize`.
+   >    The failure mode is silent: the PR looks mid-run forever because the run was never queued.
 2. **Ratchet counts only shrink.** A phase that raises one fails CI, and that is the mechanism.
    New primitives arrive as kit pieces, so adopting them should move a count DOWN.
 3. **Build the primitive before sweeping onto it** (Phase 2 before Phase 3). Half this plan's

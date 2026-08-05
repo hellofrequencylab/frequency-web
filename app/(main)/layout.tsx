@@ -16,6 +16,7 @@ import { loadPageSettings } from '@/lib/page-settings/store'
 import { resolveTheme } from '@/lib/theme/server/resolve'
 import { structureFor } from '@/lib/theme/structure'
 import { THEME_COOKIE, parseThemeCookie } from '@/lib/theme/cookie'
+import { RAIL_FOLD_COOKIE, readRailFoldCookie } from '@/lib/layout/rail-fold'
 import { loadActiveThemeCss, resolveActiveOccasionSlug } from '@/lib/theme/server/themes'
 import RightSidebar, { MobileGameStats, VaultDockSlot } from '@/components/sidebar/right-sidebar'
 import { isQuestSurface } from '@/lib/layout/rail-panels'
@@ -538,7 +539,7 @@ export default async function MainLayout({
   // when there is no pin and no explicit occasion. All fail-safe. The per-request
   // cookie + DB-theme reads live HERE, not in the root layout, so public marketing/
   // discover pages stay static (app/layout.tsx).
-  const [theme, occasionPinned, autoOccasion, pageGate] = await Promise.all([
+  const [theme, occasionPinned, autoOccasion, pageGate, railFold] = await Promise.all([
     resolveTheme({ spaceSkin: activeSkin, spaceGeneration: activeGeneration }),
     (async () => {
       try {
@@ -555,6 +556,20 @@ export default async function MainLayout({
     reqPath && reqPath !== '/feed' && isSafeRoute(reqPath) && !isStaff(pageWebRole)
       ? loadPageSettings(reqPath).catch(() => null)
       : Promise.resolve(null),
+    // A folded rail is different MARKUP, not restyled markup, so unlike the theme it cannot be
+    // corrected pre-paint by an inline script — by the time any script runs the open rail is
+    // already in the HTML. The server is the only actor who can paint the fold on frame one, and
+    // this cookie is the client's mirror of its localStorage instruction so the server can.
+    // Without it the shell hydrates from `auto`, then flips a `shrink-0` track from w-48 to w-14
+    // and shoves the whole content column sideways one frame after paint.
+    (async () => {
+      try {
+        const jar = await cookies()
+        return readRailFoldCookie(jar.get(RAIL_FOLD_COOKIE)?.value)
+      } catch {
+        return undefined /* no cookie → Auto, which is the pre-existing first paint */
+      }
+    })(),
   ])
   if (pageGate) {
     const draftHidden = pageGate.status === 'draft'
@@ -577,6 +592,7 @@ export default async function MainLayout({
     <>
       {themeCss ? <style id="fx-theme" dangerouslySetInnerHTML={{ __html: themeCss }} /> : null}
     <AppShell
+      railFold={railFold}
       skin={theme.skin}
       generation={theme.generation}
       structure={structure}

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Check, Clock, Loader2, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Label, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import {
   createSpaceCampaign,
@@ -181,18 +182,18 @@ export function ComposerShell({
             <Label htmlFor="campaign-topic" className="font-semibold">
               Topic
             </Label>
-            <select
+            <Select
               id="campaign-topic"
               value={topic}
               onChange={(e) => setTopic(e.target.value as NotificationTopic)}
-              className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              wrapperClassName="mt-1"
             >
               {EMAIL_TOPIC_OPTIONS.map((o) => (
                 <option key={o.key} value={o.key}>
                   {o.label}
                 </option>
               ))}
-            </select>
+            </Select>
             <p className="mt-1 text-meta text-subtle">
               {EMAIL_TOPIC_OPTIONS.find((o) => o.key === topic)?.help}
             </p>

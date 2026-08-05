@@ -47,7 +47,24 @@ export function UnderlineTabs({
   const pathname = usePathname()
   const isActive = (href: string) => (activeHref !== undefined ? activeHref === href : pathname === href)
   return (
-    <nav className="admin-subnav-scroll -mb-px flex gap-1 overflow-x-auto border-b border-border" aria-label={label}>
+    <nav
+      // A disclosure and a horizontal scroller cannot share a box. `overflow-x: auto` forces
+      // `overflow-y` to compute to `auto` as well (CSS Overflow §3 — only `visible` pairs with
+      // `visible`), so the ~44px-tall strip clips its own absolutely-positioned menu, and
+      // `.admin-subnav-scroll`'s mask-image clips descendant painting on top of that. The menu
+      // gets sliced off with no scrollbar to hint at it, because that class hides those too.
+      //
+      // So the strip stops scrolling when it carries a menu, and wraps instead. That is not a
+      // trade, it is the same intent: `menu` exists so a long tail folds away and the strip
+      // stays SHORT. A strip short enough to want a disclosure is short enough not to need a
+      // scroller. Whole class strings either side, because Tailwind scans source text.
+      className={
+        tabs.some((t) => 'menu' in t)
+          ? '-mb-px flex flex-wrap gap-1 border-b border-border'
+          : 'admin-subnav-scroll -mb-px flex gap-1 overflow-x-auto border-b border-border'
+      }
+      aria-label={label}
+    >
       {tabs.map((t) =>
         'menu' in t ? (
           // Long-tail group. A native <details> so it needs no client JS, and its links are in the

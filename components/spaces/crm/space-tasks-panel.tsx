@@ -4,7 +4,8 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, ListChecks, Loader2, Plus, RotateCcw, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, fieldClasses } from '@/components/ui/field'
+import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SectionHeader } from '@/components/ui/section-header'
 import { isError } from '@/lib/action-result'
@@ -177,13 +178,13 @@ export function SpaceTasksPanel({
               aria-label="Due date (optional)"
               className="@lg:w-44"
             />
-            <select
+            <Select
               value={linkTo}
               onChange={(e) => setLinkTo(e.target.value)}
               aria-label="Link to a deal or contact (optional)"
-              className={`${fieldClasses} @lg:w-52`}
+              emptyLabel="No link"
+              wrapperClassName="@lg:w-52"
             >
-              <option value="">No link</option>
               {dealOptions.length > 0 && (
                 <optgroup label="Deals">
                   {dealOptions.map((d) => (
@@ -202,7 +203,7 @@ export function SpaceTasksPanel({
                   ))}
                 </optgroup>
               )}
-            </select>
+            </Select>
           </div>
           <div className="mt-3 flex justify-end">
             <Button type="submit" size="sm" disabled={pending}>

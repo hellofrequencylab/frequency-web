@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, Loader2, Palette, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { fieldClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { SectionHeader } from '@/components/ui/section-header'
 import { isError, type ActionResult } from '@/lib/action-result'
 import type { ThemeInput, ThemeKind, ThemeRow, ThemeTokens } from '@/lib/theme/admin-types'
@@ -235,15 +236,16 @@ export function ThemeEditor({ initial, mode }: { initial: ThemeRow | null; mode:
                 <label htmlFor="theme-kind" className={labelCls}>
                   Kind
                 </label>
-                <select
+                <Select
                   id="theme-kind"
-                  className={`${fieldClasses} mt-1`}
+                  wrapperClassName="mt-1"
                   value={draft.kind}
                   onChange={(e) => setField('kind', e.target.value as ThemeKind)}
-                >
-                  <option value="skin">Skin · a palette and feel</option>
-                  <option value="occasion">Occasion · a seasonal overlay</option>
-                </select>
+                  options={[
+                    { value: 'skin', label: 'Skin · a palette and feel' },
+                    { value: 'occasion', label: 'Occasion · a seasonal overlay' },
+                  ]}
+                />
                 <p className={fieldHint}>
                   {isOccasion
                     ? 'An overlay that applies within a calendar window.'
