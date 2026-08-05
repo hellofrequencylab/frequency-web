@@ -1,0 +1,106 @@
+import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react'
+import { cn } from '@/lib/utils'
+
+// The Checkbox primitive (DAWN dawn/components/forms/Checkbox.jsx) — a warm box that fills amber
+// with a check when on. Used for consent gates, settings and filter lists, all of which were
+// hand-rolling a raw `<input type="checkbox">` with drifting size, colour and label wiring.
+//
+// NATIVE, NOT A FAKE. DAWN's reference draws a `<button role="checkbox">`; this does not. A real
+// `<input type="checkbox">` is what gives us Space to toggle, `disabled`, `required`, form
+// submission with `name`/`value`, label click-through, and the browser's own announcement — all
+// of which a role-annotated button has to re-implement, and usually only half does. So the input
+// IS the visible box: `appearance-none` strips the UA control and the border/fill/radius are set
+// on the real element, which means every state (`:checked`, `:disabled`, `:focus-visible`,
+// `aria-invalid`) styles itself with no JS mirror to fall out of sync. The check mark is a
+// `pointer-events-none` sibling revealed by `peer-checked`.
+//
+// CONTROLLED THE NATIVE WAY. `checked` + `onChange(event)`, not DAWN's `onChange(nextBoolean)`.
+// That keeps it a drop-in for the raw inputs it replaces (no call site has to rewrite its
+// handler), keeps `defaultChecked` working uncontrolled, and keeps it usable inside a plain
+// `<form>` with a server action.
+//
+// FOCUS. Deliberately no focus class: the global rule in app/globals.css paints the 3px amber
+// `--color-focus-ring` on a focused input, which is the ring actionable chrome gets. A checkbox
+// is a control you act on, not a field you type in, so it keeps that ring — the calm neutral
+// halo in `fieldClasses` is for text fields, and inventing a third treatment here would break
+// the split.
+export const checkboxClasses =
+  'peer size-5 shrink-0 appearance-none rounded-control border border-border-strong bg-surface transition-[background-color,border-color] motion-reduce:transition-none checked:border-primary checked:bg-primary aria-[invalid=true]:border-danger disabled:cursor-not-allowed disabled:opacity-50'
+
+export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
+  /** The visible label, rendered beside the box and wired by implicit `<label>` association —
+   *  no `id` to mint, no `htmlFor` to thread. Omit it only when something else already names
+   *  the control (a table column header, a surrounding `<Field>`, an `aria-label`). */
+  label?: ReactNode
+  /** Helper line under the label. Requires `label`. */
+  hint?: ReactNode
+  /** Classes for the outer `<label>` (or, unlabelled, for the box wrapper) — for layout, e.g.
+   *  `"w-full justify-between"` in a settings row. `className` still goes to the input. */
+  wrapperClassName?: string
+}
+
+export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Checkbox(
+  { label, hint, className, wrapperClassName, disabled, ...props },
+  ref,
+) {
+  const labelled = label !== undefined
+
+  // TOUCH TARGET, and why it lands on a different element in each branch. `tap-target` clamps to
+  // the active `--tap-min`: 32px density floor on a mouse, 44px on a coarse pointer
+  // (app/globals.css). LABELLED, the <label> is the real hit area — clicking anywhere in it
+  // toggles the box — so the floor goes there and the box stays a trim 20px beside the text.
+  // UNLABELLED there is nothing else to grow, so the floor goes on the input itself. Neither
+  // branch bleeds a ::after hit area, which in a stacked list of checkboxes would overlap the
+  // neighbouring row and toggle the wrong one.
+  const box = (
+    // `relative inline-flex` so the check mark can sit over the input. Presentational only,
+    // which is why it is a <span> carrying no role — the input below is the whole control.
+    <span
+      className={cn(
+        'relative inline-flex shrink-0 items-center justify-center',
+        !labelled && wrapperClassName,
+      )}
+    >
+      <input
+        ref={ref}
+        type="checkbox"
+        disabled={disabled}
+        className={cn(checkboxClasses, !labelled && 'tap-target', className)}
+        {...props}
+      />
+      <svg
+        aria-hidden
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="pointer-events-none absolute size-3 text-on-primary opacity-0 transition-opacity peer-checked:opacity-100 motion-reduce:transition-none"
+      >
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+    </span>
+  )
+
+  if (!labelled) return box
+
+  return (
+    <label
+      className={cn(
+        'tap-target inline-flex gap-2.5',
+        hint ? 'items-start' : 'items-center',
+        disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+        wrapperClassName,
+      )}
+    >
+      {box}
+      {/* The fade is applied ONCE, here on the text, because `checkboxClasses` already fades the
+          box on `:disabled` — a wrapper-level `opacity-50` would compound the two to 25%. */}
+      <span className={cn('min-w-0', disabled && 'opacity-50')}>
+        <span className="block text-body-sm text-text">{label}</span>
+        {hint ? <span className="mt-0.5 block text-meta text-muted">{hint}</span> : null}
+      </span>
+    </label>
+  )
+})

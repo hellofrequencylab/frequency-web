@@ -102,14 +102,14 @@ export function LiveStatsBlock({ eyebrow, heading, live, pad, vis = '' }: { eyeb
   return (
     <section className={`bg-surface px-6 ${pad ?? 'py-24 sm:py-28'} ${vis}`}>
       <div className="max-w-3xl mx-auto text-center">
-        {eyebrow && <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">{eyebrow}</p>}
+        {eyebrow && <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">{eyebrow}</p>}
         {heading && <h2 className="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)] mb-12">{heading}</h2>}
         {stats ? (
           <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
             {stats.map((s) => (
               <div key={s.label}>
                 <p className="font-display text-6xl sm:text-7xl text-text">{s.value.toLocaleString()}</p>
-                <p className="text-meta text-subtle mt-3 uppercase tracking-widest font-bold">{s.label}</p>
+                <p className="text-meta text-subtle mt-3 uppercase tracking-eyebrow font-bold">{s.label}</p>
               </div>
             ))}
           </div>

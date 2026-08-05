@@ -57,7 +57,7 @@ export default function BetaPage() {
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-start">
           {/* Why you're here */}
           <div>
-            <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
+            <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">
               What you&apos;re joining
             </p>
             <h2 className="font-display uppercase text-text text-4xl sm:text-5xl mb-7">
@@ -112,7 +112,7 @@ export default function BetaPage() {
       {/* ── How it works after you sign up ───────────────────────────────── */}
       <Section tone="canvas" pad="py-20 sm:py-24">
         <div className="text-center mb-12">
-          <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
+          <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">
             What happens next
           </p>
           <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">

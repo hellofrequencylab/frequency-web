@@ -334,7 +334,7 @@ function Room({
         </span>
       </div>
       <div className="p-6 pt-8">
-        <p className="text-3xs font-bold uppercase tracking-widest text-on-ink-subtle">
+        <p className="text-3xs font-bold uppercase tracking-eyebrow text-on-ink-subtle">
           Reference, not our room
         </p>
         <h3 className="mt-2 font-display uppercase text-page-title text-on-ink">{title}</h3>

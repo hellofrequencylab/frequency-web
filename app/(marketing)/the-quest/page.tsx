@@ -289,7 +289,7 @@ function LegacyTheQuest() {
                   <h3 className="font-display uppercase text-text text-page-title leading-none">
                     {r.name}
                   </h3>
-                  <span className="text-meta font-bold uppercase tracking-widest text-primary-strong">
+                  <span className="text-meta font-bold uppercase tracking-eyebrow text-primary-strong">
                     {r.tag}
                   </span>
                 </div>
@@ -411,7 +411,7 @@ function LegacyTheQuest() {
           watch the path light up. Finish a Journey and you earn a Trophy. Finish
           three and you reach Master. All it takes is a Circle and a standing time.
         </Body>
-        <p className="mt-7 inline-flex items-center gap-2 text-body-sm font-bold uppercase tracking-[0.2em] text-primary-strong">
+        <p className="mt-7 inline-flex items-center gap-2 text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong">
           <Trophy className="w-4 h-4" aria-hidden /> Season one is open
         </p>
         <p className="mt-6 text-body text-muted leading-relaxed">
