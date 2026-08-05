@@ -931,15 +931,16 @@ function NavLinkList({
           // The line was carrying real separation, so the gaps grew to carry it instead — measured
           // at this app's 17px root, not eyeballed:
           //
-          //   open rail    group gap `mt-4` → `mt-6`, 17px → 25.5px (+50%), which is 6x the 4.25px
-          //                `space-y-0.5` between rows INSIDE a group. At mt-4 it was only 4x, and
-          //                4x plus a hairline reads as a break where 4x alone reads as a pause.
-          //                The home anchor keeps its extra breath as `pb-1`: it used to run
+          //   open rail    group gap `mt-4` → `mt-6`, 17px → 25.5px (+50%). Against the 2.125px
+          //                `space-y-0.5` between rows INSIDE a group that takes the ratio from 8x
+          //                to 12x — and 8x plus a hairline reads as a break where 8x alone reads
+          //                as a pause. The home anchor keeps its extra breath as `pb-1`: it ran
           //                pb-2 + mb-1 + the next group's mt-4 = 29.75px and a line, and it now
           //                runs pb-1 + mt-6 = 29.75px exactly. Same distance, no rule.
-          //   folded strip group gap `mt-2 pt-2` → `mt-5`, 17px → 21.25px, against a 4.25px
-          //                `gap-1` between icons. The strip has no labels and no text to read, so
-          //                it needs the RATIO to be unmistakable more than the open rail does.
+          //   folded strip group gap `mt-2 pt-2` → `mt-5`, 17px → 21.25px, against the 4.25px
+          //                `gap-1` between icons — 4x to 5x. The strip has no labels and no text
+          //                to read, so it needs the RATIO to be unmistakable more than the open
+          //                rail does, and it has less room to spend on it.
           //
           // 🔴 AND THE FOLDED STRIP'S GROUPS STAY NAMED. Folding drops the visible group label, so
           // the grouping survives for a screen reader as `role="group"` + `aria-label` — that is

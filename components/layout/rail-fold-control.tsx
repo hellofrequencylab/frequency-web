@@ -70,9 +70,19 @@ import { railFoldControlLabel, railHandleId, type RailSide, type RailState } fro
  *
  *  The diagonal offset is what keeps the ink INSIDE the tab while the hit box straddles the
  *  corner: the button is centred ON the corner point, so a mark centred in the button would be
- *  bisected by it and read as floating off the crest. 8.5px in on both axes clears the rounded
- *  corner at every `--radius-card` on the feel scale (0.625rem → 1.75rem) and — crucially — is a
- *  FIXED distance, so the ink does not wander when `--tap-min` changes generation. */
+ *  bisected by it and read as floating off the crest. Two spacing units = 8.5px in on both axes,
+ *  and it is a FIXED distance rather than a fraction, so the ink does not wander when `--tap-min`
+ *  changes generation.
+ *
+ *  WHY 8.5 AND NOT MORE, since more would clear the corner curve better. It is the CEILING, not a
+ *  preference. The tightest generation is `bold` (`--tap-min: 26px`), where a box centred on the
+ *  corner leaves a 13px quadrant inside the tab; the mark is 10.625px wide, so its centre cannot
+ *  sit deeper than ~7.7px without part of the ink hanging outside its own pressable box — which is
+ *  the one thing a subtle control must not do. 8.5 keeps it within a pixel of that everywhere and
+ *  is comfortably inside the tab on the default and compact skins (`--radius-card` 0.625–1.125rem).
+ *  On the roundest presets (`playful`, `kids-early`: 1.5–1.75rem) the mark rides the shoulder of
+ *  the curve rather than sitting flat inside it — stated rather than glossed, because it is a real
+ *  difference and it reads as a notch ON the corner, which is what was asked for. */
 const TICK_MARK_BASE =
   'h-1 w-2.5 rounded-pill bg-chrome-border transition-colors duration-150 group-hover:bg-border-strong group-focus-visible:bg-border-strong'
 
@@ -122,7 +132,11 @@ export function RailFoldTick({
   showing: RailState
   onPress: () => void
   /** Extra classes for the ONE thing placement cannot derive: the right rail exists only at lg+,
-   *  while the bar it rides on renders from md, so that mount passes `hidden lg:flex`. */
+   *  while the bar it rides on renders from md, so that mount passes `hidden lg:flex`.
+   *
+   *  That composes with the `flex` in TICK_BOX rather than fighting it, and the reason is source
+   *  order in the compiled sheet, which was checked rather than assumed: Tailwind emits `.flex`,
+   *  then `.hidden`, then the `lg` block. So `hidden` wins below lg and `lg:flex` wins above it. */
   className?: string
 }) {
   const label = railFoldControlLabel(side, showing)

@@ -206,6 +206,14 @@ describe('the fold takes the VAULT and leaves the chat tab (the ADR-946 amendmen
     expect(dock).toContain('onFold?: () => void')
     expect(dock).toContain('{onFold && (')
   })
+
+  it('and it only appears where there IS a right rail to fold', () => {
+    // 🔴 The bar renders from md; the right rail is `hidden lg:flex`. A tick in the md–lg band
+    // would offer to fold a rail that is not on screen. It works because Tailwind emits `.flex`
+    // (the tick's own base display) BEFORE `.hidden`, and both before the `lg` block — so `hidden`
+    // wins below lg and `lg:flex` wins above it. Verified against the compiled sheet.
+    expect(dock).toContain('className="hidden lg:flex"')
+  })
 })
 
 describe('the rail-end sentinel survives the fold', () => {
