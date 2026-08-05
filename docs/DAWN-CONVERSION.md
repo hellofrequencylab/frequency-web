@@ -140,7 +140,7 @@ before trusting it to measure this sweep.
 | :--- | :--- | :---: |
 | ⚠️ **The 8 browse surfaces** | Circles, Channels, Classifieds, Events, Housing, Market, Store and the Spaces directory were deliberately migrated OFF `IndexTemplate` onto `MarketHero` + `BlockRender`. `PAGE-FRAMEWORK.md` §8.5 still lists two of them as `IndexTemplate` exemplars. **Needs a ruling: is that a sanctioned 12th composition, or the backlog?** The doc is stale either way | M |
 | 5 hand-rolled editors | `admin/appearance/{new,[id]}`, `admin/walkthroughs/[id]`, `circles/[slug]/edit`, `spaces/[slug]/manage` | M |
-| Dead templates | `TwoColumnTemplate` and `HeaderSidebarTemplate` have **zero** JSX usages while being documented as 2 of the nine shells. Delete or adopt | XS |
+| ✅ Dead templates | **Done 2026-08-05.** `TwoColumnTemplate` and `HeaderSidebarTemplate` had zero JSX usages while being documented as 2 of the nine shells. Both deleted. The canon is now **eight**: Stream · Index · Detail · Dashboard · Focus · WizardShell · RailGrid · Admin — and `RailGrid` was in §8.1's table but missing from the prose, so the "nine" heading was really counting ten rows | XS |
 | `check:headers` scope gap | it walks `page.tsx` only, so an `<h1>` inside a delegated component is invisible to it — 3 confirmed hand-rolled ones evade it today | S |
 | Rail widths | `288`/`56` hardcoded in three places plus `w-72`/`w-14`/`lg:min-w-72`; DAWN drives both rails from one grid declaration. Introduce `--rail-w-*` | S |
 | The breakpoint | production sheds the left rail at 768px and the right at 1024px; DAWN's law is one 1000px line. Between 768 and 1024 the app is in a state DAWN does not describe | S |

@@ -78,9 +78,10 @@ export function DetailTemplate({
   stickyNav?: React.ReactNode
   /** OPTIONAL in-body SCOPE RAIL — the entity's own right column (its pulse, what is coming up,
    *  what is attached to it), rendered beside the body from `lg` up and BELOW it on mobile so the
-   *  content still comes first. Geometry matches HeaderSidebarTemplate's sidebar (Template D), so
-   *  the two read as one system. This is page CONTENT, not shell chrome: the page keeps the
-   *  global member rail (see the rail note at the top of this file). */
+   *  content still comes first (`lg:w-80` beside the body). This is now the ONE in-body sidebar
+   *  geometry in the kit — the standalone HeaderSidebarTemplate that once shared it was deleted
+   *  (2026-08-05, zero usages; docs/PAGE-FRAMEWORK.md §3). This is page CONTENT, not shell chrome:
+   *  the page keeps the global member rail (see the rail note at the top of this file). */
   sidebar?: React.ReactNode
   children: React.ReactNode
 }) {
