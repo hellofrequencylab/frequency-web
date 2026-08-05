@@ -1108,10 +1108,8 @@
   --color-info-bg:          var(--color-info-bg);
 
   /* Rank palette. Exposes the static primitives as utility classes:
-     bg-rank-stone, text-rank-jade, border-rank-gold, etc. The full
-     core/deep/bright spectrum is only used by .rank-badge in CSS;
-     these utilities give callers the rank "core" color for dots, fills,
-     and progress accents. */
+     bg-rank-stone, text-rank-jade, border-rank-gold, etc. These give callers
+     the rank "core" color for dots, fills, and progress accents. */
   --color-rank-stone:  var(--rank-stone);
   --color-rank-clay:   var(--rank-clay);
   --color-rank-gold:   var(--rank-gold);
@@ -1122,6 +1120,35 @@
   --color-rank-indigo: var(--rank-indigo);
   --color-rank-plum:   var(--rank-plum);
   --color-rank-rose:   var(--rank-rose);
+
+  /* …and the other two thirds of the spectrum. DAWN's contract is core = fill,
+     DEEP = text on light, BRIGHT = text on dark, and until now only `.rank-badge`
+     could honour it — the deep/bright steps existed in :root with no utility, so
+     anything that needed rank-coloured TEXT either set an inline var or reached for
+     a raw Tailwind palette class. The core alone cannot do that job: --rank-clay on
+     white is ~3.4:1, under AA, while --rank-clay-deep is ~8:1. Bridging both steps
+     is what let TIER_CONFIG/DIFFICULTY_CONFIG stop carrying raw palette strings. */
+  --color-rank-stone-deep:  var(--rank-stone-deep);
+  --color-rank-clay-deep:   var(--rank-clay-deep);
+  --color-rank-gold-deep:   var(--rank-gold-deep);
+  --color-rank-olive-deep:  var(--rank-olive-deep);
+  --color-rank-jade-deep:   var(--rank-jade-deep);
+  --color-rank-teal-deep:   var(--rank-teal-deep);
+  --color-rank-slate-deep:  var(--rank-slate-deep);
+  --color-rank-indigo-deep: var(--rank-indigo-deep);
+  --color-rank-plum-deep:   var(--rank-plum-deep);
+  --color-rank-rose-deep:   var(--rank-rose-deep);
+
+  --color-rank-stone-bright:  var(--rank-stone-bright);
+  --color-rank-clay-bright:   var(--rank-clay-bright);
+  --color-rank-gold-bright:   var(--rank-gold-bright);
+  --color-rank-olive-bright:  var(--rank-olive-bright);
+  --color-rank-jade-bright:   var(--rank-jade-bright);
+  --color-rank-teal-bright:   var(--rank-teal-bright);
+  --color-rank-slate-bright:  var(--rank-slate-bright);
+  --color-rank-indigo-bright: var(--rank-indigo-bright);
+  --color-rank-plum-bright:   var(--rank-plum-bright);
+  --color-rank-rose-bright:   var(--rank-rose-bright);
 
   /* Fonts wired the same way they were. */
   --font-sans: var(--font-nunito);

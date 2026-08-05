@@ -1,4 +1,5 @@
 import { Heart } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 
 // One small pill that marks a member as a **Supporter** — the pay-more entitlement
 // tier above Crew (profiles.membership_tier = 'supporter'). It's the cosmetic
@@ -9,14 +10,20 @@ import { Heart } from 'lucide-react'
 //
 // Gate the render on the DISPLAYED profile's tier, not the viewer's:
 //   {tier === 'supporter' && <SupporterBadge />}
+//
+// Composes the shared Badge primitive (components/ui/badge.tsx): this file owns the
+// MEANING — which tone, which glyph, what the tooltip says — and never the pill's metrics.
+// `compact` drops the label, leaving the heart alone in the pill.
 export function SupporterBadge({ className = '', compact = false }: { className?: string; compact?: boolean }) {
   return (
-    <span
+    <Badge
+      tone="signal"
+      size="sm"
+      icon={<Heart className="fill-current" aria-hidden />}
       title="Supporter. Chips in beyond membership to keep Frequency running."
-      className={`inline-flex shrink-0 items-center gap-1 rounded-pill border border-signal/30 bg-signal-bg/60 px-2 py-0.5 text-3xs font-semibold uppercase tracking-wide text-signal-strong ${className}`}
+      className={className}
     >
-      <Heart className="h-2.5 w-2.5 fill-signal-strong text-signal-strong" aria-hidden />
       {!compact && 'Supporter'}
-    </span>
+    </Badge>
   )
 }

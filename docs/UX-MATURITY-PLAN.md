@@ -543,7 +543,7 @@ column is the model; the score column is measured. **Total: 80.0 / 100.**
 
 | # | Dimension | Wt | Score | Contribution | What the number is |
 |---|---|---:|---:|---:|---|
-| 1 | **Token layer** (colour · type · space · radius · motion · shadow) | 15 | 95% | 14.25 | Every DAWN `:root` / `.dark` / `.theme-light-lock` token present. 4 deliberate divergences, all prod-ahead. Docked 5 for the `--radius-cover` phantom + the R3 ladder split |
+| 1 | **Token layer** (colour · type · space · radius · motion · shadow) | 15 | 97% | 14.55 | Every DAWN `:root` / `.dark` / `.theme-light-lock` token present. 4 deliberate divergences, all prod-ahead. Docked 3 for the R3 ladder split alone — the `--radius-cover` half of the original deduction was retracted (§4.1), and the rank spectrum's `deep`/`bright` steps have since been bridged |
 | 2 | **Theming machinery** (mode · skin · occasion · generation · `@theme` bridge · registry guards) | 10 | 100% | 10.00 | Production is **ahead of DAWN**: DAWN ships one alternate skin, production ships four composing axes, 8 feel generations, a typed resolver and CSS⇄registry drift tests |
 | 3 | **Effects + texture** (`lift` · `sheen` · `halo` · `spot` · `grain` · `dot-grid` · `arc-top` · `rule-amber` · `light-strip` · `glass` · `bg-slat` · `amber-glow` · `brandmark` · `reveal` · `stagger` · `press` · `dimmed`) | 10 | 90% | 9.00 | All 20 classes in CSS, 17 adopted. `shadow-literals` 684 → 54. Three classes at zero adopters |
 | 4 | **Kit primitives** (13 pieces) | 15 | 85% | 12.75 | All 13 exist. ~609 adopter sites vs ~91 hand-rolled equivalents still standing |
@@ -576,7 +576,7 @@ Sizes: **S** one PR · **M** 1 to 3 PRs · **L** a wave. "Gain" is points on the
 | # | Package | Size | Gain | Why this order |
 | :--- | :--- | :---: | ---: | :--- |
 | 1 | **`raw-palette` — 48 sites, one file** | S | +1.5 | Every one is in `lib/gamification.ts` (`TIER_CONFIG` / `DIFFICULTY_CONFIG`), exported, so raw Tailwind palette classes propagate into every achievement surface and **ignore every skin, occasion and generation**. Best ratio on the board: one file, whole-app effect |
-| 2 | **R3 — the radius ladder** | S | +2.0 | `sm`…`2xl` authored in `px`, `xs`/`3xl`/`4xl` left at Tailwind's `rem`: the top rung is a 1.5px step and the only part of the scale that ignores the density lever. Also retire `--radius-cover`, declared in five generation blocks, never in `:root`, never bridged, so `rounded-cover` generates **nothing** while a comment claims it themes covers. Touches 1,317 sites' *meaning*, so it owes a baseline recapture |
+| 2 | **R3 — the radius ladder** | S | +2.0 | `sm`…`2xl` authored in `px`, `xs`/`3xl`/`4xl` left at Tailwind's `rem`: the top rung is a 1.5px step and the only part of the scale that ignores the density lever. Touches 1,317 sites' *meaning*, so it owes a baseline recapture. (The `--radius-cover` half of this row was retracted — see §4.1) |
 | 3 | **`subtle-tiny-type` AA rule + 24 sites** | S | +1.0 | The rule is the valuable half; the population is 24, not the 832 the audit implied |
 | 4 | **Adopt or retire `edge-light` · `scanlines` · `vignette`** | XS | +0.5 | Three effect classes at zero adopters. Either give them a home or delete them; a contract class nobody calls is a lie in the stylesheet |
 | 5 | **R7 — unify the eyebrow** | M | +3.0 | Split **ten** ways: `tracking-wide` 484 · `wider` 77 · `widest` 75 · 62 arbitrary values, against **3** adopters of the `eyebrow` utility. The dominant hand-rolled value is 7.2× tighter than `--tracking-eyebrow`. Largely mechanical, and it is the single most visible type tell |
@@ -591,10 +591,17 @@ afternoon and buy 5 of them.** Package 10 is not a project, it is a habit.
 
 ### 4. Three findings that are not on any list yet
 
-1. **`--radius-cover` is a phantom.** Declared in five `data-generation` blocks, absent from
-   `:root`, absent from `@theme`. `rounded-cover` compiles to nothing, and the comment in
-   `app/spaces/claim/[token]/page.tsx` claiming it themes covers is describing a no-op. This is
-   exactly the failure mode `check:bridge` was built for, one rung below its current reach.
+1. ~~**`--radius-cover` is a phantom.**~~ **RETRACTED 2026-08-05 — the claim was wrong.** It was
+   inherited from the session handoff, repeated here and in `DAWN-CONVERSION.md`, and did not
+   survive the first grep. `--radius-cover` is a **Space-theme** token (`[data-space-theme="…"]`),
+   not a generation token. Absence from `:root` is deliberate — `bold` is the no-op default theme
+   and sets no radius — and both consumers call it as `rounded-[var(--radius-cover,0.75rem)]`, an
+   arbitrary value **with a fallback**, so an unthemed Space paints 0.75rem and a themed one paints
+   its own. `lib/theme/space-themes.test.ts` already enforces that all five blocks set it. The bare
+   `rounded-cover` utility genuinely does not exist, and that is harmless: nothing calls it. The
+   comment in `app/spaces/claim/[token]/page.tsx` is **accurate**.
+   *Kept visible rather than deleted, per this plan's own rule that audits are leads and corrections
+   get recorded. Two documents asserted it before anyone checked.*
 2. **`.mk-cream` / `.mk-ink` at zero adopters is a silent half-system.** The four-role rhythm
    landed; the tone-adjacency correction that pairs with it did not. The rhythm is therefore
    uniform again wherever two same-tone sections stack, which is the exact failure the round was

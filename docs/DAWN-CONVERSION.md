@@ -68,7 +68,20 @@ product is visibly wrong on any look but the default.
 | :--- | ---: | :---: | :--- |
 | `lib/gamification.ts` `TIER_CONFIG` / `DIFFICULTY_CONFIG` | 48 | S | raw Tailwind palette classes in ONE exported file; propagates to every achievement, badge and leaderboard surface. The whole `raw-palette` ratchet |
 | `white-black-literals` | 266 | M | hardcoded monochromes; the ratchet's own description calls this the only *bug* class in the census |
-| `--radius-cover` phantom | 5 decls | XS | declared in five generation blocks, never in `:root`, never bridged; `rounded-cover` compiles to nothing |
+
+> **Correction (2026-08-05).** An earlier revision of this doc, and the session handoff it came
+> from, listed `--radius-cover` here as a phantom token that "compiles to nothing." **That is
+> wrong and the row has been removed.** `--radius-cover` is a *Space-theme* token
+> (`[data-space-theme="…"]`), not a generation token. Its absence from `:root` is deliberate:
+> `bold` is the no-op default theme and sets no radius, and both consumers call it as
+> `rounded-[var(--radius-cover,0.75rem)]` — an arbitrary value **with a fallback** — so an
+> unthemed Space paints 0.75rem and a themed one paints its own value. `lib/theme/space-themes.test.ts`
+> enforces that all five theme blocks set it. The bare `rounded-cover` utility does not exist, which
+> is true and harmless, because nothing in the repo calls it. The comment in
+> `app/spaces/claim/[token]/page.tsx` saying it themes covers is **accurate**.
+>
+> Recorded rather than quietly deleted, per the working convention: *audits are leads, not facts.*
+> This one was inherited unverified and repeated in two documents before anyone ran the grep.
 
 ### 🔴 Phase 2 — Build the 11 missing primitives *(blocks Phase 3)*
 
@@ -166,3 +179,11 @@ its own DAWN adoption decision; do not fold its debt into this app's scoreboard.
    `check:headers` cannot see a delegated `<h1>`, and `AREA_ICONS` had no test comparing it to the
    nav until one row's fallback had been shipping for months. Prove a guard can fail before
    trusting it.
+5. **`check:adoption` counts matches inside comments.** Found 2026-08-05: writing the words
+   `shadow-lg` inside a `//` comment raised `shadow-literals` by one and failed the gate, with no
+   markup involved. Every utility-class ratchet reads raw file text, so **prose about a token is
+   indistinguishable from a use of it** — which also means a sweep can bank a phantom "win" by
+   deleting a comment. This is the same defect class as handoff §3.5 (`check:bridge`'s first
+   version matched a token *mentioned* in a comment 1,000 lines from the real at-rule) in a
+   different script. Fix: strip comments before matching, in `scripts/check-adoption.mjs`. Until
+   then, a ratchet delta inside ±2 deserves a look at the diff before it is believed.

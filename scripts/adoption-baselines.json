@@ -556,14 +556,14 @@
         "app/**/opengraph-image.tsx",
         "app/**/twitter-image.tsx"
       ],
-      "baseline": 48,
+      "baseline": 0,
       "frozen": {
         "at": "2026-08-05",
-        "value": 48,
-        "direction": "rebased",
+        "value": 0,
+        "direction": "lowered",
         "basis": "eb0a69c6c6e2",
-        "reason": "New class, seeded at the measured 48. Every one is in lib/gamification.ts — I ran the pattern over the whole corpus and that file is the ONLY one in the repo carrying a raw Tailwind palette class. They are the exported TIER_CONFIG and DIFFICULTY_CONFIG records, so the strings propagate into every achievement and challenge surface that consumes them, and none of them respond to a theme generation or a skin. Nothing measured this before: check-tokens.mjs looks for raw hex, text-[Npx] and rgb(), not palette class names.",
-        "from": 0
+        "reason": "Retired by the rank-spectrum sweep: lib/gamification.ts's exported TIER_CONFIG and DIFFICULTY_CONFIG were the only raw Tailwind palette classes in the repo, and being exported they propagated into every achievement, award and challenge surface while answering to no skin, occasion or feel generation. Both records now draw from the DAWN rank spectrum (core = fill, deep = text on light, bright = text on dark), which required bridging the deep/bright steps into @theme -- until now only .rank-badge could reach them, which is why callers reached for Tailwind instead. 48 -> 0.",
+        "from": 48
       },
       "history": [
         {
@@ -572,6 +572,13 @@
           "to": 48,
           "direction": "rebased",
           "reason": "New class, seeded at the measured 48. Every one is in lib/gamification.ts — I ran the pattern over the whole corpus and that file is the ONLY one in the repo carrying a raw Tailwind palette class. They are the exported TIER_CONFIG and DIFFICULTY_CONFIG records, so the strings propagate into every achievement and challenge surface that consumes them, and none of them respond to a theme generation or a skin. Nothing measured this before: check-tokens.mjs looks for raw hex, text-[Npx] and rgb(), not palette class names."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 48,
+          "to": 0,
+          "direction": "lowered",
+          "reason": "Retired by the rank-spectrum sweep: lib/gamification.ts's exported TIER_CONFIG and DIFFICULTY_CONFIG were the only raw Tailwind palette classes in the repo, and being exported they propagated into every achievement, award and challenge surface while answering to no skin, occasion or feel generation. Both records now draw from the DAWN rank spectrum (core = fill, deep = text on light, bright = text on dark), which required bridging the deep/bright steps into @theme -- until now only .rank-badge could reach them, which is why callers reached for Tailwind instead. 48 -> 0."
         }
       ]
     },
