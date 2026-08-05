@@ -306,12 +306,78 @@ export function masksFor(page: Page, surface: Surface): Locator[] {
 /**
  * Wait for a surface to stop moving: 'load', then a CAPPED networkidle (streaming
  * sections and analytics beacons mean /discover and the feed never reach true idle), then
- * web fonts, which swap late and shift every text metric.
+ * web fonts, which swap late and shift every text metric, then HEIGHT.
+ *
+ * Height is the one that took three runs to find. `/feed` failed with `Failed to take two
+ * consecutive stable screenshots` at 8497 → 9272 → 9390px, which reads like volatile
+ * content and is not: the page carries five `<Suspense fallback={null}>` boundaries and
+ * `/settings` carries twelve. A null fallback reserves ZERO height, so every boundary that
+ * resolves does not swap a placeholder for content — it APPENDS. Neither of the first two
+ * waits can see that. `networkidle` is capped precisely because these pages never idle, and
+ * `document.fonts.ready` resolves long before the last boundary does.
+ *
+ * Masking cannot fix this and neither can a longer networkidle. A mask paints over a
+ * region; the element keeps its box, so a masked block that arrives late still moves
+ * everything under it. The failure is the page's HEIGHT, not its pixels.
+ *
+ * Worse, `fullPage: true` is part of the loop: stitching a full-page shot scrolls the whole
+ * document, which trips lazy content below the fold, which grows the page again — so the
+ * act of capturing produces the instability the capture then fails on. Hence the scroll
+ * pass BEFORE the stability wait rather than after: trigger everything deliberately while
+ * we are still allowed to wait, then hold still.
  */
 export async function settle(page: Page): Promise<void> {
   await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {})
   // `.then(() => undefined)`: FontFaceSet is not serialisable across the protocol.
   await page.evaluate(() => document.fonts.ready.then(() => undefined))
+  await settleHeight(page)
+}
+
+/**
+ * Scroll the document end to end to trigger anything lazy, return to the top, then wait for
+ * `scrollHeight` to hold a single value.
+ *
+ * Everything runs INSIDE one `page.evaluate` on purpose: polling height over the CDP wire
+ * would put a round trip between each reading, so a page growing steadily could report the
+ * same number twice by luck of timing and be declared stable. In-page, the readings are
+ * ~100ms apart and mean what they say.
+ *
+ * It resolves rather than throws on timeout. A surface that genuinely never settles should
+ * fail as a SCREENSHOT diff, naming the surface and showing the pixels, not as an opaque
+ * helper timeout several frames removed from the thing that moved.
+ */
+async function settleHeight(page: Page): Promise<void> {
+  await page.evaluate(
+    async ({ timeout, quietFor, step }) => {
+      const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+      const height = () => document.documentElement.scrollHeight
+
+      // Pass 1 — walk the page so lazy content, IntersectionObservers and unresolved
+      // boundaries below the fold all fire now, not during the stitch.
+      const startedAt = Date.now()
+      for (let y = 0; y < height() && Date.now() - startedAt < timeout; y += step) {
+        window.scrollTo(0, y)
+        await sleep(50)
+      }
+      window.scrollTo(0, 0)
+
+      // Pass 2 — hold still. `quietFor` of no change is what counts as settled; a page that
+      // is still growing resets the clock every time it does.
+      let last = height()
+      let lastChangedAt = Date.now()
+      while (Date.now() - startedAt < timeout) {
+        await sleep(100)
+        const current = height()
+        if (current !== last) {
+          last = current
+          lastChangedAt = Date.now()
+        } else if (Date.now() - lastChangedAt >= quietFor) {
+          return
+        }
+      }
+    },
+    { timeout: 20_000, quietFor: 600, step: 800 },
+  )
 }
 
 /**

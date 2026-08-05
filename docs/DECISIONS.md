@@ -18074,3 +18074,66 @@ plan's status markers, the ADR ledger, every commit message containing "left alo
 The shipped-role-with-no-ADR was its top finding. Four ADRs were written in one day here, and a
 decision record that describes behaviour the product does not have is worse than no record — so
 that reconciliation is worth repeating after any burst of decisions, not just this one.
+
+---
+
+## ADR-952 — A settled surface is one whose HEIGHT stopped changing, not one whose network went quiet
+
+**Date.** 2026-08-05 · **Status.** Accepted · **Scope.** `test/e2e/surfaces.ts` (`settle`)
+
+**Context.** `pr-compare` closed the app-shell blind spot and immediately produced three failures,
+all `/feed`, all `Failed to take two consecutive stable screenshots`, with the page height reported
+at 8497 → 9272 → 9390px across attempts. The obvious reading is that the feed renders live content
+and is therefore unphotographable. That reading is wrong, and acting on it would have masked or
+excluded the most-visited member surface for a reason that was never true.
+
+`/feed` carries **five** `<Suspense fallback={null}>` boundaries; `/settings`, the other failing
+surface, carries **twelve**. This is the page framework working as designed — PAGE-FRAMEWORK §5
+says never block the shell on a slow await, push it behind a per-section boundary. But a `null`
+fallback reserves **zero height**. A resolving boundary therefore does not swap a placeholder for
+content of similar size; it **appends**, and everything below it moves.
+
+Neither existing wait can observe that. `networkidle` is capped at 10s *precisely because* these
+pages never reach true idle, and `document.fonts.ready` resolves long before the last boundary does.
+So `settle()` was returning while the page was still growing, and doing so by design.
+
+There is a second mechanism compounding it: `fullPage: true` stitches by scrolling the whole
+document, which trips lazy content below the fold, which grows the page again. **The act of
+capturing was producing the instability the capture then failed on.**
+
+**Options.** (a) Mask more of the feed. (b) Capture `/feed` at viewport size instead of `fullPage`.
+(c) Exclude `/feed` from the visual suite. (d) Wait for height.
+
+**Decision.** **(d).** (a) cannot work and it matters that this is understood rather than merely
+rejected: a mask paints over a region, but the masked element **keeps its box**, so a late-arriving
+masked block still moves everything under it. The failure is the page's height, not its pixels —
+masking is aimed at the wrong quantity. (b) and (c) both buy green by photographing less, and (c)
+would surrender the surface members actually look at, to fix a fault that is not in the surface.
+
+`settle()` now scrolls the document end to end — deliberately tripping lazy content and below-fold
+boundaries **while we are still allowed to wait** — returns to the top, and then holds until
+`scrollHeight` reports one unchanged value for 600ms, capped at 20s.
+
+**Why the whole wait lives inside a single `page.evaluate`.** Polling height over CDP would put a
+round trip between readings, so a page growing steadily could report the same number twice by luck
+of timing and be declared stable — a flake that would appear only under load, which is the worst
+kind. In-page, the readings are ~100ms apart and mean what they say.
+
+**Why it resolves rather than throws on timeout.** A surface that genuinely never settles should
+fail as a *screenshot diff* — naming the surface, showing the pixels — not as an opaque helper
+timeout several frames removed from whatever moved. The helper's job is to give the assertion its
+best shot, not to become a second, worse assertion.
+
+**Consequences.** ✅ Every streaming surface benefits, not just `/feed` — the existing comment in
+`settle` already named `/discover` as never reaching idle. ✅ `/feed` and `/settings` stay
+`fullPage`, so below-fold regressions remain catchable. ⚠️ Each captured surface now costs up to
+~20s more in the worst case; the scroll pass is bounded by the same clock, so a pathological page
+cannot spend the budget twice. ⚠️ This makes the suite tolerant of zero-height fallbacks rather
+than fixing them. A `fallback` that reserved the height of the content it stands in for would stop
+the layout shift **for members**, not just for the camera — members on a slow connection are
+watching the same 900px jump. That is a real follow-up and this ADR is not a substitute for it.
+
+**Open, unchanged by this.** The four `/feed` and `/settings` a11y failures are a *separate* fault:
+those baselines were never seeded, so both surfaces are being held to zero serious+ violations
+against debt that predates the gate. Seeding them is `e2e-manual.yml` with `capture_shell` +
+`update_a11y`, and it is a different decision from this one.
