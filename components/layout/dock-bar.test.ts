@@ -469,7 +469,9 @@ describe('the chat panel is sized to its CONTENT, and grows left out of the tab'
     // ABOVE md and must not start applying below it.
     expect(launcher).toContain('const panelBox = anchor')
     expect(launcher).toContain('fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md')
-    expect(launcher).toContain('md:max-h-none')
+    // The exact class run, not a bare `md:max-h-none`: the comment above it names the token, so a
+    // loose search would be satisfied by the prose after the class had been deleted.
+    expect(launcher).toContain('md:h-[35rem] md:max-h-none md:pb-2')
   })
 })
 
