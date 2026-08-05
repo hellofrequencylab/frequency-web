@@ -119,7 +119,32 @@ before trusting it to measure this sweep.
 
 | Item | Sites | Size |
 | :--- | ---: | :---: |
-| Eyebrow unification (`tracking-wide` 484 · `wider` 77 · `widest` 75 · 62 arbitrary, against 3 adopters of the `eyebrow` utility) | ~698 | M |
+| Eyebrow unification (`tracking-wide` 484 · `wider` 77 · `widest` 75 · 62 arbitrary, against 3 adopters of the `eyebrow` utility). ⏳ marketing done: 40 → 9. **The role is now LOCKED — see below** | ~698 | M |
+
+> **The eyebrow role, locked 2026-08-05 (owner-delegated).**
+> **`0.75rem` · `0.18em` · bold · uppercase** — `--text-eyebrow`, `--tracking-eyebrow`, and the
+> `eyebrow` utility, guarded by `lib/theme/eyebrow-role.test.ts`.
+>
+> This needed deciding because DAWN disagreed with itself on **all three axes of one role**, and
+> production had inherited every fork:
+>
+> | Axis | DAWN readme §4 | DAWN's own `.eyebrow` class | Locked |
+> |---|---|---|---|
+> | Size | `--text-eyebrow: 0.875rem` (token) | reads `--text-meta` → 0.75rem | **0.75rem** |
+> | Tracking | "locked at 0.25em" | reads the token → 0.18em | **0.18em** |
+> | Weight | "uppercase, bold" | `--weight-semibold` | **bold** |
+>
+> In each case the class body — what DAWN's components have actually *rendered* all along — won
+> over the prose, which is the same rule the repo already applies to its own plan docs. The
+> reasoning beyond precedent: 0.875rem is also `--text-body-sm`, so an eyebrow there is exactly as
+> large as the sentence it labels and stops being a label; 0.25em spaces letters faster than words
+> at this size, so a two-word eyebrow reads as two, and it will not fit a `px-2.5` pill; and
+> tracking thins a word optically, so semibold reads underweight beside its own heading.
+>
+> **Net rendered change: zero.** Every eyebrow already painted 0.75rem/0.18em. What moved is that
+> the role now has one answer instead of three, the `eyebrow` utility reads its own role token
+> rather than borrowing `--text-meta`, and it is **sufficient alone** — no `font-bold` needed
+> beside it, which was the habit quietly rebuilding the hand-rolled eyebrow at every call site.
 | Display literals `text-3xl`…`9xl` → display roles (pass 2b) | 301 | M/L |
 | `tracking-[…]` arbitrary | 72 | S |
 | `text-[…]` arbitrary (incl. 3× `text-[9px]`) | 64 | S |
@@ -171,6 +196,21 @@ its own DAWN adoption decision; do not fold its debt into this app's scoreboard.
 1. **Every phase past 1 changes rendering, and `pr-compare` is not a required check.** Batch the
    rendering work, then recapture once against a finished tree. The runner's capture commit does
    not re-trigger CI.
+
+   > **Measured cost, 2026-08-05.** This is no longer hypothetical. #2038 recaptured baselines that
+   > had drifted across **six** merges. #2042 then merged red — because an advisory gate cannot
+   > block anything — and the **very next PR** inherited the drift: 4 failures on `/about` mobile,
+   > `390×9587` vs `390×9566`, a 21px shortening traced to `SectionHeading`'s eyebrow tightening
+   > from 0.25em to 0.18em and un-wrapping a line. Two recapture cycles in two days, both for the
+   > same reason.
+   >
+   > The recapture is also the cleanest attribution tool available: it rewrote **exactly the 4
+   > baselines that failed and no others**, which is mechanical proof that the other 60 surfaces
+   > were pixel-identical. If a capture rewrites more files than the run reported failing, the
+   > extra ones are the real regression and the diff is where to look.
+   >
+   > **Making `pr-compare` required is the fix.** Until then, budget one recapture cycle per
+   > rendering merge and read a green `pr-compare` as "either nothing changed, or nobody looked."
 2. **Ratchet counts only shrink.** A phase that raises one fails CI, and that is the mechanism.
    New primitives arrive as kit pieces, so adopting them should move a count DOWN.
 3. **Build the primitive before sweeping onto it** (Phase 2 before Phase 3). Half this plan's
