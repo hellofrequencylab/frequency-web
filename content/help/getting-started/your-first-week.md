@@ -15,7 +15,7 @@ When you join, a quick welcome gets your name, a photo, and a sense of what you'
 
 Vera is the guide who keeps this place running. Right after you join, she uses what you told us about your interests to suggest a circle that fits, and offers to get you in with a tap. She's a bridge to your people, not a chatbot to hang out with: once she's pointed you somewhere real, she steps aside. You can always skip straight to [Circles](/help/getting-started/join-a-circle) instead.
 
-Vera lives as a small tab tucked into the right edge of the screen. Hover (or tap) to open her. On the left edge you'll find a matching **Next Steps** tab that holds whatever's next for you. It quietly nudges when something's waiting, and once you've finished everything it has for you, it disappears.
+Vera lives in the bar anchored along the bottom right of the screen, next to your Vault. Tap it to open her, your messages, and help. On the left edge you'll find a **Next Steps** tab that holds whatever's next for you. It quietly nudges when something's waiting, and once you've finished everything it has for you, it disappears.
 
 ## Your Founder's First Week
 
