@@ -44,7 +44,7 @@ export default async function MarketSellPage() {
               <ArrowUpRight className="h-4 w-4" aria-hidden />
             </Link>
           </div>
-          <div className="rounded-2xl border border-border bg-surface p-5">
+          <div className="rounded-card border border-border bg-surface p-5">
             <div className="mb-2 flex items-center gap-2">
               <Tag className="h-5 w-5 text-muted" aria-hidden />
               <h2 className="text-body font-bold text-text">Free to post in Classifieds</h2>

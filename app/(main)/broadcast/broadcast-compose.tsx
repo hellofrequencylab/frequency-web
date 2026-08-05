@@ -3,7 +3,8 @@
 import { useState, useTransition } from 'react'
 import { Plus, Megaphone } from 'lucide-react'
 import { createAndPublishDispatch } from './actions'
-import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
+import { CreateModal, cmLabel } from '@/components/create-modal'
+import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 
 type DispatchType = 'post' | 'poll' | 'challenge' | 'article'
@@ -80,7 +81,7 @@ export function BroadcastCompose({
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap"
+        className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap"
       >
         <Plus className="w-4 h-4" />
         New Dispatch
@@ -101,14 +102,14 @@ export function BroadcastCompose({
       >
         <div>
           <label className={cmLabel}>Title *</label>
-          <input
+          <Input
+            aria-label="Title"
             type="text"
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="e.g. This Week's Highlights"
             required
             disabled={isPending}
-            className={cmInput}
           />
         </div>
 
@@ -120,7 +121,7 @@ export function BroadcastCompose({
                 key={t}
                 type="button"
                 onClick={() => setType(t)}
-                className={`px-3 py-1.5 rounded-lg text-meta font-semibold border transition-colors ${
+                className={`px-3 py-1.5 rounded-control text-meta font-semibold border transition-colors ${
                   type === t
                     ? 'border-primary bg-primary text-on-primary'
                     : 'border-border bg-surface text-text hover:border-primary'
@@ -136,14 +137,15 @@ export function BroadcastCompose({
           <label className={cmLabel}>
             Body * <span className="text-subtle font-normal">(markdown supported)</span>
           </label>
-          <textarea
+          <Textarea
+            aria-label="Body"
             value={body}
             onChange={e => setBody(e.target.value)}
             placeholder="Write your broadcast…"
             rows={8}
             required
             disabled={isPending}
-            className={`${cmInput} resize-y font-mono text-meta leading-relaxed`}
+            className="resize-y font-mono text-meta leading-relaxed"
           />
         </div>
 

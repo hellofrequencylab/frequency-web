@@ -147,7 +147,7 @@ export function SpaceSettingsForm({
 
   return (
     <form
-      className="space-y-8 rounded-2xl border border-border bg-surface p-5 lift-1 sm:p-6"
+      className="space-y-8 rounded-card border border-border bg-surface p-5 lift-1 sm:p-6"
       onSubmit={(e) => {
         e.preventDefault()
         if (!pending && !readOnly) save()

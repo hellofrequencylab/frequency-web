@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { Gem, Gift, Search, X, Loader2, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
 import { giftGemsAction, searchGiftRecipients, type GiftRecipient } from './actions'
 
@@ -87,7 +88,7 @@ export function GiftGemsDialog({ balance }: { balance: number }) {
 
   return (
     <Dialog open={open} onClose={close} ariaLabel="Gift Gems" className="max-w-md">
-      <div className="w-full rounded-2xl border border-border bg-surface lift-3">
+      <div className="w-full rounded-card border border-border bg-surface lift-3">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h2 className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
             <Gift className="h-4 w-4 text-primary-strong" aria-hidden />
@@ -138,13 +139,13 @@ export function GiftGemsDialog({ balance }: { balance: number }) {
                   <div className="mt-1">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-subtle" aria-hidden />
-                      <input
+                      <Input
                         type="text"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="Search members"
                         aria-label="Search members"
-                        className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-border-strong/30"
+                        className="pl-9"
                       />
                     </div>
                     {query.trim().length >= 2 && (
@@ -183,7 +184,7 @@ export function GiftGemsDialog({ balance }: { balance: number }) {
                 <label htmlFor="gift-amount" className="text-meta font-semibold uppercase tracking-wider text-muted">
                   Amount
                 </label>
-                <input
+                <Input
                   id="gift-amount"
                   type="number"
                   min={1}
@@ -192,7 +193,7 @@ export function GiftGemsDialog({ balance }: { balance: number }) {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="How many Gems"
-                  className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-border-strong/30"
+                  className="mt-1"
                 />
                 {amount.trim() !== '' && !amountValid && (
                   <p className="mt-1 text-meta text-danger">

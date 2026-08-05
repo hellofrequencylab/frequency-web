@@ -242,7 +242,7 @@ export function ModuleManager({
                 return (
                   <li
                     key={id}
-                    className={`flex flex-col gap-3 rounded-2xl border bg-surface p-3 lift-1 sm:flex-row sm:items-center sm:justify-between ${
+                    className={`flex flex-col gap-3 rounded-card border bg-surface p-3 lift-1 sm:flex-row sm:items-center sm:justify-between ${
                       advancedOff ? 'border-dashed border-primary/30' : 'border-border'
                     }`}
                   >
@@ -281,7 +281,7 @@ export function ModuleManager({
                           aria-label={isActivated ? `Remove ${row.label} from the menu` : `Activate ${row.label}`}
                           disabled={readOnly}
                           onClick={() => toggleActivated(id)}
-                          className={`flex h-7 items-center gap-1 rounded-lg px-2 text-2xs font-semibold transition-colors disabled:opacity-40 motion-reduce:transition-none ${
+                          className={`flex h-7 items-center gap-1 rounded-control px-2 text-2xs font-semibold transition-colors disabled:opacity-40 motion-reduce:transition-none ${
                             isActivated
                               ? 'bg-primary-bg text-primary-strong hover:bg-primary-bg/70'
                               : 'border border-primary/40 bg-surface text-primary-strong hover:bg-primary-bg/30'
@@ -321,7 +321,7 @@ export function ModuleManager({
                         title={row.hideable ? undefined : 'This part of your space is always shown.'}
                         disabled={readOnly || !row.hideable}
                         onClick={() => toggleHidden(id)}
-                        className="flex h-7 items-center gap-1 rounded-lg border border-border bg-surface px-2 text-2xs font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-40 motion-reduce:transition-none"
+                        className="flex h-7 items-center gap-1 rounded-control border border-border bg-surface px-2 text-2xs font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-40 motion-reduce:transition-none"
                       >
                         {isHidden ? <EyeOff className="h-3.5 w-3.5" aria-hidden /> : <Eye className="h-3.5 w-3.5" aria-hidden />}
                         {isHidden ? 'Hidden' : 'Shown'}
@@ -411,7 +411,7 @@ function ReviewsOffDialog({
       ariaLabel="Are you sure you want to turn reviews off?"
       className="max-w-sm"
     >
-      <div className="relative w-full rounded-2xl border border-border bg-surface p-6 lift-3">
+      <div className="relative w-full rounded-card border border-border bg-surface p-6 lift-3">
         <h2 className="text-body font-bold leading-tight text-text">Are you sure?</h2>
         <p className="mt-2 text-body-sm leading-relaxed text-muted">
           Reviews build trust with new members. We recommend keeping them on. Turning {label.toLowerCase()} off
@@ -423,7 +423,7 @@ function ReviewsOffDialog({
           type="button"
           onClick={onKeepOn}
           disabled={pending}
-          className="mt-5 flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-70"
+          className="mt-5 flex w-full items-center justify-center rounded-control bg-primary px-4 py-3 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-70"
         >
           Keep reviews on
         </button>
@@ -434,7 +434,7 @@ function ReviewsOffDialog({
           onClick={() => startTransition(() => void onConfirm())}
           disabled={pending}
           aria-busy={pending}
-          className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 text-meta font-medium text-subtle transition-colors hover:text-danger disabled:cursor-wait disabled:opacity-70"
+          className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-control px-4 py-2.5 text-meta font-medium text-subtle transition-colors hover:text-danger disabled:cursor-wait disabled:opacity-70"
         >
           {pending ? (
             <>

@@ -160,6 +160,7 @@ export default async function ConnectionsPage({
                 <input
                   name="q"
                   defaultValue={q}
+                  aria-label="Search contacts"
                   placeholder="Search…"
                   className="w-44 rounded-lg border border-border-strong bg-surface py-1.5 pl-8 pr-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none"
                 />

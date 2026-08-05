@@ -1180,7 +1180,7 @@ export default async function EventDetailPage({
   // The Join column's primary action — reused in the aside AND the mobile sheet.
   const joinActions = (
     <div className="space-y-4">
-      <div className="space-y-4 rounded-2xl border border-border bg-surface p-4">
+      <div className="space-y-4 rounded-card border border-border bg-surface p-4">
         <div className="flex items-center gap-2">
           <Ticket className="h-4 w-4 text-primary" />
           <span className="text-body-sm font-bold text-text">RSVP</span>
@@ -1434,7 +1434,7 @@ export default async function EventDetailPage({
           <form action={toggleRSVP.bind(null, event.id)}>
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-muted transition-colors hover:border-danger hover:text-danger"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-muted transition-colors hover:border-danger hover:text-danger"
             >
               <Clock className="w-4 h-4" />
               On waitlist · tap to leave

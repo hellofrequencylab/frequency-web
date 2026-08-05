@@ -8,6 +8,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Pencil, Trash2, Download, Copy, Check, ArrowLeft } from 'lucide-react'
 import { shortLinkUrl } from '@/lib/qr/links'
+import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { STYLE_PRESETS, DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
 import { buildEntryFlyerSvg, type FlyerSlots } from '@/lib/entry-points/flyer'
@@ -65,13 +66,13 @@ export function EntryPointsManager({
   return (
     <div className="space-y-6">
       {/* Create */}
-      <section className="rounded-2xl border border-border bg-surface lift-1">
+      <section className="rounded-card border border-border bg-surface lift-1">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="text-body-sm font-bold text-text">New entry point</h2>
           {!creating && (
             <button
               onClick={() => setCreating(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               <Plus className="h-3.5 w-3.5" /> Start one
             </button>
@@ -97,7 +98,7 @@ export function EntryPointsManager({
       {/* List */}
       <section className="space-y-3">
         {cards.length === 0 && !creating && (
-          <p className="rounded-2xl border border-dashed border-border bg-surface px-4 py-8 text-center text-body-sm text-muted">
+          <p className="rounded-card border border-dashed border-border bg-surface px-4 py-8 text-center text-body-sm text-muted">
             No entry points yet. Start one above. It takes about a minute.
           </p>
         )}
@@ -210,7 +211,6 @@ export function EntryForm({
     })
   }
 
-  const field = 'w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text'
   const labelCls = 'block text-meta font-medium text-subtle mb-1'
 
   return (
@@ -223,7 +223,7 @@ export function EntryForm({
         )}
         <label className="block">
           <span className={labelCls}>Name (just for you)</span>
-          <input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="e.g. Coffee-shop flyer" className={field} />
+          <Input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="e.g. Coffee-shop flyer" />
         </label>
         <label className="block">
           <span className={labelCls}>Where it points</span>
@@ -239,15 +239,15 @@ export function EntryForm({
         </label>
         <label className="block">
           <span className={labelCls}>Headline</span>
-          <input value={form.headline} onChange={(e) => set('headline', e.target.value)} className={field} maxLength={80} />
+          <Input value={form.headline} onChange={(e) => set('headline', e.target.value)} maxLength={80} />
         </label>
         <label className="block">
           <span className={labelCls}>Subhead</span>
-          <input value={form.subhead} onChange={(e) => set('subhead', e.target.value)} className={field} maxLength={120} />
+          <Input value={form.subhead} onChange={(e) => set('subhead', e.target.value)} maxLength={120} />
         </label>
         <label className="block">
           <span className={labelCls}>Call to action</span>
-          <input value={form.footer} onChange={(e) => set('footer', e.target.value)} className={field} maxLength={40} />
+          <Input value={form.footer} onChange={(e) => set('footer', e.target.value)} maxLength={40} />
         </label>
 
         {error && <p className="text-meta text-danger">{error}</p>}
@@ -256,11 +256,11 @@ export function EntryForm({
           <button
             onClick={submit}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
           >
             {pending ? 'Saving…' : card ? 'Save changes' : 'Create entry point'}
           </button>
-          <button onClick={onDone} className="rounded-lg px-3 py-1.5 text-meta font-semibold text-muted hover:text-text">
+          <button onClick={onDone} className="rounded-control px-3 py-1.5 text-meta font-semibold text-muted hover:text-text">
             Cancel
           </button>
         </div>
@@ -305,7 +305,7 @@ export function EntryRow({ card, destinationGroups }: { card: EntryCard; destina
     'inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted transition-colors hover:bg-surface-elevated hover:text-text'
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-3 lift-1">
+    <div className="rounded-card border border-border bg-surface p-3 lift-1">
       <div className="flex gap-3">
         <div
           // // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.

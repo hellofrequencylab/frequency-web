@@ -79,7 +79,7 @@ function RosterGroup({ title, guests }: { title: string; guests: ManageGuest[] }
   return (
     <div>
       <SectionHeader title={title} count={guests.length} />
-      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+      <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
         {guests.map((g) => {
           const chip = STATUS_CHIP[g.status]
           return (
@@ -155,7 +155,7 @@ export async function ApprovalsSection({ eventId, slug }: { eventId: string; slu
   }
 
   return (
-    <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+    <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
       {pending.map((p) => (
         <li key={p.profileId} className="flex items-center gap-3 px-4 py-3">
           <div className="min-w-0 flex-1">
@@ -222,7 +222,7 @@ export async function QuestionnaireSection({
               description={`When guests answer the questions for ${eventTitle}, every response lands here, ready to export.`}
             />
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
+            <div className="overflow-x-auto rounded-card border border-border bg-surface">
               <table className="w-full text-left text-body-sm">
                 <thead>
                   <tr className="border-b border-border">
@@ -436,7 +436,7 @@ export async function InvitedGuestsSection({ eventId }: { eventId: string }) {
   return (
     <div>
       <SectionHeader title="Captured guests" count={guests.length} />
-      <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
+      <div className="overflow-x-auto rounded-card border border-border bg-surface">
         <table className="w-full text-left text-body-sm">
           <thead>
             <tr className="border-b border-border">
@@ -499,7 +499,7 @@ export async function DispatchesSection({ eventId }: { eventId: string }) {
   return (
     <ul className="space-y-3">
       {dispatches.map((d) => (
-        <li key={d.id} className="rounded-2xl border border-border bg-surface p-4">
+        <li key={d.id} className="rounded-card border border-border bg-surface p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               {d.title && <p className="text-body-sm font-bold text-text">{d.title}</p>}

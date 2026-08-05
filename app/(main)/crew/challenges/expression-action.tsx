@@ -35,7 +35,7 @@ export function ExpressionAction({ journeyId }: { journeyId: string }) {
           type="button"
           onClick={() => run('circle')}
           disabled={pending}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-60 motion-reduce:transition-none"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-60 motion-reduce:transition-none"
         >
           {pending && mode === 'circle' ? <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" /> : <Users className="h-3.5 w-3.5" />}
           Shared at a Circle
@@ -45,7 +45,7 @@ export function ExpressionAction({ journeyId }: { journeyId: string }) {
           type="button"
           onClick={() => run('online')}
           disabled={pending}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-60 motion-reduce:transition-none"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-60 motion-reduce:transition-none"
         >
           {pending && mode === 'online' ? <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" /> : <Globe className="h-3.5 w-3.5" />}
           Posted it online

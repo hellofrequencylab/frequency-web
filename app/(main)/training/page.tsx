@@ -26,7 +26,7 @@ export default async function TrainingPage() {
       description="As you grow into new roles, this walks you through what just became yours to do."
     >
       {!active ? (
-        <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
+        <div className="rounded-card border border-dashed border-border bg-surface p-8 text-center">
           <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-pill bg-broadcast-bg text-broadcast-strong">
             <Trophy className="h-6 w-6" aria-hidden />
           </span>
@@ -35,7 +35,7 @@ export default async function TrainingPage() {
         </div>
       ) : (
         <div className="space-y-5">
-          <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-5 lift-1">
+          <div className="flex items-start gap-3 rounded-card border border-border bg-surface p-5 lift-1">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-broadcast-bg text-broadcast-strong">
               <GraduationCap className="h-6 w-6" aria-hidden />
             </span>

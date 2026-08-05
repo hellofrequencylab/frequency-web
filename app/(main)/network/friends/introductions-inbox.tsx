@@ -73,7 +73,7 @@ function StatusChip({ intro, rewardGems }: { intro: IntroductionMade; rewardGems
 
 function MadeRow({ intro, rewardGems }: { intro: IntroductionMade; rewardGems: number }) {
   return (
-    <li className="rounded-2xl border border-border bg-surface px-4 py-3">
+    <li className="rounded-card border border-border bg-surface px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Pair a={intro.a} b={intro.b} />
         <StatusChip intro={intro} rewardGems={rewardGems} />
@@ -85,7 +85,7 @@ function MadeRow({ intro, rewardGems }: { intro: IntroductionMade; rewardGems: n
 
 function ForYouRow({ intro }: { intro: IntroductionForYou }) {
   return (
-    <li className="rounded-2xl border border-border bg-surface px-4 py-3">
+    <li className="rounded-card border border-border bg-surface px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <Avatar person={intro.other} size={40} />

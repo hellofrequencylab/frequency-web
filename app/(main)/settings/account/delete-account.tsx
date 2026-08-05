@@ -34,7 +34,7 @@ export function DeleteAccount() {
               if (r && isError(r)) setErr(r.error)
             })
           }
-          className="rounded-lg bg-danger text-on-danger px-4 py-1.5 text-body-sm font-semibold disabled:opacity-50"
+          className="rounded-control bg-danger text-on-danger px-4 py-1.5 text-body-sm font-semibold disabled:opacity-50"
         >
           {pending ? 'Deleting…' : 'Delete account'}
         </button>

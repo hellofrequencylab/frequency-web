@@ -53,7 +53,7 @@ export function DownloadData() {
               }
             })
           }
-          className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-1.5 text-body-sm font-semibold text-text hover:border-border-strong transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-control border border-border bg-surface px-4 py-1.5 text-body-sm font-semibold text-text hover:border-border-strong transition-colors disabled:opacity-50"
         >
           <Download className="h-4 w-4" />
           {pending ? 'Putting it together…' : 'Download my data'}

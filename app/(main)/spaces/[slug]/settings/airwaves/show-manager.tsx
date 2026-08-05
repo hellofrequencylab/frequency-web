@@ -25,6 +25,7 @@ import {
 import { EmptyState } from '@/components/ui/empty-state'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Dialog } from '@/components/ui/dialog'
+import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import {
   isRecordingPublic,
@@ -332,7 +333,7 @@ export function ShowManager({
             type="button"
             onClick={openNew}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden /> New show
           </button>
@@ -360,7 +361,7 @@ export function ShowManager({
             const coverUrl = coverUrlByShowId[show.id]
             const isOpen = openShowId === show.id
             return (
-              <li key={show.id} className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+              <li key={show.id} className="space-y-3 rounded-card border border-border bg-surface p-4">
                 <div className="flex items-start gap-3">
                   {coverUrl ? (
                     <span className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border">
@@ -395,7 +396,7 @@ export function ShowManager({
                       type="button"
                       onClick={() => openEdit(show)}
                       disabled={pending}
-                      className="rounded-lg border border-border px-2.5 py-1 text-2xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-50"
+                      className="rounded-control border border-border px-2.5 py-1 text-2xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-50"
                     >
                       Edit
                     </button>
@@ -420,7 +421,7 @@ export function ShowManager({
                       <button
                         type="button"
                         onClick={() => copyFeed(feedUrlFor(show))}
-                        className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border px-2 py-1 text-3xs font-semibold text-text transition-colors hover:border-border-strong"
+                        className="inline-flex shrink-0 items-center gap-1 rounded-control border border-border px-2 py-1 text-3xs font-semibold text-text transition-colors hover:border-border-strong"
                       >
                         <Copy className="h-3 w-3" aria-hidden /> {copied === feedUrlFor(show) ? 'Copied' : 'Copy'}
                       </button>
@@ -580,7 +581,7 @@ function EpisodePanel({
                         type="button"
                         disabled={pending}
                         onClick={() => onSetVisibility(ep.id, 'public', new Date().toISOString())}
-                        className="rounded-lg border border-border px-2 py-1 text-3xs font-semibold text-primary-strong transition-colors hover:border-border-strong disabled:opacity-50"
+                        className="rounded-control border border-border px-2 py-1 text-3xs font-semibold text-primary-strong transition-colors hover:border-border-strong disabled:opacity-50"
                       >
                         Publish now
                       </button>
@@ -615,7 +616,7 @@ function EpisodePanel({
                   type="button"
                   disabled={pending}
                   onClick={() => onAdd(r.id)}
-                  className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-3xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+                  className="inline-flex shrink-0 items-center gap-1 rounded-control bg-primary px-2.5 py-1 text-3xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
                 >
                   <Plus className="h-3 w-3" aria-hidden /> Add
                 </button>
@@ -650,20 +651,19 @@ function ShowFormDialog({
   const set = <K extends keyof ShowDraft>(key: K, value: ShowDraft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }))
 
-  const field = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
   const label = 'block space-y-1'
   const labelText = 'text-meta font-semibold text-muted'
 
   return (
     <Dialog open onClose={onCancel} ariaLabel={isNew ? 'Create a show' : 'Edit show'} className="max-w-lg">
-      <div className="max-h-[86vh] overflow-y-auto rounded-2xl border border-border bg-canvas p-5 lift-3">
+      <div className="max-h-[86vh] overflow-y-auto rounded-card border border-border bg-canvas p-5 lift-3">
         <div className="mb-4 flex items-center justify-between gap-2">
           <h2 className="text-body font-bold text-text">{isNew ? 'New show' : 'Edit show'}</h2>
           <button
             type="button"
             onClick={onCancel}
             aria-label="Close"
-            className="rounded-lg p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+            className="rounded-control p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
           >
             <X className="h-4 w-4" aria-hidden />
           </button>
@@ -672,35 +672,33 @@ function ShowFormDialog({
         <div className="space-y-4">
           <label className={label}>
             <span className={labelText}>Title</span>
-            <input
+            <Input
               type="text"
               value={draft.title}
               placeholder="Name your show"
               onChange={(e) => set('title', e.target.value)}
-              className={field}
             />
           </label>
 
           <label className={label}>
             <span className={labelText}>Link name (optional)</span>
-            <input
+            <Input
               type="text"
               value={draft.slug}
               placeholder="Leave blank to build it from the title"
               onChange={(e) => set('slug', e.target.value)}
-              className={field}
             />
             <span className="text-2xs text-muted">This becomes the end of your feed link.</span>
           </label>
 
           <label className={label}>
             <span className={labelText}>Description</span>
-            <textarea
+            <Textarea
               value={draft.description}
               rows={3}
               placeholder="Tell listeners what the show is about."
               onChange={(e) => set('description', e.target.value)}
-              className={`${field} resize-none`}
+              className="resize-none"
             />
           </label>
 
@@ -719,12 +717,11 @@ function ShowFormDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <label className={label}>
               <span className={labelText}>Author</span>
-              <input
+              <Input
                 type="text"
                 value={draft.author}
                 placeholder="Who hosts the show"
                 onChange={(e) => set('author', e.target.value)}
-                className={field}
               />
             </label>
             <label className={label}>
@@ -768,20 +765,18 @@ function ShowFormDialog({
             <div className="grid gap-4 sm:grid-cols-2">
               <label className={label}>
                 <span className={labelText}>Owner name</span>
-                <input
+                <Input
                   type="text"
                   value={draft.ownerName}
                   onChange={(e) => set('ownerName', e.target.value)}
-                  className={field}
                 />
               </label>
               <label className={label}>
                 <span className={labelText}>Owner email</span>
-                <input
+                <Input
                   type="email"
                   value={draft.ownerEmail}
                   onChange={(e) => set('ownerEmail', e.target.value)}
-                  className={field}
                 />
               </label>
             </div>
@@ -804,7 +799,7 @@ function ShowFormDialog({
             type="button"
             onClick={onCancel}
             disabled={pending}
-            className="rounded-lg px-4 py-2 text-body-sm font-semibold text-muted transition-colors hover:text-text disabled:opacity-50"
+            className="rounded-control px-4 py-2 text-body-sm font-semibold text-muted transition-colors hover:text-text disabled:opacity-50"
           >
             Cancel
           </button>
@@ -812,7 +807,7 @@ function ShowFormDialog({
             type="button"
             onClick={onSave}
             disabled={pending || !draft.title.trim()}
-            className="rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {pending ? 'Saving' : isNew ? 'Create show' : 'Save changes'}
           </button>

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { X } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
+import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { COMMERCE_CATEGORIES, normalizeTags } from '@/lib/commerce/categories'
 import { createMakerProductAction } from '../../marketplace/commerce-actions'
@@ -15,8 +16,6 @@ import { createMakerProductAction } from '../../marketplace/commerce-actions'
 // public event-media bucket under the signer's own uid prefix and ride as a JSON array of storage PATHS
 // in a hidden field; tags ride the same way. No em or en dashes.
 
-const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
 const LABEL = 'mb-1 block text-body-sm font-medium text-text'
 
 export function SellForm() {
@@ -49,7 +48,7 @@ export function SellForm() {
         <label htmlFor="title" className={LABEL}>
           What are you selling?
         </label>
-        <input id="title" name="title" required maxLength={200} className={FIELD} placeholder="e.g. Hand-thrown ceramic mug" />
+        <Input id="title" name="title" required maxLength={200} placeholder="e.g. Hand-thrown ceramic mug" />
       </div>
 
       {/* Photos — the cover is the first tile; drag or use the arrows to reorder. */}
@@ -69,7 +68,7 @@ export function SellForm() {
           <label htmlFor="price" className={LABEL}>
             Price (USD)
           </label>
-          <input id="price" name="price" type="number" min="0" step="0.01" inputMode="decimal" required className={FIELD} placeholder="e.g. 28" />
+          <Input id="price" name="price" type="number" min="0" step="0.01" inputMode="decimal" required placeholder="e.g. 28" />
         </div>
         <div>
           <label htmlFor="category" className={LABEL}>
@@ -150,12 +149,11 @@ export function SellForm() {
         <label htmlFor="description" className={LABEL}>
           Details
         </label>
-        <textarea
+        <Textarea
           id="description"
           name="description"
           rows={5}
           maxLength={2000}
-          className={FIELD}
           placeholder="Materials, size, how it's made, shipping or pickup."
         />
       </div>

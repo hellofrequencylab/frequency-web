@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { Zap, Loader2 } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 import { startMembershipCheckout } from './actions'
 import { isError } from '@/lib/action-result'
 
@@ -129,18 +130,19 @@ export function PwywPicker({
         </div>
       </label>
 
-      <label className="flex items-center gap-2 text-body-sm text-muted">
-        <input
-          type="checkbox"
-          checked={annual}
-          onChange={(e) => setAnnual(e.target.checked)}
-          className="h-4 w-4 rounded border-border"
-        />
-        {/* Two months free is the house convention; the server computes the charge from the monthly
-            pick so the number shown here can never disagree with the number billed. */}
-        Pay for a year and get two months free
-        {valid ? <span className="font-medium text-text">{` (${priceLabel(chosen * 10)})`}</span> : null}
-      </label>
+      {/* Two months free is the house convention; the server computes the charge from the monthly
+          pick so the number shown here can never disagree with the number billed. */}
+      <Checkbox
+        checked={annual}
+        onChange={(e) => setAnnual(e.target.checked)}
+        wrapperClassName="flex"
+        label={
+          <>
+            Pay for a year and get two months free
+            {valid ? <span className="font-medium text-text">{` (${priceLabel(chosen * 10)})`}</span> : null}
+          </>
+        }
+      />
 
       <button
         onClick={go}

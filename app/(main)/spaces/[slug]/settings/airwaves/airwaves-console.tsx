@@ -9,6 +9,7 @@
 import { useRef, useState, useTransition, type ReactNode } from 'react'
 import { Upload, Trash2, Music, Video } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { SectionHeader } from '@/components/ui/section-header'
 import { RecordingBlockEmbed } from '@/components/airwaves/recording-block-embed'
@@ -112,8 +113,8 @@ export function AirwavesConsole({
               onClick={() => setTab(t)}
               className={
                 tab === t
-                  ? 'flex-1 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary'
-                  : 'flex-1 rounded-lg px-3 py-1.5 text-body-sm font-semibold text-muted transition-colors hover:text-text'
+                  ? 'flex-1 rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary'
+                  : 'flex-1 rounded-control px-3 py-1.5 text-body-sm font-semibold text-muted transition-colors hover:text-text'
               }
             >
               {t === 'recordings' ? 'Recordings' : 'Shows'}
@@ -124,17 +125,16 @@ export function AirwavesConsole({
 
       <div className={canEdit && tab !== 'recordings' ? 'hidden' : 'space-y-8'}>
       {canEdit && (
-        <section className="space-y-3 rounded-2xl border border-border bg-surface p-5">
+        <section className="space-y-3 rounded-card border border-border bg-surface p-5">
           <SectionHeader title="Add a recording" />
           <div className="space-y-3">
             <label className="block space-y-1">
               <span className="text-meta font-semibold text-muted">Title (optional)</span>
-              <input
+              <Input
                 type="text"
                 value={title}
                 placeholder="Name this recording"
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary"
               />
             </label>
             <input
@@ -152,7 +152,7 @@ export function AirwavesConsole({
               type="button"
               disabled={pending}
               onClick={() => fileRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               <Upload className="h-4 w-4" aria-hidden />
               {pending ? 'Uploading' : 'Upload audio or video'}
@@ -178,7 +178,7 @@ export function AirwavesConsole({
         ) : (
           <ul className="space-y-5">
             {recordings.map((r) => (
-              <li key={r.id} className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+              <li key={r.id} className="space-y-3 rounded-card border border-border bg-surface p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">
                     {r.mediaKind === 'video' ? (

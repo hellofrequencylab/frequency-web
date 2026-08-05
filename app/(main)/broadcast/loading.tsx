@@ -8,7 +8,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 // layout shift).
 function DispatchCardSkeleton() {
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="flex items-start gap-3 rounded-card border border-border bg-surface p-4 lift-1">
       <Skeleton className="h-10 w-10 shrink-0 rounded-2xl" />
       <div className="min-w-0 flex-1 space-y-2">
         <Skeleton className="h-4 w-44" />
@@ -30,7 +30,7 @@ export default function BroadcastLoading() {
       <div className="mb-5 border-b border-border sm:mb-6" />
 
       {/* Highlight hero */}
-      <div className="mb-6 flex items-center gap-4 rounded-2xl border border-border bg-surface p-5">
+      <div className="mb-6 flex items-center gap-4 rounded-card border border-border bg-surface p-5">
         <Skeleton className="h-11 w-11 shrink-0 rounded-2xl" />
         <div className="min-w-0 flex-1 space-y-2">
           <Skeleton className="h-3 w-24" />

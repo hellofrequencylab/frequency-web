@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Heart, Home, Plus, Users, DoorOpen, SlidersHorizontal } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { getMyProfileId } from '@/lib/auth'
 import { listSavedListingIds, listSavedListings } from '@/lib/listings'
@@ -50,8 +51,6 @@ type HousingSearchParams = {
   saved?: string
 }
 
-const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
 const FILTER_LABEL = 'mb-1 block text-meta font-medium text-muted'
 
 // Canonical quick-browse sub-menu: All + one tab per property type, then Roommates (its own route).
@@ -185,7 +184,7 @@ export default async function HousingPage({
             {!savedOnly && (
             <form
               method="get"
-              className="space-y-4 rounded-2xl border border-border bg-surface p-4 lift-1"
+              className="space-y-4 rounded-card border border-border bg-surface p-4 lift-1"
               aria-label="Filter housing"
             >
               <div className="flex items-center gap-2 text-body-sm font-medium text-text">
@@ -209,14 +208,13 @@ export default async function HousingPage({
                   <label htmlFor="min" className={FILTER_LABEL}>
                     Min rent (per month)
                   </label>
-                  <input
+                  <Input
                     id="min"
                     name="min"
                     type="number"
                     min="0"
                     inputMode="numeric"
                     defaultValue={sp.min ?? ''}
-                    className={FIELD}
                     placeholder="Any"
                   />
                 </div>
@@ -224,14 +222,13 @@ export default async function HousingPage({
                   <label htmlFor="max" className={FILTER_LABEL}>
                     Max rent (per month)
                   </label>
-                  <input
+                  <Input
                     id="max"
                     name="max"
                     type="number"
                     min="0"
                     inputMode="numeric"
                     defaultValue={sp.max ?? ''}
-                    className={FIELD}
                     placeholder="Any"
                   />
                 </div>

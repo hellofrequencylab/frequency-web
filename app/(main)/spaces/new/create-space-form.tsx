@@ -81,7 +81,7 @@ export function CreateSpaceForm({ choices }: { choices: SpaceModeChoice[] }) {
 
   return (
     <form
-      className="space-y-6 rounded-2xl border border-border bg-surface p-5 lift-1 sm:p-6"
+      className="space-y-6 rounded-card border border-border bg-surface p-5 lift-1 sm:p-6"
       onSubmit={(e) => {
         e.preventDefault()
         if (canSubmit) submit()
@@ -104,7 +104,7 @@ export function CreateSpaceForm({ choices }: { choices: SpaceModeChoice[] }) {
                 onClick={() => setChoiceId(c.id)}
                 aria-pressed={active}
                 className={cn(
-                  'rounded-lg border px-3 py-2 text-left transition-colors',
+                  'rounded-control border px-3 py-2 text-left transition-colors',
                   active
                     ? 'border-primary bg-primary-bg text-text'
                     : 'border-border bg-surface text-muted hover:border-border-strong',

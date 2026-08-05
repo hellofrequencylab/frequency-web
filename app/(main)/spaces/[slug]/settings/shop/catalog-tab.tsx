@@ -107,7 +107,7 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
             return (
               <div
                 key={p.id}
-                className="flex flex-col overflow-hidden rounded-2xl border border-border bg-surface lift-1"
+                className="flex flex-col overflow-hidden rounded-card border border-border bg-surface lift-1"
               >
                 {/* Header image — the listing's first photo, or a branded gradient + type icon. */}
                 <div className="relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-surface-elevated">

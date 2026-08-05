@@ -59,7 +59,7 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
   }
 
   return (
-    <div className={`rounded-2xl border px-4 py-3 transition-all motion-reduce:transition-none ${
+    <div className={`rounded-card border px-4 py-3 transition-all motion-reduce:transition-none ${
       item.owned
         ? 'border-success bg-success-bg/30'
         : 'border-border bg-surface'
@@ -101,7 +101,7 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
               <button
                 onClick={handleRedeem}
                 disabled={!canAfford || isPending}
-                className={`flex min-h-11 items-center gap-1 rounded-lg px-3 py-1 text-meta font-semibold transition-colors motion-reduce:transition-none ${
+                className={`flex min-h-11 items-center gap-1 rounded-control px-3 py-1 text-meta font-semibold transition-colors motion-reduce:transition-none ${
                   canAfford
                     ? 'bg-primary text-on-primary hover:bg-primary-hover disabled:opacity-50'
                     : 'bg-surface-elevated text-subtle cursor-not-allowed'

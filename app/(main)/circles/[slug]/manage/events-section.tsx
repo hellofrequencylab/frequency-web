@@ -182,7 +182,7 @@ export async function CircleEventsSection({
   // Add an event this manager already runs (the owner ask). The picker only offers what the
   // action's gates admit; the action re-checks both authorities on submit.
   const addForm = (
-    <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+    <div className="rounded-card border border-border bg-surface p-5 lift-1">
       <SectionHeader title="Add an event" />
       <p className="mb-3 text-body-sm text-muted">
         Bring an event you already run onto this circle. It shows on the circle page, and your
@@ -241,7 +241,7 @@ export async function CircleEventsSection({
   return (
     <div className="space-y-5">
       {banner}
-      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+      <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
         {upcoming.map((e) => (
           <li key={e.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3">
             <div className="min-w-0 flex-1">

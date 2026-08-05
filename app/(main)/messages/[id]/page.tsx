@@ -181,7 +181,7 @@ export default async function ConversationPage({
                 <form action={leaveConversation.bind(null, conversationId)}>
                   <button
                     type="submit"
-                    className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated"
+                    className="flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated"
                   >
                     <LogOut className="h-3 w-3" /> Leave
                   </button>

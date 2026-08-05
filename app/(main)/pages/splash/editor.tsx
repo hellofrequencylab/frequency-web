@@ -12,6 +12,7 @@ import {
   type FunnelDestination,
 } from '@/lib/onboarding/beta-sequences'
 import { FUNNEL_ICON_NAMES } from '@/lib/onboarding/funnel-icons'
+import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import type { SequenceOverride } from '@/lib/onboarding/sequence-overrides'
 import BetaInduction from '@/app/onboarding/beta/induction'
@@ -34,8 +35,6 @@ import { saveSequenceVersion, renameSequenceSlug } from '@/app/(main)/pages/sequ
 type Oaths = BetaSequence['oaths']
 type BeatKey = keyof VeraCopy
 
-const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-broadcast'
 const LABEL = 'mb-1 block text-meta font-semibold text-subtle'
 
 // Niche-funnel config (ADR-funnels). A niche funnel swaps the generic "who are you" step
@@ -320,14 +319,13 @@ export function SplashCopyEditor({
         {/* Custom funnels carry their own title (the audience). The default template's
             title is fixed, so this only shows for a custom slug. */}
         {!isDefault && (
-          <section className="space-y-2 rounded-2xl border border-border bg-surface p-5 lift-1">
+          <section className="space-y-2 rounded-card border border-border bg-surface p-5 lift-1">
             <label className={LABEL} htmlFor="splash-audience">
               Funnel title
               <span className="ml-1.5 font-normal text-subtle/70">· the audience this funnel is for</span>
             </label>
-            <input
+            <Input
               id="splash-audience"
-              className={FIELD}
               value={audience}
               placeholder="e.g. Local business owners"
               onChange={(e) => { setAudience(e.target.value); setSaved(false) }}
@@ -337,7 +335,7 @@ export function SplashCopyEditor({
         {/* Permalink (the funnel's slug): the ?seq= value + the link you share. Renaming re-keys the
             funnel; existing links to the old permalink stop resolving. Custom funnels only. */}
         {!isDefault && (
-          <section className="space-y-2 rounded-2xl border border-border bg-surface p-5 lift-1">
+          <section className="space-y-2 rounded-card border border-border bg-surface p-5 lift-1">
             <label className={LABEL} htmlFor="splash-permalink">
               Permalink
               <span className="ml-1.5 font-normal text-subtle/70">· the /onboarding/beta?seq= slug and the link you share</span>
@@ -368,7 +366,7 @@ export function SplashCopyEditor({
                     router.refresh()
                   })
                 }}
-                className="shrink-0 rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+                className="shrink-0 rounded-control border border-border-strong bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
               >
                 {renaming ? 'Updating…' : 'Update permalink'}
               </button>
@@ -383,7 +381,7 @@ export function SplashCopyEditor({
           <section
             key={b.id}
             onFocusCapture={() => setPreviewBeat(b.beatIndex)}
-            className={`space-y-3 rounded-2xl border bg-surface p-5 lift-1 transition-colors ${
+            className={`space-y-3 rounded-card border bg-surface p-5 lift-1 transition-colors ${
               previewBeat === b.beatIndex ? 'border-primary/50' : 'border-border'
             }`}
           >
@@ -402,17 +400,16 @@ export function SplashCopyEditor({
                   )}
                 </label>
                 {f.area ? (
-                  <textarea
+                  <Textarea
                     id={`splash-${b.id}-${f.key}`}
                     rows={3}
-                    className={`${FIELD} resize-y`}
+                    className="resize-y"
                     value={(vera[b.id] as Record<string, string>)[f.key] ?? ''}
                     onChange={(e) => setField(b.id, f.key, e.target.value)}
                   />
                 ) : (
-                  <input
+                  <Input
                     id={`splash-${b.id}-${f.key}`}
-                    className={FIELD}
                     value={(vera[b.id] as Record<string, string>)[f.key] ?? ''}
                     onChange={(e) => setField(b.id, f.key, e.target.value)}
                   />
@@ -426,9 +423,8 @@ export function SplashCopyEditor({
                     <label className={LABEL} htmlFor={`splash-oath-label-${i}`}>
                       Checkbox {i + 1}
                     </label>
-                    <input
+                    <Input
                       id={`splash-oath-label-${i}`}
-                      className={FIELD}
                       value={o.label}
                       onChange={(e) => setOathLabel(i, e.target.value)}
                     />
@@ -444,7 +440,7 @@ export function SplashCopyEditor({
         {!isDefault && (
           <>
             {/* 1. Slide 2 feature cards */}
-            <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
+            <section className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1">
               <div>
                 <h2 className="text-body-sm font-bold text-text">Slide 2 features</h2>
                 <p className="text-meta text-muted">
@@ -456,18 +452,16 @@ export function SplashCopyEditor({
                   <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Feature {i + 1}</p>
                   <div>
                     <label className={LABEL} htmlFor={`slide2-title-${i}`}>Title</label>
-                    <input
+                    <Input
                       id={`slide2-title-${i}`}
-                      className={FIELD}
                       value={row.title}
                       onChange={(e) => setSlide2Field(i, 'title', e.target.value)}
                     />
                   </div>
                   <div>
                     <label className={LABEL} htmlFor={`slide2-blurb-${i}`}>Blurb</label>
-                    <input
+                    <Input
                       id={`slide2-blurb-${i}`}
-                      className={FIELD}
                       value={row.blurb}
                       onChange={(e) => setSlide2Field(i, 'blurb', e.target.value)}
                     />
@@ -490,7 +484,7 @@ export function SplashCopyEditor({
             </section>
 
             {/* 2. Slide 3 core features + art */}
-            <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
+            <section className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1">
               <div>
                 <h2 className="text-body-sm font-bold text-text">Slide 3 core features</h2>
                 <p className="text-meta text-muted">
@@ -504,18 +498,16 @@ export function SplashCopyEditor({
                     <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Core feature {i + 1}</p>
                     <div>
                       <label className={LABEL} htmlFor={`slide3-title-${i}`}>Title</label>
-                      <input
+                      <Input
                         id={`slide3-title-${i}`}
-                        className={FIELD}
                         value={row.title}
                         onChange={(e) => setSlide3Text(i, 'title', e.target.value)}
                       />
                     </div>
                     <div>
                       <label className={LABEL} htmlFor={`slide3-blurb-${i}`}>Blurb</label>
-                      <input
+                      <Input
                         id={`slide3-blurb-${i}`}
-                        className={FIELD}
                         value={row.blurb}
                         onChange={(e) => setSlide3Text(i, 'blurb', e.target.value)}
                       />
@@ -536,9 +528,8 @@ export function SplashCopyEditor({
                     {row.art.kind === 'image' && (
                       <div>
                         <label className={LABEL} htmlFor={`slide3-art-src-${i}`}>Image URL</label>
-                        <input
+                        <Input
                           id={`slide3-art-src-${i}`}
-                          className={FIELD}
                           value={row.art.src}
                           placeholder="/images/site/example.jpg"
                           onChange={(e) => setSlide3ImageSrc(i, e.target.value)}
@@ -551,7 +542,7 @@ export function SplashCopyEditor({
             </section>
 
             {/* 3. Completion destination */}
-            <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
+            <section className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1">
               <div>
                 <h2 className="text-body-sm font-bold text-text">Where it goes when they finish</h2>
                 <p className="text-meta text-muted">
@@ -563,7 +554,7 @@ export function SplashCopyEditor({
                   type="button"
                   aria-pressed={destMode === 'waitlist'}
                   onClick={() => { setDestMode('waitlist'); setSaved(false) }}
-                  className={`rounded-lg px-3 py-2 text-meta font-semibold transition-colors ${
+                  className={`rounded-control px-3 py-2 text-meta font-semibold transition-colors ${
                     destMode === 'waitlist'
                       ? 'bg-primary text-on-primary'
                       : 'border border-border bg-surface text-subtle hover:bg-surface-elevated'
@@ -575,7 +566,7 @@ export function SplashCopyEditor({
                   type="button"
                   aria-pressed={destMode === 'direct'}
                   onClick={() => { setDestMode('direct'); setSaved(false) }}
-                  className={`rounded-lg px-3 py-2 text-meta font-semibold transition-colors ${
+                  className={`rounded-control px-3 py-2 text-meta font-semibold transition-colors ${
                     destMode === 'direct'
                       ? 'bg-primary text-on-primary'
                       : 'border border-border bg-surface text-subtle hover:bg-surface-elevated'
@@ -590,9 +581,8 @@ export function SplashCopyEditor({
                     In-app link
                     <span className="ml-1.5 font-normal text-subtle/70">· a path like /spaces or /booking</span>
                   </label>
-                  <input
+                  <Input
                     id="dest-url"
-                    className={FIELD}
                     value={destUrl}
                     placeholder="/spaces"
                     onChange={(e) => { setDestUrl(e.target.value); setSaved(false) }}
@@ -606,7 +596,7 @@ export function SplashCopyEditor({
         {/* Save / reset bar */}
         {/* The sticky save bar floats over the scrolling form — lift-3's named case
             (the sticky action card), and it must not travel on hover the way lift-2 does. */}
-        <div className="sticky bottom-4 flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-border bg-surface p-3 lift-3">
+        <div className="sticky bottom-4 flex flex-wrap items-center justify-end gap-3 rounded-card border border-border bg-surface p-3 lift-3">
           {error && <span className="text-meta font-medium text-danger">{error}</span>}
           {dirty && !error && <span className="text-meta font-medium text-warning">Unsaved changes</span>}
           {saved && !dirty && (
@@ -621,7 +611,7 @@ export function SplashCopyEditor({
               onClick={reset}
               disabled={pending || !hasOverride}
               title={hasOverride ? 'Remove your saved edits and return to the built-in script' : 'No saved edits to remove'}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:cursor-not-allowed disabled:opacity-40"
             >
               <RotateCcw className="h-3.5 w-3.5" /> Reset to script
             </button>
@@ -630,7 +620,7 @@ export function SplashCopyEditor({
             type="button"
             onClick={save}
             disabled={pending}
-            className="rounded-lg bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            className="rounded-control bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
           >
             {pending ? 'Working…' : 'Save & publish'}
           </button>
@@ -667,7 +657,7 @@ export function SplashCopyEditor({
 
         {/* The REAL induction component (preview mode: nothing is saved), scaled to
             half so a full screen fits the pane. Inert: the tabs drive navigation. */}
-        <div className="overflow-hidden rounded-2xl border border-border lift-1">
+        <div className="overflow-hidden rounded-card border border-border lift-1">
           <div aria-hidden className="pointer-events-none h-[50vh] w-full select-none overflow-hidden">
             <div className="h-[200%] w-[200%] origin-top-left scale-50">
               <BetaInduction

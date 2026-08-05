@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
 import { buttonClasses } from '@/components/ui/button'
@@ -15,8 +17,6 @@ import { saveSeekerProfileAction } from '@/app/(main)/marketplace/actions'
 // shared home). Age is captured as a SOFT hint for ranking, never advertised as a hard
 // "must be X" requirement. See the honest note rendered below the fields.
 
-const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
 const LABEL = 'mb-1 block text-body-sm font-medium text-text'
 
 export interface LifestylePrefs {
@@ -141,20 +141,20 @@ export function SeekerForm({ initial }: { initial: SeekerFormValues }) {
   return (
     <form
       action={saveSeekerProfileAction}
-      className="mb-8 space-y-5 rounded-2xl border border-border bg-surface p-5 lift-1"
+      className="mb-8 space-y-5 rounded-card border border-border bg-surface p-5 lift-1"
     >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="budget_min" className={LABEL}>
             Budget min (per month)
           </label>
-          <input id="budget_min" name="budget_min" type="number" min="0" defaultValue={initial.budgetMin} className={FIELD} placeholder="e.g. 600" />
+          <Input id="budget_min" name="budget_min" type="number" min="0" defaultValue={initial.budgetMin} placeholder="e.g. 600" />
         </div>
         <div>
           <label htmlFor="budget_max" className={LABEL}>
             Budget max (per month)
           </label>
-          <input id="budget_max" name="budget_max" type="number" min="0" defaultValue={initial.budgetMax} className={FIELD} placeholder="e.g. 1200" />
+          <Input id="budget_max" name="budget_max" type="number" min="0" defaultValue={initial.budgetMax} placeholder="e.g. 1200" />
         </div>
       </div>
 
@@ -178,7 +178,7 @@ export function SeekerForm({ initial }: { initial: SeekerFormValues }) {
           <label htmlFor="move_in" className={LABEL}>
             Move-in from
           </label>
-          <input id="move_in" name="move_in" type="date" defaultValue={initial.moveIn} className={FIELD} />
+          <Input id="move_in" name="move_in" type="date" defaultValue={initial.moveIn} />
         </div>
       </div>
 
@@ -248,13 +248,13 @@ export function SeekerForm({ initial }: { initial: SeekerFormValues }) {
               <label htmlFor="age_min" className={LABEL}>
                 Ideal age from
               </label>
-              <input id="age_min" name="age_min" type="number" min="18" max="120" defaultValue={ls.ageMin} className={FIELD} placeholder="Any" />
+              <Input id="age_min" name="age_min" type="number" min="18" max="120" defaultValue={ls.ageMin} placeholder="Any" />
             </div>
             <div>
               <label htmlFor="age_max" className={LABEL}>
                 Ideal age to
               </label>
-              <input id="age_max" name="age_max" type="number" min="18" max="120" defaultValue={ls.ageMax} className={FIELD} placeholder="Any" />
+              <Input id="age_max" name="age_max" type="number" min="18" max="120" defaultValue={ls.ageMax} placeholder="Any" />
             </div>
           </div>
         )}
@@ -267,10 +267,7 @@ export function SeekerForm({ initial }: { initial: SeekerFormValues }) {
         </p>
       </div>
 
-      <label className="flex items-center gap-2 text-body-sm text-text">
-        <input type="checkbox" name="active" defaultChecked={initial.active} className="h-4 w-4 rounded border-border" />
-        Show me as actively looking
-      </label>
+      <Checkbox name="active" defaultChecked={initial.active} label="Show me as actively looking" wrapperClassName="flex" />
 
       <div className="flex justify-end">
         <button type="submit" className={buttonClasses('primary', 'md')}>

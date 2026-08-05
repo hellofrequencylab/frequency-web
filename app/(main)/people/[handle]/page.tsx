@@ -660,7 +660,7 @@ export default async function ProfilePage({
           </div>
 
           {/* Achievements — the earned / nearly-earned chips. */}
-          <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
+          <div className="rounded-card border border-border bg-surface p-4 lift-1">
             <p className="mb-3 text-body-sm font-bold tracking-tight text-text">
               Achievements <span className="font-medium text-subtle">· {rewardsEarned}/{rewards.length}</span>
             </p>
@@ -687,7 +687,7 @@ function ProfileFeedSkeleton() {
   return (
     <div className="space-y-4" aria-hidden>
       {[0, 1, 2].map((i) => (
-        <div key={i} className="rounded-2xl border border-border bg-surface p-4 lift-1">
+        <div key={i} className="rounded-card border border-border bg-surface p-4 lift-1">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 animate-pulse rounded-pill bg-surface-elevated" />
             <div className="flex-1 space-y-2">
@@ -729,7 +729,7 @@ function ProfileStandingCard({
     { icon: Trophy, label: 'Rank', value: rankDef.label, href: isOwner ? '/crew/leaderboard' : null },
   ]
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="rounded-card border border-border bg-surface p-4 lift-1">
       <div className="flex items-center justify-between gap-2">
         <p className="text-body-sm font-bold tracking-tight text-text">Standing</p>
         <RankBadge rank={rank}>{rankDef.label}</RankBadge>

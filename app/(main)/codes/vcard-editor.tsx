@@ -3,6 +3,8 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Contact, Download, Check } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/field'
 import type { VcardConfig } from '@/lib/vcard'
 import type { ActionResult } from '@/lib/action-result'
 
@@ -39,20 +41,16 @@ export function VcardEditor({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="rounded-card border border-border bg-surface p-4 lift-1">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-1.5 text-body-sm font-bold text-text">
           <Contact className="h-4 w-4 text-primary-strong" /> Contact card
         </h2>
-        <label className="flex items-center gap-1.5 text-meta text-muted">
-          <input
-            type="checkbox"
-            checked={form.enabled}
-            onChange={(e) => set('enabled', e.target.checked)}
-            className="accent-primary"
-          />
-          Offer “Save contact” on my code
-        </label>
+        <Checkbox
+          checked={form.enabled}
+          onChange={(e) => set('enabled', e.target.checked)}
+          label="Offer “Save contact” on my code"
+        />
       </div>
       <p className="mt-0.5 text-meta text-muted">
         Choose what your profile code shares. Only the fields you fill in are included.
@@ -66,15 +64,12 @@ export function VcardEditor({
             <VField label="Title / role" value={form.title} onChange={(v) => set('title', v)} placeholder="e.g. Host, Vista circle" />
             <VField label="Organization" value={form.org} onChange={(v) => set('org', v)} placeholder="e.g. Frequency" />
             <VField label="Website" value={form.website} onChange={(v) => set('website', v)} placeholder="yoursite.com" />
-            <label className="flex items-center gap-2 self-end text-body-sm text-text">
-              <input
-                type="checkbox"
-                checked={form.includeAvatar}
-                onChange={(e) => set('includeAvatar', e.target.checked)}
-                className="accent-primary"
-              />
-              Include my photo
-            </label>
+            <Checkbox
+              checked={form.includeAvatar}
+              onChange={(e) => set('includeAvatar', e.target.checked)}
+              label="Include my photo"
+              wrapperClassName="self-end"
+            />
           </div>
         </>
       )}
@@ -83,7 +78,7 @@ export function VcardEditor({
         <button
           onClick={save}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {saved ? <Check className="h-3.5 w-3.5" /> : null}
           {pending ? 'Saving…' : saved ? 'Saved' : 'Save card'}
@@ -118,12 +113,11 @@ function VField({
   return (
     <label className="block">
       <span className="mb-1 block text-meta font-medium text-subtle">{label}</span>
-      <input
+      <Input
         type={type}
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value || null)}
         placeholder={placeholder}
-        className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
       />
     </label>
   )

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { Copy, Check, HeartHandshake, CalendarClock, Gift, Contact } from 'lucide-react'
 import { createWarmIntroLink, makeEventLink, makeMagnetLink, makeExchangeLink, type LinkResult } from './actions'
@@ -59,13 +60,12 @@ function Field({
         {label}
         {optional && <span className="font-normal text-subtle"> (optional)</span>}
       </label>
-      <input
+      <Input
         id={id}
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-control border border-border bg-surface px-4 py-2.5 text-body-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
       />
     </div>
   )
@@ -113,7 +113,7 @@ function LinkResultRow({ url, error }: { url: string | null; error: string | nul
             /* clipboard blocked — the field is selectable as a fallback */
           }
         }}
-        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-surface-elevated px-3 py-1.5 text-meta font-semibold text-text hover:bg-surface-elevated/70"
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-control bg-surface-elevated px-3 py-1.5 text-meta font-semibold text-text hover:bg-surface-elevated/70"
       >
         {copied ? <Check className="h-3.5 w-3.5 text-success" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
         {copied ? 'Copied' : 'Copy'}
@@ -134,7 +134,7 @@ function Card({
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-surface p-6">
+    <section className="rounded-card border border-border bg-surface p-6">
       <div className="flex items-start gap-3">
         <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
           <Icon className="h-5 w-5" aria-hidden />

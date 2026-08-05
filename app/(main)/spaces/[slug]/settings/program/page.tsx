@@ -71,7 +71,7 @@ export default async function SpaceProgramPage({
         description="Run your model as a Program. Your flagship circle becomes the blueprint, and members start Chapters anywhere."
         back={{ href: `/spaces/${slug}/manage`, label: 'Manage' }}
       >
-        <p className="rounded-2xl border border-border bg-surface p-6 text-body-sm text-muted">
+        <p className="rounded-card border border-border bg-surface p-6 text-body-sm text-muted">
           Program is turned off for this space, or your role does not include it. An admin can turn it on
           in the module settings.
         </p>
@@ -137,7 +137,7 @@ export default async function SpaceProgramPage({
               const chapters = chaptersByProgram[program.id] ?? []
               return (
                 <div key={program.id} className="space-y-6">
-                  <section className="rounded-2xl border border-border bg-surface p-6">
+                  <section className="rounded-card border border-border bg-surface p-6">
                     <SectionHeader
                       title={program.name}
                       href={program.isActive ? `/channels/${program.slug}` : undefined}
@@ -172,7 +172,7 @@ export default async function SpaceProgramPage({
 
                   <form
                     action={updateSpaceProgramAction.bind(null, slug, program.id)}
-                    className="space-y-4 rounded-2xl border border-border bg-surface p-6"
+                    className="space-y-4 rounded-card border border-border bg-surface p-6"
                   >
                     <SectionHeader title="Edit your Program" />
                     <p className="text-body-sm text-muted">
@@ -189,7 +189,7 @@ export default async function SpaceProgramPage({
 
                   <form
                     action={refreshProgramBlueprintAction.bind(null, slug, program.id)}
-                    className="space-y-4 rounded-2xl border border-border bg-surface p-6"
+                    className="space-y-4 rounded-card border border-border bg-surface p-6"
                   >
                     <SectionHeader title="Blueprint" />
                     <p className="text-body-sm text-muted">
@@ -215,7 +215,7 @@ export default async function SpaceProgramPage({
                     </Button>
                   </form>
 
-                  <section className="space-y-4 rounded-2xl border border-border bg-surface p-6">
+                  <section className="space-y-4 rounded-card border border-border bg-surface p-6">
                     <SectionHeader title={program.isActive ? 'Pause your Program' : 'Resume your Program'} />
                     <p className="text-body-sm text-muted">
                       {program.isActive
@@ -247,7 +247,7 @@ export default async function SpaceProgramPage({
         ) : (
           <form
             action={createSpaceProgramAction.bind(null, slug)}
-            className="space-y-4 rounded-2xl border border-border bg-surface p-6"
+            className="space-y-4 rounded-card border border-border bg-surface p-6"
           >
             <SectionHeader title="Create your Program" />
             <p className="text-body-sm text-muted">

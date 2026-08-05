@@ -137,7 +137,7 @@ export default async function ShowPage({
               ) : (
                 <div
                   aria-hidden
-                  className="grid h-40 w-40 place-items-center rounded-2xl border border-dashed border-border bg-surface-elevated text-page-title font-bold text-subtle sm:h-48 sm:w-48"
+                  className="grid h-40 w-40 place-items-center rounded-card border border-dashed border-border bg-surface-elevated text-page-title font-bold text-subtle sm:h-48 sm:w-48"
                 >
                   {show.title.slice(0, 1).toUpperCase()}
                 </div>

@@ -8,6 +8,8 @@ import { archiveCircle, updateCircleSettings } from '@/app/(main)/admin/actions'
 import { uploadCircleCover, removeCircleCover } from '@/app/(main)/circles/admin-actions'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { InlineCover } from '@/components/admin/inline/inline-cover'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 
 export interface CircleSettingsInitial {
@@ -22,8 +24,6 @@ export interface CircleSettingsInitial {
   unlisted: boolean
 }
 
-const input =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
 const lbl = 'block text-meta font-medium text-muted mb-1'
 
 // Host self-service circle settings — the full-page editor a host opens from their circle.
@@ -90,12 +90,12 @@ export function CircleSettingsForm({
     <form onSubmit={submit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div className="sm:col-span-2">
         <label className={lbl}>Circle name *</label>
-        <input type="text" value={name} onChange={(e) => setName(e.target.value)} required disabled={pending} className={input} />
+        <Input aria-label="Circle name" type="text" value={name} onChange={(e) => setName(e.target.value)} required disabled={pending} />
       </div>
 
       <div className="sm:col-span-2">
         <label className={lbl}>About <span className="font-normal text-subtle">(optional)</span></label>
-        <textarea value={about} onChange={(e) => setAbout(e.target.value)} rows={3} placeholder="What is this circle about?" disabled={pending} className={`${input} resize-none`} />
+        <Textarea aria-label="About" value={about} onChange={(e) => setAbout(e.target.value)} rows={3} placeholder="What is this circle about?" disabled={pending} className="resize-none" />
       </div>
 
       <div>
@@ -114,7 +114,7 @@ export function CircleSettingsForm({
 
       <div>
         <label className={lbl}>Member cap</label>
-        <input type="number" min={1} max={500} value={cap} onChange={(e) => setCap(e.target.value)} disabled={pending} className={input} />
+        <Input aria-label="Member cap" type="number" min={1} max={500} value={cap} onChange={(e) => setCap(e.target.value)} disabled={pending} />
       </div>
 
       <div className="sm:col-span-2">
@@ -135,39 +135,40 @@ export function CircleSettingsForm({
 
       <div>
         <label className={lbl}>City <span className="font-normal text-subtle">(optional)</span></label>
-        <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g. Encinitas" disabled={pending} className={input} />
+        <Input aria-label="City" type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g. Encinitas" disabled={pending} />
       </div>
 
       <div>
         <label className={lbl}>Neighborhood <span className="font-normal text-subtle">(optional)</span></label>
-        <input type="text" value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} placeholder="e.g. Leucadia" disabled={pending} className={input} />
+        <Input aria-label="Neighborhood" type="text" value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} placeholder="e.g. Leucadia" disabled={pending} />
       </div>
 
       <div className="rounded-lg border border-border bg-surface-elevated/40 p-3 sm:col-span-2">
-        <label className="flex items-start gap-2.5 text-body-sm text-text">
-          <input type="checkbox" checked={unlisted} onChange={(e) => setUnlisted(e.target.checked)} disabled={pending} className="mt-0.5 h-4 w-4 rounded border-border-strong text-primary focus:ring-2 focus:ring-primary/40" />
-          <span>
-            <span className="font-medium">Unlisted</span>
-            <span className="mt-0.5 block text-2xs text-muted">
-              Keep this circle off the Circles directory, map, and search. Anyone with the link can still open it,
-              and your members always see it. Great for a private group you invite by hand.
-            </span>
-          </span>
-        </label>
+        <Checkbox
+          checked={unlisted}
+          onChange={(e) => setUnlisted(e.target.checked)}
+          disabled={pending}
+          label={<span className="font-medium">Unlisted</span>}
+          hint="Keep this circle off the Circles directory, map, and search. Anyone with the link can still open it, and your members always see it. Great for a private group you invite by hand."
+          wrapperClassName="flex"
+        />
       </div>
 
       <div className="sm:col-span-2">
-        <label className="flex items-center gap-2 text-body-sm text-text">
-          <input type="checkbox" checked={resonancePublic} onChange={(e) => setResonancePublic(e.target.checked)} disabled={pending} className="h-4 w-4 rounded border-border-strong text-primary focus:ring-2 focus:ring-primary/40" />
-          Show this circle&apos;s resonance publicly
-        </label>
+        <Checkbox
+          checked={resonancePublic}
+          onChange={(e) => setResonancePublic(e.target.checked)}
+          disabled={pending}
+          label={<>Show this circle&apos;s resonance publicly</>}
+          wrapperClassName="flex"
+        />
       </div>
 
       <div className="flex items-center gap-3 pt-1 sm:col-span-2">
         <button
           type="submit"
           disabled={pending || !name.trim()}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           <Check className="h-4 w-4" /> {pending ? 'Saving…' : 'Save changes'}
         </button>
@@ -182,7 +183,7 @@ export function CircleSettingsForm({
           type="button"
           onClick={() => setConfirmArchive(true)}
           disabled={archiving || pending}
-          className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-2 text-body-sm font-medium text-danger transition-colors hover:bg-danger-bg/40 disabled:opacity-60"
+          className="mt-2 inline-flex items-center gap-1.5 rounded-control border border-danger/30 px-3 py-2 text-body-sm font-medium text-danger transition-colors hover:bg-danger-bg/40 disabled:opacity-60"
         >
           <Archive className="h-4 w-4" /> Archive this circle
         </button>

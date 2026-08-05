@@ -83,7 +83,7 @@ export default async function NonprofitVerifyPage({
         )}
 
         {showForm && (
-          <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+          <div className="rounded-card border border-border bg-surface p-5 lift-1">
             <VerifyForm slug={slug} readOnly={staffViewing} />
           </div>
         )}
@@ -106,7 +106,7 @@ function StatusCard({
   const ui = STATUS_UI[status]
   const Icon = ui.icon
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+    <div className="rounded-card border border-border bg-surface p-5 lift-1">
       <div className="flex items-start gap-3">
         <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${ui.tone}`} aria-hidden />
         <div className="min-w-0 space-y-1">

@@ -384,7 +384,7 @@ function FeedListSkeleton() {
   return (
     <div className="space-y-4" aria-hidden>
       {[0, 1, 2].map((i) => (
-        <div key={i} className="rounded-2xl border border-border bg-surface p-4">
+        <div key={i} className="rounded-card border border-border bg-surface p-4">
           <div className="mb-3 flex items-center gap-3">
             <div className="h-9 w-9 rounded-pill bg-surface-elevated animate-pulse" />
             <div className="h-3 w-32 rounded bg-surface-elevated animate-pulse" />

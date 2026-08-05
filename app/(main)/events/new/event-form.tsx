@@ -562,7 +562,7 @@ export function EventForm({
                       key={value}
                       onClick={() => setRecurrenceType(value)}
                       disabled={isPending}
-                      className={`rounded-lg border px-3 py-2 text-left transition-colors ${
+                      className={`rounded-control border px-3 py-2 text-left transition-colors ${
                         active
                           ? 'border-primary bg-primary-bg ring-2 ring-primary/30'
                           : 'border-border bg-surface hover:border-border-strong'
@@ -616,7 +616,7 @@ export function EventForm({
                   key={value}
                   onClick={() => setAttendanceMode(value)}
                   disabled={isPending}
-                  className={`rounded-lg border px-3 py-2 text-center text-body-sm font-medium transition-colors ${
+                  className={`rounded-control border px-3 py-2 text-center text-body-sm font-medium transition-colors ${
                     active
                       ? 'border-primary bg-primary-bg text-primary-strong ring-2 ring-primary/30'
                       : 'border-border bg-surface text-text hover:border-border-strong'
@@ -888,7 +888,7 @@ export function EventForm({
                     key={value}
                     onClick={() => setPriceMode(value)}
                     disabled={isPending}
-                    className={`rounded-lg border px-3 py-2 text-center text-body-sm font-medium transition-colors ${
+                    className={`rounded-control border px-3 py-2 text-center text-body-sm font-medium transition-colors ${
                       active
                         ? 'border-primary bg-primary-bg text-primary-strong ring-2 ring-primary/30'
                         : 'border-border bg-surface text-text hover:border-border-strong'
@@ -1004,7 +1004,7 @@ export function EventForm({
         <button
           type="submit"
           disabled={!title.trim() || !scopeId || !startsAt || !!recurrenceError || isPending}
-          className="rounded-lg bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-control bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isPending ? (isEdit ? 'Saving…' : 'Creating…') : isEdit ? 'Save changes' : 'Create Event'}
         </button>

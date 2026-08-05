@@ -3,7 +3,8 @@
 import { useState, useTransition } from 'react'
 import { CHANNEL_CATEGORIES } from '@/lib/channels/categories'
 import { Plus, Radio } from 'lucide-react'
-import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
+import { CreateModal, cmLabel } from '@/components/create-modal'
+import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { createTopicalChannel } from './actions'
 
@@ -97,14 +98,13 @@ export function NewChannelCompose({
 
           <div>
             <label htmlFor="ch-name" className={cmLabel}>Name</label>
-            <input
+            <Input
               id="ch-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Breathwork"
               maxLength={80}
-              className={cmInput}
               required
             />
           </div>
@@ -150,14 +150,13 @@ export function NewChannelCompose({
             <label htmlFor="ch-description" className={cmLabel}>
               Description <span className="text-subtle font-normal">(optional)</span>
             </label>
-            <textarea
+            <Textarea
               id="ch-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What is this channel about? Who is it for?"
               rows={3}
               maxLength={240}
-              className={cmInput}
             />
           </div>
         </div>

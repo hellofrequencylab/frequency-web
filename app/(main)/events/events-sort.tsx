@@ -59,7 +59,7 @@ export function EventsSort({ options, defaultValue = 'date' }: { options: SortOp
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-meta font-medium transition-colors ${
+        className={`inline-flex items-center gap-1.5 rounded-control border px-2.5 py-1 text-meta font-medium transition-colors ${
           active
             ? 'border-primary bg-primary-bg text-primary-strong'
             : 'border-border bg-surface text-muted hover:border-primary'
@@ -82,7 +82,7 @@ export function EventsSort({ options, defaultValue = 'date' }: { options: SortOp
                 key={o.value}
                 type="button"
                 onClick={() => choose(o.value)}
-                className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-meta transition-colors hover:bg-surface-elevated ${
+                className={`flex w-full items-center justify-between gap-2 rounded-control px-2.5 py-1.5 text-left text-meta transition-colors hover:bg-surface-elevated ${
                   isSel ? 'font-semibold text-primary-strong' : 'text-text'
                 }`}
               >

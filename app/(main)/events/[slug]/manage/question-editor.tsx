@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Plus, Pencil, Trash2, GripVertical } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input, Textarea, Label } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -72,7 +73,7 @@ export function QuestionEditor({
         />
       ) : (
         <>
-          <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+          <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
             {questions.map((q) => (
               <li key={q.id} className="flex items-start gap-3 px-4 py-3">
                 <GripVertical className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
@@ -93,7 +94,7 @@ export function QuestionEditor({
                     type="button"
                     onClick={() => setEditing(q)}
                     aria-label="Edit question"
-                    className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+                    className="rounded-control p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
@@ -102,7 +103,7 @@ export function QuestionEditor({
                     onClick={() => onDelete(q)}
                     disabled={pending}
                     aria-label="Remove question"
-                    className="rounded-lg p-1.5 text-subtle transition-colors hover:text-danger disabled:opacity-40"
+                    className="rounded-control p-1.5 text-subtle transition-colors hover:text-danger disabled:opacity-40"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -159,7 +160,7 @@ function QuestionDialog({
     <Dialog open onClose={onClose} className="max-w-lg" ariaLabel={isEdit ? 'Edit question' : 'Add question'}>
       <form
         action={onSubmit}
-        className="rounded-2xl border border-border bg-surface p-5 lift-3"
+        className="rounded-card border border-border bg-surface p-5 lift-3"
       >
         <h3 className="mb-4 text-body font-bold text-text">
           {isEdit ? 'Edit question' : 'Add a question'}
@@ -212,15 +213,12 @@ function QuestionDialog({
             </div>
           )}
 
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              name="required"
-              defaultChecked={question?.required ?? false}
-              className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
-            />
-            <span className="text-body-sm text-text">Require an answer to RSVP</span>
-          </label>
+          <Checkbox
+            name="required"
+            defaultChecked={question?.required ?? false}
+            label="Require an answer to RSVP"
+            wrapperClassName="flex"
+          />
         </div>
 
         <div className="mt-5 flex items-center justify-end gap-2">
