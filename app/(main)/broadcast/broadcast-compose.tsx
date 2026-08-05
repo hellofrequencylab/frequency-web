@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Plus, Megaphone } from 'lucide-react'
 import { createAndPublishDispatch } from './actions'
 import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
+import { Select } from '@/components/ui/select'
 
 type DispatchType = 'post' | 'poll' | 'challenge' | 'article'
 const TYPE_LABELS: Record<DispatchType, string> = {
@@ -148,32 +149,32 @@ export function BroadcastCompose({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className={cmLabel}>Send to</label>
-            <select
+            <label className={cmLabel} htmlFor="broadcast-scope">Send to</label>
+            <Select
+              id="broadcast-scope"
               value={scope}
               onChange={e => { setScope(e.target.value as Scope); setAudId('') }}
               disabled={isPending}
-              className={cmInput}
             >
               {circles.length > 0 && <option value="circle">Circle</option>}
               {hubs.length > 0 && <option value="hub">Hub</option>}
               {nexuses.length > 0 && <option value="nexus">Nexus</option>}
               {canGlobal && <option value="global">Everyone (Global)</option>}
-            </select>
+            </Select>
           </div>
           {scope !== 'global' ? (
             <div>
-              <label className={cmLabel}>Which {scope}</label>
-              <select
+              <label className={cmLabel} htmlFor="broadcast-audience">Which {scope}</label>
+              <Select
+                id="broadcast-audience"
                 value={audId}
                 onChange={e => setAudId(e.target.value)}
                 required
                 disabled={isPending}
-                className={cmInput}
+                emptyLabel="- Select -"
               >
-                <option value="">- Select -</option>
                 {audienceOptions.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
+              </Select>
             </div>
           ) : (
             <div className="flex items-end">

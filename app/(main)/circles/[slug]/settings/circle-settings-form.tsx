@@ -8,6 +8,7 @@ import { archiveCircle, updateCircleSettings } from '@/app/(main)/admin/actions'
 import { uploadCircleCover, removeCircleCover } from '@/app/(main)/circles/admin-actions'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { InlineCover } from '@/components/admin/inline/inline-cover'
+import { Select } from '@/components/ui/select'
 
 export interface CircleSettingsInitial {
   name: string
@@ -98,11 +99,17 @@ export function CircleSettingsForm({
       </div>
 
       <div>
-        <label className={lbl}>Type</label>
-        <select value={type} onChange={(e) => setType(e.target.value)} disabled={pending} className={input}>
-          <option value="in-person">In-person</option>
-          <option value="online">Online</option>
-        </select>
+        <label className={lbl} htmlFor="circle-type">Type</label>
+        <Select
+          id="circle-type"
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          disabled={pending}
+          options={[
+            { value: 'in-person', label: 'In-person' },
+            { value: 'online', label: 'Online' },
+          ]}
+        />
       </div>
 
       <div>

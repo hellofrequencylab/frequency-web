@@ -12,7 +12,8 @@ import {
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
-import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { attachEventToCircleAction } from './events-actions'
 
 // The circle Manage hub's EVENTS area (the Channel hub's sections.tsx pattern, ADR-870): an async
@@ -196,7 +197,7 @@ export async function CircleEventsSection({
         <form action={attachEventToCircleAction.bind(null, circleId, slug)} className="space-y-3">
           <label className="block space-y-1">
             <span className={labelClasses}>Event</span>
-            <select name="eventId" required className={fieldClasses} defaultValue="">
+            <Select name="eventId" required defaultValue="">
               <option value="" disabled>
                 Pick an event
               </option>
@@ -206,7 +207,7 @@ export async function CircleEventsSection({
                   {e.starts_at ? ` · ${fmtWhen(e.starts_at)}` : ''}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <Button type="submit" size="sm">
             Add to circle

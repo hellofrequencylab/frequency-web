@@ -9,6 +9,7 @@ import {
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { DetailTemplate } from '@/components/templates'
+import { Select } from '@/components/ui/select'
 import { normalizeTag, hasAnyDetails } from '@/lib/connections/normalize'
 import { DetailsEditor, DetailsView } from '@/components/connections/contact-details-fields'
 import { UpsellTease } from '@/components/upsell/upsell-tease'
@@ -163,17 +164,19 @@ export function Detail({
       }
       badges={
         <span className="inline-flex items-center gap-1.5">
-          <select
+          <Select
             value={contact.status}
             disabled={pending}
             onChange={(e) => start(async () => { await setStatus(contact.id, e.target.value as ContactStatus); router.refresh() })}
-            className="rounded-lg border border-border-strong bg-surface px-2 py-1 text-meta text-text focus:outline-none"
+            className="text-meta"
+            wrapperClassName="inline-block w-max max-w-full"
             aria-label="Status"
-          >
-            <option value="new">New</option>
-            <option value="active">Active</option>
-            <option value="archived">Archived</option>
-          </select>
+            options={[
+              { value: 'new', label: 'New' },
+              { value: 'active', label: 'Active' },
+              { value: 'archived', label: 'Archived' },
+            ]}
+          />
           {/* At-a-glance visibility; the actionable toggle + helper live in the Sharing section below. */}
           <span className="inline-flex items-center gap-1 rounded-lg border border-border-strong px-2 py-1 text-meta font-medium text-muted">
             {contact.visibility === 'network' ? (

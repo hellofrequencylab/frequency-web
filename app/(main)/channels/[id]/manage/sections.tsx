@@ -14,6 +14,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { StatCard } from '@/components/ui/stat-card'
 import { Button } from '@/components/ui/button'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import {
   loadChannelHomeStats,
   loadTunedInMembers,
@@ -234,7 +235,7 @@ export async function CirclesSection({
         <form action={addChannelCircleAction.bind(null, channelId, idOrSlug)} className="space-y-3">
           <label className="block space-y-1">
             <span className={labelClasses}>Circle</span>
-            <select name="circleId" required className={fieldClasses} defaultValue="">
+            <Select name="circleId" required defaultValue="">
               <option value="" disabled>
                 Pick a Circle
               </option>
@@ -244,7 +245,7 @@ export async function CirclesSection({
                   {c.city ? ` (${c.city})` : ''} · {c.memberCount} members
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <Button type="submit" size="sm">
             Add to Channel
@@ -405,7 +406,7 @@ export async function ProgramSection({
           >
             <label className="block space-y-1">
               <span className={labelClasses}>Space</span>
-              <select name="spaceId" required className={fieldClasses} defaultValue="">
+              <Select name="spaceId" required defaultValue="">
                 <option value="" disabled>
                   Pick a Space
                 </option>
@@ -414,7 +415,7 @@ export async function ProgramSection({
                     {s.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <Button type="submit" size="sm">
               Assign owner Space
@@ -447,7 +448,7 @@ export async function ProgramSection({
             <input type="hidden" name="source" value="circle" />
             <label className="block space-y-1">
               <span className={labelClasses}>Circle</span>
-              <select name="circleId" required className={fieldClasses} defaultValue="">
+              <Select name="circleId" required defaultValue="">
                 <option value="" disabled>
                   Pick a Circle
                 </option>
@@ -457,7 +458,7 @@ export async function ProgramSection({
                     {c.city ? ` (${c.city})` : ''} · {c.memberCount} members
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <Button type="submit" size="sm">
               Attach blueprint
@@ -475,7 +476,7 @@ export async function ProgramSection({
             <input type="hidden" name="source" value="starter" />
             <label className="block space-y-1">
               <span className={labelClasses}>Starter Circle</span>
-              <select name="templateId" required className={fieldClasses} defaultValue="">
+              <Select name="templateId" required defaultValue="">
                 <option value="" disabled>
                   Pick a Starter
                 </option>
@@ -485,7 +486,7 @@ export async function ProgramSection({
                     {t.oneLiner ? ` · ${t.oneLiner}` : ''}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <Button type="submit" size="sm">
               Attach blueprint
@@ -546,7 +547,7 @@ export async function ProgramSection({
         >
           <label className="block space-y-1">
             <span className={labelClasses}>Source Circle</span>
-            <select name="sourceCircleId" required className={fieldClasses} defaultValue="">
+            <Select name="sourceCircleId" required defaultValue="">
               <option value="" disabled>
                 Pick a Circle
               </option>
@@ -556,7 +557,7 @@ export async function ProgramSection({
                   {c.city ? ` (${c.city})` : ''} · {c.memberCount} members
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <Button type="submit" variant="secondary" size="sm">
             Refresh blueprint

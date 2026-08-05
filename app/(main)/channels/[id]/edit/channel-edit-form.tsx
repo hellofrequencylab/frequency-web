@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, Users, Circle as CircleIcon, Radio } from 'lucide-react'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { InlineCover } from '@/components/admin/inline/inline-cover'
 import { DangerDelete } from '@/components/admin/danger-delete'
@@ -159,7 +160,7 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
             label="Category"
             hint="Sets the icon on the Channel page and its directory card."
           >
-            <select name="category" defaultValue={channel.category} className={input}>
+            <Select name="category" defaultValue={channel.category}>
               {offList && (
                 <option value={channel.category}>{channel.category} (not a standard category)</option>
               )}
@@ -168,21 +169,20 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
                   {c.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </FieldBlock>
 
           <FieldBlock
             label="Pillar"
             hint="The Pillar this Channel groups under in the directory. It also shows as a chip on the Channel page."
           >
-            <select name="pillar_id" defaultValue={channel.pillar_id ?? ''} className={input}>
-              <option value="">No Pillar</option>
+            <Select name="pillar_id" defaultValue={channel.pillar_id ?? ''} emptyLabel="No Pillar">
               {pillars.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </FieldBlock>
 
           <FieldBlock
@@ -204,10 +204,14 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
             label="Visibility"
             hint="Archived: the Channel page is hidden and it leaves the directory. Circles keep everything they have. Set it back to Live to bring it back."
           >
-            <select name="is_active" defaultValue={channel.is_active ? 'on' : 'off'} className={input}>
-              <option value="on">Live (listed in the Channels directory)</option>
-              <option value="off">Archived (hidden)</option>
-            </select>
+            <Select
+              name="is_active"
+              defaultValue={channel.is_active ? 'on' : 'off'}
+              options={[
+                { value: 'on', label: 'Live (listed in the Channels directory)' },
+                { value: 'off', label: 'Archived (hidden)' },
+              ]}
+            />
           </FieldBlock>
         </section>
 

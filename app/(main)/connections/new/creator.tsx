@@ -8,6 +8,7 @@ import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { squareCropRect, dedupeTags, normalizeTag, hasAnyDetails } from '@/lib/connections/normalize'
 import { deskewCardCanvas } from '@/lib/connections/deskew'
 import { DetailsEditor } from '@/components/connections/contact-details-fields'
+import { Select } from '@/components/ui/select'
 import type { ExtractedContact, ContactDetails, ContactSource, Visibility } from '@/lib/connections/types'
 import { scanCard, veraAssist, createProfile } from '../actions'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
@@ -775,11 +776,16 @@ export function Creator({ userId }: { userId: string }) {
           </Field>
 
           {/* Visibility */}
-          <Field label="Visibility">
-            <select className={input} value={form.visibility} onChange={(e) => set('visibility', e.target.value as Visibility)}>
-              <option value="private">Private (only you)</option>
-              <option value="network">Network (visible to stewards)</option>
-            </select>
+          <Field label="Visibility" htmlFor="contact-visibility">
+            <Select
+              id="contact-visibility"
+              value={form.visibility}
+              onChange={(e) => set('visibility', e.target.value as Visibility)}
+              options={[
+                { value: 'private', label: 'Private (only you)' },
+                { value: 'network', label: 'Network (visible to stewards)' },
+              ]}
+            />
           </Field>
 
           {/* One-time intro invite — shown only when there's an email */}
@@ -875,10 +881,22 @@ function TabBtn({ active, onClick, icon: Icon, label }: { active: boolean; onCli
   )
 }
 
-function Field({ label, className = '', children }: { label: string; className?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  htmlFor,
+  className = '',
+  children,
+}: {
+  label: string
+  /** Id of the control inside. Pass it (and the same id on the control) so the label is
+   *  programmatically associated, not just visually adjacent. */
+  htmlFor?: string
+  className?: string
+  children: React.ReactNode
+}) {
   return (
     <div className={className}>
-      <label className={lbl}>{label}</label>
+      <label className={lbl} htmlFor={htmlFor}>{label}</label>
       {children}
     </div>
   )

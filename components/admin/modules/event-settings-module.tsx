@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { ImagePlus } from 'lucide-react'
-import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Input, Textarea, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RailSaveRow } from '@/components/admin/rail/rail-autosave-form'
@@ -72,7 +72,6 @@ const EventLocationPicker = dynamic(() => import('@/components/events/event-loca
 
 type EventData = NonNullable<Awaited<ReturnType<typeof getEventAdminData>>>
 
-const input = fieldClasses
 const fieldLabel = labelClasses
 
 const RECURRENCE_OPTIONS = [
@@ -380,11 +379,11 @@ export function EventSettingsModule() {
         <div className="grid grid-cols-3 gap-3">
           <label className="col-span-2 block min-w-0 space-y-1.5">
             <span className={fieldLabel}>Title</span>
-            <input name="title" defaultValue={data.title} required className={`${input} min-w-0`} />
+            <Input name="title" defaultValue={data.title} required className="min-w-0" />
           </label>
           <label className="block min-w-0 space-y-1.5">
             <span className={fieldLabel}>Capacity</span>
-            <input name="capacity" type="number" min={1} defaultValue={data.capacity ?? ''} placeholder="Any" className={`${input} min-w-0`} />
+            <Input name="capacity" type="number" min={1} defaultValue={data.capacity ?? ''} placeholder="Any" className="min-w-0" />
           </label>
         </div>
 
@@ -421,18 +420,18 @@ export function EventSettingsModule() {
         {/* DESCRIPTION */}
         <label className="block space-y-1.5">
           <span className={fieldLabel}>Description</span>
-          <textarea name="description" defaultValue={data.description ?? ''} rows={4} className={`${input} resize-none`} />
+          <Textarea name="description" defaultValue={data.description ?? ''} rows={4} className="resize-none" />
         </label>
 
         {/* WHEN + WHO — starts / ends / who can see. */}
         <div className="grid grid-cols-3 gap-2">
           <label className="block min-w-0 space-y-1.5">
             <span className={fieldLabel}>Starts</span>
-            <input name="starts_at" type="datetime-local" defaultValue={isoToWallClockInput(data.starts_at)} required className={`${input} min-w-0 px-2`} />
+            <Input name="starts_at" type="datetime-local" defaultValue={isoToWallClockInput(data.starts_at)} required className="min-w-0 px-2" />
           </label>
           <label className="block min-w-0 space-y-1.5">
             <span className={fieldLabel}>Ends</span>
-            <input name="ends_at" type="datetime-local" defaultValue={isoToWallClockInput(data.ends_at)} className={`${input} min-w-0 px-2`} />
+            <Input name="ends_at" type="datetime-local" defaultValue={isoToWallClockInput(data.ends_at)} className="min-w-0 px-2" />
           </label>
           <label className="block min-w-0 space-y-1.5">
             <span className={fieldLabel}>Who can see this</span>
@@ -539,7 +538,7 @@ export function EventSettingsModule() {
             <span className={fieldLabel}>
               Repeat until <span className="font-normal text-subtle">(leave blank to repeat indefinitely)</span>
             </span>
-            <input name="recurrence_until" type="date" defaultValue={isoToDateInput(data.recurrence_until)} className={`${input} px-2`} />
+            <Input name="recurrence_until" type="date" defaultValue={isoToDateInput(data.recurrence_until)} className="px-2" />
           </label>
         )}
 
@@ -547,7 +546,7 @@ export function EventSettingsModule() {
         {mode !== 'in_person' && (
           <label className="block space-y-1.5">
             <span className={fieldLabel}>Join link</span>
-            <input name="online_url" type="url" defaultValue={data.online_url ?? ''} placeholder="https://…" className={input} />
+            <Input name="online_url" type="url" defaultValue={data.online_url ?? ''} placeholder="https://…" />
           </label>
         )}
 
@@ -559,11 +558,11 @@ export function EventSettingsModule() {
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <label className="block min-w-0 space-y-1.5">
               <span className={fieldLabel}>RSVPs open</span>
-              <input name="rsvp_opens_at" type="datetime-local" defaultValue={isoToWallClockInput(data.rsvpOpensAt)} className={`${input} min-w-0 px-2`} />
+              <Input name="rsvp_opens_at" type="datetime-local" defaultValue={isoToWallClockInput(data.rsvpOpensAt)} className="min-w-0 px-2" />
             </label>
             <label className="block min-w-0 space-y-1.5">
               <span className={fieldLabel}>RSVPs close</span>
-              <input name="rsvp_closes_at" type="datetime-local" defaultValue={isoToWallClockInput(data.rsvpClosesAt)} className={`${input} min-w-0 px-2`} />
+              <Input name="rsvp_closes_at" type="datetime-local" defaultValue={isoToWallClockInput(data.rsvpClosesAt)} className="min-w-0 px-2" />
             </label>
           </div>
         </div>
@@ -582,12 +581,11 @@ export function EventSettingsModule() {
                   independent of the map pick. */}
               <label className="block space-y-1.5">
                 <span className={fieldLabel}>Venue name</span>
-                <input
+                <Input
                   name="venue_name"
                   value={venueName}
                   onChange={(e) => setVenueName(e.target.value)}
                   placeholder="e.g. Torus Co."
-                  className={input}
                 />
               </label>
 
@@ -601,14 +599,14 @@ export function EventSettingsModule() {
               </div>
 
               {/* The full address — filled by a pick, editable by hand. */}
-              <input name="street" value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Street address" className={input} />
+              <Input name="street" value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Street address" />
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <input name="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className={`${input} min-w-0`} />
-                <input name="region" value={region} onChange={(e) => setRegion(e.target.value)} placeholder="State or province" className={`${input} min-w-0`} />
+                <Input name="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className="min-w-0" />
+                <Input name="region" value={region} onChange={(e) => setRegion(e.target.value)} placeholder="State or province" className="min-w-0" />
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <input name="postal_code" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="Postal code" className={`${input} min-w-0`} />
-                <input name="country" value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country" className={`${input} min-w-0`} />
+                <Input name="postal_code" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="Postal code" className="min-w-0" />
+                <Input name="country" value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country" className="min-w-0" />
               </div>
 
               {/* Hidden address (ADR-825). A controlled HIDDEN input ('on'/'off') so the field is
