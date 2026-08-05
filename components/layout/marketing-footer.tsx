@@ -1,8 +1,8 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import { MARKETING_NAV, ORG_LEGAL_NAME, CONTACT_EMAIL } from '@/lib/site'
 import { effectiveMode } from '@/components/layout/menu-role'
 import type { ResolvedMenu } from '@/lib/menus/types'
+import { Wordmark } from '@/components/layout/wordmark'
 
 // The footer's nav links, resolved for the PUBLIC visitor. Source of truth is the
 // DB-backed `marketing_footer` menu (lib/menus) when provided: a flat list of rootItems,
@@ -34,7 +34,7 @@ export function MarketingFooter({ menu }: { menu?: ResolvedMenu }) {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-8">
           {/* Brand */}
           <div className="max-w-xs">
-            <Image src="/frequency-logo.png" alt="Frequency" width={963} height={170} className="h-6 w-auto opacity-50 mb-3" />
+            <Wordmark className="h-6 w-auto opacity-50 mb-3" />
             <p className="text-body-sm text-muted leading-relaxed">
               Frequency is a Community Collective for real-world connection. Find local Circles and Events
               near you, keep a private book of the Contacts you meet, and stay in touch. Not home,

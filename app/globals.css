@@ -1899,8 +1899,11 @@ h1, h2, h3, h4, h5, h6 {
   background-repeat: no-repeat;
   background-size: 240% 100%;
   background-position: 240% 0;
-  -webkit-mask: url('/frequency-logo.png') left center / contain no-repeat;
-          mask: url('/frequency-logo.png') left center / contain no-repeat;
+  /* The WORDMARK crop, not the full logo: the original had the retired tagline baked in, and
+     this mask painted it onto the in-app header. The aspect ratio in
+     components/layout/brand-mark.tsx must match this asset (963x130). */
+  -webkit-mask: url('/frequency-wordmark.png') left center / contain no-repeat;
+          mask: url('/frequency-wordmark.png') left center / contain no-repeat;
   opacity: 0.9;
   /* Light/rest state = raised EMBOSS: a catch-light on the top edge, a soft
      shadow beneath, so the wordmark reads as pressed UP out of the surface. */

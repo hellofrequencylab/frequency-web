@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 import { PrimaryNav } from '@/components/layout/primary-nav'
 import { MarketingMobileMenu } from '@/components/layout/marketing-mobile-menu'
 import type { MenuSettings, ResolvedMenu } from '@/lib/menus/types'
+import { Wordmark } from '@/components/layout/wordmark'
 // NOTE: @/lib/supabase/client is deliberately NOT imported here. See the effect below.
 
 // Public marketing header. No search box (that's for the community app). When
@@ -112,13 +112,7 @@ export function MarketingHeader({
 
       {/* Logo — into the app when signed in, to the splash when not. */}
       <Link href={authed ? '/feed' : '/'} className="shrink-0">
-        <Image
-          src="/frequency-logo.png"
-          alt="Frequency"
-          width={963}
-          height={170}
-          className={`h-7 w-auto ${light ? 'dark:invert' : 'invert drop-shadow-md'}`}
-        />
+        <Wordmark className={`h-7 w-auto ${light ? 'dark:invert' : 'invert drop-shadow-md'}`} priority />
       </Link>
 
       {/* Header mega-menu (Discover + Explore dropdowns, from the `header` surface) */}

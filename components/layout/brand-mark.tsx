@@ -1,7 +1,8 @@
 import Link from 'next/link'
+import { safeImageSrc } from '@/lib/safe-image-src'
 
 // The in-app header wordmark. By DEFAULT renders the Frequency logo as an engraved,
-// warm dark-sandy-brown fill (the PNG is an alpha mask) that lightly fades at rest,
+// warm dark-sandy-brown fill (the wordmark PNG is an alpha mask) that lightly fades at rest,
 // brightens on hover, and presses deeper on click (look + interaction live in
 // `.brandmark` / `.brandmark-link`, app/globals.css). When the active Space sets a
 // brand (a logo URL and/or a display name), that brand leads the header in place of
@@ -21,11 +22,15 @@ export function BrandMark({
 }) {
   const linkClass = `brandmark-link group flex items-center pl-3.5 pr-2 md:px-5 ${className}`
 
-  if (logoUrl) {
+  // Guarded: this is an operator-supplied URL out of a DB column reaching an <img src> sink,
+  // which is the exact shape lib/safe-image-src.ts exists for. A rejected URL falls through to
+  // the name (or the engraved wordmark) rather than painting a broken image in the header.
+  const brandLogo = safeImageSrc(logoUrl)
+  if (brandLogo) {
     return (
       <Link href="/feed" aria-label={`${name ?? 'Home'}, home feed`} className={linkClass}>
         {/* eslint-disable-next-line @next/next/no-img-element -- operator-supplied Space logo URL, not a build-time asset */}
-        <img src={logoUrl} alt={name ?? ''} className="h-[22px] md:h-8 w-auto max-w-[160px] object-contain" />
+        <img src={brandLogo} alt={name ?? ''} className="h-[22px] md:h-8 w-auto max-w-[160px] object-contain" />
       </Link>
     )
   }
@@ -42,7 +47,7 @@ export function BrandMark({
 
   return (
     <Link href="/feed" aria-label="Frequency, home feed" className={linkClass}>
-      <span className="brandmark h-[22px] md:h-8 aspect-[963/170]" aria-hidden />
+      <span className="brandmark h-[22px] md:h-8 aspect-[963/130]" aria-hidden />
     </Link>
   )
 }

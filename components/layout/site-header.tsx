@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import { Search } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { UserMenu, AuthButtons, type UserMenuProfile } from './user-menu'
@@ -8,6 +7,7 @@ import { ViewerAuthSlot, ViewerLink, ViewerPrimaryNav } from './viewer-chrome'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import { viewerRoleFor } from '@/components/layout/menu-role'
 import { asWebRole, type CommunityRole } from '@/lib/core/roles'
+import { Wordmark } from '@/components/layout/wordmark'
 
 // ── Public site header ────────────────────────────────────────────────────────
 // Used on the landing page and any future public-facing pages.
@@ -130,23 +130,11 @@ export async function SiteHeader({ profile: profileProp, variant = 'light', auth
       {/* Logo */}
       {clientAuth ? (
         <ViewerLink anonHref="/" authHref="/feed" className="shrink-0">
-          <Image
-            src="/frequency-logo.png"
-            alt="Frequency"
-            width={963}
-            height={170}
-            className={`h-7 w-auto ${isDark ? 'invert' : 'dark:invert'}`}
-          />
+          <Wordmark className={`h-7 w-auto ${isDark ? 'invert' : 'dark:invert'}`} priority />
         </ViewerLink>
       ) : (
         <Link href={isAuth ? '/feed' : '/'} className="shrink-0">
-          <Image
-            src="/frequency-logo.png"
-            alt="Frequency"
-            width={963}
-            height={170}
-            className={`h-7 w-auto ${isDark ? 'invert' : 'dark:invert'}`}
-          />
+          <Wordmark className={`h-7 w-auto ${isDark ? 'invert' : 'dark:invert'}`} priority />
         </Link>
       )}
 

@@ -58,6 +58,7 @@ import type {
 import { effectiveMode, canSeeMenuItem, flattenCategoryTree, type MenuViewer } from '@/components/layout/menu-role'
 import { GhostLink } from '@/components/layout/ghost-link'
 import { BrandMark } from '@/components/layout/brand-mark'
+import { Wordmark } from '@/components/layout/wordmark'
 import { MemberFooter } from '@/components/layout/member-footer'
 import { SiteAlertBar } from '@/components/layout/site-alert-bar'
 import { AREA_ICONS, railIconFor } from '@/components/layout/nav-icons'
@@ -1161,7 +1162,7 @@ function MobileLeftDrawer({
             (marketing-mobile-menu, search-overlay, loom-picker, capture-launcher) does this. */}
         <div className="shrink-0 flex items-center px-4 border-b border-border h-14 box-content pt-[env(safe-area-inset-top)]">
           <Link href="/feed" onClick={onClose} className="flex items-center">
-            <Image src="/frequency-logo.png" alt="Frequency" width={963} height={170} className="h-7 w-auto dark:invert" />
+            <Wordmark className="h-7 w-auto dark:invert" priority />
           </Link>
         </div>
 
