@@ -31,6 +31,8 @@
      2026-08-03; currently only adopted where the shell opts in. */
   --color-chrome:            #F2EFE8;
   --color-chrome-border:     #E5E0D6;
+  /* Light: surface. `surface-elevated` sits 3/255 from chrome here, so the rail shipped with no visible hover. */
+  --color-chrome-hover:      #FFFFFF;
 
   /* Borders */
   --color-border:           #EAE6DE;
@@ -347,6 +349,8 @@
   --color-surface-post:      #F7F5F0;
   --color-chrome:            #F2EFE8;
   --color-chrome-border:     #E5E0D6;
+  /* The lock mirrors :root. */
+  --color-chrome-hover:      #FFFFFF;
   --color-border:            #EAE6DE;
   --color-border-strong:     #D9D3C8;
   --color-text:              #3D352A;
@@ -447,6 +451,8 @@
   /* Chrome band, cool side. */
   --color-chrome:            #E8ECF3;
   --color-chrome-border:     #D2D8E4;
+  /* Midnight light: surface, Δ23/19/12 against its cooler chrome. */
+  --color-chrome-hover:      #FFFFFF;
 
   /* Borders — cool grey-blue hairlines. */
   --color-border:            #D5DBE6;
@@ -489,6 +495,8 @@
   /* Chrome band, dark timber side. */
   --color-chrome:           #1C1710;
   --color-chrome-border:    #33291A;
+  /* Dark INVERTS the light answer: surface is 5/255 from chrome here, surface-elevated is a readable 15. */
+  --color-chrome-hover:      #2B2415;
 
   --color-border:           #3C3220;
   --color-border-strong:    #50432B;
@@ -576,6 +584,8 @@
   /* Chrome band, deep cool side. */
   --color-chrome:           #111721;
   --color-chrome-border:    #232D3D;
+  /* Midnight dark: same inversion, Δ14/16/21. */
+  --color-chrome-hover:      #1F2736;
 
   /* Borders — cool slate. */
   --color-border:           #2A3445;
@@ -1068,6 +1078,7 @@
   --color-surface-post:     var(--color-surface-post);
   --color-chrome:           var(--color-chrome);
   --color-chrome-border:    var(--color-chrome-border);
+  --color-chrome-hover:     var(--color-chrome-hover);
 
   --color-border:           var(--color-border);
   --color-border-strong:    var(--color-border-strong);

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Users, Plus } from 'lucide-react'
+import { Meter } from '@/components/ui/meter'
 import type { SeatUsage } from '@/lib/spaces/seats'
 
 // SEAT COUNTER (Pricing ladder Phase D, ADR-465). A compact "X of Y seats used" line for the members
@@ -29,7 +30,7 @@ export function SeatCounter({
   const { used, licensed, full } = usage
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-5 py-4 lift-1">
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
         <span
           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
             enforced && full ? 'bg-warning-bg text-warning' : 'bg-surface-elevated text-subtle'
@@ -38,12 +39,13 @@ export function SeatCounter({
         >
           <Users className="h-4 w-4" />
         </span>
-        <div>
-          <p className="text-body-sm font-semibold text-text">
-            <span className="tabular-nums">{used}</span> of{' '}
-            <span className="tabular-nums">{licensed}</span> operator seats used
-          </p>
-          <p className="mt-0.5 text-meta text-muted">
+        <div className="min-w-0 flex-1">
+          {/* THE CAP METER, THROUGH THE KIT. A licensed seat allowance is exactly what Meter is for
+              (DAWN: a Space shows the room it has left, teal with room, amber from 80%, danger only
+              AT the cap), and the hand-rolled line here was the third spelling of the same idea.
+              The reading is unchanged word for word: "3 of 5 operator seats used". */}
+          <Meter used={used} cap={licensed} label="Operator seats" unit="operator seats used" />
+          <p className="mt-1.5 text-meta text-muted">
             {enforced ? (
               full ? (
                 <>

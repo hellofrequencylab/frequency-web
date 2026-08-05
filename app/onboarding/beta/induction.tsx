@@ -508,7 +508,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   const backLink = 'text-body-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline'
   // Primary action — the shared Wizard button (app register), used across the beats.
   const btnPrimary = wizardPrimaryClass
-  const eyebrow = 'text-body-sm font-semibold uppercase tracking-[0.25em] text-primary'
+  const eyebrow = 'text-body-sm font-semibold uppercase tracking-eyebrow text-primary'
   const heading = 'font-display uppercase leading-[1.0] text-text'
 
   const slide = reel[reelIndex]
@@ -637,7 +637,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                     funnel). GENERAL funnel: the multi-select persona fork, exactly as before. */}
                 {hasNicheFeatures ? (
                   <>
-                    <p className="mt-9 text-body-sm font-bold uppercase tracking-[0.25em] text-primary-strong">First off, what are you into?</p>
+                    <p className="mt-9 text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong">First off, what are you into?</p>
                     <p className="mt-1.5 text-body-sm text-muted">Click all that apply.</p>
                     <div className="mx-auto mt-4 grid max-w-2xl gap-3 sm:grid-cols-2">
                       {slide2Features!.map((f, i) => {
@@ -674,7 +674,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                     {/* Persona fork — first, who are you? Pre-selected if they came in
                         through a lead flow; changeable here. Branches the tour reel and
                         is stamped on the member so the site + Vera can tailor later. */}
-                    <p className="mt-9 text-body-sm font-bold uppercase tracking-[0.25em] text-primary-strong">First, who are you?</p>
+                    <p className="mt-9 text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong">First, who are you?</p>
                     <p className="mt-1.5 text-body-sm text-muted">Pick all that fit.</p>
                     <div className="mx-auto mt-4 grid max-w-2xl gap-3 sm:grid-cols-2">
                       {listPersonas().map((p) => {

@@ -93,7 +93,7 @@ export function Eyebrow({ children, ink }: { children: React.ReactNode; ink?: bo
     // bold-scoped rule, so the default look keeps this exact computed style.
     <p
       data-text-role="eyebrow"
-      className={`font-eyebrow text-body-sm font-bold uppercase tracking-[0.25em] mb-4 ${
+      className={`font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow mb-4 ${
         ink ? 'text-primary' : 'text-primary-strong'
       }`}
     >

@@ -145,8 +145,17 @@ export function countEntry(entry, files) {
  * Two numbers are only comparable when their bases match, so the baseline records the basis it
  * was measured under and the gate refuses to compare across a change.
  */
+/** Bumped whenever the CORPUS PREPROCESSING changes, because that changes what every entry is
+ *  measuring just as surely as editing its pattern does — and until 2026-08-05 the fingerprint
+ *  could not see it. `strip-comments@1` is the first: blanking comments moved seven counts
+ *  (literal-radius −41, white-black-literals −52) and raised one, none of it bought by a sweep.
+ *  Folding it into the hash is what makes the gate REFUSE to compare across the change instead
+ *  of silently booking those as wins. */
+const CORPUS_BASIS = 'strip-comments@1'
+
 export function basisFingerprint(entry) {
   const canonical = JSON.stringify({
+    corpus: CORPUS_BASIS,
     mode: entry.mode ?? 'matches',
     patterns: entry.patterns ?? [],
     absent: entry.absent ?? [],
@@ -305,11 +314,38 @@ function walk(dir, exts, out = []) {
   return out
 }
 
+/** Blank out comments so PROSE ABOUT a token stops counting as a USE of it.
+ *
+ *  Hit twice on 2026-08-05, independently: writing `shadow-lg` inside a `//` comment raised
+ *  `shadow-literals` by one, and a comment quoting `text-6xl sm:text-7xl` as the anti-pattern
+ *  raised `literal-display-type` by four. No markup in either case. The mirror image is worse
+ *  than the false rise: a sweep could bank a phantom "win" by deleting a comment. Same defect
+ *  class as check-bridge's first version, which matched a token MENTIONED in a comment a
+ *  thousand lines from the real at-rule.
+ *
+ *  BLANKED, NOT DELETED — every comment character becomes a space and newlines survive.
+ *  `raw-button-bg` is a 500-character proximity window over arbitrary JSX, so deleting text
+ *  would pull unrelated code closer together and silently change what that entry measures.
+ *  Length-preserving substitution keeps every offset, line number and window distance intact,
+ *  which means this change can only ever REMOVE comment matches, never move a real one.
+ *
+ *  Line comments are stripped only when the `//` OPENS the line (optionally indented). A naive
+ *  strip would treat the `//` in `https://example.com` as a comment and blank the rest of that
+ *  line — including any real class beside it — turning a false rise into a false FALL, which is
+ *  the direction a ratchet must never be wrong in. A trailing comment after code on the same
+ *  line still counts; that is the deliberate, safe side of the trade. */
+export function stripComments(text) {
+  const blank = (m) => m.replace(/[^\n]/g, ' ')
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, blank)
+    .replace(/(^|\n)([ \t]*\/\/[^\n]*)/g, (_m, lead, body) => lead + blank(body))
+}
+
 export function loadCorpus(config) {
   return config.roots
     .flatMap((r) => walk(r, config.extensions))
     .sort()
-    .map((path) => ({ path, text: readFileSync(path, 'utf8') }))
+    .map((path) => ({ path, text: stripComments(readFileSync(path, 'utf8')) }))
 }
 
 export function loadConfig(file = BASELINES) {

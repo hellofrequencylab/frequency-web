@@ -5,6 +5,7 @@ import {
   seasonRankStyle,
   type SeasonRank,
 } from '@/lib/season-ranks'
+import { Counter, CounterRow, type CounterTone } from '@/components/ui/counter'
 import type { SeasonBlock, JourneyTrophy } from '@/lib/quest/trophies'
 
 // TrophyCase — the lifetime record beside the resettable seasonal rank.
@@ -92,29 +93,31 @@ function SeasonSummary({
   gemsConverted: number
   challengesCompleted: number
 }) {
-  const stats: { icon: typeof Zap; label: string; value: string }[] = [
-    { icon: Zap, label: 'Season Zaps', value: finalZaps.toLocaleString('en-US') },
-    { icon: Gem, label: 'Gems kept', value: gemsConverted.toLocaleString('en-US') },
-    { icon: Target, label: 'Challenges', value: challengesCompleted.toLocaleString('en-US') },
+  // The stamped summary is three READINGS, which is precisely what Counter is for — and the tone
+  // follows the kind rather than the chrome: Zaps amber, Gems teal (DAWN's counter tone law), the
+  // challenge tally neutral because it is a tally, not a currency. They were all `text-subtle`
+  // glyphs over tabular-but-not-mono numerals before.
+  const stats: { icon: typeof Zap; label: string; value: number; tone: CounterTone }[] = [
+    { icon: Zap, label: 'Season Zaps', value: finalZaps, tone: 'primary' },
+    { icon: Gem, label: 'Gems kept', value: gemsConverted, tone: 'signal' },
+    { icon: Target, label: 'Challenges', value: challengesCompleted, tone: 'neutral' },
   ]
   return (
     <div
-      className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-card bg-surface-elevated/60 px-3.5 py-2.5"
+      className="rounded-card bg-surface-elevated/60 px-3.5 py-2.5"
       style={seasonRankStyle(finalRank)}
     >
-      <span className="flex items-center gap-1.5">
-        <span className="text-2xs font-medium text-muted">Rank reached</span>
-        <span className="rank-badge text-2xs font-bold leading-tight" style={seasonRankStyle(finalRank)}>
-          {RANK_LABELS[finalRank] ?? finalRank}
+      <CounterRow>
+        <span className="inline-flex items-baseline gap-1.5">
+          <span className="text-2xs font-medium text-muted">Rank reached</span>
+          <span className="rank-badge text-2xs font-bold leading-tight" style={seasonRankStyle(finalRank)}>
+            {RANK_LABELS[finalRank] ?? finalRank}
+          </span>
         </span>
-      </span>
-      {stats.map((s) => (
-        <span key={s.label} className="flex items-center gap-1.5 text-text">
-          <s.icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
-          <span className="text-meta font-bold tabular-nums">{s.value}</span>
-          <span className="text-2xs font-medium text-muted">{s.label}</span>
-        </span>
-      ))}
+        {stats.map((s) => (
+          <Counter key={s.label} value={s.value} label={s.label} glyph={s.icon} tone={s.tone} />
+        ))}
+      </CounterRow>
     </div>
   )
 }

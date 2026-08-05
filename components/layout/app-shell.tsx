@@ -444,7 +444,7 @@ function ProfileCard({
       <Link
         key={it.id}
         href={it.href}
-        className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-body-sm font-medium text-text hover:bg-surface-elevated transition-colors"
+        className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-body-sm font-medium text-text hover:bg-chrome-hover transition-colors"
       >
         <Icon className="w-4 h-4 text-muted shrink-0" />
         {it.label}
@@ -508,7 +508,7 @@ function ProfileCard({
           onClick={() => setManualOpen((v) => !v)}
           aria-expanded={open}
           aria-label={open ? 'Collapse profile menu' : 'Expand profile menu'}
-          className="shrink-0 p-1.5 rounded-md text-subtle hover:text-primary-strong hover:bg-surface-elevated transition-colors"
+          className="shrink-0 p-1.5 rounded-md text-subtle hover:text-primary-strong hover:bg-chrome-hover transition-colors"
         >
           <ChevronUp className={`w-4 h-4 transition-transform duration-300 ${open ? '' : 'rotate-180'}`} />
         </button>
@@ -530,7 +530,7 @@ function ProfileCard({
             <ContextSwitcher context={context} available={availableContexts} />
             <Link
               href={profileHref}
-              className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-body-sm font-medium text-text hover:bg-surface-elevated transition-colors"
+              className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-body-sm font-medium text-text hover:bg-chrome-hover transition-colors"
             >
               <User className="w-4 h-4 text-muted shrink-0" />
               View profile
@@ -653,8 +653,8 @@ function AccountDropdown({
 
       {open && (
         // The SYSTEM dock's popover (three-docks law): opens from the top-right corner
-        // toward the interior. rounded-control + shadow-menu (downward-only depth, so it
-        // reads as sliding out from under the chrome band, not floating over it).
+        // toward the interior. `.glass` + `.lift-3` on the cue-pop beat — the shared dock
+        // popover shell, so the system dock and the Vault dock read as one language.
         // The shared dock popover shell: `.glass` + `.lift-3`, arriving on the cue-pop beat.
         // All three docks are supposed to look like one another; this one was flat `bg-surface`
         // with the `shadow-menu` literal, so the system dock read as a different language from
@@ -859,10 +859,10 @@ function NavLinkList({
   const itemClass = (active: boolean, emphasize = false, depth = 0) =>
     `${nestClass(depth)}flex items-center gap-2.5 px-3 py-2 rounded-control text-body-sm transition-colors ${
       emphasize
-        ? `font-bold text-[var(--brand-mark)] ${active ? 'bg-primary-bg' : 'hover:bg-surface-elevated'}`
+        ? `font-bold text-[var(--brand-mark)] ${active ? 'bg-primary-bg' : 'hover:bg-chrome-hover'}`
         : active
           ? 'bg-primary-bg text-primary-strong font-extrabold'
-          : 'text-muted font-semibold hover:bg-surface-elevated hover:text-text'
+          : 'text-muted font-semibold hover:bg-chrome-hover hover:text-text'
     }`
 
   // The group label is an EYEBROW, and eyebrows are tracked at 0.18em (`--tracking-eyebrow`).
@@ -953,7 +953,7 @@ function NavLinkList({
                     aria-label={label}
                     title={label}
                     className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${
-                      active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'
+                      active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-chrome-hover hover:text-text'
                     }`}
                   >
                     <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
@@ -1004,8 +1004,8 @@ function NavLinkList({
                     active
                       ? 'bg-primary-bg text-primary-strong'
                       : reachable
-                        ? 'text-muted hover:bg-surface-elevated hover:text-text'
-                        : 'text-subtle hover:bg-surface-elevated'
+                        ? 'text-muted hover:bg-chrome-hover hover:text-text'
+                        : 'text-subtle hover:bg-chrome-hover'
                   }`}
                 >
                   <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
@@ -1024,7 +1024,9 @@ function NavLinkList({
                   onClick={onNavigate}
                   title="Preview. Sign in or upgrade to engage"
                   className={`${nest}flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm font-medium transition-colors ${
-                    active ? 'bg-surface-elevated text-muted' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
+                    // The ACTIVE ghost row is a background on chrome, so it has the same problem
+                    // its hover did: `surface-elevated` is 3/255 off the rail's own ground.
+                    active ? 'bg-chrome-hover text-muted' : 'text-subtle hover:bg-chrome-hover hover:text-muted'
                   }`}
                 >
                   <Icon className="h-[18px] w-[18px] shrink-0 text-subtle" strokeWidth={2} />
@@ -1078,7 +1080,7 @@ function NavLinkList({
                   aria-label={label}
                   title={label}
                   className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${
-                    active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'
+                    active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-chrome-hover hover:text-text'
                   }`}
                 >
                   <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
@@ -1202,7 +1204,7 @@ function MobileLeftDrawer({
           <Link
             href={profileHref}
             onClick={onClose}
-            className="flex items-center gap-2.5 rounded-lg p-1 -m-1 hover:bg-surface-elevated transition-colors"
+            className="flex items-center gap-2.5 rounded-lg p-1 -m-1 hover:bg-chrome-hover transition-colors"
           >
             {profile.avatar_url ? (
               <Image
@@ -1421,7 +1423,7 @@ function MindlessLaunch() {
         type="button"
         onClick={() => open()}
         aria-label="Mindless. Open the practice timer"
-        className="flex items-center gap-1.5 h-8 sm:h-9 px-2 sm:px-2.5 rounded-pill text-muted hover:text-primary-strong hover:bg-surface-elevated transition-colors"
+        className="flex items-center gap-1.5 h-8 sm:h-9 px-2 sm:px-2.5 rounded-pill text-muted hover:text-primary-strong hover:bg-chrome-hover transition-colors"
       >
         {/* Pure-outline lotus (no fill) so it carries the same weight as the lucide icons beside it. */}
         <LotusIcon filled={false} className="w-5 h-5" />
@@ -1854,7 +1856,7 @@ export default function AppShell({
             type="button"
             onClick={() => setSearchOpen(true)}
             title="Search (⌘K)"
-            className="hidden sm:flex items-center gap-2 rounded-pill border border-border bg-surface-elevated/70 pl-3 pr-2 py-1.5 text-body-sm text-muted hover:text-text hover:border-border-strong hover:bg-surface-elevated transition-colors"
+            className="hidden sm:flex items-center gap-2 rounded-pill border border-border bg-surface-elevated/70 pl-3 pr-2 py-1.5 text-body-sm text-muted hover:text-text hover:border-border-strong hover:bg-chrome-hover transition-colors"
           >
             <Search className="w-4 h-4" />
             <span>Search</span>
@@ -1869,7 +1871,7 @@ export default function AppShell({
             onClick={() => setSearchOpen(true)}
             aria-label="Search"
             title="Search"
-            className="sm:hidden flex items-center justify-center w-8 h-8 rounded-pill text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+            className="sm:hidden flex items-center justify-center w-8 h-8 rounded-pill text-muted hover:text-text hover:bg-chrome-hover transition-colors"
           >
             <Search className="w-5 h-5" />
           </button>
@@ -1887,7 +1889,7 @@ export default function AppShell({
               <Link
                 href="/network/friends"
                 aria-label="Friends"
-                className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-pill text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+                className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-pill text-muted hover:text-text hover:bg-chrome-hover transition-colors"
               >
                 <Users className="w-5 h-5" />
               </Link>
@@ -2008,11 +2010,14 @@ export default function AppShell({
                     law): the admin canvas corner-tab skin (rounded top, hairline, canvas-tinted
                     blur), sticky to the column bottom. Mirrors components/admin/
                     admin-profile-card.tsx's wrapper. */}
-                {/* The tab tint follows the rail it sits in: now that the rail is chrome, a
-                    canvas-tinted tab read LIGHTER than its own ground and inverted the corner-tab
-                    effect. `rounded-t-card` for the same reason the rows took `rounded-control` —
-                    a skin should be able to retune it. */}
-                <div className="sticky bottom-0 z-10 rounded-t-card border-x border-t border-chrome-border bg-chrome/95 px-1.5 pt-1 backdrop-blur-sm">
+                {/* NOT a tab any more. It was a canvas-tinted corner tab because the rail was
+                    canvas and the tint lifted it off; once the rail became chrome, tinting it
+                    chrome made it exactly its own ground — a 1.000:1 "tab" that only its hairline
+                    described, and a backdrop-blur over an opaque same-coloured parent doing
+                    nothing at all. Rather than invent a third tint to keep a shape the rail no
+                    longer needs, the account dock is simply the FOOT of the rail now, separated
+                    the way DAWN separates rail sections: a hairline and space. Group, don't box. */}
+                <div className="sticky bottom-0 z-10 border-t border-chrome-border bg-chrome px-1.5 pt-1">
                   {!hideAppNav && role === 'member' && <UpgradeCrew />}
                   <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} operatorContext={operatorContext} availableContexts={availableContexts} menu={profileMenu} viewerRole={menuViewerRole} staffRole={staffRole} canReceivePayouts={canReceivePayouts} />
                 </div>
@@ -2079,7 +2084,7 @@ export default function AppShell({
                           onClick={toggleRail}
                           title={`${label} — open the rail`}
                           aria-label={`${label} — open the rail`}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-control text-muted transition-colors hover:bg-chrome-hover hover:text-text"
                         >
                           <Icon className="h-5 w-5" aria-hidden />
                         </button>

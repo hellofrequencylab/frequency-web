@@ -32,13 +32,25 @@ import { compile } from 'tailwindcss'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 
-const ROOTS = ['app', 'components']
-/** Prefixes whose vocabulary is OURS — a miss here is a real token that does not exist. */
-const OWNED = /^(?:bg|text|border|rounded|tracking|leading|shadow|lift)-[a-z][a-z0-9-]*$/
+// `lib` is in scope because design-system class strings live there too: lib/gamification.ts
+// exports TIER_CONFIG/DIFFICULTY_CONFIG, whose class strings propagate into every achievement
+// surface. Those were outside this gate entirely until 2026-08-05, so the green tick was not
+// evidence about them — the exact blind spot the DAWN pass then moved real tokens into.
+const ROOTS = ['app', 'components', 'lib']
+/** Prefixes whose vocabulary is OURS — a miss here is a real token that does not exist.
+ *  `ring` joined the list when tier glows moved onto ring utilities. */
+const OWNED = /^(?:bg|text|border|rounded|tracking|leading|shadow|lift|ring)-[a-z][a-z0-9-]*$/
+/** Tailwind's alpha modifier. `bg-rank-clay/10` is the SAME token as `bg-rank-clay` plus an
+ *  opacity, so strip it before testing — otherwise every tinted class silently leaves scope,
+ *  and tints are exactly how a token-bound palette gets used. */
+const stripAlpha = (t) => t.replace(/\/(?:\d{1,3}|\[[^\]]+\])$/, '')
 /** English words and legitimate non-class strings that the prefix rule cannot distinguish. */
 const IGNORE = new Set([
   'text-only', 'text-bearing', 'text-field', 'text-search', 'text-style', 'text-size',
   'text-color', 'text-font', 'border-box', 'text-align', 'text-content', 'text-block',
+  // Prose, not markup: "draws rounded-end bars for connected modules" is a QR test's own
+  // description of a bar shape (lib/qr/style.test.ts). Surfaced when `lib` entered scope.
+  'rounded-end',
 ])
 
 function walk(dir, out = []) {
@@ -46,7 +58,9 @@ function walk(dir, out = []) {
     if (entry === 'node_modules' || entry.startsWith('.')) continue
     const p = join(dir, entry)
     if (statSync(p).isDirectory()) walk(p, out)
-    else if (/\.tsx$/.test(p)) out.push(p)
+    // .ts as well as .tsx: a config module that exports class strings is just as load-bearing
+    // as a component that writes them inline, and lib/gamification.ts is precisely that.
+    else if (/\.tsx?$/.test(p)) out.push(p)
   }
   return out
 }
@@ -56,7 +70,8 @@ for (const root of ROOTS) {
   for (const file of walk(root)) {
     const src = readFileSync(file, 'utf8')
     for (const m of src.matchAll(/["'`]([^"'`\n$]{2,400})["'`]/g)) {
-      for (const tok of m[1].split(/\s+/)) {
+      for (const raw of m[1].split(/\s+/)) {
+        const tok = stripAlpha(raw)
         if (!OWNED.test(tok) || IGNORE.has(tok)) continue
         if (!seen.has(tok)) seen.set(tok, `${file}`)
       }

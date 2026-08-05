@@ -197,8 +197,24 @@ export async function ChallengesSeason() {
                               <span>{challenge.current} / {challenge.target}</span>
                               <span>{progressPct}%</span>
                             </div>
-                            <div className="h-1.5 overflow-hidden rounded-pill bg-surface-elevated">
-                              <div className={`h-full rounded-pill transition-all ${diff.bar}`} style={{ width: `${progressPct}%` }} />
+                            {/* ProgressTrack, not a hand-rolled track + inline-width fill. The
+                                difficulty accents are the RANK palette (bg-rank-jade …), which is
+                                not one of the primitive's semantic tone families, so the bar takes
+                                `tone="current"` and inherits the colour its parent sets. The token
+                                is derived from `diff.bar` rather than re-listed here, so it stays
+                                in lock-step with DIFFICULTY_CONFIG. `--rank-*` and not
+                                `--color-rank-*`: the rank palette is declared in `@theme inline`,
+                                which inlines the value into the utility instead of emitting the
+                                `--color-` alias to :root, so the raw token is the one that
+                                resolves — and it is what `bg-rank-jade` expands to regardless. */}
+                            <div style={{ color: `var(--${diff.bar.slice('bg-'.length)})` }}>
+                              <ProgressTrack
+                                value={progressPct}
+                                label={`${challenge.name} progress`}
+                                tone="current"
+                                animate
+                                className="w-full"
+                              />
                             </div>
                           </div>
                         )}

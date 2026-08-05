@@ -188,12 +188,28 @@ describe('Checkbox is a native input', () => {
     expect(plain.textContent).toBe('Marketing email')
   })
 
-  it('unlabelled renders the bare box, and the input itself carries the tap floor', () => {
+  // The tap floor must NEVER land on this input. `checkboxClasses` is `appearance-none` with its
+  // own border and fill, so the input IS the visible box — a min-block-size floor there does not
+  // grow a hit area, it grows the checkbox itself: 44px on a coarse pointer and up to 56px on the
+  // kids generations, with the tick still frozen at 12px. The floor belongs on a wrapper.
+  it('unlabelled puts the tap floor on a bare wrapper, never on the box itself', () => {
     const c = mount(<Checkbox aria-label="Select row" />)
-    expect(c.querySelector('label')).toBeNull()
     const el = c.querySelector('input')!
     expect(el.getAttribute('aria-label')).toBe('Select row')
-    expect(el.className).toContain('tap-target')
+    expect(el.className).not.toContain('tap-target')
+    // A textless <label> — it names nothing (aria-label does that) and exists only to be the
+    // clickable floor, which a <span> could not be.
+    const wrapper = c.querySelector('label')!
+    expect(wrapper).not.toBeNull()
+    expect(wrapper.className).toContain('tap-target')
+    expect(wrapper.textContent).toBe('')
+  })
+
+  it('keeps the visible box at its intended size in both branches', () => {
+    for (const node of [mount(<Checkbox aria-label="x" />), mount(<Checkbox label="y" />)]) {
+      expect(node.querySelector('input')!.className).toContain('size-5')
+      expect(node.querySelector('input')!.className).not.toContain('tap-target')
+    }
   })
 
   it('labelled puts the tap floor on the label, so the box stays trim beside the text', () => {

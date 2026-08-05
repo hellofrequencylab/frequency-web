@@ -84,7 +84,7 @@ function SectionTitle({ eyebrow, heading, ink, accent }: { eyebrow?: string; hea
   return (
     <div className="mb-6">
       {eyebrow && (
-        <p className={`font-eyebrow text-2xs font-bold uppercase tracking-[0.2em] ${ink ? 'text-primary' : 'text-primary-strong'}`}>
+        <p className={`font-eyebrow text-2xs font-bold uppercase tracking-eyebrow ${ink ? 'text-primary' : 'text-primary-strong'}`}>
           {eyebrow}
         </p>
       )}
@@ -144,7 +144,7 @@ export function CoverBlock({
           <div className="absolute inset-0 bg-black/35" aria-hidden />
           <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
             {eyebrow && (
-              <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-on-ink/80 mb-3">{eyebrow}</p>
+              <p className="text-body-sm font-bold uppercase tracking-eyebrow text-on-ink/80 mb-3">{eyebrow}</p>
             )}
             {title && (
               <h1 className="font-display uppercase text-balance text-on-ink text-[clamp(1.875rem,6vw,3.5rem)]">

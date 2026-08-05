@@ -51,6 +51,43 @@ describe('Counter', () => {
     expect(svg!.getAttribute('aria-hidden')).toBe('true')
   })
 
+  it('tones the GLYPH by kind and never the numeral (Gems teal, Zaps amber)', () => {
+    const gems = mount(<Counter value={85} label="Gems" glyph={Flame} tone="signal" />)
+    expect(gems.querySelector('svg')!.getAttribute('class')).toContain('text-signal')
+    // The reading itself stays the text colour: tone is the kind, not the number.
+    expect(gems.querySelector('.font-mono')!.className).toContain('text-text')
+    expect(gems.querySelector('.font-mono')!.className).not.toContain('text-signal')
+
+    const zaps = mount(<Counter value={340} label="Zaps" glyph={Flame} tone="primary" />)
+    expect(zaps.querySelector('svg')!.getAttribute('class')).toContain('text-primary')
+  })
+
+  it('mutes a zero rather than alarming it (never danger)', () => {
+    const c = mount(<Counter value={0} label="Gems" glyph={Flame} tone="signal" />)
+    const value = c.querySelector('.font-mono')!
+    expect(value.textContent).toBe('0')
+    expect(value.className).toContain('text-muted')
+    expect(value.className).not.toContain('text-danger')
+  })
+
+  it('labelHidden keeps the label for assistive tech only (the tight dock strip)', () => {
+    const c = mount(<Counter value={12} label="day streak" glyph={Flame} labelHidden />)
+    const label = c.querySelectorAll('span')[c.querySelectorAll('span').length - 1]
+    expect(label.textContent).toBe('day streak')
+    expect(label.className).toContain('sr-only')
+    // Still spelled out on hover for a sighted reader.
+    expect(c.firstElementChild!.getAttribute('title')).toBe('12 day streak')
+  })
+
+  it('stacked layout centres the mono numeral over its label (scoreboard tiles)', () => {
+    const c = mount(<Counter value={1240} label="Zaps" layout="stacked" />)
+    expect(c.firstElementChild!.className).toContain('flex-col')
+    const value = c.querySelector('.font-mono')!
+    expect(value.textContent).toBe((1240).toLocaleString())
+    expect(value.className).toContain('tabular-nums')
+    expect(c.textContent).toContain('Zaps')
+  })
+
   it('CounterRow lays out multiple Counters inline', () => {
     const c = mount(
       <CounterRow>

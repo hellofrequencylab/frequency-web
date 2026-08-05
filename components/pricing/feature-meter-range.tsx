@@ -5,11 +5,13 @@ import Link from 'next/link'
 import { Check, Gauge } from 'lucide-react'
 import {
   ALLOWANCE_NUDGE,
+  allowanceAt,
   currentMeterStepIndex,
   allowanceReadout,
   nearAllowanceLimit,
   type FeatureMeterLadder,
 } from '@/lib/pricing/feature-meters'
+import { Meter } from '@/components/ui/meter'
 
 // FEATURE METER RANGE (ADR-519, owner directive #4). The reusable "pay to play" affordance: a segmented
 // RANGE across a feature's tiers that shows, for each tier, its ALLOWANCE on the usage dimension (up to N
@@ -59,6 +61,12 @@ export function FeatureMeterRange({ ladder, currentTier, upgradeHref, live = fal
   const isCurrent = selected === currentIdx
   const isBelowCurrent = selected < currentIdx
   const readout = typeof usage === 'number' ? allowanceReadout(ladder.featureKey, currentTier, usage) : null
+  // The viewer's own cap, when they have a finite one. A finite cap is exactly what Meter renders
+  // (DAWN: the paywall is caps and take-rate, so a Space shows the room it has left — teal, amber
+  // from 80%, danger only AT the cap), and its 80% step is the same USAGE_UPGRADE_THRESHOLD the
+  // nudge sentence below already fires on, so the bar and the sentence turn together. An UNLIMITED
+  // rung has no cap to fill, so it keeps the plain "N contacts used (unlimited)" line.
+  const cap = typeof usage === 'number' ? allowanceAt(ladder.featureKey, currentTier) : null
   // The quiet gauge-as-upsell line (ADR-837): once real usage crosses USAGE_UPGRADE_THRESHOLD of the
   // current tier's allowance, ONE plain sentence + a "See plans" link. Informational; nothing blocks.
   const nearLimit = typeof usage === 'number' && nearAllowanceLimit(ladder.featureKey, currentTier, usage)
@@ -96,12 +104,17 @@ export function FeatureMeterRange({ ladder, currentTier, upgradeHref, live = fal
       <p className="text-meta font-semibold uppercase tracking-widest text-subtle">{ladder.dimension} allowance</p>
 
       {/* The OPTIONAL usage readout: "X of N used" on the viewer's current tier. Informational only. */}
-      {readout && (
-        <p className="mt-1 flex items-center gap-1.5 text-body-sm text-muted">
-          <Gauge className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-          <span>{readout}</span>
-        </p>
-      )}
+      {readout &&
+        (cap != null && cap > 0 && typeof usage === 'number' ? (
+          <div className="mt-2">
+            <Meter used={usage} cap={cap} label={ladder.dimension} unit={`${ladder.unit} used`} />
+          </div>
+        ) : (
+          <p className="mt-1 flex items-center gap-1.5 text-body-sm text-muted">
+            <Gauge className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+            <span>{readout}</span>
+          </p>
+        ))}
 
       {/* The gauge as upsell (ADR-837): the one shared nudge sentence + a See plans link, only once usage
           crosses the threshold. No modal, no countdown, no urgency; it links, it never blocks. */}

@@ -27,6 +27,7 @@ import { STREAK_MILESTONES } from '@/lib/streak'
 import type { PracticeStreakState } from '@/lib/practice-streak'
 import { pauseStreak, resumeStreak } from '@/app/(main)/crew/leaderboard/streak-actions'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { Counter, CounterRow } from '@/components/ui/counter'
 
 interface Progress {
   pct: number
@@ -114,26 +115,29 @@ export function StreakHero({
             {status === 'none' && 'Log one practice and day one starts.'}
           </p>
 
-          {/* The three supporting counts: best, reserve, and a quiet "held" note. */}
-          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-body-sm">
-            <span className="text-subtle">
-              <span className="font-semibold tabular-nums text-muted">{longest}</span> best
-            </span>
-            <span className="h-4 w-px bg-border-strong" aria-hidden />
-            <span
-              className="inline-flex items-center gap-1.5"
-              title={`Reserve: up to ${reserveCap} grace ${reserveCap === 1 ? 'day' : 'days'} that bridge a slip automatically`}
-            >
-              <Shield className="h-4 w-4 text-signal-strong" aria-hidden />
-              <span className="font-semibold tabular-nums text-signal">{freezeTokens}</span>
-              <span className="text-subtle">in reserve</span>
-            </span>
-            {streak.reserveHeld && (
-              <>
-                <span className="h-4 w-px bg-border-strong" aria-hidden />
-                <span className="text-subtle">reserve covered a slip</span>
-              </>
-            )}
+          {/* The three supporting counts: best, reserve, and a quiet "held" note.
+              The two numbers are READINGS beside the headline, which is Counter's exact job — the
+              4xl streak numeral above is deliberately NOT one (Counter's law is no oversized
+              numerals; the hero figure belongs to the hero). Freeze tokens keep their teal, which
+              is the tone the kind already carried and the same teal StreakMeter paints a frozen
+              day, so a member reads one reserve idea in one colour. */}
+          <div className="mt-3">
+            <CounterRow>
+              <Counter value={longest} label="best" />
+              <span className="h-4 w-px self-center bg-border-strong" aria-hidden />
+              <span
+                className="inline-flex items-baseline"
+                title={`Reserve: up to ${reserveCap} grace ${reserveCap === 1 ? 'day' : 'days'} that bridge a slip automatically`}
+              >
+                <Counter value={freezeTokens} label="in reserve" glyph={Shield} tone="signal" />
+              </span>
+              {streak.reserveHeld && (
+                <>
+                  <span className="h-4 w-px self-center bg-border-strong" aria-hidden />
+                  <span className="text-body-sm text-subtle">reserve covered a slip</span>
+                </>
+              )}
+            </CounterRow>
           </div>
         </div>
       </div>

@@ -23,7 +23,7 @@ Status legend: ✅ done · ⏳ in progress · ⚠️ needs a ruling · 🔴 not 
 | **Raw markup subtotal** | **3,124** | ~98% of the element count |
 | Duplicate implementations of a DAWN concept | 52 | 32 bespoke card shells · 6 tab strips · 5 badges · 3 meters · 2 avatars · 2 modals · 2 toasts |
 | **Element total** | **~3,176** | |
-| DAWN primitives missing or orphaned | 11 of 30 | Badge · RankBadge · Stat · Glyph · Select · Checkbox · CounterRow, plus Toast / Meter / GateNotice / StreakMeter at 0–1 call sites |
+| DAWN primitives missing or orphaned | **10** of 30 | Badge · RankBadge · Stat · Select · Checkbox · CounterRow, plus Toast / Meter / GateNotice / StreakMeter at 0–1 call sites. **Glyph was struck — see below** |
 | Routes with genuinely hand-rolled layout | 13 | of 382 `page.tsx`; 260 already compose a template |
 
 **The style surface itself is clean, and that is the good news.** Zero CSS modules, zero stray
@@ -96,8 +96,24 @@ product is visibly wrong on any look but the default.
 > pills; `Select` and `Checkbox` did not exist at all, against 272 raw `<select>`. Two badges were
 > deliberately NOT folded in — `VerifiedBadge` and `CharterBadge` are not pills, and making them
 > one would turn a calm trust signal into a status symbol.
-> **Remaining 8:** Glyph · RankBadge · Stat · CounterRow, plus wiring the four that shipped idle
-> (Counter · StreakMeter · Meter · GateNotice, all at 0–1 call sites).
+> **Shipped since:** `RankBadge` (drives the existing `.rank-badge` CSS primitive through
+> `lib/season-ranks.ts` rather than re-deriving its colours) and `Stat`. `Counter` went 1 → 7
+> importers and `Meter` 0 → 2, which is the other half of this phase: a primitive nobody calls is
+> not built, it is only written.
+>
+> **`Glyph` is struck from the list — it was an audit lead the code had already answered.**
+> DAWN ships a Glyph for exactly one reason: `lucide.createIcons()` replaces the `<i data-lucide>`
+> node React created and unmounts the tree. That failure mode is structurally absent here.
+> `components/ui/icon.tsx` **already is** this primitive under **ADR-505 (accepted 2026-07-02)** —
+> `aria-hidden` by default, `currentColor`, size defaulting to `1em` off the type role — and
+> `lucide-react` already emits `aria-hidden` and `currentColor` on its own. Building one would
+> add a *third* icon entry point against an ADR that explicitly rules direct `lucide-react` use
+> "the normal path, not a stopgap". Per AGENTS.md, the code and the ADR beat the plan doc.
+>
+> **Remaining: `CounterRow`**, plus finishing the wiring of `StreakMeter` and `GateNotice`, both
+> of which need a widening rather than an adoption (no second day-run surface exists for
+> StreakMeter; GateNotice's single-`<p>` body cannot hold the three-paragraph notices that would
+> otherwise adopt it).
 
 Sweeping 3,124 elements onto primitives that do not exist is not possible. This phase is small in
 line count and unblocks the largest phase in the plan.
@@ -107,7 +123,7 @@ line count and unblocks the largest phase in the plan.
 | **Select** | none — 267 raw `<select>` | build it; largest un-primitived control |
 | **Checkbox** | none | build it |
 | **Badge** | 5 one-off pill components | one `Badge` with a tone prop; retire the five |
-| **Glyph** | raw `lucide-react` everywhere | DAWN's React-owned SVG wrapper |
+| ~~**Glyph**~~ | ~~raw `lucide-react` everywhere~~ | **Struck.** `components/ui/icon.tsx` already is it (ADR-505); a Glyph would be a third icon entry point |
 | **Stat** / **RankBadge** / **CounterRow** | none | build from the DAWN reference |
 | **Avatar** | split across 2 files, neither wired to `presence-dot` | merge into one |
 | **Toast** | 2 renderers sharing a lane | unify |

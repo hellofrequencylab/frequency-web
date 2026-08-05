@@ -185,7 +185,7 @@ function CardTitle({ eyebrow, heading, ink }: { eyebrow?: string; heading?: stri
   return (
     <div className="mb-6">
       {eyebrow && (
-        <p className={`font-eyebrow text-2xs font-bold uppercase tracking-[0.2em] ${ink ? 'text-primary' : 'text-primary-strong'}`}>
+        <p className={`font-eyebrow text-2xs font-bold uppercase tracking-eyebrow ${ink ? 'text-primary' : 'text-primary-strong'}`}>
           {eyebrow}
         </p>
       )}
@@ -1240,7 +1240,7 @@ export function SpaceSectionTitleBlock({
   return (
     <div className={centered ? 'text-center' : ''}>
       {eyebrow && (
-        <p className={`font-eyebrow text-2xs font-bold uppercase tracking-[0.2em] ${ink ? 'text-primary' : 'text-primary-strong'}`}>
+        <p className={`font-eyebrow text-2xs font-bold uppercase tracking-eyebrow ${ink ? 'text-primary' : 'text-primary-strong'}`}>
           {eyebrow}
         </p>
       )}
@@ -1299,7 +1299,7 @@ export function SpaceCalloutBlock({
       }`}
     >
       {eyebrow && (
-        <p className={`font-eyebrow text-2xs font-bold uppercase tracking-[0.2em] ${ink ? 'text-primary' : 'text-primary-strong'}`}>
+        <p className={`font-eyebrow text-2xs font-bold uppercase tracking-eyebrow ${ink ? 'text-primary' : 'text-primary-strong'}`}>
           {eyebrow}
         </p>
       )}

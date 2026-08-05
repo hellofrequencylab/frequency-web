@@ -7,6 +7,7 @@ import {
   rankProgress,
   type SeasonRank,
 } from '@/lib/season-ranks'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // StandingHero — the member dashboard's centerpiece (the redesign's "wow" band, the
 // member analog of the admin KPI hero). One warm canvas-printed feature band that
@@ -90,10 +91,27 @@ export function StandingHero({
         <FeatureTile href={links?.gems} icon={Gem} iconCls="text-signal" value={gems.toLocaleString()} label="Gems" />
       </div>
 
-      {/* Climb ladder — the rank progress bar + the six-tier spine. */}
+      {/* Climb ladder — the rank progress bar + the six-tier spine.
+          The bar was a five-line copy of ProgressTrack's own render (track + inline-width fill),
+          missing the primitive's clamping and its progressbar role. It composes the primitive now.
+          `tone="current"` exists for exactly this case: the fill is the RANK core colour, which is
+          not one of the semantic tone families, so the parent sets `color` from the same token the
+          `bg-rank-*` class resolves to and the bar inherits it. Derived from `def.color` rather
+          than re-listed here, so it stays in lock-step with lib/season-ranks.ts.
+          NOTE the var name: globals.css declares the rank palette in `@theme inline`, which does
+          NOT emit `--color-rank-*` to :root — it inlines the value into the utility. The variable
+          that actually resolves at runtime is the raw `--rank-*` token, which is what `bg-rank-jade`
+          expands to anyway, so this is the same value the class was painting. */}
       <div className="px-6 py-5 sm:px-7">
-        <div className="h-2.5 overflow-hidden rounded-pill bg-surface-elevated">
-          <div className={`h-full rounded-pill transition-all ${def.color}`} style={{ width: `${pct}%` }} />
+        <div style={{ color: `var(--${def.color.slice('bg-'.length)})` }}>
+          <ProgressTrack
+            value={pct}
+            label={`Progress to ${next ? next.label : 'the top rank'}`}
+            size="xl"
+            tone="current"
+            animate
+            className="w-full"
+          />
         </div>
         <div className="mt-2.5 flex justify-between">
           {SEASON_RANKS.map((r) => {
