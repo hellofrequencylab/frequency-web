@@ -3,7 +3,6 @@
 // reading from a FunnelConfig. Built on the marketing UI kit (Button, Section) + house tokens; the graphics
 // are the inline SVGs in funnel-graphics.tsx. Voice/naming locked (no em dashes).
 
-import Image from 'next/image'
 import Link from 'next/link'
 import { Button, Section } from '@/components/marketing/marketing-ui'
 import { catalogItem } from '@/lib/billing/pricing-keys'
@@ -26,6 +25,7 @@ import {
   BreakEvenGraphic,
   FeatureIcon,
 } from './funnel-graphics'
+import { Wordmark } from '@/components/layout/wordmark'
 
 /** The Start-free destination. Interim = the Space directory (where a signed-in operator creates a free
  *  Space); funnels P2 replaces this with the real minimal-signup -> createSpace bridge. Attribution is
@@ -39,7 +39,7 @@ export function SplashHeader() {
     <header className="sticky top-0 z-40 border-b border-border/60 bg-canvas/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3 sm:px-8">
         <Link href="/" className="shrink-0" aria-label="Frequency home">
-          <Image src="/frequency-logo.png" alt="Frequency" width={963} height={170} priority className="h-6 w-auto dark:invert sm:h-7" />
+          <Wordmark className="h-6 w-auto dark:invert sm:h-7" priority />
         </Link>
         <Button href={FUNNEL_START_HREF} size="sm">
           {FUNNEL_CTA_LABEL}
@@ -396,7 +396,7 @@ export function SplashFooter() {
   return (
     <footer className="border-t border-border bg-canvas">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-5 py-10 text-center sm:px-8">
-        <Image src="/frequency-logo.png" alt="Frequency" width={963} height={170} className="h-6 w-auto dark:invert" />
+        <Wordmark className="h-6 w-auto dark:invert" />
         <p className="text-body-sm text-muted">{FUNNEL_FOOTER.tagline}</p>
         <ul className="flex items-center gap-6 text-body-sm text-subtle">
           {FUNNEL_FOOTER.links.map((l) => (

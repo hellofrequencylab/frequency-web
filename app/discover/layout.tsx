@@ -1,10 +1,10 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import { SiteHeader } from '@/components/layout/site-header'
 import { ViewerProvider } from '@/components/layout/viewer-chrome'
 import { SiteAlertBar } from '@/components/layout/site-alert-bar'
 import { SupportLauncher } from '@/components/support/support-launcher'
 import { SupportChatWidget } from '@/components/chat/support-chat-widget'
+import { Wordmark } from '@/components/layout/wordmark'
 
 // Shared chrome for every public /discover page: the SiteHeader (light variant,
 // since these are content pages rather than the hero splash) and a footer. The
@@ -43,7 +43,7 @@ export default function DiscoverLayout({ children }: { children: React.ReactNode
       >
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <Image src="/frequency-logo.png" alt="Frequency" width={963} height={170} className="h-5 w-auto opacity-40" />
+            <Wordmark className="h-5 w-auto opacity-40" />
             <span className="text-meta text-muted">
               &copy; {new Date().getFullYear()} Frequency Labs Holdings
             </span>
