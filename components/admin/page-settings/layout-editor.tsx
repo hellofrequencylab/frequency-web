@@ -238,7 +238,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
             onClick={() => chooseScope(s.choice)}
             disabled={pending}
             aria-pressed={s.choice === choice}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-40 ${
+            className={`rounded-lg px-3 py-1.5 text-meta font-semibold transition-colors disabled:opacity-40 ${
               s.choice === choice ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:text-text'
             }`}
           >
@@ -323,13 +323,13 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
                           disabled={pending}
                           placeholder="Row header (optional)"
                           aria-label={`Row header for ${s.label}`}
-                          className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1 text-sm text-text placeholder:text-subtle disabled:opacity-40"
+                          className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1 text-body-sm text-text placeholder:text-subtle disabled:opacity-40"
                         />
                       </div>
                     )
                   })()}
                   {group.length === 0 ? (
-                    <p className="text-xs text-muted">Nothing here yet.</p>
+                    <p className="text-meta text-muted">Nothing here yet.</p>
                   ) : (
                     <ul className="space-y-2">
                       {group.map((item, index) => (
@@ -351,10 +351,10 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
                               {item.enabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                             </button>
                             <div className="min-w-0 flex-1">
-                              <p className={`truncate text-sm font-semibold ${item.enabled ? 'text-text' : 'text-muted'}`}>
+                              <p className={`truncate text-body-sm font-semibold ${item.enabled ? 'text-text' : 'text-muted'}`}>
                                 {item.label}
                               </p>
-                              {item.description && <p className="truncate text-xs text-muted">{item.description}</p>}
+                              {item.description && <p className="truncate text-meta text-muted">{item.description}</p>}
                             </div>
                             <div className="flex shrink-0 items-center gap-1">
                               <button
@@ -386,7 +386,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
                                   onChange={(e) => setSlot(item.id, e.target.value)}
                                   disabled={pending}
                                   aria-label={`Area for ${item.label}`}
-                                  className="rounded-lg border border-border bg-surface px-2 py-1 text-xs text-text disabled:opacity-40"
+                                  className="rounded-lg border border-border bg-surface px-2 py-1 text-meta text-text disabled:opacity-40"
                                 >
                                   {slots.map((opt) => (
                                     <option key={opt.id} value={opt.id}>
@@ -403,7 +403,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
                                 onChange={(e) => setRole(item.id, (e.target.value || null) as ModuleRole | null)}
                                 disabled={pending}
                                 aria-label={`Who can see ${item.label}`}
-                                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1 text-xs text-text disabled:opacity-40"
+                                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1 text-meta text-text disabled:opacity-40"
                               >
                                 <option value="">Everyone</option>
                                 {MODULE_ROLES.map((r) => (
@@ -425,10 +425,10 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
         </>
       )}
 
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
       <div className="flex items-center justify-end gap-2 pt-1">
         {saved && (
-          <span className="flex items-center gap-1 text-xs font-medium text-primary-strong">
+          <span className="flex items-center gap-1 text-meta font-medium text-primary-strong">
             <Check className="h-3.5 w-3.5" /> Saved
           </span>
         )}
@@ -436,7 +436,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
           type="button"
           onClick={save}
           disabled={pending || loading}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
         >
           {pending ? 'Saving…' : 'Save'}
         </button>

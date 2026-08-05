@@ -15,8 +15,8 @@ import { saveSeekerProfileAction } from '@/app/(main)/marketplace/actions'
 // "must be X" requirement. See the honest note rendered below the fields.
 
 const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary'
-const LABEL = 'mb-1 block text-sm font-medium text-text'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
+const LABEL = 'mb-1 block text-body-sm font-medium text-text'
 
 export interface LifestylePrefs {
   cleanliness: string
@@ -262,7 +262,7 @@ export function SeekerForm({ initial }: { initial: SeekerFormValues }) {
           </div>
         )}
 
-        <p className="rounded-lg bg-surface-elevated p-3 text-xs text-subtle">
+        <p className="rounded-lg bg-surface-elevated p-3 text-meta text-subtle">
           Straight talk on roommate matching: tidiness, rhythm, and house rules help us rank who
           you would actually get along with, and they stay private to you. Gender preference is only
           offered when you are sharing a living space, and age is a soft hint for ranking, never a
@@ -270,7 +270,7 @@ export function SeekerForm({ initial }: { initial: SeekerFormValues }) {
         </p>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-text">
+      <label className="flex items-center gap-2 text-body-sm text-text">
         <input type="checkbox" name="active" defaultChecked={initial.active} className="h-4 w-4 rounded border-border" />
         Show me as actively looking
       </label>

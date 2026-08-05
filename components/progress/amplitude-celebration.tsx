@@ -37,12 +37,12 @@ export function AmplitudeCelebration({
         <AudioWaveform className="h-4 w-4" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-bold text-text">
+        <p className="text-body-sm font-bold text-text">
           {milestone
             ? `${milestoneLabel}. A permanent Award is in your Vault.`
             : `Amplitude Level ${level}`}
         </p>
-        <p className="mt-0.5 text-xs text-muted">
+        <p className="mt-0.5 text-meta text-muted">
           {amplitude.toLocaleString()} lifetime Amplitude. It never resets.
         </p>
       </div>

@@ -40,9 +40,9 @@ export function FeatureEventField({ spaceId }: { spaceId: string }) {
     <section className="rounded-2xl border border-border bg-surface p-4">
       <div className="mb-2 flex items-center gap-2">
         <CalendarPlus className="h-4 w-4 text-subtle" aria-hidden />
-        <h2 className="text-sm font-bold text-text">Feature an event</h2>
+        <h2 className="text-body-sm font-bold text-text">Feature an event</h2>
       </div>
-      <p className="mb-3 text-xs text-subtle">
+      <p className="mb-3 text-meta text-subtle">
         Paste a public event link to ask its host to feature it on your space calendar. They approve it,
         then it shows up alongside your own events.
       </p>
@@ -61,8 +61,8 @@ export function FeatureEventField({ spaceId }: { spaceId: string }) {
           Send request
         </Button>
       </div>
-      {error && <p className="mt-2 text-sm font-medium text-danger">{error}</p>}
-      {notice && !error && <p className="mt-2 text-sm font-medium text-success">{notice}</p>}
+      {error && <p className="mt-2 text-body-sm font-medium text-danger">{error}</p>}
+      {notice && !error && <p className="mt-2 text-body-sm font-medium text-success">{notice}</p>}
     </section>
   )
 }

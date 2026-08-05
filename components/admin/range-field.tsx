@@ -30,7 +30,7 @@ export function RangeField({
   disabled?: boolean
 }) {
   return (
-    <label className="block text-xs text-muted">
+    <label className="block text-meta text-muted">
       <span className="mb-1 flex justify-between gap-2">
         <span>{label}</span>
         <b className="tabular-nums text-text">

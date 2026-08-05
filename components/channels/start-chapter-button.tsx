@@ -37,7 +37,7 @@ export function StartChapterButton({
         isCrew={false}
         label={label}
         reason="create-circle"
-        buttonClassName={`${className ?? 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover whitespace-nowrap'}`}
+        buttonClassName={`${className ?? 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover whitespace-nowrap'}`}
       />
     )
   }
@@ -61,12 +61,12 @@ export function StartChapterButton({
         onClick={startAChapter}
         disabled={pending}
         title="You get a private draft to shape before anyone sees it."
-        className={`${className ?? 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover whitespace-nowrap'} disabled:opacity-60`}
+        className={`${className ?? 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover whitespace-nowrap'} disabled:opacity-60`}
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
         {pending ? 'Starting…' : label}
       </button>
-      {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
+      {error && <p className="mt-1.5 text-meta text-danger">{error}</p>}
     </div>
   )
 }

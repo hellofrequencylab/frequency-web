@@ -39,7 +39,7 @@ export default async function EditFunnelPage({ params }: { params: Promise<{ slu
         <div className="flex items-center gap-2">
           <Link
             href="/pages/sequences"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
           >
             <ArrowLeft className="h-3.5 w-3.5" /> All funnels
           </Link>
@@ -47,7 +47,7 @@ export default async function EditFunnelPage({ params }: { params: Promise<{ slu
             href={inductionPath}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
           >
             <ExternalLink className="h-3.5 w-3.5" /> Preview
           </a>

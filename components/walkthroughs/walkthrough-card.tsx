@@ -36,22 +36,22 @@ export function WalkthroughCard({ walkthrough }: { walkthrough: Walkthrough }) {
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Walkthrough</p>
-            <h3 className="mt-0.5 text-base font-bold text-text">{walkthrough.name}</h3>
+            <h3 className="mt-0.5 text-body font-bold text-text">{walkthrough.name}</h3>
             {walkthrough.description && (
-              <p className="mt-1 text-sm leading-relaxed text-muted">{walkthrough.description}</p>
+              <p className="mt-1 text-body-sm leading-relaxed text-muted">{walkthrough.description}</p>
             )}
             <div className="mt-3 flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 Start <ArrowRight className="h-3.5 w-3.5" aria-hidden />
               </button>
               <button
                 type="button"
                 onClick={notNow}
-                className="rounded-xl px-3 py-2 text-sm font-medium text-subtle transition-colors hover:text-text"
+                className="rounded-xl px-3 py-2 text-body-sm font-medium text-subtle transition-colors hover:text-text"
               >
                 Not now
               </button>

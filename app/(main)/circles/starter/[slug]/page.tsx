@@ -78,12 +78,12 @@ export default async function StarterCirclePreview({
       <div className="mx-auto max-w-3xl">
         <StarterClaim templateId={t.id} canCreate={await canCreate('circle.create')} />
 
-        {lead && <p className="text-base leading-relaxed text-text">{lead}</p>}
+        {lead && <p className="text-body leading-relaxed text-text">{lead}</p>}
 
         {t.audience && (
           <section className="mt-8">
             <SectionHeader title="Who it's for" />
-            <p className="text-sm leading-relaxed text-muted">{t.audience}</p>
+            <p className="text-body-sm leading-relaxed text-muted">{t.audience}</p>
           </section>
         )}
 
@@ -101,11 +101,11 @@ export default async function StarterCirclePreview({
                       primary ? 'border-primary-bg bg-primary-bg/30' : 'border-border bg-surface'
                     }`}
                   >
-                    <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
+                    <p className="text-meta font-semibold uppercase tracking-wide text-subtle">
                       {PILLAR_LABELS[p]}
                       {primary && <span className="ml-1.5 text-primary-strong">· leads</span>}
                     </p>
-                    <p className="mt-1 text-sm leading-relaxed text-text">{t.pillarsInside[p]}</p>
+                    <p className="mt-1 text-body-sm leading-relaxed text-text">{t.pillarsInside[p]}</p>
                   </div>
                 )
               })}
@@ -141,14 +141,14 @@ export default async function StarterCirclePreview({
           <section className="mt-8">
             <SectionHeader title="How we keep it good" />
             {t.sizeLabel && (
-              <p className="mb-3 inline-flex items-center gap-1.5 rounded-pill bg-surface-elevated px-3 py-1 text-sm text-muted">
+              <p className="mb-3 inline-flex items-center gap-1.5 rounded-pill bg-surface-elevated px-3 py-1 text-body-sm text-muted">
                 <Users className="h-3.5 w-3.5" aria-hidden /> {t.sizeLabel}
               </p>
             )}
             {t.agreements.length > 0 && (
               <ul className="space-y-2">
                 {t.agreements.map((a, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-muted">
+                  <li key={i} className="flex items-start gap-2 text-body-sm leading-relaxed text-muted">
                     <Handshake className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
                     {a}
                   </li>
@@ -177,8 +177,8 @@ function RhythmRow({
         {icon}
       </span>
       <div className="min-w-0">
-        <p className="text-sm font-semibold text-text">{label}</p>
-        <p className="mt-0.5 text-sm leading-relaxed text-muted">{children}</p>
+        <p className="text-body-sm font-semibold text-text">{label}</p>
+        <p className="mt-0.5 text-body-sm leading-relaxed text-muted">{children}</p>
       </div>
     </div>
   )

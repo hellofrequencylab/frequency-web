@@ -16,7 +16,7 @@ export function SaveStatus({
   idleLabel?: string
 }) {
   return (
-    <span className="flex items-center gap-1.5 text-xs text-subtle">
+    <span className="flex items-center gap-1.5 text-meta text-subtle">
       {state === 'saving' ? (
         <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving…</>
       ) : state === 'saved' ? (

@@ -43,14 +43,14 @@ export function VariantPicker({
   return (
     <div className="space-y-3">
       <div>
-        <label htmlFor={`variant-${productId}`} className="mb-1 block text-sm font-medium text-text">
+        <label htmlFor={`variant-${productId}`} className="mb-1 block text-body-sm font-medium text-text">
           Options
         </label>
         <select
           id={`variant-${productId}`}
           value={selectedId ?? ''}
           onChange={(e) => setSelectedId(e.target.value || null)}
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary"
+          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary"
         >
           {variants.map((v) => {
             const stock = effectiveVariantStock(v)
@@ -65,10 +65,10 @@ export function VariantPicker({
         </select>
       </div>
 
-      <p className="text-sm font-semibold text-text">{usd(selectedPrice, currency)}</p>
+      <p className="text-body-sm font-semibold text-text">{usd(selectedPrice, currency)}</p>
 
       {selectedSoldOut ? (
-        <p className="text-sm font-medium text-subtle">This option is sold out.</p>
+        <p className="text-body-sm font-medium text-subtle">This option is sold out.</p>
       ) : (
         <BuyButton productId={productId} variantId={selectedId} disabled={!selectedId} />
       )}

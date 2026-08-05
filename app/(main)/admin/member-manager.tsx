@@ -89,13 +89,13 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or handle..."
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30 dark:border-border-strong dark:bg-surface-elevated dark:text-subtle/60 dark:placeholder:text-muted"
+          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30 dark:border-border-strong dark:bg-surface-elevated dark:text-subtle/60 dark:placeholder:text-muted"
         />
       </div>
 
       {/* Action error — surfaced inline instead of failing silently */}
       {error && (
-        <p role="alert" className="mb-3 rounded-lg border border-danger/30 bg-danger-bg px-3 py-2 text-xs text-danger">
+        <p role="alert" className="mb-3 rounded-lg border border-danger/30 bg-danger-bg px-3 py-2 text-meta text-danger">
           {error}
         </p>
       )}
@@ -109,17 +109,17 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
           className="max-w-sm"
         >
           <div className="bg-surface rounded-2xl lift-3 border border-border p-6 w-full">
-            <h3 className="text-sm font-semibold text-text mb-2">
+            <h3 className="text-body-sm font-semibold text-text mb-2">
               Deactivate {confirmTarget.displayName}?
             </h3>
-            <p className="text-xs text-muted mb-5 leading-relaxed">
+            <p className="text-meta text-muted mb-5 leading-relaxed">
               This will mark the account as inactive. The member will lose access
               until reactivated by an admin.
             </p>
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setConfirmId(null)}
-                className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text hover:bg-surface-elevated transition-colors"
+                className="rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-text hover:bg-surface-elevated transition-colors"
               >
                 Cancel
               </button>
@@ -127,7 +127,7 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
                 disabled={isPending}
                 onClick={() => handleDeactivate(confirmId)}
                 // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
-                className="rounded-lg bg-danger px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-colors"
+                className="rounded-lg bg-danger px-3 py-1.5 text-meta font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-colors"
               >
                 {isPending ? 'Deactivating...' : 'Deactivate'}
               </button>
@@ -138,7 +138,7 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
 
       {/* Member list */}
       {filtered.length === 0 ? (
-        <p className="text-sm text-subtle py-4 text-center">No members found.</p>
+        <p className="text-body-sm text-subtle py-4 text-center">No members found.</p>
       ) : (
         <div className="space-y-0.5">
           {filtered.map((m) => {
@@ -158,7 +158,7 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
                     style={avatarFocusStyle(m.avatarUrl)}
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-pill bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none mt-0.5">
+                  <div className="w-8 h-8 rounded-pill bg-primary-bg text-primary-strong text-meta font-semibold flex items-center justify-center shrink-0 select-none mt-0.5">
                     {getInitials(m.displayName)}
                   </div>
                 )}
@@ -168,17 +168,17 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <Link
                       href={`/people/${m.handle}`}
-                      className="text-sm font-medium text-text hover:underline"
+                      className="text-body-sm font-medium text-text hover:underline"
                     >
                       {m.displayName}
                     </Link>
                     {m.isCrewLead && (
-                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-warning-bg dark:bg-warning-bg text-warning font-medium">
+                      <span className="text-meta px-1.5 py-0.5 rounded-md bg-warning-bg dark:bg-warning-bg text-warning font-medium">
                         Crew Lead
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-subtle">
+                  <div className="flex items-center gap-1.5 text-meta text-subtle">
                     <span>@{m.handle}</span>
                     {m.circleName && (
                       <>
@@ -212,7 +212,7 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
                       defaultValue={m.role}
                       disabled={isPending}
                       onChange={(e) => handleRoleChange(m.profileId, e.target.value)}
-                      className="rounded-md border border-border bg-surface px-2 py-1 text-xs text-text focus:border-border-strong focus:outline-none cursor-pointer disabled:opacity-50"
+                      className="rounded-md border border-border bg-surface px-2 py-1 text-meta text-text focus:border-border-strong focus:outline-none cursor-pointer disabled:opacity-50"
                     >
                       {ROLES.map((r) => (
                         <option key={r} value={r}>

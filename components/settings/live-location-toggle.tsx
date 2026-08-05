@@ -58,10 +58,10 @@ export function LiveLocationToggle({
     <section className="rounded-2xl border border-border bg-surface p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h2 className="flex items-center gap-2 text-sm font-bold text-text">
+          <h2 className="flex items-center gap-2 text-body-sm font-bold text-text">
             <Radio className="h-4 w-4 text-primary-strong" /> Live location
           </h2>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 text-body-sm text-muted">
             Share your <em>current</em> spot instead of your home city, so nearby people and maps reflect
             where you actually are. Off by default; reverts to your home city when you turn it off.
           </p>
@@ -98,7 +98,7 @@ export function LiveLocationToggle({
         <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
           <ShieldCheck className="h-3.5 w-3.5 text-primary-strong" /> What live location does (and doesn’t) do
         </p>
-        <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-muted">
+        <ul className="mt-2 space-y-1.5 text-meta leading-relaxed text-muted">
           <li>• <strong className="text-text">Still never exact.</strong> Live or not, others only ever see the band you chose under “Location precision” (a fuzzed ~1-mile area or just your city). We never share precise coordinates with anyone.</li>
           <li>• <strong className="text-text">Only the people you allow.</strong> Your “Who can find me nearby” setting still applies (strangers, connections, or no one). Live location doesn’t widen who can see you.</li>
           <li>• <strong className="text-text">It can go stale.</strong> Your position updates when the app captures it, not continuously. Treat it as “roughly where I was,” not a live tracker.</li>

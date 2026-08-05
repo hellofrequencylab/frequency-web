@@ -13,13 +13,13 @@ export function HelpMarkdown({ children }: { children: string }) {
       <ReactMarkdown
         components={{
           h1: ({ children }: Kids) => (
-            <h2 className="font-display text-2xl text-text mt-10 mb-3">{children}</h2>
+            <h2 className="font-display text-page-title text-text mt-10 mb-3">{children}</h2>
           ),
           h2: ({ children }: Kids) => (
-            <h2 className="font-display text-xl text-text mt-10 mb-3">{children}</h2>
+            <h2 className="font-display text-lead text-text mt-10 mb-3">{children}</h2>
           ),
           h3: ({ children }: Kids) => (
-            <h3 className="text-lg font-semibold text-text mt-6 mb-2">{children}</h3>
+            <h3 className="text-body-lg font-semibold text-text mt-6 mb-2">{children}</h3>
           ),
           // break-words on the three inline elements that can carry an unbreakable string:
           // a bare URL, a long env-var name, a hyphen-free compound. <pre> below already had
@@ -58,10 +58,10 @@ export function HelpMarkdown({ children }: { children: string }) {
             </blockquote>
           ),
           code: ({ children }: Kids) => (
-            <code className="break-words rounded bg-surface px-1.5 py-0.5 text-sm text-text">{children}</code>
+            <code className="break-words rounded bg-surface px-1.5 py-0.5 text-body-sm text-text">{children}</code>
           ),
           pre: ({ children }: Kids) => (
-            <pre className="rounded-lg bg-surface border border-border p-4 overflow-x-auto text-sm mb-4">
+            <pre className="rounded-lg bg-surface border border-border p-4 overflow-x-auto text-body-sm mb-4">
               {children}
             </pre>
           ),

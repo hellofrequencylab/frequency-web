@@ -34,7 +34,7 @@ export function EntityHeader({
       {back && (
         <Link
           href={back.href}
-          className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text"
+          className="mb-2 inline-flex items-center gap-1 text-body-sm font-medium text-muted transition-colors hover:text-text"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden />
           {back.label}
@@ -45,10 +45,10 @@ export function EntityHeader({
           {avatar && <div className="shrink-0">{avatar}</div>}
           <div className="min-w-0">
             {eyebrow && (
-              <p className="text-xs font-semibold uppercase tracking-wide text-primary-strong">{eyebrow}</p>
+              <p className="text-meta font-semibold uppercase tracking-wide text-primary-strong">{eyebrow}</p>
             )}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <h1 className="text-balance text-xl font-bold text-text sm:text-2xl">{title}</h1>
+              <h1 className="text-balance text-lead font-bold text-text sm:text-page-title">{title}</h1>
               {badges}
             </div>
           </div>
@@ -59,8 +59,8 @@ export function EntityHeader({
         <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2">
           {facts.map((f) => (
             <div key={f.label} className="min-w-0">
-              <dt className="text-xs font-medium uppercase tracking-wide text-subtle">{f.label}</dt>
-              <dd className="mt-0.5 text-sm font-semibold tabular-nums text-text">{f.value}</dd>
+              <dt className="text-meta font-medium uppercase tracking-wide text-subtle">{f.label}</dt>
+              <dd className="mt-0.5 text-body-sm font-semibold tabular-nums text-text">{f.value}</dd>
             </div>
           ))}
         </dl>

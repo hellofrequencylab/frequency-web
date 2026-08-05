@@ -51,7 +51,7 @@ export function MembershipCheckoutFold({
         }`}
       >
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-text">{rowName}</p>
+          <p className="truncate text-body-sm font-semibold text-text">{rowName}</p>
           <div className="mt-1">
             <span className="inline-flex items-center gap-1 rounded-md bg-success-bg px-1.5 py-0.5 text-2xs font-medium text-success">
               <Lock className="h-2.5 w-2.5" />
@@ -59,7 +59,7 @@ export function MembershipCheckoutFold({
             </span>
           </div>
         </div>
-        <span className="flex shrink-0 items-center gap-1.5 text-sm font-semibold text-text">
+        <span className="flex shrink-0 items-center gap-1.5 text-body-sm font-semibold text-text">
           {priceLabel}
           <ChevronDown
             className={`h-4 w-4 text-subtle transition-transform ${open ? 'rotate-180' : ''}`}
@@ -72,8 +72,8 @@ export function MembershipCheckoutFold({
         <div className="space-y-4 rounded-card border border-primary/40 bg-surface-elevated/40 p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-bold text-text">Join {spaceName}</p>
-              <p className="mt-0.5 text-xs text-muted">
+              <p className="text-body-sm font-bold text-text">Join {spaceName}</p>
+              <p className="mt-0.5 text-meta text-muted">
                 Membership includes your ticket to {includedEvent.title}.
               </p>
             </div>
@@ -103,11 +103,11 @@ export function MembershipCheckoutFold({
             <div className="space-y-2">
               <Link
                 href={signInHref}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 Sign in to join
               </Link>
-              <p className="text-xs text-muted">
+              <p className="text-meta text-muted">
                 Sign in and the membership takes a minute to join.
               </p>
             </div>

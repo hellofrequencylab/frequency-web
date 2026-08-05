@@ -46,8 +46,8 @@ export function BookingAvailabilitySummary({ windows }: { windows: AvailabilityW
         <div key={label} className="flex items-center gap-3 bg-surface px-4 py-3.5">
           <Icon className="h-5 w-5 shrink-0 text-muted" aria-hidden />
           <div className="min-w-0">
-            <dd className="truncate text-base font-bold tabular-nums text-text">{value}</dd>
-            <dt className="text-xs text-muted">{label}</dt>
+            <dd className="truncate text-body font-bold tabular-nums text-text">{value}</dd>
+            <dt className="text-meta text-muted">{label}</dt>
           </div>
         </div>
       ))}

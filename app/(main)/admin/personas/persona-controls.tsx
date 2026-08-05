@@ -42,7 +42,7 @@ export function PersonaControls({
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-1.5">
-      {error && <span className="mr-1 text-xs text-danger">{error}</span>}
+      {error && <span className="mr-1 text-meta text-danger">{error}</span>}
       {isPending && <Loader2 className="h-4 w-4 animate-spin text-muted" />}
       {reinstate ? (
         <Button variant="secondary" size="sm" onClick={() => move('verified')} disabled={isPending}>

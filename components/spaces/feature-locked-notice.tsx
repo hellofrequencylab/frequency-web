@@ -73,21 +73,21 @@ export function FeatureLockedNotice({
   const action = !canManageMembers ? (
     <Link
       href={spaceManageHref(type, slug)}
-      className="inline-flex items-center gap-1.5 rounded-control bg-surface-elevated px-4 py-2 text-sm font-semibold text-muted hover:bg-surface-elevated/70"
+      className="inline-flex items-center gap-1.5 rounded-control bg-surface-elevated px-4 py-2 text-body-sm font-semibold text-muted hover:bg-surface-elevated/70"
     >
       Back to manage {brandName}
     </Link>
   ) : reason === 'plan' ? (
     <Link
       href={`/spaces/${slug}/settings/billing`}
-      className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
+      className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
     >
       <CreditCard className="h-4 w-4" aria-hidden /> See plans
     </Link>
   ) : (
     <Link
       href={`/spaces/${slug}/manage/modules`}
-      className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
+      className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
     >
       <SlidersHorizontal className="h-4 w-4" aria-hidden /> Menu and features
     </Link>

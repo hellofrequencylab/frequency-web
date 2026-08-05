@@ -58,8 +58,8 @@ export function AppsLane({ items, view = 'cards' }: { items: AppCard[]; view?: '
     return (
       <div className="rounded-2xl border border-dashed border-border-strong px-6 py-16 text-center">
         <Blocks className="mx-auto mb-3 h-8 w-8 text-subtle" aria-hidden />
-        <p className="text-base text-muted">No Apps match.</p>
-        <p className="mt-1 text-sm text-subtle">Try clearing the search or picking another folder.</p>
+        <p className="text-body text-muted">No Apps match.</p>
+        <p className="mt-1 text-body-sm text-subtle">Try clearing the search or picking another folder.</p>
       </div>
     )
   }
@@ -78,10 +78,10 @@ export function AppsLane({ items, view = 'cards' }: { items: AppCard[]; view?: '
               <span className="block h-10 w-14 shrink-0 overflow-hidden rounded-lg bg-surface-elevated">
                 {a.preview}
               </span>
-              <span className="min-w-0 flex-1 truncate text-sm text-text" title={a.title}>
+              <span className="min-w-0 flex-1 truncate text-body-sm text-text" title={a.title}>
                 {a.title}
               </span>
-              <span className="hidden w-24 shrink-0 truncate text-xs text-subtle sm:block">{a.categoryLabel}</span>
+              <span className="hidden w-24 shrink-0 truncate text-meta text-subtle sm:block">{a.categoryLabel}</span>
               <span className="hidden shrink-0 gap-1 md:flex">
                 {a.surfaces.map((s) => (
                   <SurfaceBadge key={s} surface={s} />
@@ -107,7 +107,7 @@ export function AppsLane({ items, view = 'cards' }: { items: AppCard[]; view?: '
                   </span>
                   <span className="block px-3 py-2">
                     <span className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm text-text" title={a.title}>
+                      <span className="truncate text-body-sm text-text" title={a.title}>
                         {a.title}
                       </span>
                       <span className="shrink-0 text-2xs uppercase tracking-wide text-muted">{a.categoryLabel}</span>
@@ -134,7 +134,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
       <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-muted">{label}</p>
-      <div className="text-sm text-text">{children}</div>
+      <div className="text-body-sm text-text">{children}</div>
     </div>
   )
 }
@@ -145,7 +145,7 @@ function AppDrawer({ app, onClose }: { app: AppCard; onClose: () => void }) {
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-slat/40" />
       <div className="relative flex h-full w-full max-w-md flex-col overflow-y-auto bg-surface shadow-pop">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h2 className="font-display text-lg uppercase text-text">App</h2>
+          <h2 className="font-display text-body-lg uppercase text-text">App</h2>
           <button
             type="button"
             onClick={onClose}
@@ -164,7 +164,7 @@ function AppDrawer({ app, onClose }: { app: AppCard; onClose: () => void }) {
 
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <h3 className="min-w-0 flex-1 truncate text-base font-semibold text-text" title={app.title}>
+              <h3 className="min-w-0 flex-1 truncate text-body font-semibold text-text" title={app.title}>
                 {app.title}
               </h3>
               <span
@@ -173,10 +173,10 @@ function AppDrawer({ app, onClose }: { app: AppCard; onClose: () => void }) {
                 {app.status.replace('_', ' ')}
               </span>
             </div>
-            <p className="text-xs text-subtle">
+            <p className="text-meta text-subtle">
               {app.categoryLabel} · v{app.version}
             </p>
-            {app.description && <p className="pt-1 text-sm text-muted">{app.description}</p>}
+            {app.description && <p className="pt-1 text-body-sm text-muted">{app.description}</p>}
           </div>
 
           {/* Surfaces. */}
@@ -190,7 +190,7 @@ function AppDrawer({ app, onClose }: { app: AppCard; onClose: () => void }) {
 
           {/* Gate. */}
           <Field label="Gate">
-            <span className="inline-flex items-center gap-1.5 rounded-card border border-border bg-surface-elevated px-2.5 py-1 text-sm text-text">
+            <span className="inline-flex items-center gap-1.5 rounded-card border border-border bg-surface-elevated px-2.5 py-1 text-body-sm text-text">
               {app.gate.system === 'none' ? (
                 <ShieldCheck className="h-4 w-4 text-signal-strong" aria-hidden />
               ) : (
@@ -203,7 +203,7 @@ function AppDrawer({ app, onClose }: { app: AppCard; onClose: () => void }) {
           {/* Config schema (read-only). */}
           <Field label="Config schema">
             {app.config.length === 0 ? (
-              <p className="flex items-center gap-1.5 text-sm text-subtle">
+              <p className="flex items-center gap-1.5 text-body-sm text-subtle">
                 <Sliders className="h-4 w-4" aria-hidden /> No configurable fields.
               </p>
             ) : (
@@ -211,11 +211,11 @@ function AppDrawer({ app, onClose }: { app: AppCard; onClose: () => void }) {
                 {app.config.map((f) => (
                   <li key={f.key} className="flex items-baseline justify-between gap-3 px-3 py-2">
                     <span className="min-w-0">
-                      <span className="block truncate text-sm text-text">
+                      <span className="block truncate text-body-sm text-text">
                         {f.label}
                         {f.required && <span className="ml-1 text-danger">*</span>}
                       </span>
-                      {f.description && <span className="block truncate text-xs text-subtle">{f.description}</span>}
+                      {f.description && <span className="block truncate text-meta text-subtle">{f.description}</span>}
                     </span>
                     <span className="shrink-0 rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
                       {f.type}
@@ -231,7 +231,7 @@ function AppDrawer({ app, onClose }: { app: AppCard; onClose: () => void }) {
             <Field label="Connections">
               <ul className="space-y-1">
                 {app.connections.map((c) => (
-                  <li key={c.id} className="flex items-center gap-1.5 text-sm text-text">
+                  <li key={c.id} className="flex items-center gap-1.5 text-body-sm text-text">
                     <Link2 className="h-4 w-4 text-subtle" aria-hidden />
                     {c.label}
                     {c.required && <span className="text-2xs text-muted">(required)</span>}
@@ -243,10 +243,10 @@ function AppDrawer({ app, onClose }: { app: AppCard; onClose: () => void }) {
 
           {/* Source — Layer 1 is read-only: git is the source of truth (docs/LOOM-PLATFORM.md §10). */}
           <div className="rounded-2xl border border-border bg-surface-elevated/50 p-3">
-            <p className="flex items-center gap-1.5 text-sm font-semibold text-text">
+            <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
               <GitBranch className="h-4 w-4 text-primary-strong" aria-hidden /> Source: code
             </p>
-            <p className="mt-1 text-xs text-subtle">
+            <p className="mt-1 text-meta text-subtle">
               This App is drawn from code, versioned in git. The Loom indexes it read-only; a version bump
               is a commit. Config and placement are edited as data, never the source.
             </p>
@@ -254,7 +254,7 @@ function AppDrawer({ app, onClose }: { app: AppCard; onClose: () => void }) {
 
           {/* Used in — the "help section for assets" index (docs/LOOM-PLATFORM.md §4). */}
           <Field label="Used in">
-            <p className="flex items-center gap-1.5 text-sm text-subtle">
+            <p className="flex items-center gap-1.5 text-body-sm text-subtle">
               <History className="h-4 w-4" aria-hidden /> Usage tracking coming soon.
             </p>
             {/* TODO(LP3/LP5): wire library_usages (context/ref_id/block_id → deep links) so this lists

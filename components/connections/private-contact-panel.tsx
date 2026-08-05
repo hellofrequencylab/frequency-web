@@ -38,20 +38,20 @@ export function PrivateContactPanel({ card, memberName }: { card: LinkedContactC
   return (
     <div className="mb-6 rounded-2xl border border-border bg-surface-elevated/40 p-5 lift-1">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-1.5 text-sm font-bold text-text">
+        <h2 className="flex items-center gap-1.5 text-body-sm font-bold text-text">
           <Lock className="h-3.5 w-3.5 text-subtle" /> Your private contact card
         </h2>
-        <Link href={`/connections/${card.id}`} className="text-xs font-medium text-primary-strong hover:underline">
+        <Link href={`/connections/${card.id}`} className="text-meta font-medium text-primary-strong hover:underline">
           Open
         </Link>
       </div>
-      <p className="mb-3 text-xs text-muted">
+      <p className="mb-3 text-meta text-muted">
         From your contact book. Only you can see this. The details you logged for {memberName}.
       </p>
 
       <dl className="space-y-1.5">
         {rows.map((r, i) => (
-          <div key={i} className="flex items-center gap-2 text-sm text-text">
+          <div key={i} className="flex items-center gap-2 text-body-sm text-text">
             <r.Icon className="h-3.5 w-3.5 shrink-0 text-subtle" />
             {r.href ? (
               <a href={r.href} className="truncate hover:underline" target={r.href.startsWith('http') ? '_blank' : undefined} rel="noreferrer">
@@ -67,7 +67,7 @@ export function PrivateContactPanel({ card, memberName }: { card: LinkedContactC
       {card.notes.length > 0 && (
         <div className="mt-3 space-y-1.5 border-t border-border pt-3">
           {card.notes.map((n, i) => (
-            <p key={i} className="text-sm text-muted">“{n}”</p>
+            <p key={i} className="text-body-sm text-muted">“{n}”</p>
           ))}
         </div>
       )}

@@ -30,8 +30,8 @@ export function MarketplaceStats({ stats }: { stats: MarketplaceStat[] }) {
             className="flex items-center gap-1.5 rounded-lg bg-surface-elevated/60 px-2.5 py-1"
           >
             {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />}
-            <span className="text-sm font-bold tabular-nums text-text">{s.value}</span>
-            <span className="text-xs text-muted">{s.label}</span>
+            <span className="text-body-sm font-bold tabular-nums text-text">{s.value}</span>
+            <span className="text-meta text-muted">{s.label}</span>
           </div>
         )
       })}

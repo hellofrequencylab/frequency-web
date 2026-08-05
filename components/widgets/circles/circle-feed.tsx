@@ -21,8 +21,8 @@ export const CircleFeed = async () => {
     >
       <section>
         <div className="mb-4">
-          <h2 className="text-sm font-bold text-text">Circle feed</h2>
-          <p className="mt-0.5 text-xs leading-relaxed text-muted">
+          <h2 className="text-body-sm font-bold text-text">Circle feed</h2>
+          <p className="mt-0.5 text-meta leading-relaxed text-muted">
             {canManage
               ? 'Post to your circle. Toggle Announce to broadcast to the wider hub.'
               : 'Conversation and event announcements for everyone in this circle.'}
@@ -32,8 +32,8 @@ export const CircleFeed = async () => {
           <div className="mb-4 flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3">
             <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
             <div>
-              <p className="text-sm font-semibold text-text">Welcome to {circle.name}</p>
-              <p className="mt-0.5 text-xs leading-relaxed text-muted">
+              <p className="text-body-sm font-semibold text-text">Welcome to {circle.name}</p>
+              <p className="mt-0.5 text-meta leading-relaxed text-muted">
                 You&rsquo;re in. Say hello below so the circle knows who just arrived. A quick intro is
                 the easiest way to start showing up here.
               </p>
@@ -45,7 +45,7 @@ export const CircleFeed = async () => {
         ) : (
           myProfileId && (
             <div className="mb-4 rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-3">
-              <p className="text-xs leading-relaxed text-muted">Join this circle to post and follow it from your feed.</p>
+              <p className="text-meta leading-relaxed text-muted">Join this circle to post and follow it from your feed.</p>
             </div>
           )
         )}

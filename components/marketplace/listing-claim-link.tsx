@@ -25,13 +25,13 @@ export function ListingClaimLink({ claimShareUrl }: { claimShareUrl: string }) {
       <p className="mb-1.5 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
         <Send className="h-3.5 w-3.5" aria-hidden /> Claim Listing link
       </p>
-      <p className="mb-2 text-xs text-muted">
+      <p className="mb-2 text-meta text-muted">
         Send this to the poster. Opening it lets them claim the listing in place of contacting the seller.
       </p>
       <button
         type="button"
         onClick={copy}
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
       >
         {copied ? <Check className="h-4 w-4 text-success" /> : <Link2 className="h-4 w-4" />}
         {copied ? 'Copied' : 'Copy claim link'}

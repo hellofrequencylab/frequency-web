@@ -15,8 +15,8 @@ import { createMakerProductAction } from '../../marketplace/commerce-actions'
 // in a hidden field; tags ride the same way. No em or en dashes.
 
 const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary'
-const LABEL = 'mb-1 block text-sm font-medium text-text'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
+const LABEL = 'mb-1 block text-body-sm font-medium text-text'
 
 export function SellForm() {
   const [images, setImages] = useState<string[]>([])
@@ -102,7 +102,7 @@ export function SellForm() {
             New (Business accounts only)
           </option>
         </select>
-        <p className="mt-1 text-xs text-subtle">
+        <p className="mt-1 text-meta text-subtle">
           Individuals list used items.{' '}
           <Link href="/spaces/new" className="font-medium text-primary-strong hover:underline">
             Go Business to sell new products
@@ -118,7 +118,7 @@ export function SellForm() {
         </label>
         <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1.5 focus-within:border-primary">
           {tags.map((t) => (
-            <span key={t} className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-xs text-text">
+            <span key={t} className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-meta text-text">
               {t}
               <button
                 type="button"
@@ -136,11 +136,11 @@ export function SellForm() {
             onChange={(e) => setTagDraft(e.target.value)}
             onKeyDown={onTagKeyDown}
             onBlur={() => tagDraft.trim() && commitTags(tagDraft)}
-            className="min-w-[8rem] flex-1 bg-transparent px-1 py-0.5 text-sm text-text outline-none"
+            className="min-w-[8rem] flex-1 bg-transparent px-1 py-0.5 text-body-sm text-text outline-none"
             placeholder={tags.length ? 'Add another' : 'e.g. ceramic, handmade, mug'}
           />
         </div>
-        <p className="mt-1 text-xs text-subtle">Press Enter or comma to add a tag. Up to 12.</p>
+        <p className="mt-1 text-meta text-subtle">Press Enter or comma to add a tag. Up to 12.</p>
       </div>
 
       <div>
@@ -156,7 +156,7 @@ export function SellForm() {
           placeholder="Materials, size, how it's made, shipping or pickup."
         />
       </div>
-      <p className="text-xs text-subtle">
+      <p className="text-meta text-subtle">
         Payouts run on Stripe Connect, so the money goes straight to you. Set up a payout account
         before your first sale; the platform fee stays low.
       </p>

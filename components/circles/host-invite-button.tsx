@@ -35,7 +35,7 @@ export function HostInviteButton({ circleId }: { circleId: string }) {
     <button
       onClick={handleClick}
       disabled={isPending}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:border-primary hover:text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg disabled:opacity-50 transition-colors"
+      className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-muted hover:border-primary hover:text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg disabled:opacity-50 transition-colors"
       title={copied ? 'Link copied!' : 'Generate invite link'}
     >
       {isPending ? (

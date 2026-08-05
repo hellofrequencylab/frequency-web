@@ -28,8 +28,8 @@ export async function CommunityFeedReach() {
           </span>
           <div className="min-w-0 space-y-3">
             <div>
-              <p className="text-sm font-semibold text-text">Open feed</p>
-              <p className="mt-0.5 text-xs leading-snug text-muted">
+              <p className="text-body-sm font-semibold text-text">Open feed</p>
+              <p className="mt-0.5 text-meta leading-snug text-muted">
                 On: every member sees every member&rsquo;s posts. Off: a member sees public posts plus their
                 own circles&rsquo; and nearby posts (the reach gate). Private posts don&rsquo;t exist, so this never
                 exposes anything members didn&rsquo;t share with the community.

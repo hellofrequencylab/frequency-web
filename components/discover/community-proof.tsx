@@ -23,7 +23,7 @@ export function CommunityProof({
   if (!hasProof) {
     return (
       <div className="rounded-2xl border border-border bg-surface px-6 py-5 text-center lift-1">
-        <p className="text-sm text-muted leading-relaxed">
+        <p className="text-body-sm text-muted leading-relaxed">
           The first Circles are taking root in{' '}
           <strong className="text-text">{FOUNDING_PLACE}</strong>. The founding members are
           shaping what this becomes. Come be one of them.
@@ -34,7 +34,7 @@ export function CommunityProof({
 
   return (
     <div className="rounded-2xl border border-border bg-surface px-6 py-5 lift-1">
-      <p className="mb-4 text-center text-xs font-bold uppercase tracking-[0.2em] text-primary">
+      <p className="mb-4 text-center text-meta font-bold uppercase tracking-[0.2em] text-primary">
         Already happening in {FOUNDING_PLACE}
       </p>
       <dl className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
@@ -65,8 +65,8 @@ function ProofStat({
         {icon}
       </span>
       <div className="text-left leading-tight">
-        <dd className="text-xl font-bold text-text">{value}</dd>
-        <dt className="text-xs text-muted">{label}</dt>
+        <dd className="text-lead font-bold text-text">{value}</dd>
+        <dt className="text-meta text-muted">{label}</dt>
       </div>
     </div>
   )

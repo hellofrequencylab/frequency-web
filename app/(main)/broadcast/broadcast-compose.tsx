@@ -79,7 +79,7 @@ export function BroadcastCompose({
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap"
       >
         <Plus className="w-4 h-4" />
         New Dispatch
@@ -119,7 +119,7 @@ export function BroadcastCompose({
                 key={t}
                 type="button"
                 onClick={() => setType(t)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                className={`px-3 py-1.5 rounded-lg text-meta font-semibold border transition-colors ${
                   type === t
                     ? 'border-primary bg-primary text-on-primary'
                     : 'border-border bg-surface text-text hover:border-primary'
@@ -142,7 +142,7 @@ export function BroadcastCompose({
             rows={8}
             required
             disabled={isPending}
-            className={`${cmInput} resize-y font-mono text-xs leading-relaxed`}
+            className={`${cmInput} resize-y font-mono text-meta leading-relaxed`}
           />
         </div>
 
@@ -177,7 +177,7 @@ export function BroadcastCompose({
             </div>
           ) : (
             <div className="flex items-end">
-              <p className="text-xs text-subtle">Reaches every member, site-wide.</p>
+              <p className="text-meta text-subtle">Reaches every member, site-wide.</p>
             </div>
           )}
         </div>

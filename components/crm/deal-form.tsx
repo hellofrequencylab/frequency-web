@@ -6,8 +6,8 @@ import { createDeal, updateDeal, moveDeal } from '@/app/(main)/admin/crm/actions
 import type { CrmStage, CrmDeal } from '@/lib/crm/pipeline'
 
 const input =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-broadcast'
-const label = 'block text-xs font-semibold text-subtle mb-1'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-broadcast'
+const label = 'block text-meta font-semibold text-subtle mb-1'
 
 // Create / edit a CRM deal (build §9.5). Wires the UI gap to the existing actions
 // (createDeal / updateDeal / moveDeal) — no new backend.
@@ -89,17 +89,17 @@ export function DealForm({ stages, deal }: { stages: CrmStage[]; deal?: CrmDeal 
         <input className={input} value={source} onChange={(e) => setSource(e.target.value)} placeholder="Where it came from" />
       </div>
 
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
 
       <div className="flex items-center justify-end gap-2 pt-1">
-        <button type="button" onClick={() => router.push('/admin/growth?tab=crm')} className="rounded-lg px-4 py-2 text-sm font-medium text-subtle hover:text-text">
+        <button type="button" onClick={() => router.push('/admin/growth?tab=crm')} className="rounded-lg px-4 py-2 text-body-sm font-medium text-subtle hover:text-text">
           Cancel
         </button>
         <button
           type="button"
           onClick={submit}
           disabled={!title.trim() || pending}
-          className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          className="rounded-lg bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
         >
           {pending ? 'Saving…' : deal ? 'Save deal' : 'Create deal'}
         </button>

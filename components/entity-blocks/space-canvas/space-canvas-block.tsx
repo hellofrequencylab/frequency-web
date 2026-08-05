@@ -55,8 +55,8 @@ const STRUCTURAL_PREVIEW_IDS: ReadonlySet<string> = new Set(['links', 'embed', '
 // ── Canvas typography, matched to the published design components so the page style shows while editing. ──
 // `font-eyebrow` matches kit.tsx's Eyebrow: the Space page theme's per-role kicker hook (ADR-578), a
 // bare marker with no bold-scoped rule, so the canvas previews the same treatment the page renders.
-const EYEBROW_CLS = 'font-eyebrow text-sm font-bold uppercase tracking-[0.25em] text-primary-strong'
-const EYEBROW_INK_CLS = 'font-eyebrow text-sm font-bold uppercase tracking-[0.25em] text-primary'
+const EYEBROW_CLS = 'font-eyebrow text-body-sm font-bold uppercase tracking-[0.25em] text-primary-strong'
+const EYEBROW_INK_CLS = 'font-eyebrow text-body-sm font-bold uppercase tracking-[0.25em] text-primary'
 /** A design-block heading (DesignHeading default): the Anton display face at the published FLUID CLAMP, so the
  *  canvas heading is not dramatically smaller than the page (parity fix 5). */
 const HEADING_CLS = 'font-display text-[clamp(1.875rem,5.5vw,3rem)] uppercase leading-[1.05] text-text'
@@ -65,8 +65,8 @@ const HEADING_LG_CLS = 'font-display text-[clamp(2rem,7vw,4.5rem)] uppercase lea
 const HEADING_LG_INK_CLS = 'font-display text-[clamp(2rem,7vw,4.5rem)] uppercase leading-[0.95] text-on-ink'
 /** The big standalone Display heading block, at the published display clamp (parity fix 6). */
 const DISPLAY_CLS = 'font-display text-[clamp(2rem,6vw,3.75rem)] uppercase leading-[0.95] text-balance text-text'
-const BODY_CLS = 'text-lg leading-relaxed text-muted'
-const BODY_INK_CLS = 'text-lg leading-relaxed text-on-ink-muted'
+const BODY_CLS = 'text-body-lg leading-relaxed text-muted'
+const BODY_INK_CLS = 'text-body-lg leading-relaxed text-on-ink-muted'
 
 // The Banner OVERLAY height + scrim, copied verbatim from the published PhotoHero (design.tsx) so the canvas
 // overlay sizes by the `height` control and veils on the `scrim` step instead of a hardcoded 16/9 + fixed scrim
@@ -124,7 +124,7 @@ function ImageSlot({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`group relative flex w-full items-center justify-center overflow-hidden rounded-control border border-border bg-surface-elevated text-sm font-medium text-subtle ${
+        className={`group relative flex w-full items-center justify-center overflow-hidden rounded-control border border-border bg-surface-elevated text-body-sm font-medium text-subtle ${
           fill ? 'h-full' : ''
         } ${className ?? ''}`}
         style={{ minHeight: url ? undefined : 128 }}
@@ -141,7 +141,7 @@ function ImageSlot({
               alt={alt}
               className={fill || className ? 'h-full w-full object-cover' : 'max-h-72 w-full object-cover'}
             />
-            <span className="absolute right-2 top-2 flex items-center gap-1 rounded-md bg-surface px-2 py-1 text-xs font-semibold text-text opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+            <span className="absolute right-2 top-2 flex items-center gap-1 rounded-md bg-surface px-2 py-1 text-meta font-semibold text-text opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
               <Pencil className="h-3.5 w-3.5" aria-hidden /> Change
             </span>
           </>
@@ -222,14 +222,14 @@ function ItemBody({
       <div className={titleClass}>
         <SpaceEditableSlot value={decodeLegacyEntities(title)} placeholder="Title" onChange={onTitle} />
       </div>
-      <div className="text-sm leading-relaxed text-muted">
+      <div className="text-body-sm leading-relaxed text-muted">
         <SpaceEditableSlot value={decodeLegacyEntities(text)} placeholder="Description" multiline onChange={onText} />
       </div>
       {/* Published FeatureBody renders a price line (accent tag) + a CTA button when the item carries a
           price / link. They are rail-set, so on the canvas they show READ-ONLY (a span, not a live link). */}
-      {price ? <p className="text-sm font-semibold text-primary-strong">{price}</p> : null}
+      {price ? <p className="text-body-sm font-semibold text-primary-strong">{price}</p> : null}
       {link ? (
-        <span className="mt-1 inline-flex items-center gap-1 self-start rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text">
+        <span className="mt-1 inline-flex items-center gap-1 self-start rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text">
           {cta || 'Learn more'}
         </span>
       ) : null}
@@ -286,7 +286,7 @@ function ItemsTextCanvas({
     ? (value as Array<Record<string, unknown>>)
     : []
   if (items.length === 0) {
-    return <p className="text-sm italic text-subtle">Add items in this block&rsquo;s settings.</p>
+    return <p className="text-body-sm italic text-subtle">Add items in this block&rsquo;s settings.</p>
   }
   const sig = items
     .map((it) => `${typeof it.icon === 'string' ? it.icon : ''}~${typeof it.image === 'string' ? it.image : ''}`)
@@ -317,7 +317,7 @@ function ItemsTextCanvas({
               <ItemBody
                 title={title}
                 text={text}
-                titleClass="text-base font-bold text-text"
+                titleClass="text-body font-bold text-text"
                 onTitle={(v) => patch(i, 'title', v)}
                 onText={(v) => patch(i, 'text', v)}
               />
@@ -363,7 +363,7 @@ function CardGridItemsCanvas({
     ? (value as Array<Record<string, unknown>>)
     : []
   if (items.length === 0) {
-    return <p className="text-sm italic text-subtle">Add cards in this block&rsquo;s settings.</p>
+    return <p className="text-body-sm italic text-subtle">Add cards in this block&rsquo;s settings.</p>
   }
   const sig = items
     .map((it) => `${typeof it.icon === 'string' ? it.icon : ''}~${typeof it.image === 'string' ? it.image : ''}`)
@@ -404,7 +404,7 @@ function CardGridItemsCanvas({
               <ItemBody
                 title={title}
                 text={text}
-                titleClass="text-base font-bold text-text"
+                titleClass="text-body font-bold text-text"
                 onTitle={(v) => patch(i, 'title', v)}
                 onText={(v) => patch(i, 'text', v)}
               />
@@ -436,7 +436,7 @@ function FeaturesItemsCanvas({
 }) {
   if (isFeatureDataSource(props)) {
     return (
-      <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-xs text-subtle">
+      <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-meta text-subtle">
         Your live {label} show on the published page. Choose which items appear in this block&rsquo;s settings.
       </p>
     )
@@ -445,7 +445,7 @@ function FeaturesItemsCanvas({
     ? (props.items as Array<Record<string, unknown>>)
     : []
   if (items.length === 0) {
-    return <p className="text-sm italic text-subtle">Add features in this block&rsquo;s settings.</p>
+    return <p className="text-body-sm italic text-subtle">Add features in this block&rsquo;s settings.</p>
   }
   const layout = featureLayout(props)
   const cols = gridColumns(props)
@@ -493,7 +493,7 @@ function FeaturesItemsCanvas({
             'flex items-start gap-3 rounded-xl',
             <>
               <ItemMedia image={it.image} icon={it.icon} variant="inline" />
-              {body(i, it, 'text-base font-bold text-text')}
+              {body(i, it, 'text-body font-bold text-text')}
             </>,
           )
         })}
@@ -510,7 +510,7 @@ function FeaturesItemsCanvas({
             'flex flex-col gap-2 rounded-xl',
             <>
               <ItemMedia image={it.image} icon={it.icon} variant="top" />
-              {body(i, it, 'text-base font-bold text-text')}
+              {body(i, it, 'text-body font-bold text-text')}
             </>,
           )
         })}
@@ -518,7 +518,7 @@ function FeaturesItemsCanvas({
     )
   }
   if (layout === 'stats') {
-    // Parity fix 3: published stats render the headline value as `price || title` at text-4xl (not text-2xl). A
+    // Parity fix 3: published stats render the headline value as `price || title` at text-4xl (not text-page-title). A
     // set price is the read-only big number and the editable title drops to the label; with no price the
     // editable title IS the big number. Text stays an editable secondary label. Both fields stay authorable.
     return (
@@ -533,14 +533,14 @@ function FeaturesItemsCanvas({
               {it.price ? (
                 <div className="text-4xl font-bold leading-none text-primary-strong">{it.price}</div>
               ) : null}
-              <div className={titleBig ? 'text-4xl font-bold leading-none text-primary-strong' : 'text-base font-bold text-text'}>
+              <div className={titleBig ? 'text-4xl font-bold leading-none text-primary-strong' : 'text-body font-bold text-text'}>
                 <SpaceEditableSlot
                   value={decodeLegacyEntities(it.title)}
                   placeholder="Title"
                   onChange={(v) => patch(i, 'title', v)}
                 />
               </div>
-              <div className="mt-2 text-sm leading-relaxed text-muted">
+              <div className="mt-2 text-body-sm leading-relaxed text-muted">
                 <SpaceEditableSlot
                   value={decodeLegacyEntities(it.text)}
                   placeholder="Description"
@@ -571,7 +571,7 @@ function FeaturesItemsCanvas({
                   <BlockIcon name={it.icon} size={30} />
                 </div>
               ) : null}
-              <div className="flex flex-1 flex-col p-5">{body(i, it, 'text-base font-bold text-text')}</div>
+              <div className="flex flex-1 flex-col p-5">{body(i, it, 'text-body font-bold text-text')}</div>
             </>,
           )
         })}
@@ -596,7 +596,7 @@ function FeaturesItemsCanvas({
           `flex flex-col gap-5 rounded-2xl sm:items-center ${flip ? 'sm:flex-row-reverse' : 'sm:flex-row'}`,
           <>
             {media && <div className="sm:w-1/2">{media}</div>}
-            <div className={media ? 'sm:w-1/2' : 'w-full'}>{body(i, it, 'text-xl font-bold text-text')}</div>
+            <div className={media ? 'sm:w-1/2' : 'w-full'}>{body(i, it, 'text-lead font-bold text-text')}</div>
           </>,
         )
       })}
@@ -637,7 +637,7 @@ export function SpaceCanvasBlock({
       return <div className="pointer-events-none">{node}</div>
     }
     return (
-      <p className="rounded-lg border border-dashed border-border px-3 py-2 text-xs text-subtle">
+      <p className="rounded-lg border border-dashed border-border px-3 py-2 text-meta text-subtle">
         Your live {block.label.toLowerCase()} shows on the published page. Edit which items appear in this
         section&rsquo;s settings.
       </p>
@@ -713,8 +713,8 @@ export function SpaceCanvasBlock({
     return (
       <div className="space-y-6">
         <div className="space-y-1">
-          {textSlot('title', 'text-2xl font-bold text-text')}
-          {textSlot('subtitle', 'text-base leading-relaxed text-muted')}
+          {textSlot('title', 'text-page-title font-bold text-text')}
+          {textSlot('subtitle', 'text-body leading-relaxed text-muted')}
         </div>
         <CardGridItemsCanvas
           value={props.cards}
@@ -737,8 +737,8 @@ export function SpaceCanvasBlock({
     return (
       <div className="space-y-6">
         <div className="space-y-1">
-          {textSlot('eyebrow', 'text-xs font-bold uppercase tracking-[0.12em] text-primary-strong')}
-          {textSlot('title', 'text-2xl font-bold text-text')}
+          {textSlot('eyebrow', 'text-meta font-bold uppercase tracking-[0.12em] text-primary-strong')}
+          {textSlot('title', 'text-page-title font-bold text-text')}
         </div>
         <FeaturesItemsCanvas
           props={props}
@@ -770,12 +770,12 @@ export function SpaceCanvasBlock({
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
         {imageSlot('image', { className: calloutImg })}
         <div className="space-y-3 p-6">
-          {textSlot('title', 'text-xl font-bold text-text')}
-          {textSlot('body', 'text-base leading-relaxed text-muted')}
+          {textSlot('title', 'text-lead font-bold text-text')}
+          {textSlot('body', 'text-body leading-relaxed text-muted')}
           {props.buttonOn !== false &&
             textSlot(
               'buttonLabel',
-              'mt-1 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary',
+              'mt-1 inline-flex rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary',
             )}
         </div>
       </div>
@@ -786,22 +786,22 @@ export function SpaceCanvasBlock({
   if (id === 'quote') {
     return (
       <figure className="max-w-prose border-l-2 border-primary pl-4">
-        {textSlot('text', 'text-lg font-medium italic text-text')}
-        {textSlot('by', 'mt-2 text-sm text-muted')}
+        {textSlot('text', 'text-body-lg font-medium italic text-text')}
+        {textSlot('by', 'mt-2 text-body-sm text-muted')}
       </figure>
     )
   }
 
   // ── HEADING / TEXT / BUTTON: the plain member content blocks, in their published type. ──
   if (id === 'heading') {
-    return <div>{textSlot('text', 'text-2xl font-bold text-text')}</div>
+    return <div>{textSlot('text', 'text-page-title font-bold text-text')}</div>
   }
   if (id === 'text') {
-    return <div>{textSlot('text', 'max-w-prose text-base leading-relaxed text-muted')}</div>
+    return <div>{textSlot('text', 'max-w-prose text-body leading-relaxed text-muted')}</div>
   }
   if (id === 'button') {
     return (
-      <div className="inline-flex rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary">
+      <div className="inline-flex rounded-lg bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary">
         {textSlot('label', '')}
       </div>
     )
@@ -814,7 +814,7 @@ export function SpaceCanvasBlock({
         <ContentBlockView id={id} props={props} />
       </div>
     ) : (
-      <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-xs text-subtle">
+      <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-meta text-subtle">
         Add your {block.label.toLowerCase()} in this block&rsquo;s settings.
       </p>
     )
@@ -843,10 +843,10 @@ export function SpaceCanvasBlock({
       const isTitle = f.key === 'title' || f.key === 'text' || f.key === 'label'
       const isEyebrow = f.key === 'eyebrow'
       const cls = isEyebrow
-        ? 'text-xs font-bold uppercase tracking-[0.12em] text-subtle'
+        ? 'text-meta font-bold uppercase tracking-[0.12em] text-subtle'
         : isTitle
-          ? 'text-2xl font-bold text-text'
-          : 'text-base leading-relaxed text-muted'
+          ? 'text-page-title font-bold text-text'
+          : 'text-body leading-relaxed text-muted'
       return textSlot(f.key, cls)
     }
     // Cards item copy — editable on the canvas (structure stays in the rail), each card selectable.
@@ -883,7 +883,7 @@ export function SpaceCanvasBlock({
               ))}
             </div>
           ) : (
-            <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-xs text-subtle">
+            <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-meta text-subtle">
               Add photos to this gallery in its settings.
             </p>
           )}
@@ -953,7 +953,7 @@ function designCanvas(
       const display = props.display === 'beside' || props.display === 'below' ? props.display : 'overlay'
       const buttonSlot =
         props.buttonOn !== false
-          ? textSlot('buttonLabel', 'mt-1 inline-flex rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-on-primary')
+          ? textSlot('buttonLabel', 'mt-1 inline-flex rounded-xl bg-primary px-5 py-2.5 text-body-sm font-bold text-on-primary')
           : null
       // The Banner headline is the published DesignHeading size="lg" (a much larger clamp) across every layout.
       if (display === 'beside') {
@@ -1019,7 +1019,7 @@ function designCanvas(
       // The accent beat is a centered CTA on an accent-wash card; mirror the card + button on the canvas so a
       // styled block reads TRUE while editing (not as plain text). Parity fix 7: published wraps the copy in
       // max-w-2xl with generous vertical padding (py-16 sm:py-20) and uses the kit CtaButton (rounded-2xl px-8
-      // py-3.5 text-base font-bold shadow-pop + a trailing arrow). Match the button style + padding; the button
+      // py-3.5 text-body font-bold shadow-pop + a trailing arrow). Match the button style + padding; the button
       // label edits inline like the copy.
       return (
         <div className="rounded-2xl bg-primary-bg px-6 py-16 text-center sm:py-20">
@@ -1027,7 +1027,7 @@ function designCanvas(
             {textSlot('eyebrow', EYEBROW_CLS)}
             {textSlot('title', HEADING_CLS)}
             {textSlot('body', BODY_CLS)}
-            <div className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-primary px-8 py-3.5 text-base font-bold text-on-primary shadow-pop">
+            <div className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-primary px-8 py-3.5 text-body font-bold text-on-primary shadow-pop">
               {textSlot('buttonLabel', '')}
               <ArrowRight className="h-5 w-5" aria-hidden />
             </div>

@@ -56,7 +56,7 @@ export function ContactCard({
             style={avatarFocusStyle(avatarUrl)}
           />
         ) : (
-          <div className="flex h-18 w-18 items-center justify-center rounded-pill bg-primary-bg text-xl font-semibold text-primary-strong select-none ring-2 ring-surface-elevated">
+          <div className="flex h-18 w-18 items-center justify-center rounded-pill bg-primary-bg text-lead font-semibold text-primary-strong select-none ring-2 ring-surface-elevated">
             {getInitials(displayName)}
           </div>
         )}
@@ -69,10 +69,10 @@ export function ContactCard({
       </div>
 
       <div className="mt-3 flex items-center gap-1.5">
-        <h3 className="truncate text-sm font-bold leading-tight text-text">{displayName}</h3>
+        <h3 className="truncate text-body-sm font-bold leading-tight text-text">{displayName}</h3>
         {isDemo && <DemoBadge />}
       </div>
-      <p className="mt-0.5 truncate text-xs text-subtle">@{handle}</p>
+      <p className="mt-0.5 truncate text-meta text-subtle">@{handle}</p>
 
       {showBand && (
         <span className="mt-2 inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
@@ -84,7 +84,7 @@ export function ContactCard({
       <div className="mt-3 flex flex-col items-center gap-1.5">
         <RoleBadge role={role} className="text-3xs leading-tight" />
         {location && (
-          <span className="inline-flex items-center gap-1 text-xs text-muted">
+          <span className="inline-flex items-center gap-1 text-meta text-muted">
             <MapPin className="h-3 w-3 shrink-0 text-subtle" />
             <span className="truncate">{location}</span>
           </span>

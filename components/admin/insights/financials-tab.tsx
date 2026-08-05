@@ -67,13 +67,13 @@ export async function FinancialsTab() {
           <div className="grid gap-3 sm:grid-cols-2">
             {summary.entities.map((e) => (
               <div key={e.entityKey} className="rounded-2xl border border-border bg-surface p-4">
-                <p className="mb-2 text-sm font-semibold text-text">{e.entityName}</p>
+                <p className="mb-2 text-body-sm font-semibold text-text">{e.entityName}</p>
                 {Object.keys(e.byType).length === 0 ? (
-                  <p className="text-sm text-muted">No transactions yet.</p>
+                  <p className="text-body-sm text-muted">No transactions yet.</p>
                 ) : (
                   <ul className="space-y-1">
                     {Object.entries(e.byType).map(([type, cents]) => (
-                      <li key={type} className="flex items-center justify-between text-sm">
+                      <li key={type} className="flex items-center justify-between text-body-sm">
                         <span className="capitalize text-muted">{type}</span>
                         <span className="font-medium tabular-nums text-text">{formatCents(cents)}</span>
                       </li>

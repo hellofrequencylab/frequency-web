@@ -178,7 +178,7 @@ export default async function DiscoverCityPage({
             <div className="mt-8">
               <Link
                 href="/discover/events"
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong hover:underline"
+                className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline"
               >
                 Browse all events <ArrowRight className="h-4 w-4" />
               </Link>
@@ -193,7 +193,7 @@ export default async function DiscoverCityPage({
           <h2 className="mb-4 font-display text-3xl uppercase text-text sm:text-4xl">
             Want to start one in {city}?
           </h2>
-          <p className="text-lg leading-relaxed text-muted">
+          <p className="text-body-lg leading-relaxed text-muted">
             You do not have to build a community. Host one Circle. Pick one thing, set a
             standing time, and invite a few people. We hand you the format and the
             first-night script.
@@ -208,7 +208,7 @@ export default async function DiscoverCityPage({
 
       {/* ── Cross-links: the other ways to browse ───────────────── */}
       <Section tone="canvas">
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm">
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-body-sm">
           <Link href="/discover/cities" className="inline-flex items-center gap-1.5 font-semibold text-primary-strong hover:underline">
             <Users className="h-4 w-4" /> All cities
           </Link>

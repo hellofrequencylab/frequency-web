@@ -70,10 +70,10 @@ export function CollectiveGoal({
         <p className="text-2xs font-semibold uppercase tracking-widest text-primary-strong">
           {seasonName ? `The Quest · ${seasonName}` : 'The Quest'}
         </p>
-        <h2 id="collective-goal-heading" className="mt-0.5 text-xl font-bold leading-tight text-text">
+        <h2 id="collective-goal-heading" className="mt-0.5 text-lead font-bold leading-tight text-text">
           Together with {scopeLabel}
         </h2>
-        <p className="mt-1 text-sm text-muted">
+        <p className="mt-1 text-body-sm text-muted">
           Every practice you log adds to the same total. This one belongs to the group.
         </p>
       </div>
@@ -87,11 +87,11 @@ export function CollectiveGoal({
             <span className="text-3xl font-extrabold leading-none tabular-nums text-text">
               {total.toLocaleString()}
             </span>
-            <span className="text-sm font-medium text-muted">
+            <span className="text-body-sm font-medium text-muted">
               of {target.toLocaleString()} Zaps
             </span>
           </p>
-          <p className="shrink-0 text-sm font-semibold tabular-nums text-text">{pct}%</p>
+          <p className="shrink-0 text-body-sm font-semibold tabular-nums text-text">{pct}%</p>
         </div>
 
         <ProgressTrack
@@ -103,17 +103,17 @@ export function CollectiveGoal({
         />
 
         <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
-          <p className="inline-flex items-center gap-1.5 text-sm text-muted">
+          <p className="inline-flex items-center gap-1.5 text-body-sm text-muted">
             <Users className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
             <span className="font-semibold tabular-nums text-text">{contributors.toLocaleString()}</span>
             {contributors === 1 ? 'person adding to it' : 'people adding to it'}
           </p>
           {remaining > 0 ? (
-            <p className="text-sm text-muted">
+            <p className="text-body-sm text-muted">
               <span className="font-semibold tabular-nums text-text">{remaining.toLocaleString()}</span> Zaps to the next milestone
             </p>
           ) : (
-            <p className="text-sm font-semibold text-primary-strong">Milestone reached. The next one is already open.</p>
+            <p className="text-body-sm font-semibold text-primary-strong">Milestone reached. The next one is already open.</p>
           )}
         </div>
       </div>

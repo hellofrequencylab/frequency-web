@@ -40,7 +40,7 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
   }
 
   const field =
-    'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-border-strong focus:outline-none'
+    'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text focus:border-border-strong focus:outline-none'
 
   return (
     <div className="space-y-3">
@@ -50,10 +50,10 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
       <div className="grid gap-3 lg:grid-cols-2">
         {/* Add members to an existing circle */}
         <div className="rounded-2xl border border-border bg-surface p-5">
-          <p className="text-sm font-semibold text-text">Top up a circle</p>
-          <p className="mt-0.5 text-sm text-muted">Add members to an existing demo circle. Each brings a post, reactions, a streak, and a practice.</p>
+          <p className="text-body-sm font-semibold text-text">Top up a circle</p>
+          <p className="mt-0.5 text-body-sm text-muted">Add members to an existing demo circle. Each brings a post, reactions, a streak, and a practice.</p>
           <div className="mt-4 flex flex-wrap items-end gap-2">
-            <label className="flex flex-col gap-1 text-xs text-muted">
+            <label className="flex flex-col gap-1 text-meta text-muted">
               Add members to
               <select
                 value={memberCircle}
@@ -68,7 +68,7 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
                 ))}
               </select>
             </label>
-            <label className="flex flex-col gap-1 text-xs text-muted">
+            <label className="flex flex-col gap-1 text-meta text-muted">
               How many
               <input
                 type="number"
@@ -97,10 +97,10 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
 
         {/* Spin up a new circle */}
         <div className="rounded-2xl border border-border bg-surface p-5">
-          <p className="text-sm font-semibold text-text">Spin up a circle</p>
-          <p className="mt-0.5 text-sm text-muted">A new circle arrives with a host, a roster, a practice, and an upcoming event.</p>
+          <p className="text-body-sm font-semibold text-text">Spin up a circle</p>
+          <p className="mt-0.5 text-body-sm text-muted">A new circle arrives with a host, a roster, a practice, and an upcoming event.</p>
           <div className="mt-4 flex flex-wrap items-end gap-2">
-            <label className="flex flex-col gap-1 text-xs text-muted">
+            <label className="flex flex-col gap-1 text-meta text-muted">
               New circle name
               <input
                 value={circleName}
@@ -109,7 +109,7 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
                 className={`min-w-52 ${field}`}
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-muted">
+            <label className="flex flex-col gap-1 text-meta text-muted">
               Channel
               <select value={circleChannel} onChange={(e) => setCircleChannel(e.target.value)} className={field}>
                 {channels.map((c) => (
@@ -119,11 +119,11 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
                 ))}
               </select>
             </label>
-            <label className="flex flex-col gap-1 text-xs text-muted">
+            <label className="flex flex-col gap-1 text-meta text-muted">
               City
               <input value={circleCity} onChange={(e) => setCircleCity(e.target.value)} className={`w-32 ${field}`} />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-muted">
+            <label className="flex flex-col gap-1 text-meta text-muted">
               Size
               <input
                 type="number"

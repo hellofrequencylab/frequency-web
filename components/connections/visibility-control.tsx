@@ -88,13 +88,13 @@ export function VisibilityControl({
       </div>
 
       {visibility === 'shared' && canShare && (
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-xs font-medium text-muted">Share with the team at</span>
+        <label className="flex flex-col gap-1 text-body-sm">
+          <span className="text-meta font-medium text-muted">Share with the team at</span>
           <select
             value={spaceId}
             disabled={pending}
             onChange={(e) => apply('shared', e.target.value)}
-            className="w-full max-w-xs rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50"
+            className="w-full max-w-xs rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50"
           >
             {operatedSpaces.map((s) => (
               <option key={s.id} value={s.id}>
@@ -105,7 +105,7 @@ export function VisibilityControl({
         </label>
       )}
 
-      <p className="text-sm text-muted">
+      <p className="text-body-sm text-muted">
         {visibility === 'network' ? (
           <>
             Network: {where} can find this person and see their basic card (name, role, company). Your
@@ -149,7 +149,7 @@ function Choice({
       aria-checked={active}
       disabled={disabled}
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
+      className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors disabled:opacity-50 ${
         active
           ? 'border-primary bg-primary-bg text-primary-strong'
           : 'border-border-strong text-text hover:bg-surface-elevated'

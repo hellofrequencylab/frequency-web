@@ -72,7 +72,7 @@ export function MergeTagPicker() {
                 className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors hover:bg-surface-elevated"
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-xs font-semibold text-text">{v.label}</span>
+                  <span className="block truncate text-meta font-semibold text-text">{v.label}</span>
                   <span className="block truncate font-mono text-3xs text-muted">{mergeTagText(v.token)}</span>
                 </span>
                 {isCopied ? (

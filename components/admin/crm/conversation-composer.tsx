@@ -90,7 +90,7 @@ export function ConversationComposer({
 
   return (
     <div className="border-t border-border p-3">
-      <div className="mb-2 flex items-center gap-1 rounded-lg bg-surface-elevated p-0.5 text-xs">
+      <div className="mb-2 flex items-center gap-1 rounded-lg bg-surface-elevated p-0.5 text-meta">
         <button
           type="button"
           onClick={() => setInternal(false)}
@@ -125,11 +125,11 @@ export function ConversationComposer({
         rows={3}
         placeholder={internal ? 'A note only your team can see...' : `Reply to ${counterpartName || 'them'}...`}
         aria-label={internal ? 'Internal note' : 'Reply'}
-        className="w-full resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+        className="w-full resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
       />
       {aiDrafted && <p className="mt-1 text-2xs text-muted">Vera drafted this. Read it and edit before you send.</p>}
       {error && (
-        <p role="alert" className="mt-1 text-xs text-danger">
+        <p role="alert" className="mt-1 text-meta text-danger">
           {error}
         </p>
       )}
@@ -140,7 +140,7 @@ export function ConversationComposer({
             onClick={draft}
             disabled={drafting || pending}
             title="Draft a reply with Vera (you review before sending)"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
           >
             {drafting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             Draft with Vera
@@ -154,7 +154,7 @@ export function ConversationComposer({
           type="button"
           onClick={submit}
           disabled={pending || !body.trim()}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
           {internal ? 'Add note' : 'Send reply'}

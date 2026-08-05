@@ -22,7 +22,7 @@ export function NearMissesSection({ people }: { people: NearMiss[] }) {
   return (
     <section>
       <SectionHeader title="People you keep crossing paths with" count={people.length} />
-      <p className="mb-3 -mt-1 max-w-prose text-sm text-muted">
+      <p className="mb-3 -mt-1 max-w-prose text-body-sm text-muted">
         You haven&rsquo;t connected yet, but your worlds already overlap. Say hello.
       </p>
       <div className={GRID}>

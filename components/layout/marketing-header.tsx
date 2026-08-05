@@ -105,7 +105,7 @@ export function MarketingHeader({
           (WCAG 2.4.1 Bypass Blocks). Pointer users never see it. */}
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-text focus:shadow-pop"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-body-sm focus:font-semibold focus:text-text focus:shadow-pop"
       >
         Skip to content
       </a>
@@ -135,7 +135,7 @@ export function MarketingHeader({
 
       <Link
         href="/sign-in"
-        className={`hidden sm:block text-sm font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+        className={`hidden sm:block text-body-sm font-semibold px-3 py-1.5 rounded-lg transition-colors ${
           light
             ? 'text-muted hover:text-text hover:bg-surface-elevated'
             : 'text-on-ink-muted hover:text-on-ink hover:bg-on-ink/10'
@@ -145,7 +145,7 @@ export function MarketingHeader({
       </Link>
       <Link
         href={BETA_CTA_HREF}
-        className={`rounded-lg px-4 py-2 text-sm font-bold transition-colors whitespace-nowrap ${
+        className={`rounded-lg px-4 py-2 text-body-sm font-bold transition-colors whitespace-nowrap ${
           light
             ? 'bg-primary text-on-primary hover:bg-primary-hover'
             : 'bg-on-ink text-ink hover:bg-on-ink/90'

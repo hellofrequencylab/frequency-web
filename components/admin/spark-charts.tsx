@@ -70,13 +70,13 @@ export function RingGauge({ pct, label, sub }: { pct: number; label: string; sub
           strokeDasharray={`${(clamped * c).toFixed(1)} ${c.toFixed(1)}`}
           transform="rotate(-90 40 40)"
         />
-        <text x="40" y="46" textAnchor="middle" className="fill-text text-xl font-bold">
+        <text x="40" y="46" textAnchor="middle" className="fill-text text-lead font-bold">
           {Math.round(clamped * 100)}%
         </text>
       </svg>
       <div className="min-w-0">
-        <p className="text-sm font-semibold text-text">{label}</p>
-        {sub && <p className="mt-0.5 text-xs leading-snug text-muted">{sub}</p>}
+        <p className="text-body-sm font-semibold text-text">{label}</p>
+        {sub && <p className="mt-0.5 text-meta leading-snug text-muted">{sub}</p>}
       </div>
     </div>
   )
@@ -101,10 +101,10 @@ export function ChartCard({
   return (
     <div className="flex h-full flex-col rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-baseline justify-between gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-subtle">{title}</p>
-        {delta && <p className="text-xs font-semibold text-success">{delta}</p>}
+        <p className="text-meta font-semibold uppercase tracking-wider text-subtle">{title}</p>
+        {delta && <p className="text-meta font-semibold text-success">{delta}</p>}
       </div>
-      {value && <p className="mt-0.5 text-xl font-bold leading-tight text-text">{value}</p>}
+      {value && <p className="mt-0.5 text-lead font-bold leading-tight text-text">{value}</p>}
       <div className="mt-2 min-h-12 flex-1">{children}</div>
       {caption && <p className="mt-1.5 text-2xs text-muted">{caption}</p>}
     </div>
@@ -113,7 +113,7 @@ export function ChartCard({
 
 function EmptyChart({ height }: { height: number }) {
   return (
-    <div style={{ height }} className="flex items-center justify-center text-xs text-subtle">
+    <div style={{ height }} className="flex items-center justify-center text-meta text-subtle">
       Not enough data yet
     </div>
   )

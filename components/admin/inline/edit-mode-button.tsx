@@ -13,7 +13,7 @@ export function EditModeButton() {
       type="button"
       onClick={toggle}
       aria-pressed={editing}
-      className={`shrink-0 inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+      className={`shrink-0 inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-body-sm font-medium transition-colors ${
         editing
           ? 'bg-primary text-on-primary hover:bg-primary-hover'
           : 'border border-border bg-surface text-text hover:border-border-strong'
@@ -40,7 +40,7 @@ export function StartEditingLink({ label }: { label: string }) {
     <button
       type="button"
       onClick={() => setEditing(true)}
-      className="inline-block text-xs text-subtle transition-colors hover:text-primary-strong"
+      className="inline-block text-meta text-subtle transition-colors hover:text-primary-strong"
     >
       {label}
     </button>

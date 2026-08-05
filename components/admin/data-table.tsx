@@ -78,7 +78,7 @@ export function DataTable<T>({
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-surface">
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
+        <table className="w-full border-collapse text-body-sm">
           <caption className="sr-only">{caption}</caption>
           <thead className={stickyHeader ? 'sticky top-0 z-10' : ''}>
             <tr className="border-b border-border bg-surface-elevated/50 text-left">
@@ -87,7 +87,7 @@ export function DataTable<T>({
                   key={c.key}
                   scope="col"
                   style={c.width ? { width: c.width } : undefined}
-                  className={`${pad} text-xs font-semibold uppercase tracking-wide text-muted ${ALIGN[c.align ?? 'left']}`}
+                  className={`${pad} text-meta font-semibold uppercase tracking-wide text-muted ${ALIGN[c.align ?? 'left']}`}
                 >
                   {c.header}
                 </th>

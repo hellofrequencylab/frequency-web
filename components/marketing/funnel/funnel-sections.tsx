@@ -70,11 +70,11 @@ export function FunnelHero({ config }: { config: FunnelConfig }) {
           the text column. */}
       <div className="grid items-center gap-10 lg:grid-cols-2">
         <div>
-          <p className="text-sm font-bold uppercase tracking-[0.22em] text-primary-strong">{hero.eyebrow}</p>
+          <p className="text-body-sm font-bold uppercase tracking-[0.22em] text-primary-strong">{hero.eyebrow}</p>
           <h1 className="mt-4 font-display text-4xl uppercase leading-[1.02] text-text sm:text-5xl lg:text-6xl">
             {hero.h1}
           </h1>
-          <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted">{hero.subhead}</p>
+          <p className="mt-5 max-w-xl text-body-lg leading-relaxed text-muted">{hero.subhead}</p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button href={FUNNEL_START_HREF} size="lg" className="whitespace-nowrap">
               {FUNNEL_CTA_LABEL}
@@ -83,8 +83,8 @@ export function FunnelHero({ config }: { config: FunnelConfig }) {
               {FUNNEL_SECONDARY_LABEL}
             </Button>
           </div>
-          <p className="mt-4 text-sm text-subtle">{hero.microcopy}</p>
-          <p className="mt-6 text-sm font-semibold uppercase tracking-wide text-muted">{hero.trustLine}</p>
+          <p className="mt-4 text-body-sm text-subtle">{hero.microcopy}</p>
+          <p className="mt-6 text-body-sm font-semibold uppercase tracking-wide text-muted">{hero.trustLine}</p>
         </div>
         <div className="order-first lg:order-last">
           <div className="mx-auto max-w-lg rounded-3xl border border-border bg-surface p-6 shadow-pop sm:p-8">
@@ -104,7 +104,7 @@ export function AssuranceBar({ config }: { config: FunnelConfig }) {
     <div className="border-y border-border bg-surface">
       <ul className="mx-auto grid max-w-5xl grid-cols-2 divide-x divide-y divide-border sm:grid-cols-4 sm:divide-y-0">
         {items.map((it) => (
-          <li key={it} className="flex items-center justify-center gap-2 px-4 py-4 text-center text-xs font-semibold text-muted sm:text-sm">
+          <li key={it} className="flex items-center justify-center gap-2 px-4 py-4 text-center text-meta font-semibold text-muted sm:text-body-sm">
             <span className="h-1.5 w-1.5 shrink-0 rounded-pill bg-primary" aria-hidden />
             {it}
           </li>
@@ -123,11 +123,11 @@ export function ProblemSection({ config }: { config: FunnelConfig }) {
       <div className="grid items-center gap-10 lg:grid-cols-2">
         <div>
           <h2 className="font-display text-3xl uppercase leading-tight text-text sm:text-4xl">{problem.header}</h2>
-          <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted">{problem.body}</p>
+          <p className="mt-5 max-w-xl text-body-lg leading-relaxed text-muted">{problem.body}</p>
         </div>
         <figure className="m-0">
           <ScatteredStackGraphic />
-          <figcaption className="mt-3 text-center text-sm text-subtle">{problem.caption}</figcaption>
+          <figcaption className="mt-3 text-center text-body-sm text-subtle">{problem.caption}</figcaption>
         </figure>
       </div>
     </Section>
@@ -151,15 +151,15 @@ export function HowItWorks({ config }: { config: FunnelConfig }) {
             <div className="w-full max-w-[220px] rounded-2xl border border-border bg-surface p-5 lift-1">
               <SetupStepGraphic step={i as 0 | 1 | 2} />
             </div>
-            <span className="mt-6 inline-flex h-9 w-9 items-center justify-center rounded-pill bg-primary text-sm font-bold text-on-primary">
+            <span className="mt-6 inline-flex h-9 w-9 items-center justify-center rounded-pill bg-primary text-body-sm font-bold text-on-primary">
               {i + 1}
             </span>
-            <h3 className="mt-3 font-display text-xl uppercase text-text">{s.title}</h3>
-            <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted">{s.body}</p>
+            <h3 className="mt-3 font-display text-lead uppercase text-text">{s.title}</h3>
+            <p className="mt-2 max-w-xs text-body-sm leading-relaxed text-muted">{s.body}</p>
           </li>
         ))}
       </ol>
-      <p className="mt-10 text-center text-sm text-subtle">{howItWorks.caption}</p>
+      <p className="mt-10 text-center text-body-sm text-subtle">{howItWorks.caption}</p>
     </Section>
   )
 }
@@ -193,10 +193,10 @@ export function FeatureBlocks({ config }: { config: FunnelConfig }) {
                 <FeatureIcon name={f.icon} />
               </div>
               <div className={i % 2 === 1 ? 'sm:text-right' : ''}>
-                <h3 className={`font-display text-2xl uppercase ${f.soft ? 'text-muted' : spine ? 'text-primary-strong' : 'text-text'}`}>
+                <h3 className={`font-display text-page-title uppercase ${f.soft ? 'text-muted' : spine ? 'text-primary-strong' : 'text-text'}`}>
                   {f.title}
                 </h3>
-                <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted">{f.body}</p>
+                <p className="mt-2 max-w-2xl text-body leading-relaxed text-muted">{f.body}</p>
               </div>
             </div>
           )
@@ -217,13 +217,13 @@ export function LoopSection({ config, prominent = false, echo = false }: { confi
     <Section tone="ink" pad={echo ? 'py-12' : prominent ? 'py-20 sm:py-28' : 'py-16 sm:py-24'}>
       <div className="mx-auto max-w-2xl text-center">
         <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl">{header}</h2>
-        {intro && <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-on-ink-muted">{intro}</p>}
+        {intro && <p className="mx-auto mt-4 max-w-xl text-body-lg leading-relaxed text-on-ink-muted">{intro}</p>}
       </div>
       <div className={`mx-auto mt-10 ${prominent ? 'max-w-2xl' : echo ? 'max-w-sm' : 'max-w-lg'}`}>
         <LoopGraphic />
       </div>
       {payoff && (
-        <p className="mx-auto mt-8 max-w-xl text-center text-base leading-relaxed text-on-ink">{payoff}</p>
+        <p className="mx-auto mt-8 max-w-xl text-center text-body leading-relaxed text-on-ink">{payoff}</p>
       )}
     </Section>
   )
@@ -254,7 +254,7 @@ export function PricingBeat({ config }: { config: FunnelConfig }) {
     <Section tone="canvas">
       <div className="mx-auto max-w-2xl text-center">
         <h2 className="font-display text-3xl uppercase text-text sm:text-4xl">{pricing.header}</h2>
-        <p className="mt-4 text-lg leading-relaxed text-muted">{pricing.intro}</p>
+        <p className="mt-4 text-body-lg leading-relaxed text-muted">{pricing.intro}</p>
       </div>
 
       <div className="mx-auto mt-10 max-w-2xl overflow-hidden rounded-2xl border border-border">
@@ -268,17 +268,17 @@ export function PricingBeat({ config }: { config: FunnelConfig }) {
               } ${row.kind !== 'free' ? 'border-t border-border' : ''}`}
             >
               <div>
-                <p className={`font-display text-xl uppercase ${row.featured ? 'text-primary-strong' : 'text-text'}`}>
+                <p className={`font-display text-lead uppercase ${row.featured ? 'text-primary-strong' : 'text-text'}`}>
                   {row.name}
                 </p>
-                <p className="mt-0.5 text-sm text-muted">{row.detail}</p>
+                <p className="mt-0.5 text-body-sm text-muted">{row.detail}</p>
               </div>
               <div className="shrink-0 text-right">
                 <span className="flex items-baseline justify-end gap-2">
-                  {anchor && <span className="text-base text-subtle line-through">{anchor}</span>}
-                  <span className={`font-display text-2xl ${row.featured ? 'text-primary-strong' : 'text-text'}`}>{price}</span>
+                  {anchor && <span className="text-body text-subtle line-through">{anchor}</span>}
+                  <span className={`font-display text-page-title ${row.featured ? 'text-primary-strong' : 'text-text'}`}>{price}</span>
                 </span>
-                {row.kind !== 'free' && <span className="text-xs text-subtle">/mo</span>}
+                {row.kind !== 'free' && <span className="text-meta text-subtle">/mo</span>}
               </div>
             </div>
           )
@@ -289,11 +289,11 @@ export function PricingBeat({ config }: { config: FunnelConfig }) {
       <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-primary/40 bg-primary-bg/40 p-6 sm:p-7">
         <div className="grid items-center gap-5 sm:grid-cols-[1.05fr_1fr]">
           <BreakEvenGraphic className="w-full" />
-          <p className="text-base font-semibold leading-relaxed text-text">{pricing.breakEvenCaption}</p>
+          <p className="text-body font-semibold leading-relaxed text-text">{pricing.breakEvenCaption}</p>
         </div>
       </div>
 
-      <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-muted">{pricing.note}</p>
+      <p className="mx-auto mt-6 max-w-2xl text-center text-body-sm leading-relaxed text-muted">{pricing.note}</p>
 
       <div className="mt-7 flex justify-center">
         <Button href={FUNNEL_START_HREF} size="lg">
@@ -321,8 +321,8 @@ export function ProofSection({ testimonials }: { testimonials?: FunnelTestimonia
       <div className="grid gap-4 sm:grid-cols-3">
         {testimonials.map((t) => (
           <figure key={t.name} className="m-0 rounded-2xl border border-border bg-surface-elevated p-6">
-            <blockquote className="text-base leading-relaxed text-text">“{t.quote}”</blockquote>
-            <figcaption className="mt-4 text-sm text-muted">
+            <blockquote className="text-body leading-relaxed text-text">“{t.quote}”</blockquote>
+            <figcaption className="mt-4 text-body-sm text-muted">
               <span className="font-semibold text-text">{t.name}</span>, {t.modality}, {t.city}
             </figcaption>
           </figure>
@@ -339,7 +339,7 @@ export function MissionSection() {
     <Section tone="canvas">
       <div className="mx-auto max-w-2xl text-center">
         <h2 className="font-display text-3xl uppercase text-text sm:text-4xl">{MISSION_COPY.header}</h2>
-        <p className="mt-5 text-lg leading-relaxed text-muted">{MISSION_COPY.body}</p>
+        <p className="mt-5 text-body-lg leading-relaxed text-muted">{MISSION_COPY.body}</p>
       </div>
     </Section>
   )
@@ -355,13 +355,13 @@ export function FaqSection({ config }: { config: FunnelConfig }) {
         <div className="mt-8 divide-y divide-border rounded-2xl border border-border">
           {config.faq.map((f) => (
             <details key={f.q} className="group px-5 py-4 sm:px-6">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-semibold text-text marker:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-body font-semibold text-text marker:hidden">
                 {f.q}
                 <span className="text-primary-strong transition-transform group-open:rotate-45" aria-hidden>
                   +
                 </span>
               </summary>
-              <p className="mt-3 text-sm leading-relaxed text-muted">{f.a}</p>
+              <p className="mt-3 text-body-sm leading-relaxed text-muted">{f.a}</p>
             </details>
           ))}
         </div>
@@ -378,13 +378,13 @@ export function FinalCta({ config }: { config: FunnelConfig }) {
     <Section tone="ink" pad="py-20 sm:py-24">
       <div className="mx-auto max-w-2xl text-center">
         <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl">{finalCta.header}</h2>
-        <p className="mt-4 text-lg leading-relaxed text-on-ink-muted">{finalCta.subhead}</p>
+        <p className="mt-4 text-body-lg leading-relaxed text-on-ink-muted">{finalCta.subhead}</p>
         <div className="mt-8 flex justify-center">
           <Button href={FUNNEL_START_HREF} size="lg">
             {FUNNEL_CTA_LABEL}
           </Button>
         </div>
-        <p className="mt-4 text-sm text-on-ink-muted">{finalCta.microcopy}</p>
+        <p className="mt-4 text-body-sm text-on-ink-muted">{finalCta.microcopy}</p>
       </div>
     </Section>
   )
@@ -397,8 +397,8 @@ export function SplashFooter() {
     <footer className="border-t border-border bg-canvas">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-5 py-10 text-center sm:px-8">
         <Image src="/frequency-logo.png" alt="Frequency" width={963} height={170} className="h-6 w-auto dark:invert" />
-        <p className="text-sm text-muted">{FUNNEL_FOOTER.tagline}</p>
-        <ul className="flex items-center gap-6 text-sm text-subtle">
+        <p className="text-body-sm text-muted">{FUNNEL_FOOTER.tagline}</p>
+        <ul className="flex items-center gap-6 text-body-sm text-subtle">
           {FUNNEL_FOOTER.links.map((l) => (
             <li key={l.href}>
               <Link href={l.href} className="hover:text-text">

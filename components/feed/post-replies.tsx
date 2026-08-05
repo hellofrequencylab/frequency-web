@@ -73,7 +73,7 @@ function CommentRow({
           <div className="flex items-baseline gap-1.5">
             <Link
               href={author ? `/people/${author.handle}` : '#'}
-              className="text-xs font-semibold text-text hover:underline"
+              className="text-meta font-semibold text-text hover:underline"
             >
               {author?.display_name ?? 'Unknown'}
             </Link>
@@ -87,7 +87,7 @@ function CommentRow({
             )}
             <span className="text-2xs text-muted">{relativeTime(comment.created_at)}</span>
           </div>
-          <PostBody body={comment.body ?? ''} className="mt-0.5 text-xs leading-relaxed text-text" />
+          <PostBody body={comment.body ?? ''} className="mt-0.5 text-meta leading-relaxed text-text" />
           {/* Per-comment actions: the emoji ReactionBar (comments are posts, so the
               same curated set, with grouped counts) and a Reply affordance that
               opens the composer aimed here. Replying to your OWN comment earns
@@ -156,7 +156,7 @@ function ReplyComposer({
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) onSubmit(e)
         }}
-        className="flex-1 resize-none rounded-control bg-surface-elevated/50 px-3.5 py-2 text-xs leading-relaxed text-text placeholder-subtle ring-1 ring-border/50 focus:outline-none focus:ring-1 focus:ring-border-strong/50 disabled:opacity-50 dark:bg-canvas/40"
+        className="flex-1 resize-none rounded-control bg-surface-elevated/50 px-3.5 py-2 text-meta leading-relaxed text-text placeholder-subtle ring-1 ring-border/50 focus:outline-none focus:ring-1 focus:ring-border-strong/50 disabled:opacity-50 dark:bg-canvas/40"
       />
       <button
         type="submit"
@@ -303,7 +303,7 @@ export function PostReplies({
             <button
               type="button"
               onClick={() => setExpanded(true)}
-              className="text-xs font-medium text-primary-strong hover:underline"
+              className="text-meta font-medium text-primary-strong hover:underline"
             >
               View all {count} comments
             </button>
@@ -311,7 +311,7 @@ export function PostReplies({
             <button
               type="button"
               onClick={() => setExpanded(false)}
-              className="text-xs font-medium text-subtle hover:text-muted hover:underline"
+              className="text-meta font-medium text-subtle hover:text-muted hover:underline"
             >
               Show fewer comments
             </button>
@@ -322,7 +322,7 @@ export function PostReplies({
           <button
             onClick={() => setOpen((o) => !o)}
             aria-label={open ? 'Hide comments' : 'Show comments'}
-            className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors sm:min-h-0 ${
+            className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-meta font-medium transition-colors sm:min-h-0 ${
               open ? 'text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
             }`}
           >
@@ -346,7 +346,7 @@ export function PostReplies({
               <Loader2 className="w-4 h-4 animate-spin text-subtle" />
             </div>
           ) : allComments.length === 0 ? (
-            <p className="text-xs text-subtle text-center py-1">No replies yet. Be the first.</p>
+            <p className="text-meta text-subtle text-center py-1">No replies yet. Be the first.</p>
           ) : (
             <div className="space-y-2.5">
               {/* The "View all / show fewer" control lives on the action line above. */}

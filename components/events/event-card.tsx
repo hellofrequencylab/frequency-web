@@ -24,7 +24,7 @@ function CoverFallback({ iso }: { iso: string }) {
   return (
     <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong">
       <Calendar className="h-5 w-5 opacity-70" aria-hidden />
-      <span className="mt-1.5 text-xs font-semibold uppercase leading-none tracking-wide">{month}</span>
+      <span className="mt-1.5 text-meta font-semibold uppercase leading-none tracking-wide">{month}</span>
       <span className="text-4xl font-bold leading-tight">{day}</span>
     </div>
   )

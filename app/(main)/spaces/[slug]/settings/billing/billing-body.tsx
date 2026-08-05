@@ -153,8 +153,8 @@ export async function BillingBody({ slug }: { slug: string }) {
 
       <div className="space-y-8">
         <div className="rounded-2xl border border-border bg-surface px-5 py-4 lift-1">
-          <p className="text-xs font-semibold uppercase tracking-widest text-subtle">Current plan</p>
-          <p className="mt-1 text-lg font-bold text-text">{SPACE_PLAN_LABEL[currentPlan]}</p>
+          <p className="text-meta font-semibold uppercase tracking-widest text-subtle">Current plan</p>
+          <p className="mt-1 text-body-lg font-bold text-text">{SPACE_PLAN_LABEL[currentPlan]}</p>
         </div>
 
         {/* MANUAL BILLING AGREEMENT (ADR-872): the read-only receipt for an off-Stripe deal the crew
@@ -162,21 +162,21 @@ export async function BillingBody({ slug }: { slug: string }) {
             No self-serve controls on purpose: the crew manages the deal. */}
         {manualAgreement && (
           <div className="rounded-2xl border border-border bg-surface px-5 py-4 lift-1">
-            <p className="text-xs font-semibold uppercase tracking-widest text-subtle">Billing agreement</p>
-            <p className="mt-1 text-sm font-semibold text-text">
+            <p className="text-meta font-semibold uppercase tracking-widest text-subtle">Billing agreement</p>
+            <p className="mt-1 text-body-sm font-semibold text-text">
               {SPACE_PLAN_LABEL[asSpacePlan(manualAgreement.plan)]} plan, billed{' '}
               {manualAgreement.interval === 'year' ? 'yearly' : 'monthly'}
             </p>
-            <dl className="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
+            <dl className="mt-3 grid gap-x-6 gap-y-2 text-body-sm sm:grid-cols-3">
               <div>
-                <dt className="text-xs text-subtle">Your rate</dt>
+                <dt className="text-meta text-subtle">Your rate</dt>
                 <dd className="font-medium text-text">
                   {manualAgreement.label ??
                     formatAgreementRate(manualAgreement.amountCents, manualAgreement.interval)}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-subtle">Paid through</dt>
+                <dt className="text-meta text-subtle">Paid through</dt>
                 <dd className="font-medium text-text">
                   {new Date(`${manualAgreement.paidThrough}T00:00:00Z`).toLocaleDateString('en-US', {
                     timeZone: 'UTC',
@@ -187,11 +187,11 @@ export async function BillingBody({ slug }: { slug: string }) {
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-subtle">Paid by</dt>
+                <dt className="text-meta text-subtle">Paid by</dt>
                 <dd className="font-medium text-text">{AGREEMENT_METHOD_LABEL[manualAgreement.method]}</dd>
               </div>
             </dl>
-            <p className="mt-3 text-xs text-muted">Managed by the crew. Questions? Reach out.</p>
+            <p className="mt-3 text-meta text-muted">Managed by the crew. Questions? Reach out.</p>
           </div>
         )}
 
@@ -301,14 +301,14 @@ export async function BillingBody({ slug }: { slug: string }) {
             and approval grants the Non Profit plan. We show the current request status if one exists,
             otherwise the "get verified" invite. */}
         <div className="rounded-2xl border border-border bg-surface px-5 py-4">
-          <p className="text-sm font-semibold text-text">Non Profit</p>
+          <p className="text-body-sm font-semibold text-text">Non Profit</p>
           {verification?.status === 'verified' ? (
-            <p className="mt-0.5 text-xs leading-relaxed text-muted">
+            <p className="mt-0.5 text-meta leading-relaxed text-muted">
               Verified 501(c)(3). This space is eligible for the Non Profit plan: the full Collective
               toolkit at one flat monthly price, never per seat.
             </p>
           ) : verification?.status === 'pending' ? (
-            <p className="mt-0.5 text-xs leading-relaxed text-muted">
+            <p className="mt-0.5 text-meta leading-relaxed text-muted">
               Your 501(c)(3) verification is in review.{' '}
               <a href={`/spaces/${space.slug}/settings/billing/verify`} className="font-semibold text-primary-strong underline">
                 Check status
@@ -316,7 +316,7 @@ export async function BillingBody({ slug }: { slug: string }) {
               .
             </p>
           ) : (
-            <p className="mt-0.5 text-xs leading-relaxed text-muted">
+            <p className="mt-0.5 text-meta leading-relaxed text-muted">
               Verified 501(c)(3) organizations get the full Collective toolkit at one flat monthly price,
               never per seat.{' '}
               <a href={`/spaces/${space.slug}/settings/billing/verify`} className="font-semibold text-primary-strong underline">

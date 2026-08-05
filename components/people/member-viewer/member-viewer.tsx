@@ -285,7 +285,7 @@ export function MemberViewer({
   const detailPane = (() => {
     if (!selectedMember) {
       return (
-        <div className="flex h-full items-center justify-center p-8 text-center text-sm text-subtle">
+        <div className="flex h-full items-center justify-center p-8 text-center text-body-sm text-subtle">
           Pick a member to see their details.
         </div>
       )
@@ -334,7 +334,7 @@ export function MemberViewer({
                 onChange={(e) => setSearchText(e.target.value)}
                 placeholder={search.placeholder ?? 'Search members'}
                 aria-label={search.placeholder ?? 'Search members'}
-                className="w-full rounded-control border border-border bg-surface py-2.5 pl-10 pr-9 text-sm text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none"
+                className="w-full rounded-control border border-border bg-surface py-2.5 pl-10 pr-9 text-body-sm text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none"
               />
               {text && (
                 <button
@@ -364,7 +364,7 @@ export function MemberViewer({
                     aria-pressed={active}
                     onClick={() => chooseSort(o.key)}
                     className={cn(
-                      'rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors',
+                      'rounded-lg px-3 py-1.5 text-body-sm font-semibold transition-colors',
                       active
                         ? 'bg-primary text-on-primary'
                         : 'text-muted hover:bg-surface-elevated hover:text-text',
@@ -392,7 +392,7 @@ export function MemberViewer({
                 value={facetSel[f.key] ?? ''}
                 onChange={(e) => setFacet(f.key, e.target.value)}
                 className={cn(
-                  'rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors focus:outline-none',
+                  'rounded-lg border px-2.5 py-1.5 text-meta font-medium transition-colors focus:outline-none',
                   facetSel[f.key]
                     ? 'border-primary bg-primary-bg text-primary-strong'
                     : 'border-border bg-surface text-muted hover:border-primary',
@@ -485,7 +485,7 @@ export function MemberViewer({
                     <button
                       type="button"
                       onClick={() => setPage((p) => p + 1)}
-                      className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                      className="rounded-lg border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
                     >
                       Load more members
                     </button>
@@ -517,7 +517,7 @@ export function MemberViewer({
             <button
               type="button"
               onClick={() => setOverlayOpen(false)}
-              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-body-sm font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden />
               Back
@@ -685,7 +685,7 @@ function ListRow({
           ) : (
             <div
               className={cn(
-                'flex items-center justify-center rounded-pill bg-primary-bg text-xs font-semibold text-primary-strong select-none',
+                'flex items-center justify-center rounded-pill bg-primary-bg text-meta font-semibold text-primary-strong select-none',
                 rich ? 'h-9 w-9' : 'h-8 w-8',
               )}
             >
@@ -702,13 +702,13 @@ function ListRow({
         <div className="min-w-0 flex-1">
           {rich ? (
             <div className="flex items-center gap-2">
-              <p className="min-w-0 flex-1 truncate text-sm font-bold text-text">{member.displayName}</p>
+              <p className="min-w-0 flex-1 truncate text-body-sm font-bold text-text">{member.displayName}</p>
               <MemberTags member={member} />
             </div>
           ) : (
-            <p className="truncate text-sm font-bold text-text">{member.displayName}</p>
+            <p className="truncate text-body-sm font-bold text-text">{member.displayName}</p>
           )}
-          <p className="truncate text-xs text-subtle">{member.headline ?? `@${member.handle}`}</p>
+          <p className="truncate text-meta text-subtle">{member.headline ?? `@${member.handle}`}</p>
           {rich && <MemberMeta member={member} />}
         </div>
       </button>

@@ -32,7 +32,7 @@ async function EngagementContent() {
   const d = await getEngagementDashboard(WINDOW_DAYS)
 
   const byTypeColumns: ColumnDef<EventTypeCount>[] = [
-    { key: 'eventType', header: 'Event', render: (r) => <span className="font-mono text-xs text-text">{r.eventType}</span> },
+    { key: 'eventType', header: 'Event', render: (r) => <span className="font-mono text-meta text-text">{r.eventType}</span> },
     { key: 'events', header: 'Events', type: 'number', render: (r) => r.events.toLocaleString() },
     { key: 'actors', header: 'Members', type: 'number', render: (r) => r.actors.toLocaleString() },
   ]
@@ -91,7 +91,7 @@ async function EngagementContent() {
 function FunnelView({ steps }: { steps: FunnelStep[] }) {
   const top = steps[0]?.actors ?? 0
   if (steps.length === 0) {
-    return <p className="text-sm text-muted">No funnel signal yet in this window.</p>
+    return <p className="text-body-sm text-muted">No funnel signal yet in this window.</p>
   }
   return (
     <div className="space-y-2.5">
@@ -99,7 +99,7 @@ function FunnelView({ steps }: { steps: FunnelStep[] }) {
         const width = top > 0 ? Math.round((s.actors / top) * 100) : 0
         return (
           <div key={s.eventType}>
-            <div className="flex items-baseline justify-between gap-2 text-sm">
+            <div className="flex items-baseline justify-between gap-2 text-body-sm">
               <span className="truncate text-text">{s.step}</span>
               <span className="flex shrink-0 items-center gap-2">
                 {s.dropPct !== null && s.dropPct > 0 && (

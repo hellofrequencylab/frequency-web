@@ -64,7 +64,7 @@ export function CirclesToolbar({ showSearch = true }: { showSearch?: boolean } =
                 type="button"
                 onClick={() => update({ type: key || null })}
                 aria-pressed={active}
-                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors ${
+                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-body-sm font-medium transition-colors ${
                   active ? 'bg-surface text-primary-strong lift-1' : 'text-muted hover:text-text'
                 }`}
               >
@@ -81,7 +81,7 @@ export function CirclesToolbar({ showSearch = true }: { showSearch?: boolean } =
           <select
             value={sort}
             onChange={(e) => update({ sort: e.target.value })}
-            className="cursor-pointer rounded-r-lg bg-transparent py-2 pr-2 text-sm font-medium text-muted focus:outline-none"
+            className="cursor-pointer rounded-r-lg bg-transparent py-2 pr-2 text-body-sm font-medium text-muted focus:outline-none"
             aria-label="Sort circles"
           >
             {SORTS.map((s) => (

@@ -56,7 +56,7 @@ function spaceFrom(puck: PuckArg): SpaceContentData | undefined {
 // visible + draggable there. Never rendered on a live page.
 function EditorStub({ label, hint }: { label: string; hint: string }) {
   return (
-    <div className="rounded-card border border-dashed border-border bg-surface/60 px-4 py-8 text-center text-sm text-muted">
+    <div className="rounded-card border border-dashed border-border bg-surface/60 px-4 py-8 text-center text-body-sm text-muted">
       {label}
       <span className="mt-0.5 block text-2xs text-subtle">{hint}</span>
     </div>
@@ -89,7 +89,7 @@ function SectionTitle({ eyebrow, heading, ink, accent }: { eyebrow?: string; hea
         </p>
       )}
       {heading && (
-        <h2 className={`font-section mt-1.5 text-xl font-bold tracking-tight sm:text-2xl ${accent || (ink ? 'text-on-ink' : 'text-text')}`}>
+        <h2 className={`font-section mt-1.5 text-lead font-bold tracking-tight sm:text-page-title ${accent || (ink ? 'text-on-ink' : 'text-text')}`}>
           {heading}
         </h2>
       )}
@@ -144,7 +144,7 @@ export function CoverBlock({
           <div className="absolute inset-0 bg-black/35" aria-hidden />
           <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
             {eyebrow && (
-              <p className="text-sm font-bold uppercase tracking-[0.25em] text-on-ink/80 mb-3">{eyebrow}</p>
+              <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-on-ink/80 mb-3">{eyebrow}</p>
             )}
             {title && (
               <h1 className="font-display uppercase text-balance text-on-ink text-[clamp(1.875rem,6vw,3.5rem)]">
@@ -193,10 +193,10 @@ export function SpaceUpdatesBlock({
             )}
             <div className="p-6">
               {u.title && (
-                <h3 className={`text-xl font-bold mb-2 ${ink ? 'text-on-ink' : 'text-text'}`}>{u.title}</h3>
+                <h3 className={`text-lead font-bold mb-2 ${ink ? 'text-on-ink' : 'text-text'}`}>{u.title}</h3>
               )}
               {u.body && (
-                <div className={`text-base leading-relaxed space-y-3 ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
+                <div className={`text-body leading-relaxed space-y-3 ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
                   {richParagraphs(u.body)}
                 </div>
               )}
@@ -208,7 +208,7 @@ export function SpaceUpdatesBlock({
         <div className="mt-6">
           <Link
             href={viewAllHref}
-            className={`inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}
+            className={`inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}
           >
             View all updates
           </Link>
@@ -261,7 +261,7 @@ export function SpaceReviewsBlock({
             {reviews.average.toFixed(1)}
           </span>
           <Stars rating={reviews.average} ink={ink} />
-          <span className={`text-sm ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
+          <span className={`text-body-sm ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
             {reviews.count === 1 ? '1 review' : `${reviews.count} reviews`}
           </span>
         </div>
@@ -274,9 +274,9 @@ export function SpaceReviewsBlock({
           >
             <Stars rating={r.rating} ink={ink} />
             {r.body && (
-              <p className={`mt-3 text-base leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-text'}`}>{r.body}</p>
+              <p className={`mt-3 text-body leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-text'}`}>{r.body}</p>
             )}
-            <p className={`mt-3 text-sm font-semibold ${ink ? 'text-on-ink' : 'text-muted'}`}>
+            <p className={`mt-3 text-body-sm font-semibold ${ink ? 'text-on-ink' : 'text-muted'}`}>
               {r.author?.displayName ?? 'Member'}
             </p>
           </article>

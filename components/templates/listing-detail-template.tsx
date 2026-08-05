@@ -33,7 +33,7 @@ import { relativeTime } from '@/lib/utils'
 /** The larger info line directly under the hero: price/terms . location . relative time. */
 function ListingInfoLine({ view }: { view: ListingDetailView }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-base text-muted">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body text-muted">
       {view.priceLabel && <span className="font-semibold text-text">{view.priceLabel}</span>}
       {view.terms && <span>{view.terms}</span>}
       {view.locationLabel && (
@@ -112,7 +112,7 @@ export function ListingDetailTemplate({
           view.isOwner && editHref ? (
             <Link
               href={editHref}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-white/90"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-body-sm font-semibold text-black transition-colors hover:bg-white/90"
             >
               <Pencil className="h-4 w-4" aria-hidden /> Edit listing
             </Link>
@@ -125,7 +125,7 @@ export function ListingDetailTemplate({
         <div className="min-w-0 space-y-1.5">
           <ListingInfoLine view={view} />
           {view.seller && (
-            <Link href={`/people/${view.seller.handle}`} className="inline-block text-sm text-muted hover:text-text">
+            <Link href={`/people/${view.seller.handle}`} className="inline-block text-body-sm text-muted hover:text-text">
               {view.isOwner ? 'Your listing' : 'Posted by'}{' '}
               <span className="font-semibold text-text">{view.seller.displayName}</span>
             </Link>
@@ -152,7 +152,7 @@ export function ListingDetailTemplate({
           <div className="rounded-3xl border border-border bg-surface p-5 lift-1">
             {children}
             {view.description && (
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">{view.description}</p>
+              <p className="whitespace-pre-wrap text-body-sm leading-relaxed text-text">{view.description}</p>
             )}
           </div>
 
@@ -210,7 +210,7 @@ export function ListingDetailTemplate({
                 canOffer={!!myProfileId}
                 highestOfferCents={view.highestOfferCents}
                 revalidatePath={detailPath}
-                triggerClassName="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                triggerClassName="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               />
               {contactNote && <div className="mt-3">{contactNote}</div>}
             </section>
@@ -223,7 +223,7 @@ export function ListingDetailTemplate({
               {editHref && (
                 <Link
                   href={editHref}
-                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
                 >
                   <Pencil className="h-4 w-4" aria-hidden /> Edit listing
                 </Link>

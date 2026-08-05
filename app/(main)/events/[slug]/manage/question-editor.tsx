@@ -77,11 +77,11 @@ export function QuestionEditor({
               <li key={q.id} className="flex items-start gap-3 px-4 py-3">
                 <GripVertical className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-text">
+                  <p className="text-body-sm font-medium text-text">
                     {q.prompt}
-                    {q.required && <span className="ml-1.5 text-xs text-danger">required</span>}
+                    {q.required && <span className="ml-1.5 text-meta text-danger">required</span>}
                   </p>
-                  <p className="mt-0.5 text-xs text-subtle">
+                  <p className="mt-0.5 text-meta text-subtle">
                     {TYPE_LABEL[q.type]}
                     {CHOICE_TYPES.includes(q.type) && q.options.length > 0 && (
                       <span> · {q.options.join(', ')}</span>
@@ -161,7 +161,7 @@ function QuestionDialog({
         action={onSubmit}
         className="rounded-2xl border border-border bg-surface p-5 lift-3"
       >
-        <h3 className="mb-4 text-base font-bold text-text">
+        <h3 className="mb-4 text-body font-bold text-text">
           {isEdit ? 'Edit question' : 'Add a question'}
         </h3>
 
@@ -208,7 +208,7 @@ function QuestionDialog({
                 rows={4}
                 className="mt-1"
               />
-              <p className="mt-1 text-xs text-subtle">One choice per line, or separated by commas.</p>
+              <p className="mt-1 text-meta text-subtle">One choice per line, or separated by commas.</p>
             </div>
           )}
 
@@ -219,7 +219,7 @@ function QuestionDialog({
               defaultChecked={question?.required ?? false}
               className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
             />
-            <span className="text-sm text-text">Require an answer to RSVP</span>
+            <span className="text-body-sm text-text">Require an answer to RSVP</span>
           </label>
         </div>
 

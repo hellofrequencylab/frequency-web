@@ -15,11 +15,11 @@ export const EventCheckin = async () => {
 
   return (
     <div className="@container rounded-2xl border border-primary/30 bg-primary-bg p-4">
-      <h3 className="mb-1.5 flex items-center gap-2 text-sm font-bold text-text">
+      <h3 className="mb-1.5 flex items-center gap-2 text-body-sm font-bold text-text">
         <QrCode className="h-4 w-4 shrink-0 text-primary-strong" />
         Check-in is open
       </h3>
-      <p className="text-sm text-muted">
+      <p className="text-body-sm text-muted">
         This gathering is happening now. Guests can check in to mark that they showed up.
       </p>
     </div>

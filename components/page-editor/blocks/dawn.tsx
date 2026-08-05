@@ -225,7 +225,7 @@ export function PhotoTrioBlock({
         )}
         {intro && (
           <div
-            className={`mx-auto max-w-2xl text-center text-lg leading-relaxed [&>p+p]:mt-4 ${
+            className={`mx-auto max-w-2xl text-center text-body-lg leading-relaxed [&>p+p]:mt-4 ${
               ink ? 'text-on-ink-muted' : 'text-muted'
             }`}
           >
@@ -236,7 +236,7 @@ export function PhotoTrioBlock({
         {footnote && (
           <Reveal>
             <div
-              className={`mx-auto mt-9 max-w-2xl text-center text-base leading-relaxed [&_a]:font-semibold [&_a]:no-underline hover:[&_a]:underline ${
+              className={`mx-auto mt-9 max-w-2xl text-center text-body leading-relaxed [&_a]:font-semibold [&_a]:no-underline hover:[&_a]:underline ${
                 ink ? 'text-on-ink-muted' : 'text-muted'
               }`}
             >
@@ -357,10 +357,10 @@ export function ValueBandBlock({
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary/20 text-primary">
                     <Icon className="h-5 w-5" aria-hidden />
                   </span>
-                  <h3 className="text-lg font-bold text-on-ink">{item.title}</h3>
+                  <h3 className="text-body-lg font-bold text-on-ink">{item.title}</h3>
                 </div>
                 {item.body && (
-                  <p className="mt-3 text-base leading-relaxed text-on-ink-muted">{item.body}</p>
+                  <p className="mt-3 text-body leading-relaxed text-on-ink-muted">{item.body}</p>
                 )}
               </Reveal>
             )
@@ -446,7 +446,7 @@ export function BuildTimelineBlock({
           />
         )}
         {intro && (
-          <div className="mx-auto max-w-2xl text-center text-lg leading-relaxed text-muted [&>p+p]:mt-4">
+          <div className="mx-auto max-w-2xl text-center text-body-lg leading-relaxed text-muted [&>p+p]:mt-4">
             {richParagraphs(intro)}
           </div>
         )}
@@ -465,7 +465,7 @@ export function BuildTimelineBlock({
                   </span>
                   {(item.title || item.tag) && (
                     <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      {item.title && <h3 className="text-lg font-bold text-text">{item.title}</h3>}
+                      {item.title && <h3 className="text-body-lg font-bold text-text">{item.title}</h3>}
                       {item.tag && (
                         <span className="text-3xs font-bold uppercase tracking-widest text-primary-strong">
                           {item.tag}
@@ -474,7 +474,7 @@ export function BuildTimelineBlock({
                     </div>
                   )}
                   {item.body && (
-                    <p className="mt-2 text-base leading-relaxed text-muted">{item.body}</p>
+                    <p className="mt-2 text-body leading-relaxed text-muted">{item.body}</p>
                   )}
                 </Card>
               </Reveal>
@@ -484,7 +484,7 @@ export function BuildTimelineBlock({
         {footnote && (
           <div className="mx-auto mt-10 max-w-2xl">
             <hr className="rule-amber" />
-            <p className="mt-6 text-center text-sm leading-relaxed text-subtle">{footnote}</p>
+            <p className="mt-6 text-center text-body-sm leading-relaxed text-subtle">{footnote}</p>
           </div>
         )}
       </div>
@@ -561,7 +561,7 @@ export function PhotoCardRowBlock({
                 />
                 <span
                   aria-hidden
-                  className="absolute -bottom-4 left-5 flex h-9 w-9 items-center justify-center rounded-pill bg-primary font-display text-sm text-on-primary"
+                  className="absolute -bottom-4 left-5 flex h-9 w-9 items-center justify-center rounded-pill bg-primary font-display text-body-sm text-on-primary"
                 >
                   {card.label || String(i + 1).padStart(2, '0')}
                 </span>
@@ -578,14 +578,14 @@ export function PhotoCardRowBlock({
                 )}
                 {card.title && (
                   <h3
-                    className={`mt-2 font-display uppercase text-2xl ${ink ? 'text-on-ink' : 'text-text'}`}
+                    className={`mt-2 font-display uppercase text-page-title ${ink ? 'text-on-ink' : 'text-text'}`}
                   >
                     {card.title}
                   </h3>
                 )}
                 {card.body && (
                   <p
-                    className={`mt-2 text-base leading-relaxed ${
+                    className={`mt-2 text-body leading-relaxed ${
                       ink ? 'text-on-ink-muted' : 'text-muted'
                     }`}
                   >
@@ -672,7 +672,7 @@ function PlanRateLine({ rate, ink }: { rate?: string; ink: boolean }) {
   const network = rest.join(', ')
   return (
     <p
-      className={`mt-4 border-t pt-3 text-sm leading-relaxed ${
+      className={`mt-4 border-t pt-3 text-body-sm leading-relaxed ${
         ink ? 'border-on-ink/10' : 'border-border'
       }`}
     >
@@ -697,7 +697,7 @@ function PlanPrice({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
     <div className="mt-4">
       {plan.strikePrice && (
         <span className="flex items-baseline gap-2">
-          <span className={`text-sm line-through ${ink ? 'text-on-ink-subtle' : 'text-subtle'}`}>
+          <span className={`text-body-sm line-through ${ink ? 'text-on-ink-subtle' : 'text-subtle'}`}>
             {plan.strikePrice}/mo
           </span>
           <span
@@ -715,7 +715,7 @@ function PlanPrice({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
         {plan.price}
       </span>
       {plan.yearly && (
-        <span className={`mt-1.5 block text-sm ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
+        <span className={`mt-1.5 block text-body-sm ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
           or {plan.yearly}
         </span>
       )}
@@ -730,7 +730,7 @@ function PlanCta({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
     return (
       <Link
         href={href}
-        className="text-emboss mt-5 inline-flex w-full items-center justify-center gap-2 rounded-control bg-primary px-8 py-3.5 text-base font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover"
+        className="text-emboss mt-5 inline-flex w-full items-center justify-center gap-2 rounded-control bg-primary px-8 py-3.5 text-body font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover"
       >
         {plan.ctaLabel}
       </Link>
@@ -739,7 +739,7 @@ function PlanCta({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
   return (
     <Link
       href={href}
-      className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-control px-8 py-3.5 text-base font-bold transition-colors ${
+      className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-control px-8 py-3.5 text-body font-bold transition-colors ${
         ink
           ? 'border border-on-ink/20 bg-on-ink/10 text-on-ink hover:bg-on-ink/15'
           : 'border border-border bg-surface text-text hover:bg-surface-elevated'
@@ -766,28 +766,28 @@ function PlanCard({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
         </span>
       )}
       <h3
-        className={`font-display uppercase ${plan.featured ? 'text-3xl' : 'text-2xl'} ${
+        className={`font-display uppercase ${plan.featured ? 'text-3xl' : 'text-page-title'} ${
           ink ? 'text-on-ink' : 'text-text'
         }`}
       >
         {plan.name}
       </h3>
       {plan.tagline && (
-        <p className={`mt-1 text-sm font-semibold ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
+        <p className={`mt-1 text-body-sm font-semibold ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
           {plan.tagline}
         </p>
       )}
       <PlanPrice plan={plan} ink={ink} />
       {plan.billing && (
-        <p className={`mt-3 text-sm ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{plan.billing}</p>
+        <p className={`mt-3 text-body-sm ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{plan.billing}</p>
       )}
       {plan.trial && (
-        <p className={`mt-1 text-sm font-semibold ${ink ? 'text-on-ink' : 'text-text'}`}>
+        <p className={`mt-1 text-body-sm font-semibold ${ink ? 'text-on-ink' : 'text-text'}`}>
           {plan.trial}
         </p>
       )}
       {plan.forWho && (
-        <p className={`mt-3 flex-1 text-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
+        <p className={`mt-3 flex-1 text-body-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
           {plan.forWho}
         </p>
       )}
@@ -808,26 +808,26 @@ function PlanStrip({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
     >
       <div>
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h3 className={`font-display uppercase text-2xl ${ink ? 'text-on-ink' : 'text-text'}`}>
+          <h3 className={`font-display uppercase text-page-title ${ink ? 'text-on-ink' : 'text-text'}`}>
             {plan.name}
           </h3>
-          <span className={`font-display text-xl ${ink ? 'text-primary' : 'text-primary-strong'}`}>
+          <span className={`font-display text-lead ${ink ? 'text-primary' : 'text-primary-strong'}`}>
             {plan.price}
           </span>
           {plan.yearly && (
-            <span className={`text-sm ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
+            <span className={`text-body-sm ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
               or {plan.yearly}
             </span>
           )}
         </div>
         {plan.tagline && (
-          <p className={`mt-1 text-sm font-semibold ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
+          <p className={`mt-1 text-body-sm font-semibold ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
             {plan.tagline}
           </p>
         )}
         {plan.forWho && (
           <p
-            className={`mt-2 max-w-2xl text-sm leading-relaxed ${
+            className={`mt-2 max-w-2xl text-body-sm leading-relaxed ${
               ink ? 'text-on-ink-muted' : 'text-muted'
             }`}
           >
@@ -835,14 +835,14 @@ function PlanStrip({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
           </p>
         )}
         {plan.rate && (
-          <p className={`mt-2 text-sm ${ink ? 'text-on-ink-subtle' : 'text-subtle'}`}>{plan.rate}</p>
+          <p className={`mt-2 text-body-sm ${ink ? 'text-on-ink-subtle' : 'text-subtle'}`}>{plan.rate}</p>
         )}
       </div>
       {plan.ctaLabel && plan.ctaHref && (
         <div className="shrink-0">
           <Link
             href={safeHref(plan.ctaHref) ?? '#'}
-            className={`inline-flex items-center justify-center gap-2 rounded-control px-8 py-3.5 text-base font-bold transition-colors ${
+            className={`inline-flex items-center justify-center gap-2 rounded-control px-8 py-3.5 text-body font-bold transition-colors ${
               ink
                 ? 'border border-on-ink/20 bg-on-ink/10 text-on-ink hover:bg-on-ink/15'
                 : 'border border-border bg-surface text-text hover:bg-surface-elevated'
@@ -948,7 +948,7 @@ export function PlanBandBlock({
         ))}
         {footnote && (
           <p
-            className={`mx-auto mt-10 max-w-2xl text-center text-base leading-relaxed ${
+            className={`mx-auto mt-10 max-w-2xl text-center text-body leading-relaxed ${
               ink ? 'text-on-ink-muted' : 'text-muted'
             }`}
           >
@@ -1075,7 +1075,7 @@ export function DawnHowToStepsBlock({
         )}
         {intro && (
           <div
-            className={`text-lg leading-relaxed [&>p+p]:mt-4 ${ink ? 'text-on-ink-muted' : 'text-muted'}`}
+            className={`text-body-lg leading-relaxed [&>p+p]:mt-4 ${ink ? 'text-on-ink-muted' : 'text-muted'}`}
           >
             {richParagraphs(intro)}
           </div>
@@ -1115,13 +1115,13 @@ export function DawnHowToStepsBlock({
                   {String(i + 1).padStart(2, '0')}
                 </span>
                 {step.name && (
-                  <h3 className={`mt-2 text-lg font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>
+                  <h3 className={`mt-2 text-body-lg font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>
                     {step.name}
                   </h3>
                 )}
                 {step.text && (
                   <div
-                    className={`mt-2 text-base leading-relaxed [&>p+p]:mt-3 ${
+                    className={`mt-2 text-body leading-relaxed [&>p+p]:mt-3 ${
                       ink ? 'text-on-ink-muted' : 'text-muted'
                     }`}
                   >

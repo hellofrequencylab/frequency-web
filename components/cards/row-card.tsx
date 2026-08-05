@@ -57,20 +57,20 @@ export function RowCard({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           {actions ? (
-            <Link href={href} className="text-base font-bold leading-tight text-text hover:text-primary-strong hover:underline">
+            <Link href={href} className="text-body font-bold leading-tight text-text hover:text-primary-strong hover:underline">
               {title}
             </Link>
           ) : (
-            <h3 className="text-base font-bold leading-tight text-text">{title}</h3>
+            <h3 className="text-body font-bold leading-tight text-text">{title}</h3>
           )}
           {badge}
         </div>
-        {context && <p className="mt-0.5 truncate text-xs text-subtle">{context}</p>}
+        {context && <p className="mt-0.5 truncate text-meta text-subtle">{context}</p>}
         {description && (
-          <p className="mt-0.5 line-clamp-1 text-sm leading-relaxed text-muted">{description}</p>
+          <p className="mt-0.5 line-clamp-1 text-body-sm leading-relaxed text-muted">{description}</p>
         )}
         {meta && (
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-subtle">
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-subtle">
             {meta}
           </div>
         )}

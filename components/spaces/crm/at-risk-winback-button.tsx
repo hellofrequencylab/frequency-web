@@ -33,7 +33,7 @@ export function AtRiskWinBackButton({ slug, contactId }: { slug: string; contact
   }
 
   if (state === 'done') {
-    return <span className="text-xs font-medium tabular-nums text-success">Win-back started</span>
+    return <span className="text-meta font-medium tabular-nums text-success">Win-back started</span>
   }
 
   return (
@@ -42,13 +42,13 @@ export function AtRiskWinBackButton({ slug, contactId }: { slug: string; contact
         type="button"
         onClick={onClick}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface px-3 py-1 text-xs font-medium text-text lift-1 transition-colors hover:bg-surface-elevated disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface px-3 py-1 text-meta font-medium text-text lift-1 transition-colors hover:bg-surface-elevated disabled:opacity-60"
       >
         <HeartHandshake className="h-3.5 w-3.5" aria-hidden />
         {pending ? 'Starting' : 'Win back'}
       </button>
       {state === 'error' && (
-        <span className="text-xs text-danger">That did not go through. Try again.</span>
+        <span className="text-meta text-danger">That did not go through. Try again.</span>
       )}
     </div>
   )

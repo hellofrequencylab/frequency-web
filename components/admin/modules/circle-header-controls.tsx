@@ -95,7 +95,7 @@ export function CircleHeaderControls({
                   aria-pressed={on}
                   onClick={() => onHeightChange(h.value)}
                   className={
-                    'rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors disabled:opacity-40 ' +
+                    'rounded-lg px-2.5 py-1.5 text-meta font-semibold transition-colors disabled:opacity-40 ' +
                     (on
                       ? 'bg-primary text-on-primary'
                       : 'border border-border bg-surface text-text hover:border-border-strong')
@@ -111,7 +111,7 @@ export function CircleHeaderControls({
       </div>
 
       {error && (
-        <p role="alert" className="text-xs font-medium text-danger">
+        <p role="alert" className="text-meta font-medium text-danger">
           {error}
         </p>
       )}

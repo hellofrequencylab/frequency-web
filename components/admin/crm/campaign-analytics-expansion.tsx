@@ -22,7 +22,7 @@ const pct = (n: number): string => `${Math.round(n * 100)}%`
 function Stat({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
   return (
     <div className="rounded-card bg-surface-elevated/60 px-3 py-2">
-      <p className="text-base font-extrabold leading-none tabular-nums text-text">{value}</p>
+      <p className="text-body font-extrabold leading-none tabular-nums text-text">{value}</p>
       <p className="mt-1 text-2xs font-medium text-muted">{label}</p>
       {hint && <p className="mt-0.5 text-2xs text-muted">{hint}</p>}
     </div>
@@ -72,14 +72,14 @@ export function CampaignAnalyticsExpansion({ campaignId }: { campaignId: string 
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 px-4 py-4 text-sm text-muted">
+      <div className="flex items-center gap-2 px-4 py-4 text-body-sm text-muted">
         <LoaderCircle className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden />
         Loading stats...
       </div>
     )
   }
   if (!metrics || !metrics.hasSent) {
-    return <p className="px-4 py-4 text-sm text-muted">No engagement stats for this campaign yet.</p>
+    return <p className="px-4 py-4 text-body-sm text-muted">No engagement stats for this campaign yet.</p>
   }
 
   const legacy = metrics.attributionMode === 'legacy'
@@ -120,7 +120,7 @@ export function CampaignAnalyticsExpansion({ campaignId }: { campaignId: string 
       {/* Vera open-rate analysis (on demand, one gated AI call) */}
       <div className="rounded-card border border-border bg-surface p-3">
         <div className="flex items-center justify-between gap-2">
-          <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-text">
+          <p className="inline-flex items-center gap-1.5 text-meta font-semibold text-text">
             <Sparkles className="h-3.5 w-3.5 text-primary-strong" aria-hidden /> Vera on your open rate
           </p>
           {!coach && (
@@ -128,7 +128,7 @@ export function CampaignAnalyticsExpansion({ campaignId }: { campaignId: string 
               type="button"
               onClick={runCoach}
               disabled={coachLoading || legacy}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1 text-xs font-semibold text-primary-strong transition-colors hover:bg-surface-elevated disabled:opacity-50 motion-reduce:transition-none"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1 text-meta font-semibold text-primary-strong transition-colors hover:bg-surface-elevated disabled:opacity-50 motion-reduce:transition-none"
             >
               {coachLoading ? (
                 <>
@@ -144,7 +144,7 @@ export function CampaignAnalyticsExpansion({ campaignId }: { campaignId: string 
           <p className="mt-1.5 text-2xs text-muted">Analysis needs open and click data, which starts with your next send.</p>
         )}
         {coach && (
-          <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-muted">
+          <p className="mt-2 whitespace-pre-line text-meta leading-relaxed text-muted">
             {coach.ok ? coach.analysis : coach.reason}
           </p>
         )}

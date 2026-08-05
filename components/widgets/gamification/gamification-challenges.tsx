@@ -28,7 +28,7 @@ const challengeColumns: ColumnDef<ChallengeRow>[] = [
   {
     key: 'name',
     header: 'Challenge',
-    render: (c) => <span className="text-sm font-medium text-text truncate">{c.name}</span>,
+    render: (c) => <span className="text-body-sm font-medium text-text truncate">{c.name}</span>,
   },
   {
     key: 'difficulty',

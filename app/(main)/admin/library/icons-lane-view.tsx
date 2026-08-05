@@ -34,18 +34,18 @@ export function IconsLaneView() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-ink">{set.name}</span>
+                    <span className="text-body-sm font-semibold text-ink">{set.name}</span>
                     <span
                       className={
                         set.role === 'house'
-                          ? 'rounded-pill bg-primary px-2 py-0.5 text-xs font-medium text-on-primary'
-                          : 'rounded-pill border border-border px-2 py-0.5 text-xs text-muted'
+                          ? 'rounded-pill bg-primary px-2 py-0.5 text-meta font-medium text-on-primary'
+                          : 'rounded-pill border border-border px-2 py-0.5 text-meta text-muted'
                       }
                     >
                       {set.role === 'house' ? 'House' : 'Coverage'}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-xs text-muted">
+                  <p className="mt-0.5 text-meta text-muted">
                     {set.total.toLocaleString()} glyphs · prefix{' '}
                     <code className="rounded bg-surface-elevated px-1 py-0.5 text-ink">{set.prefix}</code>
                   </p>
@@ -54,7 +54,7 @@ export function IconsLaneView() {
                   href={set.license.url ?? '#'}
                   target="_blank"
                   rel="noreferrer"
-                  className="shrink-0 rounded-pill border border-border px-2.5 py-1 text-xs font-medium text-ink hover:bg-surface-elevated"
+                  className="shrink-0 rounded-pill border border-border px-2.5 py-1 text-meta font-medium text-ink hover:bg-surface-elevated"
                 >
                   {set.license.title} license
                 </a>
@@ -64,7 +64,7 @@ export function IconsLaneView() {
                   <Icon key={s} name={`${set.prefix}:${s}`} className="size-6" />
                 ))}
               </div>
-              <p className="mt-3 text-xs text-muted">
+              <p className="mt-3 text-meta text-muted">
                 by{' '}
                 <a href={set.author.url ?? '#'} target="_blank" rel="noreferrer" className="underline">
                   {set.author.name}
@@ -87,8 +87,8 @@ export function IconsLaneView() {
             >
               <Icon name={name} className="size-5 shrink-0 text-primary" />
               <div className="min-w-0">
-                <p className="truncate text-xs font-medium text-ink">{key}</p>
-                <p className="truncate text-xs text-muted">{name}</p>
+                <p className="truncate text-meta font-medium text-ink">{key}</p>
+                <p className="truncate text-meta text-muted">{name}</p>
               </div>
             </div>
           ))}

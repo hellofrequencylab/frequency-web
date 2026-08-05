@@ -79,17 +79,17 @@ export async function ExpansionTab() {
             {ready.map((p) => (
               <div key={p.city} className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-base font-bold text-text">{p.city}</h3>
+                  <h3 className="text-body font-bold text-text">{p.city}</h3>
                   <StatusChip tone="success" size="sm">
                     <span className="tabular-nums">{p.score}</span>
                   </StatusChip>
                 </div>
-                <p className="mt-2 text-sm text-muted">
+                <p className="mt-2 text-body-sm text-muted">
                   {p.circle_members} members across {p.circles} circle{p.circles === 1 ? '' : 's'} at {pct(p.saturation)} full.
                   {p.unmet > 0 && ` ${p.unmet} more residents not yet in a circle.`}
                 </p>
                 {p.capacityCrunch && (
-                  <p className="mt-2 text-xs font-medium text-warning">Circles are full. People are being turned away.</p>
+                  <p className="mt-2 text-meta font-medium text-warning">Circles are full. People are being turned away.</p>
                 )}
               </div>
             ))}
@@ -130,7 +130,7 @@ export async function ExpansionTab() {
       </AdminSection>
 
       <AdminSection title="How readiness is scored">
-        <p className="max-w-3xl text-sm text-muted">
+        <p className="max-w-3xl text-body-sm text-muted">
           A deterministic blend of three grounded signals: how full existing circles are
           (45%), the local population on the platform (35%, maxing at {READY_MEMBERS} residents),
           and how fast that population is growing (20%). A place with people but no circles caps at

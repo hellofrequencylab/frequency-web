@@ -128,8 +128,8 @@ export default async function UpgradePage({
       {/* Supporter-contribution thanks — the confirmed Stripe success redirect. Plain and concrete. */}
       {supporterThanks && (
         <div className="mb-8 rounded-2xl border border-success/30 bg-success-bg/30 px-5 py-4">
-          <p className="text-sm font-bold text-text">Thank you. Your contribution went through.</p>
-          <p className="mt-0.5 text-xs leading-relaxed text-muted">
+          <p className="text-body-sm font-bold text-text">Thank you. Your contribution went through.</p>
+          <p className="mt-0.5 text-meta leading-relaxed text-muted">
             {formatCents(supporterThanks.amountCents)} to the Foundation, and your Supporter badge is on.
           </p>
         </div>
@@ -139,7 +139,7 @@ export default async function UpgradePage({
       {!live && (
         <div className="rounded-2xl bg-primary-bg border border-primary-bg/50 px-5 py-4 mb-8">
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-xs font-black uppercase tracking-widest text-primary-strong">
+            <span className="text-meta font-black uppercase tracking-widest text-primary-strong">
               Free Beta
             </span>
             <span className="text-3xs font-bold uppercase tracking-wider text-on-primary bg-primary px-2 py-0.5 rounded-md">
@@ -149,7 +149,7 @@ export default async function UpgradePage({
           {/* No "Opening Beta price" promise. Crew is pay-what-you-want, so there is no launch price to
               be offered early and nothing an early member could miss by waiting. Say what is true: it is
               free right now, and when it is sold the member sets the amount. */}
-          <p className="text-sm text-primary-strong/70 dark:text-primary-strong/70 leading-relaxed">
+          <p className="text-body-sm text-primary-strong/70 dark:text-primary-strong/70 leading-relaxed">
             Frequency is in free beta. All features are unlocked for everyone. When paid memberships
             launch, Crew is pay what you want, so you set the amount.
           </p>
@@ -163,8 +163,8 @@ export default async function UpgradePage({
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-on-primary/20 backdrop-blur-sm mb-4">
             <Zap className="w-7 h-7 text-on-primary" />
           </div>
-          <p className="text-2xl font-bold text-on-primary mb-1">Join the Crew</p>
-          <p className="text-primary-bg/80 text-sm">The personal tier: your badge, the whole game, and backing the community</p>
+          <p className="text-page-title font-bold text-on-primary mb-1">Join the Crew</p>
+          <p className="text-primary-bg/80 text-body-sm">The personal tier: your badge, the whole game, and backing the community</p>
           {/* PWYW (ADR-908): Crew has no single price to headline, so the hero states the FLOOR and
               the picker below carries the choice. Never render a struck-through anchor here: there is
               no list price to discount against when the member sets the amount. */}
@@ -174,19 +174,19 @@ export default async function UpgradePage({
                 which was a made-up number for an offer that has no fixed number. */}
             {live ? (
               <>
-                <span className="text-primary-strong text-sm mr-1">from</span>
+                <span className="text-primary-strong text-body-sm mr-1">from</span>
                 <span className="text-4xl font-black text-on-primary">{formatCents(pwyw.minCents)}</span>
-                <span className="text-primary-strong text-sm ml-1">/ month</span>
+                <span className="text-primary-strong text-body-sm ml-1">/ month</span>
               </>
             ) : (
               <>
                 <span className="text-4xl font-black text-on-primary">Free</span>
-                <span className="text-primary-strong text-sm ml-1">during beta</span>
+                <span className="text-primary-strong text-body-sm ml-1">during beta</span>
               </>
             )}
           </div>
           {live && (
-            <p className="mt-1 text-xs text-primary-strong/80">
+            <p className="mt-1 text-meta text-primary-strong/80">
               You pick the amount. {formatCents(pwyw.suggestedCents)} suggested, and every amount buys the same Crew.
             </p>
           )}
@@ -194,7 +194,7 @@ export default async function UpgradePage({
 
         {/* Benefits */}
         <div className="px-6 py-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted mb-4">
+          <p className="text-meta font-semibold uppercase tracking-widest text-muted mb-4">
             What you get
           </p>
           <ul className="space-y-3.5">
@@ -203,7 +203,7 @@ export default async function UpgradePage({
                 <div className="shrink-0 w-8 h-8 rounded-lg bg-success-bg/30 flex items-center justify-center">
                   <Check className="w-4 h-4 text-success" />
                 </div>
-                <span className="text-sm text-text">{label}</span>
+                <span className="text-body-sm text-text">{label}</span>
               </li>
             ))}
           </ul>
@@ -216,7 +216,7 @@ export default async function UpgradePage({
           ) : isCrew ? (
             <Link
               href="/settings/billing"
-              className="flex w-full items-center justify-center gap-2 rounded-control border border-border px-4 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+              className="flex w-full items-center justify-center gap-2 rounded-control border border-border px-4 py-3 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
             >
               Manage your membership <ArrowRight className="h-4 w-4" />
             </Link>
@@ -237,7 +237,7 @@ export default async function UpgradePage({
           (PAGE-FRAMEWORK §5). Informational: nothing here charges, refuses, or removes anything. */}
       <section className="mt-10">
         <SectionHeader title="Your allowances" />
-        <p className="-mt-2 mb-4 text-sm text-muted">
+        <p className="-mt-2 mb-4 text-body-sm text-muted">
           What you have built so far, and what each one carries on Member and on Crew. Everything you
           have already made stays yours on either.
         </p>
@@ -248,7 +248,7 @@ export default async function UpgradePage({
 
       {/* Mission framing (CONTENT-VOICE: plain, concrete, no narrating the reader's feelings, skeptic
           test). State plainly what the membership funds. */}
-      <p className="mt-5 text-center text-xs leading-relaxed text-subtle px-4">
+      <p className="mt-5 text-center text-meta leading-relaxed text-subtle px-4">
         A paid membership keeps Frequency independent. It pays the people and the infrastructure that run
         it, so the work stays member-funded instead of sold to advertisers.
       </p>
@@ -264,7 +264,7 @@ export default async function UpgradePage({
       {/* What happens at launch, stated without a promise we would have to keep. */}
       {!live && (
         <div className="mt-8 text-center px-4">
-          <p className="text-xs text-subtle leading-relaxed">
+          <p className="text-meta text-subtle leading-relaxed">
             You can switch between the free tier and Crew freely during the beta. When paid memberships
             launch you pick what you pay, from {formatCents(pwyw.minCents)} a month, and you can change
             that amount whenever you want.

@@ -86,7 +86,7 @@ export function LeaderboardList({
               }`}
             >
               {/* Position — quiet by design. Not a podium; just where the row sits. */}
-              <span className="w-6 shrink-0 text-center text-sm font-semibold tabular-nums text-subtle">
+              <span className="w-6 shrink-0 text-center text-body-sm font-semibold tabular-nums text-subtle">
                 {position}
               </span>
 
@@ -102,7 +102,7 @@ export function LeaderboardList({
                 />
               ) : (
                 <span
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-xs font-bold text-primary-strong"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-meta font-bold text-primary-strong"
                   aria-hidden
                 >
                   {getInitials(entry.displayName)}
@@ -112,9 +112,9 @@ export function LeaderboardList({
               {/* Name — wraps rather than truncating into oblivion; the rank badge
                   rides beneath it so identity reads on one stacked block. */}
               <span className="flex min-w-0 flex-1 flex-col gap-1">
-                <span className={`text-sm leading-tight ${isSelf ? 'font-bold text-primary-strong' : 'font-semibold text-text'}`}>
+                <span className={`text-body-sm leading-tight ${isSelf ? 'font-bold text-primary-strong' : 'font-semibold text-text'}`}>
                   {entry.displayName}
-                  {isSelf && <span className="ml-1.5 text-xs font-medium text-primary-strong">you</span>}
+                  {isSelf && <span className="ml-1.5 text-meta font-medium text-primary-strong">you</span>}
                 </span>
                 <span className="rank-badge w-fit text-2xs" style={seasonRankStyle(rankDef.rank)}>
                   {rankDef.label}
@@ -124,10 +124,10 @@ export function LeaderboardList({
               {/* The ONE metric for the active track — the only number per row. */}
               <span className="flex shrink-0 items-center gap-1.5 text-right">
                 <Icon className={`h-4 w-4 shrink-0 ${t.iconCls}`} aria-hidden />
-                <span className="text-sm font-bold tabular-nums text-text">
+                <span className="text-body-sm font-bold tabular-nums text-text">
                   {value.toLocaleString()}
                 </span>
-                <span className="hidden text-xs font-medium text-muted sm:inline">{t.unit(value)}</span>
+                <span className="hidden text-meta font-medium text-muted sm:inline">{t.unit(value)}</span>
               </span>
             </Link>
           </li>

@@ -75,20 +75,20 @@ export async function AiDepthUpsell({
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex-1 min-w-[16rem]">
-          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary-strong">
+          <p className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wider text-primary-strong">
             <Icon className="h-3.5 w-3.5" aria-hidden /> Your engine is ready for more
           </p>
-          <h3 id="ai-depth-upsell-heading" className="mt-1.5 text-base font-semibold text-text">
+          <h3 id="ai-depth-upsell-heading" className="mt-1.5 text-body font-semibold text-text">
             {next.title}
           </h3>
-          <p className="mt-1 max-w-prose text-sm text-muted">{next.line}</p>
+          <p className="mt-1 max-w-prose text-body-sm text-muted">{next.line}</p>
           <p className="mt-2 text-2xs text-muted">
             You have run {used.toLocaleString()} engine actions for your room this month.
           </p>
         </div>
         <Link
           href={`/spaces/${slug}/settings/billing`}
-          className="inline-flex shrink-0 items-center gap-1.5 self-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
+          className="inline-flex shrink-0 items-center gap-1.5 self-center rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
         >
           {next.cta}
         </Link>

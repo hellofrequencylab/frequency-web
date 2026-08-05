@@ -82,7 +82,7 @@ export async function MembershipsSection({
           tier's current members in; the membership lifecycle keeps it in sync from then on. */}
       <section>
         <SectionHeader title="Circle access" />
-        <p className="mb-3 text-sm text-muted">
+        <p className="mb-3 text-body-sm text-muted">
           Give each membership its own circle. Members join it automatically while their
           membership is active, and its gatherings show on your space calendar.
         </p>
@@ -95,7 +95,7 @@ export async function MembershipsSection({
           members-ticket gate on the event, the same rows the event's own ticket editor manages. */}
       <section>
         <SectionHeader title="Event access" />
-        <p className="mb-3 text-sm text-muted">
+        <p className="mb-3 text-body-sm text-muted">
           Include your events with a membership. Pick who gets the free Members ticket on each.
         </p>
         <Suspense fallback={<MembersSkeleton />}>

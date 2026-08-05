@@ -48,7 +48,7 @@ export async function ConnectionPanel({
     return (
       <section className="mb-6 rounded-2xl border border-border bg-surface p-4 lift-1">
         <div className="mb-3 flex items-center justify-between gap-2">
-          <p className="flex items-center gap-1.5 text-sm font-bold text-text">
+          <p className="flex items-center gap-1.5 text-body-sm font-bold text-text">
             <Sparkles className="h-4 w-4 text-primary" /> How you’re connected
           </p>
           <span className="rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
@@ -56,7 +56,7 @@ export async function ConnectionPanel({
           </span>
         </div>
 
-        <dl className="space-y-2 text-xs">
+        <dl className="space-y-2 text-meta">
           {tie.metAt && (
             <div className="flex items-center gap-2 text-muted">
               <HowMetIcon className="h-3.5 w-3.5 shrink-0 text-subtle" />
@@ -99,7 +99,7 @@ export async function ConnectionPanel({
               profileId={profileId}
               threadTitle={firstName}
               wrapperClassName="w-full"
-              className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-on-primary transition-colors hover:bg-primary-hover"
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-medium text-on-primary transition-colors hover:bg-primary-hover"
             >
               <MessageSquare className="h-3.5 w-3.5" />
               Reconnect with {firstName}
@@ -117,10 +117,10 @@ export async function ConnectionPanel({
     if (!context) return null
     return (
       <section className="mb-6 rounded-2xl border border-border bg-surface p-4 lift-1">
-        <p className="mb-2 flex items-center gap-1.5 text-sm font-bold text-text">
+        <p className="mb-2 flex items-center gap-1.5 text-body-sm font-bold text-text">
           <Sparkles className="h-4 w-4 text-primary" /> How you’re connected
         </p>
-        <p className="flex items-center gap-2 text-xs text-muted">
+        <p className="flex items-center gap-2 text-meta text-muted">
           <Users className="h-3.5 w-3.5 shrink-0 text-subtle" /> {context}
         </p>
       </section>
@@ -134,10 +134,10 @@ export async function ConnectionPanel({
 
   return (
     <section className="mb-6 rounded-2xl border border-border bg-surface p-4 lift-1">
-      <p className="mb-1 flex items-center gap-1.5 text-sm font-bold text-text">
+      <p className="mb-1 flex items-center gap-1.5 text-body-sm font-bold text-text">
         <Sparkles className="h-4 w-4 text-primary" /> Connect with {firstName}
       </p>
-      <p className="mb-3 text-xs text-muted">
+      <p className="mb-3 text-meta text-muted">
         You’re not connected yet. Add {firstName} to start building your shared history.
       </p>
       <div className="[&_button]:w-full [&_button]:justify-center">{friendAction}</div>

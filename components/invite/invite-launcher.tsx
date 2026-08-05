@@ -77,7 +77,7 @@ export function InviteLauncher() {
         style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
       >
         <div className="mb-1 flex items-center justify-between">
-          <p className="flex items-center gap-2 text-base font-bold text-text">
+          <p className="flex items-center gap-2 text-body font-bold text-text">
             <UserPlus className="h-5 w-5 text-primary-strong" /> Invite friends
           </p>
           <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="rounded-pill p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text">
@@ -90,7 +90,7 @@ export function InviteLauncher() {
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-primary text-on-primary shadow-pop">
             <Zap className="h-5 w-5" />
           </span>
-          <p className="text-sm leading-snug text-text">
+          <p className="text-body-sm leading-snug text-text">
             Earn <span className="font-bold text-primary-strong">40 <Zap className="inline h-3.5 w-3.5 fill-current" /></span> for every friend who joins through your link, and you’ll be connected automatically.
           </p>
         </div>
@@ -98,7 +98,7 @@ export function InviteLauncher() {
         {pending && !data ? (
           <div className="flex items-center justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-subtle" /></div>
         ) : error ? (
-          <p className="py-8 text-center text-sm text-danger">{error}</p>
+          <p className="py-8 text-center text-body-sm text-danger">{error}</p>
         ) : data ? (
           <>
             {/* QR for in-person */}
@@ -112,14 +112,14 @@ export function InviteLauncher() {
 
             {/* Link + actions */}
             <div className="mt-4 flex items-center gap-2">
-              <code className="min-w-0 flex-1 truncate rounded-lg border border-border bg-surface px-3 py-2 font-mono text-xs text-muted" title={data.url}>{data.url}</code>
-              <button type="button" onClick={copy} className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated">
+              <code className="min-w-0 flex-1 truncate rounded-lg border border-border bg-surface px-3 py-2 font-mono text-meta text-muted" title={data.url}>{data.url}</code>
+              <button type="button" onClick={copy} className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated">
                 {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Link2 className="h-3.5 w-3.5" />}
                 {copied ? 'Copied' : 'Copy'}
               </button>
             </div>
 
-            <button type="button" onClick={share} className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
+            <button type="button" onClick={share} className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
               <Share2 className="h-4 w-4" /> Share your invite
             </button>
 

@@ -18,7 +18,7 @@ export function CaptureShell({
   return (
     <div className="min-h-screen flex items-center justify-center bg-canvas px-6 py-12">
       <div className="w-full max-w-md">
-        <Link href="/" className="mb-6 inline-block text-xl font-black tracking-tight text-text">
+        <Link href="/" className="mb-6 inline-block text-lead font-black tracking-tight text-text">
           frequency
         </Link>
         <div className="rounded-2xl border border-border bg-surface p-8 lift-1">

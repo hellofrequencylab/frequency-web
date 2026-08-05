@@ -66,22 +66,22 @@ function CardRow({ card, onDone }: { card: TodayCard; onDone: (contactId: string
   return (
     <li className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <span className="text-sm font-bold text-text">{card.name}</span>
-        <span className="text-xs text-subtle">{card.context}</span>
+        <span className="text-body-sm font-bold text-text">{card.name}</span>
+        <span className="text-meta text-subtle">{card.context}</span>
         <span className={`ml-auto rounded-pill px-2 py-0.5 text-2xs font-medium ${chip.cls}`}>{chip.label}</span>
         <span className={`rounded-pill px-2 py-0.5 text-2xs font-medium ${badge.cls}`}>{badge.label}</span>
       </div>
 
-      <p className="mt-2 text-sm text-muted">{card.whyNow}</p>
+      <p className="mt-2 text-body-sm text-muted">{card.whyNow}</p>
 
       {/* The "top signals" line (Phase 3 · ADR-384): the drivers behind the read, so the operator
           sees WHY, never a bare score. */}
       {card.signals.length > 0 && (
-        <p className="mt-1 text-xs text-subtle">
+        <p className="mt-1 text-meta text-subtle">
           <span className="font-medium">Top signals:</span> {card.signals.join(' · ')}
         </p>
       )}
-      <p className="mt-1 text-sm font-medium text-text">{card.actionDraft}</p>
+      <p className="mt-1 text-body-sm font-medium text-text">{card.actionDraft}</p>
 
       {tweaking && isOutbound && (
         <div className="mt-3 space-y-2">
@@ -90,26 +90,26 @@ function CardRow({ card, onDone }: { card: TodayCard; onDone: (contactId: string
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder="Subject"
-            className="w-full rounded-control border border-border bg-canvas px-3 py-2 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+            className="w-full rounded-control border border-border bg-canvas px-3 py-2 text-body-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
           />
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Write the note in your own words. You approve before it sends."
             rows={4}
-            className="w-full rounded-control border border-border bg-canvas px-3 py-2 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+            className="w-full rounded-control border border-border bg-canvas px-3 py-2 text-body-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
           />
         </div>
       )}
 
-      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+      {error && <p className="mt-2 text-body-sm text-danger">{error}</p>}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
           type="button"
           disabled={pending}
           onClick={doIt}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-medium text-on-primary transition-colors hover:bg-primary-strong disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-body-sm font-medium text-on-primary transition-colors hover:bg-primary-strong disabled:opacity-50"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
           Do it
@@ -119,7 +119,7 @@ function CardRow({ card, onDone }: { card: TodayCard; onDone: (contactId: string
             type="button"
             disabled={pending}
             onClick={() => setTweaking((t) => !t)}
-            className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
           >
             <Pencil className="h-4 w-4" />
             Tweak
@@ -129,7 +129,7 @@ function CardRow({ card, onDone }: { card: TodayCard; onDone: (contactId: string
           type="button"
           disabled={pending}
           onClick={notNow}
-          className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
         >
           <X className="h-4 w-4" />
           Not now
@@ -146,7 +146,7 @@ export function TodayCards({ cards }: { cards: TodayCard[] }) {
   const visible = cards.filter((c) => !cleared.has(c.contactId))
 
   if (visible.length === 0) {
-    return <p className="text-sm text-muted">Cleared for now. Vera will line up the next moves overnight.</p>
+    return <p className="text-body-sm text-muted">Cleared for now. Vera will line up the next moves overnight.</p>
   }
 
   return (

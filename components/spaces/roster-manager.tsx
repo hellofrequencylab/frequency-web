@@ -77,7 +77,7 @@ function Avatar({ row }: { row: RosterRow }) {
   }
   return (
     <span
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-sm font-semibold text-primary-strong select-none"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-body-sm font-semibold text-primary-strong select-none"
       aria-hidden
     >
       {getInitials(row.displayName)}
@@ -198,7 +198,7 @@ export function RosterManager({
       {/* Bulk action bar — appears once members are selected. */}
       {selected.size > 0 && (
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface-elevated p-3 lift-1">
-          <span className="text-sm font-medium text-text">
+          <span className="text-body-sm font-medium text-text">
             {selected.size} selected
           </span>
           <div className="flex items-center gap-2">
@@ -207,7 +207,7 @@ export function RosterManager({
               onChange={(e) => setBulkRole(e.target.value as SpaceRole)}
               disabled={bulkPending}
               aria-label="Role to assign in bulk"
-              className={cn(fieldClasses, 'w-auto py-1.5 text-xs')}
+              className={cn(fieldClasses, 'w-auto py-1.5 text-meta')}
             >
               {ROLE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -261,12 +261,12 @@ export function RosterManager({
       )}
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
+        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
       {notice && !error && (
-        <p className="text-sm font-medium text-success" role="status">
+        <p className="text-body-sm font-medium text-success" role="status">
           {notice}
         </p>
       )}
@@ -274,7 +274,7 @@ export function RosterManager({
       <div className="overflow-hidden rounded-2xl border border-border bg-surface lift-1">
         {/* Select-all header (only when there are selectable members). */}
         {selectableIds.length > 0 && (
-          <div className="flex items-center gap-3 border-b border-border px-4 py-2.5 text-xs font-medium text-muted">
+          <div className="flex items-center gap-3 border-b border-border px-4 py-2.5 text-meta font-medium text-muted">
             <input
               type="checkbox"
               checked={allSelected}
@@ -316,12 +316,12 @@ export function RosterManager({
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/people/${row.handle}`}
-                    className="inline-flex items-center gap-1.5 truncate text-sm font-semibold text-text transition-colors hover:text-primary-strong"
+                    className="inline-flex items-center gap-1.5 truncate text-body-sm font-semibold text-text transition-colors hover:text-primary-strong"
                   >
                     {row.displayName}
                     {row.isDemo && <DemoBadge />}
                   </Link>
-                  <p className="truncate text-xs text-muted">
+                  <p className="truncate text-meta text-muted">
                     @{row.handle}
                     {suspended && <span className="ml-2 font-medium text-warning">Suspended</span>}
                   </p>
@@ -329,7 +329,7 @@ export function RosterManager({
 
                 {/* The owner is shown read-only; members get the role select + actions. */}
                 {row.isOwner ? (
-                  <span className="shrink-0 text-sm font-medium text-primary-strong">Owner</span>
+                  <span className="shrink-0 text-body-sm font-medium text-primary-strong">Owner</span>
                 ) : (
                   <div className="flex shrink-0 items-center gap-2">
                     <select
@@ -338,7 +338,7 @@ export function RosterManager({
                       disabled={anyPending || suspended}
                       aria-label={`Role for ${row.displayName}`}
                       title={suspended ? 'Reactivate to change the role' : undefined}
-                      className={cn(fieldClasses, 'w-auto py-1.5 text-xs')}
+                      className={cn(fieldClasses, 'w-auto py-1.5 text-meta')}
                     >
                       {ROLE_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -394,7 +394,7 @@ export function RosterManager({
         </ul>
       </div>
 
-      <p className="text-xs text-subtle">
+      <p className="text-meta text-subtle">
         Roles climb a ladder: Member, Editor, Moderator, Admin. Editors can shape the space, Moderators
         can invite, Admins can manage the team. Suspending a member keeps their history but pauses their
         access until you reactivate them. {ROLE_LABEL.admin}s and the Owner manage members.

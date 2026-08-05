@@ -139,10 +139,10 @@ export function ItemEditor({
           ) : (
             <ChevronRight className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
           )}
-          <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">
+          <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-text">
             {item.label || 'Untitled link'}
           </span>
-          <span className="truncate text-xs text-subtle">{item.href}</span>
+          <span className="truncate text-meta text-subtle">{item.href}</span>
         </button>
         <OnOffToggle
           mode={item.mode}
@@ -165,7 +165,7 @@ export function ItemEditor({
       </div>
 
       {open && pinned && (
-        <div className="space-y-2 border-t border-border px-3 py-3 text-xs text-subtle">
+        <div className="space-y-2 border-t border-border px-3 py-3 text-meta text-subtle">
           <p>
             Profile is pinned beside Feed and shown to every signed-in member. Its link is
             personal to each viewer, so it cannot be renamed, retargeted, moved, or removed
@@ -176,11 +176,11 @@ export function ItemEditor({
 
       {open && !pinned && (
         <div className="space-y-4 border-t border-border px-3 py-3">
-          {error && <p className="text-sm text-danger">{error}</p>}
+          {error && <p className="text-body-sm text-danger">{error}</p>}
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="min-w-0">
-              <label className="mb-1 block text-xs font-semibold text-subtle" htmlFor={`label-${item.id}`}>
+              <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`label-${item.id}`}>
                 Label
               </label>
               <input
@@ -190,7 +190,7 @@ export function ItemEditor({
                 disabled={isPending}
                 onChange={(e) => setLabel(e.target.value)}
                 onBlur={() => label !== item.label && save({ label }, { label })}
-                className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
               />
             </div>
             <LinkTargetField
@@ -204,7 +204,7 @@ export function ItemEditor({
             <button
               type="button"
               onClick={() => save({ href }, { href })}
-              className="text-xs font-semibold text-primary-strong hover:underline"
+              className="text-meta font-semibold text-primary-strong hover:underline"
             >
               Save link target
             </button>
@@ -212,7 +212,7 @@ export function ItemEditor({
 
           {/* Requirement 4: per-item subheading (the one-line description). */}
           <div className="min-w-0">
-            <label className="mb-1 block text-xs font-semibold text-subtle" htmlFor={`sub-${item.id}`}>
+            <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`sub-${item.id}`}>
               Subheading
             </label>
             <input
@@ -226,7 +226,7 @@ export function ItemEditor({
                 subheading !== (item.subheading ?? '') &&
                 save({ subheading: subheading || null }, { subheading: subheading || undefined })
               }
-              className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+              className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
             />
           </div>
 
@@ -252,7 +252,7 @@ export function ItemEditor({
           {hasGhostRole && (
             <div className="grid gap-3 rounded-lg border border-warning/30 bg-warning-bg/40 p-3 sm:grid-cols-2">
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold text-subtle" htmlFor={`gt-${item.id}`}>
+                <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`gt-${item.id}`}>
                   Ghost tier
                 </label>
                 <input
@@ -266,11 +266,11 @@ export function ItemEditor({
                     ghostTier !== (item.ghostTier ?? 'crew') &&
                     save({ ghostTier: ghostTier || null }, { ghostTier: ghostTier || undefined })
                   }
-                  className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                  className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
                 />
               </div>
               <div className="min-w-0 sm:row-span-1">
-                <label className="mb-1 block text-xs font-semibold text-subtle" htmlFor={`gm-${item.id}`}>
+                <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`gm-${item.id}`}>
                   Ghost upsell message
                 </label>
                 <input
@@ -284,7 +284,7 @@ export function ItemEditor({
                     ghostMessage !== (item.ghostMessage ?? '') &&
                     save({ ghostMessage: ghostMessage || null }, { ghostMessage: ghostMessage || undefined })
                   }
-                  className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                  className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
                 />
               </div>
             </div>
@@ -292,7 +292,7 @@ export function ItemEditor({
 
           {/* Two-axis access gate (ADR-390): the floor + optional staff domain. */}
           <div>
-            <p className="mb-1.5 text-xs font-semibold text-subtle">Who can see this</p>
+            <p className="mb-1.5 text-meta font-semibold text-subtle">Who can see this</p>
             <GateControls
               minAccess={item.minAccess}
               staffDomain={item.staffDomain}
@@ -395,7 +395,7 @@ function NumField({
   const initial = value == null ? '' : String(value)
   return (
     <div className="min-w-0">
-      <label className="mb-1 block text-xs font-semibold text-subtle">{label}</label>
+      <label className="mb-1 block text-meta font-semibold text-subtle">{label}</label>
       <input
         type="number"
         inputMode="numeric"
@@ -413,7 +413,7 @@ function NumField({
             if (Number.isFinite(n)) onCommit(n)
           }
         }}
-        className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-sm tabular-nums text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+        className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm tabular-nums text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
       />
     </div>
   )

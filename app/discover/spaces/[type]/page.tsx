@@ -111,7 +111,7 @@ export default async function DiscoverSpacesByTypePage({
         <Section tone="surface">
           <div className="mx-auto max-w-md text-center">
             <Building2 className="mx-auto h-8 w-8 text-subtle" aria-hidden />
-            <p className="mt-3 text-sm text-muted">
+            <p className="mt-3 text-body-sm text-muted">
               No {hub.plural.toLowerCase()} here yet. Be the first to claim one.
             </p>
           </div>
@@ -120,7 +120,7 @@ export default async function DiscoverSpacesByTypePage({
 
       {/* Cross-links to the other type hubs, so each page feeds the others (hub-and-spoke). */}
       <Section tone="canvas">
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm">
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-body-sm">
           <Link
             href="/spaces"
             className="inline-flex items-center gap-1.5 font-semibold text-primary-strong hover:underline"

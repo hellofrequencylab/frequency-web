@@ -186,7 +186,7 @@ export function StageEditor({
     <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <p className="text-sm font-bold text-text">Edit stages</p>
+          <p className="text-body-sm font-bold text-text">Edit stages</p>
           {pending && <Loader2 className="h-3.5 w-3.5 animate-spin text-subtle" aria-hidden />}
         </div>
         <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
@@ -194,13 +194,13 @@ export function StageEditor({
         </Button>
       </div>
 
-      <p className="mb-3 text-xs text-muted">
+      <p className="mb-3 text-meta text-muted">
         Rename a stage, set whether it counts as Open, Won, or Lost, and drag to reorder. Keep at least
         one Won and one Lost stage. Removing a stage moves its deals to your next open stage.
       </p>
 
       {error && (
-        <p className="mb-3 rounded-lg border border-danger bg-danger-bg px-3 py-2 text-sm font-medium text-danger">
+        <p className="mb-3 rounded-lg border border-danger bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger">
           {error}
         </p>
       )}
@@ -260,7 +260,7 @@ export function StageEditor({
                     ;(e.target as HTMLInputElement).blur()
                   }
                 }}
-                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
               />
 
               <label className="sr-only" htmlFor={`kind-${stage.id}`}>
@@ -271,7 +271,7 @@ export function StageEditor({
                 value={stage.kind}
                 disabled={pending}
                 onChange={(e) => changeKind(stage, e.target.value as StageKind)}
-                className="rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text outline-none focus:border-primary"
+                className="rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text outline-none focus:border-primary"
               >
                 {KIND_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -310,7 +310,7 @@ export function StageEditor({
               addStage()
             }
           }}
-          className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+          className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
         />
         <label className="sr-only" htmlFor="new-stage-kind">
           New stage type
@@ -320,7 +320,7 @@ export function StageEditor({
           value={newKind}
           disabled={pending}
           onChange={(e) => setNewKind(e.target.value as StageKind)}
-          className="rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text outline-none focus:border-primary"
+          className="rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text outline-none focus:border-primary"
         >
           {KIND_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -333,7 +333,7 @@ export function StageEditor({
         </Button>
       </div>
 
-      <div className="mt-3 flex items-center gap-2 text-xs text-subtle">
+      <div className="mt-3 flex items-center gap-2 text-meta text-subtle">
         <X className="h-3 w-3" aria-hidden />
         Changes save as you make them.
       </div>

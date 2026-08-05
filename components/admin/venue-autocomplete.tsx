@@ -130,7 +130,7 @@ export function VenueAutocomplete({
         disabled={disabled}
         className={
           className ??
-          'w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-9 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none disabled:opacity-50'
+          'w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-9 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none disabled:opacity-50'
         }
       />
       {(loading || q) && (
@@ -156,13 +156,13 @@ export function VenueAutocomplete({
                   setQ(r.name ?? r.label)
                   setOpen(false)
                 }}
-                className="flex w-full items-start gap-2 px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated"
+                className="flex w-full items-start gap-2 px-3 py-2 text-left text-body-sm text-text hover:bg-surface-elevated"
               >
                 <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary-strong" />
                 <span className="min-w-0">
                   <span className="block truncate font-medium">{r.name ?? r.label}</span>
                   {r.label !== r.name && (
-                    <span className="block truncate text-xs text-subtle">{r.label}</span>
+                    <span className="block truncate text-meta text-subtle">{r.label}</span>
                   )}
                 </span>
               </button>

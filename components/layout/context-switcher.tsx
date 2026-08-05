@@ -121,7 +121,7 @@ export function ContextSwitcher({
         disabled={isPending}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+        className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
       >
         <span className="text-3xs font-semibold uppercase tracking-wider text-muted">In</span>
         <span className="flex-1 truncate text-left">{activeLabel(context, available)}</span>
@@ -159,7 +159,7 @@ export function ContextSwitcher({
                   key={key}
                   role="menuitem"
                   onClick={() => choose(target)}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-text transition-colors hover:bg-surface"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-body-sm text-text transition-colors hover:bg-surface"
                 >
                   <ContextIcon option={option} />
                   <span className="flex-1 truncate text-left">{option.label}</span>
@@ -174,7 +174,7 @@ export function ContextSwitcher({
                 <a
                   role="menuitem"
                   href={OPERATING_HUB}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface"
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface"
                 >
                   <ArrowUpRight className="h-4 w-4 shrink-0 text-muted" />
                   Manage your spaces

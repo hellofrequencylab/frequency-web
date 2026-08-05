@@ -22,7 +22,7 @@ export async function ConnectionsPulse() {
     <section className="rounded-2xl border border-border bg-surface-elevated p-5">
       <div className="flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-primary-strong" />
-        <h2 className="text-sm font-bold tracking-tight text-text">Connect with others</h2>
+        <h2 className="text-body-sm font-bold tracking-tight text-text">Connect with others</h2>
       </div>
       <p className="mt-1 text-2xs text-muted">A few people it might be nice to reach out to this week.</p>
 
@@ -38,7 +38,7 @@ export async function ConnectionsPulse() {
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/people/${m.handle}`}
-                    className="block truncate text-sm font-semibold text-text hover:text-primary-strong"
+                    className="block truncate text-body-sm font-semibold text-text hover:text-primary-strong"
                   >
                     {m.displayName}
                   </Link>
@@ -65,7 +65,7 @@ export async function ConnectionsPulse() {
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/people/${m.handle}`}
-                    className="block truncate text-sm font-semibold text-text hover:text-primary-strong"
+                    className="block truncate text-body-sm font-semibold text-text hover:text-primary-strong"
                   >
                     {m.displayName}
                   </Link>

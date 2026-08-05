@@ -44,7 +44,7 @@ export default function BetaPage() {
         title="Be one of the first."
         subtitle={`Frequency is open in ${FOUNDING_PLACE} and wherever someone starts the first Circle. Walk in today, no invite needed.`}
         footer={
-          <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-on-ink/60">
+          <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-body-sm text-on-ink/60">
             <span className="font-semibold text-on-ink/80">Free during the beta.</span>
             <span aria-hidden className="text-on-ink/30">·</span>
             <span>No card · Pay what you want later · Leave anytime</span>
@@ -57,7 +57,7 @@ export default function BetaPage() {
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-start">
           {/* Why you're here */}
           <div>
-            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
+            <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
               What you&apos;re joining
             </p>
             <h2 className="font-display uppercase text-text text-4xl sm:text-5xl mb-7">
@@ -70,8 +70,8 @@ export default function BetaPage() {
                     <Icon className="w-5 h-5 text-primary-strong" aria-hidden />
                   </span>
                   <div>
-                    <p className="text-base font-bold text-text">{label}</p>
-                    <p className="text-sm text-muted leading-relaxed mt-0.5">{body}</p>
+                    <p className="text-body font-bold text-text">{label}</p>
+                    <p className="text-body-sm text-muted leading-relaxed mt-0.5">{body}</p>
                   </div>
                 </li>
               ))}
@@ -83,20 +83,20 @@ export default function BetaPage() {
           <div className="lg:pt-1">
             <div className="rounded-2xl border border-border bg-surface p-7 sm:p-8 lift-1 text-center">
               <h3 className="font-display uppercase text-text text-3xl mb-2">The door is open</h3>
-              <p className="text-base text-muted leading-relaxed mb-6">
+              <p className="text-body text-muted leading-relaxed mb-6">
                 No invite, no waiting list. Start a Circle where you live, or join one that is
                 already meeting.
               </p>
               <Button href={BETA_CTA_HREF} className="w-full">
                 {BETA_CTA_LABEL}
               </Button>
-              <p className="mt-3 text-sm text-muted">
+              <p className="mt-3 text-body-sm text-muted">
                 <Link href={BETA_CTA_HREF} className="font-semibold text-primary-strong hover:underline">
                   {BETA_CTA_SECONDARY_LABEL}
                 </Link>
               </p>
             </div>
-            <p className="mt-4 text-center text-xs text-subtle leading-relaxed">
+            <p className="mt-4 text-center text-meta text-subtle leading-relaxed">
               Free for the whole beta. No card, and you can leave anytime.
             </p>
           </div>
@@ -112,7 +112,7 @@ export default function BetaPage() {
       {/* ── How it works after you sign up ───────────────────────────────── */}
       <Section tone="canvas" pad="py-20 sm:py-24">
         <div className="text-center mb-12">
-          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
+          <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
             What happens next
           </p>
           <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">
@@ -129,12 +129,12 @@ export default function BetaPage() {
               <span className="font-display text-3xl text-border-strong" aria-hidden>
                 {s.n}
               </span>
-              <p className="mt-3 text-lg font-bold text-text">{s.t}</p>
-              <p className="mt-1.5 text-sm text-muted leading-relaxed">{s.b}</p>
+              <p className="mt-3 text-body-lg font-bold text-text">{s.t}</p>
+              <p className="mt-1.5 text-body-sm text-muted leading-relaxed">{s.b}</p>
             </li>
           ))}
         </ol>
-        <p className="mt-10 text-center text-sm text-muted">
+        <p className="mt-10 text-center text-body-sm text-muted">
           Curious first?{' '}
           <Link href="/the-community" className="font-semibold text-primary-strong hover:underline">
             See how it works

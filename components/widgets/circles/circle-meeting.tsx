@@ -33,7 +33,7 @@ export const CircleMeeting = async () => {
 
   return (
     <div className="@container rounded-2xl border border-border bg-surface p-4">
-      <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-text">
+      <h3 className="mb-3 flex items-center gap-2 text-body-sm font-bold text-text">
         {isOnline ? (
           <Globe className="h-4 w-4 shrink-0 text-primary-strong" />
         ) : (
@@ -41,7 +41,7 @@ export const CircleMeeting = async () => {
         )}
         How we meet
       </h3>
-      <ul className="space-y-2 text-sm text-muted">
+      <ul className="space-y-2 text-body-sm text-muted">
         {place && (
           <li className="flex items-start gap-2">
             {isOnline ? (

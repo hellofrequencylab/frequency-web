@@ -143,15 +143,15 @@ export function TourProvider({
       <div className="flex items-start gap-2.5">
         <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold text-text">{tip.title}</p>
-          <p className="mt-1 text-sm leading-snug text-muted">{tip.body}</p>
+          <p className="text-body-sm font-bold text-text">{tip.title}</p>
+          <p className="mt-1 text-body-sm leading-snug text-muted">{tip.body}</p>
           {(tip.cta || tip.cta2) && (
             <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
               {tip.cta && (
                 <Link
                   href={tip.cta.href}
                   onClick={() => close('cta')}
-                  className="inline-flex items-center rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                  className="inline-flex items-center rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
                 >
                   {tip.cta.label}
                 </Link>
@@ -160,7 +160,7 @@ export function TourProvider({
                 <Link
                   href={tip.cta2.href}
                   onClick={() => close('cta')}
-                  className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm font-medium text-primary-strong transition-colors hover:bg-primary-bg"
+                  className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-body-sm font-medium text-primary-strong transition-colors hover:bg-primary-bg"
                 >
                   <Sparkles className="h-3.5 w-3.5" aria-hidden /> {tip.cta2.label}
                 </Link>

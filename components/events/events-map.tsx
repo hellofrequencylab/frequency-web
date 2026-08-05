@@ -37,7 +37,7 @@ export default function EventsMap({
   if (pins.length === 0) {
     return (
       <div className="flex h-[420px] w-full items-center justify-center rounded-2xl border border-dashed border-border bg-surface/60 px-6 text-center">
-        <p className="text-sm text-muted">
+        <p className="text-body-sm text-muted">
           No in-person events with a location to map yet. Online events and ones without a place
           set don&rsquo;t show here.
         </p>

@@ -68,7 +68,7 @@ const WEIGHT_OPTIONS: { value: WeightClass; label: string; zaps: number }[] = [
   { value: 'heavy', label: 'Heavy', zaps: 15 },
 ]
 
-const FIELD = 'rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
+const FIELD = 'rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
 export interface PracticeBuilderProps {
   id: string
@@ -295,14 +295,14 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
     <StudioFooter left={<SaveStatus state={saveState} error={error} />}>
       <a
         href={`/practices/${props.id}`}
-        className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+        className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
       >
         <Eye className="h-4 w-4" /> View
       </a>
       <button
         type="button"
         onClick={close}
-        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
       >
         Done
       </button>
@@ -350,7 +350,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                   hint="Shown as the practice's face on cards and the header."
                 />
               </div>
-              <button type="button" onClick={() => { setIcon(''); setHeaderImage(''); setIconOpen(false); queueSave({ icon: '', header_image: null }) }} className="mt-2 text-xs text-subtle hover:text-text">Use default</button>
+              <button type="button" onClick={() => { setIcon(''); setHeaderImage(''); setIconOpen(false); queueSave({ icon: '', header_image: null }) }} className="mt-2 text-meta text-subtle hover:text-text">Use default</button>
             </div>
           )}
         </div>
@@ -360,14 +360,14 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             onChange={(e) => { setTitle(e.target.value); queueSave({ title: e.target.value }) }}
             maxLength={80}
             placeholder="Name your practice"
-            className="w-full bg-transparent text-2xl font-bold text-text outline-none placeholder:text-subtle"
+            className="w-full bg-transparent text-page-title font-bold text-text outline-none placeholder:text-subtle"
           />
           <input
             value={summary}
             onChange={(e) => { setSummary(e.target.value); queueSave({ summary: e.target.value }) }}
             maxLength={140}
             placeholder="A short hook shown on the card"
-            className="mt-1 w-full bg-transparent text-sm text-muted outline-none placeholder:text-subtle"
+            className="mt-1 w-full bg-transparent text-body-sm text-muted outline-none placeholder:text-subtle"
           />
           <p className="mt-1 text-2xs text-muted">Click the icon, name, and hook to edit.</p>
         </div>
@@ -390,7 +390,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                 type="button"
                 aria-pressed={active}
                 onClick={() => toggleFocus(p.id)}
-                className={`min-h-11 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                className={`min-h-11 rounded-lg border px-3 py-2 text-body-sm font-medium transition-colors ${
                   active
                     ? 'border-primary/50 bg-primary-bg text-primary-strong'
                     : 'border-border bg-surface text-muted hover:bg-surface-elevated'
@@ -401,7 +401,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             )
           })}
         </div>
-        <p className="mt-1 text-xs text-subtle">Pick one or more. Each gets its own instructions and timing below.</p>
+        <p className="mt-1 text-meta text-subtle">Pick one or more. Each gets its own instructions and timing below.</p>
       </fieldset>
 
       {/* Per-Focus instructions + timing. Appears/disappears as Focuses are toggled. */}
@@ -478,7 +478,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         {/* Lock the length: on a timed practice the member normally adjusts it; locking pins it.
             A sibling of the Time field (not nested in its label), spanning the row. */}
         {timerKind !== 'none' && (
-          <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-muted sm:col-span-2">
+          <label className="inline-flex cursor-pointer items-center gap-2 text-meta font-medium text-muted sm:col-span-2">
             <input
               type="checkbox"
               checked={durationLocked}
@@ -531,7 +531,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                 disabled={!allowed}
                 title={allowed ? undefined : `Needs a ${floor}+ min practice`}
                 onClick={() => { if (!allowed) return; setWeightClass(w.value); queueSave({ weight_class: w.value }) }}
-                className={`flex min-h-11 flex-col items-center justify-center rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                className={`flex min-h-11 flex-col items-center justify-center rounded-lg border px-3 py-2 text-body-sm font-medium transition-colors ${
                   active
                     ? 'border-primary/50 bg-primary-bg text-primary-strong'
                     : !allowed
@@ -547,7 +547,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             )
           })}
         </div>
-        <p className="mt-1 text-xs text-subtle">
+        <p className="mt-1 text-meta text-subtle">
           The per-log payout, earned by the practice&apos;s length: Standard needs {TIER_FLOOR_MIN.standard}+ min, Heavy {TIER_FLOOR_MIN.heavy}+ min. Set the time above. Light 8 · Standard 12 · Heavy 15 Zaps.
         </p>
       </fieldset>
@@ -590,7 +590,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                     queueSave({ timer_kind: 'none', movement_config: null })
                   }
                 }}
-                className={`flex min-h-11 flex-col items-start justify-center rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                className={`flex min-h-11 flex-col items-start justify-center rounded-lg border px-3 py-2 text-body-sm font-medium transition-colors ${
                   active ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
                 }`}
               >
@@ -625,7 +625,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                       setMovementMode(m.mode)
                       saveMovement({}, m.mode)
                     }}
-                    className={`flex min-h-11 items-center justify-center rounded-lg border px-2 py-2 text-sm font-medium transition-colors ${
+                    className={`flex min-h-11 items-center justify-center rounded-lg border px-2 py-2 text-body-sm font-medium transition-colors ${
                       active ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
                     }`}
                   >
@@ -706,12 +706,12 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
               )}
 
               {movementMode === 'play' && (
-                <p className="rounded-lg border border-border bg-surface px-3 py-2 text-xs text-subtle">
+                <p className="rounded-lg border border-border bg-surface px-3 py-2 text-meta text-subtle">
                   An open count-up. The member starts, moves, and stops when they are done. Nothing to preset.
                 </p>
               )}
 
-              <p className="text-xs text-subtle">This is the preset it ships with. The member can still adjust it when they start.</p>
+              <p className="text-meta text-subtle">This is the preset it ships with. The member can still adjust it when they start.</p>
             </div>
           </div>
         )}
@@ -777,12 +777,12 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           </div>
         )}
 
-        <p className="mt-1 text-xs text-subtle">On a Journey, a Mindless or Get Moving practice shows a Start Practice button; a Log it practice shows a Log it check-off.</p>
+        <p className="mt-1 text-meta text-subtle">On a Journey, a Mindless or Get Moving practice shows a Start Practice button; a Log it practice shows a Log it check-off.</p>
 
         {/* LIVE LAUNCH PREVIEW (PRACTICE-TIMER-CONTINUITY P5): the exact summary line the member's
             card + detail page render (the same pure timerPreview the cards call), recomputed live
             as the creator edits. The creator sees what they are shipping, not an approximation. */}
-        <p className="mt-3 rounded-lg bg-surface-elevated px-3 py-2 text-xs text-text">
+        <p className="mt-3 rounded-lg bg-surface-elevated px-3 py-2 text-meta text-text">
           <span className="font-semibold">Members will see:</span>{' '}
           {timerPreview({
             timerKind,
@@ -857,7 +857,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
               />
             </StudioField>
           </div>
-          <p className="mt-1 text-xs text-subtle">Overrides the weight-class payout. Leave the Zap field blank to use the default.</p>
+          <p className="mt-1 text-meta text-subtle">Overrides the weight-class payout. Leave the Zap field blank to use the default.</p>
         </fieldset>
       )}
 
@@ -873,7 +873,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             className={FIELD}
           />
         </StudioField>
-        <p className="mt-1 text-xs text-subtle">Comma-separated. Helps people find this practice; new tags join the library.</p>
+        <p className="mt-1 text-meta text-subtle">Comma-separated. Helps people find this practice; new tags join the library.</p>
       </div>
 
       {/* Description + full guide */}
@@ -886,7 +886,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         </StudioField>
       </div>
 
-      <p className="mt-4 text-xs text-subtle">Changes apply everywhere this practice appears.</p>
+      <p className="mt-4 text-meta text-subtle">Changes apply everywhere this practice appears.</p>
 
       {/* Publish (ADR-920 Phase 5): the status the author could previously never see, and the
           explicit "Submit to the library" a draft needs to reach review. Before this, a Crew
@@ -896,22 +896,22 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         <div className="mt-6 border-t border-border pt-4">
           <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Library</p>
           {props.isPublic || props.status === 'approved' ? (
-            <p className="mt-1.5 text-sm text-text">
+            <p className="mt-1.5 text-body-sm text-text">
               <span className="font-semibold text-success">Live.</span>{' '}
               {props.isPublic ? 'In the public library for anyone to adopt.' : 'Live to your space.'}
             </p>
           ) : props.status === 'pending' ? (
-            <p className="mt-1.5 text-sm text-text">
+            <p className="mt-1.5 text-body-sm text-text">
               <span className="font-semibold text-warning">In review.</span> A curator will look it
               over; it goes live when approved. You can keep editing meanwhile.
             </p>
           ) : props.status === 'rejected' ? (
-            <p className="mt-1.5 text-sm text-text">
+            <p className="mt-1.5 text-body-sm text-text">
               <span className="font-semibold text-danger">Not approved.</span> Rework it and submit
               again when it is ready.
             </p>
           ) : (
-            <p className="mt-1.5 text-sm text-muted">
+            <p className="mt-1.5 text-body-sm text-muted">
               <span className="font-semibold text-text">Private draft.</span> Only you can see it.
               Submit it to the library when the guide and timer are ready.
             </p>
@@ -927,7 +927,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                   if (!isError(res)) setSubmittedNow(true)
                 })
               }}
-              className="mt-2.5 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+              className="mt-2.5 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
             >
               {submitting ? 'Submitting…' : submittedNow ? 'Submitted' : 'Submit to the library'}
             </button>
@@ -947,7 +947,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           type="button"
           onClick={() => setConfirmDelete(true)}
           disabled={deleting}
-          className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-2 text-sm font-medium text-danger transition-colors hover:bg-danger-bg/40 disabled:opacity-60"
+          className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-2 text-body-sm font-medium text-danger transition-colors hover:bg-danger-bg/40 disabled:opacity-60"
         >
           <Trash2 className="h-4 w-4" /> Delete this practice
         </button>
@@ -981,7 +981,7 @@ function MoveChip({ active, onClick, title, children }: { active: boolean; onCli
       aria-checked={active}
       title={title}
       onClick={onClick}
-      className={`min-h-9 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+      className={`min-h-9 rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors ${
         active ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
       }`}
     >
@@ -997,7 +997,7 @@ function MoveStepper({ label, value, onLess, onMore }: { label: string; value: s
       <p className="text-2xs font-semibold uppercase tracking-wide text-muted">{label}</p>
       <div className="mt-0.5 flex items-center justify-between gap-1">
         <button type="button" aria-label={`Less ${label}`} onClick={onLess} className="h-6 w-6 rounded-md border border-border text-muted transition-colors hover:bg-surface-elevated">−</button>
-        <span className="min-w-8 text-sm font-semibold tabular-nums text-text">{value}</span>
+        <span className="min-w-8 text-body-sm font-semibold tabular-nums text-text">{value}</span>
         <button type="button" aria-label={`More ${label}`} onClick={onMore} className="h-6 w-6 rounded-md border border-border text-muted transition-colors hover:bg-surface-elevated">+</button>
       </div>
     </div>

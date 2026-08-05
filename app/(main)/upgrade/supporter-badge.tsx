@@ -44,14 +44,14 @@ export function SupporterBadge({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p className="text-sm font-bold text-text">Wear the Supporter badge</p>
+            <p className="text-body-sm font-bold text-text">Wear the Supporter badge</p>
             {on && (
               <span className="rounded-md bg-signal-bg/60 px-2 py-0.5 text-3xs font-bold uppercase tracking-wider text-signal-strong">
                 On
               </span>
             )}
           </div>
-          <p className="mt-0.5 text-xs leading-relaxed text-muted">
+          <p className="mt-0.5 text-meta leading-relaxed text-muted">
             Back the work beyond membership and wear the Supporter badge on your profile. You pick the amount, starting
             at {minLabel} a month. Most Supporters give {suggestedLabel}. You can turn this off anytime.
           </p>
@@ -60,15 +60,15 @@ export function SupporterBadge({
             disabled={pending}
             className={
               on
-                ? 'mt-3 flex w-full items-center justify-center gap-2 rounded-control border border-border px-4 py-2.5 text-sm font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-60'
-                : 'mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-signal/40 bg-signal-bg/40 px-4 py-2.5 text-sm font-bold text-signal-strong transition-colors hover:bg-signal-bg/60 disabled:opacity-60'
+                ? 'mt-3 flex w-full items-center justify-center gap-2 rounded-control border border-border px-4 py-2.5 text-body-sm font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-60'
+                : 'mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-signal/40 bg-signal-bg/40 px-4 py-2.5 text-body-sm font-bold text-signal-strong transition-colors hover:bg-signal-bg/60 disabled:opacity-60'
             }
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Heart className="h-4 w-4" aria-hidden />}
             {on ? 'Remove the Supporter badge' : 'Become a Supporter'}
           </button>
           {error && (
-            <p className="mt-2 text-xs text-danger" role="alert">
+            <p className="mt-2 text-meta text-danger" role="alert">
               {error}
             </p>
           )}

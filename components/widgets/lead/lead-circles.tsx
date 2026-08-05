@@ -70,7 +70,7 @@ export async function LeadCircles(): Promise<React.ReactElement | null> {
         </div>
       )}
       {!leadsNothing && (
-        <p className="mt-3 text-sm text-muted">
+        <p className="mt-3 text-body-sm text-muted">
           Managing a circle happens on its own page. Open one and use the Settings control to edit
           it, welcome members, or add an event.
         </p>

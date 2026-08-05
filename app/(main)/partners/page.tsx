@@ -52,7 +52,7 @@ export default async function PartnersPage() {
               <OfferCard key={o.id} offer={o} />
             ))}
           </div>
-          <p className="mt-3 flex items-center gap-1.5 text-xs text-subtle">
+          <p className="mt-3 flex items-center gap-1.5 text-meta text-subtle">
             <ScanLine className="h-3.5 w-3.5 shrink-0" aria-hidden />
             Offers unlock in person: walk in and{' '}
             <Link href="/scan?hint=partner" className="font-semibold text-primary-strong hover:underline">
@@ -71,7 +71,7 @@ export default async function PartnersPage() {
           count={partners.length}
           action={
             cities > 0 ? (
-              <p className="text-xs text-subtle">
+              <p className="text-meta text-subtle">
                 {cities} {cities === 1 ? 'city' : 'cities'}
                 {categories > 0 && <> · {categories} {categories === 1 ? 'category' : 'categories'}</>}
               </p>

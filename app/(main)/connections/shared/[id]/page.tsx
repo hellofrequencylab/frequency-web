@@ -47,7 +47,7 @@ export default async function SharedContactPage({ params }: { params: Promise<{ 
       <DetailTemplate
         title={
           <span className="inline-flex items-center gap-3 align-middle">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-base font-semibold text-muted">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-body font-semibold text-muted">
               {c.displayName ? getInitials(name) : <User className="h-6 w-6" />}
             </span>
             <span className="truncate">{name}</span>
@@ -62,7 +62,7 @@ export default async function SharedContactPage({ params }: { params: Promise<{ 
           </span>
         }
         badges={
-          <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-1.5 py-0.5 text-xs font-medium text-muted">
+          <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-1.5 py-0.5 text-meta font-medium text-muted">
             <Globe className="h-3 w-3" /> Network contact
           </span>
         }
@@ -70,7 +70,7 @@ export default async function SharedContactPage({ params }: { params: Promise<{ 
       <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
         {/* How to act on it: ask the capturing steward for an intro. */}
         <div className="rounded-card bg-surface-elevated/60 p-3">
-          <p className="flex items-center gap-1.5 text-sm text-muted">
+          <p className="flex items-center gap-1.5 text-body-sm text-muted">
             <Users className="h-4 w-4 shrink-0" /> Shared to the network by{' '}
             {c.ownerHandle ? (
               <Link href={`/people/${c.ownerHandle}`} className="font-medium text-primary-strong hover:underline">
@@ -80,14 +80,14 @@ export default async function SharedContactPage({ params }: { params: Promise<{ 
               <span className="font-medium text-text">{c.ownerName ?? 'a steward'}</span>
             )}
           </p>
-          <p className="mt-1 flex items-start gap-1.5 text-xs text-subtle">
+          <p className="mt-1 flex items-start gap-1.5 text-meta text-subtle">
             <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0" /> They met this person. Reach out to them for an introduction.
           </p>
         </div>
 
         {/* Business-card links only. */}
         {hasLinks && (
-          <div className="mt-4 space-y-2 text-sm">
+          <div className="mt-4 space-y-2 text-body-sm">
             {website && (
               <a href={website} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-primary-strong hover:underline">
                 <Globe className="h-4 w-4 shrink-0 text-subtle" /> {c.website!.replace(/^https?:\/\//, '')}
@@ -100,7 +100,7 @@ export default async function SharedContactPage({ params }: { params: Promise<{ 
         )}
       </div>
 
-      <p className="mt-3 text-xs text-subtle">
+      <p className="mt-3 text-meta text-subtle">
         A steward chose to share this private contact with stewards in {c.city ?? 'your area'}. Their notes, email and
         phone stay private. Connect through the steward above.
       </p>
@@ -113,7 +113,7 @@ function SocialRow({ label, value }: { label: string; value: string }) {
   const href = value.startsWith('http') ? value : null
   return (
     <div className="flex items-center gap-2">
-      <span className="w-16 shrink-0 text-xs text-subtle">{label}</span>
+      <span className="w-16 shrink-0 text-meta text-subtle">{label}</span>
       {href ? (
         <a href={href} target="_blank" rel="noreferrer" className="truncate text-primary-strong hover:underline">{value}</a>
       ) : (

@@ -110,8 +110,8 @@ export function AdminSection({
       {(title || actions) && (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
-            {title && <h2 className="text-base font-bold text-text">{title}</h2>}
-            {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
+            {title && <h2 className="text-body font-bold text-text">{title}</h2>}
+            {description && <p className="mt-0.5 text-body-sm text-muted">{description}</p>}
           </div>
           {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
         </div>

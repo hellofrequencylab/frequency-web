@@ -20,7 +20,7 @@ export async function PagesSplashFunnels() {
         action={
           <Link
             href="/pages/sequences"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong transition-colors hover:text-primary-hover"
+            className="inline-flex items-center gap-1 text-meta font-semibold text-primary-strong transition-colors hover:text-primary-hover"
           >
             Manage all <ArrowRight className="h-3.5 w-3.5" />
           </Link>
@@ -34,12 +34,12 @@ export async function PagesSplashFunnels() {
           <Sparkles className="h-5 w-5" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-base font-bold text-text">Splash Funnels</span>
-          <span className="block text-sm leading-relaxed text-muted">
+          <span className="block text-body font-bold text-text">Splash Funnels</span>
+          <span className="block text-body-sm leading-relaxed text-muted">
             The induction every new member walks through. Start from the template, tune a
             funnel for a specific audience, and watch the real flow update live.
           </span>
-          <span className="mt-1.5 block text-xs font-medium text-subtle">
+          <span className="mt-1.5 block text-meta font-medium text-subtle">
             {customCount === 0
               ? 'Just the template so far'
               : `${customCount} custom ${customCount === 1 ? 'funnel' : 'funnels'} plus the template`}
@@ -50,7 +50,7 @@ export async function PagesSplashFunnels() {
           aria-hidden
         />
       </Link>
-      <p className="mt-2 max-w-3xl text-xs text-subtle">
+      <p className="mt-2 max-w-3xl text-meta text-subtle">
         Editing the{' '}
         <Link href="/pages/splash" className="font-semibold text-primary-strong hover:underline">
           Splash Funnel template

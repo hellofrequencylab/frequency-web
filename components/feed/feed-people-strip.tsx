@@ -24,13 +24,13 @@ export async function FeedPeopleStrip({ viewerProfileId }: { viewerProfileId: st
   return (
     <section className="rounded-2xl border border-border bg-surface/60 p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="flex items-center gap-1.5 text-sm font-bold text-text">
+        <h3 className="flex items-center gap-1.5 text-body-sm font-bold text-text">
           <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
             <UserPlus className="h-3.5 w-3.5" />
           </span>
           People you&rsquo;d click with
         </h3>
-        <Link href="/network" className="text-xs font-medium text-primary-strong hover:underline">
+        <Link href="/network" className="text-meta font-medium text-primary-strong hover:underline">
           See more
         </Link>
       </div>

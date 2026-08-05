@@ -82,7 +82,7 @@ const TYPES: Record<CreateType, TypeCfg> = {
 }
 
 const ORDER: CreateType[] = ['icon', 'spot', 'illustration', 'trophy', 'card', 'texture']
-const inputCls = 'w-full rounded-2xl border border-border bg-surface px-3 py-2 text-sm'
+const inputCls = 'w-full rounded-2xl border border-border bg-surface px-3 py-2 text-body-sm'
 
 export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
   const router = useRouter()
@@ -193,7 +193,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
 
   return (
     <details className="mb-6 rounded-2xl border border-border bg-surface-elevated/50 p-4" open>
-      <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-text">
+      <summary className="flex cursor-pointer items-center gap-2 text-body-sm font-semibold text-text">
         <Sparkles className="h-4 w-4 text-primary-strong" aria-hidden />
         Create
         <span className="font-normal text-subtle">(describe it, and the studio makes it)</span>
@@ -213,7 +213,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                 onClick={() => pickType(t)}
                 aria-pressed={active}
                 title={disabled ? 'Needs the Image Studio (set RECRAFT_API_KEY)' : TYPES[t].hint}
-                className={`rounded-pill border px-3 py-1.5 text-sm font-semibold transition-colors disabled:opacity-40 ${
+                className={`rounded-pill border px-3 py-1.5 text-body-sm font-semibold transition-colors disabled:opacity-40 ${
                   active
                     ? 'border-primary bg-primary text-on-primary'
                     : 'border-border text-muted hover:bg-surface-elevated'
@@ -240,7 +240,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
               key={s}
               type="button"
               onClick={() => setPrompt(s)}
-              className="max-w-full truncate rounded-lg border border-dashed border-border px-2 py-1 text-xs text-subtle hover:bg-surface-elevated hover:text-text"
+              className="max-w-full truncate rounded-lg border border-dashed border-border px-2 py-1 text-meta text-subtle hover:bg-surface-elevated hover:text-text"
               title={s}
             >
               {s}
@@ -260,7 +260,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                 }}
                 aria-pressed={engine === 'vera'}
                 title="Vera draws a clean house-style line mark, instant, no cost"
-                className={`inline-flex items-center gap-1 rounded-[14px] px-3 py-1.5 text-sm font-semibold ${
+                className={`inline-flex items-center gap-1 rounded-[14px] px-3 py-1.5 text-body-sm font-semibold ${
                   engine === 'vera' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'
                 }`}
               >
@@ -274,7 +274,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                 }}
                 aria-pressed={engine === 'studio'}
                 title="The Image Studio generates a richer result (uses the paid engine)"
-                className={`inline-flex items-center gap-1 rounded-[14px] px-3 py-1.5 text-sm font-semibold ${
+                className={`inline-flex items-center gap-1 rounded-[14px] px-3 py-1.5 text-body-sm font-semibold ${
                   engine === 'studio' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'
                 }`}
               >
@@ -286,12 +286,12 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
           {/* Studio-only controls: count + trained brand style. */}
           {engine === 'studio' && (
             <>
-              <label className="flex items-center gap-1.5 text-sm text-muted">
+              <label className="flex items-center gap-1.5 text-body-sm text-muted">
                 Count
                 <select
                   value={count}
                   onChange={(e) => setCount(Number(e.target.value))}
-                  className="rounded-control border border-border bg-surface px-2 py-1 text-sm"
+                  className="rounded-control border border-border bg-surface px-2 py-1 text-body-sm"
                 >
                   {[1, 2, 3, 4].map((n) => (
                     <option key={n} value={n}>
@@ -301,12 +301,12 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                 </select>
               </label>
               {laneStyles.length > 0 && (
-                <label className="flex items-center gap-1.5 text-sm text-muted">
+                <label className="flex items-center gap-1.5 text-body-sm text-muted">
                   <Palette className="h-4 w-4" aria-hidden /> Style
                   <select
                     value={styleId}
                     onChange={(e) => setStyleId(e.target.value)}
-                    className="rounded-control border border-border bg-surface px-2 py-1 text-sm"
+                    className="rounded-control border border-border bg-surface px-2 py-1 text-body-sm"
                   >
                     <option value="">Base</option>
                     {laneStyles.map((s) => (
@@ -324,7 +324,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
             type="button"
             onClick={create}
             disabled={busy || !prompt.trim() || engineUnavailable}
-            className="inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-2 text-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+            className="inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-2 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
             {createLabel}
@@ -334,12 +334,12 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
             <button
               type="button"
               onClick={reset}
-              className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-2 text-sm text-muted hover:bg-surface-elevated"
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-2 text-body-sm text-muted hover:bg-surface-elevated"
             >
               <RotateCcw className="h-4 w-4" /> Clear
             </button>
           )}
-          {msg && <span className="text-sm text-signal-strong">{msg}</span>}
+          {msg && <span className="text-body-sm text-signal-strong">{msg}</span>}
         </div>
 
         {/* Vera preview + save (the Studio auto-saves, so it has no preview step). */}
@@ -355,26 +355,26 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
               dangerouslySetInnerHTML={{ __html: safeSvg }}
             />
             <label className="flex-1">
-              <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-subtle">Title</span>
+              <span className="mb-1 block text-meta font-semibold uppercase tracking-wide text-subtle">Title</span>
               <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} />
             </label>
             <button
               type="button"
               onClick={saveVera}
               disabled={busy || !title.trim()}
-              className="rounded-2xl bg-signal px-4 py-2 text-sm font-bold text-on-signal hover:bg-signal-strong disabled:opacity-70"
+              className="rounded-2xl bg-signal px-4 py-2 text-body-sm font-bold text-on-signal hover:bg-signal-strong disabled:opacity-70"
             >
               {busy ? 'Saving…' : 'Save to library'}
             </button>
           </div>
         )}
 
-        <p className="text-xs text-subtle">
+        <p className="text-meta text-subtle">
           {engine === 'vera'
             ? 'Vera draws a clean, on-brand line mark you review before saving. Instant, no cost.'
             : `The Image Studio generates ${cfg.lane === 'vector' ? 'vector' : 'raster'} art and adds it straight to the library.`}
         </p>
-        {err && <p className="text-sm text-danger">{err}</p>}
+        {err && <p className="text-body-sm text-danger">{err}</p>}
       </div>
     </details>
   )

@@ -134,7 +134,7 @@ export function ContextActions({ role, context }: ContextActionsProps) {
                 key={action.key}
                 href={action.href}
                 onClick={() => setOpen(false)}
-                className={`flex items-center gap-2.5 px-3 py-2 text-xs font-medium transition-colors hover:bg-surface-elevated ${
+                className={`flex items-center gap-2.5 px-3 py-2 text-meta font-medium transition-colors hover:bg-surface-elevated ${
                   action.destructive
                     ? 'text-danger'
                     : 'text-text'
@@ -151,7 +151,7 @@ export function ContextActions({ role, context }: ContextActionsProps) {
                   setOpen(false)
                 }}
                 disabled={isPending}
-                className={`flex items-center gap-2.5 px-3 py-2 text-xs font-medium transition-colors hover:bg-surface-elevated w-full text-left disabled:opacity-50 ${
+                className={`flex items-center gap-2.5 px-3 py-2 text-meta font-medium transition-colors hover:bg-surface-elevated w-full text-left disabled:opacity-50 ${
                   action.destructive
                     ? 'text-danger'
                     : 'text-text'

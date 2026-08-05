@@ -14,8 +14,8 @@ import { Banner } from '@/components/admin/status'
 import { startBusinessImport } from './actions'
 
 const field =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
-const labelCls = 'flex flex-col gap-1 text-xs font-medium text-muted'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
+const labelCls = 'flex flex-col gap-1 text-meta font-medium text-muted'
 
 export function StartImportForm() {
   const router = useRouter()
@@ -159,7 +159,7 @@ export function StartImportForm() {
 
       {/* Structured content boxes: labeled so the extractor can identify content. Everything here is a
           SOURCE (parsed into the draft); paste anything you scraped about the business. */}
-      <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-muted">Content to parse</p>
+      <p className="mt-5 text-meta font-semibold uppercase tracking-wide text-muted">Content to parse</p>
       <p className="mb-2 text-2xs text-muted">
         Paste anything you have. Labeled boxes help the seeder sort it. All of it is treated as a source.
       </p>
@@ -213,7 +213,7 @@ export function StartImportForm() {
       </label>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <label className="flex items-center gap-2 text-xs text-muted">
+        <label className="flex items-center gap-2 text-meta text-muted">
           <input
             type="checkbox"
             checked={runInline}

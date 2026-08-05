@@ -45,7 +45,7 @@ export function FollowUpButton({
       onClick={add}
       disabled={pending || done}
       title="File a follow-up task for this contact"
-      className={`inline-flex items-center gap-1 rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs text-muted hover:bg-surface-elevated hover:text-text disabled:opacity-60 ${className ?? ''}`}
+      className={`inline-flex items-center gap-1 rounded-md border border-border bg-surface px-2.5 py-1.5 text-meta text-muted hover:bg-surface-elevated hover:text-text disabled:opacity-60 ${className ?? ''}`}
     >
       {pending ? (
         <Loader2 className="size-3.5 animate-spin" />

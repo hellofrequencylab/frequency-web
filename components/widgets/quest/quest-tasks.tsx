@@ -104,26 +104,26 @@ export async function QuestTasks() {
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={`text-sm font-medium ${isDone ? 'text-success' : 'text-text'}`}>
+                      <span className={`text-body-sm font-medium ${isDone ? 'text-success' : 'text-text'}`}>
                         {task.name}
                       </span>
-                      <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-xs font-medium text-muted">
+                      <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-meta font-medium text-muted">
                         {TASK_TYPE_LABEL[task.task_type] ?? task.task_type}
                       </span>
                       {task.is_repeatable && (
-                        <span className="rounded-md bg-signal-bg px-1.5 py-0.5 text-xs font-medium text-signal-strong">
+                        <span className="rounded-md bg-signal-bg px-1.5 py-0.5 text-meta font-medium text-signal-strong">
                           Repeatable
                         </span>
                       )}
                       {task.requires_verification && (
-                        <span className="rounded-md bg-warning-bg px-1.5 py-0.5 text-xs font-medium text-warning dark:text-primary">
+                        <span className="rounded-md bg-warning-bg px-1.5 py-0.5 text-meta font-medium text-warning dark:text-primary">
                           Needs review
                         </span>
                       )}
                     </div>
 
                     {isDone && lastCompletion?.completed_at && (
-                      <p className="mt-0.5 text-xs text-success">
+                      <p className="mt-0.5 text-meta text-success">
                         Completed{' '}
                         {new Date(lastCompletion.completed_at).toLocaleDateString('en-US', {
                           month: 'short',
@@ -143,7 +143,7 @@ export async function QuestTasks() {
                   <div className="flex shrink-0 items-center gap-2">
                     <div className="flex items-center gap-0.5">
                       <Zap className={`h-3.5 w-3.5 ${isDone ? 'text-success' : 'text-primary'}`} />
-                      <span className={`text-sm font-semibold ${isDone ? 'text-success' : 'text-muted'}`}>
+                      <span className={`text-body-sm font-semibold ${isDone ? 'text-success' : 'text-muted'}`}>
                         +{task.zaps_value}
                       </span>
                     </div>

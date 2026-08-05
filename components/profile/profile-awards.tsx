@@ -22,7 +22,7 @@ export function ProfileAwards({ awards, firstName, isOwner }: { awards: ProfileA
     <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
       {achievements.length > 0 && (
         <div className="mb-4">
-          <p className="mb-2 text-sm font-bold tracking-tight text-text">
+          <p className="mb-2 text-body-sm font-bold tracking-tight text-text">
             {who} awards <span className="font-medium text-subtle">· {achievements.length}</span>
           </p>
           <div className="flex flex-wrap gap-2">
@@ -30,7 +30,7 @@ export function ProfileAwards({ awards, firstName, isOwner }: { awards: ProfileA
               <span
                 key={a.slug}
                 title={a.description ?? a.name}
-                className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-xs font-medium ${tierStyle(a.tier)}`}
+                className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-meta font-medium ${tierStyle(a.tier)}`}
               >
                 <Award className="h-3.5 w-3.5" />
                 {a.name}
@@ -42,7 +42,7 @@ export function ProfileAwards({ awards, firstName, isOwner }: { awards: ProfileA
 
       {items.length > 0 && (
         <div>
-          <p className="mb-2 text-sm font-bold tracking-tight text-text">
+          <p className="mb-2 text-body-sm font-bold tracking-tight text-text">
             {who} collection <span className="font-medium text-subtle">· {items.length}</span>
           </p>
           <div className="flex flex-wrap gap-2">
@@ -50,7 +50,7 @@ export function ProfileAwards({ awards, firstName, isOwner }: { awards: ProfileA
               <span
                 key={it.slug}
                 title={it.description ?? it.name}
-                className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface-elevated px-2.5 py-1 text-xs font-medium text-text"
+                className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface-elevated px-2.5 py-1 text-meta font-medium text-text"
               >
                 {it.bought ? <ShoppingBag className="h-3.5 w-3.5 text-subtle" /> : <Gift className="h-3.5 w-3.5 text-subtle" />}
                 {it.name}

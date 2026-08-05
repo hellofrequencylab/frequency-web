@@ -73,8 +73,8 @@ export function PosterLineup({
                 </span>
               )}
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-text">{item.name}</p>
-                <p className="truncate text-xs capitalize text-subtle">
+                <p className="truncate text-body-sm font-semibold text-text">{item.name}</p>
+                <p className="truncate text-meta capitalize text-subtle">
                   {item.role}
                   {item.note ? ` · ${item.note}` : ''}
                 </p>
@@ -95,13 +95,13 @@ export function PosterSchedule({ details }: { details: EventDetailsWithMedia }) 
       <SectionHeader title="Schedule" />
       <ul className="space-y-1.5">
         {schedule.map((item, i) => (
-          <li key={`${item.title}-${i}`} className="flex items-baseline gap-3 text-sm">
+          <li key={`${item.title}-${i}`} className="flex items-baseline gap-3 text-body-sm">
             {item.time && (
               <span className="w-16 shrink-0 font-semibold tabular-nums text-primary-strong">{item.time}</span>
             )}
             <span className="min-w-0 text-text">
               {item.title}
-              {item.note && <span className="ml-1.5 text-xs text-subtle">{item.note}</span>}
+              {item.note && <span className="ml-1.5 text-meta text-subtle">{item.note}</span>}
             </span>
           </li>
         ))}
@@ -118,7 +118,7 @@ export function PosterFeatures({ details }: { details: EventDetailsWithMedia }) 
       <SectionHeader title="Good to know" />
       <div className="flex flex-wrap gap-1.5">
         {features.map((f) => (
-          <span key={f} className="rounded-pill bg-primary-bg px-2.5 py-1 text-xs font-medium text-primary-strong">
+          <span key={f} className="rounded-pill bg-primary-bg px-2.5 py-1 text-meta font-medium text-primary-strong">
             {f}
           </span>
         ))}
@@ -136,10 +136,10 @@ export function PosterPricing({ details }: { details: EventDetailsWithMedia }) {
       <div className="rounded-2xl border border-border bg-surface p-4">
         <ul className="space-y-1.5">
           {tickets.map((t, i) => (
-            <li key={`${t.label}-${i}`} className="flex items-baseline justify-between gap-3 text-sm">
+            <li key={`${t.label}-${i}`} className="flex items-baseline justify-between gap-3 text-body-sm">
               <span className="min-w-0 text-text">
                 {t.label}
-                {t.note && <span className="ml-1.5 text-xs text-subtle">{t.note}</span>}
+                {t.note && <span className="ml-1.5 text-meta text-subtle">{t.note}</span>}
               </span>
               {centsLabel(t.priceCents) && (
                 <span className="shrink-0 font-semibold tabular-nums text-text">{centsLabel(t.priceCents)}</span>
@@ -147,7 +147,7 @@ export function PosterPricing({ details }: { details: EventDetailsWithMedia }) {
             </li>
           ))}
         </ul>
-        <p className="mt-2 text-xs text-subtle">As printed on the poster. Check with the organizer.</p>
+        <p className="mt-2 text-meta text-subtle">As printed on the poster. Check with the organizer.</p>
       </div>
     </section>
   )
@@ -166,7 +166,7 @@ export function PosterLinks({ details }: { details: EventDetailsWithMedia }) {
             href={l.href}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated"
           >
             <ExternalLink className="h-3.5 w-3.5 text-subtle" /> {l.label}
           </a>
@@ -179,7 +179,7 @@ export function PosterLinks({ details }: { details: EventDetailsWithMedia }) {
 export function PosterSponsors({ details }: { details: EventDetailsWithMedia }) {
   const { sponsors } = details
   if (!sponsors || sponsors.length === 0) return null
-  return <p className="text-xs text-subtle">With support from {sponsors.join(', ')}.</p>
+  return <p className="text-meta text-subtle">With support from {sponsors.join(', ')}.</p>
 }
 
 export function PosterOther({ details }: { details: EventDetailsWithMedia }) {
@@ -190,7 +190,7 @@ export function PosterOther({ details }: { details: EventDetailsWithMedia }) {
       <SectionHeader title="Details" />
       <dl className="space-y-1">
         {other.map((o, i) => (
-          <div key={`${o.label}-${i}`} className="flex gap-2 text-sm">
+          <div key={`${o.label}-${i}`} className="flex gap-2 text-body-sm">
             <dt className="shrink-0 font-medium capitalize text-muted">{o.label}:</dt>
             <dd className="min-w-0 text-text">{o.value}</dd>
           </div>

@@ -111,8 +111,8 @@ export function AirwavesConsole({
               onClick={() => setTab(t)}
               className={
                 tab === t
-                  ? 'flex-1 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary'
-                  : 'flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold text-muted transition-colors hover:text-text'
+                  ? 'flex-1 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary'
+                  : 'flex-1 rounded-lg px-3 py-1.5 text-body-sm font-semibold text-muted transition-colors hover:text-text'
               }
             >
               {t === 'recordings' ? 'Recordings' : 'Shows'}
@@ -127,13 +127,13 @@ export function AirwavesConsole({
           <SectionHeader title="Add a recording" />
           <div className="space-y-3">
             <label className="block space-y-1">
-              <span className="text-xs font-semibold text-muted">Title (optional)</span>
+              <span className="text-meta font-semibold text-muted">Title (optional)</span>
               <input
                 type="text"
                 value={title}
                 placeholder="Name this recording"
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary"
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary"
               />
             </label>
             <input
@@ -151,14 +151,14 @@ export function AirwavesConsole({
               type="button"
               disabled={pending}
               onClick={() => fileRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               <Upload className="h-4 w-4" aria-hidden />
               {pending ? 'Uploading' : 'Upload audio or video'}
             </button>
             <p className="text-2xs text-muted">Audio or video, up to 500 MB. It lands in your Loom.</p>
           </div>
-          {error && <p className="text-xs text-danger">{error}</p>}
+          {error && <p className="text-meta text-danger">{error}</p>}
         </section>
       )}
 
@@ -185,7 +185,7 @@ export function AirwavesConsole({
                     ) : (
                       <Music className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
                     )}
-                    <span className="truncate text-sm font-bold text-text">{r.title}</span>
+                    <span className="truncate text-body-sm font-bold text-text">{r.title}</span>
                   </div>
                   {canEdit && (
                     <div className="flex shrink-0 items-center gap-2">
@@ -228,7 +228,7 @@ export function AirwavesConsole({
       {canEdit && (
         <section className="space-y-3">
           <SectionHeader title="On your space page" />
-          <p className="text-xs text-muted">
+          <p className="text-meta text-muted">
             Attach recordings to show them on this space. Attach one to a practice, journey, event, or product
             from that item&apos;s editor.
           </p>

@@ -21,7 +21,7 @@ import { ProgressTrack } from '@/components/ui/progress-track'
 // voice canon (no em or en dashes).
 
 const inputCls =
-  'w-full rounded-card border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-primary'
+  'w-full rounded-card border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary'
 
 type SortKey = 'recent' | 'highest' | 'lowest'
 
@@ -63,7 +63,7 @@ function Avatar({ name, avatarUrl, size = 36 }: { name: string; avatarUrl: strin
   }
   return (
     <span
-      className="grid shrink-0 place-items-center rounded-pill bg-primary-bg text-sm font-semibold text-primary-strong"
+      className="grid shrink-0 place-items-center rounded-pill bg-primary-bg text-body-sm font-semibold text-primary-strong"
       style={{ width: size, height: size }}
       aria-hidden
     >
@@ -130,7 +130,7 @@ export function SpaceReviews({
                 {reviews.average != null ? reviews.average.toFixed(1) : '--'}
               </div>
               <Stars value={reviews.average ?? 0} className="h-4 w-4" />
-              <p className="text-xs text-muted">
+              <p className="text-meta text-muted">
                 {reviews.count} review{reviews.count === 1 ? '' : 's'}
               </p>
             </div>
@@ -140,7 +140,7 @@ export function SpaceReviews({
                 const pct = reviews.count > 0 ? Math.round((n / reviews.count) * 100) : 0
                 return (
                   <div key={star} className="flex items-center gap-2">
-                    <span className="flex w-8 shrink-0 items-center gap-0.5 text-xs tabular-nums text-muted">
+                    <span className="flex w-8 shrink-0 items-center gap-0.5 text-meta tabular-nums text-muted">
                       {star}
                       <Star className="h-3 w-3 fill-subtle text-subtle" aria-hidden />
                     </span>
@@ -150,14 +150,14 @@ export function SpaceReviews({
                       size="lg"
                       className="flex-1"
                     />
-                    <span className="w-6 shrink-0 text-right text-xs tabular-nums text-subtle">{n}</span>
+                    <span className="w-6 shrink-0 text-right text-meta tabular-nums text-subtle">{n}</span>
                   </div>
                 )
               })}
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-2 text-sm text-muted">
+          <div className="flex items-center gap-2 text-body-sm text-muted">
             <Stars value={0} />
             <span>No ratings yet for {spaceName}.</span>
           </div>
@@ -169,10 +169,10 @@ export function SpaceReviews({
         <ReviewForm slug={slug} initial={myReview} />
       ) : !signedIn ? (
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface-elevated/50 p-4">
-          <p className="text-sm text-muted">Sign in to leave a review.</p>
+          <p className="text-body-sm text-muted">Sign in to leave a review.</p>
           <Link
             href="/sign-in"
-            className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             Sign in
           </Link>
@@ -265,7 +265,7 @@ function ReviewCard({
           <Avatar name={name} avatarUrl={review.author?.avatarUrl ?? null} />
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="truncate text-sm font-semibold text-text">{name}</span>
+              <span className="truncate text-body-sm font-semibold text-text">{name}</span>
               <MemberBadge />
             </div>
             <div className="mt-0.5 flex items-center gap-2">
@@ -277,7 +277,7 @@ function ReviewCard({
         {canModerate && <HideButton slug={slug} id={review.id} onHidden={() => setHidden(true)} />}
       </div>
 
-      {review.body && <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted">{review.body}</p>}
+      {review.body && <p className="whitespace-pre-wrap text-body-sm leading-relaxed text-muted">{review.body}</p>}
 
       <ResponseBlock
         slug={slug}
@@ -353,10 +353,10 @@ function ResponseBlock({
         <div className="rounded-card border border-border bg-surface-elevated/60 p-3">
           <div className="flex items-center gap-2">
             <Avatar name={spaceName} avatarUrl={response.author?.avatarUrl ?? spaceLogoUrl} size={24} />
-            <span className="text-xs font-semibold text-text">Response from {spaceName}</span>
+            <span className="text-meta font-semibold text-text">Response from {spaceName}</span>
             {response.at && <span className="text-2xs text-muted">{relativeTime(response.at)}</span>}
           </div>
-          <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-muted">{response.body}</p>
+          <p className="mt-1.5 whitespace-pre-wrap text-body-sm leading-relaxed text-muted">{response.body}</p>
           {canRespond && (
             <div className="mt-2 flex items-center gap-3">
               <button
@@ -394,7 +394,7 @@ function ResponseBlock({
 
       {canRespond && editing && (
         <div className="space-y-2 rounded-card border border-border bg-surface-elevated/60 p-3">
-          <p className="text-xs font-semibold text-text">Response from {spaceName}</p>
+          <p className="text-meta font-semibold text-text">Response from {spaceName}</p>
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -403,7 +403,7 @@ function ResponseBlock({
             maxLength={2000}
             className={inputCls}
           />
-          {error && <p className="text-xs text-danger">{error}</p>}
+          {error && <p className="text-meta text-danger">{error}</p>}
           <div className="flex items-center justify-end gap-2">
             <button
               type="button"
@@ -458,7 +458,7 @@ function ReviewForm({ slug, initial }: { slug: string; initial: { rating: number
 
   return (
     <div className="space-y-2 rounded-2xl border border-border bg-surface p-4 lift-1">
-      <p className="text-sm font-semibold text-text">{initial ? 'Update your review' : 'Leave a review'}</p>
+      <p className="text-body-sm font-semibold text-text">{initial ? 'Update your review' : 'Leave a review'}</p>
       <div className="flex items-center gap-1" onMouseLeave={() => setHover(0)}>
         {[1, 2, 3, 4, 5].map((n) => (
           <button
@@ -481,14 +481,14 @@ function ReviewForm({ slug, initial }: { slug: string; initial: { rating: number
         maxLength={2000}
         className={inputCls}
       />
-      {error && <p className="text-xs text-danger">{error}</p>}
-      {note && <p className="text-xs text-success" role="status">{note}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
+      {note && <p className="text-meta text-success" role="status">{note}</p>}
       <div className="flex justify-end">
         <button
           type="button"
           onClick={submit}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           {initial ? 'Update review' : 'Post review'}

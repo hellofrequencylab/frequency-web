@@ -27,18 +27,18 @@ export function RoleModeMatrix({
 
   return (
     <fieldset className="min-w-0">
-      <legend className="mb-1 text-xs font-semibold text-subtle">{legend}</legend>
+      <legend className="mb-1 text-meta font-semibold text-subtle">{legend}</legend>
       <div className="overflow-x-auto rounded-lg border border-border">
-        <table className="w-full border-collapse text-sm">
+        <table className="w-full border-collapse text-body-sm">
           <thead>
             <tr className="border-b border-border bg-surface-elevated">
-              <th scope="col" className="px-2.5 py-1.5 text-left text-xs font-semibold text-muted">
+              <th scope="col" className="px-2.5 py-1.5 text-left text-meta font-semibold text-muted">
                 Role
               </th>
               <th
                 scope="col"
                 title="Follow the on/off toggle for this role"
-                className="px-2 py-1.5 text-center text-xs font-semibold text-muted"
+                className="px-2 py-1.5 text-center text-meta font-semibold text-muted"
               >
                 Default
               </th>
@@ -47,7 +47,7 @@ export function RoleModeMatrix({
                   key={m}
                   scope="col"
                   title={MODE_LABEL[m]}
-                  className="px-2 py-1.5 text-center text-xs font-semibold text-muted"
+                  className="px-2 py-1.5 text-center text-meta font-semibold text-muted"
                 >
                   {MODE_LABEL[m]}
                 </th>
@@ -95,7 +95,7 @@ export function RoleModeMatrix({
           </tbody>
         </table>
       </div>
-      <p className="mt-1 text-xs text-subtle">
+      <p className="mt-1 text-meta text-subtle">
         Leave a role on Default to follow the on/off toggle. Active shows it, Ghost previews
         it as an upsell, Hidden removes it for that role only.
       </p>

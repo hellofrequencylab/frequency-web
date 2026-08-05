@@ -35,12 +35,12 @@ export function RsvpBottomBar({
       <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur md:bottom-0 lg:hidden">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            {statusLine && <p className="truncate text-sm font-medium text-text">{statusLine}</p>}
+            {statusLine && <p className="truncate text-body-sm font-medium text-text">{statusLine}</p>}
           </div>
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             <ChevronUp className="h-4 w-4" />
             {primaryLabel}

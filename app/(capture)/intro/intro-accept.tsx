@@ -30,14 +30,14 @@ export function IntroAccept({ token, spaceName }: { token: string; spaceName: st
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-pill bg-success-bg text-success">
           <Check className="h-6 w-6" strokeWidth={2.5} aria-hidden />
         </div>
-        <h3 className="text-2xl font-bold text-text">You&apos;re connected.</h3>
-        <p className="mt-2 text-sm leading-relaxed text-muted">
+        <h3 className="text-page-title font-bold text-text">You&apos;re connected.</h3>
+        <p className="mt-2 text-body-sm leading-relaxed text-muted">
           {spaceName} can reach you now. Every email has a one-click unsubscribe if it ever stops being
           worth your inbox.
         </p>
         <Link
           href="/"
-          className="mt-5 inline-flex rounded-2xl bg-primary px-6 py-3 text-base font-bold text-on-primary transition-colors hover:bg-primary-hover"
+          className="mt-5 inline-flex rounded-2xl bg-primary px-6 py-3 text-body font-bold text-on-primary transition-colors hover:bg-primary-hover"
         >
           Explore Frequency
         </Link>
@@ -51,18 +51,18 @@ export function IntroAccept({ token, spaceName }: { token: string; spaceName: st
         type="button"
         onClick={onAccept}
         disabled={status === 'loading'}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-8 py-3.5 text-base font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-8 py-3.5 text-body font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
       >
         {status === 'loading' ? 'One sec…' : 'Yes, keep me posted'}
       </button>
       <Link
         href="/"
-        className="mt-3 inline-flex w-full items-center justify-center rounded-2xl border border-border px-8 py-3 text-sm font-semibold text-muted transition-colors hover:bg-canvas"
+        className="mt-3 inline-flex w-full items-center justify-center rounded-2xl border border-border px-8 py-3 text-body-sm font-semibold text-muted transition-colors hover:bg-canvas"
       >
         No thanks
       </Link>
       {error && (
-        <p className="mt-4 text-sm text-danger" role="alert">
+        <p className="mt-4 text-body-sm text-danger" role="alert">
           {error}
         </p>
       )}

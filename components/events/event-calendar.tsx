@@ -132,7 +132,7 @@ export function EventCalendar({
     <div className="rounded-card border border-border bg-surface">
       {/* Header: month label (grid) or "Upcoming" (list) + the view toggle, and month nav in grid view. */}
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-        <h2 className="text-lg font-semibold text-text">{view === 'grid' ? monthLabel(year, month1) : 'Upcoming'}</h2>
+        <h2 className="text-body-lg font-semibold text-text">{view === 'grid' ? monthLabel(year, month1) : 'Upcoming'}</h2>
         <div className="flex items-center gap-2">
           {view === 'grid' && (
             <div className="flex items-center gap-1">
@@ -142,7 +142,7 @@ export function EventCalendar({
               <button
                 type="button"
                 onClick={() => setMonth({ year: initialYear, month1: initialMonth1 })}
-                className="rounded-lg px-2.5 py-1 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                className="rounded-lg px-2.5 py-1 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
               >
                 Today
               </button>
@@ -185,7 +185,7 @@ export function EventCalendar({
       {view === 'list' && (
         <div className="divide-y divide-border">
           {chronological.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-muted">No upcoming events.</p>
+            <p className="px-4 py-6 text-center text-body-sm text-muted">No upcoming events.</p>
           ) : (
             chronological.map((ev, i) => (
               <button
@@ -213,11 +213,11 @@ export function EventCalendar({
                       )}
                     </span>
                   )}
-                  <span className="mt-0.5 block text-xs text-muted">{ev.whenLabel}</span>
-                  {ev.location && <span className="mt-0.5 block truncate text-xs text-subtle">{ev.location}</span>}
+                  <span className="mt-0.5 block text-meta text-muted">{ev.whenLabel}</span>
+                  {ev.location && <span className="mt-0.5 block truncate text-meta text-subtle">{ev.location}</span>}
                 </span>
                 {ev.goingCount > 0 && (
-                  <span className="mt-0.5 shrink-0 text-xs text-subtle tabular-nums">{ev.goingCount} going</span>
+                  <span className="mt-0.5 shrink-0 text-meta text-subtle tabular-nums">{ev.goingCount} going</span>
                 )}
               </button>
             ))
@@ -256,7 +256,7 @@ export function EventCalendar({
                   <div className="mb-1 flex justify-end">
                     <span
                       className={cn(
-                        'inline-flex h-6 min-w-6 items-center justify-center rounded-pill px-1 text-xs font-medium',
+                        'inline-flex h-6 min-w-6 items-center justify-center rounded-pill px-1 text-meta font-medium',
                         isToday ? 'bg-primary text-on-primary' : cell.inMonth ? 'text-text' : 'text-subtle',
                       )}
                     >
@@ -315,7 +315,7 @@ export function EventCalendar({
             {selected.isCancelled && (
               <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-danger">Cancelled</p>
             )}
-            <h3 className="text-xl font-bold leading-tight text-text">{selected.title}</h3>
+            <h3 className="text-lead font-bold leading-tight text-text">{selected.title}</h3>
             {(selected.sourceLabel || selected.statusLabel) && (
               <p className="mt-1 flex flex-wrap items-center gap-1">
                 {selected.statusLabel && (
@@ -330,7 +330,7 @@ export function EventCalendar({
                 )}
               </p>
             )}
-            <div className="mt-3 flex items-start gap-2 text-sm text-muted">
+            <div className="mt-3 flex items-start gap-2 text-body-sm text-muted">
               <CalendarDays className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
               <span>{whenText}</span>
             </div>
@@ -344,13 +344,13 @@ export function EventCalendar({
               </button>
             )}
             {selected.location && (
-              <div className="mt-1.5 flex items-start gap-2 text-sm text-muted">
+              <div className="mt-1.5 flex items-start gap-2 text-body-sm text-muted">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                 <span>{selected.location}</span>
               </div>
             )}
             {selected.goingCount > 0 && (
-              <div className="mt-1.5 flex items-start gap-2 text-sm text-muted">
+              <div className="mt-1.5 flex items-start gap-2 text-body-sm text-muted">
                 <Users className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                 <span>
                   <span className="font-semibold text-text tabular-nums">{selected.goingCount}</span>{' '}

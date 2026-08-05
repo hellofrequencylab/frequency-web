@@ -26,7 +26,7 @@ export function OutreachForm({ scope }: { scope: string }) {
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
-      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-text">
+      <div className="mb-3 flex items-center gap-2 text-body-sm font-semibold text-text">
         <Users className="h-4 w-4 text-primary-strong" />
         Message your {scope}
       </div>
@@ -36,21 +36,21 @@ export function OutreachForm({ scope }: { scope: string }) {
         rows={4}
         maxLength={2000}
         placeholder={`Write a note to everyone in your ${scope}…`}
-        className="w-full resize-none rounded-control border border-border bg-surface-elevated px-4 py-3 text-sm text-text placeholder:text-subtle outline-none focus:border-primary"
+        className="w-full resize-none rounded-control border border-border bg-surface-elevated px-4 py-3 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary"
       />
       <div className="mt-3 flex items-center justify-between gap-3">
-        <p className="text-xs text-subtle">Sends through the same email + push spine as Dispatch.</p>
+        <p className="text-meta text-subtle">Sends through the same email + push spine as Dispatch.</p>
         <button
           type="button"
           onClick={submit}
           disabled={isPending || !message.trim()}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Send
         </button>
       </div>
       {result && (
-        <p className={`mt-3 inline-flex items-center gap-1.5 text-sm ${result.ok ? 'text-success' : 'text-danger'}`}>
+        <p className={`mt-3 inline-flex items-center gap-1.5 text-body-sm ${result.ok ? 'text-success' : 'text-danger'}`}>
           {result.ok && <Check className="h-4 w-4 shrink-0" />} {result.text}
         </p>
       )}

@@ -31,8 +31,8 @@ const VARIANT: Record<ButtonVariant, string> = {
 }
 
 const SIZE: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-xs',
-  md: 'px-4 py-2 text-sm',
+  sm: 'px-3 py-1.5 text-meta',
+  md: 'px-4 py-2 text-body-sm',
 }
 
 // State set per docs/INTERACTION-STATES.md §2 (Action control): rest · hover (VARIANT) ·

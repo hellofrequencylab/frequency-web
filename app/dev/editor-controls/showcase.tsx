@@ -32,7 +32,7 @@ function Demo({ title, note, value, children }: { title: string; note?: string; 
   return (
     <div className="space-y-2 rounded-card border border-border bg-surface p-3">
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-xs font-bold text-text">{title}</h3>
+        <h3 className="text-meta font-bold text-text">{title}</h3>
         {value !== undefined && (
           <code className="rounded bg-surface-elevated px-1.5 py-0.5 text-3xs text-muted">{value}</code>
         )}
@@ -57,7 +57,7 @@ function PrimitivesColumn() {
 
   return (
     <div className="space-y-3">
-      <h2 className="text-sm font-bold text-text">Control primitives (C6)</h2>
+      <h2 className="text-body-sm font-bold text-text">Control primitives (C6)</h2>
 
       <Demo title="Toggle" value={String(toggle)} note="Minimal on/off switch (role=switch).">
         <ToggleRow label="Show button" checked={toggle} onChange={setToggle} />
@@ -159,7 +159,7 @@ function PanelDemo({ id, label }: { id: string; label: string }) {
   return (
     <div className="space-y-2 rounded-card border border-border bg-surface p-3">
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-xs font-bold text-text">{label}</h3>
+        <h3 className="text-meta font-bold text-text">{label}</h3>
         <code className="rounded bg-surface-elevated px-1.5 py-0.5 text-3xs text-muted">{id}</code>
       </div>
       <BlockEditPanel
@@ -200,7 +200,7 @@ function HeroPanelDemo() {
   return (
     <div className="space-y-2 rounded-card border border-primary/40 bg-surface p-3">
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-xs font-bold text-text">Top hero (pinned, fixed first section)</h3>
+        <h3 className="text-meta font-bold text-text">Top hero (pinned, fixed first section)</h3>
         <code className="rounded bg-surface-elevated px-1.5 py-0.5 text-3xs text-muted">hero</code>
       </div>
       <div className="space-y-3">
@@ -223,7 +223,7 @@ function HeroPanelDemo() {
 function PanelsColumn() {
   return (
     <div className="space-y-3">
-      <h2 className="text-sm font-bold text-text">Redesigned block panels (C1 / C4 / C5 / C7)</h2>
+      <h2 className="text-body-sm font-bold text-text">Redesigned block panels (C1 / C4 / C5 / C7)</h2>
       <HeroPanelDemo />
       <PanelDemo id="callout" label="Callout (content + text style + spacing)" />
       <PanelDemo id="heading" label="Heading (text-bearing)" />
@@ -239,8 +239,8 @@ export function EditorControlsShowcase() {
   return (
     <main className="mx-auto max-w-5xl space-y-6 p-6">
       <header className="space-y-1">
-        <h1 className="text-lg font-bold text-text">Editor control system</h1>
-        <p className="text-sm text-muted">
+        <h1 className="text-body-lg font-bold text-text">Editor control system</h1>
+        <p className="text-body-sm text-muted">
           Dev-only showcase of the reusable block-editor control primitives and the redesigned inspector
           panel. Every control is token-driven and keyboard-operable. Not linked, noindex, dev-only.
         </p>

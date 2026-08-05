@@ -36,13 +36,13 @@ export function DashSection({
     <section className="rounded-2xl border border-border bg-surface px-5 py-4 sm:px-6 sm:py-5">
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <div className="min-w-0">
-          <h2 className="text-base font-bold text-text">{title}</h2>
-          {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
+          <h2 className="text-body font-bold text-text">{title}</h2>
+          {description && <p className="mt-0.5 text-body-sm text-muted">{description}</p>}
         </div>
         {href && (
           <Link
             href={href}
-            className="inline-flex shrink-0 items-center gap-0.5 text-xs font-semibold text-primary-strong hover:underline"
+            className="inline-flex shrink-0 items-center gap-0.5 text-meta font-semibold text-primary-strong hover:underline"
           >
             {hrefLabel ?? 'Open'}
             <ChevronRight className="h-3.5 w-3.5" aria-hidden />
@@ -82,16 +82,16 @@ export function DashArea({
     <section className="border-t border-border/70 pt-8 first:border-t-0 first:pt-0 sm:pt-9">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <div className="min-w-0">
-          <h2 className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-text">
+          <h2 className="flex items-center gap-2.5 text-lead font-bold tracking-tight text-text">
             {Icon && <Icon className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />}
             {label}
           </h2>
-          {blurb && <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-muted">{blurb}</p>}
+          {blurb && <p className="mt-1.5 max-w-3xl text-body-sm leading-relaxed text-muted">{blurb}</p>}
         </div>
         {href && (
           <Link
             href={href}
-            className="inline-flex shrink-0 items-center gap-0.5 text-sm font-semibold text-primary-strong hover:underline"
+            className="inline-flex shrink-0 items-center gap-0.5 text-body-sm font-semibold text-primary-strong hover:underline"
           >
             {hrefLabel ?? 'Open'}
             <ChevronRight className="h-4 w-4" aria-hidden />
@@ -99,7 +99,7 @@ export function DashArea({
         )}
       </div>
       {children}
-      {footnote && <p className="mt-4 text-xs leading-relaxed text-subtle">{footnote}</p>}
+      {footnote && <p className="mt-4 text-meta leading-relaxed text-subtle">{footnote}</p>}
     </section>
   )
 }
@@ -133,9 +133,9 @@ export function Tile({
 }) {
   return (
     <div className={`flex h-full flex-col rounded-2xl border border-border bg-surface p-4 sm:p-5 ${SPAN[span]}`}>
-      {label && <p className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</p>}
+      {label && <p className="text-meta font-semibold uppercase tracking-wide text-muted">{label}</p>}
       <div className={`${label ? 'mt-3 ' : ''}min-h-12 flex-1`}>{children}</div>
-      {caption && <p className="mt-2 text-xs text-subtle">{caption}</p>}
+      {caption && <p className="mt-2 text-meta text-subtle">{caption}</p>}
     </div>
   )
 }
@@ -157,11 +157,11 @@ export function GraphTile({
   return (
     <div className={`flex h-full flex-col rounded-2xl border border-border bg-surface p-4 sm:p-5 ${SPAN[span]}`}>
       <div className="flex items-baseline justify-between gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</p>
-        {value !== undefined && <p className="text-base font-bold tabular-nums text-text">{value}</p>}
+        <p className="text-meta font-semibold uppercase tracking-wide text-muted">{label}</p>
+        {value !== undefined && <p className="text-body font-bold tabular-nums text-text">{value}</p>}
       </div>
       <div className="mt-3 min-h-12 flex-1">{children}</div>
-      {caption && <p className="mt-2 text-xs text-subtle">{caption}</p>}
+      {caption && <p className="mt-2 text-meta text-subtle">{caption}</p>}
     </div>
   )
 }
@@ -180,8 +180,8 @@ export function MiniStat({
   const valueTone = tone === 'good' ? 'text-success' : tone === 'bad' ? 'text-danger' : 'text-text'
   return (
     <div className="min-w-0">
-      <p className={`text-2xl font-bold leading-none tabular-nums ${valueTone}`}>{value}</p>
-      <p className="mt-1.5 truncate text-xs font-medium text-muted">{label}</p>
+      <p className={`text-page-title font-bold leading-none tabular-nums ${valueTone}`}>{value}</p>
+      <p className="mt-1.5 truncate text-meta font-medium text-muted">{label}</p>
     </div>
   )
 }
@@ -220,8 +220,8 @@ export function StatItem({
     deltaTone === 'good' ? 'text-success' : deltaTone === 'bad' ? 'text-danger' : 'text-subtle'
   const inner = (
     <>
-      <p className="text-2xl font-extrabold leading-none tabular-nums text-text">{value}</p>
-      <p className="mt-1 text-xs font-medium text-muted">{label}</p>
+      <p className="text-page-title font-extrabold leading-none tabular-nums text-text">{value}</p>
+      <p className="mt-1 text-meta font-medium text-muted">{label}</p>
       {delta && <p className={`mt-0.5 text-2xs font-semibold ${tone}`}>{delta}</p>}
     </>
   )

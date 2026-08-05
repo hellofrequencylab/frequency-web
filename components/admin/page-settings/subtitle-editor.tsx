@@ -76,17 +76,17 @@ export function SubtitleEditor() {
           />
         </label>
         <p className="text-2xs text-muted">Leave blank to use the page&rsquo;s built-in subtitle.</p>
-        {error && <p className="text-xs text-danger">{error}</p>}
+        {error && <p className="text-meta text-danger">{error}</p>}
         <div className="flex items-center justify-end gap-2 pt-1">
           {saved && (
-            <span className="flex items-center gap-1 text-xs font-medium text-primary-strong">
+            <span className="flex items-center gap-1 text-meta font-medium text-primary-strong">
               <Check className="h-3.5 w-3.5" /> Saved
             </span>
           )}
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
           >
             {pending ? 'Saving…' : 'Save'}
           </button>

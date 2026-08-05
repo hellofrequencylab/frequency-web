@@ -13,7 +13,7 @@ import { TrendArea } from '@/components/admin/spark-charts'
 //   `bordered` — hard-bordered card on bg-surface (QR stats/analytics, practice
 //   detail) for pages whose stat rows sit on the canvas, not inside a panel.
 //   `detail`   — a small subtle line under the value (a qualifier, not a trend).
-//   `size="sm"`— compact tile with a text-sm value, for phrase-valued stats
+//   `size="sm"`— compact tile with a text-body-sm value, for phrase-valued stats
 //   (e.g. a practice's "+20 zaps · streak +1" reward) where 2xl would wrap.
 //
 // Presentational + server-friendly (no hooks).
@@ -57,8 +57,8 @@ export function StatCard({
   href?: string
   /** Hard-bordered card on bg-surface (for stat rows sitting on the canvas). */
   bordered?: boolean
-  /** 'sm' = compact tile (text-sm value) for phrase values that would wrap at 2xl.
-   *  'xs' = HALF-height dense tile (text-base value, tight padding) for metric-dense dashboards
+  /** 'sm' = compact tile (text-body-sm value) for phrase values that would wrap at 2xl.
+   *  'xs' = HALF-height dense tile (text-body value, tight padding) for metric-dense dashboards
    *  where many tiles share a row (email performance, KPI strips). */
   size?: 'md' | 'sm' | 'xs'
   /** Optional trend series rendered as a sparkline under the stat (ADR-233: value +
@@ -84,20 +84,20 @@ export function StatCard({
         <p
           className={`tabular-nums text-text ${
             sm
-              ? 'text-sm font-bold'
+              ? 'text-body-sm font-bold'
               : xs
-                ? 'text-base font-extrabold leading-none'
-                : 'text-xl font-extrabold leading-none'
+                ? 'text-body font-extrabold leading-none'
+                : 'text-lead font-extrabold leading-none'
           }`}
         >
           {value}
         </p>
         {Icon && <Icon className={`mt-0.5 shrink-0 text-subtle ${xs ? 'h-3 w-3' : 'h-3.5 w-3.5'}`} />}
       </div>
-      <p className={`font-medium text-muted ${xs ? 'mt-0.5 text-2xs' : 'mt-1 text-xs'}`}>{label}</p>
-      {detail && <p className={`text-muted ${xs ? 'mt-0.5 text-2xs' : 'mt-0.5 text-xs'}`}>{detail}</p>}
+      <p className={`font-medium text-muted ${xs ? 'mt-0.5 text-2xs' : 'mt-1 text-meta'}`}>{label}</p>
+      {detail && <p className={`text-muted ${xs ? 'mt-0.5 text-2xs' : 'mt-0.5 text-meta'}`}>{detail}</p>}
       {delta && t && (
-        <p className={`mt-1 inline-flex items-center gap-1 text-xs font-medium ${t.cls}`}>
+        <p className={`mt-1 inline-flex items-center gap-1 text-meta font-medium ${t.cls}`}>
           <t.Icon className="h-3.5 w-3.5 shrink-0" />
           {delta.label}
         </p>

@@ -154,7 +154,7 @@ function FeatureMedia({ item, variant }: { item: FeatureItem; variant: 'inline' 
 
 /** An item's price line (a small accent tag). Null when there is no price. */
 function FeaturePrice({ price }: { price: string }): ReactNode {
-  return price ? <p className="text-sm font-semibold text-primary-strong">{price}</p> : null
+  return price ? <p className="text-body-sm font-semibold text-primary-strong">{price}</p> : null
 }
 
 /** An item's CTA button, over its link (label falls back to a plain "Learn more"). Null with no link. */
@@ -163,7 +163,7 @@ function FeatureCta({ item }: { item: FeatureItem }): ReactNode {
   return (
     <a
       href={item.link}
-      className="mt-1 inline-flex items-center gap-1 self-start rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:border-primary hover:text-primary-strong"
+      className="mt-1 inline-flex items-center gap-1 self-start rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:border-primary hover:text-primary-strong"
     >
       {item.cta || 'Learn more'}
     </a>
@@ -176,7 +176,7 @@ function FeatureBody({ item, titleClass }: { item: FeatureItem; titleClass: stri
     <div className="flex flex-col gap-1">
       {item.title && <InlineRichText as="h4" value={item.title} className={titleClass} />}
       {item.text && (
-        <InlineRichText value={item.text} className="whitespace-pre-wrap text-sm leading-relaxed text-muted" />
+        <InlineRichText value={item.text} className="whitespace-pre-wrap text-body-sm leading-relaxed text-muted" />
       )}
       <FeaturePrice price={item.price} />
       <FeatureCta item={item} />
@@ -203,12 +203,12 @@ function FeaturesBlock({ props }: { props: Record<string, unknown> }): ReactNode
         {eyebrowHtml && (
           <p
             data-text-role="eyebrow"
-            className="text-xs font-bold uppercase tracking-[0.12em] text-primary-strong"
+            className="text-meta font-bold uppercase tracking-[0.12em] text-primary-strong"
             dangerouslySetInnerHTML={{ __html: eyebrowHtml }}
           />
         )}
         {/* font-section: the Space page theme's heading face (ADR-578); a computed no-op for `bold`. */}
-        {title && <InlineRichText as="h3" value={title} className="font-section text-2xl font-bold text-text" />}
+        {title && <InlineRichText as="h3" value={title} className="font-section text-page-title font-bold text-text" />}
       </div>
     ) : null
 
@@ -222,7 +222,7 @@ function FeaturesBlock({ props }: { props: Record<string, unknown> }): ReactNode
           const inner = (
             <>
               <FeatureMedia item={it} variant="inline" />
-              <FeatureBody item={it} titleClass="text-base font-bold text-text" />
+              <FeatureBody item={it} titleClass="text-body font-bold text-text" />
             </>
           )
           const rowCls = 'flex items-start gap-3'
@@ -245,7 +245,7 @@ function FeaturesBlock({ props }: { props: Record<string, unknown> }): ReactNode
         {items.map((it, i) => (
           <div key={i} className="flex flex-col gap-2">
             <FeatureMedia item={it} variant="top" />
-            <FeatureBody item={it} titleClass="text-base font-bold text-text" />
+            <FeatureBody item={it} titleClass="text-body font-bold text-text" />
           </div>
         ))}
       </div>
@@ -260,7 +260,7 @@ function FeaturesBlock({ props }: { props: Record<string, unknown> }): ReactNode
           const stat = (
             <>
               {big && <InlineRichText as="div" value={big} className="text-4xl font-bold leading-none text-primary-strong" />}
-              {label && <InlineRichText as="div" value={label} className="mt-2 text-sm leading-relaxed text-muted" />}
+              {label && <InlineRichText as="div" value={label} className="mt-2 text-body-sm leading-relaxed text-muted" />}
             </>
           )
           // rounded-card (was a rounded-2xl literal): the Space page theme shapes these cards
@@ -293,9 +293,9 @@ function FeaturesBlock({ props }: { props: Record<string, unknown> }): ReactNode
                 </div>
               ) : null}
               <div className="flex flex-1 flex-col gap-1 p-5">
-                {it.title && <InlineRichText as="h4" value={it.title} className="text-base font-bold text-text" />}
+                {it.title && <InlineRichText as="h4" value={it.title} className="text-body font-bold text-text" />}
                 {it.text && (
-                  <InlineRichText value={it.text} className="whitespace-pre-wrap text-sm leading-relaxed text-muted" />
+                  <InlineRichText value={it.text} className="whitespace-pre-wrap text-body-sm leading-relaxed text-muted" />
                 )}
                 <FeaturePrice price={it.price} />
                 <FeatureCta item={it} />
@@ -334,7 +334,7 @@ function FeaturesBlock({ props }: { props: Record<string, unknown> }): ReactNode
             <div key={i} className={`flex flex-col gap-5 sm:items-center ${flip ? 'sm:flex-row-reverse' : 'sm:flex-row'}`}>
               {media && <div className="sm:w-1/2">{media}</div>}
               <div className={media ? 'sm:w-1/2' : 'w-full'}>
-                <FeatureBody item={it} titleClass="text-xl font-bold text-text" />
+                <FeatureBody item={it} titleClass="text-lead font-bold text-text" />
               </div>
             </div>
           )
@@ -388,12 +388,12 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
             <img src={image} alt="" className={`w-full object-cover ${calloutAspect}`} />
           )}
           <div className="space-y-3 p-6">
-            {title && <InlineRichText as="h3" value={title} className="text-xl font-bold text-text" />}
-            {body && <InlineRichText value={body} className="whitespace-pre-wrap text-base leading-relaxed text-muted" />}
+            {title && <InlineRichText as="h3" value={title} className="text-lead font-bold text-text" />}
+            {body && <InlineRichText value={body} className="whitespace-pre-wrap text-body leading-relaxed text-muted" />}
             {hasButton && (
               <a
                 href={buttonUrl || '#'}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 <InlineRichText as="span" value={buttonLabel} />
               </a>
@@ -413,7 +413,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       // Render through the inline-rich path so a heading authored with a <br> (or a Bold / Italic / Link mark)
       // shows a real line break / mark on the page, EXACTLY as the editor canvas does — not a literal `<BR>`.
       // font-section: the Space page theme's heading face (ADR-578); a computed no-op for `bold`.
-      return text ? <InlineRichText as="h2" value={text} className="font-section text-2xl font-bold text-text" /> : null
+      return text ? <InlineRichText as="h2" value={text} className="font-section text-page-title font-bold text-text" /> : null
     }
     case 'button': {
       // A labeled call-to-action link (shared with Email Studio). A no-link button falls back to '#' until
@@ -426,7 +426,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
         <div className={`flex ${justify}`}>
           <a
             href={url || '#'}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             <InlineRichText as="span" value={label} />
           </a>
@@ -439,7 +439,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       // edge in a wide single-column row. A no-op in a narrow / multi-column row (the column is already
       // shorter than the cap).
       return text ? (
-        <InlineRichText value={text} className="max-w-prose whitespace-pre-wrap text-base leading-relaxed text-muted" />
+        <InlineRichText value={text} className="max-w-prose whitespace-pre-wrap text-body leading-relaxed text-muted" />
       ) : null
     }
     case 'links': {
@@ -454,7 +454,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
             <li key={`${it.url}-${i}`}>
               <a
                 href={it.url}
-                className="flex items-center justify-between rounded-control border border-border bg-surface px-4 py-3 text-sm font-semibold text-text transition-colors hover:border-primary hover:text-primary-strong"
+                className="flex items-center justify-between rounded-control border border-border bg-surface px-4 py-3 text-body-sm font-semibold text-text transition-colors hover:border-primary hover:text-primary-strong"
               >
                 {it.label || it.url}
               </a>
@@ -536,8 +536,8 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       const by = s(props, 'by')
       return (
         <figure className="max-w-prose border-l-2 border-primary pl-4">
-          <InlineRichText as="blockquote" value={text} className="text-lg font-medium italic text-text" />
-          {by && <InlineRichText as="figcaption" value={by} className="mt-2 text-sm text-muted" />}
+          <InlineRichText as="blockquote" value={text} className="text-body-lg font-medium italic text-text" />
+          {by && <InlineRichText as="figcaption" value={by} className="mt-2 text-body-sm text-muted" />}
         </figure>
       )
     }
@@ -572,7 +572,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
             href={card.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-5 py-4 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+            className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-5 py-4 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
           >
             <span>Listen on {card.label}</span>
             <ExternalLink className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />

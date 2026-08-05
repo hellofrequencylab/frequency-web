@@ -11,7 +11,7 @@ import type { PropertyType } from '@/lib/listings/types'
 // JS and closes on navigation. Each tab is a real URL (`?type=<slug>`), so the view stays server-rendered
 // and shareable. Tokens only, no hex.
 
-const TAB = 'flex shrink-0 items-center gap-1 border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors'
+const TAB = 'flex shrink-0 items-center gap-1 border-b-2 px-3 py-2.5 text-body-sm font-semibold transition-colors'
 const ACTIVE = 'border-primary-strong text-text'
 const IDLE = 'border-transparent text-muted hover:border-border-strong hover:text-text'
 
@@ -72,7 +72,7 @@ export function HousingCategoryNav({ selectedType }: { selectedType: string }) {
               key={o.slug}
               href={typeHref(o.slug)}
               className={cn(
-                'block rounded-md px-3 py-1.5 text-sm transition-colors',
+                'block rounded-md px-3 py-1.5 text-body-sm transition-colors',
                 selectedType === o.slug
                   ? 'bg-primary-bg font-semibold text-primary-strong'
                   : 'text-muted hover:bg-surface-elevated hover:text-text',

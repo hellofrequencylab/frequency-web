@@ -45,7 +45,7 @@ export function ReviewConsole({ id }: { id: string }) {
             type="button"
             onClick={approve}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
           >
             {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Check className="h-3.5 w-3.5" aria-hidden />}
             Approve and grant Non Profit
@@ -54,7 +54,7 @@ export function ReviewConsole({ id }: { id: string }) {
             type="button"
             onClick={() => setRejecting(true)}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-60"
           >
             <X className="h-3.5 w-3.5" aria-hidden /> Reject
           </button>
@@ -74,7 +74,7 @@ export function ReviewConsole({ id }: { id: string }) {
               type="button"
               onClick={reject}
               disabled={pending}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-danger px-3 py-1.5 text-xs font-bold text-on-danger transition-colors hover:opacity-90 disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-danger px-3 py-1.5 text-meta font-bold text-on-danger transition-colors hover:opacity-90 disabled:opacity-60"
             >
               {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <X className="h-3.5 w-3.5" aria-hidden />}
               Confirm reject
@@ -83,7 +83,7 @@ export function ReviewConsole({ id }: { id: string }) {
               type="button"
               onClick={() => setRejecting(false)}
               disabled={pending}
-              className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-60"
+              className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-60"
             >
               Cancel
             </button>

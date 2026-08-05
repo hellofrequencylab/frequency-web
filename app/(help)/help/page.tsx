@@ -32,9 +32,9 @@ export default async function HelpHomePage() {
             className="rounded-card border border-border bg-surface-elevated p-5"
           >
             <Link href={`/help/${cat.slug}`} className="block">
-              <h2 className="font-display text-xl text-text">{cat.title}</h2>
+              <h2 className="font-display text-lead text-text">{cat.title}</h2>
               {cat.description && (
-                <p className="mt-1 text-sm text-muted">{cat.description}</p>
+                <p className="mt-1 text-body-sm text-muted">{cat.description}</p>
               )}
             </Link>
             <ul className="mt-4 space-y-1.5">
@@ -42,7 +42,7 @@ export default async function HelpHomePage() {
                 <li key={a.slug}>
                   <Link
                     href={helpHref(cat.slug, a.slug)}
-                    className="text-sm text-primary-strong hover:underline"
+                    className="text-body-sm text-primary-strong hover:underline"
                   >
                     {a.title}
                   </Link>

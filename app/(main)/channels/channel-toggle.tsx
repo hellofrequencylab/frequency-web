@@ -58,7 +58,7 @@ export function TuneInButton({
   const cls =
     className ??
     (size === 'md'
-      ? 'shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors'
+      ? 'shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors'
       : 'shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-3 py-1.5 text-2xs font-semibold text-on-primary hover:bg-primary-hover transition-colors')
 
   return (
@@ -92,7 +92,7 @@ export function TunedInButton({
   const cls =
     className ??
     (size === 'md'
-      ? 'shrink-0 inline-flex items-center justify-center rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text hover:text-danger hover:border-danger transition-colors'
+      ? 'shrink-0 inline-flex items-center justify-center rounded-lg border border-border bg-surface px-4 py-2 text-body-sm font-medium text-text hover:text-danger hover:border-danger transition-colors'
       : 'shrink-0 inline-flex items-center justify-center rounded-lg border border-border bg-surface px-3 py-1.5 text-2xs font-medium text-text hover:text-danger hover:border-danger transition-colors')
 
   return (
@@ -145,11 +145,11 @@ function LeaveChannelDialog({
         <div className="p-6">
           <h2
             id="leave-channel-title"
-            className="text-base font-bold text-text pr-6 leading-tight"
+            className="text-body font-bold text-text pr-6 leading-tight"
           >
             Are you sure you want to leave this channel?
           </h2>
-          <p className="mt-2 text-sm text-muted leading-relaxed">
+          <p className="mt-2 text-body-sm text-muted leading-relaxed">
             You&apos;ll stop seeing posts and updates from{' '}
             <span className="font-semibold text-text">
               {channelName ?? 'this channel'}
@@ -162,7 +162,7 @@ function LeaveChannelDialog({
           <Link
             href="/channels"
             onClick={onClose}
-            className="mt-5 flex items-center justify-center gap-2 w-full rounded-lg bg-primary px-4 py-3 text-sm font-bold text-on-primary hover:bg-primary-hover transition-colors"
+            className="mt-5 flex items-center justify-center gap-2 w-full rounded-lg bg-primary px-4 py-3 text-body-sm font-bold text-on-primary hover:bg-primary-hover transition-colors"
           >
             <Compass className="w-4 h-4" />
             Explore more channels
@@ -172,7 +172,7 @@ function LeaveChannelDialog({
               useFormStatus so a stray double-tap doesn't fire twice. */}
           <form action={tuneOutChannel.bind(null, channelId)} className="mt-2">
             <PendingButton
-              className="inline-flex items-center justify-center w-full rounded-lg px-4 py-2.5 text-xs font-medium text-subtle hover:text-danger transition-colors"
+              className="inline-flex items-center justify-center w-full rounded-lg px-4 py-2.5 text-meta font-medium text-subtle hover:text-danger transition-colors"
               pendingLabel="Leaving…"
             >
               Yes, leave the channel

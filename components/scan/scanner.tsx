@@ -166,7 +166,7 @@ export function Scanner({ hint = 'default' }: { hint?: string }) {
       {/* Chrome: title up top, reticle center, status at the bottom. */}
       <div className="absolute inset-0 flex flex-col items-center justify-between px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]">
         <div className="relative flex w-full max-w-md items-center justify-center">
-          <p className="text-sm font-bold uppercase tracking-[0.3em] text-white/90">{copy.title}</p>
+          <p className="text-body-sm font-bold uppercase tracking-[0.3em] text-white/90">{copy.title}</p>
           <button
             type="button"
             onClick={leave}
@@ -190,13 +190,13 @@ export function Scanner({ hint = 'default' }: { hint?: string }) {
         )}
 
         <div className="flex w-full max-w-md flex-col items-center gap-3 text-center">
-          {scanning && <p className="text-sm text-white/85">{copy.line}</p>}
+          {scanning && <p className="text-body-sm text-white/85">{copy.line}</p>}
           {state.kind === 'navigating' && (
-            <p className="text-sm font-semibold text-white">Got it. One sec…</p>
+            <p className="text-body-sm font-semibold text-white">Got it. One sec…</p>
           )}
           {state.kind === 'foreign' && (
             <>
-              <p className="text-sm text-white/90">
+              <p className="text-body-sm text-white/90">
                 That code points to <span className="font-semibold">{state.host}</span>. Not a
                 Frequency code.
               </p>
@@ -206,19 +206,19 @@ export function Scanner({ hint = 'default' }: { hint?: string }) {
                   setState({ kind: 'starting' })
                   setAttempt((a) => a + 1)
                 }}
-                className="rounded-pill bg-white px-6 py-2.5 text-sm font-bold text-black transition-opacity hover:opacity-90"
+                className="rounded-pill bg-white px-6 py-2.5 text-body-sm font-bold text-black transition-opacity hover:opacity-90"
               >
                 Scan again
               </button>
             </>
           )}
           {state.kind === 'denied' && (
-            <p className="text-sm text-white/90">
+            <p className="text-body-sm text-white/90">
               The camera needs your permission. Allow it in your browser settings, then come back.
             </p>
           )}
           {state.kind === 'unsupported' && (
-            <p className="text-sm text-white/90">
+            <p className="text-body-sm text-white/90">
               This browser can’t open the camera. Your phone’s own camera app works too: Frequency
               codes are plain links.
             </p>
@@ -226,7 +226,7 @@ export function Scanner({ hint = 'default' }: { hint?: string }) {
           {(state.kind === 'denied' || state.kind === 'unsupported') && (
             <Link
               href="/feed"
-              className="rounded-pill bg-white px-6 py-2.5 text-sm font-bold text-black transition-opacity hover:opacity-90"
+              className="rounded-pill bg-white px-6 py-2.5 text-body-sm font-bold text-black transition-opacity hover:opacity-90"
             >
               Back home
             </Link>

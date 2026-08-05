@@ -76,7 +76,7 @@ function ItemForm({
     <form action={onSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
+          <label className="block text-meta font-semibold text-muted uppercase tracking-wider mb-1">
             Name
           </label>
           <input
@@ -84,11 +84,11 @@ function ItemForm({
             defaultValue={item?.name ?? ''}
             required
             placeholder="Neon Halo"
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
+          <label className="block text-meta font-semibold text-muted uppercase tracking-wider mb-1">
             Slug
           </label>
           <input
@@ -96,13 +96,13 @@ function ItemForm({
             defaultValue={item?.slug ?? ''}
             required
             placeholder="neon-halo"
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
+        <label className="block text-meta font-semibold text-muted uppercase tracking-wider mb-1">
           Description
         </label>
         <textarea
@@ -111,19 +111,19 @@ function ItemForm({
           required
           rows={2}
           placeholder="A brief description shown in the store."
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
         />
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
+          <label className="block text-meta font-semibold text-muted uppercase tracking-wider mb-1">
             Category
           </label>
           <select
             name="category"
             defaultValue={item?.category ?? 'cosmetic'}
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/30"
           >
             {CATEGORIES.map((c) => (
               <option key={c.value} value={c.value}>
@@ -133,7 +133,7 @@ function ItemForm({
           </select>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
+          <label className="block text-meta font-semibold text-muted uppercase tracking-wider mb-1">
             Gem cost
           </label>
           <input
@@ -142,11 +142,11 @@ function ItemForm({
             min={0}
             defaultValue={item?.gem_cost ?? 0}
             required
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
+          <label className="block text-meta font-semibold text-muted uppercase tracking-wider mb-1">
             Stock (blank = ∞)
           </label>
           <input
@@ -155,38 +155,38 @@ function ItemForm({
             min={0}
             defaultValue={item?.stock ?? ''}
             placeholder="∞"
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
+          <label className="block text-meta font-semibold text-muted uppercase tracking-wider mb-1">
             Icon (emoji or slug)
           </label>
           <input
             name="icon"
             defaultValue={item?.icon ?? ''}
             placeholder="💎"
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
+          <label className="block text-meta font-semibold text-muted uppercase tracking-wider mb-1">
             Sort order
           </label>
           <input
             name="sort_order"
             type="number"
             defaultValue={item?.sort_order ?? 0}
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
+        <label className="block text-meta font-semibold text-muted uppercase tracking-wider mb-1">
           Preview URL (optional)
         </label>
         <input
@@ -194,7 +194,7 @@ function ItemForm({
           type="url"
           defaultValue={item?.preview ?? ''}
           placeholder="https://..."
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
       </div>
 
@@ -206,7 +206,7 @@ function ItemForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:bg-surface-elevated transition-colors"
+          className="rounded-lg border border-border px-4 py-2 text-body-sm font-medium text-muted hover:bg-surface-elevated transition-colors"
         >
           Cancel
         </button>
@@ -247,7 +247,7 @@ export function NewItemButton() {
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="New store item" className="max-w-lg">
           <div className="w-full rounded-2xl border border-border bg-surface lift-3">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <h2 className="text-sm font-semibold text-text">New store item</h2>
+              <h2 className="text-body-sm font-semibold text-text">New store item</h2>
               <button
                 onClick={() => setOpen(false)}
                 className="rounded p-1 text-subtle hover:text-muted transition-colors"
@@ -259,7 +259,7 @@ export function NewItemButton() {
               {done ? (
                 <div className="flex flex-col items-center gap-2 py-6 text-center">
                   <Check className="w-8 h-8 text-success" />
-                  <p className="text-sm text-text font-medium">Item created</p>
+                  <p className="text-body-sm text-text font-medium">Item created</p>
                 </div>
               ) : (
                 <ItemForm
@@ -305,7 +305,7 @@ export function EditItemButton({ item }: { item: StoreItem }) {
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel={`Edit ${item.name}`} className="max-w-lg">
           <div className="w-full rounded-2xl border border-border bg-surface lift-3">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <h2 className="text-sm font-semibold text-text">Edit {item.name}</h2>
+              <h2 className="text-body-sm font-semibold text-text">Edit {item.name}</h2>
               <button
                 onClick={() => setOpen(false)}
                 className="rounded p-1 text-subtle hover:text-muted transition-colors"
@@ -350,13 +350,13 @@ export function DeleteItemButton({ id, name }: { id: string; name: string }) {
         <button
           onClick={handleDelete}
           disabled={pending}
-          className="rounded px-2 py-1 text-xs font-semibold text-danger bg-danger-bg hover:bg-danger-bg/80 disabled:opacity-50 transition-colors"
+          className="rounded px-2 py-1 text-meta font-semibold text-danger bg-danger-bg hover:bg-danger-bg/80 disabled:opacity-50 transition-colors"
         >
           {pending ? <Loader2 className="w-3 h-3 animate-spin inline" /> : 'Delete'}
         </button>
         <button
           onClick={() => setConfirming(false)}
-          className="rounded px-2 py-1 text-xs text-subtle hover:text-muted transition-colors"
+          className="rounded px-2 py-1 text-meta text-subtle hover:text-muted transition-colors"
         >
           Cancel
         </button>

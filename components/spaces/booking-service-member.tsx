@@ -56,14 +56,14 @@ export function BookingServiceMember({
         <button
           type="button"
           onClick={back}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong transition-colors hover:text-primary"
+          className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong transition-colors hover:text-primary"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden /> All services
         </button>
 
         <div className="rounded-2xl border border-border bg-surface-elevated/40 px-4 py-3">
-          <p className="text-sm font-bold text-text">{selected.name}</p>
-          <p className="flex items-center gap-1.5 text-xs text-muted">
+          <p className="text-body-sm font-bold text-text">{selected.name}</p>
+          <p className="flex items-center gap-1.5 text-meta text-muted">
             <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
             {durationLabel(selected.durationMinutes)}
             {selected.description ? ` · ${selected.description}` : ''}
@@ -71,7 +71,7 @@ export function BookingServiceMember({
         </div>
 
         {loading || slots === null ? (
-          <div className="flex items-center gap-2 px-1 text-sm text-muted">
+          <div className="flex items-center gap-2 px-1 text-body-sm text-muted">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading times
           </div>
         ) : slots.length === 0 ? (
@@ -97,7 +97,7 @@ export function BookingServiceMember({
   // Step 1: pick a service.
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted">Pick a service to see open times.</p>
+      <p className="text-body-sm text-muted">Pick a service to see open times.</p>
       <div className="grid gap-2 sm:grid-cols-2">
         {services.map((service) => (
           <button
@@ -106,13 +106,13 @@ export function BookingServiceMember({
             onClick={() => pick(service)}
             className="flex flex-col items-start gap-1 rounded-2xl border border-border bg-surface p-4 text-left lift-1 transition-colors hover:border-border-strong hover:bg-surface-elevated"
           >
-            <span className="text-sm font-bold text-text">{service.name}</span>
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-muted">
+            <span className="text-body-sm font-bold text-text">{service.name}</span>
+            <span className="flex items-center gap-1.5 text-meta font-semibold text-muted">
               <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
               {durationLabel(service.durationMinutes)}
             </span>
             {service.description && (
-              <span className="line-clamp-2 text-xs text-subtle">{service.description}</span>
+              <span className="line-clamp-2 text-meta text-subtle">{service.description}</span>
             )}
           </button>
         ))}

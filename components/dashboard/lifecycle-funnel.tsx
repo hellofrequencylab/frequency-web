@@ -48,7 +48,7 @@ export function LifecycleFunnelPanel({
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
-      <p className="text-sm text-muted">
+      <p className="text-body-sm text-muted">
         Where members stall on the climb from new to engaged. Tap a stage to see who is stuck there.
       </p>
 
@@ -67,7 +67,7 @@ export function LifecycleFunnelPanel({
                 href={`${drillBase}?stage=${step.stage}`}
                 className="group flex items-center gap-3 rounded-control px-2 py-1.5 transition-colors hover:bg-surface-elevated/60"
               >
-                <span className="w-20 shrink-0 text-sm font-medium text-text">{step.label}</span>
+                <span className="w-20 shrink-0 text-body-sm font-medium text-text">{step.label}</span>
                 <span className="relative h-6 flex-1 overflow-hidden rounded-md bg-surface-elevated">
                   <span
                     className="absolute inset-y-0 left-0 rounded-md bg-primary/30"
@@ -75,7 +75,7 @@ export function LifecycleFunnelPanel({
                     aria-hidden
                   />
                 </span>
-                <span className="w-12 shrink-0 text-right text-sm font-bold tabular-nums text-text">{count}</span>
+                <span className="w-12 shrink-0 text-right text-body-sm font-bold tabular-nums text-text">{count}</span>
                 <ArrowRight className="h-4 w-4 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong" />
               </Link>
             </div>
@@ -91,8 +91,8 @@ export function LifecycleFunnelPanel({
             href={`${drillBase}?stage=${step.stage}`}
             className="group flex items-center justify-between rounded-control bg-surface-elevated/60 px-3 py-2 transition-colors hover:bg-surface-elevated"
           >
-            <span className="text-sm font-medium text-muted">{step.label}</span>
-            <span className="inline-flex items-center gap-1.5 text-sm font-bold tabular-nums text-text">
+            <span className="text-body-sm font-medium text-muted">{step.label}</span>
+            <span className="inline-flex items-center gap-1.5 text-body-sm font-bold tabular-nums text-text">
               {funnel[step.key]}
               <ArrowRight className="h-3.5 w-3.5 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong" />
             </span>

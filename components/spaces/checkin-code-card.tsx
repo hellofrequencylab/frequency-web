@@ -24,14 +24,14 @@ export function CheckinCodeCard({ svg, link }: { svg: string; link: string }) {
   }
 
   const btn =
-    'inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated'
+    'inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated'
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
-      <h3 className="flex items-center gap-1.5 text-sm font-bold text-text">
+      <h3 className="flex items-center gap-1.5 text-body-sm font-bold text-text">
         <QrCode className="h-4 w-4 text-primary-strong" aria-hidden /> Check-in code
       </h3>
-      <p className="mt-0.5 text-xs text-muted">
+      <p className="mt-0.5 text-meta text-muted">
         Print it at your door. Every scan records a check-in on the roster below.
       </p>
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -43,7 +43,7 @@ export function CheckinCodeCard({ svg, link }: { svg: string; link: string }) {
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex items-center gap-2">
             <code
-              className="min-w-0 flex-1 truncate rounded-lg border border-border bg-surface-elevated/50 px-2.5 py-1.5 font-mono text-xs text-muted"
+              className="min-w-0 flex-1 truncate rounded-lg border border-border bg-surface-elevated/50 px-2.5 py-1.5 font-mono text-meta text-muted"
               title={link}
             >
               {link}

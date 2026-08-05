@@ -95,7 +95,7 @@ export function TimelinePanel({
         title="Timeline"
         count={visible.length}
         action={
-          <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-muted">
+          <label className="inline-flex cursor-pointer items-center gap-2 text-meta font-medium text-muted">
             <input
               type="checkbox"
               checked={showAutomated}
@@ -106,7 +106,7 @@ export function TimelinePanel({
           </label>
         }
       />
-      <p className="mb-3 text-xs text-subtle">
+      <p className="mb-3 text-meta text-subtle">
         Every touch with this person, newest first. Turn off automated events to focus on real calls,
         meetings, messages, and notes. This only hides them from view, it never deletes anything.
       </p>
@@ -133,11 +133,11 @@ export function TimelinePanel({
                   <Icon className="h-3 w-3" />
                 </span>
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                  <span className="text-sm font-medium text-text">{e.title}</span>
+                  <span className="text-body-sm font-medium text-text">{e.title}</span>
                   <Chip>{e.channel.replace('_', ' ')}</Chip>
-                  <span className="text-xs text-subtle">{fmtDate(e.at)}</span>
+                  <span className="text-meta text-subtle">{fmtDate(e.at)}</span>
                 </div>
-                {e.detail && <p className="mt-0.5 text-sm text-muted">{e.detail}</p>}
+                {e.detail && <p className="mt-0.5 text-body-sm text-muted">{e.detail}</p>}
               </li>
             )
           })}
@@ -145,7 +145,7 @@ export function TimelinePanel({
       )}
 
       {!showAutomated && hiddenCount > 0 && (
-        <p className="mt-3 text-xs text-subtle">
+        <p className="mt-3 text-meta text-subtle">
           {hiddenCount} automated {hiddenCount === 1 ? 'event is' : 'events are'} hidden. Turn on
           &ldquo;Show automated events&rdquo; to see them.
         </p>
@@ -182,15 +182,15 @@ function LogTouch({ contactId }: { contactId: string }) {
 
   return (
     <div className="mt-3 rounded-2xl border border-border bg-surface p-3">
-      <p className="text-sm font-semibold text-text">Log a touch</p>
-      <p className="mt-0.5 text-xs text-subtle">
+      <p className="text-body-sm font-semibold text-text">Log a touch</p>
+      <p className="mt-0.5 text-meta text-subtle">
         Record a call, meeting, or note you had with this person so the history stays complete.
       </p>
       <div className="mt-3 flex flex-wrap items-start gap-2">
         <select
           value={kind}
           onChange={(e) => setKind(e.target.value as ManualTouchKind)}
-          className="rounded-lg border border-border-strong bg-surface px-2 py-2 text-sm text-text focus:outline-none"
+          className="rounded-lg border border-border-strong bg-surface px-2 py-2 text-body-sm text-text focus:outline-none"
           aria-label="Touch type"
         >
           {KINDS.map((k) => (
@@ -203,17 +203,17 @@ function LogTouch({ contactId }: { contactId: string }) {
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder={kind === 'note' ? 'What happened…' : 'What happened… (optional)'}
-          className="min-w-[12rem] flex-1 rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30"
+          className="min-w-[12rem] flex-1 rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30"
         />
         <button
           type="button"
           onClick={submit}
           disabled={pending || (kind === 'note' && !note.trim())}
-          className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Log
         </button>
-        {msg && <span className={`self-center text-xs ${msg.ok ? 'text-success' : 'text-danger'}`}>{msg.text}</span>}
+        {msg && <span className={`self-center text-meta ${msg.ok ? 'text-success' : 'text-danger'}`}>{msg.text}</span>}
       </div>
     </div>
   )

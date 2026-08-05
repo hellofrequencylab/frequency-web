@@ -64,7 +64,7 @@ export default async function BetaSequenceSplash({ params }: { params: Promise<{
         subtitle={splash.body}
         minHeight="screen"
         footer={
-          <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-on-ink/60">
+          <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-body-sm text-on-ink/60">
             <span className="font-semibold text-on-ink/80">Free during the beta.</span>
             <span aria-hidden className="text-on-ink/30">·</span>
             <span>No card · It’s live, it’s raw, and you’re early</span>
@@ -79,7 +79,7 @@ export default async function BetaSequenceSplash({ params }: { params: Promise<{
       <Statement tone="canvas">{accent(splash.statement)}</Statement>
 
       <section className="bg-surface px-6 py-16 text-center sm:py-20">
-        <p className="mx-auto max-w-xl text-lg leading-relaxed text-muted">
+        <p className="mx-auto max-w-xl text-body-lg leading-relaxed text-muted">
           Two minutes to step in. You’ll take the founder’s oath, claim your handle, and meet your people.
         </p>
         <div className="mt-7">

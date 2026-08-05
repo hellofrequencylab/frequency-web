@@ -51,7 +51,7 @@ export function SpaceConversationCompose({
   }
 
   const field =
-    'w-full rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
+    'w-full rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
   return (
     <>
@@ -62,7 +62,7 @@ export function SpaceConversationCompose({
           setError(null)
           setOpen(true)
         }}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
       >
         <PenLine className="h-4 w-4" /> New conversation
       </button>
@@ -70,18 +70,18 @@ export function SpaceConversationCompose({
       <Dialog open={open} onClose={() => setOpen(false)} align="sheet" ariaLabel="New conversation">
         <div className="space-y-3 p-4">
           <div>
-            <h2 className="text-base font-semibold text-text">New conversation</h2>
-            <p className="mt-0.5 text-xs text-muted">{description}</p>
+            <h2 className="text-body font-semibold text-text">New conversation</h2>
+            <p className="mt-0.5 text-meta text-muted">{description}</p>
           </div>
 
           {done ? (
-            <div className="rounded-lg bg-success-bg px-3 py-3 text-sm text-success">
+            <div className="rounded-lg bg-success-bg px-3 py-3 text-body-sm text-success">
               Sent. The conversation is now in your inbox.
               <div className="mt-2">
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-text hover:bg-surface-elevated"
+                  className="rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-text hover:bg-surface-elevated"
                 >
                   Done
                 </button>
@@ -100,7 +100,7 @@ export function SpaceConversationCompose({
                 className={`${field} resize-none leading-relaxed`}
               />
               {error && (
-                <p role="alert" className="text-xs text-danger">
+                <p role="alert" className="text-meta text-danger">
                   {error}
                 </p>
               )}
@@ -109,7 +109,7 @@ export function SpaceConversationCompose({
                   type="button"
                   onClick={() => setOpen(false)}
                   disabled={pending}
-                  className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted hover:bg-surface-elevated disabled:opacity-50"
+                  className="rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-muted hover:bg-surface-elevated disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -117,7 +117,7 @@ export function SpaceConversationCompose({
                   type="button"
                   onClick={submit}
                   disabled={pending || !email.trim() || !subject.trim() || !body.trim()}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50"
                 >
                   {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                   Send

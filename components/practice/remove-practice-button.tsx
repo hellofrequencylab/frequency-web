@@ -10,7 +10,7 @@ import { dropPracticeAction } from '@/app/(main)/practices/actions'
 export function RemovePracticeButton({ practiceId, title }: { practiceId: string; title: string }) {
   const [pending, start] = useTransition()
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-subtle">
+    <span className="inline-flex items-center gap-1.5 text-meta text-subtle">
       <span className="font-medium">Adopted</span>
       <span aria-hidden>·</span>
       <button

@@ -68,7 +68,7 @@ export async function LeaderboardConsistency() {
   return (
     <section aria-labelledby="consistency-heading" className="scroll-mt-20">
       <SectionHeader title="Consistency" />
-      <p className="-mt-2 mb-4 text-sm text-muted" id="consistency-heading">
+      <p className="-mt-2 mb-4 text-body-sm text-muted" id="consistency-heading">
         Showing up is how the steady person wins. Your daily practice streak is the
         heartbeat. One slip won’t break it, and a planned rest doesn’t count against you.
       </p>
@@ -85,13 +85,13 @@ export async function LeaderboardConsistency() {
         <div className="flex items-start gap-3">
           <Shield className="mt-0.5 h-5 w-5 shrink-0 text-signal-strong" aria-hidden />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-signal-strong">Your reserve</p>
-            <p className="mt-1 text-sm leading-relaxed text-signal-strong">
+            <p className="text-body-sm font-semibold text-signal-strong">Your reserve</p>
+            <p className="mt-1 text-body-sm leading-relaxed text-signal-strong">
               Miss one day and a reserve day bridges it the next time you log, so one
               slip never zeroes your streak. The rule is simple: never miss twice. Two
               days in a row and the streak starts fresh, with your best still on record.
             </p>
-            <p className="mt-2 text-sm leading-relaxed text-signal-strong">
+            <p className="mt-2 text-body-sm leading-relaxed text-signal-strong">
               You bank a reserve day (up to two) at the Week, Month, Century and Year
               badges, and one for every five Full Day bonuses on a Journey. Planning real
               time off? Set a rest above and the break won’t count against you.
@@ -123,24 +123,24 @@ export async function LeaderboardConsistency() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-text">{config.label} streak</h3>
+                      <h3 className="text-body-sm font-semibold text-text">{config.label} streak</h3>
                       {active && current > 0 && (
-                        <span className="rounded-md bg-success-bg px-1.5 py-0.5 text-xs font-semibold text-success">Active</span>
+                        <span className="rounded-md bg-success-bg px-1.5 py-0.5 text-meta font-semibold text-success">Active</span>
                       )}
                       {!active && current > 0 && (
-                        <span className="rounded-md bg-surface px-1.5 py-0.5 text-xs font-semibold text-muted">Resting</span>
+                        <span className="rounded-md bg-surface px-1.5 py-0.5 text-meta font-semibold text-muted">Resting</span>
                       )}
                     </div>
-                    <p className="mt-0.5 text-xs text-muted">{config.description}</p>
+                    <p className="mt-0.5 text-meta text-muted">{config.description}</p>
                     <div className="mt-3 flex items-center gap-4">
                       <div>
-                        <span className="text-2xl font-bold text-text tabular-nums">{current}</span>
-                        <span className="ml-1 text-xs text-subtle">{current === 1 ? 'week' : 'weeks'}</span>
+                        <span className="text-page-title font-bold text-text tabular-nums">{current}</span>
+                        <span className="ml-1 text-meta text-subtle">{current === 1 ? 'week' : 'weeks'}</span>
                       </div>
                       <div className="h-6 w-px bg-border-strong" />
                       <div>
-                        <span className="text-sm font-semibold text-muted tabular-nums">{longest}</span>
-                        <span className="ml-1 text-xs text-subtle">best</span>
+                        <span className="text-body-sm font-semibold text-muted tabular-nums">{longest}</span>
+                        <span className="ml-1 text-meta text-subtle">best</span>
                       </div>
                     </div>
                   </div>
@@ -153,7 +153,7 @@ export async function LeaderboardConsistency() {
                       return (
                         <div key={m} className="flex flex-1 flex-col items-center gap-1">
                           <div className={`h-1.5 w-full rounded-pill ${reached ? 'bg-primary' : 'bg-surface-elevated'}`} />
-                          <span className={`text-xs font-semibold ${reached ? 'text-primary-strong' : 'text-subtle'}`}>{m}w</span>
+                          <span className={`text-meta font-semibold ${reached ? 'text-primary-strong' : 'text-subtle'}`}>{m}w</span>
                         </div>
                       )
                     })}
@@ -161,7 +161,7 @@ export async function LeaderboardConsistency() {
                 </div>
 
                 {streak?.last_activity_at && (
-                  <p className="mt-3 text-xs text-subtle">
+                  <p className="mt-3 text-meta text-subtle">
                     Last recorded: {new Date(streak.last_activity_at).toLocaleDateString('en-US', {
                       month: 'short', day: 'numeric', year: 'numeric',
                     })}

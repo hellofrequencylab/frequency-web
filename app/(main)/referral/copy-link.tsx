@@ -22,29 +22,29 @@ export function ReferralLinkCard({ url }: { url: string | null }) {
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
-      <h2 className="flex items-center gap-2 text-sm font-bold text-text">
+      <h2 className="flex items-center gap-2 text-body-sm font-bold text-text">
         <Link2 className="h-4 w-4 text-primary-strong" aria-hidden /> Your invite link
       </h2>
-      <p className="mt-1 text-sm text-muted">
+      <p className="mt-1 text-body-sm text-muted">
         Share this with people you want in Frequency. When someone you bring in takes their first
         real action, it counts toward the contest and earns you Zaps.
       </p>
       {url ? (
         <div className="mt-3 flex items-center gap-2">
-          <code className="min-w-0 flex-1 truncate rounded-card bg-surface-elevated/60 px-3 py-2 text-sm text-text">
+          <code className="min-w-0 flex-1 truncate rounded-card bg-surface-elevated/60 px-3 py-2 text-body-sm text-text">
             {url}
           </code>
           <button
             type="button"
             onClick={copy}
-            className="press inline-flex shrink-0 items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-sm font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover motion-reduce:transition-none"
+            className="press inline-flex shrink-0 items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-body-sm font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover motion-reduce:transition-none"
           >
             {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
             {copied ? 'Copied' : 'Copy'}
           </button>
         </div>
       ) : (
-        <p className="mt-3 rounded-card bg-surface-elevated/60 px-3 py-2 text-sm text-muted">
+        <p className="mt-3 rounded-card bg-surface-elevated/60 px-3 py-2 text-body-sm text-muted">
           Finish setting up your profile to get your invite link.
         </p>
       )}

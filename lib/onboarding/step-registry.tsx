@@ -88,10 +88,10 @@ function suggestHandle(name: string): string {
 }
 
 const inputBase =
-  'w-full rounded-card border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/25'
+  'w-full rounded-card border border-border bg-surface px-4 py-3 text-body text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/25'
 
 function Avatar({ url, name, email, size = 'md' }: { url: string; name: string; email: string; size?: 'md' | 'lg' }) {
-  const dim = size === 'lg' ? 'w-20 h-20 text-2xl' : 'w-16 h-16 text-xl'
+  const dim = size === 'lg' ? 'w-20 h-20 text-page-title' : 'w-16 h-16 text-lead'
   // Only paint a preview for a known-safe scheme. This used to be a local regex; it is
   // now the shared upload-preview allowlist, so this sink and the two others in the
   // product cannot drift apart. Falls through to initials when the URL is rejected.
@@ -168,7 +168,7 @@ function IdentityStep({ content, draft, patch, report, ctx }: StepViewProps) {
   return (
     <div className="mt-2 space-y-4">
       <div>
-        <label htmlFor="displayName" className="mb-1.5 block text-sm font-medium text-text">
+        <label htmlFor="displayName" className="mb-1.5 block text-body-sm font-medium text-text">
           {c.displayNameLabel} <span className="text-danger">*</span>
         </label>
         <input
@@ -187,11 +187,11 @@ function IdentityStep({ content, draft, patch, report, ctx }: StepViewProps) {
       </div>
 
       <div>
-        <label htmlFor="handle" className="mb-1.5 block text-sm font-medium text-text">
+        <label htmlFor="handle" className="mb-1.5 block text-body-sm font-medium text-text">
           {c.handleLabel} <span className="text-danger">*</span>
         </label>
         <div className="relative">
-          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-subtle">@</span>
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-body text-subtle">@</span>
           <input
             id="handle"
             type="text"
@@ -205,7 +205,7 @@ function IdentityStep({ content, draft, patch, report, ctx }: StepViewProps) {
             aria-describedby="handle-status"
             className={`${inputBase} pl-8 pr-9`}
           />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm leading-none" aria-hidden>
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-body-sm leading-none" aria-hidden>
             {handleStatus === 'checking' && <span className="animate-pulse text-subtle">•••</span>}
             {handleStatus === 'available' && <span className="text-success">✓</span>}
             {handleStatus === 'taken' && <span className="text-danger">✗</span>}
@@ -217,7 +217,7 @@ function IdentityStep({ content, draft, patch, report, ctx }: StepViewProps) {
           aria-live="polite"
           className={
             handleStatus === 'taken' || (handle && !HANDLE_RE.test(handle))
-              ? 'mt-1.5 text-xs text-danger'
+              ? 'mt-1.5 text-meta text-danger'
               : 'sr-only'
           }
         >
@@ -321,7 +321,7 @@ function ProfileStep({ content, draft, patch, report, ctx }: StepViewProps) {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="text-sm font-semibold text-primary-strong hover:underline"
+            className="text-body-sm font-semibold text-primary-strong hover:underline"
           >
             {preview ? 'Change photo' : 'Upload a photo'}
           </button>
@@ -334,19 +334,19 @@ function ProfileStep({ content, draft, patch, report, ctx }: StepViewProps) {
                 patch({ avatarUrl: '' })
                 if (fileInputRef.current) fileInputRef.current.value = ''
               }}
-              className="text-sm text-subtle hover:text-muted"
+              className="text-body-sm text-subtle hover:text-muted"
             >
               Remove
             </button>
           )}
-          <p className="text-xs text-subtle">JPG, PNG, or GIF up to 5 MB</p>
+          <p className="text-meta text-subtle">JPG, PNG, or GIF up to 5 MB</p>
         </div>
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => void onFileChange(e)} />
       </div>
-      {uploadError && <p className="text-xs text-danger">{uploadError}</p>}
+      {uploadError && <p className="text-meta text-danger">{uploadError}</p>}
 
       <div>
-        <label htmlFor="bio" className="mb-1.5 block text-sm font-medium text-text">
+        <label htmlFor="bio" className="mb-1.5 block text-body-sm font-medium text-text">
           {c.bioLabel}
         </label>
         <textarea
@@ -357,7 +357,7 @@ function ProfileStep({ content, draft, patch, report, ctx }: StepViewProps) {
           rows={4}
           className={`${inputBase} resize-none`}
         />
-        <p className={`mt-1.5 text-right text-xs tabular-nums ${draft.bio.length >= 260 ? 'text-primary' : 'text-subtle'}`}>
+        <p className={`mt-1.5 text-right text-meta tabular-nums ${draft.bio.length >= 260 ? 'text-primary' : 'text-subtle'}`}>
           {draft.bio.length} / 280
         </p>
       </div>
@@ -379,11 +379,11 @@ function RegionStep({ content, draft, patch, ctx }: StepViewProps) {
   const c = regionContent.parse(content)
   return (
     <div className="mt-2">
-      <label htmlFor="region" className="mb-1.5 block text-sm font-medium text-text">
+      <label htmlFor="region" className="mb-1.5 block text-body-sm font-medium text-text">
         {c.regionLabel} <span className="text-danger">*</span>
       </label>
       {ctx.regions.length === 0 ? (
-        <p className="rounded-card border border-dashed border-border bg-surface/50 px-4 py-6 text-center text-sm text-subtle">
+        <p className="rounded-card border border-dashed border-border bg-surface/50 px-4 py-6 text-center text-body-sm text-subtle">
           {c.emptyText}
         </p>
       ) : (
@@ -421,22 +421,22 @@ function ReviewStep({ draft, ctx }: StepViewProps) {
       <div className="flex items-center gap-4 p-5">
         <Avatar url={draft.avatarUrl} name={draft.displayName} email={ctx.userEmail} size="lg" />
         <div className="min-w-0">
-          <p className="truncate text-lg font-semibold text-text">{draft.displayName}</p>
-          <p className="text-sm text-muted">@{draft.handle}</p>
+          <p className="truncate text-body-lg font-semibold text-text">{draft.displayName}</p>
+          <p className="text-body-sm text-muted">@{draft.handle}</p>
         </div>
       </div>
 
       {draft.bio && (
         <div className="px-5 py-4">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">Bio</p>
-          <p className="whitespace-pre-wrap text-sm text-text">{draft.bio}</p>
+          <p className="mb-1 text-meta font-semibold uppercase tracking-wide text-subtle">Bio</p>
+          <p className="whitespace-pre-wrap text-body-sm text-text">{draft.bio}</p>
         </div>
       )}
 
       {draft.regionId && (
         <div className="px-5 py-4">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">Region</p>
-          <p className="text-sm text-text">{ctx.regions.find((r) => r.id === draft.regionId)?.name}</p>
+          <p className="mb-1 text-meta font-semibold uppercase tracking-wide text-subtle">Region</p>
+          <p className="text-body-sm text-text">{ctx.regions.find((r) => r.id === draft.regionId)?.name}</p>
         </div>
       )}
     </div>

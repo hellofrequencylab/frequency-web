@@ -27,8 +27,8 @@ export interface SkinOption {
 }
 
 const fieldClass =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-primary'
-const labelClass = 'block text-xs font-semibold uppercase tracking-wide text-muted mb-1'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary'
+const labelClass = 'block text-meta font-semibold uppercase tracking-wide text-muted mb-1'
 
 export function SpaceBrandEditor({
   space,
@@ -105,7 +105,7 @@ export function SpaceBrandEditor({
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-subtle">
+            <p className="mt-1 text-meta text-subtle">
               The token set applied to this Space. Takes effect through the shell&rsquo;s{' '}
               <code>data-skin</code> resolution.
             </p>
@@ -135,7 +135,7 @@ export function SpaceBrandEditor({
                     }`}
                   >
                     <span className="flex items-center justify-between gap-2">
-                      <span className="font-display text-sm font-semibold text-text">{t.label}</span>
+                      <span className="font-display text-body-sm font-semibold text-text">{t.label}</span>
                       {selected && <Check className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />}
                     </span>
                     <span className="mt-0.5 block text-2xs font-medium uppercase tracking-wide text-muted">
@@ -145,7 +145,7 @@ export function SpaceBrandEditor({
                 )
               })}
             </div>
-            <p className="mt-1 text-xs text-subtle">
+            <p className="mt-1 text-meta text-subtle">
               Fonts and shape for the public profile. Keeps the Space&rsquo;s colors and accent. Bold is the
               standard look.
             </p>
@@ -165,7 +165,7 @@ export function SpaceBrandEditor({
               maxLength={200}
               className={fieldClass}
             />
-            <p className="mt-1 text-xs text-subtle">Shown in the Space header. Defaults to the Space name.</p>
+            <p className="mt-1 text-meta text-subtle">Shown in the Space header. Defaults to the Space name.</p>
           </div>
 
           {/* Brand accent */}
@@ -189,7 +189,7 @@ export function SpaceBrandEditor({
                 aria-hidden
               />
             </div>
-            <p className="mt-1 text-xs text-subtle">
+            <p className="mt-1 text-meta text-subtle">
               A reference swatch (hex, rgb, or hsl). The active palette still comes from the theme above.
             </p>
           </div>
@@ -207,11 +207,11 @@ export function SpaceBrandEditor({
               placeholder="https://… or /path/to/logo.svg"
               className={fieldClass}
             />
-            <p className="mt-1 text-xs text-subtle">An https URL or a same-origin path (starting with &ldquo;/&rdquo;).</p>
+            <p className="mt-1 text-meta text-subtle">An https URL or a same-origin path (starting with &ldquo;/&rdquo;).</p>
           </div>
 
           {error && (
-            <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
+            <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
               {error}
             </p>
           )}

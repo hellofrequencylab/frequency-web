@@ -44,7 +44,7 @@ function NumberField({
   disabled?: boolean
 }) {
   return (
-    <label className="block text-xs text-muted">
+    <label className="block text-meta text-muted">
       <span className="mb-1 block">{label}</span>
       <span className="flex items-center gap-1.5">
         <input
@@ -55,7 +55,7 @@ function NumberField({
           step={step}
           disabled={disabled}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="w-24 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm tabular-nums text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-50"
+          className="w-24 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm tabular-nums text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-50"
         />
         {suffix && <span className="text-subtle">{suffix}</span>}
       </span>
@@ -116,14 +116,14 @@ export function AutonomyControls({ data }: { data: AutonomyControlsData }) {
                   type="button"
                   onClick={rearm}
                   disabled={pending}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary disabled:opacity-50"
                 >
                   <ShieldCheck className="h-4 w-4" aria-hidden /> Re-arm breaker
                 </button>
               </div>
             </Banner>
           ) : (
-            <div className="flex items-center gap-2 text-sm text-muted">
+            <div className="flex items-center gap-2 text-body-sm text-muted">
               <ShieldCheck className="h-4 w-4 text-success" aria-hidden />
               <span>Breaker armed.</span>
               {data.live && (
@@ -142,7 +142,7 @@ export function AutonomyControls({ data }: { data: AutonomyControlsData }) {
               ariaLabel="Vera autonomous sending"
               disabled={pending}
             />
-            <span className="text-sm text-muted">
+            <span className="text-body-sm text-muted">
               Master switch{' '}
               <StatusChip tone={data.enabled ? 'success' : 'neutral'} size="sm">
                 {data.enabled ? 'On' : 'Off'}
@@ -167,8 +167,8 @@ export function AutonomyControls({ data }: { data: AutonomyControlsData }) {
                 ariaLabel={`Autonomous ${c.label}`}
                 disabled={pending || !data.enabled}
               />
-              <span className="text-sm text-muted">{c.label}</span>
-              {!data.enabled && <span className="text-xs text-subtle">(master off)</span>}
+              <span className="text-body-sm text-muted">{c.label}</span>
+              {!data.enabled && <span className="text-meta text-subtle">(master off)</span>}
             </div>
           ))}
         </div>
@@ -232,7 +232,7 @@ export function AutonomyControls({ data }: { data: AutonomyControlsData }) {
               type="button"
               onClick={saveTuning}
               disabled={pending}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary disabled:opacity-50"
             >
               <ShieldAlert className="h-4 w-4" aria-hidden />
               {saved ? 'Saved' : 'Save caps'}
@@ -247,13 +247,13 @@ export function AutonomyControls({ data }: { data: AutonomyControlsData }) {
         description="Every autonomous-send decision Vera made: what she decided, the gate outcome, and whether it sent, fell back to propose, or was blocked."
       >
         {data.decisions.length === 0 ? (
-          <p className="flex items-center gap-1.5 text-sm text-subtle">
+          <p className="flex items-center gap-1.5 text-body-sm text-subtle">
             <History className="h-4 w-4" aria-hidden /> No autonomous decisions yet.
           </p>
         ) : (
           <ul className="space-y-2">
             {data.decisions.map((d) => (
-              <li key={d.id} className="flex items-center gap-3 text-sm">
+              <li key={d.id} className="flex items-center gap-3 text-body-sm">
                 <StatusChip
                   tone={d.outcome === 'sent' ? 'success' : d.outcome === 'proposed' ? 'warning' : 'danger'}
                   size="sm"
@@ -268,7 +268,7 @@ export function AutonomyControls({ data }: { data: AutonomyControlsData }) {
                   )}
                   {d.gateReason && d.gateReason !== 'ok' && <span className="text-subtle"> · gate: {d.gateReason}</span>}
                 </span>
-                <span className="shrink-0 text-xs tabular-nums text-subtle">{fmtWhen(d.createdAt)}</span>
+                <span className="shrink-0 text-meta tabular-nums text-subtle">{fmtWhen(d.createdAt)}</span>
               </li>
             ))}
           </ul>

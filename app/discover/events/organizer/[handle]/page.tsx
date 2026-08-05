@@ -164,7 +164,7 @@ export default async function OrganizerPage({
 
       <Link
         href="/discover/events"
-        className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text"
+        className="mb-4 inline-flex items-center gap-1 text-body-sm font-medium text-muted transition-colors hover:text-text"
       >
         <ChevronLeft className="h-4 w-4" />
         Events
@@ -183,7 +183,7 @@ export default async function OrganizerPage({
                 style={avatarFocusStyle(avatarUrl)}
               />
             ) : (
-              <span className="flex h-12 w-12 items-center justify-center rounded-pill bg-primary-bg text-base font-semibold text-primary-strong select-none">
+              <span className="flex h-12 w-12 items-center justify-center rounded-pill bg-primary-bg text-body font-semibold text-primary-strong select-none">
                 {getInitials(displayName)}
               </span>
             )}
@@ -202,7 +202,7 @@ export default async function OrganizerPage({
             personal feed from the /events library. */}
         <div className="mb-8 flex items-start gap-3 rounded-2xl border border-border bg-marketing-canvas p-4">
           <CalendarPlus className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
-          <p className="text-sm leading-relaxed text-muted">
+          <p className="text-body-sm leading-relaxed text-muted">
             Want these on your calendar?{' '}
             <Link href="/sign-in" className="font-medium text-primary-strong hover:underline">
               Sign in
@@ -230,7 +230,7 @@ export default async function OrganizerPage({
               ))}
             </div>
           ) : (
-            <p className="mt-5 text-base leading-relaxed text-muted">
+            <p className="mt-5 text-body leading-relaxed text-muted">
               {displayName} doesn&rsquo;t have a public event up at the moment. The next one shows
               up here as soon as it&rsquo;s posted.
             </p>

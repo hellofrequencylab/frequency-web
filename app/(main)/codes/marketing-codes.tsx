@@ -43,10 +43,10 @@ export function MarketingCodes({
     <section className="rounded-2xl border border-border bg-surface lift-1">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div>
-          <h2 className="flex items-center gap-1.5 text-sm font-bold text-text">
+          <h2 className="flex items-center gap-1.5 text-body-sm font-bold text-text">
             <Megaphone className="w-4 h-4 text-primary-strong" /> Marketing codes
           </h2>
-          <p className="text-xs text-muted mt-0.5">
+          <p className="text-meta text-muted mt-0.5">
             Your funnel codes. Point one at a circle or event you&apos;re promoting and track the
             scans. {cards.length}/{limit} used.
           </p>
@@ -54,7 +54,7 @@ export function MarketingCodes({
         {!creating && !atLimit && (
           <button
             onClick={() => setCreating(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary-hover transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary px-3 py-1.5 text-meta font-semibold hover:bg-primary-hover transition-colors"
           >
             <Plus className="w-3.5 h-3.5" /> New code
           </button>
@@ -63,7 +63,7 @@ export function MarketingCodes({
 
       <div className="p-4 space-y-4">
         {targets.length === 0 && (
-          <p className="text-xs text-muted">
+          <p className="text-meta text-muted">
             Join a circle or host an event first, then you can point a code at it.
           </p>
         )}
@@ -77,7 +77,7 @@ export function MarketingCodes({
         )}
 
         {cards.length === 0 && !creating && (
-          <p className="text-xs text-muted">No marketing codes yet.</p>
+          <p className="text-meta text-muted">No marketing codes yet.</p>
         )}
 
         {cards.map((card) => (
@@ -120,41 +120,41 @@ function MarketingRow({ card, targets }: { card: MarketingCard; targets: Marketi
           dangerouslySetInnerHTML={{ __html: card.svg }}
         />
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-bold text-text truncate">{card.title}</h3>
-          <p className="text-xs text-muted truncate">→ {targetLabel}</p>
-          <p className="mt-0.5 text-xs text-muted">
+          <h3 className="text-body-sm font-bold text-text truncate">{card.title}</h3>
+          <p className="text-meta text-muted truncate">→ {targetLabel}</p>
+          <p className="mt-0.5 text-meta text-muted">
             <span className="font-semibold text-text">{card.scans}</span> scan{card.scans === 1 ? '' : 's'}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <a
               href={`${apiBase}&format=png&download=${encodeURIComponent(card.slug)}`}
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
             >
               <Download className="w-3 h-3" /> PNG
             </a>
             <a
               href={`${apiBase}&format=svg&download=${encodeURIComponent(card.slug)}`}
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
             >
               <Download className="w-3 h-3" /> SVG
             </a>
             <button
               onClick={copy}
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
             >
               {copied ? <Check className="w-3 h-3 text-success" /> : <Copy className="w-3 h-3" />}
               {copied ? 'Copied' : 'Link'}
             </button>
             <button
               onClick={() => setEditing((v) => !v)}
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
             >
               <Pencil className="w-3 h-3" /> {editing ? 'Close' : 'Edit'}
             </button>
             <button
               onClick={remove}
               disabled={pending}
-              className="ml-auto inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-danger transition-colors disabled:opacity-60"
+              className="ml-auto inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-danger transition-colors disabled:opacity-60"
             >
               <Trash2 className="w-3 h-3" /> Delete
             </button>
@@ -215,7 +215,7 @@ function MarketingForm({
     <div className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="block">
-          <span className="block text-xs font-medium text-subtle mb-1">Code name</span>
+          <span className="block text-meta font-medium text-subtle mb-1">Code name</span>
           <input
             value={form.title}
             onChange={(e) => {
@@ -223,18 +223,18 @@ function MarketingForm({
               setError(null)
             }}
             placeholder="e.g. Coffee-shop flyer"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </label>
         <label className="block">
-          <span className="block text-xs font-medium text-subtle mb-1">Points at</span>
+          <span className="block text-meta font-medium text-subtle mb-1">Points at</span>
           <select
             value={form.path}
             onChange={(e) => {
               setForm((f) => ({ ...f, path: e.target.value }))
               setError(null)
             }}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           >
             {targets.map((t) => (
               <option key={t.path} value={t.path}>
@@ -252,20 +252,20 @@ function MarketingForm({
         previewUrl={card?.url ?? shortLinkUrl('preview')}
       />
 
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
 
       <div className="flex items-center gap-2">
         <button
           onClick={submit}
           disabled={pending || targets.length === 0}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary px-3 py-1.5 text-meta font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60"
         >
           <Megaphone className="w-3.5 h-3.5" />
           {pending ? 'Saving…' : card ? 'Save changes' : 'Create code'}
         </button>
         <button
           onClick={onCancel}
-          className="rounded-lg px-3 py-1.5 text-xs font-semibold text-muted hover:text-text transition-colors"
+          className="rounded-lg px-3 py-1.5 text-meta font-semibold text-muted hover:text-text transition-colors"
         >
           Cancel
         </button>

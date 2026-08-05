@@ -31,7 +31,7 @@ export function StatusChip({
   size?: 'sm' | 'md'
   children: React.ReactNode
 }) {
-  const pad = size === 'sm' ? 'px-2 py-0.5 text-2xs' : 'px-2.5 py-0.5 text-xs'
+  const pad = size === 'sm' ? 'px-2 py-0.5 text-2xs' : 'px-2.5 py-0.5 text-meta'
   return (
     <span className={`inline-flex shrink-0 items-center gap-1 rounded-pill font-semibold ${pad} ${TONE[tone]}`}>
       {children}
@@ -81,8 +81,8 @@ export function Banner({
       className={`flex items-start gap-3 rounded-2xl border px-4 py-3 ${BANNER[tone]}`}
     >
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold">{title}</p>
-        {children && <div className="mt-0.5 text-sm text-text/80">{children}</div>}
+        <p className="text-body-sm font-semibold">{title}</p>
+        {children && <div className="mt-0.5 text-body-sm text-text/80">{children}</div>}
         {action && <div className="mt-2">{action}</div>}
       </div>
       {dismissible && (

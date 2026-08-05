@@ -126,11 +126,11 @@ export async function CommunityManage() {
               <ArrowUpRight className="h-4 w-4 shrink-0 text-subtle opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-text">{card.label}</p>
-              <p className="mt-0.5 text-xs leading-snug text-muted">{card.desc}</p>
+              <p className="text-body-sm font-semibold text-text">{card.label}</p>
+              <p className="mt-0.5 text-meta leading-snug text-muted">{card.desc}</p>
             </div>
             <p className="mt-auto flex items-baseline gap-1.5">
-              {card.stat && <span className="text-lg font-bold tabular-nums text-text">{card.stat}</span>}
+              {card.stat && <span className="text-body-lg font-bold tabular-nums text-text">{card.stat}</span>}
               <span className="text-2xs font-medium uppercase tracking-wide text-muted">{card.statLabel}</span>
             </p>
           </Link>

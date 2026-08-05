@@ -82,24 +82,24 @@ function TypeBlock({ block }: { block: TypeDefaultBlock }) {
   return (
     <section className="rounded-2xl border border-border bg-surface lift-1">
       <div className="border-b border-border p-4">
-        <h2 className="text-sm font-semibold text-text">{block.typeLabel}</h2>
-        <p className="mt-0.5 text-xs text-muted">
+        <h2 className="text-body-sm font-semibold text-text">{block.typeLabel}</h2>
+        <p className="mt-0.5 text-meta text-muted">
           What a new {block.typeLabel.toLowerCase()} space starts with. Universal tools start on; the
           lowest role sets who can use each one. Plan tools turn on when a plan grants them.
         </p>
       </div>
 
-      {error && <p className="px-4 pt-3 text-sm text-danger">{error}</p>}
+      {error && <p className="px-4 pt-3 text-body-sm text-danger">{error}</p>}
 
       <div className="overflow-x-auto p-2">
-        <table className="w-full border-collapse text-sm">
+        <table className="w-full border-collapse text-body-sm">
           <thead>
             <tr>
-              <th className="sticky left-0 z-10 bg-surface px-3 py-2 text-left text-xs font-semibold text-subtle">
+              <th className="sticky left-0 z-10 bg-surface px-3 py-2 text-left text-meta font-semibold text-subtle">
                 Function
               </th>
-              <th className="px-2 py-2 text-center text-xs font-semibold text-muted">On for new spaces</th>
-              <th className="px-2 py-2 text-left text-xs font-semibold text-muted">Lowest role</th>
+              <th className="px-2 py-2 text-center text-meta font-semibold text-muted">On for new spaces</th>
+              <th className="px-2 py-2 text-left text-meta font-semibold text-muted">Lowest role</th>
             </tr>
           </thead>
           <tbody>
@@ -117,7 +117,7 @@ function TypeBlock({ block }: { block: TypeDefaultBlock }) {
                       {r.planGated && (
                         <span
                           title="Plan tool. It turns on when a plan grants it; this only sets its lowest role."
-                          className="inline-flex items-center rounded-pill bg-surface-elevated px-1.5 py-0.5 text-xs font-semibold text-muted"
+                          className="inline-flex items-center rounded-pill bg-surface-elevated px-1.5 py-0.5 text-meta font-semibold text-muted"
                         >
                           Plan
                         </span>
@@ -125,13 +125,13 @@ function TypeBlock({ block }: { block: TypeDefaultBlock }) {
                       {isCustom && (
                         <span
                           title={`Default: ${r.defaultEnabled ? 'on' : 'off'}, ${ROLE_LABEL[r.defaultMinRole]}`}
-                          className="inline-flex items-center gap-0.5 rounded-pill bg-primary-bg px-1.5 py-0.5 text-xs font-semibold text-primary-strong"
+                          className="inline-flex items-center gap-0.5 rounded-pill bg-primary-bg px-1.5 py-0.5 text-meta font-semibold text-primary-strong"
                         >
                           <RotateCcw className="h-2.5 w-2.5" /> custom
                         </span>
                       )}
                     </span>
-                    <span className="mt-0.5 block max-w-prose text-xs font-normal text-muted">
+                    <span className="mt-0.5 block max-w-prose text-meta font-normal text-muted">
                       {r.description}
                     </span>
                   </th>
@@ -151,7 +151,7 @@ function TypeBlock({ block }: { block: TypeDefaultBlock }) {
                       value={cur.minRole}
                       disabled={savingKey === r.key}
                       onChange={(e) => save(r.key, { ...cur, minRole: e.target.value as SpaceRole })}
-                      className="rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text outline-none focus:border-primary disabled:opacity-50"
+                      className="rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text outline-none focus:border-primary disabled:opacity-50"
                     >
                       {SPACE_ROLES.map((role) => (
                         <option key={role} value={role}>

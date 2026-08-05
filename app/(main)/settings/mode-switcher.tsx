@@ -55,7 +55,7 @@ export function ModeSwitcher() {
 
   return (
     <div>
-      <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">Mode</p>
+      <p className="text-meta font-medium text-muted uppercase tracking-wide mb-2">Mode</p>
       <div className="rounded-card border border-border bg-surface lift-1 divide-y divide-border/80 dark:divide-border/50 overflow-hidden">
         {THEME_OPTIONS.map(({ value, label, description, Icon }) => {
           const active = theme === value
@@ -77,10 +77,10 @@ export function ModeSwitcher() {
                 <Icon className={`w-4 h-4 ${active ? 'text-primary-strong' : 'text-muted'}`} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
+                <p className={`text-body-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
                   {label}
                 </p>
-                <p className="text-xs text-muted mt-0.5">{description}</p>
+                <p className="text-meta text-muted mt-0.5">{description}</p>
               </div>
               {active && (
                 <Check className="w-4 h-4 text-primary-strong shrink-0" />

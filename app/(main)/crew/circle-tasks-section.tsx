@@ -68,7 +68,7 @@ export async function CircleTasksSection({
         action={canAssign ? (
           <Link
             href="/admin/crew-tasks"
-            className="inline-flex items-center gap-1 text-xs font-medium text-muted hover:text-text transition-colors"
+            className="inline-flex items-center gap-1 text-meta font-medium text-muted hover:text-text transition-colors"
           >
             <Settings2 className="w-3.5 h-3.5" /> Manage
           </Link>
@@ -94,12 +94,12 @@ export async function CircleTasksSection({
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-medium text-text">{task.name}</span>
-                  <span className="text-xs px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium">
+                  <span className="text-body-sm font-medium text-text">{task.name}</span>
+                  <span className="text-meta px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium">
                     {TASK_TYPE_LABEL[task.taskType] ?? task.taskType}
                   </span>
                   {task.requiresVerification && (
-                    <span className="text-xs px-1.5 py-0.5 rounded-md bg-warning-bg text-warning dark:text-primary font-medium">
+                    <span className="text-meta px-1.5 py-0.5 rounded-md bg-warning-bg text-warning dark:text-primary font-medium">
                       Needs review
                     </span>
                   )}
@@ -118,11 +118,11 @@ export async function CircleTasksSection({
                         style={avatarFocusStyle(task.assignee.avatarUrl)}
                       />
                     ) : (
-                      <span className="w-4 h-4 rounded-pill bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                      <span className="w-4 h-4 rounded-pill bg-primary-bg text-primary-strong text-meta font-semibold flex items-center justify-center shrink-0 select-none">
                         {getInitials(task.assignee?.displayName ?? '?')}
                       </span>
                     )}
-                    <span className="text-xs text-muted">
+                    <span className="text-meta text-muted">
                       {mine ? 'Claimed by you' : `Claimed by ${task.assignee?.displayName ?? 'a member'}`}
                       {task.claimedAt && (
                         <> · {new Date(task.claimedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>
@@ -130,14 +130,14 @@ export async function CircleTasksSection({
                     </span>
                   </span>
                 ) : (
-                  <p className="mt-1 text-xs text-subtle">
+                  <p className="mt-1 text-meta text-subtle">
                     Open. {canClaim ? 'Claim it to take this on for your circle.' : 'A Crew member can claim this.'}
                   </p>
                 )}
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-sm font-semibold text-muted">+{task.zapsValue}</span>
+                <span className="text-body-sm font-semibold text-muted">+{task.zapsValue}</span>
                 {!claimed && canClaim && <ClaimTaskButton taskId={task.id} />}
                 {mine && (
                   <>

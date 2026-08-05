@@ -125,9 +125,9 @@ export function RecordingReviews({
   return (
     <section className="mt-6">
       <div className="mb-3 flex items-center gap-3">
-        <h2 className="text-sm font-bold text-text">Ratings</h2>
+        <h2 className="text-body-sm font-bold text-text">Ratings</h2>
         {aggregate.average != null && (
-          <span className="inline-flex items-center gap-1.5 text-xs text-muted">
+          <span className="inline-flex items-center gap-1.5 text-meta text-muted">
             <Stars value={aggregate.average} />
             <span className="font-semibold text-text">{aggregate.average.toFixed(1)}</span>
             <span className="text-subtle">
@@ -140,7 +140,7 @@ export function RecordingReviews({
       {canRate ? (
         <div className="mb-4 rounded-2xl border border-border bg-surface p-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-muted">
+            <span className="text-meta font-semibold text-muted">
               {myReview ? 'Your rating' : 'Rate this recording'}
             </span>
             <Stars value={rating} onPick={setRating} size="lg" />
@@ -151,26 +151,26 @@ export function RecordingReviews({
             placeholder="Add a note (optional)."
             rows={2}
             disabled={pending}
-            className="mt-2 w-full resize-none rounded-lg bg-transparent text-sm leading-relaxed text-text/90 outline-none placeholder:text-subtle disabled:opacity-60"
+            className="mt-2 w-full resize-none rounded-lg bg-transparent text-body-sm leading-relaxed text-text/90 outline-none placeholder:text-subtle disabled:opacity-60"
           />
-          {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+          {error && <p className="mt-1 text-meta text-danger">{error}</p>}
           <div className="mt-2 flex justify-end border-t border-border pt-2">
             <button
               type="button"
               onClick={submit}
               disabled={pending || rating < 1}
-              className="rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
             >
               {pending ? 'Saving...' : myReview ? 'Update rating' : 'Post rating'}
             </button>
           </div>
         </div>
       ) : (
-        <p className="mb-4 text-sm text-subtle">Sign in to rate this recording.</p>
+        <p className="mb-4 text-body-sm text-subtle">Sign in to rate this recording.</p>
       )}
 
       {reviews.length === 0 ? (
-        <p className="text-sm text-subtle">No ratings yet.</p>
+        <p className="text-body-sm text-subtle">No ratings yet.</p>
       ) : (
         <ul className="space-y-3">
           {reviews.map((r) => {
@@ -197,11 +197,11 @@ export function RecordingReviews({
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                       {a ? (
-                        <Link href={`/people/${a.handle}`} className="text-sm font-semibold text-text hover:underline">
+                        <Link href={`/people/${a.handle}`} className="text-body-sm font-semibold text-text hover:underline">
                           {a.displayName}
                         </Link>
                       ) : (
-                        <span className="text-sm font-semibold text-text">A member</span>
+                        <span className="text-body-sm font-semibold text-text">A member</span>
                       )}
                       <Stars value={r.rating} />
                       <span className="text-2xs text-muted">{timeAgo(r.createdAt)}</span>
@@ -219,7 +219,7 @@ export function RecordingReviews({
                     )}
                   </div>
                   {r.body && (
-                    <p className="mt-0.5 whitespace-pre-wrap text-sm leading-relaxed text-text/90">{r.body}</p>
+                    <p className="mt-0.5 whitespace-pre-wrap text-body-sm leading-relaxed text-text/90">{r.body}</p>
                   )}
                 </div>
               </li>

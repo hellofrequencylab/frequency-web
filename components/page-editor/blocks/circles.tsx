@@ -32,7 +32,7 @@ function indexFrom(puck: PuckArg): CirclesIndexData | undefined {
 // Shown on the editor canvas ONLY (`puck.isEditing`) so a section is visible + draggable there.
 function EditorStub({ label }: { label: string }) {
   return (
-    <div className="rounded-card border border-dashed border-border bg-surface/60 px-4 py-8 text-center text-sm text-muted">
+    <div className="rounded-card border border-dashed border-border bg-surface/60 px-4 py-8 text-center text-body-sm text-muted">
       {label}
       <span className="mt-0.5 block text-2xs text-subtle">Live circles show on the published page</span>
     </div>
@@ -54,13 +54,13 @@ function ChannelPills({ links }: { links: CirclesIndexData['channelLinks'] }) {
             key={link.href}
             href={link.href}
             aria-current={link.active ? 'page' : undefined}
-            className={`inline-flex items-center gap-1.5 rounded-pill px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+            className={`inline-flex items-center gap-1.5 rounded-pill px-3.5 py-1.5 text-body-sm font-semibold transition-colors ${
               link.active ? activeClass : 'bg-surface-elevated text-muted hover:bg-surface hover:text-text'
             }`}
           >
             {link.label}
             {link.count > 0 && (
-              <span className={`text-xs tabular-nums ${link.active ? 'opacity-70' : 'text-subtle'}`}>
+              <span className={`text-meta tabular-nums ${link.active ? 'opacity-70' : 'text-subtle'}`}>
                 {link.count}
               </span>
             )}
@@ -140,7 +140,7 @@ export const circlesComponents: Record<string, ComponentConfig> = {
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
               <Sparkles className="h-4 w-4" />
             </span>
-            <h2 className="text-sm font-bold text-text">{(heading as string) || 'Featured circles'}</h2>
+            <h2 className="text-body-sm font-bold text-text">{(heading as string) || 'Featured circles'}</h2>
           </div>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {featured.map((card) => (
@@ -169,10 +169,10 @@ export const circlesComponents: Record<string, ComponentConfig> = {
                   <Sparkles className="h-5 w-5" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-text">
+                  <p className="text-body-sm font-semibold text-text">
                     {d.nearlyFullCount} {d.nearlyFullCount === 1 ? 'circle is' : 'circles are'} filling up
                   </p>
-                  <p className="text-sm text-muted">
+                  <p className="text-body-sm text-muted">
                     A full circle is a good problem. It means the next one&rsquo;s ready to start. Open the door
                     for the people still looking for their room.
                   </p>
@@ -182,13 +182,13 @@ export const circlesComponents: Record<string, ComponentConfig> = {
                 interests={d.interests}
                 buttonLabel="Start the next circle"
                 canCreate={d.canCreate}
-                buttonClass="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                buttonClass="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               />
             </div>
           )}
 
           {d.hitFetchCap && (
-            <p className="text-xs text-subtle">
+            <p className="text-meta text-subtle">
               Showing the first {d.fetchLimit} Circles. Use the filters above to find what you&rsquo;re looking for.
             </p>
           )}
@@ -237,14 +237,14 @@ export const circlesComponents: Record<string, ComponentConfig> = {
                     <Link
                       key={i.id}
                       href={`/circles?interest=${active ? '' : i.id}`}
-                      className={`flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors ${
+                      className={`flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-body-sm transition-colors ${
                         active
                           ? 'bg-primary-bg font-semibold text-primary-strong'
                           : 'text-muted hover:bg-surface-elevated hover:text-text'
                       }`}
                     >
                       <span className="truncate">{i.name}</span>
-                      <span className="text-xs tabular-nums text-subtle">{i.count}</span>
+                      <span className="text-meta tabular-nums text-subtle">{i.count}</span>
                     </Link>
                   )
                 })}
@@ -265,8 +265,8 @@ export const circlesComponents: Record<string, ComponentConfig> = {
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-elevated text-primary-strong">
                       <Compass className="h-3.5 w-3.5" />
                     </span>
-                    <span className="flex-1 truncate text-sm font-medium text-text">{nx.name}</span>
-                    <span className="text-xs tabular-nums text-subtle">{nx.count}</span>
+                    <span className="flex-1 truncate text-body-sm font-medium text-text">{nx.name}</span>
+                    <span className="text-meta tabular-nums text-subtle">{nx.count}</span>
                   </Link>
                 ))}
               </div>

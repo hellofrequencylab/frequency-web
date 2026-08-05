@@ -127,7 +127,7 @@ export function RsvpPaymentFlow({
             }`}
           >
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-text">{r.name}</p>
+              <p className="truncate text-body-sm font-semibold text-text">{r.name}</p>
               {r.tag && (
                 <div className="mt-1">
                   {r.tag === 'member' ? (
@@ -142,7 +142,7 @@ export function RsvpPaymentFlow({
                 </div>
               )}
             </div>
-            <span className="shrink-0 text-sm font-semibold text-text">{r.priceLabel}</span>
+            <span className="shrink-0 text-body-sm font-semibold text-text">{r.priceLabel}</span>
           </button>
         ))}
       </div>
@@ -163,11 +163,11 @@ export function RsvpPaymentFlow({
         <div className="space-y-2">
           <Link
             href={signInHref}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             Sign in to RSVP
           </Link>
-          <p className="text-xs text-muted">Sign in and you&rsquo;re two taps from the list.</p>
+          <p className="text-meta text-muted">Sign in and you&rsquo;re two taps from the list.</p>
         </div>
       )}
 
@@ -177,8 +177,8 @@ export function RsvpPaymentFlow({
           {selected.kind === 'general' ? (
             <>
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-text">{selected.name}</p>
-                <p className="text-sm font-semibold text-text">{selected.priceLabel}</p>
+                <p className="text-body-sm font-semibold text-text">{selected.name}</p>
+                <p className="text-body-sm font-semibold text-text">{selected.priceLabel}</p>
               </div>
               {paymentsReady ? (
                 <>
@@ -186,7 +186,7 @@ export function RsvpPaymentFlow({
                     type="button"
                     onClick={payAndGo}
                     disabled={pending}
-                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
                   >
                     {pending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -205,7 +205,7 @@ export function RsvpPaymentFlow({
                     type="button"
                     onClick={payAndGo}
                     disabled={pending}
-                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
                   >
                     {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                     Confirm RSVP
@@ -216,13 +216,13 @@ export function RsvpPaymentFlow({
                   </p>
                 </>
               )}
-              {error && <p className="text-sm text-danger">{error}</p>}
+              {error && <p className="text-body-sm text-danger">{error}</p>}
             </>
           ) : membership ? (
             <>
               <div>
-                <p className="text-sm font-bold text-text">Join {membership.spaceName}</p>
-                <p className="mt-0.5 text-xs text-muted">
+                <p className="text-body-sm font-bold text-text">Join {membership.spaceName}</p>
+                <p className="mt-0.5 text-meta text-muted">
                   Membership includes your ticket to {membership.includedEvent.title}. Once you
                   join, tap Going and you&rsquo;re in.
                 </p>

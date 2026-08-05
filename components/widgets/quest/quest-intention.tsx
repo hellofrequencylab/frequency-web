@@ -15,7 +15,7 @@ export async function QuestIntention() {
       <p className="text-2xs font-semibold uppercase tracking-widest text-primary-strong">
         {season.name ? `${season.name} · the intention` : 'This season'}
       </p>
-      <p className="mt-1 text-lg font-semibold leading-snug text-text">{season.theme}</p>
+      <p className="mt-1 text-body-lg font-semibold leading-snug text-text">{season.theme}</p>
     </div>
   )
 }

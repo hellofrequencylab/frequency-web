@@ -19,7 +19,7 @@ interface ScopeOption {
 export function NewChannelCompose({
   scopeOptions,
   buttonLabel = 'New Channel',
-  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
+  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
 }: {
   scopeOptions: ScopeOption[]
   buttonLabel?: string
@@ -80,9 +80,9 @@ export function NewChannelCompose({
             <StudioFooter
               left={
                 error ? (
-                  <span className="text-xs text-danger">{error}</span>
+                  <span className="text-meta text-danger">{error}</span>
                 ) : (
-                  <span className="text-xs text-subtle">A topical or event space for your people.</span>
+                  <span className="text-meta text-subtle">A topical or event space for your people.</span>
                 )
               }
             >
@@ -90,7 +90,7 @@ export function NewChannelCompose({
                 type="button"
                 onClick={() => setOpen(false)}
                 disabled={isPending}
-                className="rounded-control border border-border px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+                className="rounded-control border border-border px-4 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -98,7 +98,7 @@ export function NewChannelCompose({
                 type="button"
                 onClick={submit}
                 disabled={!name.trim() || !selected || isPending}
-                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+                className="rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
               >
                 {isPending ? 'Creating…' : 'Create channel'}
               </button>
@@ -127,7 +127,7 @@ export function NewChannelCompose({
                     onClick={() => setType(t)}
                     disabled={isPending}
                     aria-pressed={type === t}
-                    className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium capitalize transition-colors ${
+                    className={`flex-1 rounded-lg border px-3 py-2 text-meta font-medium capitalize transition-colors ${
                       type === t
                         ? 'border-primary bg-primary-bg text-primary-strong'
                         : 'border-border text-muted hover:bg-surface-elevated'
@@ -199,7 +199,7 @@ export function NewChannelCompose({
                   }`}
                 />
               </button>
-              <span className="text-xs text-text">
+              <span className="text-meta text-text">
                 {isPublic ? 'Public: discoverable in your nexus' : 'Private: invite only'}
               </span>
             </div>

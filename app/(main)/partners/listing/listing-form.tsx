@@ -48,21 +48,21 @@ export function ListingForm({ initial }: { initial: Partial<Record<keyof Listing
     <div className="space-y-4">
       {FIELDS.map((f) => (
         <label key={f.key} className="block">
-          <span className="mb-1 block text-sm font-medium text-text">{f.label}</span>
+          <span className="mb-1 block text-body-sm font-medium text-text">{f.label}</span>
           {f.textarea ? (
             <textarea
               value={form[f.key]}
               onChange={(e) => set(f.key, e.target.value)}
               rows={4}
               placeholder={f.placeholder}
-              className="w-full resize-none rounded-control border border-border bg-surface-elevated px-4 py-3 text-sm text-text placeholder:text-subtle outline-none focus:border-primary"
+              className="w-full resize-none rounded-control border border-border bg-surface-elevated px-4 py-3 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary"
             />
           ) : (
             <input
               value={form[f.key]}
               onChange={(e) => set(f.key, e.target.value)}
               placeholder={f.placeholder}
-              className="w-full rounded-control border border-border bg-surface-elevated px-4 py-2.5 text-sm text-text placeholder:text-subtle outline-none focus:border-primary"
+              className="w-full rounded-control border border-border bg-surface-elevated px-4 py-2.5 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary"
             />
           )}
         </label>
@@ -70,7 +70,7 @@ export function ListingForm({ initial }: { initial: Partial<Record<keyof Listing
 
       <div className="flex items-center justify-between gap-3">
         {result && (
-          <p className={`inline-flex items-center gap-1.5 text-sm ${result.ok ? 'text-success' : 'text-danger'}`}>
+          <p className={`inline-flex items-center gap-1.5 text-body-sm ${result.ok ? 'text-success' : 'text-danger'}`}>
             {result.ok && <Check className="h-4 w-4 shrink-0" />} {result.text}
           </p>
         )}
@@ -78,7 +78,7 @@ export function ListingForm({ initial }: { initial: Partial<Record<keyof Listing
           type="button"
           onClick={submit}
           disabled={isPending || !form.name.trim()}
-          className="ml-auto inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className="ml-auto inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Store className="h-4 w-4" />}
           {initial ? 'Save listing' : 'Publish listing'}

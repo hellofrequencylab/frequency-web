@@ -40,7 +40,7 @@ export function LikeButton({
       onClick={handleToggle}
       disabled={isPending || !isLoggedIn}
       title={isLoggedIn ? (liked ? 'Unlike' : 'Like') : 'Sign in to like'}
-      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-colors disabled:opacity-50 ${
+      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-body-sm font-medium transition-colors disabled:opacity-50 ${
         liked
           ? 'border-danger bg-danger-bg text-danger'
           : 'border-border bg-surface text-muted hover:border-danger hover:text-danger'

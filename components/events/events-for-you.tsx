@@ -67,7 +67,7 @@ export async function EventsForYou({
     <section aria-labelledby="events-for-you" className="space-y-4">
       <div className="flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-primary-strong" />
-        <h2 id="events-for-you" className="text-sm font-bold tracking-tight text-text">
+        <h2 id="events-for-you" className="text-body-sm font-bold tracking-tight text-text">
           For you
         </h2>
       </div>

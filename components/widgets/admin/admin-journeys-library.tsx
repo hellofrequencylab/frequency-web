@@ -42,7 +42,7 @@ function JourneyRow({ j, quests }: { j: RankedJourney; quests: { id: string; nam
             <span className="truncate">{j.title}</span>
             <ExternalLink className="h-3 w-3 shrink-0 text-subtle" aria-hidden />
           </Link>
-          <span className="truncate text-xs tabular-nums text-muted">
+          <span className="truncate text-meta tabular-nums text-muted">
             {author} · {j.adopt_count} adopted · {j.active_adoptions} active · {j.forked_count} remixed
           </span>
         </div>

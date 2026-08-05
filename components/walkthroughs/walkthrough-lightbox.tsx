@@ -89,12 +89,12 @@ export function WalkthroughLightbox({
             type="button"
             onClick={back}
             disabled={index === 0}
-            className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white/80 transition-colors hover:text-white disabled:opacity-0"
+            className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-body-sm font-semibold text-white/80 transition-colors hover:text-white disabled:opacity-0"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden /> Back
           </button>
 
-          <span className="text-xs font-medium text-white/70">
+          <span className="text-meta font-medium text-white/70">
             {index + 1} of {steps.length}
           </span>
 
@@ -103,7 +103,7 @@ export function WalkthroughLightbox({
               type="button"
               onClick={finish}
               disabled={pending}
-              className="inline-flex items-center gap-1.5 rounded-control bg-surface px-5 py-2 text-sm font-semibold text-text lift-3 transition-colors hover:bg-surface-elevated disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-control bg-surface px-5 py-2 text-body-sm font-semibold text-text lift-3 transition-colors hover:bg-surface-elevated disabled:opacity-60"
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Check className="h-4 w-4" aria-hidden />}
               Finish
@@ -112,7 +112,7 @@ export function WalkthroughLightbox({
             <button
               type="button"
               onClick={next}
-              className="inline-flex items-center gap-1.5 rounded-control bg-surface px-5 py-2 text-sm font-semibold text-text lift-3 transition-colors hover:bg-surface-elevated"
+              className="inline-flex items-center gap-1.5 rounded-control bg-surface px-5 py-2 text-body-sm font-semibold text-text lift-3 transition-colors hover:bg-surface-elevated"
             >
               Next <ArrowRight className="h-4 w-4" aria-hidden />
             </button>

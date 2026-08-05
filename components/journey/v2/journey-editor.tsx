@@ -71,7 +71,7 @@ const isAnchor = (b: EditorBlock): boolean =>
 function CheckEditor({ initial, disabled, onSave }: { initial: CheckConfig | null; disabled: boolean; onSave: (c: CheckConfig) => void }) {
   const [cfg, setCfg] = useState<CheckConfig>(() => initial ?? { question: '', options: ['', ''], answer: 0, explanation: '' })
   const commit = (next: CheckConfig) => { setCfg(next); onSave(next) }
-  const inputCls = 'w-full rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none'
+  const inputCls = 'w-full rounded-md border border-border bg-surface px-2 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none'
   return (
     <div className="mt-2 space-y-2 rounded-lg border border-border bg-surface p-2.5">
       <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Knowledge check</p>
@@ -99,7 +99,7 @@ function CheckEditor({ initial, disabled, onSave }: { initial: CheckConfig | nul
         ))}
       </div>
       {cfg.options.length < 6 && (
-        <button type="button" disabled={disabled} onClick={() => commit({ ...cfg, options: [...cfg.options, ''] })} className="inline-flex items-center gap-1 text-xs font-medium text-primary-strong hover:underline">
+        <button type="button" disabled={disabled} onClick={() => commit({ ...cfg, options: [...cfg.options, ''] })} className="inline-flex items-center gap-1 text-meta font-medium text-primary-strong hover:underline">
           <Plus className="h-3.5 w-3.5" /> Add option
         </button>
       )}
@@ -171,7 +171,7 @@ function SlotCoaching({
           type="button"
           disabled={disabled || busy}
           onClick={draft}
-          className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-primary-strong hover:bg-primary-bg disabled:opacity-60"
+          className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-meta font-medium text-primary-strong hover:bg-primary-bg disabled:opacity-60"
         >
           <Sparkles className="h-3.5 w-3.5" /> {busy ? 'Drafting…' : value ? 'Redraft' : 'Draft with Vera'}
         </button>
@@ -183,7 +183,7 @@ function SlotCoaching({
         onBlur={() => updateBlockAction(slug, itemId, { coachingPrompt: value })}
         rows={2}
         placeholder="What Vera nudges them with when they reach this practice. Draft it with Vera or write your own."
-        className="mt-1.5 w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none"
+        className="mt-1.5 w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none"
       />
       {/* Per-step warm-up override (ADR-592, P5): shown in the timer pre-roll for this step, over
           the practice's own warm-up message. Blank = the practice's message (or a silent pre-roll). */}
@@ -196,7 +196,7 @@ function SlotCoaching({
         rows={2}
         maxLength={WARMUP_MESSAGE_MAX}
         placeholder="Shown as the timer counts in, just for this Journey step. Leave blank to use the practice's own."
-        className="mt-1 w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none"
+        className="mt-1 w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none"
       />
       {error && <p className="mt-1 text-2xs text-danger">{error}</p>}
     </div>
@@ -301,7 +301,7 @@ export function JourneyEditor({
           defaultValue={m.title}
           onBlur={(e) => run(() => updateBlockAction(slug, m.id, { title: e.target.value }))}
           placeholder="Module title"
-          className="min-w-[8rem] flex-1 rounded-md border border-border bg-canvas px-1.5 py-1.5 text-sm font-semibold text-text hover:border-border focus:border-primary focus:outline-none"
+          className="min-w-[8rem] flex-1 rounded-md border border-border bg-canvas px-1.5 py-1.5 text-body-sm font-semibold text-text hover:border-border focus:border-primary focus:outline-none"
         />
         <span className="ml-auto flex shrink-0 items-center gap-0.5">
           <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, m.id, 'up'))} className="flex h-9 w-9 items-center justify-center rounded text-subtle hover:text-text" aria-label="Move up"><ChevronUp className="h-3.5 w-3.5" /></button>
@@ -359,7 +359,7 @@ export function JourneyEditor({
                 type="button"
                 onClick={() => togglePillar(pl.id)}
                 aria-pressed={on}
-                className={`rounded-pill border px-2.5 py-1 text-xs font-medium transition-colors ${
+                className={`rounded-pill border px-2.5 py-1 text-meta font-medium transition-colors ${
                   on
                     ? 'border-primary/40 bg-primary-bg text-primary-strong'
                     : 'border-border bg-surface text-subtle opacity-60 hover:opacity-100 hover:text-text'
@@ -373,7 +373,7 @@ export function JourneyEditor({
             <button
               type="button"
               onClick={() => setPillarFilter(new Set())}
-              className="rounded-pill px-2 py-1 text-xs font-medium text-muted hover:text-text"
+              className="rounded-pill px-2 py-1 text-meta font-medium text-muted hover:text-text"
             >
               Clear
             </button>
@@ -387,13 +387,13 @@ export function JourneyEditor({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search practices…"
-          className="w-full bg-transparent text-sm text-text outline-none placeholder:text-subtle"
+          className="w-full bg-transparent text-body-sm text-text outline-none placeholder:text-subtle"
         />
         <button type="button" onClick={onClose} aria-label="Close" className="rounded p-1 text-subtle hover:text-text"><X className="h-4 w-4" /></button>
       </div>
       <ul className="max-h-56 space-y-0.5 overflow-y-auto">
         {pickList.length === 0 ? (
-          <li className="px-2 py-2 text-sm text-muted">
+          <li className="px-2 py-2 text-body-sm text-muted">
             No matching practices.{' '}
             <a href="/practices" target="_blank" rel="noopener noreferrer" className="font-medium text-primary-strong hover:underline">
               Create one in the library
@@ -410,8 +410,8 @@ export function JourneyEditor({
                 className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left hover:bg-primary-bg/50"
               >
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-text">{pr.title}</span>
-                  {pr.description && <span className="block truncate text-xs text-muted">{pr.description}</span>}
+                  <span className="block truncate text-body-sm font-medium text-text">{pr.title}</span>
+                  {pr.description && <span className="block truncate text-meta text-muted">{pr.description}</span>}
                 </span>
                 <Plus className="h-4 w-4 shrink-0 text-primary-strong" />
               </button>
@@ -441,7 +441,7 @@ export function JourneyEditor({
             {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </button>
           {isExtra ? (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-signal/30 bg-signal-bg/60 px-1.5 py-1 text-xs font-medium text-signal-strong" title="Extra credit: a bonus task, above and beyond, that pays Zaps">
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-signal/30 bg-signal-bg/60 px-1.5 py-1 text-meta font-medium text-signal-strong" title="Extra credit: a bonus task, above and beyond, that pays Zaps">
               <Award className="h-3.5 w-3.5" /> extra credit
             </span>
           ) : isPractice ? (
@@ -455,7 +455,7 @@ export function JourneyEditor({
             <select
               defaultValue={LEAF_TYPES.includes(l.blockType as (typeof LEAF_TYPES)[number]) ? l.blockType : 'lesson'}
               onChange={(e) => run(() => updateBlockAction(slug, l.id, { blockType: e.target.value }))}
-              className="shrink-0 rounded-md border border-border bg-surface px-1.5 py-1 text-xs text-muted"
+              className="shrink-0 rounded-md border border-border bg-surface px-1.5 py-1 text-meta text-muted"
             >
               {LEAF_TYPES.map((t) => (
                 <option key={t} value={t}>{t}</option>
@@ -464,18 +464,18 @@ export function JourneyEditor({
           )}
           {anchored && (
             // The daily through-line, badged like the extra-credit chip so it reads at a glance.
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-primary/30 bg-primary-bg px-1.5 py-1 text-xs font-medium text-primary-strong" title="Anchor: the daily through-line of this Journey">
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-primary/30 bg-primary-bg px-1.5 py-1 text-meta font-medium text-primary-strong" title="Anchor: the daily through-line of this Journey">
               <Anchor className="h-3.5 w-3.5" /> Anchor
             </span>
           )}
           <input
             defaultValue={l.title}
             onBlur={(e) => run(() => updateBlockAction(slug, l.id, { title: e.target.value }))}
-            className="min-w-[8rem] flex-1 rounded-md border border-border bg-canvas px-1.5 py-1.5 text-sm text-text hover:border-border focus:border-primary focus:outline-none"
+            className="min-w-[8rem] flex-1 rounded-md border border-border bg-canvas px-1.5 py-1.5 text-body-sm text-text hover:border-border focus:border-primary focus:outline-none"
             placeholder={isExtra ? 'Challenge name' : isPractice ? 'Practice step' : 'Lesson title'}
           />
           {isExtra && (
-            <label className="flex shrink-0 items-center gap-1 text-xs text-muted" title="Bonus Zaps paid on completion">
+            <label className="flex shrink-0 items-center gap-1 text-meta text-muted" title="Bonus Zaps paid on completion">
               <Zap className="h-3.5 w-3.5 text-signal-strong" aria-hidden />
               <input
                 type="number"
@@ -483,7 +483,7 @@ export function JourneyEditor({
                 max={500}
                 defaultValue={l.bonusZaps}
                 onBlur={(e) => run(() => updateBlockAction(slug, l.id, { bonusZaps: Number(e.target.value) }))}
-                className="w-14 rounded-md border border-border bg-surface px-1.5 py-1 text-xs text-text focus:border-primary focus:outline-none"
+                className="w-14 rounded-md border border-border bg-surface px-1.5 py-1 text-meta text-text focus:border-primary focus:outline-none"
                 aria-label="Bonus Zaps"
               />
               Zaps
@@ -515,7 +515,7 @@ export function JourneyEditor({
               onBlur={(e) => run(() => updateBlockAction(slug, l.id, { body: e.target.value }))}
               rows={2}
               placeholder={isExtra ? 'What is the challenge, and what counts as done?' : isPractice ? 'A note for this practice step (optional).' : 'Lesson content (markdown). Paste a YouTube/Vimeo/video link to embed it.'}
-              className="mt-2 w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none"
+              className="mt-2 w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none"
             />
             {!isExtra && l.blockType === 'check' && (
               <CheckEditor
@@ -543,7 +543,7 @@ export function JourneyEditor({
                         type="button"
                         disabled={pending}
                         onClick={() => run(() => mintPracticeForBlockAction(slug, l.id))}
-                        className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-primary-strong hover:bg-primary-bg"
+                        className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-meta font-medium text-primary-strong hover:bg-primary-bg"
                         title="Create a real, timer-carrying practice from this slot"
                       >
                         <Sparkles className="h-3.5 w-3.5" /> Make it real
@@ -554,7 +554,7 @@ export function JourneyEditor({
                     <button
                       type="button"
                       onClick={() => { setReplacing((v) => (v === l.id ? null : l.id)); setQuery('') }}
-                      className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-primary-strong hover:bg-primary-bg"
+                      className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-meta font-medium text-primary-strong hover:bg-primary-bg"
                     >
                       {l.practiceId ? <><RefreshCw className="h-3.5 w-3.5" /> Replace</> : <><Plus className="h-3.5 w-3.5" /> Add a Practice</>}
                     </button>
@@ -576,7 +576,7 @@ export function JourneyEditor({
                     onClick={() => toggleAnchor(l.id, !anchored)}
                     aria-pressed={anchored}
                     title="Anchor: the one daily practice that runs through the whole Journey"
-                    className={`inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium transition-colors disabled:opacity-60 ${anchored ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'}`}
+                    className={`inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-meta font-medium transition-colors disabled:opacity-60 ${anchored ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'}`}
                   >
                     <Anchor className="h-3.5 w-3.5" /> {anchored ? 'Anchor (daily through-line)' : 'Make this the Anchor'}
                   </button>
@@ -636,7 +636,7 @@ export function JourneyEditor({
           type="button"
           disabled={pending}
           onClick={() => addAndOpen(() => addLessonAction(slug, parentId, 'lesson'))}
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-primary-strong hover:bg-primary-bg"
+          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-body-sm font-medium text-primary-strong hover:bg-primary-bg"
         >
           <Plus className="h-4 w-4" /> Add lesson
         </button>
@@ -644,7 +644,7 @@ export function JourneyEditor({
           <button
             type="button"
             onClick={() => { setPicker((v) => (v === pickerKey ? null : pickerKey)); setQuery('') }}
-            className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-muted hover:bg-surface-elevated hover:text-text"
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-body-sm font-medium text-muted hover:bg-surface-elevated hover:text-text"
           >
             <Dumbbell className="h-4 w-4" /> Add practice
           </button>
@@ -653,7 +653,7 @@ export function JourneyEditor({
           type="button"
           disabled={pending}
           onClick={() => addAndOpen(() => addExtraCreditAction(slug, parentId))}
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-signal-strong hover:bg-signal-bg/50"
+          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-body-sm font-medium text-signal-strong hover:bg-signal-bg/50"
           title="A bonus task, above and beyond, that pays Zaps"
         >
           <Award className="h-4 w-4" /> Add extra credit
@@ -677,12 +677,12 @@ export function JourneyEditor({
       {/* Section header — identity/title + Vera live in the header above, so this is just the
           curriculum section's label. */}
       <header>
-        <h2 className="text-base font-bold text-text">Curriculum</h2>
-        <p className="text-sm text-muted">Add phases, then fill each with bite-sized lessons and practices.</p>
+        <h2 className="text-body font-bold text-text">Curriculum</h2>
+        <p className="text-body-sm text-muted">Add phases, then fill each with bite-sized lessons and practices.</p>
       </header>
 
       {empty && (
-        <p className="rounded-card border border-dashed border-border p-6 text-center text-sm text-muted">
+        <p className="rounded-card border border-dashed border-border p-6 text-center text-body-sm text-muted">
           Nothing here yet. Build it with Vera above, or add your first phase by hand.
         </p>
       )}
@@ -692,9 +692,9 @@ export function JourneyEditor({
         <section className="rounded-2xl border border-border bg-surface p-4">
           <div className="mb-1 flex items-center gap-2">
             <Layers className="h-4 w-4 shrink-0 text-subtle" />
-            <span className="text-base font-semibold text-text">Steps</span>
+            <span className="text-body font-semibold text-text">Steps</span>
           </div>
-          <p className="mb-3 text-xs text-muted">
+          <p className="mb-3 text-meta text-muted">
             These steps aren’t in a phase yet. Learners see them as one opening phase. Add phases below to group them into trophy milestones.
           </p>
           <ul className="space-y-2">{looseLeaves.map(LeafRow)}</ul>
@@ -721,11 +721,11 @@ export function JourneyEditor({
             <input
               defaultValue={p.title}
               onBlur={(e) => run(() => updateBlockAction(slug, p.id, { title: e.target.value }))}
-              className="min-w-[8rem] flex-1 rounded-lg border border-border bg-canvas px-1.5 py-1.5 text-base font-semibold text-text hover:border-border focus:border-primary focus:outline-none"
+              className="min-w-[8rem] flex-1 rounded-lg border border-border bg-canvas px-1.5 py-1.5 text-body font-semibold text-text hover:border-border focus:border-primary focus:outline-none"
               placeholder="Phase title"
             />
             <span className="ml-auto flex shrink-0 items-center gap-0.5">
-              <span className="mr-1 whitespace-nowrap text-xs text-subtle">{stepCount} {stepCount === 1 ? 'step' : 'steps'}</span>
+              <span className="mr-1 whitespace-nowrap text-meta text-subtle">{stepCount} {stepCount === 1 ? 'step' : 'steps'}</span>
               <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, p.id, 'up'))} className="flex h-9 w-9 items-center justify-center rounded text-subtle hover:text-text" aria-label="Move up"><ChevronUp className="h-4 w-4" /></button>
               <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, p.id, 'down'))} className="flex h-9 w-9 items-center justify-center rounded text-subtle hover:text-text" aria-label="Move down"><ChevronDown className="h-4 w-4" /></button>
               <button type="button" disabled={pending} onClick={() => run(() => removeBlockAction(slug, p.id))} className="flex h-9 w-9 items-center justify-center rounded text-subtle hover:text-danger" aria-label="Delete phase"><Trash2 className="h-4 w-4" /></button>
@@ -740,7 +740,7 @@ export function JourneyEditor({
                 onBlur={(e) => run(() => updateBlockAction(slug, p.id, { body: e.target.value }))}
                 rows={2}
                 placeholder="What this week is about (its focus). Optional."
-                className="mt-3 w-full resize-y rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-muted focus:border-primary focus:outline-none"
+                className="mt-3 w-full resize-y rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-muted focus:border-primary focus:outline-none"
               />
               {stepCount === 0 && (
                 // An unfilled week: let Vera read the outline + earlier weeks and fill this one. She
@@ -750,7 +750,7 @@ export function JourneyEditor({
                     type="button"
                     disabled={pending}
                     onClick={() => run(() => populateWeekAction(slug, p.id))}
-                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary-bg/30 px-3 py-2.5 text-sm font-semibold text-primary-strong transition-colors hover:bg-primary-bg disabled:opacity-60"
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary-bg/30 px-3 py-2.5 text-body-sm font-semibold text-primary-strong transition-colors hover:bg-primary-bg disabled:opacity-60"
                   >
                     <Sparkles className="h-4 w-4" /> {pending ? 'Building…' : 'Populate this week with Vera'}
                   </button>
@@ -764,7 +764,7 @@ export function JourneyEditor({
                 type="button"
                 disabled={pending}
                 onClick={() => run(() => addModuleAction(slug, p.id))}
-                className="mt-1 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-muted hover:bg-surface-elevated"
+                className="mt-1 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-body-sm font-medium text-muted hover:bg-surface-elevated"
               >
                 <Layers className="h-4 w-4" /> Add module
               </button>
@@ -778,7 +778,7 @@ export function JourneyEditor({
         type="button"
         disabled={pending}
         onClick={() => run(() => addPhaseAction(slug))}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60"
       >
         <Plus className="h-4 w-4" /> Add phase
       </button>

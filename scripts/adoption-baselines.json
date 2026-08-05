@@ -49,14 +49,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 3833,
+      "baseline": 3824,
       "frozen": {
-        "at": "2026-08-04",
-        "value": 3833,
+        "at": "2026-08-05",
+        "value": 3824,
         "direction": "lowered",
         "basis": "d2a53ce6b015",
-        "reason": "Five more hand-rolled icon controls retired into the kit (page-editor desktop back/close, calendar month nav, practice overflow) and three more small icon tiles moved from the rounded-lg literal onto rounded-control.",
-        "from": 3841
+        "reason": "Pass 2a retired the last text-xs/sm/base/lg/xl/2xl literals in app, components and lib: the template-literal classNames pass 1's attribute walker could not reach, the page-editor tree it held out, and text-lg once --text-body-lg existed to receive it. literal-type goes to 0 and the floor moves with it so the sweep cannot silently unwind.",
+        "from": 3833
       },
       "history": [
         {
@@ -100,6 +100,46 @@
           "to": 3833,
           "direction": "lowered",
           "reason": "Five more hand-rolled icon controls retired into the kit (page-editor desktop back/close, calendar month nav, practice overflow) and three more small icon tiles moved from the rounded-lg literal onto rounded-control."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 3833,
+          "to": 3824,
+          "direction": "lowered",
+          "reason": "Pass 2a retired the last text-xs/sm/base/lg/xl/2xl literals in app, components and lib: the template-literal classNames pass 1's attribute walker could not reach, the page-editor tree it held out, and text-lg once --text-body-lg existed to receive it. literal-type goes to 0 and the floor moves with it so the sweep cannot silently unwind."
+        }
+      ]
+    },
+    {
+      "key": "literal-type",
+      "description": "Literal text-* size utilities instead of the DAWN type roles (text-meta / text-body-sm / text-body / text-lead / text-page-title)",
+      "mode": "matches",
+      "patterns": [
+        "\\btext-(?:xs|sm|base|xl|2xl)\\b"
+      ],
+      "include": [
+        "{app,components}/**/*.tsx"
+      ],
+      "exclude": [
+        "**/*.{test,spec}.{ts,tsx}",
+        "components/page-editor/**"
+      ],
+      "baseline": 0,
+      "frozen": {
+        "at": "2026-08-05",
+        "value": 0,
+        "direction": "lowered",
+        "basis": "436e1d174f40",
+        "reason": "Pass 2a retired the last text-xs/sm/base/lg/xl/2xl literals in app, components and lib: the template-literal classNames pass 1's attribute walker could not reach, the page-editor tree it held out, and text-lg once --text-body-lg existed to receive it. literal-type goes to 0 and the floor moves with it so the sweep cannot silently unwind.",
+        "from": 376
+      },
+      "history": [
+        {
+          "at": "2026-08-05",
+          "from": 376,
+          "to": 0,
+          "direction": "lowered",
+          "reason": "Pass 2a retired the last text-xs/sm/base/lg/xl/2xl literals in app, components and lib: the template-literal classNames pass 1's attribute walker could not reach, the page-editor tree it held out, and text-lg once --text-body-lg existed to receive it. literal-type goes to 0 and the floor moves with it so the sweep cannot silently unwind."
         }
       ]
     },
@@ -225,14 +265,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 529,
+      "baseline": 528,
       "frozen": {
-        "at": "2026-08-04",
-        "value": 529,
+        "at": "2026-08-05",
+        "value": 528,
         "direction": "lowered",
         "basis": "b0d275f91676",
-        "reason": "Kit primitives sweep: every components/ui/*.tsx className moved from literal rounded-* to the role tokens (rounded-card / rounded-control / rounded-pill). These are the primitives every other component composes, so the roles now propagate instead of stopping at the call site.",
-        "from": 530
+        "reason": "Pass 2a retired the last text-xs/sm/base/lg/xl/2xl literals in app, components and lib: the template-literal classNames pass 1's attribute walker could not reach, the page-editor tree it held out, and text-lg once --text-body-lg existed to receive it. literal-type goes to 0 and the floor moves with it so the sweep cannot silently unwind.",
+        "from": 529
       },
       "history": [
         {
@@ -255,6 +295,13 @@
           "to": 529,
           "direction": "lowered",
           "reason": "Kit primitives sweep: every components/ui/*.tsx className moved from literal rounded-* to the role tokens (rounded-card / rounded-control / rounded-pill). These are the primitives every other component composes, so the roles now propagate instead of stopping at the call site."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 529,
+          "to": 528,
+          "direction": "lowered",
+          "reason": "Pass 2a retired the last text-xs/sm/base/lg/xl/2xl literals in app, components and lib: the template-literal classNames pass 1's attribute walker could not reach, the page-editor tree it held out, and text-lg once --text-body-lg existed to receive it. literal-type goes to 0 and the floor moves with it so the sweep cannot silently unwind."
         }
       ]
     },

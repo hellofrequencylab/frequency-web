@@ -79,7 +79,7 @@ function IdentityCard({ funnel }: { funnel: FunnelView }) {
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="text-sm font-bold text-text">Funnel basics</h3>
+        <h3 className="text-body-sm font-bold text-text">Funnel basics</h3>
         <StatusChip tone={STATUS_TONE[status] ?? 'neutral'} size="sm">
           <span className="capitalize">{status}</span>
         </StatusChip>
@@ -118,8 +118,8 @@ function IdentityCard({ funnel }: { funnel: FunnelView }) {
             <Input id="b-goal" value={goalEvent} onChange={(e) => setGoalEvent(e.target.value)} maxLength={80} />
           </div>
         </div>
-        {err && <p className="text-xs text-danger">{err}</p>}
-        {saved && !err && <p className="text-xs text-success">Saved.</p>}
+        {err && <p className="text-meta text-danger">{err}</p>}
+        {saved && !err && <p className="text-meta text-success">Saved.</p>}
         <div>
           <Button size="sm" onClick={save} disabled={pending || !name.trim()}>
             {pending ? 'Saving…' : 'Save basics'}
@@ -138,13 +138,13 @@ function StageCard({ stage }: { stage: FunnelStage }) {
     <div className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-bold text-text">
+          <p className="text-body-sm font-bold text-text">
             <span className="mr-2 inline-flex items-center rounded-md bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold uppercase tracking-wide text-primary-strong">
               {meta?.label ?? stage.kind}
             </span>
             {stage.label}
           </p>
-          <p className="mt-0.5 text-xs text-muted">{meta?.blurb}</p>
+          <p className="mt-0.5 text-meta text-muted">{meta?.blurb}</p>
         </div>
         {!adding && (
           <Button size="sm" variant="secondary" onClick={() => setAdding(true)}>
@@ -184,7 +184,7 @@ function LinkRow({ linkId, refType, target }: { linkId: string; refType: StageRe
     <li className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface-elevated/50 px-3 py-1.5">
       <Link2 className="h-3.5 w-3.5 shrink-0 text-muted" aria-hidden />
       <span className="text-2xs font-semibold uppercase tracking-wide text-muted">{REF_TYPE_META[refType]?.label ?? refType}</span>
-      <span className="min-w-0 flex-1 truncate text-xs text-text">{target}</span>
+      <span className="min-w-0 flex-1 truncate text-meta text-text">{target}</span>
       <button
         onClick={remove}
         disabled={pending}
@@ -252,7 +252,7 @@ function AddLinkForm({ stageId, onDone }: { stageId: string; onDone: () => void 
           />
         </div>
       </div>
-      {err && <p className="text-xs text-danger">{err}</p>}
+      {err && <p className="text-meta text-danger">{err}</p>}
       <div className="flex items-center gap-2">
         <Button size="sm" onClick={submit} disabled={pending || !target.trim()}>
           {pending ? 'Linking…' : 'Add link'}

@@ -7,7 +7,7 @@ import { Sparkles } from 'lucide-react'
 export function CrewPreviewBanner() {
   return (
     <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary-bg bg-primary-bg/40 px-4 py-3">
-      <p className="flex items-center gap-2 text-sm text-text">
+      <p className="flex items-center gap-2 text-body-sm text-text">
         <Sparkles className="h-4 w-4 shrink-0 text-primary-strong" />
         <span>
           <span className="font-semibold">You&rsquo;re previewing the Quest.</span>{' '}
@@ -16,7 +16,7 @@ export function CrewPreviewBanner() {
       </p>
       <Link
         href="/upgrade"
-        className="shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        className="shrink-0 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
       >
         Upgrade
       </Link>

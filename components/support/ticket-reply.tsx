@@ -33,7 +33,7 @@ export function TicketReply({ ticketId, disabled = false }: { ticketId: string; 
           onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) send() }}
           rows={2}
           placeholder={disabled ? 'This ticket is closed. Reopen it by replying.' : 'Add a reply…'}
-          className="flex-1 resize-none rounded-control border border-border bg-surface px-3 py-2 text-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+          className="flex-1 resize-none rounded-control border border-border bg-surface px-3 py-2 text-body-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
         />
         <button
           type="button"
@@ -45,7 +45,7 @@ export function TicketReply({ ticketId, disabled = false }: { ticketId: string; 
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </button>
       </div>
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
     </div>
   )
 }

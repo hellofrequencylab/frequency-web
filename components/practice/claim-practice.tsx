@@ -15,8 +15,8 @@ import { isError } from '@/lib/action-result'
 type Fallback = { title: string; cadence: string; why: string; steps: string[] }
 
 const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
-const LABEL = 'block text-xs font-semibold uppercase tracking-wide text-subtle'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
+const LABEL = 'block text-meta font-semibold uppercase tracking-wide text-subtle'
 
 export function ClaimPractice({ templateId, fallback }: { templateId: string; fallback: Fallback }) {
   const router = useRouter()
@@ -124,7 +124,7 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+        className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
       >
         <Sparkles className="h-4 w-4" /> Claim &amp; make it yours
       </button>
@@ -141,7 +141,7 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
             className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-border bg-surface p-5 lift-3 sm:rounded-2xl"
           >
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-lg font-bold text-text">
+              <h2 className="flex items-center gap-2 text-body-lg font-bold text-text">
                 <Wand2 className="h-5 w-5 text-primary" />
                 {step === 1 ? 'Make it yours' : 'Your practice'}
               </h2>
@@ -152,7 +152,7 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
 
             {step === 1 ? (
               <div className="space-y-4">
-                <p className="text-sm text-muted">
+                <p className="text-body-sm text-muted">
                   Tell Vera what you’re after and she’ll shape this practice around you, or skip and tweak it yourself.
                 </p>
                 <div>
@@ -178,21 +178,21 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
                     className={`mt-1 ${FIELD}`}
                   />
                 </div>
-                {error && <p className="text-sm text-danger">{error}</p>}
+                {error && <p className="text-body-sm text-danger">{error}</p>}
                 <div className="flex items-center justify-between gap-3 pt-1">
                   <button
                     onClick={() => {
                       prefillFromFallback()
                       setStep(2)
                     }}
-                    className="text-sm font-medium text-subtle hover:text-text"
+                    className="text-body-sm font-medium text-subtle hover:text-text"
                   >
                     Skip, I&apos;ll do it myself
                   </button>
                   <button
                     onClick={askVera}
                     disabled={thinking || !goal.trim()}
-                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover disabled:opacity-50"
                   >
                     {thinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                     {thinking ? 'Vera is shaping it…' : 'Ask Vera'}
@@ -202,7 +202,7 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
             ) : (
               <div className="space-y-4">
                 {veraUsed && (
-                  <p className="flex items-center gap-1.5 rounded-lg bg-primary-bg px-3 py-2 text-xs font-medium text-primary-strong">
+                  <p className="flex items-center gap-1.5 rounded-lg bg-primary-bg px-3 py-2 text-meta font-medium text-primary-strong">
                     <Sparkles className="h-3.5 w-3.5" /> Vera tailored this to you. Edit anything before you claim it.
                   </p>
                 )}
@@ -222,15 +222,15 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
                   <label className={LABEL} htmlFor="cwhy">Why it matters to you</label>
                   <textarea id="cwhy" value={why} onChange={(e) => setWhy(e.target.value)} rows={2} maxLength={280} className={`mt-1 ${FIELD}`} />
                 </div>
-                {error && <p className="text-sm text-danger">{error}</p>}
+                {error && <p className="text-body-sm text-danger">{error}</p>}
                 <div className="flex items-center justify-between gap-3 pt-1">
-                  <button onClick={() => setStep(1)} className="inline-flex items-center gap-1.5 text-sm font-medium text-subtle hover:text-text">
+                  <button onClick={() => setStep(1)} className="inline-flex items-center gap-1.5 text-body-sm font-medium text-subtle hover:text-text">
                     <ArrowLeft className="h-4 w-4" /> Back
                   </button>
                   <button
                     onClick={claim}
                     disabled={pending || !title.trim()}
-                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover disabled:opacity-50"
                   >
                     {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 fill-on-primary" />}
                     {pending ? 'Claiming…' : 'Claim it'}

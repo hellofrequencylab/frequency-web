@@ -49,7 +49,7 @@ export function FreshnessNote({
   const stale = nowMs !== null && sla !== undefined && nowMs - fromMs > sla * 60_000
 
   return (
-    <span className={`text-xs ${stale ? 'font-medium text-warning' : 'text-subtle'}`} suppressHydrationWarning>
+    <span className={`text-meta ${stale ? 'font-medium text-warning' : 'text-subtle'}`} suppressHydrationWarning>
       {label} {text}
     </span>
   )

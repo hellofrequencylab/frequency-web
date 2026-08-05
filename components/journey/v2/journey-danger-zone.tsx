@@ -28,7 +28,7 @@ export function JourneyDangerZone({ planId, title }: { planId: string; title: st
         type="button"
         onClick={() => setOpen(true)}
         disabled={pending}
-        className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-2 text-sm font-medium text-danger transition-colors hover:bg-danger-bg/40 disabled:opacity-60"
+        className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-2 text-body-sm font-medium text-danger transition-colors hover:bg-danger-bg/40 disabled:opacity-60"
       >
         <Trash2 className="h-4 w-4" /> Delete this Journey
       </button>

@@ -60,21 +60,21 @@ export function GoBusinessCta({
     <div className="rounded-2xl border border-primary bg-surface p-5 lift-1">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-base font-bold text-text">Go Business</h2>
-          <p className="mt-1 text-sm text-muted">
+          <h2 className="text-body font-bold text-text">Go Business</h2>
+          <p className="mt-1 text-body-sm text-muted">
             Keep everything you already have, with the caps lifted: the full CRM, email, reporting, your
             own website, more seats, and higher limits. You still keep 100% of what you bring in, and
             Business buys down your rate on the business the network sends you.
           </p>
           {/* Mission framing (CONTENT-VOICE §1a, voice-bound): plain, no guilt, no hype. */}
-          <p className="mt-2 text-xs text-muted">
+          <p className="mt-2 text-meta text-muted">
             Going Business keeps Frequency independent and funds the small team that builds it.
           </p>
           {/* Operator-seat picker (A4/A5). Only shown when seats are actually sellable (activated + priced);
               your own seat is free, so this buys EXTRA operators. Hidden until seats go live. */}
           {sellable && seatsSellable && (
             <div className="mt-3 flex items-center gap-3">
-              <span className="text-xs font-semibold text-text">Extra operator seats</span>
+              <span className="text-meta font-semibold text-text">Extra operator seats</span>
               <div className="inline-flex items-center gap-1 rounded-lg border border-border">
                 <button
                   type="button"
@@ -85,7 +85,7 @@ export function GoBusinessCta({
                 >
                   <Minus className="h-3.5 w-3.5" aria-hidden />
                 </button>
-                <span className="min-w-8 text-center text-sm font-semibold tabular-nums text-text" aria-live="polite">
+                <span className="min-w-8 text-center text-body-sm font-semibold tabular-nums text-text" aria-live="polite">
                   {extraSeats}
                 </span>
                 <button
@@ -103,7 +103,7 @@ export function GoBusinessCta({
           )}
           {/* What the chosen seats cost, so the count is never priceless. Prorated on the first invoice. */}
           {sellable && seatsSellable && seatMonthlyCents > 0 && extraSeats > 0 && (
-            <p className="mt-2 text-xs font-medium text-text">
+            <p className="mt-2 text-meta font-medium text-text">
               {extraSeats} {extraSeats === 1 ? 'seat' : 'seats'} x {usd(seatMonthlyCents)} ={' '}
               {usd(seatMonthlyCents * extraSeats)}/mo, prorated on your first invoice.
             </p>
@@ -115,7 +115,7 @@ export function GoBusinessCta({
               type="button"
               onClick={goBusiness}
               disabled={pending}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <ArrowRight className="h-4 w-4" aria-hidden />}
               {pending ? 'Redirecting' : 'Go Business'}
@@ -123,7 +123,7 @@ export function GoBusinessCta({
           ) : (
             <div
               aria-disabled
-              className="flex w-full cursor-default items-center justify-center gap-2 rounded-card border border-dashed border-border px-4 py-3 text-xs font-semibold text-subtle"
+              className="flex w-full cursor-default items-center justify-center gap-2 rounded-card border border-dashed border-border px-4 py-3 text-meta font-semibold text-subtle"
             >
               <Lock className="h-3.5 w-3.5" aria-hidden /> Available soon
             </div>

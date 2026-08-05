@@ -44,11 +44,11 @@ export function PersonalProfileModule() {
   return (
     <section className="min-w-0 space-y-4">
       <header className="space-y-1">
-        <h3 className="flex items-center gap-2 text-sm font-bold text-text">
+        <h3 className="flex items-center gap-2 text-body-sm font-bold text-text">
           {Icon && <Icon className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />}
           {mod?.label ?? 'Profile'}
         </h3>
-        {mod?.desc && <p className="text-sm text-muted">{mod.desc}</p>}
+        {mod?.desc && <p className="text-body-sm text-muted">{mod.desc}</p>}
       </header>
       <ProfileForm userId={data.userId} initial={data.initial} hideSpotlight />
     </section>

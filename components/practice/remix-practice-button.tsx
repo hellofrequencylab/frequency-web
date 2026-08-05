@@ -29,7 +29,7 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
         onClick={() => setOpen(true)}
         aria-label="Remix this practice"
         title="Remix this practice into a copy you own"
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
       >
         <Wand2 className="h-3.5 w-3.5" /> Remix
       </button>
@@ -40,9 +40,9 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
             <span className="flex h-9 w-9 items-center justify-center rounded-pill bg-primary-bg text-primary-strong">
               <Wand2 className="h-4 w-4" />
             </span>
-            <h2 className="text-lg font-bold text-text">Remix this practice?</h2>
+            <h2 className="text-body-lg font-bold text-text">Remix this practice?</h2>
           </div>
-          <p className="text-sm text-muted">
+          <p className="text-body-sm text-muted">
             Remix makes a new practice you own, starting from this one. Don&apos;t just rework it.
             Make it yours: a new angle, a different setting, your own niche. Publish your version so
             the community gets a practice only you would make. The original stays exactly as it is.
@@ -51,7 +51,7 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
             <p className="text-2xs font-semibold uppercase tracking-widest text-primary-strong">
               Ways to make it yours
             </p>
-            <ul className="mt-2 space-y-1 text-sm text-muted">
+            <ul className="mt-2 space-y-1 text-body-sm text-muted">
               <li>A different setting: try it outdoors, before bed, or on a walk.</li>
               <li>A shorter version: trim it to five minutes for busy days.</li>
               <li>Your own focus: point it at one thing you care about.</li>
@@ -62,7 +62,7 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
               type="button"
               disabled={pending}
               onClick={() => setOpen(false)}
-              className="inline-flex items-center rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+              className="inline-flex items-center rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
             >
               Cancel
             </button>
@@ -70,7 +70,7 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
               type="button"
               disabled={pending}
               onClick={confirm}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover disabled:opacity-60"
             >
               {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
               {pending ? 'Making your copy…' : 'Remix it'}

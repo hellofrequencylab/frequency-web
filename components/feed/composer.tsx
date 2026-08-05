@@ -451,7 +451,7 @@ export function Composer({
     >
       {expanded && (
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-sm font-semibold text-muted">Compose</p>
+          <p className="text-body-sm font-semibold text-muted">Compose</p>
           <Tool onClick={toggleExpand} label="Exit full screen">
             <Minimize2 className="h-4 w-4" />
           </Tool>
@@ -471,7 +471,7 @@ export function Composer({
           rows={expanded ? 6 : 3}
           disabled={isPending}
           className={`w-full resize-none bg-transparent leading-relaxed text-text/90 placeholder:text-subtle outline-none focus-visible:shadow-none disabled:opacity-60 ${
-            expanded ? 'min-h-[40vh] text-base' : 'min-h-24 text-sm'
+            expanded ? 'min-h-[40vh] text-body' : 'min-h-24 text-body-sm'
           }`}
         />
 
@@ -501,7 +501,7 @@ export function Composer({
                 key={p.id}
                 type="button"
                 onClick={() => insertMention(p)}
-                className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors ${
+                className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-body-sm transition-colors ${
                   i === activeSuggestion ? 'bg-primary-bg' : 'hover:bg-surface-elevated'
                 }`}
               >
@@ -513,7 +513,7 @@ export function Composer({
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-text">{p.display_name}</p>
+                  <p className="truncate text-meta font-semibold text-text">{p.display_name}</p>
                   <p className="truncate text-2xs text-muted">@{p.handle}</p>
                 </div>
               </button>
@@ -540,7 +540,7 @@ export function Composer({
           </button>
         </div>
       )}
-      {imageError && <p className="mt-1.5 text-xs text-danger">{imageError}</p>}
+      {imageError && <p className="mt-1.5 text-meta text-danger">{imageError}</p>}
 
       {/* Hidden inputs — camera (Take photo, capture='environment' force-opens the
           rear camera on mobile) + library (Upload, any saved image). */}
@@ -564,21 +564,21 @@ export function Composer({
             <button
               type="button"
               onClick={() => { setPhotoSheetOpen(false); cameraInputRef.current?.click() }}
-              className="flex w-full items-center gap-3 rounded-control px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+              className="flex w-full items-center gap-3 rounded-control px-4 py-3 text-left text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
             >
               <Camera className="h-5 w-5 text-primary-strong" /> Take photo
             </button>
             <button
               type="button"
               onClick={() => { setPhotoSheetOpen(false); fileInputRef.current?.click() }}
-              className="flex w-full items-center gap-3 rounded-control px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+              className="flex w-full items-center gap-3 rounded-control px-4 py-3 text-left text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
             >
               <ImagePlus className="h-5 w-5 text-primary-strong" /> Upload from library
             </button>
             <button
               type="button"
               onClick={() => setPhotoSheetOpen(false)}
-              className="flex w-full items-center justify-center rounded-control px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated"
+              className="flex w-full items-center justify-center rounded-control px-4 py-2.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated"
             >
               Cancel
             </button>
@@ -680,7 +680,7 @@ export function Composer({
           <button
             onClick={submit}
             disabled={!canPost}
-            className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+            className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
           >
             {isPending
               ? kind === 'note' ? 'Saving…' : 'Posting…'
@@ -689,7 +689,7 @@ export function Composer({
         </div>
       </div>
 
-      {postError && <p className="mt-2 text-xs text-danger">{postError}</p>}
+      {postError && <p className="mt-2 text-meta text-danger">{postError}</p>}
     </div>
   )
 

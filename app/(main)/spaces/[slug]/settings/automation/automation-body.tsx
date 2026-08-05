@@ -82,7 +82,7 @@ export async function AutomationBody({ slug }: { slug: string }) {
             right member on join, so a new member gets a welcome without the operator touching a builder. */}
         <section>
           <SectionHeader title="Start from a template" />
-          <p className="mb-3 text-sm text-muted">
+          <p className="mb-3 text-body-sm text-muted">
             Add a ready-made sequence in one tap, then edit the steps to sound like you. It stays off until
             you turn it on.
           </p>
@@ -96,7 +96,7 @@ export async function AutomationBody({ slug }: { slug: string }) {
 
         <section>
           <SectionHeader title="Drip sequences" />
-          <p className="mb-3 text-sm text-muted">
+          <p className="mb-3 text-body-sm text-muted">
             A named series of timed emails to a chosen audience. Add steps in order and set how long
             to wait before each.
           </p>

@@ -25,11 +25,11 @@ export async function PracticesBalance() {
       <div className="rounded-2xl border border-border bg-surface p-4">
         <div className="flex items-center gap-1.5">
           <Scale className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
-          <span className="text-xs font-medium text-muted">Across your adopted practices</span>
+          <span className="text-meta font-medium text-muted">Across your adopted practices</span>
         </div>
 
         {total === 0 ? (
-          <p className="mt-3 text-sm text-subtle">
+          <p className="mt-3 text-body-sm text-subtle">
             Adopt a practice from the library to see how your Pillars balance out.
           </p>
         ) : (
@@ -38,7 +38,7 @@ export async function PracticesBalance() {
               const share = Math.round((p.count / total) * 100)
               return (
                 <li key={p.slug}>
-                  <div className="mb-1 flex items-baseline justify-between gap-2 text-sm">
+                  <div className="mb-1 flex items-baseline justify-between gap-2 text-body-sm">
                     <span
                       className="flex items-center gap-1.5 font-medium text-text"
                       style={isExpression(p) ? { ...expressionPillarStyle(), color: 'var(--rank-deep)' } : undefined}

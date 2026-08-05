@@ -112,7 +112,7 @@ export function ConversationWorkspace({
             <Link
               key={s.key}
               href={hrefWith(basePath, { status }, { scope: s.key })}
-              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+              className={`rounded-lg px-2.5 py-1 text-meta font-semibold transition-colors ${
                 scope === s.key ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:bg-surface-elevated'
               }`}
             >
@@ -122,7 +122,7 @@ export function ConversationWorkspace({
         {showScopes && <span className="mx-1 h-4 w-px bg-border" aria-hidden />}
         <Link
           href={hrefWith(basePath, { scope }, { status: undefined })}
-          className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+          className={`rounded-lg px-2.5 py-1 text-meta font-semibold transition-colors ${
             !status ? 'bg-surface-elevated text-text' : 'text-muted hover:bg-surface-elevated'
           }`}
         >
@@ -132,7 +132,7 @@ export function ConversationWorkspace({
           <Link
             key={st}
             href={hrefWith(basePath, { scope }, { status: st })}
-            className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+            className={`rounded-lg px-2.5 py-1 text-meta font-semibold transition-colors ${
               status === st ? 'bg-surface-elevated text-text' : 'text-muted hover:bg-surface-elevated'
             }`}
           >
@@ -164,7 +164,7 @@ export function ConversationWorkspace({
                     className={`block rounded-md px-3 py-2 ${active ? 'bg-surface-elevated' : 'hover:bg-surface-elevated'}`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-medium text-text">
+                      <span className="truncate text-body-sm font-medium text-text">
                         {r.counterpartName || r.counterpartEmail || 'Unknown'}
                       </span>
                       <span className="shrink-0 text-3xs text-muted">{when(r.lastActivityAt)}</span>
@@ -173,7 +173,7 @@ export function ConversationWorkspace({
                       {r.awaitingReply && (
                         <span className="inline-block size-1.5 shrink-0 rounded-pill bg-primary" aria-label="Awaiting reply" />
                       )}
-                      <span className="truncate text-xs text-muted">{r.snippet || r.subject}</span>
+                      <span className="truncate text-meta text-muted">{r.snippet || r.subject}</span>
                     </div>
                     <div className="mt-1 flex items-center gap-1.5">
                       <StatusPill status={r.status} />
@@ -237,8 +237,8 @@ function ThreadReader({
     <ResizableReader className="flex min-h-[60vh] flex-col overflow-hidden rounded-lg border border-border bg-surface lg:min-h-0">
       <div className="flex items-start justify-between gap-2 border-b border-border p-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-text">{thread.counterpartName || 'Unknown'}</p>
-          {thread.counterpartEmail && <p className="truncate text-xs text-muted">{thread.counterpartEmail}</p>}
+          <p className="truncate text-body-sm font-medium text-text">{thread.counterpartName || 'Unknown'}</p>
+          {thread.counterpartEmail && <p className="truncate text-meta text-muted">{thread.counterpartEmail}</p>}
           <p className="mt-0.5 truncate text-2xs text-muted">
             #{thread.ref} · {thread.subject}
           </p>
@@ -332,14 +332,14 @@ function ThreadStatic({
   return (
     <>
       <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto p-3">
-        {thread.messages.length === 0 && <p className="text-sm text-muted">No messages yet.</p>}
+        {thread.messages.length === 0 && <p className="text-body-sm text-muted">No messages yet.</p>}
         {thread.messages.map((m) =>
           m.isInternal ? (
             <div key={m.id} className="rounded-lg border border-warning/40 bg-warning-bg/50 px-3 py-2">
               <p className="flex items-center gap-1 text-2xs uppercase tracking-wide text-warning">
                 <Lock className="h-3 w-3" /> Note · {m.authorName} · {when(m.occurredAt)}
               </p>
-              <p className="mt-0.5 whitespace-pre-wrap text-sm text-text">{m.body}</p>
+              <p className="mt-0.5 whitespace-pre-wrap text-body-sm text-text">{m.body}</p>
             </div>
           ) : (
             <MessageBubble key={m.id} message={m} />
@@ -398,14 +398,14 @@ function MessageBubble({ message: m }: { message: ConversationThreadMessage }) {
         }`}
       >
         <p className="text-2xs font-semibold text-muted">{m.authorName}</p>
-        <p className="mt-1 whitespace-pre-wrap text-sm text-text">{m.body}</p>
+        <p className="mt-1 whitespace-pre-wrap text-body-sm text-text">{m.body}</p>
         {m.quotedTrail && (
           <details className="group mt-2 border-t border-border pt-1.5">
             <summary className="cursor-pointer list-none text-2xs font-medium text-muted hover:text-text [&::-webkit-details-marker]:hidden">
               <span className="group-open:hidden">Show earlier messages</span>
               <span className="hidden group-open:inline">Hide</span>
             </summary>
-            <p className="mt-1.5 whitespace-pre-wrap text-xs text-subtle">{m.quotedTrail}</p>
+            <p className="mt-1.5 whitespace-pre-wrap text-meta text-subtle">{m.quotedTrail}</p>
           </details>
         )}
       </div>
@@ -417,7 +417,7 @@ function MessageBubble({ message: m }: { message: ConversationThreadMessage }) {
           outbound ? 'bg-primary/10' : 'bg-surface-elevated'
         }`}
       >
-        <p className="whitespace-pre-wrap text-sm text-text">{m.body}</p>
+        <p className="whitespace-pre-wrap text-body-sm text-text">{m.body}</p>
       </div>
     )
   } else {
@@ -425,7 +425,7 @@ function MessageBubble({ message: m }: { message: ConversationThreadMessage }) {
       <div
         className={`w-fit max-w-[80%] rounded-lg px-3 py-2 ${outbound ? 'bg-primary/10' : 'bg-surface-elevated'}`}
       >
-        <p className="whitespace-pre-wrap text-sm text-text">{m.body}</p>
+        <p className="whitespace-pre-wrap text-body-sm text-text">{m.body}</p>
       </div>
     )
   }

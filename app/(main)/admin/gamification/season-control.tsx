@@ -30,10 +30,10 @@ export function SeasonControl({
         <div className="flex items-center gap-2">
           <Trophy className="w-4 h-4 text-warning" />
           <div>
-            <p className="text-sm font-bold text-text">
+            <p className="text-body-sm font-bold text-text">
               Current season
             </p>
-            <p className="text-sm font-medium text-text">
+            <p className="text-body-sm font-medium text-text">
               {season ? `${season.name} (#${season.season_number})` : 'No active season'}
             </p>
           </div>
@@ -42,7 +42,7 @@ export function SeasonControl({
         {isJanitor &&
           (confirming ? (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-muted">End the season for everyone?</span>
+              <span className="text-meta text-muted">End the season for everyone?</span>
               <button
                 disabled={pending}
                 onClick={() =>
@@ -56,13 +56,13 @@ export function SeasonControl({
                   })
                 }
                 // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
-                className="rounded-lg bg-danger text-white px-3 py-1.5 text-sm font-semibold disabled:opacity-60"
+                className="rounded-lg bg-danger text-white px-3 py-1.5 text-body-sm font-semibold disabled:opacity-60"
               >
                 {pending ? 'Ending…' : 'Confirm end'}
               </button>
               <button
                 onClick={() => setConfirming(false)}
-                className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text"
+                className="rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-text"
               >
                 Cancel
               </button>
@@ -70,14 +70,14 @@ export function SeasonControl({
           ) : (
             <button
               onClick={() => setConfirming(true)}
-              className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text hover:border-danger hover:text-danger transition-colors"
+              className="rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm font-medium text-text hover:border-danger hover:text-danger transition-colors"
             >
               End season &amp; start next
             </button>
           ))}
       </div>
-      {err && <p className="mt-2 text-xs text-danger">{err}</p>}
-      <p className="mt-2 text-xs text-subtle">
+      {err && <p className="mt-2 text-meta text-danger">{err}</p>}
+      <p className="mt-2 text-meta text-subtle">
         Ending a season mints trophies, converts each member&rsquo;s season zaps to gems,
         resets ranks / streaks / challenges, and opens the next season.
       </p>

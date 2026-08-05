@@ -116,17 +116,17 @@ export function DonationAskForm({
             }}
             className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
           />
-          <span className="text-sm text-muted">Show this ask to members</span>
+          <span className="text-body-sm text-muted">Show this ask to members</span>
         </label>
       </div>
 
-      <p className="text-xs text-subtle">
+      <p className="text-meta text-subtle">
         This sets up your ask. We do not take a payment yet, so giving is not wired and no money
         changes hands. Paid giving and tax receipts come later.
       </p>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
+        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
@@ -144,7 +144,7 @@ export function DonationAskForm({
           )}
         </Button>
         {saved && !pending && (
-          <span className="inline-flex items-center gap-1 text-sm font-medium text-success" role="status">
+          <span className="inline-flex items-center gap-1 text-body-sm font-medium text-success" role="status">
             <Check className="h-4 w-4" aria-hidden /> Saved
           </span>
         )}

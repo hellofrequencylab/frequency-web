@@ -74,12 +74,12 @@ export function WalkthroughSlide({ step }: { step: WalkthroughStep }) {
     </span>
   ) : null
   const cta = step.ctaLabel ? (
-    <span className={`mt-5 inline-flex items-center gap-1.5 rounded-xl ${a.solid} px-5 py-2.5 text-sm font-semibold ${a.onSolid}`}>
+    <span className={`mt-5 inline-flex items-center gap-1.5 rounded-xl ${a.solid} px-5 py-2.5 text-body-sm font-semibold ${a.onSolid}`}>
       {step.ctaLabel} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
     </span>
   ) : null
   const zaps = step.zaps ? (
-    <p className={`mt-4 inline-flex items-center gap-1.5 rounded-pill ${a.soft} px-3 py-1.5 text-xs font-semibold ${a.text}`}>
+    <p className={`mt-4 inline-flex items-center gap-1.5 rounded-pill ${a.soft} px-3 py-1.5 text-meta font-semibold ${a.text}`}>
       <Gem className="h-3.5 w-3.5" aria-hidden /> +{step.zaps} Zaps
     </p>
   ) : null
@@ -96,8 +96,8 @@ export function WalkthroughSlide({ step }: { step: WalkthroughStep }) {
         {media}
         <div className="flex flex-col items-center px-7 pb-7 pt-6 text-center">
           {eyebrow}
-          <h2 className="mt-3 text-2xl font-bold leading-tight text-text">{step.title || 'Slide title'}</h2>
-          {step.body && <p className="mt-2 max-w-sm text-pretty text-sm leading-relaxed text-muted">{step.body}</p>}
+          <h2 className="mt-3 text-page-title font-bold leading-tight text-text">{step.title || 'Slide title'}</h2>
+          {step.body && <p className="mt-2 max-w-sm text-pretty text-body-sm leading-relaxed text-muted">{step.body}</p>}
           {zaps}
           {cta}
         </div>
@@ -112,8 +112,8 @@ export function WalkthroughSlide({ step }: { step: WalkthroughStep }) {
           <div className="hidden sm:block">{media}</div>
           <div className="flex flex-col items-start px-6 py-7 text-left">
             {eyebrow}
-            <h2 className="mt-3 text-xl font-bold leading-tight text-text">{step.title || 'Slide title'}</h2>
-            {step.body && <p className="mt-2 text-sm leading-relaxed text-muted">{step.body}</p>}
+            <h2 className="mt-3 text-lead font-bold leading-tight text-text">{step.title || 'Slide title'}</h2>
+            {step.body && <p className="mt-2 text-body-sm leading-relaxed text-muted">{step.body}</p>}
             {zaps}
             {cta}
           </div>
@@ -128,8 +128,8 @@ export function WalkthroughSlide({ step }: { step: WalkthroughStep }) {
       <div className="flex flex-col items-center px-7 pb-7 pt-9 text-center">
         {iconChip ?? eyebrow}
         {iconChip && <div className="mt-4">{eyebrow}</div>}
-        <h2 className="mt-4 text-2xl font-bold leading-tight text-text">{step.title || 'Slide title'}</h2>
-        {step.body && <p className="mt-2 max-w-sm text-pretty text-sm leading-relaxed text-muted">{step.body}</p>}
+        <h2 className="mt-4 text-page-title font-bold leading-tight text-text">{step.title || 'Slide title'}</h2>
+        {step.body && <p className="mt-2 max-w-sm text-pretty text-body-sm leading-relaxed text-muted">{step.body}</p>}
         {zaps}
         {cta}
       </div>

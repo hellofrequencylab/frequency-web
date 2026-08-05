@@ -67,15 +67,15 @@ export function TemplatesPanel({
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
                   <Icon className="h-4 w-4" aria-hidden />
                 </span>
-                <span className="text-sm font-semibold text-text">{t.title}</span>
+                <span className="text-body-sm font-semibold text-text">{t.title}</span>
               </div>
-              <p className="flex-1 text-xs text-muted">{t.description}</p>
+              <p className="flex-1 text-meta text-muted">{t.description}</p>
               <span className="mt-3 inline-flex w-fit items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
                 {t.triggerEvent ? 'Sends on join' : 'Manual start'}
               </span>
               <div className="mt-3">
                 {isAdded ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-success">
+                  <span className="inline-flex items-center gap-1.5 text-meta font-medium text-success">
                     <Check className="h-3.5 w-3.5" aria-hidden /> Added
                   </span>
                 ) : (
@@ -106,8 +106,8 @@ export function TemplatesPanel({
 
       {/* A live region so a screen reader announces the async result (the transition swaps this in). */}
       <div role="status" aria-live="polite">
-        {error && <p className="text-sm text-danger">{error}</p>}
-        {notice && <p className="text-sm text-muted">{notice}</p>}
+        {error && <p className="text-body-sm text-danger">{error}</p>}
+        {notice && <p className="text-body-sm text-muted">{notice}</p>}
       </div>
 
       {/* Honesty note (ADR-797): a triggered template only enrolls members who join AFTER the sequence is

@@ -47,7 +47,7 @@ export function SpaceProfileMenu({
     cn(
       // rounded-control (was rounded-lg, the same 0.5rem at baseline): tab pills are CONTROLS, so the
       // Space page theme shapes them (ADR-578 — playful pills them); pinned to today's radius for `bold`.
-      'whitespace-nowrap rounded-control px-3 py-1.5 text-sm font-medium transition-colors',
+      'whitespace-nowrap rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors',
       active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text',
     )
 
@@ -88,7 +88,7 @@ export function SpaceProfileMenu({
       {/* When a `?panel=<id>` workspace surface is open, name it right under the menu so the current
           surface stays legible (Home no longer reads active). aria-current marks it as the location. */}
       {openPanelLabel && (
-        <div className="flex items-center gap-2 py-2 text-sm">
+        <div className="flex items-center gap-2 py-2 text-body-sm">
           <span className="text-muted">You are editing</span>
           <span
             aria-current="page"

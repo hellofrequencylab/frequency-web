@@ -184,7 +184,7 @@ export function BetaCampaignWorkspace({
   return (
     <div className="space-y-8">
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger" role="alert">
+        <p className="rounded-lg bg-danger-bg px-3 py-2 text-meta font-medium text-danger" role="alert">
           {error}
         </p>
       )}
@@ -195,7 +195,7 @@ export function BetaCampaignWorkspace({
         <section aria-label="Beta email sequence" className="min-w-0">
           <SectionHeader title="Beta email sequence" count={total} />
           {total === 0 ? (
-            <p className="rounded-card border border-dashed border-border px-3 py-8 text-center text-xs text-muted">
+            <p className="rounded-card border border-dashed border-border px-3 py-8 text-center text-meta text-muted">
               No beta emails yet. Start one below.
             </p>
           ) : (
@@ -225,7 +225,7 @@ export function BetaCampaignWorkspace({
                           aria-current={active}
                           className="flex w-full items-center gap-2 text-left"
                         >
-                          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-text">
+                          <span className="min-w-0 flex-1 truncate text-body-sm font-semibold text-text">
                             {email.subject.trim() || 'Untitled email'}
                           </span>
                           {email.status !== 'draft' && (
@@ -273,7 +273,7 @@ export function BetaCampaignWorkspace({
             type="button"
             onClick={onNew}
             disabled={pending}
-            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-border py-2.5 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text disabled:opacity-50"
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-border py-2.5 text-body-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text disabled:opacity-50"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Plus className="h-4 w-4" aria-hidden />}
             New email
@@ -300,18 +300,18 @@ export function BetaCampaignWorkspace({
                 <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Sequence progress
               </p>
               <div className="flex items-baseline gap-2">
-                <span className="text-xl font-extrabold tabular-nums leading-none text-text">
+                <span className="text-lead font-extrabold tabular-nums leading-none text-text">
                   {approved}
-                  <span className="text-sm font-semibold text-muted">/{total}</span>
+                  <span className="text-body-sm font-semibold text-muted">/{total}</span>
                 </span>
-                <span className="text-xs font-medium text-muted">approved</span>
+                <span className="text-meta font-medium text-muted">approved</span>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-xl font-extrabold tabular-nums leading-none text-text">
+                <span className="text-lead font-extrabold tabular-nums leading-none text-text">
                   {sent}
-                  <span className="text-sm font-semibold text-muted">/{total}</span>
+                  <span className="text-body-sm font-semibold text-muted">/{total}</span>
                 </span>
-                <span className="text-xs font-medium text-muted">sent</span>
+                <span className="text-meta font-medium text-muted">sent</span>
               </div>
             </div>
           </div>
@@ -324,7 +324,7 @@ export function BetaCampaignWorkspace({
         <EditorShell eyebrow="Beta Command Center" title="Editor">
           {selectedId == null ? (
             <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-border">
-              <p className="text-sm text-muted">Pick an email above, or start a new one.</p>
+              <p className="text-body-sm text-muted">Pick an email above, or start a new one.</p>
             </div>
           ) : loading || !loaded ? (
             <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-border">

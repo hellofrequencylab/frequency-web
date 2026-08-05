@@ -185,13 +185,13 @@ export function SegmentComposer({
 
       <div className="space-y-3 rounded-2xl border border-border bg-surface p-4 sm:p-5">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-semibold text-text">Members must match</span>
+          <span className="text-body-sm font-semibold text-text">Members must match</span>
           <div className="inline-flex overflow-hidden rounded-lg border border-border">
             <button
               type="button"
               onClick={() => setCombinator('all')}
               className={cn(
-                'px-3 py-1.5 text-xs font-semibold transition-colors',
+                'px-3 py-1.5 text-meta font-semibold transition-colors',
                 combinator === 'all' ? 'bg-primary text-on-primary' : 'bg-surface text-muted hover:bg-surface-elevated',
               )}
             >
@@ -201,14 +201,14 @@ export function SegmentComposer({
               type="button"
               onClick={() => setCombinator('any')}
               className={cn(
-                'px-3 py-1.5 text-xs font-semibold transition-colors',
+                'px-3 py-1.5 text-meta font-semibold transition-colors',
                 combinator === 'any' ? 'bg-primary text-on-primary' : 'bg-surface text-muted hover:bg-surface-elevated',
               )}
             >
               any
             </button>
           </div>
-          <span className="text-sm text-muted">of these rules</span>
+          <span className="text-body-sm text-muted">of these rules</span>
         </div>
 
         <div className="space-y-2">
@@ -236,7 +236,7 @@ export function SegmentComposer({
           {pending ? 'Saving…' : isEdit ? 'Save changes' : 'Create segment'}
         </Button>
 
-        <span className="inline-flex items-center gap-1.5 text-sm text-muted">
+        <span className="inline-flex items-center gap-1.5 text-body-sm text-muted">
           <Users className="h-4 w-4 text-subtle" aria-hidden />
           {!hasRules
             ? 'Add a rule to preview the audience'
@@ -246,12 +246,12 @@ export function SegmentComposer({
         </span>
 
         {result?.ok && (
-          <span className="inline-flex items-center gap-1.5 text-sm font-medium text-success">
+          <span className="inline-flex items-center gap-1.5 text-body-sm font-medium text-success">
             <Check className="h-4 w-4" /> Saved
           </span>
         )}
         {result && !result.ok && (
-          <span className="inline-flex items-center gap-1.5 text-sm text-danger">
+          <span className="inline-flex items-center gap-1.5 text-body-sm text-danger">
             <AlertCircle className="h-4 w-4" /> {result.error}
           </span>
         )}

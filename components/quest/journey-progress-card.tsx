@@ -89,7 +89,7 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
       <SectionHeader
         title={title}
         action={
-          <span className="text-xs font-semibold tabular-nums text-subtle">
+          <span className="text-meta font-semibold tabular-nums text-subtle">
             {finished ? 'Finished' : `${daysDone}/${daysRequired} days`}
           </span>
         }
@@ -97,13 +97,13 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {inCohort && (
-          <span className="inline-flex items-center gap-1.5 rounded-md bg-signal-bg px-2 py-1 text-xs font-medium text-signal-strong">
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-signal-bg px-2 py-1 text-meta font-medium text-signal-strong">
             <Users className="h-3.5 w-3.5" />
             Running with your Circle
           </span>
         )}
         {win && (
-          <span className="inline-flex items-center gap-1.5 rounded-md bg-surface-elevated px-2 py-1 text-xs font-medium text-muted">
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-surface-elevated px-2 py-1 text-meta font-medium text-muted">
             <CalendarRange className="h-3.5 w-3.5" />
             {win}
           </span>
@@ -112,7 +112,7 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
 
       {finished ? (
         <div className="space-y-2">
-          <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-success">
+          <p className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-success">
             <CheckCircle2 className="h-4 w-4" /> You finished this Journey
           </p>
           {hasExpression && <ExpressionPillarLine expressionDone />}
@@ -130,7 +130,7 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
             size="lg"
             animate
           />
-          <p className="mt-2 text-xs font-medium text-muted">
+          <p className="mt-2 text-meta font-medium text-muted">
             {daysMet
               ? 'All 14 practice days logged.'
               : daysDone === 0
@@ -164,7 +164,7 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
                 }}
               >
                 <p
-                  className="flex items-center gap-1.5 text-sm font-semibold text-text"
+                  className="flex items-center gap-1.5 text-body-sm font-semibold text-text"
                   style={{ color: 'var(--rank-deep)' }}
                 >
                   <ExpressionIcon className="h-4 w-4" aria-hidden />
@@ -177,7 +177,7 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
           <div className="mt-4">
             <Link
               href={learnHref}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
             >
               Open this Journey <ArrowRight className="h-4 w-4" />
             </Link>
@@ -193,7 +193,7 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
 function ExpressionPillarLine({ expressionDone }: { expressionDone: boolean }) {
   return (
     <p
-      className="inline-flex items-center gap-1.5 text-xs font-medium"
+      className="inline-flex items-center gap-1.5 text-meta font-medium"
       style={expressionPillarStyle()}
     >
       <span

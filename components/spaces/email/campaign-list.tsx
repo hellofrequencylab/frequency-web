@@ -57,10 +57,10 @@ export async function CampaignList({ spaceId }: { spaceId: string }) {
         return (
           <li key={c.id} className="flex items-center justify-between gap-4 px-4 py-3">
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-text">
+              <p className="truncate text-body-sm font-semibold text-text">
                 {c.subject || 'Untitled'}
               </p>
-              <p className="text-xs text-muted">
+              <p className="text-meta text-muted">
                 {when}
                 {c.status === 'sent' && (
                   <>

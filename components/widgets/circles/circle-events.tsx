@@ -128,7 +128,7 @@ async function CircleUpcomingEvents({
         }
       />
     ) : (
-      <p className="text-sm text-muted">
+      <p className="text-body-sm text-muted">
         Nothing on the calendar yet. Gatherings for this Circle show up here.
       </p>
     )
@@ -139,7 +139,7 @@ async function CircleUpcomingEvents({
       <UpcomingEventRows events={events} />
       {hasMore && (
         <div className="mt-2 px-1">
-          <Link href="/events" className="text-xs font-medium text-primary-strong hover:underline">
+          <Link href="/events" className="text-meta font-medium text-primary-strong hover:underline">
             See all events →
           </Link>
         </div>

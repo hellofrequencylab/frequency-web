@@ -165,7 +165,7 @@ export function SpaceInfoConnectForm({
             (what shape of thing you are, the card pill). Off-list stored values stay selectable and
             MARKED (ADR-879), so saving any other field never silently relabels the Space. */}
         <details className="group">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-1 text-sm font-bold text-text [&::-webkit-details-marker]:hidden">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-1 text-body-sm font-bold text-text [&::-webkit-details-marker]:hidden">
             Directory listing
             <ChevronDown className="h-4 w-4 shrink-0 text-subtle transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
           </summary>
@@ -190,7 +190,7 @@ export function SpaceInfoConnectForm({
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-subtle">
+              <p className="mt-1 text-meta text-subtle">
                 What your Space is about. The directory filters by this, so pick the closest fit.
               </p>
             </div>
@@ -215,7 +215,7 @@ export function SpaceInfoConnectForm({
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-subtle">
+              <p className="mt-1 text-meta text-subtle">
                 The shape of what you run: a studio, a shop, one-on-one work. Shows on your directory card.
               </p>
             </div>
@@ -233,7 +233,7 @@ export function SpaceInfoConnectForm({
                 placeholder={spaceKindLabel(biz.kind)}
                 onChange={(e) => setBiz((f) => ({ ...f, categoryLabel: e.target.value }))}
               />
-              <p className="mt-1 text-xs text-subtle">
+              <p className="mt-1 text-meta text-subtle">
                 Shown on your card in place of the kind name. Leave blank to use &ldquo;{spaceKindLabel(biz.kind)}&rdquo;.
               </p>
             </div>
@@ -273,14 +273,14 @@ export function SpaceInfoConnectForm({
                   })
                 }
                 disabled={bioBusy}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong transition-colors hover:text-primary disabled:opacity-50"
+                className="inline-flex items-center gap-1 text-meta font-semibold text-primary-strong transition-colors hover:text-primary disabled:opacity-50"
               >
                 {bioBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Sparkles className="h-3.5 w-3.5" aria-hidden />}
                 Draft with Vera
               </button>
             }
           />
-          <p className="text-xs text-subtle">
+          <p className="text-meta text-subtle">
             Vera is AI. The Draft button writes a starting point you review and edit; nothing is saved or
             published until you do.
           </p>
@@ -316,7 +316,7 @@ export function SpaceInfoConnectForm({
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-subtle">
+            <p className="mt-1 text-meta text-subtle">
               A rough guide to how pricey you are, shown to search engines. Leave it unset if it does not fit.
             </p>
           </div>
@@ -350,7 +350,7 @@ export function SpaceInfoConnectForm({
         </section>
 
         {veraError && (
-          <p className="rounded-lg bg-warning-bg px-3 py-2 text-sm font-medium text-warning" role="status">
+          <p className="rounded-lg bg-warning-bg px-3 py-2 text-body-sm font-medium text-warning" role="status">
             {veraError}
           </p>
         )}
@@ -359,7 +359,7 @@ export function SpaceInfoConnectForm({
 
       <div className="flex items-center gap-3 pt-1">
         {!readOnly && (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-subtle" aria-live="polite">
+          <span className="inline-flex items-center gap-1.5 text-meta font-medium text-subtle" aria-live="polite">
             {pending ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Saving…

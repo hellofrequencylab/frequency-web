@@ -183,12 +183,12 @@ export function ReviewBoard({
     <div className="space-y-6">
       {/* Roll-up legend + approve */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4">
-        <div className="flex flex-wrap items-center gap-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2 text-body-sm">
           <StatusChip tone="success" size="sm">✅ {s.green} verified</StatusChip>
           <StatusChip tone="warning" size="sm">⚠️ {s.amber} to review</StatusChip>
           {s.red > 0 && <StatusChip tone="danger" size="sm">🔴 {s.red} contradicted</StatusChip>}
           {s.withheld > 0 && (
-            <span className="text-xs text-muted">
+            <span className="text-meta text-muted">
               {s.withheld} commercial fact{s.withheld === 1 ? '' : 's'} withheld until cleared
             </span>
           )}
@@ -207,11 +207,11 @@ export function ReviewBoard({
       {/* Mood + Re-Seed (Importer v2): pick a mood to re-voice the copy. Facts stay put; only the tone
           changes. Available on a reviewed or applied draft (there is verified copy to re-voice). */}
       <div className="rounded-2xl border border-border bg-surface p-4">
-        <div className="flex items-center gap-2 text-sm font-semibold text-text">
+        <div className="flex items-center gap-2 text-body-sm font-semibold text-text">
           <Palette className="h-4 w-4 text-primary-strong" aria-hidden />
           Mood and re-seed
         </div>
-        <p className="mt-0.5 text-xs text-muted">
+        <p className="mt-0.5 text-meta text-muted">
           Pick a mood to re-seed the whole page: the copy, the layout, and the images regenerate and push
           to the live Space. Verified facts stay put, and anything you edited by hand is kept. Lock the hero
           below to freeze the headline and hero image while everything else refreshes.
@@ -228,7 +228,7 @@ export function ReviewBoard({
                 title={m.description}
                 aria-pressed={active}
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-pill border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50',
+                  'inline-flex items-center gap-1.5 rounded-pill border px-3 py-1.5 text-meta font-semibold transition-colors disabled:opacity-50',
                   active
                     ? 'border-primary bg-primary-bg text-primary-strong'
                     : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text',
@@ -246,7 +246,7 @@ export function ReviewBoard({
             )
           })}
         </div>
-        <label className="mt-3 flex items-center gap-2 text-xs text-muted">
+        <label className="mt-3 flex items-center gap-2 text-meta text-muted">
           <input
             type="checkbox"
             checked={lockHero}
@@ -270,14 +270,14 @@ export function ReviewBoard({
             onChange={(e) => setDirections(e.target.value)}
             disabled={reseeding}
             placeholder="e.g. Lead with the retreat space, keep it calm and grounded, mention the sky deck."
-            className="mt-1 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text placeholder:text-subtle outline-none focus:border-primary"
+            className="mt-1 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta text-text placeholder:text-subtle outline-none focus:border-primary"
           />
           <p className="mt-1 text-2xs text-muted">Steers the wording and tone. Pick a mood above to re-seed with these directions.</p>
         </div>
 
         {reseedMsg && (
           <p
-            className={cn('mt-2 text-xs', reseedMsg.tone === 'ok' ? 'text-success' : 'text-danger')}
+            className={cn('mt-2 text-meta', reseedMsg.tone === 'ok' ? 'text-success' : 'text-danger')}
             role="status"
           >
             {reseedMsg.text}
@@ -292,7 +292,7 @@ export function ReviewBoard({
             type="button"
             onClick={() => setShowAddInfo((v) => !v)}
             aria-expanded={showAddInfo}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-strong hover:underline"
+            className="inline-flex items-center gap-1.5 text-meta font-semibold text-primary-strong hover:underline"
           >
             <Plus className={cn('h-3.5 w-3.5 transition-transform', showAddInfo && 'rotate-45')} aria-hidden />
             Add more info to the master profile
@@ -320,7 +320,7 @@ export function ReviewBoard({
                     onChange={(e) => setInfoField(box.key, e.target.value)}
                     disabled={addingInfo}
                     placeholder={box.ph}
-                    className="mt-1 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text placeholder:text-subtle outline-none focus:border-primary"
+                    className="mt-1 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta text-text placeholder:text-subtle outline-none focus:border-primary"
                   />
                 </label>
               ))}
@@ -329,7 +329,7 @@ export function ReviewBoard({
                 {addingInfo ? 'Adding…' : 'Add info and re-research'}
               </Button>
               {infoMsg && (
-                <p className={cn('text-xs', infoMsg.tone === 'ok' ? 'text-success' : 'text-danger')} role="status">
+                <p className={cn('text-meta', infoMsg.tone === 'ok' ? 'text-success' : 'text-danger')} role="status">
                   {infoMsg.text}
                 </p>
               )}
@@ -345,7 +345,7 @@ export function ReviewBoard({
       {/* Re-apply the master profile to the live Space (applied only): pushes re-voiced copy / edits. */}
       {applied && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4">
-          <p className="text-xs text-muted">
+          <p className="text-meta text-muted">
             Changed the mood or the copy above? Re-apply to push it to the live Space. Verified facts and
             the commercial-fact gate are re-checked; withheld facts stay withheld.
           </p>
@@ -366,23 +366,23 @@ export function ReviewBoard({
       {error && (
         <Banner tone="critical" title="Could not seed the Space">
           {error}
-          {blocked.length > 0 && <span className="mt-1 block text-xs">Blocked: {blocked.join(', ')}</span>}
+          {blocked.length > 0 && <span className="mt-1 block text-meta">Blocked: {blocked.join(', ')}</span>}
         </Banner>
       )}
 
       {applied && links && (
         <div className="rounded-2xl border border-success/30 bg-success-bg p-4" role="status">
-          <p className="flex items-center gap-1.5 text-sm font-semibold text-success">
+          <p className="flex items-center gap-1.5 text-body-sm font-semibold text-success">
             <CheckCircle2 className="h-4 w-4" aria-hidden /> Seeded {listed ? 'a listed Space' : 'an unlisted Space'}
           </p>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 text-body-sm text-muted">
             {listed
               ? 'It shows in the Business Spaces directory. Any unverified commercial fact stays withheld.'
               : 'It is not in the directory yet. Flip it to Listed below when you are ready to show it.'}
           </p>
           {/* The easy LISTED toggle: list = show in the Business Spaces directory (visibility network),
               unlist = owner/members only (private). No more digging in settings. */}
-          <label className="mt-3 flex items-center gap-2 text-sm font-medium text-text">
+          <label className="mt-3 flex items-center gap-2 text-body-sm font-medium text-text">
             <input
               type="checkbox"
               checked={listed}
@@ -392,7 +392,7 @@ export function ReviewBoard({
             />
             {listing ? 'Saving…' : 'Listed in the Business Spaces directory'}
           </label>
-          <div className="mt-3 flex flex-wrap gap-3 text-sm font-semibold">
+          <div className="mt-3 flex flex-wrap gap-3 text-body-sm font-semibold">
             <a href={links.profileHref} className="inline-flex items-center gap-1 text-info hover:underline" target="_blank" rel="noreferrer">
               Space profile <ExternalLink className="h-3.5 w-3.5" />
             </a>
@@ -407,8 +407,8 @@ export function ReviewBoard({
       {model.sections.map((section) => (
         <section key={section.key} className="space-y-2">
           <div>
-            <h3 className="text-base font-bold text-text">{section.title}</h3>
-            <p className="mt-0.5 text-sm text-muted">{section.desc}</p>
+            <h3 className="text-body font-bold text-text">{section.title}</h3>
+            <p className="mt-0.5 text-body-sm text-muted">{section.desc}</p>
           </div>
           <div className="divide-y divide-border rounded-2xl border border-border bg-surface">
             {section.fields.map((f) => (
@@ -461,7 +461,7 @@ function FieldRow({
             <StatusChip tone={tone} size="sm">
               {SIGNAL_GLYPH[field.signal]} {SIGNAL_LABEL[field.signal]}
             </StatusChip>
-            <span className="text-xs font-semibold text-text">{field.label}</span>
+            <span className="text-meta font-semibold text-text">{field.label}</span>
             {field.generated && (
               <span className="inline-flex items-center gap-1 text-2xs text-muted">
                 <Sparkles className="h-3 w-3" aria-hidden /> AI copy
@@ -473,14 +473,14 @@ function FieldRow({
           {/* Value / edit field */}
           {editing ? (
             <textarea
-              className="mt-2 w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:border-border-strong focus:outline-none"
+              className="mt-2 w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none"
               rows={field.value.length > 60 ? 3 : 1}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               autoFocus
             />
           ) : (
-            <p className={`mt-1 whitespace-pre-wrap break-words text-sm ${field.value ? 'text-text' : 'italic text-subtle'}`}>
+            <p className={`mt-1 whitespace-pre-wrap break-words text-body-sm ${field.value ? 'text-text' : 'italic text-subtle'}`}>
               {field.value || 'Not set'}
             </p>
           )}

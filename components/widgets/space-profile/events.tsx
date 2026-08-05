@@ -66,7 +66,7 @@ function EventsHeader({ eyebrow, heading }: { eyebrow?: string; heading?: string
     <div className="mb-6">
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
       {heading && (
-        <h2 className="font-display text-2xl uppercase tracking-tight text-balance text-text sm:text-3xl">
+        <h2 className="font-display text-page-title uppercase tracking-tight text-balance text-text sm:text-3xl">
           {heading}
         </h2>
       )}

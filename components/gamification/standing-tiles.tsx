@@ -88,7 +88,7 @@ function ScoreTile({
 }) {
   const inner = (
     <>
-      <span className="flex items-center justify-center gap-1 text-base font-bold tabular-nums text-text">
+      <span className="flex items-center justify-center gap-1 text-body font-bold tabular-nums text-text">
         <Icon className={`h-3.5 w-3.5 ${iconCls}`} /> {value}
       </span>
       <span className="text-2xs font-medium uppercase tracking-wide text-muted">{label}</span>

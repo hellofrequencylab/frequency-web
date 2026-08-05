@@ -44,28 +44,28 @@ function ThemeRowCard({ t }: { t: ThemeRow }) {
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/admin/appearance/${t.id}`}
-            className="truncate text-base font-bold text-text hover:text-primary-strong"
+            className="truncate text-body font-bold text-text hover:text-primary-strong"
           >
             {t.name || 'Untitled theme'}
           </Link>
           {/* Kind badge */}
-          <span className="inline-flex items-center rounded-pill bg-broadcast-bg px-2 py-0.5 text-xs font-semibold capitalize text-broadcast-strong">
+          <span className="inline-flex items-center rounded-pill bg-broadcast-bg px-2 py-0.5 text-meta font-semibold capitalize text-broadcast-strong">
             {t.kind}
           </span>
           {/* Status badge */}
           <span
-            className={`inline-flex items-center rounded-pill px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE[t.status]}`}
+            className={`inline-flex items-center rounded-pill px-2 py-0.5 text-meta font-semibold ${STATUS_BADGE[t.status]}`}
           >
             {STATUS_LABEL[t.status]}
           </span>
           {/* Default badge */}
           {t.isDefault && (
-            <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-xs font-semibold text-primary-strong">
+            <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-semibold text-primary-strong">
               <Star className="h-3 w-3" aria-hidden /> Default
             </span>
           )}
         </div>
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-subtle">
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-subtle">
           <span>
             slug <code className="rounded bg-surface-elevated px-1 py-0.5 text-text">{t.slug}</code>
           </span>
@@ -99,7 +99,7 @@ export default async function ThemeStudioPage() {
     >
       {/* How a theme goes live — the operator's first question. */}
       <AdminSection>
-        <div className="rounded-2xl border border-border bg-surface-elevated/50 px-4 py-3 text-sm text-muted">
+        <div className="rounded-2xl border border-border bg-surface-elevated/50 px-4 py-3 text-body-sm text-muted">
           A theme takes effect once its status is <strong className="text-text">Active</strong>, and
           for the base skin once you also <strong className="text-text">Set default</strong>. One
           one-time step: the database migration must be applied for the theme system to be live.

@@ -148,17 +148,17 @@ export default async function PracticeDetailPage({ params }: Params) {
         <>
           {pillarName && <PillarBadge name={pillarName} />}
           {/* How it runs, at a glance (ADR-592, P4): the timer mode + shape, or "Log it". */}
-          <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
+          <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-medium text-muted">
             {practice.uses_timer && <Timer className="h-3 w-3" aria-hidden />}
             {timerPreview({ timerKind: practice.timer_kind, movementConfig: practice.movement_config, durationMin: practice.duration_min })}
           </span>
           {practice.subcategory && (
-            <span className="rounded-pill bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
+            <span className="rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-medium text-primary-strong">
               {practice.subcategory.name}
             </span>
           )}
           {practice.is_template && (
-            <span className="inline-flex items-center gap-1 rounded-pill bg-warning-bg px-2 py-0.5 text-xs font-semibold text-warning">
+            <span className="inline-flex items-center gap-1 rounded-pill bg-warning-bg px-2 py-0.5 text-meta font-semibold text-warning">
               <Wand2 className="h-3 w-3" /> Template
             </span>
           )}
@@ -191,7 +191,7 @@ export default async function PracticeDetailPage({ params }: Params) {
         {!profileId ? (
           <Link
             href="/sign-in"
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
           >
             <Zap className="h-4 w-4 fill-on-primary" /> Sign in to claim &amp; earn
           </Link>
@@ -293,7 +293,7 @@ export default async function PracticeDetailPage({ params }: Params) {
           streak. Only for a timed practice the member owns/adopted (the derive returns empty
           otherwise). No narrated feelings, no em dashes, live tier nouns (never "Deep"). */}
       {(depth.lastSession || depthStreakFlavor) && (
-        <div className="-mt-3 mb-6 space-y-1 text-sm">
+        <div className="-mt-3 mb-6 space-y-1 text-body-sm">
           {!state.loggedToday && depth.lastSession && (
             <p className="text-muted">
               {matchItLine(depth.lastSession)}{' '}

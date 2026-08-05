@@ -41,7 +41,7 @@ export async function EntityAbout() {
 
   return (
     <ModuleCard title="About" tile>
-      <p className="whitespace-pre-line text-sm leading-relaxed text-muted">{body}</p>
+      <p className="whitespace-pre-line text-body-sm leading-relaxed text-muted">{body}</p>
     </ModuleCard>
   )
 }

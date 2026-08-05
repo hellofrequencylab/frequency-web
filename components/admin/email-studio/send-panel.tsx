@@ -51,7 +51,7 @@ const STATUS_TONE: Record<CampaignStatus, StatusTone> = {
 }
 
 const field =
-  'w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text placeholder:text-subtle'
+  'w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text placeholder:text-subtle'
 
 export interface SendPanelProps {
   campaignId: string
@@ -153,7 +153,7 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
   return (
     <div className="space-y-4 rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-bold text-text">Send</h3>
+        <h3 className="text-body-sm font-bold text-text">Send</h3>
         <StatusChip tone={STATUS_TONE[current]} size="sm">
           {current}
         </StatusChip>
@@ -164,7 +164,7 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
       ) : (
         <div className={row ? 'flex flex-wrap items-end gap-x-6 gap-y-4' : 'space-y-4'}>
           <label className={row ? 'block min-w-[220px] flex-1 space-y-1' : 'block space-y-1'}>
-            <span className="text-xs font-medium text-subtle">Audience</span>
+            <span className="text-meta font-medium text-subtle">Audience</span>
             <select
               value={selected}
               onChange={(e) => {
@@ -188,20 +188,20 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
               {count != null && `: ${count.toLocaleString()}`}
             </Button>
             {count != null && (
-              <span className="text-xs text-muted">
+              <span className="text-meta text-muted">
                 {count.toLocaleString()} in this audience before the consent and suppression gate.
               </span>
             )}
           </div>
 
           <div className={row ? 'space-y-1' : 'space-y-1 border-t border-border pt-3'}>
-            <span className="text-xs font-medium text-subtle">Schedule (optional)</span>
+            <span className="text-meta font-medium text-subtle">Schedule (optional)</span>
             <div className="flex flex-wrap items-center gap-2">
               <input
                 type="datetime-local"
                 value={scheduleAt}
                 onChange={(e) => setScheduleAt(e.target.value)}
-                className="rounded-md border border-border bg-canvas px-2 py-1 text-xs text-text"
+                className="rounded-md border border-border bg-canvas px-2 py-1 text-meta text-text"
                 aria-label="Send date and time"
                 disabled={pending || !canSchedule}
               />

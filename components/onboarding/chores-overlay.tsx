@@ -177,13 +177,13 @@ export function ChoresOverlay({
               <span className="flex h-14 w-14 items-center justify-center rounded-pill bg-broadcast-bg text-broadcast-strong">
                 <PartyPopper className="h-6 w-6" aria-hidden />
               </span>
-              <h2 id="chores-title" className="mt-4 text-2xl font-bold text-text">There. Lived-in.</h2>
-              <p className="mt-2 max-w-sm text-pretty text-sm leading-relaxed text-muted">
+              <h2 id="chores-title" className="mt-4 text-page-title font-bold text-text">There. Lived-in.</h2>
+              <p className="mt-2 max-w-sm text-pretty text-body-sm leading-relaxed text-muted">
                 Place looks like someone actually lives here now. Knew you had it in you.
                 {nextAction ? ' One more nudge and I’ll leave you be.' : ' Off you go. Go meet your people.'}
               </p>
               {claimed && (
-                <p className="mt-4 inline-flex items-center gap-1.5 rounded-pill bg-signal-bg px-3 py-1.5 text-sm font-bold text-signal">
+                <p className="mt-4 inline-flex items-center gap-1.5 rounded-pill bg-signal-bg px-3 py-1.5 text-body-sm font-bold text-signal">
                   <Gem className="h-4 w-4" aria-hidden /> +{claimed.amount} Gems
                 </p>
               )}
@@ -191,7 +191,7 @@ export function ChoresOverlay({
                 <Link
                   href={nextAction.href}
                   onClick={close}
-                  className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                  className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
                 >
                   {nextAction.cta} <ArrowRight className="h-4 w-4" aria-hidden />
                 </Link>
@@ -199,7 +199,7 @@ export function ChoresOverlay({
                 <button
                   type="button"
                   onClick={close}
-                  className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                  className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
                 >
                   Got it
                 </button>
@@ -214,22 +214,22 @@ export function ChoresOverlay({
               <span className="mt-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-broadcast-bg text-broadcast-strong">
                 <Rocket className="h-7 w-7" aria-hidden />
               </span>
-              <h2 id="chores-title" className="mt-4 text-2xl font-bold leading-tight text-text">{nextAction!.headline}</h2>
-              <p className="mt-2 max-w-sm text-pretty text-sm leading-relaxed text-muted">{nextAction!.blurb}</p>
-              <p className="mt-4 inline-flex items-center gap-1.5 rounded-pill bg-signal-bg px-3 py-1.5 text-xs font-semibold text-signal">
+              <h2 id="chores-title" className="mt-4 text-page-title font-bold leading-tight text-text">{nextAction!.headline}</h2>
+              <p className="mt-2 max-w-sm text-pretty text-body-sm leading-relaxed text-muted">{nextAction!.blurb}</p>
+              <p className="mt-4 inline-flex items-center gap-1.5 rounded-pill bg-signal-bg px-3 py-1.5 text-meta font-semibold text-signal">
                 <Gem className="h-3.5 w-3.5" aria-hidden /> Every step earns Gems and brings your people closer
               </p>
               <Link
                 href={nextAction!.href}
                 onClick={close}
-                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 {nextAction!.cta} <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
               <button
                 type="button"
                 onClick={snoozeTomorrow}
-                className="mt-4 text-xs font-medium text-subtle transition-colors hover:text-muted"
+                className="mt-4 text-meta font-medium text-subtle transition-colors hover:text-muted"
               >
                 Don’t show till tomorrow
               </button>
@@ -239,11 +239,11 @@ export function ChoresOverlay({
             /* ── Beat 1: chores first ────────────────────────────────────────── */
             <div className="flex flex-1 flex-col overflow-hidden">
               <div className="shrink-0 border-b border-border px-6 pb-4 pt-7">
-                <span className="inline-flex items-center gap-1.5 rounded-pill bg-broadcast-bg px-3 py-1 text-xs font-semibold uppercase tracking-wide text-broadcast-strong">
+                <span className="inline-flex items-center gap-1.5 rounded-pill bg-broadcast-bg px-3 py-1 text-meta font-semibold uppercase tracking-wide text-broadcast-strong">
                   <Sparkles className="h-3.5 w-3.5" aria-hidden /> Vera
                 </span>
-                <h2 id="chores-title" className="mt-3 text-xl font-bold leading-tight text-text">Chores first.</h2>
-                <p className="mt-1 text-sm leading-snug text-muted">
+                <h2 id="chores-title" className="mt-3 text-lead font-bold leading-tight text-text">Chores first.</h2>
+                <p className="mt-1 text-body-sm leading-snug text-muted">
                   You signed up to <em>build</em>, not to lurk. {left} {left === 1 ? 'thing' : 'things'} out of place.
                   Let’s get your corner of this place in order. Won’t take a minute.
                 </p>
@@ -256,7 +256,7 @@ export function ChoresOverlay({
                     animate
                     className="flex-1"
                   />
-                  <span className="text-xs font-bold tabular-nums text-broadcast-strong">{chores.pct}%</span>
+                  <span className="text-meta font-bold tabular-nums text-broadcast-strong">{chores.pct}%</span>
                 </div>
               </div>
 
@@ -267,7 +267,7 @@ export function ChoresOverlay({
                       <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-broadcast text-on-broadcast">
                         <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
                       </span>
-                      <span className="flex-1 text-sm text-subtle line-through decoration-broadcast/40">{c.label}</span>
+                      <span className="flex-1 text-body-sm text-subtle line-through decoration-broadcast/40">{c.label}</span>
                     </div>
                   ) : (
                     <Link
@@ -280,8 +280,8 @@ export function ChoresOverlay({
                         <span className="h-1.5 w-1.5 rounded-pill bg-current" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-semibold text-text">{c.label}</span>
-                        <span className="block text-xs text-muted">{c.nudge}</span>
+                        <span className="block text-body-sm font-semibold text-text">{c.label}</span>
+                        <span className="block text-meta text-muted">{c.nudge}</span>
                       </span>
                       <ArrowRight className="h-4 w-4 shrink-0 text-subtle transition-colors group-hover:text-broadcast-strong" aria-hidden />
                     </Link>
@@ -290,7 +290,7 @@ export function ChoresOverlay({
               </div>
 
               <div className="shrink-0 border-t border-border px-6 py-3 text-center">
-                <button type="button" onClick={close} className="text-xs font-medium text-subtle transition-colors hover:text-muted">
+                <button type="button" onClick={close} className="text-meta font-medium text-subtle transition-colors hover:text-muted">
                   Fine, in a minute.
                 </button>
                 <p className="mt-1 text-2xs text-muted/70">

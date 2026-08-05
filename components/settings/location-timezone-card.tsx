@@ -51,13 +51,13 @@ export function LocationTimezoneCard({ currentTimezone }: { currentTimezone: str
           <MapPin className="h-4 w-4" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-text">Your timezone</p>
-          <p className="mt-0.5 text-sm text-muted">
+          <p className="text-body-sm font-semibold text-text">Your timezone</p>
+          <p className="mt-0.5 text-body-sm text-muted">
             {tz
               ? <>Set to <span className="font-medium text-text">{tz.replace(/_/g, ' ')}</span>. Event times and your day show in this zone.</>
               : 'Share your location so event times and your day show in your local zone. Home base is Pacific.'}
           </p>
-          {message && <p className="mt-1.5 text-sm text-subtle">{message}</p>}
+          {message && <p className="mt-1.5 text-body-sm text-subtle">{message}</p>}
         </div>
       </div>
       <div className="mt-3 flex justify-end">
@@ -65,7 +65,7 @@ export function LocationTimezoneCard({ currentTimezone }: { currentTimezone: str
           type="button"
           onClick={share}
           disabled={busy}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-border-strong disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:border-border-strong disabled:opacity-60"
         >
           {state === 'done' ? (
             <><Check className="h-4 w-4 text-primary-strong" /> Updated</>

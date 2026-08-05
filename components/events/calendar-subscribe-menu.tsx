@@ -48,7 +48,7 @@ export function CalendarSubscribeMenu({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+        className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
       >
         <CalendarPlus className="h-4 w-4" />
         Subscribe to calendar
@@ -59,13 +59,13 @@ export function CalendarSubscribeMenu({
           {/* Click-away backdrop. */}
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} aria-hidden />
           <div className="absolute right-0 z-20 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface p-4 shadow-pop">
-            <p className="text-sm font-semibold text-text">{title}</p>
+            <p className="text-body-sm font-semibold text-text">{title}</p>
             <p className="mt-1 text-2xs leading-relaxed text-muted">{description}</p>
 
             <div className="mt-3 flex flex-col gap-2">
               <a
                 href={webcalUrl}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 Add to Apple Calendar
               </a>
@@ -73,14 +73,14 @@ export function CalendarSubscribeMenu({
                 href={googleUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
               >
                 Add to Google Calendar
               </a>
               <button
                 type="button"
                 onClick={copy}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
               >
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 {copied ? 'Copied' : 'Copy link'}

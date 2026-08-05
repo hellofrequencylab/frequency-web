@@ -20,7 +20,7 @@ export async function VaultSummary() {
       <SectionHeader
         title="Your Vault"
         action={
-          <span className="text-xs font-medium tabular-nums text-subtle">
+          <span className="text-meta font-medium tabular-nums text-subtle">
             {ownedCount} {ownedCount === 1 ? 'item won' : 'items won'}
           </span>
         }
@@ -29,7 +29,7 @@ export async function VaultSummary() {
         {/* Amplitude — lifetime XP beside the season rank; never resets. */}
         {hasAmplitude && (
           <div className="flex items-center justify-between rounded-xl bg-success-bg/50 px-3 py-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-signal">
+            <span className="text-meta font-semibold uppercase tracking-wider text-signal">
               Amplitude · Level {amplitudeLevel(d.amplitude)}
             </span>
             <span className="flex items-center gap-1.5">
@@ -49,25 +49,25 @@ export async function VaultSummary() {
           className={`flex items-center gap-2 rounded-xl bg-success-bg/50 px-3 py-2.5 text-signal-strong transition-colors hover:bg-success-bg ${hasAmplitude ? 'mt-3' : ''}`}
         >
           <Receipt className="h-4 w-4 shrink-0" />
-          <span className="flex-1 text-xs font-semibold">How you earned: Zaps &amp; Gems log</span>
+          <span className="flex-1 text-meta font-semibold">How you earned: Zaps &amp; Gems log</span>
           <ArrowRight className="h-3.5 w-3.5 shrink-0" />
         </Link>
 
         {/* Equipped winnings */}
         {(equipped.border || equipped.flair || equipped.title) && (
           <div className="mt-4 border-t border-success/40 pt-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-signal">Equipped</span>
+            <span className="text-meta font-semibold uppercase tracking-wider text-signal">Equipped</span>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {equipped.border && (
-                <span className="rounded-md bg-success-bg px-2 py-0.5 text-xs text-success">
+                <span className="rounded-md bg-success-bg px-2 py-0.5 text-meta text-success">
                   Border: {equipped.border.replace('ring-', '').replace('-500', '')}
                 </span>
               )}
               {equipped.flair && (
-                <span className="rounded-md bg-success-bg px-2 py-0.5 text-xs text-success">Flair: {equipped.flair}</span>
+                <span className="rounded-md bg-success-bg px-2 py-0.5 text-meta text-success">Flair: {equipped.flair}</span>
               )}
               {equipped.title && (
-                <span className="rounded-md bg-success-bg px-2 py-0.5 text-xs text-success">Title: {equipped.title}</span>
+                <span className="rounded-md bg-success-bg px-2 py-0.5 text-meta text-success">Title: {equipped.title}</span>
               )}
             </div>
           </div>

@@ -29,8 +29,8 @@ export function EmailSignatureCard({ initial, autoDefault }: { initial: string; 
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
-      <h2 className="text-sm font-semibold text-text">Email signature</h2>
-      <p className="mt-1 text-sm text-muted">
+      <h2 className="text-body-sm font-semibold text-text">Email signature</h2>
+      <p className="mt-1 text-body-sm text-muted">
         Added to the bottom of the emails you send from your inbox. Leave it blank to use the default below.
       </p>
       <textarea
@@ -41,7 +41,7 @@ export function EmailSignatureCard({ initial, autoDefault }: { initial: string; 
         }}
         rows={4}
         placeholder={autoDefault}
-        className="mt-3 w-full resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-text focus:border-border-strong focus:outline-none"
+        className="mt-3 w-full resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none"
       />
       <div className="mt-2 flex items-center justify-between gap-3">
         <p className="text-2xs text-muted">
@@ -57,7 +57,7 @@ export function EmailSignatureCard({ initial, autoDefault }: { initial: string; 
             type="button"
             onClick={save}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
             Save signature
@@ -65,7 +65,7 @@ export function EmailSignatureCard({ initial, autoDefault }: { initial: string; 
         </div>
       </div>
       {error && (
-        <p role="alert" className="mt-2 text-xs text-danger">
+        <p role="alert" className="mt-2 text-meta text-danger">
           {error}
         </p>
       )}

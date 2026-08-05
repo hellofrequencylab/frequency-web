@@ -77,7 +77,7 @@ function ImageSlot({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="group relative flex w-full items-center justify-center overflow-hidden rounded-control border text-sm font-medium"
+        className="group relative flex w-full items-center justify-center overflow-hidden rounded-control border text-body-sm font-medium"
         style={{ borderColor: C.border, color: C.subtle, background: C.surfaceElevated, minHeight: url ? undefined : 128 }}
       >
         {url ? (
@@ -85,7 +85,7 @@ function ImageSlot({
             {/* eslint-disable-next-line @next/next/no-img-element -- operator Loom asset URL, not a build asset */}
             <img src={url} alt={alt} className="max-h-72 w-full object-cover" />
             <span
-              className="absolute right-2 top-2 flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+              className="absolute right-2 top-2 flex items-center gap-1 rounded-md px-2 py-1 text-meta font-semibold opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
               style={{ background: C.surface, color: C.text }}
             >
               <Pencil className="h-3.5 w-3.5" aria-hidden /> Change
@@ -111,7 +111,7 @@ function ImageSlot({
 /** An empty-state hint pointing the operator at the block's settings tile to add the first row. */
 function EmptyItemsHint({ label }: { label: string }) {
   return (
-    <p className="text-sm italic" style={{ color: C.subtle }}>
+    <p className="text-body-sm italic" style={{ color: C.subtle }}>
       Add {label.toLowerCase()} in this block&rsquo;s settings.
     </p>
   )
@@ -147,10 +147,10 @@ function FeaturesCanvas({ label, value, cols, onChange }: { label: string; value
                 <BlockIcon name={icon} size={22} />
               </div>
             )}
-            <div className="text-base font-bold" style={{ color: C.text }}>
+            <div className="text-body font-bold" style={{ color: C.text }}>
               <EditableSlot value={title} placeholder="Title" rich={false} onChange={(v) => patch(i, 'title', v)} />
             </div>
-            <div className="mt-0.5 text-sm leading-relaxed" style={{ color: C.muted }}>
+            <div className="mt-0.5 text-body-sm leading-relaxed" style={{ color: C.muted }}>
               <EditableSlot value={text} placeholder="Description" rich={false} onChange={(v) => patch(i, 'text', v)} />
             </div>
           </div>
@@ -196,18 +196,18 @@ function CardsCanvas({ label, value, onChange }: { label: string; value: unknown
             ) : statValue || statLabel ? (
               <div style={{ padding: '18px 16px 6px', background: C.surfaceElevated }}>
                 <div className="text-3xl font-black" style={{ color: C.primaryStrong, lineHeight: 1 }}>{statValue || '000'}</div>
-                {statLabel && <div className="mt-1 text-xs font-semibold uppercase tracking-wide" style={{ color: C.subtle }}>{statLabel}</div>}
+                {statLabel && <div className="mt-1 text-meta font-semibold uppercase tracking-wide" style={{ color: C.subtle }}>{statLabel}</div>}
               </div>
             ) : null}
             <div style={{ padding: 14 }}>
-              <div className="text-base font-bold" style={{ color: C.text }}>
+              <div className="text-body font-bold" style={{ color: C.text }}>
                 <EditableSlot value={title} placeholder="Card title" rich={false} onChange={(v) => patch(i, 'title', v)} />
               </div>
-              <div className="mt-0.5 text-sm leading-relaxed" style={{ color: C.muted }}>
+              <div className="mt-0.5 text-body-sm leading-relaxed" style={{ color: C.muted }}>
                 <EditableSlot value={text} placeholder="Card text" rich={false} onChange={(v) => patch(i, 'text', v)} />
               </div>
               {btnLabel && (
-                <span className="mt-2 inline-flex rounded-md px-3 py-1.5 text-xs font-bold" style={{ background: C.primary, color: C.onPrimary }}>
+                <span className="mt-2 inline-flex rounded-md px-3 py-1.5 text-meta font-bold" style={{ background: C.primary, color: C.onPrimary }}>
                   {btnLabel}
                 </span>
               )}
@@ -236,8 +236,8 @@ function ProductCardCanvas({ props }: { props: Record<string, unknown> }) {
         style={{ borderColor: C.border, color: C.subtle }}
       >
         <Package className="h-5 w-5" aria-hidden />
-        <p className="text-sm font-medium">Pick a product in this block&rsquo;s settings.</p>
-        <p className="text-xs">Search a maker or Space, then choose one of their products.</p>
+        <p className="text-body-sm font-medium">Pick a product in this block&rsquo;s settings.</p>
+        <p className="text-meta">Search a maker or Space, then choose one of their products.</p>
       </div>
     )
   }
@@ -248,9 +248,9 @@ function ProductCardCanvas({ props }: { props: Record<string, unknown> }) {
         <img src={image} alt={title} style={{ display: 'block', width: '100%', maxHeight: 240, objectFit: 'cover' }} />
       )}
       <div style={{ padding: 16 }}>
-        <div className="text-lg font-bold" style={{ color: C.text }}>{title || 'Product title'}</div>
-        {price && <div className="mt-0.5 text-base font-bold" style={{ color: C.primaryStrong }}>{price}</div>}
-        <span className="mt-3 inline-flex rounded-lg px-5 py-2.5 text-sm font-bold" style={{ background: C.primary, color: C.onPrimary }}>
+        <div className="text-body-lg font-bold" style={{ color: C.text }}>{title || 'Product title'}</div>
+        {price && <div className="mt-0.5 text-body font-bold" style={{ color: C.primaryStrong }}>{price}</div>}
+        <span className="mt-3 inline-flex rounded-lg px-5 py-2.5 text-body-sm font-bold" style={{ background: C.primary, color: C.onPrimary }}>
           {cta}
         </span>
       </div>
@@ -322,7 +322,7 @@ export function CanvasBlock({
             value={value}
             placeholder={f.label}
             rich={false}
-            className="text-xs font-bold uppercase tracking-[0.12em]"
+            className="text-meta font-bold uppercase tracking-[0.12em]"
             onChange={set(key)}
           />
         )
@@ -331,26 +331,26 @@ export function CanvasBlock({
         // slab (was font-extrabold). Matches the softened Header blocks in the compiled email.
         return (
           <div key={key} style={{ fontFamily: FONT, color: C.text }}>
-            <EditableSlot value={value} placeholder={f.label} rich={rich} className="text-2xl font-semibold leading-tight" onChange={set(key)} />
+            <EditableSlot value={value} placeholder={f.label} rich={rich} className="text-page-title font-semibold leading-tight" onChange={set(key)} />
           </div>
         )
       case 'quote':
         return (
           <div key={key} style={{ borderLeft: `3px solid ${C.primary}`, paddingLeft: 16, color: C.text }}>
-            <EditableSlot value={value} placeholder={f.label} rich className="text-lg italic leading-snug" onChange={set(key)} />
+            <EditableSlot value={value} placeholder={f.label} rich className="text-body-lg italic leading-snug" onChange={set(key)} />
           </div>
         )
       case 'attribution':
         return (
           <div key={key} style={{ color: C.muted }}>
-            <EditableSlot value={value} placeholder={f.label} rich={false} className="text-sm" onChange={set(key)} />
+            <EditableSlot value={value} placeholder={f.label} rich={false} className="text-body-sm" onChange={set(key)} />
           </div>
         )
       case 'button':
         return (
           <div key={key} className="flex">
             <span
-              className="inline-flex rounded-lg px-6 py-3 text-sm font-bold"
+              className="inline-flex rounded-lg px-6 py-3 text-body-sm font-bold"
               style={{ background: C.primary, color: C.onPrimary }}
             >
               <EditableSlot value={value} placeholder={f.label} rich={false} onChange={set(key)} />
@@ -370,7 +370,7 @@ export function CanvasBlock({
       default:
         return (
           <div key={key} style={{ color: C.muted }}>
-            <EditableSlot value={value} placeholder={f.label} rich={rich} className="text-base leading-relaxed" onChange={set(key)} />
+            <EditableSlot value={value} placeholder={f.label} rich={rich} className="text-body leading-relaxed" onChange={set(key)} />
           </div>
         )
     }

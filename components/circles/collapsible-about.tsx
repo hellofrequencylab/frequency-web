@@ -12,7 +12,7 @@ export function CollapsibleAbout({ text }: { text: string }) {
 
   if (!collapsible) {
     return (
-      <p className="text-sm text-muted leading-relaxed max-w-2xl whitespace-pre-wrap">
+      <p className="text-body-sm text-muted leading-relaxed max-w-2xl whitespace-pre-wrap">
         {text}
       </p>
     )
@@ -21,7 +21,7 @@ export function CollapsibleAbout({ text }: { text: string }) {
   return (
     <div className="max-w-2xl">
       <p
-        className={`text-sm text-muted leading-relaxed whitespace-pre-wrap ${
+        className={`text-body-sm text-muted leading-relaxed whitespace-pre-wrap ${
           expanded ? '' : 'line-clamp-2'
         }`}
       >
@@ -30,7 +30,7 @@ export function CollapsibleAbout({ text }: { text: string }) {
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary-strong hover:underline"
+        className="mt-1 inline-flex items-center gap-1 text-meta font-medium text-primary-strong hover:underline"
         aria-expanded={expanded}
       >
         {expanded ? 'Show less' : 'Read more'}

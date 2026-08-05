@@ -71,21 +71,21 @@ export function GhostLink({
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
             <Zap className="h-6 w-6" />
           </div>
-          <h2 className="mt-4 text-xl font-bold text-text">Upgrade to {tier}</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted">
+          <h2 className="mt-4 text-lead font-bold text-text">Upgrade to {tier}</h2>
+          <p className="mt-2 text-body-sm leading-relaxed text-muted">
             {ghostMessage ?? DEFAULT_GHOST_MESSAGE}
           </p>
           <Link
             href="/upgrade"
             onClick={() => setOpen(false)}
-            className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             Upgrade to {tier}
           </Link>
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="mt-2 w-full rounded-xl px-5 py-2 text-sm font-medium text-subtle transition-colors hover:text-text"
+            className="mt-2 w-full rounded-xl px-5 py-2 text-body-sm font-medium text-subtle transition-colors hover:text-text"
           >
             Keep looking around
           </button>

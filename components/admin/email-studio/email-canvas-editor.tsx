@@ -161,14 +161,14 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
       {/* LEFT — block list (each tile expands to its own settings) + the add-block palette. */}
       <aside className="min-w-0 space-y-3" aria-label="Blocks and settings">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-text">Blocks</h3>
+          <h3 className="text-body-sm font-bold text-text">Blocks</h3>
           <span className="flex items-center gap-1 text-2xs text-muted" role="status" aria-live="polite">
             {store.saving ? <><Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Saving</> : 'Saved'}
           </span>
         </div>
 
         {blocks.length === 0 ? (
-          <p className="rounded-card border border-dashed border-border px-3 py-6 text-center text-xs text-muted">
+          <p className="rounded-card border border-dashed border-border px-3 py-6 text-center text-meta text-muted">
             This email has no blocks yet. Add one below.
           </p>
         ) : (
@@ -228,7 +228,7 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
                       onClick={() => setSelectedId(active ? null : id)}
                       aria-current={active}
                       aria-expanded={active}
-                      className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-xs font-semibold text-text"
+                      className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-meta font-semibold text-text"
                     >
                       <Settings2 className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
                       <span className="min-w-0 flex-1 truncate">{label(id)}</span>
@@ -312,7 +312,7 @@ export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
           <div className="mb-6" dangerouslySetInnerHTML={{ __html: headerHtml }} />
 
           {blocks.length === 0 ? (
-            <p className="py-10 text-center text-sm" style={{ color: C.subtle }}>
+            <p className="py-10 text-center text-body-sm" style={{ color: C.subtle }}>
               Add blocks to this email to start editing.
             </p>
           ) : (

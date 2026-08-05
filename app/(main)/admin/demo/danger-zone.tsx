@@ -70,15 +70,15 @@ export function DangerZone({
     })
   }
 
-  // The canonical outlined-danger tokens (ui/button); sm scale with the panel's text-sm.
-  const dangerBtn = buttonClasses('dangerOutline', 'sm', 'text-sm')
+  // The canonical outlined-danger tokens (ui/button); sm scale with the panel's text-body-sm.
+  const dangerBtn = buttonClasses('dangerOutline', 'sm', 'text-body-sm')
 
   return (
     <div className="space-y-4 rounded-2xl border border-danger-bg bg-danger-bg/10 p-5">
       {error && <Banner tone="critical" title="Something went wrong">{error}</Banner>}
       {notice && <Banner tone="info" title="Done">{notice}</Banner>}
 
-      <p className="text-sm text-muted">
+      <p className="text-body-sm text-muted">
         These actions can&rsquo;t be undone. Each one confirms before it runs.
       </p>
 
@@ -86,9 +86,9 @@ export function DangerZone({
       <div className="rounded-card border border-border bg-surface p-4">
         <div className="mb-2 flex items-center gap-2">
           <MapPin className="h-4 w-4 text-danger" />
-          <p className="text-sm font-semibold text-text">Purge an area</p>
+          <p className="text-body-sm font-semibold text-text">Purge an area</p>
         </div>
-        <p className="mb-3 text-sm text-muted">Deletes demo content within a radius of a point. For clearing one town once it&rsquo;s gone real.</p>
+        <p className="mb-3 text-body-sm text-muted">Deletes demo content within a radius of a point. For clearing one town once it&rsquo;s gone real.</p>
         <LocationAutocomplete
           value={areaName}
           placeholder="Search a city or town…"
@@ -99,7 +99,7 @@ export function DangerZone({
           }}
         />
         <div className="mt-3 flex flex-wrap items-end gap-4">
-          <label className="flex flex-col gap-1 text-xs text-muted">
+          <label className="flex flex-col gap-1 text-meta text-muted">
             Radius: <b className="text-text">{radius} mi</b>
             <input
               type="range"
@@ -121,7 +121,7 @@ export function DangerZone({
       {circles.length > 0 && (
         <div className="rounded-card border border-border bg-surface p-4">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-semibold text-text">Delete specific circles</p>
+            <p className="text-body-sm font-semibold text-text">Delete specific circles</p>
             <button
               type="button"
               disabled={pending || selected.size === 0}
@@ -132,7 +132,7 @@ export function DangerZone({
               Delete selected ({selected.size})
             </button>
           </div>
-          <p className="mt-0.5 text-sm text-muted">Removes each circle and its posts, events, memberships, and RSVPs.</p>
+          <p className="mt-0.5 text-body-sm text-muted">Removes each circle and its posts, events, memberships, and RSVPs.</p>
           <ul className="mt-3 divide-y divide-border">
             {circles.map((c) => (
               <li key={c.id} className="flex items-center gap-3 py-2">
@@ -143,9 +143,9 @@ export function DangerZone({
                   className="h-4 w-4 accent-danger"
                   aria-label={`Select ${c.name}`}
                 />
-                <span className="min-w-0 flex-1 truncate text-sm text-text">{c.name}</span>
-                {c.channel && <span className="shrink-0 text-xs text-subtle">{c.channel}</span>}
-                <span className="shrink-0 text-xs tabular-nums text-muted">{c.memberCount} members</span>
+                <span className="min-w-0 flex-1 truncate text-body-sm text-text">{c.name}</span>
+                {c.channel && <span className="shrink-0 text-meta text-subtle">{c.channel}</span>}
+                <span className="shrink-0 text-meta tabular-nums text-muted">{c.memberCount} members</span>
               </li>
             ))}
           </ul>
@@ -158,8 +158,8 @@ export function DangerZone({
           <div className="flex items-start gap-2">
             <Wind className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <div>
-              <p className="text-sm font-semibold text-text">Decay pass</p>
-              <p className="text-sm text-muted">Runs nightly. Purges demo circles real ones have taken over, prunes old demo posts, and sheds demo neighbors as circles gain real members.</p>
+              <p className="text-body-sm font-semibold text-text">Decay pass</p>
+              <p className="text-body-sm text-muted">Runs nightly. Purges demo circles real ones have taken over, prunes old demo posts, and sheds demo neighbors as circles gain real members.</p>
             </div>
           </div>
           <div className="flex shrink-0 gap-2">
@@ -167,7 +167,7 @@ export function DangerZone({
               type="button"
               disabled={pending}
               onClick={() => run(async () => setDecay(await runDemoDecay(true)))}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-text hover:border-primary disabled:opacity-50 motion-reduce:transition-none"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-semibold text-text hover:border-primary disabled:opacity-50 motion-reduce:transition-none"
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
               Preview
@@ -179,7 +179,7 @@ export function DangerZone({
           </div>
         </div>
         {decay && (
-          <p className="mt-3 rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-muted">
+          <p className="mt-3 rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-muted">
             {decay.dryRun ? 'Would' : 'Did'}: purge <b className="text-text">{decay.purgedCircles}</b> circles, prune{' '}
             <b className="text-text">{decay.prunedPosts}</b> posts in <b className="text-text">{decay.prunedCircles}</b> circles, shed{' '}
             <b className="text-text">{decay.trimmedNeighbours}</b> demo neighbors, remove <b className="text-text">{decay.orphansRemoved}</b> orphans. ({decay.realCircles} real / {decay.demoCircles} demo circles.)
@@ -190,16 +190,16 @@ export function DangerZone({
       {/* 4 · Purge everything */}
       <div className="rounded-xl border border-danger/50 bg-danger-bg/20 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-text">Purge ALL demo content</p>
+          <p className="text-body-sm font-semibold text-text">Purge ALL demo content</p>
           <Button type="button" variant="danger" disabled={pending || total === 0} onClick={() => setModal('all')}>
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
             Purge everything
           </Button>
         </div>
-        <p className="mt-0.5 text-sm text-muted">
+        <p className="mt-0.5 text-body-sm text-muted">
           Permanently deletes all {total.toLocaleString()} demo {total === 1 ? 'row' : 'rows'} (and their reactions, memberships, and RSVPs). Use once real content has taken over.
         </p>
-        <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-subtle">
+        <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-meta text-subtle">
           {counts.map((c) => (
             <li key={c.label}>
               <span className="font-semibold tabular-nums text-text">{c.count}</span> {c.label}

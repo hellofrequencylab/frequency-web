@@ -226,7 +226,7 @@ export function SpaceCirclesManager({
       <div className="rounded-card border border-border bg-surface-elevated/40 p-3">
         {adding ? (
           <div className="space-y-2">
-            <label htmlFor="new-circle-name" className="block text-xs font-semibold text-text">
+            <label htmlFor="new-circle-name" className="block text-meta font-semibold text-text">
               Name this circle
             </label>
             <div className="flex flex-wrap items-center gap-2">
@@ -237,13 +237,13 @@ export function SpaceCirclesManager({
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Tuesday morning group"
                 disabled={pending}
-                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
+                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
               />
               <button
                 type="button"
                 onClick={create}
                 disabled={pending || !newName.trim()}
-                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
               >
                 Create
               </button>
@@ -255,7 +255,7 @@ export function SpaceCirclesManager({
                   setError(null)
                 }}
                 disabled={pending}
-                className="rounded-lg px-3 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
+                className="rounded-lg px-3 py-1.5 text-meta font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
               >
                 Cancel
               </button>
@@ -266,7 +266,7 @@ export function SpaceCirclesManager({
           </div>
         ) : attaching ? (
           <div className="space-y-2">
-            <label htmlFor="attach-circle-pick" className="block text-xs font-semibold text-text">
+            <label htmlFor="attach-circle-pick" className="block text-meta font-semibold text-text">
               Attach one of your circles
             </label>
             {attachable === null ? (
@@ -282,7 +282,7 @@ export function SpaceCirclesManager({
                   value={pickedCircle}
                   onChange={(e) => setPickedCircle(e.target.value)}
                   disabled={pending}
-                  className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text outline-none disabled:opacity-60"
+                  className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text outline-none disabled:opacity-60"
                 >
                   <option value="">Pick a circle…</option>
                   {attachable.map((c) => (
@@ -295,7 +295,7 @@ export function SpaceCirclesManager({
                   type="button"
                   onClick={attach}
                   disabled={pending || !pickedCircle}
-                  className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                  className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                 >
                   Attach
                 </button>
@@ -313,7 +313,7 @@ export function SpaceCirclesManager({
                   setError(null)
                 }}
                 disabled={pending}
-                className="rounded-lg px-3 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
+                className="rounded-lg px-3 py-1.5 text-meta font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
               >
                 Cancel
               </button>
@@ -324,14 +324,14 @@ export function SpaceCirclesManager({
             <button
               type="button"
               onClick={() => setAdding(true)}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong transition-colors hover:text-text"
+              className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong transition-colors hover:text-text"
             >
               <Plus className="h-4 w-4" /> New circle
             </button>
             <button
               type="button"
               onClick={openAttach}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong transition-colors hover:text-text"
+              className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong transition-colors hover:text-text"
             >
               <ArrowRight className="h-4 w-4" /> Attach a circle you host
             </button>
@@ -339,7 +339,7 @@ export function SpaceCirclesManager({
         )}
       </div>
 
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
 
       {circles.length === 0 ? (
         journeys.length > 0 && (
@@ -357,7 +357,7 @@ export function SpaceCirclesManager({
                 <div className="min-w-0">
                   <Link
                     href={`/circles/${c.slug}`}
-                    className="text-sm font-semibold text-text hover:underline"
+                    className="text-body-sm font-semibold text-text hover:underline"
                   >
                     {c.name}
                   </Link>
@@ -429,7 +429,7 @@ export function SpaceCirclesManager({
                     value={pickedTarget}
                     onChange={(e) => setPickedTarget(e.target.value)}
                     disabled={pending}
-                    className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text outline-none disabled:opacity-60"
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text outline-none disabled:opacity-60"
                   >
                     <option value="">Pick a destination</option>
                     <option value="me">Me, as my own circle</option>
@@ -444,7 +444,7 @@ export function SpaceCirclesManager({
                       type="button"
                       onClick={() => move(c.id, c.name)}
                       disabled={pending || !pickedTarget}
-                      className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                      className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                     >
                       Move it
                     </button>
@@ -452,7 +452,7 @@ export function SpaceCirclesManager({
                       type="button"
                       onClick={() => setMoveFor(null)}
                       disabled={pending}
-                      className="rounded-lg px-3 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
+                      className="rounded-lg px-3 py-1.5 text-meta font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
                     >
                       Cancel
                     </button>
@@ -475,7 +475,7 @@ export function SpaceCirclesManager({
                       onChange={(e) => searchPeople(e.target.value)}
                       placeholder="Search by name or @handle"
                       disabled={pending}
-                      className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
+                      className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
                     />
                     {handoffHits.length > 0 && (
                       <div className="overflow-hidden rounded-lg border border-border bg-surface">
@@ -487,7 +487,7 @@ export function SpaceCirclesManager({
                             disabled={pending}
                             className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left transition-colors hover:bg-surface-elevated disabled:opacity-40"
                           >
-                            <span className="min-w-0 truncate text-xs font-semibold text-text">
+                            <span className="min-w-0 truncate text-meta font-semibold text-text">
                               {p.display_name}
                             </span>
                             <span className="shrink-0 text-2xs text-muted">@{p.handle}</span>
@@ -513,7 +513,7 @@ export function SpaceCirclesManager({
                     value={pickedPlan}
                     onChange={(e) => setPickedPlan(e.target.value)}
                     disabled={pending}
-                    className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text outline-none disabled:opacity-60"
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text outline-none disabled:opacity-60"
                   >
                     <option value="">Pick a Journey</option>
                     {journeys.map((j) => (
@@ -528,7 +528,7 @@ export function SpaceCirclesManager({
                       type="button"
                       onClick={() => startRun(c.id)}
                       disabled={pending || !pickedPlan}
-                      className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                      className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                     >
                       Start the Run
                     </button>

@@ -41,7 +41,7 @@ import type { FoundingConfig } from '@/lib/pricing/founding'
 // em dashes (docs/CONTENT-VOICE.md).
 
 const inputCls =
-  'w-28 rounded-md border border-border bg-canvas px-2 py-1 text-sm text-text text-right tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30'
+  'w-28 rounded-md border border-border bg-canvas px-2 py-1 text-body-sm text-text text-right tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30'
 
 function centsToDollars(cents: number | null | undefined): string {
   if (cents == null) return ''
@@ -235,7 +235,7 @@ function CatalogItemRow({
     <div className="space-y-3 border-b border-border/60 pb-4 last:border-0 last:pb-0">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-text">{item.label}</span>
+          <span className="text-body-sm font-semibold text-text">{item.label}</span>
           {item.perSeat && (
             <StatusChip tone="info" size="sm">
               per seat
@@ -261,7 +261,7 @@ function CatalogItemRow({
         Member is charged {centsToDollars(dollarsToCents(monthlyFounding)) && formatDollars(monthlyFounding)} a month
         {' '}({formatDollars(monthlyList)} list), or {formatCentsLabel(derivedYearlyFounding)} a year.
       </p>
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
     </div>
   )
 }
@@ -331,7 +331,7 @@ function SeatConfigRow({ bundledFloor, seatItem }: { bundledFloor: number; seatI
         Each seat is {formatCentsLabel(seatItem.monthlyFoundingCents)} a month ({formatCentsLabel(seatItem.monthlyListCents)}{' '}
         list). The floor bills at least {floor || '1'} seats.
       </p>
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
     </div>
   )
 }
@@ -370,7 +370,7 @@ function PwywConfigRow({ minCents, suggestedCents }: { minCents: number; suggest
         </div>
       </div>
       <p className="text-2xs text-muted">The suggested amount is raised to the minimum if you set it lower.</p>
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
     </div>
   )
 }
@@ -418,7 +418,7 @@ function OperatorSeatRow({ item, active }: { item: ResolvedCatalogItem; active: 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-text">Seat activation</span>
+            <span className="text-body-sm font-semibold text-text">Seat activation</span>
             <StatusChip tone={on ? 'success' : 'neutral'} size="sm">
               {on ? 'Active' : 'Placeholder'}
             </StatusChip>
@@ -430,7 +430,7 @@ function OperatorSeatRow({ item, active }: { item: ResolvedCatalogItem; active: 
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {error && <span className="text-xs text-danger">{error}</span>}
+          {error && <span className="text-meta text-danger">{error}</span>}
           <Toggle
             checked={on}
             onChange={toggle}
@@ -517,7 +517,7 @@ function FoundingBusinessRow({ founding }: { founding: FoundingConfig }) {
         A Founding Business pays {formatDollars(monthly)} a month with a {takePct || '0'}% marketplace fee, up to{' '}
         {cityCap || '0'} per city.
       </p>
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
     </div>
   )
 }
@@ -572,21 +572,21 @@ function GatingReadout({ gating }: { gating: PricingConsoleData['gating'] }) {
     : 'None set'
   return (
     <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-card border border-border bg-surface-elevated px-4 py-3">
-      <span className="inline-flex items-center gap-2 text-sm text-text">
+      <span className="inline-flex items-center gap-2 text-body-sm text-text">
         <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Billing</span>
         <StatusChip tone={gating.billingLive ? 'success' : 'neutral'}>
           {gating.billingLive ? 'Live, checkout sells' : 'Off, nothing charges'}
         </StatusChip>
       </span>
-      <span className="inline-flex items-center gap-2 text-sm text-text">
+      <span className="inline-flex items-center gap-2 text-body-sm text-text">
         <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Paid gates</span>
         <StatusChip tone={gating.gatesLive ? 'warning' : 'neutral'}>
           {gating.gatesLive ? 'Enforced' : 'Not enforced, everyone keeps access'}
         </StatusChip>
       </span>
-      <span className="inline-flex items-center gap-2 text-sm text-text">
+      <span className="inline-flex items-center gap-2 text-body-sm text-text">
         <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Beta grace ends</span>
-        <span className="text-sm font-semibold tabular-nums text-text">{graceLabel}</span>
+        <span className="text-body-sm font-semibold tabular-nums text-text">{graceLabel}</span>
       </span>
       <p className="w-full text-2xs text-muted">
         Two switches, not one. Billing decides whether anyone can be charged. The beta grace date decides
@@ -630,9 +630,9 @@ function BetaFlagRow({ flagKey, initial, label }: { flagKey: string; initial: bo
 
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className={`text-sm font-semibold ${on ? 'text-success' : 'text-subtle'}`}>{label}</span>
+      <span className={`text-body-sm font-semibold ${on ? 'text-success' : 'text-subtle'}`}>{label}</span>
       <div className="flex items-center gap-3">
-        {error && <span className="text-xs text-danger">{error}</span>}
+        {error && <span className="text-meta text-danger">{error}</span>}
         <Toggle
           checked={on}
           onChange={toggle}
@@ -691,7 +691,7 @@ function BetaEndsAtRow({ initial }: { initial: string }) {
             type="date"
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            className="rounded-md border border-border bg-canvas px-2 py-1 text-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+            className="rounded-md border border-border bg-canvas px-2 py-1 text-body-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
           />
         </label>
         <div className="flex items-center gap-2">
@@ -728,7 +728,7 @@ function BetaEndsAtRow({ initial }: { initial: string }) {
             ? 'The date is here or past. The banner is hidden.'
             : `The banner counts down: ${days} day${days === 1 ? '' : 's'} left. Display only, no access changes.`}
       </p>
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
     </div>
   )
 }
@@ -798,7 +798,7 @@ function SwitchesSection({ flags }: { flags: Record<PricingFlagKey, boolean> }) 
             <FlagRow key={f.key} flagKey={f.key} initial={flags[f.key]} label={f.label} />
           ))}
         </div>
-        <div className="mt-4 space-y-2 border-t border-border/60 pt-4 text-xs text-subtle">
+        <div className="mt-4 space-y-2 border-t border-border/60 pt-4 text-meta text-subtle">
           <p>
             <span className="font-semibold text-text">Partner</span> is comped, assigned by arrangement with a revenue
             share. Not sold here, so it has no switch.
@@ -870,11 +870,11 @@ function FlagRow({
 
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className={`text-sm font-semibold ${on ? 'text-success' : 'text-subtle'}`}>
+      <span className={`text-body-sm font-semibold ${on ? 'text-success' : 'text-subtle'}`}>
         {label ?? (on ? onLabel ?? 'On' : offLabel ?? 'Off')}
       </span>
       <div className="flex items-center gap-3">
-        {error && <span className="text-xs text-danger">{error}</span>}
+        {error && <span className="text-meta text-danger">{error}</span>}
         <Toggle
           checked={on}
           onChange={toggle}
@@ -901,7 +901,7 @@ function PlansSection({ values }: { values: PricingDefaults }) {
         title="Member plans"
         description="Member is free. Crew is pay what you want, so it has no fixed price: the member picks any monthly amount at or above your floor and every amount buys the same Crew. Set the floor, the suggested amount, and the presets in Member pricing above."
       >
-        <p className="text-sm text-muted">
+        <p className="text-body-sm text-muted">
           Crew currently reads <span className="font-semibold text-text">from {formatCents(values.tier.crew.monthly_cents)} a month</span>
           {values.tier.crew.annual_cents ? <> (from {formatCents(values.tier.crew.annual_cents)} a year)</> : null} everywhere it is shown.
         </p>
@@ -911,7 +911,7 @@ function PlansSection({ values }: { values: PricingDefaults }) {
         title="Space plans"
         description="Space plans are priced in the Catalog section above (Business, Collective, Non Profit, Independent), which is what the checkout charges. This legacy per-plan store is retired from editing here so there is exactly one place to set a Space price."
       >
-        <p className="text-sm text-muted">
+        <p className="text-body-sm text-muted">
           Edit Business, Collective, Non Profit, and Independent in the Catalog above, then run the
           catalog sync. The member plan (Crew) stays here.
         </p>
@@ -939,10 +939,10 @@ function PlansSection({ values }: { values: PricingDefaults }) {
 }
 
 function SaveCue({ pending, saved }: { pending: boolean; saved: boolean }) {
-  if (pending) return <span className="text-xs text-subtle">Saving…</span>
+  if (pending) return <span className="text-meta text-subtle">Saving…</span>
   if (saved)
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-success">
+      <span className="inline-flex items-center gap-1 text-meta text-success">
         <Check className="h-3.5 w-3.5" aria-hidden /> Saved
       </span>
     )
@@ -1048,7 +1048,7 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
           </Button>
         </div>
       </div>
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
     </div>
   )
 }
@@ -1091,7 +1091,7 @@ function KnobsRow({ vera, trial, annual }: { vera: number; trial: number; annual
           </Button>
         </div>
       </div>
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
     </div>
   )
 }
@@ -1157,7 +1157,7 @@ function GateRow({ gate }: { gate: FeatureGateRow }) {
   return (
     <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 px-4 py-2.5">
       <div className="min-w-0">
-        <span className="text-sm font-semibold text-text">{prettyFeature(gate.feature)}</span>
+        <span className="text-body-sm font-semibold text-text">{prettyFeature(gate.feature)}</span>
         {gate.overridden && (
           <StatusChip tone="info" size="sm">
             customized
@@ -1173,7 +1173,7 @@ function GateRow({ gate }: { gate: FeatureGateRow }) {
           setMin(e.target.value)
           save({ minEntitlement: e.target.value })
         }}
-        className="rounded-md border border-border bg-canvas px-2 py-1 text-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+        className="rounded-md border border-border bg-canvas px-2 py-1 text-body-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
       >
         {options.map((o) => (
           <option key={o} value={o}>
@@ -1193,7 +1193,7 @@ function GateRow({ gate }: { gate: FeatureGateRow }) {
           disabled={pending}
         />
       </div>
-      {error && <p className="col-span-4 text-xs text-danger">{error}</p>}
+      {error && <p className="col-span-4 text-meta text-danger">{error}</p>}
     </div>
   )
 }
@@ -1223,7 +1223,7 @@ function StripeStatusSection({ stripe }: { stripe: PricingConsoleData['stripe'] 
             <StatusItem label="Billing" ok={stripe.live} okText="Live" offText="Off" />
           </dl>
           {!stripe.configured && (
-            <p className="mt-4 text-sm text-muted">
+            <p className="mt-4 text-body-sm text-muted">
               Stripe is not connected. Set the Stripe env keys to enable syncing. Until then, nothing charges and
               everyone keeps their current access.
             </p>
@@ -1318,10 +1318,10 @@ function SyncRow({
         </StatusChip>
       </div>
       {!configured && (
-        <p className="text-xs text-subtle">Connect Stripe first. Syncing is disabled until the env keys are set.</p>
+        <p className="text-meta text-subtle">Connect Stripe first. Syncing is disabled until the env keys are set.</p>
       )}
-      {done && <p className="text-xs text-success">{done}</p>}
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {done && <p className="text-meta text-success">{done}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
     </div>
   )
 }
@@ -1336,8 +1336,8 @@ function PriceMapTable({ prices, foundingLabel }: { prices: PricingConsoleData['
       </div>
       <div className="divide-y divide-border">
         {prices.map((p) => (
-          <div key={p.key} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-2 text-sm">
-            <span className="font-mono text-xs text-text">
+          <div key={p.key} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-2 text-body-sm">
+            <span className="font-mono text-meta text-text">
               {p.key}
               {p.founder && (
                 <StatusChip tone="info" size="sm">
@@ -1396,7 +1396,7 @@ function BetaGraceRow({ initial }: { initial: string | null }) {
             type="date"
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            className="rounded-md border border-border bg-canvas px-2 py-1 text-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+            className="rounded-md border border-border bg-canvas px-2 py-1 text-body-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
           />
         </label>
         <div className="flex items-center gap-2">
@@ -1424,7 +1424,7 @@ function BetaGraceRow({ initial }: { initial: string | null }) {
           ? `Paid features stay open to everyone through the day before, and the gates begin on ${value.trim()} at 00:00 UTC.`
           : 'No grace window. The paid gates follow the master billing switch, so they start blocking as soon as billing goes live.'}
       </p>
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
     </div>
   )
 }

@@ -99,7 +99,7 @@ export function MarketingMobileMenu({ light }: { light: boolean }) {
                   key={node.href}
                   href={node.href}
                   onClick={() => setOpen(false)}
-                  className="border-b border-border py-3 text-base font-semibold text-text"
+                  className="border-b border-border py-3 text-body font-semibold text-text"
                 >
                   {node.label}
                 </Link>
@@ -112,7 +112,7 @@ export function MarketingMobileMenu({ light }: { light: boolean }) {
                   key={item.href}
                   href={item.href}
                   onClick={() => setOpen(false)}
-                  className="py-2.5 text-base text-text"
+                  className="py-2.5 text-body text-text"
                 >
                   {item.label}
                 </Link>
@@ -123,14 +123,14 @@ export function MarketingMobileMenu({ light }: { light: boolean }) {
               <Link
                 href="/sign-in"
                 onClick={() => setOpen(false)}
-                className="rounded-control border border-border py-2.5 text-center text-base font-semibold text-text transition-colors hover:bg-surface-elevated"
+                className="rounded-control border border-border py-2.5 text-center text-body font-semibold text-text transition-colors hover:bg-surface-elevated"
               >
                 Sign in
               </Link>
               <Link
                 href={BETA_CTA_HREF}
                 onClick={() => setOpen(false)}
-                className="rounded-xl bg-primary py-2.5 text-center text-base font-bold text-on-primary transition-colors hover:bg-primary-hover"
+                className="rounded-xl bg-primary py-2.5 text-center text-body font-bold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 {BETA_CTA_LABEL}
               </Link>

@@ -135,8 +135,8 @@ export async function LeadJourneys(): Promise<React.ReactElement | null> {
                   className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-text">{r.planTitle}</p>
-                    <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-subtle">
+                    <p className="truncate text-body-sm font-semibold text-text">{r.planTitle}</p>
+                    <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-meta text-subtle">
                       <span className="truncate">{r.circleName}</span>
                       <span className="inline-flex items-center gap-1">
                         <Users className="h-3.5 w-3.5" aria-hidden />

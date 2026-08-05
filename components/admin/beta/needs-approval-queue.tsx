@@ -65,7 +65,7 @@ export function NeedsApprovalQueue({ groups }: { groups: ApprovalGroup[] }) {
         <div key={group.phaseKey ?? 'unfiled'} className="space-y-2">
           <div className="flex items-center gap-2">
             <Rocket className="h-3.5 w-3.5 shrink-0 text-primary-strong" aria-hidden />
-            <h3 className="text-sm font-bold text-text">{group.phaseTitle}</h3>
+            <h3 className="text-body-sm font-bold text-text">{group.phaseTitle}</h3>
             <StatusChip tone="warning" size="sm">
               {group.items.length} ready
             </StatusChip>
@@ -79,8 +79,8 @@ export function NeedsApprovalQueue({ groups }: { groups: ApprovalGroup[] }) {
                 <li key={`${item.type}:${item.id}`} className="flex flex-wrap items-center gap-3 px-4 py-3">
                   <meta.Icon className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-text">{item.label}</p>
-                    <p className="text-xs text-muted">
+                    <p className="truncate text-body-sm font-semibold text-text">{item.label}</p>
+                    <p className="text-meta text-muted">
                       {meta.noun}
                       {item.count != null && ` · ${item.count.toLocaleString()} recipients`}
                       {item.segment && ` · ${item.segment}`}
@@ -89,7 +89,7 @@ export function NeedsApprovalQueue({ groups }: { groups: ApprovalGroup[] }) {
                   <div className="flex shrink-0 items-center gap-2">
                     <Link
                       href={previewHref(item)}
-                      className="text-xs font-semibold text-muted underline-offset-2 hover:text-text hover:underline"
+                      className="text-meta font-semibold text-muted underline-offset-2 hover:text-text hover:underline"
                     >
                       Preview
                     </Link>

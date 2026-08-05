@@ -177,7 +177,7 @@ export default async function HousingDetailPage({
       contactNote={
         !isOwner ? (
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs text-subtle">
+            <p className="text-meta text-subtle">
               No payment happens in the app. Message {firstName} to arrange a viewing and the rest offline.
             </p>
             <div className="flex items-center gap-3">
@@ -229,7 +229,7 @@ export default async function HousingDetailPage({
           {facts.map((f) => (
             <div key={f.label}>
               <dt className="text-2xs font-semibold uppercase tracking-wide text-muted">{f.label}</dt>
-              <dd className="mt-0.5 text-sm font-medium text-text">{f.value}</dd>
+              <dd className="mt-0.5 text-body-sm font-medium text-text">{f.value}</dd>
             </div>
           ))}
         </dl>
@@ -240,7 +240,7 @@ export default async function HousingDetailPage({
           <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Amenities</p>
           <ul className="flex flex-wrap gap-2">
             {detail.amenities.map((a) => (
-              <li key={a} className="rounded-pill bg-surface-elevated px-2.5 py-0.5 text-xs font-medium text-text">
+              <li key={a} className="rounded-pill bg-surface-elevated px-2.5 py-0.5 text-meta font-medium text-text">
                 {amenityLabel(a)}
               </li>
             ))}
@@ -253,7 +253,7 @@ export default async function HousingDetailPage({
           <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Accessibility</p>
           <ul className="flex flex-wrap gap-2">
             {detail.accessibility.map((t) => (
-              <li key={t} className="rounded-pill bg-surface-elevated px-2.5 py-0.5 text-xs font-medium text-text">
+              <li key={t} className="rounded-pill bg-surface-elevated px-2.5 py-0.5 text-meta font-medium text-text">
                 {accessibilityLabel(t)}
               </li>
             ))}
@@ -266,7 +266,7 @@ export default async function HousingDetailPage({
           <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Good to know</p>
           <ul className="flex flex-wrap gap-2">
             {rules.map((r) => (
-              <li key={r} className="rounded-pill bg-primary-bg px-2.5 py-0.5 text-xs font-medium text-primary-strong">
+              <li key={r} className="rounded-pill bg-primary-bg px-2.5 py-0.5 text-meta font-medium text-primary-strong">
                 {r}
               </li>
             ))}

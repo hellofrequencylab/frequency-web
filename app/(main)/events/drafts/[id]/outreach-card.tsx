@@ -28,25 +28,25 @@ export function OutreachCard({ claimToken, slug, sentTo }: { claimToken: string;
 
   return (
     <div className="rounded-2xl border border-primary/40 bg-primary-bg/60 p-4">
-      <p className="flex items-center gap-1.5 text-sm font-bold text-text">
+      <p className="flex items-center gap-1.5 text-body-sm font-bold text-text">
         <Zap className="h-4 w-4 text-primary" />{' '}
         {sentTo ? 'It is live, and the organizer has been emailed.' : 'It is live. Now tell the organizer.'}
       </p>
-      <p className="mt-1 text-sm text-muted">
+      <p className="mt-1 text-body-sm text-muted">
         {sentTo
           ? 'We emailed the claim link to the organizer. Want to reach them another way too? Send this note. When they claim the event they become its host, and you get the credit for putting it on the map.'
           : 'Send them this note. When they claim the event they become its host, and you get the credit for putting it on the map.'}
       </p>
 
       <div className="mt-3 rounded-card border border-border bg-surface p-3">
-        <p className="break-words text-sm text-text">{message}</p>
+        <p className="break-words text-body-sm text-text">{message}</p>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={() => copy('message')}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           {copied === 'message' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           {copied === 'message' ? 'Copied' : 'Copy the message'}
@@ -54,12 +54,12 @@ export function OutreachCard({ claimToken, slug, sentTo }: { claimToken: string;
         <button
           type="button"
           onClick={() => copy('link')}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-xs font-medium text-text transition-colors hover:bg-surface-elevated"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-meta font-medium text-text transition-colors hover:bg-surface-elevated"
         >
           {copied === 'link' ? <Check className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}
           {copied === 'link' ? 'Copied' : 'Copy link'}
         </button>
-        <Link href={`/events/${slug}`} className="text-xs font-semibold text-primary-strong hover:underline">
+        <Link href={`/events/${slug}`} className="text-meta font-semibold text-primary-strong hover:underline">
           View the event
         </Link>
       </div>

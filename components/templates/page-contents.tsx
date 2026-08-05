@@ -24,12 +24,12 @@ export type PageContentsSection = { id: string; label: string; count?: number }
 export type PageContentsLink = { href: string; label: string; count?: number; active: boolean }
 
 const CHIP = (on: boolean) =>
-  `flex shrink-0 items-center gap-1.5 rounded-pill px-3 py-1.5 text-sm font-medium transition-colors ${
+  `flex shrink-0 items-center gap-1.5 rounded-pill px-3 py-1.5 text-body-sm font-medium transition-colors ${
     on ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-muted hover:text-text'
   }`
 
 function Count({ on, n }: { on: boolean; n: number }) {
-  return <span className={`text-xs tabular-nums ${on ? 'text-on-primary/80' : 'text-subtle'}`}>{n}</span>
+  return <span className={`text-meta tabular-nums ${on ? 'text-on-primary/80' : 'text-subtle'}`}>{n}</span>
 }
 
 function Bar({

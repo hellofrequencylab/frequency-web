@@ -47,8 +47,8 @@ export function EmptyState({
       >
         <Glyph className="h-6 w-6" />
       </span>
-      <p className="text-lg font-extrabold text-text">{title}</p>
-      {description && <p className="mx-auto mt-1 max-w-sm text-sm text-muted">{description}</p>}
+      <p className="text-body-lg font-extrabold text-text">{title}</p>
+      {description && <p className="mx-auto mt-1 max-w-sm text-body-sm text-muted">{description}</p>}
       {action && <div className="mt-4 flex justify-center">{action}</div>}
     </div>
   )

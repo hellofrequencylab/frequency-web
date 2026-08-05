@@ -53,8 +53,8 @@ function PreviewLink({
         <Icon className="h-5 w-5" aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold text-text">{title}</span>
-        <span className="block text-xs text-muted">{description}</span>
+        <span className="block text-body-sm font-semibold text-text">{title}</span>
+        <span className="block text-meta text-muted">{description}</span>
       </span>
       <ChevronRight className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
     </Link>

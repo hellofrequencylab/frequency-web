@@ -64,7 +64,7 @@ export default async function ReferralsPage() {
           />
           <StatCard bordered icon={Zap} label="Zaps paid out" value={stats.zapsPaid.toLocaleString()} />
         </div>
-        <p className="mt-3 text-sm text-muted">
+        <p className="mt-3 text-body-sm text-muted">
           Referrers are paid on activation (the person they brought joins a circle or logs a practice), not on signup, so the
           reward tracks real members. The on/off switch lives in{' '}
           <Link href="/admin/onboarding-controls" className="font-medium text-primary-strong hover:underline">
@@ -101,7 +101,7 @@ export default async function ReferralsPage() {
             {stats.recent.map((e) => (
               <li
                 key={e.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm"
               >
                 <span className="min-w-0 truncate text-text">
                   {e.handle ? (
@@ -113,7 +113,7 @@ export default async function ReferralsPage() {
                   )}
                   <span className="text-muted"> earned a referral reward</span>
                 </span>
-                <span className="shrink-0 text-xs tabular-nums text-subtle">{fmtWhen(e.at)}</span>
+                <span className="shrink-0 text-meta tabular-nums text-subtle">{fmtWhen(e.at)}</span>
               </li>
             ))}
           </ul>

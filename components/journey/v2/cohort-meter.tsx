@@ -12,7 +12,7 @@ export function CohortMeter({ progress, circleName }: { progress: CohortProgress
 
   return (
     <div className="rounded-xl border border-primary/30 bg-primary-bg/40 p-4">
-      <div className="mb-2 flex items-center justify-between text-sm">
+      <div className="mb-2 flex items-center justify-between text-body-sm">
         <span className="inline-flex items-center gap-1.5 font-semibold text-primary-strong">
           <Users className="h-4 w-4" />
           Your Circle{circleName ? ` · ${circleName}` : ''}
@@ -25,11 +25,11 @@ export function CohortMeter({ progress, circleName }: { progress: CohortProgress
       <ProgressTrack value={progress.meanPercent} minVisible={2} label="Cohort mean progress" size="lg" animate />
 
       {progress.allComplete ? (
-        <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-success">
+        <p className="mt-2 inline-flex items-center gap-1.5 text-body-sm font-semibold text-success">
           <Trophy className="h-4 w-4" /> Your Circle finished this together! 🎉
         </p>
       ) : (
-        <p className="mt-2 text-xs text-muted">
+        <p className="mt-2 text-meta text-muted">
           {completedPhases > 0
             ? `${completedPhases} of ${progress.phases.length} phases done as a group · ${progress.journeyCompleted} finished the whole journey`
             : 'Keep going. The Circle moves together.'}

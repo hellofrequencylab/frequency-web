@@ -16,14 +16,14 @@ export async function CommunityPulse() {
       <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Community pulse</p>
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div>
-          <p className="text-2xl font-bold tabular-nums text-text">{(members ?? 0).toLocaleString()}</p>
-          <p className="inline-flex items-center gap-1 text-xs text-muted">
+          <p className="text-page-title font-bold tabular-nums text-text">{(members ?? 0).toLocaleString()}</p>
+          <p className="inline-flex items-center gap-1 text-meta text-muted">
             <Users className="h-3.5 w-3.5" aria-hidden /> members
           </p>
         </div>
         <div>
-          <p className="text-2xl font-bold tabular-nums text-text">{(circles ?? 0).toLocaleString()}</p>
-          <p className="inline-flex items-center gap-1 text-xs text-muted">
+          <p className="text-page-title font-bold tabular-nums text-text">{(circles ?? 0).toLocaleString()}</p>
+          <p className="inline-flex items-center gap-1 text-meta text-muted">
             <CircleDot className="h-3.5 w-3.5" aria-hidden /> active circles
           </p>
         </div>

@@ -84,7 +84,7 @@ export async function GroupMapSection({ circle }: { circle: GroupMapCircle }) {
 
   return (
     <ModuleCard title="On the map">
-      <p className="mb-2 px-1 text-xs leading-relaxed text-muted">
+      <p className="mb-2 px-1 text-meta leading-relaxed text-muted">
         Where this circle meets.
       </p>
       <GroupMapClient venue={venue} events={events} />

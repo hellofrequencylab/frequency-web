@@ -52,7 +52,7 @@ export function PromoteToContacts({
 
   if (state === 'linked') {
     return (
-      <p className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-1.5 text-sm font-medium text-success">
+      <p className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-1.5 text-body-sm font-medium text-success">
         <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden /> In Frequency contacts
       </p>
     )
@@ -60,7 +60,7 @@ export function PromoteToContacts({
 
   if (state === 'needs_email') {
     return (
-      <p className="text-sm text-subtle">
+      <p className="text-body-sm text-subtle">
         Add an email in Edit to add {name} to Frequency contacts. Contacts are matched by email address.
       </p>
     )
@@ -69,14 +69,14 @@ export function PromoteToContacts({
   if (!confirming) {
     return (
       <div className="space-y-2">
-        <p className="text-sm text-subtle">
+        <p className="text-body-sm text-subtle">
           Add {name} to the shared Frequency contacts database as an unconfirmed lead. They stay in your
           private book too.
         </p>
         <button
           type="button"
           onClick={() => { setError(null); setConfirming(true) }}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           <BookUser className="h-4 w-4" aria-hidden /> Add to Frequency contacts
         </button>
@@ -86,8 +86,8 @@ export function PromoteToContacts({
 
   return (
     <div className="space-y-3 rounded-card border border-border-strong bg-surface-elevated/50 p-4">
-      <p className="text-sm font-semibold text-text">Add {name} to Frequency contacts?</p>
-      <ul className="space-y-1.5 text-sm text-muted">
+      <p className="text-body-sm font-semibold text-text">Add {name} to Frequency contacts?</p>
+      <ul className="space-y-1.5 text-body-sm text-muted">
         <li className="flex gap-2">
           <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden />
           They join the shared contacts database as an unconfirmed lead.
@@ -103,7 +103,7 @@ export function PromoteToContacts({
         </li>
       </ul>
       {error && (
-        <p className="inline-flex items-center gap-1 text-xs text-danger">
+        <p className="inline-flex items-center gap-1 text-meta text-danger">
           <TriangleAlert className="h-3.5 w-3.5" aria-hidden /> {error}
         </p>
       )}
@@ -112,7 +112,7 @@ export function PromoteToContacts({
           type="button"
           onClick={confirm}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <BookUser className="h-4 w-4" aria-hidden />}
           Add to contacts
@@ -121,7 +121,7 @@ export function PromoteToContacts({
           type="button"
           onClick={() => { setConfirming(false); setError(null) }}
           disabled={pending}
-          className="inline-flex items-center rounded-lg border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+          className="inline-flex items-center rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
         >
           Not now
         </button>

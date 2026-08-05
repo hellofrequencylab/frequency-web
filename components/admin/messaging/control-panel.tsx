@@ -62,7 +62,7 @@ export function MessagingControlPanel({ data }: { data: ControlPanelData }) {
   return (
     <div className="space-y-5">
       {/* Guidance */}
-      <div className="rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-muted">
+      <div className="rounded-2xl border border-border bg-surface px-4 py-3 text-body-sm text-muted">
         <p className="font-semibold text-text">Reading this panel</p>
         <p className="mt-1">
           Every row is one person and one message: a campaign email or a broadcast Dispatch, and where it
@@ -75,7 +75,7 @@ export function MessagingControlPanel({ data }: { data: ControlPanelData }) {
 
       {/* In-flight lane */}
       {inFlight.pending + inFlight.processing > 0 && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-2xl border border-info/30 bg-info-bg/40 px-4 py-3 text-xs text-muted">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-2xl border border-info/30 bg-info-bg/40 px-4 py-3 text-meta text-muted">
           <span className="font-semibold text-info">⏳ In flight</span>
           <span>{inFlight.pending} queued</span>
           <span>{inFlight.processing} sending now</span>
@@ -94,7 +94,7 @@ export function MessagingControlPanel({ data }: { data: ControlPanelData }) {
           <select
             name="ref"
             defaultValue={filters.ref ?? ''}
-            className="min-w-[12rem] rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-sm font-normal normal-case text-text"
+            className="min-w-[12rem] rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-body-sm font-normal normal-case text-text"
           >
             <option value="">All messages</option>
             {refOptions.map((o) => (
@@ -112,7 +112,7 @@ export function MessagingControlPanel({ data }: { data: ControlPanelData }) {
             name="q"
             defaultValue={filters.q ?? ''}
             placeholder="name or email"
-            className="min-w-[10rem] rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-sm font-normal normal-case text-text"
+            className="min-w-[10rem] rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-body-sm font-normal normal-case text-text"
           />
         </label>
         <label className="flex flex-col gap-1 text-2xs font-bold uppercase tracking-wide text-muted">
@@ -120,7 +120,7 @@ export function MessagingControlPanel({ data }: { data: ControlPanelData }) {
           <select
             name="status"
             defaultValue={filters.status ?? 'all'}
-            className="rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-sm font-normal normal-case text-text"
+            className="rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-body-sm font-normal normal-case text-text"
           >
             <option value="all">Any status</option>
             {TOUCH_STATUSES.map((s) => (
@@ -134,7 +134,7 @@ export function MessagingControlPanel({ data }: { data: ControlPanelData }) {
           Apply
         </button>
         {hasFilter && (
-          <Link href={BASE} className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:text-text">
+          <Link href={BASE} className="rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:text-text">
             Clear
           </Link>
         )}
@@ -153,7 +153,7 @@ export function MessagingControlPanel({ data }: { data: ControlPanelData }) {
           }
           action={
             hasFilter ? (
-              <Link href={BASE} className="text-sm font-semibold text-primary-strong hover:underline">
+              <Link href={BASE} className="text-body-sm font-semibold text-primary-strong hover:underline">
                 Clear filters
               </Link>
             ) : undefined
@@ -169,7 +169,7 @@ export function MessagingControlPanel({ data }: { data: ControlPanelData }) {
 function TouchTable({ touches }: { touches: RecipientTouch[] }) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-border">
-      <table className="w-full min-w-[40rem] text-left text-sm">
+      <table className="w-full min-w-[40rem] text-left text-body-sm">
         <thead className="bg-surface-elevated text-2xs uppercase tracking-wide text-muted">
           <tr>
             <th className="px-4 py-2.5 font-semibold">Person</th>

@@ -16,7 +16,7 @@ import type {
 function Card({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="space-y-3 rounded-2xl border border-border bg-surface p-4">
-      <h3 className="flex items-center gap-1.5 text-sm font-bold text-text">
+      <h3 className="flex items-center gap-1.5 text-body-sm font-bold text-text">
         <span className="text-primary-strong" aria-hidden>{icon}</span>
         {title}
       </h3>
@@ -59,8 +59,8 @@ export function SpaceCommunityRail({
       {/* About */}
       {about && (
         <Card title={`About ${brandName}`} icon={<Sparkles className="h-4 w-4" />}>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted line-clamp-6">{about}</p>
-          <Link href={`/spaces/${slug}`} className="text-xs font-semibold text-primary-strong hover:underline">
+          <p className="whitespace-pre-wrap text-body-sm leading-relaxed text-muted line-clamp-6">{about}</p>
+          <Link href={`/spaces/${slug}`} className="text-meta font-semibold text-primary-strong hover:underline">
             More about us
           </Link>
         </Card>
@@ -70,7 +70,7 @@ export function SpaceCommunityRail({
       {booking.enabled && booking.href && (
         <Link
           href={booking.href}
-          className="flex items-center justify-center gap-1.5 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="flex items-center justify-center gap-1.5 rounded-2xl bg-primary px-4 py-3 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           <Ticket className="h-4 w-4" aria-hidden /> Book with {brandName}
         </Link>
@@ -79,7 +79,7 @@ export function SpaceCommunityRail({
       {/* Contact + hours */}
       {hasContact && (
         <Card title="Visit or reach us" icon={<MapPin className="h-4 w-4" />}>
-          <ul className="space-y-2 text-sm text-muted">
+          <ul className="space-y-2 text-body-sm text-muted">
             {profile.hours && (
               <li className="flex gap-2">
                 <Clock className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
@@ -129,7 +129,7 @@ export function SpaceCommunityRail({
           <ul className="space-y-2">
             {events.slice(0, 4).map((e) => (
               <li key={e.id}>
-                <Link href={`/events/${e.slug}`} className="flex items-start gap-2 text-sm hover:text-primary-strong">
+                <Link href={`/events/${e.slug}`} className="flex items-start gap-2 text-body-sm hover:text-primary-strong">
                   <span className="mt-0.5 shrink-0 rounded-md bg-primary-bg px-1.5 py-0.5 text-2xs font-bold text-primary-strong">
                     {shortDate(e.startsAt)}
                   </span>
@@ -149,7 +149,7 @@ export function SpaceCommunityRail({
               <li key={`${p.kind}-${p.id}`}>
                 <Link
                   href={p.kind === 'journey' ? `/journeys/${p.slug}` : `/practices/${p.slug}`}
-                  className="flex items-center gap-2 text-sm font-medium text-text hover:text-primary-strong"
+                  className="flex items-center gap-2 text-body-sm font-medium text-text hover:text-primary-strong"
                 >
                   {p.emoji && <span aria-hidden>{p.emoji}</span>}
                   {p.title}
@@ -166,9 +166,9 @@ export function SpaceCommunityRail({
           <ul className="space-y-2">
             {circles.slice(0, 5).map((c) => (
               <li key={c.id}>
-                <Link href={`/circles/${c.slug}`} className="flex items-center justify-between gap-2 text-sm hover:text-primary-strong">
+                <Link href={`/circles/${c.slug}`} className="flex items-center justify-between gap-2 text-body-sm hover:text-primary-strong">
                   <span className="font-medium text-text">{c.name}</span>
-                  {c.memberCount > 0 && <span className="text-xs text-subtle">{c.memberCount}</span>}
+                  {c.memberCount > 0 && <span className="text-meta text-subtle">{c.memberCount}</span>}
                 </Link>
               </li>
             ))}

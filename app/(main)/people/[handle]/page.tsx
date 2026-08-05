@@ -309,10 +309,10 @@ export default async function ProfilePage({
       BELOW the header with the stats, not over the photo. */}
   const badges = (
     <span className="flex items-center gap-2 flex-wrap">
-      <FoundingBadge founding={profile.is_founding_member} className="text-xs leading-tight" />
+      <FoundingBadge founding={profile.is_founding_member} className="text-meta leading-tight" />
       {isSupporter && <SupporterBadge />}
       {rankEndorsed && (
-        <span className="rank-badge text-xs font-medium" style={seasonRankStyle(rank)}>{rankDef.label}</span>
+        <span className="rank-badge text-meta font-medium" style={seasonRankStyle(rank)}>{rankDef.label}</span>
       )}
       {isDemo && <DemoBadge />}
     </span>
@@ -343,7 +343,7 @@ export default async function ProfilePage({
       // one-item flex line under `justify-between` packs to flex-START — so the owner's
       // Edit profile landed left, not right as designed. The auto margin restores the
       // intended right edge below 640px and declares nothing at or above it.
-      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text max-sm:ml-auto"
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text max-sm:ml-auto"
     />
   ) : null
 
@@ -420,7 +420,7 @@ export default async function ProfilePage({
         <form action={actAsMember.bind(null, profileId)}>
           <button
             type="submit"
-            className="inline-flex items-center gap-1 text-xs font-medium text-signal-strong transition-colors hover:underline"
+            className="inline-flex items-center gap-1 text-meta font-medium text-signal-strong transition-colors hover:underline"
             title="Act as this member (full control)"
           >
             <UserCog className="h-3 w-3" />
@@ -452,7 +452,7 @@ export default async function ProfilePage({
   return (
     <>
       {tippedCents !== null && (
-        <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-primary-bg bg-primary-bg/40 px-4 py-2.5 text-sm font-semibold text-primary-strong">
+        <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-primary-bg bg-primary-bg/40 px-4 py-2.5 text-body-sm font-semibold text-primary-strong">
           <Heart className="h-4 w-4" />
           Thank you. Your ${(tippedCents / 100).toFixed(2)} tip to {firstName} is on its way.
         </div>
@@ -500,7 +500,7 @@ export default async function ProfilePage({
             {/* ONE compact line right under the header: the at-a-glance stats/meta on the left with the
                 status chips (Ghost/Founder/rank) at the END, and the owner's Edit profile on the right. */}
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-body-sm text-muted">
                 {regionName && (
                   <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {regionName}</span>
                 )}
@@ -659,7 +659,7 @@ export default async function ProfilePage({
 
           {/* Achievements — the earned / nearly-earned chips. */}
           <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
-            <p className="mb-3 text-sm font-bold tracking-tight text-text">
+            <p className="mb-3 text-body-sm font-bold tracking-tight text-text">
               Achievements <span className="font-medium text-subtle">· {rewardsEarned}/{rewards.length}</span>
             </p>
             <div className="flex flex-wrap gap-2">
@@ -729,7 +729,7 @@ function ProfileStandingCard({
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-bold tracking-tight text-text">Standing</p>
+        <p className="text-body-sm font-bold tracking-tight text-text">Standing</p>
         <span className="rank-badge text-2xs font-medium" style={seasonRankStyle(rank)}>{rankDef.label}</span>
       </div>
 
@@ -755,8 +755,8 @@ function ProfileStandingCard({
           const body = (
             <>
               <Icon className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-              <span className="min-w-0 flex-1 text-sm font-medium text-text">{r.label}</span>
-              <span className="shrink-0 text-sm font-semibold tabular-nums text-muted">{r.value}</span>
+              <span className="min-w-0 flex-1 text-body-sm font-medium text-text">{r.label}</span>
+              <span className="shrink-0 text-body-sm font-semibold tabular-nums text-muted">{r.value}</span>
             </>
           )
           return r.href ? (
@@ -795,7 +795,7 @@ function AchievementChip({
   return (
     <span
       title={earned ? `${label} (earned)` : showProgress ? `${label} (${current}/${target})` : label}
-      className={`inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs font-medium ${
+      className={`inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-meta font-medium ${
         earned ? 'bg-warning-bg text-primary' : 'border border-border text-muted'
       }`}
     >

@@ -79,7 +79,7 @@ async function PhasesBoard() {
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-muted">
+      <p className="text-body-sm text-muted">
         Walk each phase in order. Work the tasks, review the outbound, then arm the phase when it
         is ready. Nothing sends until you arm it.
       </p>
@@ -97,26 +97,26 @@ async function PhasesBoard() {
               <div className="min-w-0 space-y-1.5">
                 <div className="flex items-center gap-2">
                   <Flag className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-                  <h2 className="text-base font-bold text-text">
+                  <h2 className="text-body font-bold text-text">
                     <span className="text-primary-strong">{phase.key}</span> · {phase.title}
                   </h2>
                 </div>
                 {phase.goal && (
-                  <p className="flex items-start gap-1.5 text-sm text-muted">
+                  <p className="flex items-start gap-1.5 text-body-sm text-muted">
                     <Target className="mt-0.5 h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
                     <span>{phase.goal}</span>
                   </p>
                 )}
-                {phase.summary && <p className="text-sm text-text/80">{phase.summary}</p>}
+                {phase.summary && <p className="text-body-sm text-text/80">{phase.summary}</p>}
               </div>
               <PhaseStatusControl phaseId={phase.id} status={phase.status} />
             </div>
 
             {/* Task board: each task carries its "done when…" acceptance + a status control. */}
             <div className="space-y-2">
-              <h3 className="text-xs font-bold uppercase tracking-wide text-subtle">Tasks</h3>
+              <h3 className="text-meta font-bold uppercase tracking-wide text-subtle">Tasks</h3>
               {tasks.length === 0 ? (
-                <p className="rounded-2xl border border-dashed border-border px-4 py-4 text-sm text-muted">
+                <p className="rounded-2xl border border-dashed border-border px-4 py-4 text-body-sm text-muted">
                   No tasks on this phase yet.
                 </p>
               ) : (
@@ -128,16 +128,16 @@ async function PhasesBoard() {
                     >
                       <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-semibold text-text">{task.title}</p>
+                          <p className="text-body-sm font-semibold text-text">{task.title}</p>
                           {task.priority === 'high' && (
                             <StatusChip tone="warning" size="sm">
                               High
                             </StatusChip>
                           )}
                         </div>
-                        {task.detail && <p className="text-xs text-muted">{task.detail}</p>}
+                        {task.detail && <p className="text-meta text-muted">{task.detail}</p>}
                         {task.acceptance && (
-                          <p className="text-xs text-subtle">
+                          <p className="text-meta text-subtle">
                             <span className="font-semibold text-muted">Done when: </span>
                             {task.acceptance}
                           </p>
@@ -152,7 +152,7 @@ async function PhasesBoard() {
 
             {/* Outbound queue + the phase arm control. */}
             <div className="space-y-2">
-              <h3 className="text-xs font-bold uppercase tracking-wide text-subtle">
+              <h3 className="text-meta font-bold uppercase tracking-wide text-subtle">
                 Outbound in this phase
               </h3>
               <PhaseOutbound phaseId={phase.id} items={outbound} canArm={canArm} />

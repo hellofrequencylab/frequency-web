@@ -152,7 +152,7 @@ function routeActive(pathname: string, href: string) {
 
 function triggerClass(variant: Variant, highlighted: boolean) {
   const dark = variant === 'dark'
-  return `inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors motion-reduce:transition-none ${
+  return `inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-body-sm font-semibold transition-colors motion-reduce:transition-none ${
     dark
       ? highlighted
         ? 'text-on-ink bg-on-ink/10'
@@ -332,9 +332,9 @@ export function MegaBar({
 
     const inner = (
       <>
-        <span className="block text-sm font-semibold text-text">{item.label}</span>
+        <span className="block text-body-sm font-semibold text-text">{item.label}</span>
         {item.subheading && (
-          <span className="mt-0.5 block text-xs leading-snug text-muted">{item.subheading}</span>
+          <span className="mt-0.5 block text-meta leading-snug text-muted">{item.subheading}</span>
         )}
       </>
     )
@@ -363,11 +363,11 @@ export function MegaBar({
           itemActive ? 'bg-primary-bg' : 'hover:bg-surface-elevated'
         }`}
       >
-        <span className={`block text-sm font-semibold ${itemActive ? 'text-primary-strong' : 'text-text'}`}>
+        <span className={`block text-body-sm font-semibold ${itemActive ? 'text-primary-strong' : 'text-text'}`}>
           {item.label}
         </span>
         {item.subheading && (
-          <span className="mt-0.5 block text-xs leading-snug text-muted">{item.subheading}</span>
+          <span className="mt-0.5 block text-meta leading-snug text-muted">{item.subheading}</span>
         )}
       </Link>
     )
@@ -398,11 +398,11 @@ export function MegaBar({
     const body = (
       <>
         <div>
-          <p className="text-sm font-bold text-text">{card.title}</p>
-          <p className="mt-1 text-xs leading-snug text-muted">{card.body}</p>
+          <p className="text-body-sm font-bold text-text">{card.title}</p>
+          <p className="mt-1 text-meta leading-snug text-muted">{card.body}</p>
         </div>
         {card.cta && (
-          <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary-strong">
+          <span className="mt-3 inline-flex items-center gap-1 text-meta font-semibold text-primary-strong">
             {card.cta}
             <ArrowRight className="h-3.5 w-3.5" aria-hidden />
           </span>

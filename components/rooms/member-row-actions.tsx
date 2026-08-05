@@ -51,21 +51,21 @@ export function MemberRowActions({
           {isAdmin ? (
             <button
               onClick={(e) => { e.preventDefault(); handle(() => demoteRoomMember(roomId, memberId)) }}
-              className="flex items-center gap-2 w-full px-3 py-2 text-xs text-text hover:bg-surface-elevated transition-colors"
+              className="flex items-center gap-2 w-full px-3 py-2 text-meta text-text hover:bg-surface-elevated transition-colors"
             >
               <ShieldOff className="w-3.5 h-3.5 text-subtle" /> Remove admin
             </button>
           ) : (
             <button
               onClick={(e) => { e.preventDefault(); handle(() => promoteRoomMember(roomId, memberId)) }}
-              className="flex items-center gap-2 w-full px-3 py-2 text-xs text-text hover:bg-surface-elevated transition-colors"
+              className="flex items-center gap-2 w-full px-3 py-2 text-meta text-text hover:bg-surface-elevated transition-colors"
             >
               <Shield className="w-3.5 h-3.5 text-primary-strong" /> Make admin
             </button>
           )}
           <button
             onClick={(e) => { e.preventDefault(); handle(() => removeFromRoom(roomId, memberId)) }}
-            className="flex items-center gap-2 w-full px-3 py-2 text-xs text-danger hover:bg-danger-bg transition-colors border-t border-border"
+            className="flex items-center gap-2 w-full px-3 py-2 text-meta text-danger hover:bg-danger-bg transition-colors border-t border-border"
           >
             <UserX className="w-3.5 h-3.5" /> Remove from room
           </button>

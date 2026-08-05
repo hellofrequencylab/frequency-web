@@ -121,7 +121,7 @@ export async function OfferingsBody({ slug }: { slug: string }) {
             return (
               <section key={section.anchor} id={section.anchor} className="scroll-mt-24">
                 <SectionHeader title={meta.title} />
-                <p className="-mt-2 mb-4 text-sm text-muted">{meta.blurb}</p>
+                <p className="-mt-2 mb-4 text-body-sm text-muted">{meta.blurb}</p>
                 <Suspense fallback={<SectionSkeleton />}>
                   {renderSection(section.anchor, space, viewerProfileId, staffViewing)}
                 </Suspense>

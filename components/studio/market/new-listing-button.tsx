@@ -11,7 +11,7 @@ import { LISTING_KINDS, type ListingKind } from '@/lib/marketplace'
 import { getBrowserPosition } from '@/lib/geo-browser'
 import { createListingAction } from '@/app/(main)/classifieds/actions'
 
-const FIELD = 'rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
+const FIELD = 'rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
 // Post a marketplace listing via the Studio window. No payment — it just connects
 // neighbors; contact happens over DMs from the listing. (ADR-148)
@@ -60,13 +60,13 @@ export function NewListingButton({ className }: { className?: string }) {
       eyebrow="Studio · New listing"
       footer={
         <StudioFooter
-          left={<span className="text-xs text-subtle">{error ? <span className="text-danger">{error}</span> : 'Free to post. No payment, just neighbors helping out.'}</span>}
+          left={<span className="text-meta text-subtle">{error ? <span className="text-danger">{error}</span> : 'Free to post. No payment, just neighbors helping out.'}</span>}
         >
           <button
             type="button"
             onClick={create}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />} Post listing
           </button>
@@ -85,14 +85,14 @@ export function NewListingButton({ className }: { className?: string }) {
             onKeyDown={(e) => { if (e.key === 'Enter') create() }}
             maxLength={120}
             placeholder="What are you offering or looking for?"
-            className="w-full bg-transparent text-2xl font-bold text-text outline-none placeholder:text-subtle"
+            className="w-full bg-transparent text-page-title font-bold text-text outline-none placeholder:text-subtle"
           />
           <input
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             maxLength={40}
             placeholder="Optional category (e.g. furniture, tools, lessons)"
-            className="mt-1 w-full bg-transparent text-sm text-muted outline-none placeholder:text-subtle"
+            className="mt-1 w-full bg-transparent text-body-sm text-muted outline-none placeholder:text-subtle"
           />
         </div>
       </div>
@@ -120,12 +120,12 @@ export function NewListingButton({ className }: { className?: string }) {
           type="button"
           onClick={useMyLocation}
           disabled={locating}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
         >
           {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : coords ? <Check className="h-4 w-4 text-success" /> : <MapPin className="h-4 w-4" />}
           {coords ? 'Location pinned' : 'Use my location'}
         </button>
-        <span className="ml-2 text-xs text-subtle">Helps neighbors find it by distance (never shown exactly).</span>
+        <span className="ml-2 text-meta text-subtle">Helps neighbors find it by distance (never shown exactly).</span>
       </div>
 
       <div className="mt-4">
@@ -140,7 +140,7 @@ export function NewListingButton({ className }: { className?: string }) {
         </StudioField>
       </div>
 
-      <p className="mt-3 text-xs text-subtle">No money changes hands in the app. Arrange that offline. Be kind; this is mutual support, not a storefront.</p>
+      <p className="mt-3 text-meta text-subtle">No money changes hands in the app. Arrange that offline. Be kind; this is mutual support, not a storefront.</p>
     </StudioLaunchButton>
   )
 }

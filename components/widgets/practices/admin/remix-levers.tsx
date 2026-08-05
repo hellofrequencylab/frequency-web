@@ -55,18 +55,18 @@ export async function PracticeRemixLevers() {
         <ol className="divide-y divide-border/60">
           {rows.map((r, i) => (
             <li key={r.rootId} className="flex items-center gap-3 px-4 py-3">
-              <span className="w-5 shrink-0 text-sm font-semibold tabular-nums text-subtle">{i + 1}</span>
+              <span className="w-5 shrink-0 text-body-sm font-semibold tabular-nums text-subtle">{i + 1}</span>
               <div className="min-w-0 flex-1">
                 <Link
                   href={`/practices/${r.rootId}`}
-                  className="inline-flex items-center gap-1 text-sm font-medium text-text hover:underline"
+                  className="inline-flex items-center gap-1 text-body-sm font-medium text-text hover:underline"
                 >
                   <span className="min-w-0 truncate">{r.title || 'Untitled practice'}</span>
                   <ExternalLink className="h-3 w-3 shrink-0 text-subtle" aria-hidden />
                 </Link>
-                <p className="mt-0.5 truncate text-xs text-muted">by {nameFor(r.creator)}</p>
+                <p className="mt-0.5 truncate text-meta text-muted">by {nameFor(r.creator)}</p>
               </div>
-              <span className="shrink-0 text-xs tabular-nums text-subtle">
+              <span className="shrink-0 text-meta tabular-nums text-subtle">
                 {r.remixCount} {r.remixCount === 1 ? 'remix' : 'remixes'}
               </span>
             </li>

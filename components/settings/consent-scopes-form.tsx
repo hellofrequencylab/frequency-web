@@ -58,8 +58,8 @@ export function ConsentScopesForm({ initial }: { initial: ConsentScopeState }) {
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="text-sm font-bold tracking-tight text-text">Privacy & consent</h2>
-        <p className="mt-1 text-sm text-muted">
+        <h2 className="text-body-sm font-bold tracking-tight text-text">Privacy & consent</h2>
+        <p className="mt-1 text-body-sm text-muted">
           These control how we may use your account. Each choice is logged with a timestamp, so
           there&apos;s always a clear record of what you agreed to.
         </p>
@@ -75,8 +75,8 @@ export function ConsentScopesForm({ initial }: { initial: ConsentScopeState }) {
             <div key={scope} className="flex items-start gap-3 px-4 py-3.5">
               <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-text">{label}</p>
-                <p className="mt-0.5 text-xs text-muted">{help}</p>
+                <p className="text-body-sm font-medium text-text">{label}</p>
+                <p className="mt-0.5 text-meta text-muted">{help}</p>
               </div>
               <button
                 type="button"
@@ -98,7 +98,7 @@ export function ConsentScopesForm({ initial }: { initial: ConsentScopeState }) {
         })}
       </div>
 
-      <div className="flex items-center gap-2 text-xs text-muted px-1">
+      <div className="flex items-center gap-2 text-meta text-muted px-1">
         {isPending ? (
           <span>Saving…</span>
         ) : saveError ? (

@@ -82,13 +82,13 @@ export default async function DiscoverCitiesIndexPage() {
                 href={`/discover/cities/${c.slug}`}
                 className="group flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-6 py-5 lift-1 transition-colors hover:border-primary"
               >
-                <span className="text-lg font-semibold text-text">{c.city}</span>
+                <span className="text-body-lg font-semibold text-text">{c.city}</span>
                 <ArrowRight className="h-5 w-5 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong" aria-hidden />
               </Link>
             ))}
           </div>
         ) : (
-          <div className="mx-auto max-w-xl text-center text-lg leading-relaxed text-muted">
+          <div className="mx-auto max-w-xl text-center text-body-lg leading-relaxed text-muted">
             <p>
               Cities show up here as the community takes root in them. Want yours to be
               one of the first? Start a Circle and bring a few neighbors together.

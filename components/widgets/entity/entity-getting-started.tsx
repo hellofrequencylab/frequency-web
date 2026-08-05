@@ -54,16 +54,16 @@ export async function EntityGettingStarted() {
 
       {canEdit ? (
         <>
-          <h2 className="mt-4 text-lg font-bold text-text">Your {typeLabel} profile is ready to fill in.</h2>
-          <p className="mt-1 max-w-xl text-sm text-muted">
+          <h2 className="mt-4 text-body-lg font-bold text-text">Your {typeLabel} profile is ready to fill in.</h2>
+          <p className="mt-1 max-w-xl text-body-sm text-muted">
             Add your first session, practice, or program and it shows up here. Here is what a finished
             profile carries:
           </p>
         </>
       ) : (
         <>
-          <h2 className="mt-4 text-lg font-bold text-text">{name} is just getting started.</h2>
-          <p className="mt-1 max-w-xl text-sm text-muted">
+          <h2 className="mt-4 text-body-lg font-bold text-text">{name} is just getting started.</h2>
+          <p className="mt-1 max-w-xl text-body-sm text-muted">
             There is nothing to browse yet. Follow along and these show up the moment they go live:
           </p>
         </>
@@ -73,7 +73,7 @@ export async function EntityGettingStarted() {
         {coming.map((item) => (
           <li
             key={item}
-            className="flex items-center gap-2 rounded-card bg-surface-elevated/60 px-3 py-2 text-sm text-text"
+            className="flex items-center gap-2 rounded-card bg-surface-elevated/60 px-3 py-2 text-body-sm text-text"
           >
             <span className="h-1.5 w-1.5 shrink-0 rounded-pill bg-primary" aria-hidden />
             {item}

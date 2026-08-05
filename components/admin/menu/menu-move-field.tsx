@@ -24,7 +24,7 @@ export function MenuMoveField({
 }) {
   const others = ORDER.filter((k) => k !== current)
   return (
-    <label className="flex items-center gap-2 text-xs font-semibold text-subtle">
+    <label className="flex items-center gap-2 text-meta font-semibold text-subtle">
       {label}
       <select
         defaultValue=""
@@ -35,7 +35,7 @@ export function MenuMoveField({
           e.currentTarget.value = ''
           if (dest) onMove(dest)
         }}
-        className="rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-sm font-normal text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+        className="rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm font-normal text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
       >
         <option value="">Another menu…</option>
         {others.map((k) => (

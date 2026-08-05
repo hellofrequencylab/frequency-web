@@ -79,7 +79,7 @@ export function RecordingAttachManager({
   return (
     <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-text">{heading}</h3>
+        <h3 className="text-body-sm font-bold text-text">{heading}</h3>
         {rows.length > 0 && <span className="text-2xs text-muted">{rows.length} attached</span>}
       </div>
 
@@ -95,7 +95,7 @@ export function RecordingAttachManager({
               ) : (
                 <Music className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
               )}
-              <span className="min-w-0 flex-1 truncate text-xs font-medium text-text">{r.title}</span>
+              <span className="min-w-0 flex-1 truncate text-meta font-medium text-text">{r.title}</span>
               <button
                 type="button"
                 aria-label={`Remove ${r.title}`}

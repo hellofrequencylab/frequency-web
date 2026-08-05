@@ -43,7 +43,7 @@ export function MenuSurfacePicker({
       description="Pick which menu to edit. Each surface keeps its own groups, links, and rail cards."
       actions={
         isPending ? (
-          <span className="text-xs text-subtle" aria-live="polite">
+          <span className="text-meta text-subtle" aria-live="polite">
             Switching surface…
           </span>
         ) : undefined
@@ -60,7 +60,7 @@ export function MenuSurfacePicker({
               aria-selected={isActive}
               disabled={isPending}
               onClick={() => pick(s.key)}
-              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors disabled:opacity-60 ${
+              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-body-sm font-medium transition-colors disabled:opacity-60 ${
                 isActive
                   ? 'border-primary bg-primary-bg text-primary-strong'
                   : 'border-border bg-surface text-muted hover:bg-surface-elevated hover:text-text'
@@ -68,7 +68,7 @@ export function MenuSurfacePicker({
             >
               {s.label}
               {defaults[s.key] && (
-                <span className="rounded-pill bg-surface-elevated px-1.5 py-0.5 text-xs font-semibold text-subtle">
+                <span className="rounded-pill bg-surface-elevated px-1.5 py-0.5 text-meta font-semibold text-subtle">
                   Default
                 </span>
               )}

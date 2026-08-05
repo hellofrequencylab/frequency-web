@@ -205,7 +205,7 @@ function LegacyTheCommunity() {
           title="A whole life has four Pillars."
           kicker="Mind, Body, Spirit, Expression. Start in any of them."
         />
-        <p className="text-lg text-muted leading-relaxed mb-9">
+        <p className="text-body-lg text-muted leading-relaxed mb-9">
           The Pillars are the four parts a real life moves through. They&apos;re the
           map you arrive on: pick the one that&apos;s calling you right now, and the
           Channels and Circles inside it are where you actually land.
@@ -220,10 +220,10 @@ function LegacyTheCommunity() {
               <div className="w-11 h-11 rounded-2xl bg-primary-bg flex items-center justify-center mb-4">
                 <c.icon className="w-5 h-5 text-primary-strong" aria-hidden />
               </div>
-              <h3 className="font-display uppercase text-text text-2xl leading-none">
+              <h3 className="font-display uppercase text-text text-page-title leading-none">
                 {c.title}
               </h3>
-              <p className="mt-3 text-base text-muted leading-relaxed">{c.body}</p>
+              <p className="mt-3 text-body text-muted leading-relaxed">{c.body}</p>
             </Card>
           ))}
         </div>
@@ -467,7 +467,7 @@ function LegacyTheCommunity() {
           of the people this whole thing grows from. And you can start anywhere: a
           Circle only needs a few people and a standing time.
         </Body>
-        <p className="mt-6 text-base text-muted leading-relaxed">
+        <p className="mt-6 text-body text-muted leading-relaxed">
           <a className="text-primary-strong font-semibold hover:underline" href="/discover">
             Find a Circle near you
           </a>
@@ -494,10 +494,10 @@ function LegacyTheCommunity() {
         <dl className="space-y-6">
           {COMMUNITY_FAQ.map((item) => (
             <div key={item.q} className="rounded-2xl border border-border bg-surface p-6">
-              <dt className="font-display uppercase text-text text-xl leading-tight mb-2">
+              <dt className="font-display uppercase text-text text-lead leading-tight mb-2">
                 {item.q}
               </dt>
-              <dd className="text-base text-muted leading-relaxed">{item.a}</dd>
+              <dd className="text-body text-muted leading-relaxed">{item.a}</dd>
             </div>
           ))}
         </dl>
@@ -538,8 +538,8 @@ function Step({
           {n}
         </span>
       </div>
-      <h3 className="font-display uppercase text-text text-2xl mb-2">{title}</h3>
-      <p className="text-sm text-muted leading-relaxed">{text}</p>
+      <h3 className="font-display uppercase text-text text-page-title mb-2">{title}</h3>
+      <p className="text-body-sm text-muted leading-relaxed">{text}</p>
     </Card>
   )
 }
@@ -558,8 +558,8 @@ function Layer({
       <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-primary-bg/50 mb-4">
         <Icon className="w-5 h-5 text-primary-strong" />
       </div>
-      <h3 className="font-display uppercase text-text text-xl mb-2">{title}</h3>
-      <p className="text-sm text-muted leading-relaxed">{text}</p>
+      <h3 className="font-display uppercase text-text text-lead mb-2">{title}</h3>
+      <p className="text-body-sm text-muted leading-relaxed">{text}</p>
     </Card>
   )
 }
@@ -577,9 +577,9 @@ function Hold({
     <Card tone="feature">
       <div className="flex items-center gap-2.5 mb-3">
         <Icon className="w-5 h-5 text-primary-strong" />
-        <h3 className="font-bold text-text text-lg leading-snug">{title}</h3>
+        <h3 className="font-bold text-text text-body-lg leading-snug">{title}</h3>
       </div>
-      <p className="text-sm text-muted leading-relaxed">{text}</p>
+      <p className="text-body-sm text-muted leading-relaxed">{text}</p>
     </Card>
   )
 }
@@ -602,14 +602,14 @@ function DayBeat({
       </div>
       <div className="min-w-0">
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="font-display uppercase text-text text-xl leading-none">
+          <span className="font-display uppercase text-text text-lead leading-none">
             {title}
           </span>
-          <span className="text-xs font-bold uppercase tracking-widest text-primary-strong">
+          <span className="text-meta font-bold uppercase tracking-widest text-primary-strong">
             {time}
           </span>
         </div>
-        <p className="mt-2 text-base text-muted leading-relaxed">{body}</p>
+        <p className="mt-2 text-body text-muted leading-relaxed">{body}</p>
       </div>
     </li>
   )

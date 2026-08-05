@@ -28,7 +28,7 @@ import { TARGET_FIELDS, type ColumnMapping, type MappingChoice, type MergeStrate
 import type { ManagedSpace } from '@/lib/spaces/managed'
 
 const input =
-  'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50'
+  'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50'
 
 /** Human labels for the target fields (the dropdown + review copy). */
 const FIELD_LABEL: Record<MappingChoice, string> = {
@@ -422,7 +422,7 @@ export function ImportWizard({
   return (
     <div className="space-y-6">
       {/* Progress rail */}
-      <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium">
+      <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-meta font-medium">
         {steps.map((s, i) => (
           <li key={s.key} className="flex items-center gap-2">
             <span className={`inline-flex h-5 w-5 items-center justify-center rounded-pill text-2xs ${i <= stepIndex ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-muted'}`}>{i + 1}</span>
@@ -432,15 +432,15 @@ export function ImportWizard({
         ))}
       </ol>
 
-      {banner && <p className={`rounded-lg border px-3 py-2 text-sm ${bannerClass}`}>{banner.text}</p>}
+      {banner && <p className={`rounded-lg border px-3 py-2 text-body-sm ${bannerClass}`}>{banner.text}</p>}
 
       {step === 'upload' && (
         <div className="space-y-4">
           {targetKind === 'space' && (
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted">Import into</label>
+              <label className="mb-1 block text-meta font-medium text-muted">Import into</label>
               {lockedSpace ? (
-                <p className="rounded-lg border border-border bg-surface-elevated/40 px-3 py-2 text-sm font-medium text-text">{lockedSpace.name}</p>
+                <p className="rounded-lg border border-border bg-surface-elevated/40 px-3 py-2 text-body-sm font-medium text-text">{lockedSpace.name}</p>
               ) : spaces.length ? (
                 <select className={input} value={spaceId} onChange={(e) => setSpaceId(e.target.value)}>
                   {spaces.map((s) => (
@@ -448,14 +448,14 @@ export function ImportWizard({
                   ))}
                 </select>
               ) : (
-                <p className="text-sm text-muted">You do not manage a Space with a contact list yet.</p>
+                <p className="text-body-sm text-muted">You do not manage a Space with a contact list yet.</p>
               )}
-              <p className="mt-1 text-xs text-subtle">Contacts land in this Space’s own list, sealed to the Space. They are never shared to the wider community.</p>
+              <p className="mt-1 text-meta text-subtle">Contacts land in this Space’s own list, sealed to the Space. They are never shared to the wider community.</p>
             </div>
           )}
 
           {targetKind === 'platform' && (
-            <p className="rounded-lg border border-border bg-surface-elevated/40 px-3 py-2 text-xs text-subtle">
+            <p className="rounded-lg border border-border bg-surface-elevated/40 px-3 py-2 text-meta text-subtle">
               These contacts land in Frequency’s own list. Everyone comes in as a lead, never auto-subscribed. No Space is involved.
             </p>
           )}
@@ -477,7 +477,7 @@ export function ImportWizard({
                   type="button"
                   onClick={() => fileRef.current?.click()}
                   disabled={!canIngest}
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                 >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
                   {busy ? 'Reading…' : 'Choose files'}
@@ -503,11 +503,11 @@ export function ImportWizard({
                 <li key={q.id} className="flex items-start gap-3 rounded-card border border-border bg-surface p-3">
                   <FileText className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-text">{q.name}</p>
+                    <p className="truncate text-body-sm font-medium text-text">{q.name}</p>
                     <p className="text-2xs text-muted">{formatBytes(q.size)}</p>
                     {q.reason && <p className="mt-0.5 text-2xs text-muted">{q.reason}</p>}
                   </div>
-                  <div className="shrink-0 text-xs font-medium">
+                  <div className="shrink-0 text-meta font-medium">
                     {q.status === 'parsing' && (
                       <span className="inline-flex items-center gap-1 text-subtle">
                         <Loader2 className="h-3.5 w-3.5 animate-spin" /> Reading…
@@ -534,7 +534,7 @@ export function ImportWizard({
               <button
                 type="button"
                 onClick={() => setStep('map')}
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 Continue to matching <ArrowRight className="h-4 w-4" />
               </button>
@@ -546,7 +546,7 @@ export function ImportWizard({
               type="button"
               onClick={() => setShowPaste((v) => !v)}
               disabled={busy || (targetKind === 'space' && !spaceId)}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-text hover:text-primary-strong disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 text-meta font-semibold text-text hover:text-primary-strong disabled:opacity-40"
             >
               <ClipboardType className="h-3.5 w-3.5 text-primary-strong" />
               {showPaste ? 'Hide paste box' : 'Or paste a list of people'}
@@ -564,7 +564,7 @@ export function ImportWizard({
                   type="button"
                   onClick={() => void ingest([], pasted)}
                   disabled={busy || !pasted.trim()}
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                 >
                   {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                   {busy ? 'Reading…' : 'Pull out the contacts'}
@@ -584,8 +584,8 @@ export function ImportWizard({
             ))}
           </datalist>
           <div className="rounded-card border border-border bg-surface-elevated/40 p-4">
-            <p className="text-sm font-semibold text-text">Match your columns to contact fields</p>
-            <p className="mt-1 text-xs text-muted">
+            <p className="text-body-sm font-semibold text-text">Match your columns to contact fields</p>
+            <p className="mt-1 text-meta text-muted">
               We guessed a match for each column. A confident match is applied for you; check the rest. Anything left as a
               custom field is kept on the contact, and you can rename it or reuse one you already have. Nothing is thrown away.
               Or let Vera take a pass.
@@ -594,7 +594,7 @@ export function ImportWizard({
               type="button"
               onClick={askVera}
               disabled={busy}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
             >
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-primary-strong" />}
               Ask Vera to match them
@@ -602,9 +602,9 @@ export function ImportWizard({
           </div>
 
           <div className="overflow-x-auto rounded-card border border-border">
-            <table className="w-full min-w-[32rem] text-sm">
+            <table className="w-full min-w-[32rem] text-body-sm">
               <thead>
-                <tr className="border-b border-border bg-surface-elevated/40 text-left text-xs text-muted">
+                <tr className="border-b border-border bg-surface-elevated/40 text-left text-meta text-muted">
                   <th className="px-3 py-2 font-medium">Your column</th>
                   <th className="px-3 py-2 font-medium">Sample</th>
                   <th className="px-3 py-2 font-medium">Maps to</th>
@@ -635,7 +635,7 @@ export function ImportWizard({
                             <input
                               type="text"
                               list="known-custom-fields"
-                              className={`${input} py-1 text-xs`}
+                              className={`${input} py-1 text-meta`}
                               value={m.customLabel ?? m.header}
                               onChange={(e) => setColumnCustomLabel(m.header, e.target.value)}
                               placeholder="Custom field name"
@@ -657,14 +657,14 @@ export function ImportWizard({
           </div>
 
           <div className="flex items-center justify-between">
-            <button type="button" onClick={() => setStep('upload')} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted hover:text-text">
+            <button type="button" onClick={() => setStep('upload')} className="inline-flex items-center gap-1.5 text-meta font-medium text-muted hover:text-text">
               <ArrowLeft className="h-3.5 w-3.5" /> Choose a different file
             </button>
             <button
               type="button"
               onClick={goPreview}
               disabled={busy}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
               Review before import
@@ -676,8 +676,8 @@ export function ImportWizard({
       {step === 'preview' && validation && (
         <div className="space-y-4">
           <div className="rounded-card border border-border bg-surface-elevated/40 p-4">
-            <p className="text-sm font-semibold text-text">Here is what will happen</p>
-            <p className="mt-1 text-xs text-muted">Nothing is saved yet. This is a dry run of your file against the contacts you already have.</p>
+            <p className="text-body-sm font-semibold text-text">Here is what will happen</p>
+            <p className="mt-1 text-meta text-muted">Nothing is saved yet. This is a dry run of your file against the contacts you already have.</p>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
@@ -687,21 +687,21 @@ export function ImportWizard({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted">When a contact already exists</label>
+            <label className="mb-1 block text-meta font-medium text-muted">When a contact already exists</label>
             <div className="grid gap-2 sm:grid-cols-3">
               {(Object.keys(MERGE_LABEL) as MergeStrategy[]).map((k) => (
                 <button
                   key={k}
                   type="button"
                   onClick={() => setMergeStrategy(k)}
-                  className={`rounded-control border p-3 text-left text-xs transition-colors ${mergeStrategy === k ? 'border-primary bg-primary-bg' : 'border-border hover:bg-surface-elevated'}`}
+                  className={`rounded-control border p-3 text-left text-meta transition-colors ${mergeStrategy === k ? 'border-primary bg-primary-bg' : 'border-border hover:bg-surface-elevated'}`}
                 >
                   <span className="block font-semibold text-text">{MERGE_LABEL[k].label}</span>
                   <span className="mt-0.5 block text-subtle">{MERGE_LABEL[k].help}</span>
                 </button>
               ))}
             </div>
-            <button type="button" onClick={goPreview} disabled={busy} className="mt-2 text-xs font-medium text-primary-strong hover:underline disabled:opacity-40">
+            <button type="button" onClick={goPreview} disabled={busy} className="mt-2 text-meta font-medium text-primary-strong hover:underline disabled:opacity-40">
               Recount with this choice
             </button>
           </div>
@@ -709,8 +709,8 @@ export function ImportWizard({
           {validation.rows && validation.rows.length > 0 && (
             <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-text">Row by row</p>
-                <span className="inline-flex flex-wrap items-center gap-2 text-xs font-medium">
+                <p className="text-body-sm font-semibold text-text">Row by row</p>
+                <span className="inline-flex flex-wrap items-center gap-2 text-meta font-medium">
                   {(validation.diff.flagged ?? 0) > 0 && (
                     <span className="inline-flex items-center gap-1 text-danger">
                       <AlertTriangle className="h-3.5 w-3.5" /> {validation.diff.flagged} flagged
@@ -723,11 +723,11 @@ export function ImportWizard({
                   )}
                 </span>
               </div>
-              <p className="text-xs text-muted">Flagged rows still import where they can. We just could not use one field. Rows to double-check import as is.</p>
+              <p className="text-meta text-muted">Flagged rows still import where they can. We just could not use one field. Rows to double-check import as is.</p>
               <div className="max-h-96 overflow-auto rounded-card border border-border">
-                <table className="w-full min-w-[34rem] text-sm">
+                <table className="w-full min-w-[34rem] text-body-sm">
                   <thead className="sticky top-0">
-                    <tr className="border-b border-border bg-surface-elevated text-left text-xs text-muted">
+                    <tr className="border-b border-border bg-surface-elevated text-left text-meta text-muted">
                       <th className="px-3 py-2 font-medium">Row</th>
                       <th className="px-3 py-2 font-medium">Action</th>
                       <th className="px-3 py-2 font-medium">Contact</th>
@@ -743,14 +743,14 @@ export function ImportWizard({
                           <p className="font-medium text-text">{r.name || '—'}</p>
                           {r.email && <p className="text-2xs text-muted">{r.email}</p>}
                         </td>
-                        <td className="px-3 py-2 text-xs text-muted">{rowDetail(r)}</td>
+                        <td className="px-3 py-2 text-meta text-muted">{rowDetail(r)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
               {validation.rowTotal !== undefined && validation.rowTotal > validation.rows.length && (
-                <p className="text-xs text-subtle">
+                <p className="text-meta text-subtle">
                   + {validation.rowTotal - validation.rows.length} more row{validation.rowTotal - validation.rows.length === 1 ? '' : 's'}, handled the same way. Import to bring them all in.
                 </p>
               )}
@@ -758,14 +758,14 @@ export function ImportWizard({
           )}
 
           <div className="flex items-center justify-between">
-            <button type="button" onClick={() => setStep('map')} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted hover:text-text">
+            <button type="button" onClick={() => setStep('map')} className="inline-flex items-center gap-1.5 text-meta font-medium text-muted hover:text-text">
               <ArrowLeft className="h-3.5 w-3.5" /> Back to columns
             </button>
             <button
               type="button"
               onClick={commit}
               disabled={busy || (validation.diff.created === 0 && validation.diff.merged === 0)}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               {busy ? 'Importing…' : `Import ${validation.diff.created + validation.diff.merged} contacts`}
@@ -790,7 +790,7 @@ export function ImportWizard({
                   type="button"
                   onClick={undo}
                   disabled={busy}
-                  className="inline-flex items-center gap-2 rounded-control border border-border-strong px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+                  className="inline-flex items-center gap-2 rounded-control border border-border-strong px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
                 >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />} Undo this import
                 </button>
@@ -798,7 +798,7 @@ export function ImportWizard({
               <button
                 type="button"
                 onClick={() => { setStep('upload'); setSource(null); setImportId(null); setMapping([]); setValidation(null); setResult(null); setUndone(false); setBanner(null); setFilename(''); setPasted(''); setShowPaste(false); setQueue([]); }}
-                className="inline-flex items-center gap-2 rounded-control border border-border-strong px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                className="inline-flex items-center gap-2 rounded-control border border-border-strong px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
               >
                 <UploadCloud className="h-4 w-4" /> Import another file
               </button>
@@ -808,14 +808,14 @@ export function ImportWizard({
       )}
 
       {filename && step !== 'upload' && step !== 'done' && (
-        <p className="text-xs text-subtle">From {filename} · {source?.rowCount ?? 0} rows</p>
+        <p className="text-meta text-subtle">From {filename} · {source?.rowCount ?? 0} rows</p>
       )}
     </div>
   )
 }
 
 function MatchBadge({ m }: { m: ColumnMapping }) {
-  if (m.target === 'ignore') return <span className="text-xs text-subtle">Skipped</span>
+  if (m.target === 'ignore') return <span className="text-meta text-subtle">Skipped</span>
   if (m.target === 'custom') return <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">Custom field</span>
   if (m.reason === 'manual') return <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">You set this</span>
   const pct = Math.round(m.confidence * 100)
@@ -855,8 +855,8 @@ function rowDetail(r: PreviewRow): string {
 function Stat({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
     <div className="rounded-card border border-border bg-surface p-4 text-center">
-      <p className={`text-2xl font-semibold ${tone}`}>{value}</p>
-      <p className="mt-0.5 text-xs text-muted">{label}</p>
+      <p className={`text-page-title font-semibold ${tone}`}>{value}</p>
+      <p className="mt-0.5 text-meta text-muted">{label}</p>
     </div>
   )
 }

@@ -41,10 +41,10 @@ function OptionButton({
       }`}
     >
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
+        <p className={`text-body-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
           {label}
         </p>
-        {description && <p className="text-xs text-muted mt-0.5">{description}</p>}
+        {description && <p className="text-meta text-muted mt-0.5">{description}</p>}
       </div>
       {active && <Check className="w-4 h-4 text-primary-strong shrink-0" />}
     </button>
@@ -55,7 +55,7 @@ function OptionButton({
 function AxisCard({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="mb-6">
-      <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">{label}</p>
+      <p className="text-meta font-medium text-muted uppercase tracking-wide mb-2">{label}</p>
       <div className="rounded-card border border-border bg-surface lift-1 divide-y divide-border/80 dark:divide-border/50 overflow-hidden">
         {children}
       </div>
@@ -98,14 +98,14 @@ function SkinCard({
       </span>
       <span className="block border-t border-border px-3.5 py-2.5">
         <span className="flex items-center gap-2">
-          <span className="text-sm font-bold tracking-tight text-text">{label}</span>
+          <span className="text-body-sm font-bold tracking-tight text-text">{label}</span>
           {active && (
-            <span className="rounded-pill bg-primary-bg px-2 py-0.5 text-xs font-semibold text-primary-strong">
+            <span className="rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-semibold text-primary-strong">
               On
             </span>
           )}
         </span>
-        <span className="mt-0.5 block text-xs text-muted">{description}</span>
+        <span className="mt-0.5 block text-meta text-muted">{description}</span>
       </span>
     </button>
   )
@@ -156,7 +156,7 @@ export function ThemeSwitcher({
     <section>
       {showPalette && (
         <div className="mb-6">
-          <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">Palette</p>
+          <p className="text-meta font-medium text-muted uppercase tracking-wide mb-2">Palette</p>
           <div className="grid gap-3 sm:grid-cols-2">
             {SELECTABLE_SKINS.map((s) => (
               <SkinCard
@@ -203,7 +203,7 @@ export function ThemeSwitcher({
         ))}
       </AxisCard>
 
-      <p className="text-xs text-muted px-1">
+      <p className="text-meta text-muted px-1">
         {isPending ? 'Saving your theme…' : 'Your theme follows you across Frequency on this browser.'}
       </p>
     </section>

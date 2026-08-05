@@ -117,29 +117,29 @@ export default async function PracticeLibraryHealthPage() {
             {coverage.pillars.map((p) => (
               <div key={p.id} className="rounded-2xl border border-border bg-surface p-4">
                 <div className="flex items-baseline justify-between gap-2">
-                  <p className="text-sm font-bold text-text">{p.name}</p>
-                  <p className="text-sm font-bold tabular-nums text-text">{p.count}</p>
+                  <p className="text-body-sm font-bold text-text">{p.name}</p>
+                  <p className="text-body-sm font-bold tabular-nums text-text">{p.count}</p>
                 </div>
-                <p className="mt-0.5 text-xs text-subtle">
+                <p className="mt-0.5 text-meta text-subtle">
                   {p.subcategories.length} sub-categories · {p.emptySubcategories.length} empty
                 </p>
                 <ul className="mt-3 space-y-1.5">
                   {p.subcategories.map((s) => (
-                    <li key={s.id} className="flex items-center justify-between gap-2 text-xs">
+                    <li key={s.id} className="flex items-center justify-between gap-2 text-meta">
                       <span className={s.count === 0 ? 'text-danger' : 'text-muted'}>{s.name}</span>
                       <span className={`tabular-nums ${s.count === 0 ? 'font-semibold text-danger' : 'text-subtle'}`}>
                         {s.count}
                       </span>
                     </li>
                   ))}
-                  {p.subcategories.length === 0 && <li className="text-xs text-subtle">No sub-categories</li>}
+                  {p.subcategories.length === 0 && <li className="text-meta text-subtle">No sub-categories</li>}
                 </ul>
               </div>
             ))}
           </div>
         )}
         {coverage.unpilared > 0 && (
-          <p className="mt-3 text-xs text-muted">
+          <p className="mt-3 text-meta text-muted">
             {coverage.unpilared} published practice{coverage.unpilared === 1 ? '' : 's'} with no Pillar set.
           </p>
         )}
@@ -195,17 +195,17 @@ export default async function PracticeLibraryHealthPage() {
             <ol className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
               {contributors.map((c, i) => (
                 <li key={c.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <span className="w-5 shrink-0 text-xs font-bold tabular-nums text-muted">{i + 1}</span>
+                  <span className="w-5 shrink-0 text-meta font-bold tabular-nums text-muted">{i + 1}</span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-text">{c.displayName}</p>
-                    {c.handle && <p className="truncate text-xs text-muted">@{c.handle}</p>}
+                    <p className="truncate text-body-sm font-semibold text-text">{c.displayName}</p>
+                    {c.handle && <p className="truncate text-meta text-muted">@{c.handle}</p>}
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className="text-sm font-bold tabular-nums text-text">{c.published}</p>
+                    <p className="text-body-sm font-bold tabular-nums text-text">{c.published}</p>
                     <p className="text-2xs text-muted">published</p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className="text-sm font-semibold tabular-nums text-muted">{c.reach30d}</p>
+                    <p className="text-body-sm font-semibold tabular-nums text-muted">{c.reach30d}</p>
                     <p className="text-2xs text-muted">logs 30d</p>
                   </div>
                 </li>
@@ -232,8 +232,8 @@ function Funnel({ funnel }: { funnel: FunnelMetrics }) {
       {steps.map((s) => (
         <div key={s.label}>
           <div className="mb-1 flex items-baseline justify-between gap-2">
-            <span className="text-xs font-medium text-muted">{s.label}</span>
-            <span className="text-xs tabular-nums text-muted">
+            <span className="text-meta font-medium text-muted">{s.label}</span>
+            <span className="text-meta tabular-nums text-muted">
               {s.value}
               <span className="ml-1.5 text-2xs">{Math.round(s.share * 100)}%</span>
             </span>
@@ -265,11 +265,11 @@ function PerformerList({
       {rows.map((r) => (
         <li key={r.id} className="flex items-center gap-3 px-4 py-2.5">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-text">{r.title}</p>
-            <p className="text-xs text-subtle">{r.adopters} adopters</p>
+            <p className="truncate text-body-sm font-semibold text-text">{r.title}</p>
+            <p className="text-meta text-subtle">{r.adopters} adopters</p>
           </div>
           <div className="shrink-0 text-right">
-            <p className={`text-sm font-bold tabular-nums ${idle ? 'text-subtle' : 'text-text'}`}>
+            <p className={`text-body-sm font-bold tabular-nums ${idle ? 'text-subtle' : 'text-text'}`}>
               {idle ? r.logs_total : r.logs_30d}
             </p>
             <p className="text-2xs text-muted">logs {metric}</p>
@@ -283,8 +283,8 @@ function PerformerList({
 function SlaBucket({ label, sub, value, tone }: { label: string; sub: string; value: number; tone: string }) {
   return (
     <div className="rounded-card bg-surface-elevated/60 px-2 py-3">
-      <p className={`text-xl font-extrabold tabular-nums ${tone}`}>{value}</p>
-      <p className="mt-0.5 text-xs font-medium text-muted">{label}</p>
+      <p className={`text-lead font-extrabold tabular-nums ${tone}`}>{value}</p>
+      <p className="mt-0.5 text-meta font-medium text-muted">{label}</p>
       <p className="text-2xs text-muted">{sub}</p>
     </div>
   )

@@ -129,7 +129,7 @@ export default async function ComparisonPage({
         </h2>
         <div className="overflow-hidden rounded-2xl border border-border">
           {/* Header row */}
-          <div className="grid grid-cols-3 border-b border-border bg-surface-elevated text-sm font-semibold text-text">
+          <div className="grid grid-cols-3 border-b border-border bg-surface-elevated text-body-sm font-semibold text-text">
             <div className="px-4 py-3" />
             <div className="px-4 py-3">{comparison.name}</div>
             <div className="px-4 py-3 text-primary-strong">Frequency</div>
@@ -137,7 +137,7 @@ export default async function ComparisonPage({
           {comparison.contrast.map((row, i) => (
             <div
               key={row.dimension}
-              className={`grid grid-cols-3 text-sm ${
+              className={`grid grid-cols-3 text-body-sm ${
                 i % 2 === 0 ? 'bg-surface' : 'bg-surface-elevated'
               }`}
             >

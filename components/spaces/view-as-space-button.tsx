@@ -52,7 +52,7 @@ export function ViewAsSpaceButton({
         <Eye className="h-3.5 w-3.5" aria-hidden /> View as {spaceName}
       </button>
       {note && (
-        <p className="text-xs text-muted" role="status">
+        <p className="text-meta text-muted" role="status">
           {note}
         </p>
       )}

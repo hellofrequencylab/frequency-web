@@ -84,7 +84,7 @@ export function AppOverrideRow({
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="truncate text-sm font-bold text-text">{label}</span>
+          <span className="truncate text-body-sm font-bold text-text">{label}</span>
           {overridden && (
             <span className="shrink-0 rounded-pill bg-broadcast-bg px-2 py-0.5 text-2xs font-semibold text-broadcast-strong">
               Override
@@ -96,8 +96,8 @@ export function AppOverrideRow({
             </span>
           )}
         </div>
-        <code className="mt-0.5 block truncate text-xs text-subtle">{appId}</code>
-        {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+        <code className="mt-0.5 block truncate text-meta text-subtle">{appId}</code>
+        {error && <p className="mt-1 text-meta text-danger">{error}</p>}
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-3">
@@ -105,7 +105,7 @@ export function AppOverrideRow({
           {isPending ? 'Saving…' : saved ? 'Saved' : overridden ? '' : 'Catalog default'}
         </span>
 
-        <label className="flex items-center gap-1.5 text-xs font-medium text-muted">
+        <label className="flex items-center gap-1.5 text-meta font-medium text-muted">
           <input
             type="checkbox"
             checked={state.enabled}
@@ -116,7 +116,7 @@ export function AppOverrideRow({
           Shown
         </label>
 
-        <label className="flex items-center gap-1.5 text-xs font-medium text-muted">
+        <label className="flex items-center gap-1.5 text-meta font-medium text-muted">
           <span className="sr-only sm:not-sr-only">Order</span>
           <input
             type="number"
@@ -127,18 +127,18 @@ export function AppOverrideRow({
             aria-label={`Order for ${label}`}
             onChange={(e) => setState((s) => ({ ...s, position: e.target.value }))}
             onBlur={() => commit(state)}
-            className="w-16 rounded-lg border border-border bg-canvas px-2 py-1.5 text-sm text-text disabled:opacity-50"
+            className="w-16 rounded-lg border border-border bg-canvas px-2 py-1.5 text-body-sm text-text disabled:opacity-50"
           />
         </label>
 
-        <label className="flex items-center gap-1.5 text-xs font-medium text-muted">
+        <label className="flex items-center gap-1.5 text-meta font-medium text-muted">
           <span className="sr-only sm:not-sr-only">Who sees it</span>
           <select
             value={state.minRole}
             disabled={isPending}
             aria-label={`Who sees ${label}`}
             onChange={(e) => commit({ ...state, minRole: e.target.value as AppMinRole | '' })}
-            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm font-medium text-text disabled:opacity-50"
+            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm font-medium text-text disabled:opacity-50"
           >
             <option value="">Everyone</option>
             {APP_MIN_ROLES.map((r) => (

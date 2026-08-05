@@ -23,8 +23,8 @@ import {
   addReminder, completeReminder, deleteReminder, briefContact,
 } from '../actions'
 
-const input = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30'
-const lbl = 'block text-xs font-medium text-muted mb-1'
+const input = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30'
+const lbl = 'block text-meta font-medium text-muted mb-1'
 
 function fmtDate(s: string | null): string {
   if (!s) return ''
@@ -131,7 +131,7 @@ export function Detail({
             // Private `network-contacts` signed URL — skip the optimizer (see network/contacts page note).
             <Image src={avatarSrc(avatarUrl)} alt="" width={48} height={48} unoptimized className="h-12 w-12 shrink-0 rounded-pill object-cover ring-2 ring-surface" style={avatarFocusStyle(avatarUrl)} />
           ) : (
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-base font-semibold text-muted">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-body font-semibold text-muted">
               {contact.displayName ? getInitials(name) : <User className="h-6 w-6" />}
             </span>
           )}
@@ -149,13 +149,13 @@ export function Detail({
               {[contact.title, contact.company].filter(Boolean).join(' · ')}
             </span>
           )}
-          <span className="text-xs text-subtle">Added {fmtDate(contact.createdAt)}</span>
+          <span className="text-meta text-subtle">Added {fmtDate(contact.createdAt)}</span>
           {contact.lastContactedAt && (
-            <span className="text-xs text-subtle">Last contacted {fmtDate(contact.lastContactedAt)}</span>
+            <span className="text-meta text-subtle">Last contacted {fmtDate(contact.lastContactedAt)}</span>
           )}
           {/* Make it unmistakable this is the viewer's OWN private contact entry, not the
               person's Frequency profile — Edit/Delete here only touch this private record. */}
-          <span className="inline-flex w-full items-center gap-1.5 text-xs text-muted">
+          <span className="inline-flex w-full items-center gap-1.5 text-meta text-muted">
             <Lock className="h-3 w-3 shrink-0" />
             Your private contact. Editing or deleting this only changes your own note, never their Frequency profile.
           </span>
@@ -167,7 +167,7 @@ export function Detail({
             value={contact.status}
             disabled={pending}
             onChange={(e) => start(async () => { await setStatus(contact.id, e.target.value as ContactStatus); router.refresh() })}
-            className="rounded-lg border border-border-strong bg-surface px-2 py-1 text-xs text-text focus:outline-none"
+            className="rounded-lg border border-border-strong bg-surface px-2 py-1 text-meta text-text focus:outline-none"
             aria-label="Status"
           >
             <option value="new">New</option>
@@ -175,7 +175,7 @@ export function Detail({
             <option value="archived">Archived</option>
           </select>
           {/* At-a-glance visibility; the actionable toggle + helper live in the Sharing section below. */}
-          <span className="inline-flex items-center gap-1 rounded-lg border border-border-strong px-2 py-1 text-xs font-medium text-muted">
+          <span className="inline-flex items-center gap-1 rounded-lg border border-border-strong px-2 py-1 text-meta font-medium text-muted">
             {contact.visibility === 'network' ? (
               <Globe className="h-3.5 w-3.5" />
             ) : contact.visibility === 'shared' ? (
@@ -192,7 +192,7 @@ export function Detail({
           <button
             type="button"
             onClick={() => setEditing((v) => !v)}
-            className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated"
+            className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated"
           >
             {editing ? <X className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
             {editing ? 'Close' : 'Edit'}
@@ -201,7 +201,7 @@ export function Detail({
             type="button"
             disabled={pending}
             onClick={onDelete}
-            className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger-bg"
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-meta font-medium text-danger transition-colors hover:bg-danger-bg"
           >
             <Trash2 className="h-3.5 w-3.5" /> Delete
           </button>
@@ -254,7 +254,7 @@ export function Detail({
         <EditForm contact={contact} onSaved={() => { setEditing(false); refresh() }} />
       ) : (
         <Section title="Details">
-          <dl className="space-y-2 text-sm">
+          <dl className="space-y-2 text-body-sm">
             {contact.email && <Row icon={Mail}><a href={`mailto:${contact.email}`} className="text-primary-strong hover:underline">{contact.email}</a></Row>}
             {contact.phone && <Row icon={Phone}><a href={`tel:${contact.phone}`} className="text-text hover:underline">{contact.phone}</a></Row>}
             {contact.city && <Row icon={MapPin}><span className="text-text">{contact.city}</span></Row>}
@@ -264,7 +264,7 @@ export function Detail({
             {contact.socials.x && <SocialRow label="X" value={contact.socials.x} />}
             {!contact.email && !contact.phone && !contact.city && !website &&
               !contact.socials.instagram && !contact.socials.linkedin && !contact.socials.x && (
-                <p className="text-sm text-subtle">No contact details yet. Use Edit to add some.</p>
+                <p className="text-body-sm text-subtle">No contact details yet. Use Edit to add some.</p>
               )}
           </dl>
         </Section>
@@ -295,27 +295,27 @@ export function Detail({
       <Section title="Before you reach out">
         {brief ? (
           <div className="space-y-2">
-            <p className="whitespace-pre-wrap text-sm text-text">{brief}</p>
+            <p className="whitespace-pre-wrap text-body-sm text-text">{brief}</p>
             <button
               type="button"
               onClick={onBrief}
               disabled={briefBusy}
-              className="text-xs font-medium text-primary-strong hover:underline disabled:opacity-50"
+              className="text-meta font-medium text-primary-strong hover:underline disabled:opacity-50"
             >
               {briefBusy ? 'Thinking…' : 'Refresh brief'}
             </button>
           </div>
         ) : (
           <div className="space-y-2">
-            <p className="text-sm text-subtle">
+            <p className="text-body-sm text-subtle">
               A quick brief from Vera before you reach out: who they are, your history, and a way in.
             </p>
-            {briefError && <p className="text-xs text-danger">{briefError}</p>}
+            {briefError && <p className="text-meta text-danger">{briefError}</p>}
             <button
               type="button"
               onClick={onBrief}
               disabled={briefBusy}
-              className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+              className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               {briefBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               {briefBusy ? 'Thinking…' : 'Prep brief'}
@@ -335,7 +335,7 @@ export function Detail({
           email / sms / calls. Hidden until there is something to show. */}
       {timelineEntries.length > 0 && (
         <Section title="Timeline">
-          <label className="mb-3 inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-muted">
+          <label className="mb-3 inline-flex cursor-pointer items-center gap-2 text-meta font-medium text-muted">
             <input
               type="checkbox"
               checked={showAutomated}
@@ -345,7 +345,7 @@ export function Detail({
             Show automated events
           </label>
           {visibleTimeline.length === 0 ? (
-            <p className="text-sm text-subtle">
+            <p className="text-body-sm text-subtle">
               Only automated events so far. Turn on &ldquo;Show automated events&rdquo; to see them.
             </p>
           ) : (
@@ -354,16 +354,16 @@ export function Detail({
                 <li key={e.id} className="flex items-start gap-2">
                   <History className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-text">{e.title}</p>
-                    {e.detail && <p className="whitespace-pre-wrap text-xs text-muted">{e.detail}</p>}
-                    <p className="text-xs text-subtle">{fmtDate(e.at)}</p>
+                    <p className="text-body-sm text-text">{e.title}</p>
+                    {e.detail && <p className="whitespace-pre-wrap text-meta text-muted">{e.detail}</p>}
+                    <p className="text-meta text-subtle">{fmtDate(e.at)}</p>
                   </div>
                 </li>
               ))}
             </ul>
           )}
           {!showAutomated && hiddenTimelineCount > 0 && visibleTimeline.length > 0 && (
-            <p className="mt-3 text-xs text-subtle">
+            <p className="mt-3 text-meta text-subtle">
               {hiddenTimelineCount} automated {hiddenTimelineCount === 1 ? 'event is' : 'events are'} hidden.
             </p>
           )}
@@ -374,7 +374,7 @@ export function Detail({
       <Section title="Tags">
         <div className="flex flex-wrap items-center gap-1.5">
           {tags.map((t) => (
-            <span key={t.id} className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
+            <span key={t.id} className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-medium text-primary-strong">
               {t.source === 'ai' && <Sparkles className="h-3 w-3" />}
               {t.tag}
               <button type="button" disabled={pending} onClick={() => start(async () => { await removeTag(contact.id, t.id); router.refresh() })} aria-label={`Remove ${t.tag}`}>
@@ -387,7 +387,7 @@ export function Detail({
             onChange={(e) => setTagDraft(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); onAddTag(tagDraft) } }}
             placeholder={tags.length ? 'Add…' : 'Add a tag…'}
-            className="min-w-[7rem] flex-1 rounded-lg border border-transparent bg-surface-elevated px-2 py-1 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none"
+            className="min-w-[7rem] flex-1 rounded-lg border border-transparent bg-surface-elevated px-2 py-1 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none"
           />
         </div>
       </Section>
@@ -406,17 +406,17 @@ export function Detail({
             type="button"
             onClick={onAddNote}
             disabled={pending || !noteDraft.trim()}
-            className="inline-flex h-fit items-center gap-1 self-end rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            className="inline-flex h-fit items-center gap-1 self-end rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add
           </button>
         </div>
 
         <ul className="mt-4 space-y-3">
-          {notes.length === 0 && <li className="text-sm text-subtle">No notes yet.</li>}
+          {notes.length === 0 && <li className="text-body-sm text-subtle">No notes yet.</li>}
           {notes.map((n) => (
             <li key={n.id} className="group rounded-card bg-surface-elevated/50 p-3">
-              <div className="mb-1 flex items-center gap-2 text-xs text-subtle">
+              <div className="mb-1 flex items-center gap-2 text-meta text-subtle">
                 {n.kind === 'connection' && <span className="rounded bg-primary-bg px-1.5 py-0.5 font-medium text-primary-strong">Connection</span>}
                 {n.kind === 'ai' && <span className="inline-flex items-center gap-1 rounded bg-surface-elevated px-1.5 py-0.5 font-medium text-muted"><Sparkles className="h-3 w-3" /> Vera</span>}
                 <span>{fmtDate(n.createdAt)}</span>
@@ -430,7 +430,7 @@ export function Detail({
                   <Trash2 className="h-3.5 w-3.5 text-subtle hover:text-danger" />
                 </button>
               </div>
-              <p className="whitespace-pre-wrap text-sm text-text">{n.body}</p>
+              <p className="whitespace-pre-wrap text-body-sm text-text">{n.body}</p>
             </li>
           ))}
         </ul>
@@ -459,21 +459,21 @@ function FollowUp({ contactId, reminders }: { contactId: string; reminders: Cont
   return (
     <div>
       <ul className="space-y-2">
-        {reminders.length === 0 && <li className="text-sm text-subtle">No follow-ups yet.</li>}
+        {reminders.length === 0 && <li className="text-body-sm text-subtle">No follow-ups yet.</li>}
         {reminders.map((r) => (
           <li key={r.id} className="group flex items-center gap-2 rounded-card bg-surface-elevated/50 p-3">
             <CalendarClock className="h-4 w-4 shrink-0 text-subtle" />
             <div className="min-w-0 flex-1">
-              <p className={`text-sm font-medium ${isOverdue(r.dueAt) ? 'text-danger' : 'text-text'}`}>
+              <p className={`text-body-sm font-medium ${isOverdue(r.dueAt) ? 'text-danger' : 'text-text'}`}>
                 {dueLabel(r.dueAt)}
               </p>
-              {r.note && <p className="truncate text-xs text-muted">{r.note}</p>}
+              {r.note && <p className="truncate text-meta text-muted">{r.note}</p>}
             </div>
             <button
               type="button"
               disabled={pending}
               onClick={() => start(async () => { await completeReminder(r.id, contactId); router.refresh() })}
-              className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
             >
               <Check className="h-3.5 w-3.5" /> Done
             </button>
@@ -510,7 +510,7 @@ function FollowUp({ contactId, reminders }: { contactId: string; reminders: Cont
           type="button"
           onClick={onAdd}
           disabled={pending || !due}
-          className="inline-flex h-fit items-center gap-1 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          className="inline-flex h-fit items-center gap-1 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add
         </button>
@@ -524,7 +524,7 @@ function FollowUp({ contactId, reminders }: { contactId: string; reminders: Cont
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-border/70 bg-surface/60 p-5">
-      <h2 className="mb-3 text-sm font-semibold tracking-tight text-text">{title}</h2>
+      <h2 className="mb-3 text-body-sm font-semibold tracking-tight text-text">{title}</h2>
       {children}
     </section>
   )
@@ -542,7 +542,7 @@ function CardImage({ url, label }: { url: string; label: string }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={url} alt={`${label} of the card`} className="w-full object-contain" />
       {/* KEEP the black/white pair: A scrim chip painted on a photo thumbnail, not on a themed surface, so the monochrome pair stays. */}
-      <span className="absolute bottom-1.5 left-1.5 rounded bg-black/55 px-1.5 py-0.5 text-xs font-medium text-white">
+      <span className="absolute bottom-1.5 left-1.5 rounded bg-black/55 px-1.5 py-0.5 text-meta font-medium text-white">
         {label}
       </span>
     </a>
@@ -562,7 +562,7 @@ function SocialRow({ label, value }: { label: string; value: string }) {
   const href = value.startsWith('http') ? value : null
   return (
     <div className="flex items-center gap-2">
-      <span className="w-16 shrink-0 text-xs text-subtle">{label}</span>
+      <span className="w-16 shrink-0 text-meta text-subtle">{label}</span>
       {href ? (
         <a href={href} target="_blank" rel="noreferrer" className="truncate text-primary-strong hover:underline">{value}</a>
       ) : (
@@ -615,7 +615,7 @@ function EditForm({ contact, onSaved }: { contact: ContactDetail['contact']; onS
 
   return (
     <section className="rounded-2xl border border-border/70 bg-surface/60 p-5">
-      <h2 className="mb-3 text-sm font-semibold tracking-tight text-text">Edit details</h2>
+      <h2 className="mb-3 text-body-sm font-semibold tracking-tight text-text">Edit details</h2>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="Name" full><input className={input} value={f.displayName} onChange={(e) => set('displayName', e.target.value)} /></Field>
         <Field label="Title"><input className={input} value={f.title} onChange={(e) => set('title', e.target.value)} /></Field>
@@ -629,14 +629,14 @@ function EditForm({ contact, onSaved }: { contact: ContactDetail['contact']; onS
         <Field label="X"><input className={input} value={f.x} onChange={(e) => set('x', e.target.value)} /></Field>
       </div>
       <div className="mt-4 border-t border-border/70 pt-4">
-        <p className="mb-3 text-xs font-medium text-muted">From the card</p>
+        <p className="mb-3 text-meta font-medium text-muted">From the card</p>
         <DetailsEditor value={details} onChange={setDetails} />
       </div>
       <button
         type="button"
         onClick={save}
         disabled={saving}
-        className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+        className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
       >
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
         {saving ? 'Saving…' : 'Save'}

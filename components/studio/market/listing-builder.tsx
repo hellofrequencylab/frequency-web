@@ -14,7 +14,7 @@ import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import { ListingOwnerControls } from '@/components/market/listing-owner-controls'
 import { ListingShareButton } from '@/components/marketplace/listing-share-button'
 
-const FIELD = 'rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
+const FIELD = 'rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
 // Best-practice detail fields a seller can add with one tap. A field with `options` edits its value
 // through a select; the rest are free text. Every preset still persists through the same
@@ -93,10 +93,10 @@ export function ListingBuilder(props: ListingBuilderProps) {
 
   const footer = (
     <StudioFooter left={<SaveStatus state={saveState} error={error} />}>
-      <a href={`/classifieds/${props.id}`} className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated">
+      <a href={`/classifieds/${props.id}`} className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated">
         <Eye className="h-4 w-4" /> View
       </a>
-      <button type="button" onClick={close} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
+      <button type="button" onClick={close} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
         Done
       </button>
     </StudioFooter>
@@ -114,14 +114,14 @@ export function ListingBuilder(props: ListingBuilderProps) {
             onChange={(e) => { setTitle(e.target.value); queueSave({ title: e.target.value }) }}
             maxLength={120}
             placeholder="What are you offering or looking for?"
-            className="w-full bg-transparent text-2xl font-bold text-text outline-none placeholder:text-subtle"
+            className="w-full bg-transparent text-page-title font-bold text-text outline-none placeholder:text-subtle"
           />
           <input
             value={category}
             onChange={(e) => { setCategory(e.target.value); queueSave({ category: e.target.value || null }) }}
             maxLength={40}
             placeholder="Category (optional)"
-            className="mt-1 w-full bg-transparent text-sm text-muted outline-none placeholder:text-subtle"
+            className="mt-1 w-full bg-transparent text-body-sm text-muted outline-none placeholder:text-subtle"
           />
         </div>
       </div>
@@ -144,11 +144,11 @@ export function ListingBuilder(props: ListingBuilderProps) {
       </div>
 
       <div className="mt-3 flex items-center gap-2">
-        <button type="button" onClick={useMyLocation} disabled={locating} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60">
+        <button type="button" onClick={useMyLocation} disabled={locating} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60">
           {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : hasGeo ? <Check className="h-4 w-4 text-success" /> : <MapPin className="h-4 w-4" />}
           {hasGeo ? 'Location pinned' : 'Use my location'}
         </button>
-        {hasGeo && <button type="button" onClick={clearLocation} className="text-xs text-subtle hover:text-text">Clear</button>}
+        {hasGeo && <button type="button" onClick={clearLocation} className="text-meta text-subtle hover:text-text">Clear</button>}
       </div>
 
       {/* Pickup address (private by default). The map shows only the approximate area unless the seller
@@ -163,7 +163,7 @@ export function ListingBuilder(props: ListingBuilderProps) {
             className={FIELD}
           />
         </StudioField>
-        <label className="mt-2 flex items-center gap-2 text-sm text-muted">
+        <label className="mt-2 flex items-center gap-2 text-body-sm text-muted">
           <input
             type="checkbox"
             checked={showExact}
@@ -189,7 +189,7 @@ export function ListingBuilder(props: ListingBuilderProps) {
                     type="button"
                     onClick={() => addPreset(p.label)}
                     disabled={added}
-                    className="inline-flex items-center gap-1 rounded-pill border border-border px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-pill border border-border px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
                   >
                     {added ? <Check className="h-3.5 w-3.5 text-success" /> : <Plus className="h-3.5 w-3.5" />} {p.label}
                   </button>
@@ -231,7 +231,7 @@ export function ListingBuilder(props: ListingBuilderProps) {
                 </div>
               )
             })}
-            <button type="button" onClick={addDetail} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated">
+            <button type="button" onClick={addDetail} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated">
               <Plus className="h-4 w-4" /> Add detail
             </button>
           </div>

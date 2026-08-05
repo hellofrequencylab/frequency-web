@@ -14,9 +14,9 @@ import { createHousingListingAction } from '@/app/(main)/marketplace/actions'
 // EDIT surface ([id]/edit): pass `initial` to prefill + a bound update `action`.
 
 const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary'
-const LABEL = 'mb-1 block text-sm font-medium text-text'
-const CHECK = 'flex items-center gap-2 text-sm text-text'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
+const LABEL = 'mb-1 block text-body-sm font-medium text-text'
+const CHECK = 'flex items-center gap-2 text-body-sm text-text'
 
 /** Prefill values for EDIT mode — the base listing + housing extension, already merged
  *  by the edit page. Field-for-field with the form controls below; money is in dollars
@@ -317,12 +317,12 @@ export function HousingForm({
           search engines, previews, or structured data. */}
       <fieldset>
         <legend className={LABEL}>Address privacy</legend>
-        <p className="mb-2 text-xs text-subtle">
+        <p className="mb-2 text-meta text-subtle">
           Choose how much of the location shows on the listing.
         </p>
         <div className="space-y-2">
           {ADDRESS_PRECISIONS.map((p) => (
-            <label key={p.slug} className="flex items-start gap-2 text-sm text-text">
+            <label key={p.slug} className="flex items-start gap-2 text-body-sm text-text">
               <input
                 type="radio"
                 name="address_precision"
@@ -333,7 +333,7 @@ export function HousingForm({
               />
               <span>
                 <span className="font-medium">{p.label}</span>
-                <span className="block text-xs text-subtle">{p.hint}</span>
+                <span className="block text-meta text-subtle">{p.hint}</span>
               </span>
             </label>
           ))}

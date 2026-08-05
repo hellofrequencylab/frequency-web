@@ -49,8 +49,8 @@ export function EmailEnableCard({
           <Mail className="h-5 w-5" aria-hidden />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-text">Turn on email</p>
-          <p className="mt-0.5 text-sm text-muted">
+          <p className="text-body-sm font-semibold text-text">Turn on email</p>
+          <p className="mt-0.5 text-body-sm text-muted">
             Email your own contacts from this space. Once it is on, you can write a campaign, pick who
             gets it, and send or schedule it.
           </p>
@@ -65,13 +65,13 @@ export function EmailEnableCard({
           onChange={(e) => setAcknowledged(e.target.checked)}
           className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-border-strong/30"
         />
-        <span className="text-sm text-text">
+        <span className="text-body-sm text-text">
           I have permission to email these people and will follow anti-spam rules.
         </span>
       </label>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
+        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}

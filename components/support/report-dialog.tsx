@@ -149,7 +149,7 @@ export function ReportDialog({
         style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
       >
         <div className="mb-1 flex items-center justify-between">
-          <p className="text-base font-bold text-text">{done ? 'Report sent' : 'Send a report'}</p>
+          <p className="text-body font-bold text-text">{done ? 'Report sent' : 'Send a report'}</p>
           <button type="button" onClick={onClose} aria-label="Close" className="rounded-pill p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text">
             <X className="h-5 w-5" />
           </button>
@@ -162,22 +162,22 @@ export function ReportDialog({
                 <Check className="h-5 w-5" />
               </span>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-text">Thanks. We’re on it.</p>
-                <p className="text-xs text-muted">Your report is logged as ticket #{done.ref}. We’ll reply in your support history.</p>
+                <p className="text-body-sm font-semibold text-text">Thanks. We’re on it.</p>
+                <p className="text-meta text-muted">Your report is logged as ticket #{done.ref}. We’ll reply in your support history.</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Link href={`/support/${done.id}`} onClick={onClose} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
+              <Link href={`/support/${done.id}`} onClick={onClose} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
                 View ticket <ExternalLink className="h-3.5 w-3.5" />
               </Link>
-              <Link href="/support" onClick={onClose} className="rounded-xl px-3 py-2 text-sm font-semibold text-muted hover:text-text">
+              <Link href="/support" onClick={onClose} className="rounded-xl px-3 py-2 text-body-sm font-semibold text-muted hover:text-text">
                 All my tickets
               </Link>
             </div>
           </div>
         ) : (
           <>
-            <p className="mb-3 text-xs leading-relaxed text-muted">
+            <p className="mb-3 text-meta leading-relaxed text-muted">
               Found a bug or stuck on something? Tell us what happened. We capture the page details
               automatically, and you can drop in a screenshot.
             </p>
@@ -204,30 +204,30 @@ export function ReportDialog({
             </div>
 
             <label className="block">
-              <span className="mb-1 block text-xs font-medium text-subtle">Summary</span>
+              <span className="mb-1 block text-meta font-medium text-subtle">Summary</span>
               <input
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder={type === 'bug' ? 'e.g. Capture button does nothing on the feed' : 'A short summary'}
                 maxLength={160}
-                className="w-full rounded-control border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+                className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
               />
             </label>
 
             <label className="mt-3 block">
-              <span className="mb-1 block text-xs font-medium text-subtle">What happened?</span>
+              <span className="mb-1 block text-meta font-medium text-subtle">What happened?</span>
               <textarea
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 rows={4}
                 placeholder="What you were doing, what you expected, and what happened instead."
-                className="w-full resize-none rounded-control border border-border bg-surface px-3 py-2 text-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+                className="w-full resize-none rounded-control border border-border bg-surface px-3 py-2 text-body-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
               />
             </label>
 
             {/* Screenshot */}
             <div className="mt-3">
-              <span className="mb-1 block text-xs font-medium text-subtle">Screenshot <span className="font-normal text-subtle">· optional, paste or attach</span></span>
+              <span className="mb-1 block text-meta font-medium text-subtle">Screenshot <span className="font-normal text-subtle">· optional, paste or attach</span></span>
               {shot ? (
                 <div className="relative overflow-hidden rounded-card border border-border">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -240,7 +240,7 @@ export function ReportDialog({
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
-                  className="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-border bg-surface px-3 py-4 text-xs font-medium text-muted transition-colors hover:border-primary hover:text-text"
+                  className="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-border bg-surface px-3 py-4 text-meta font-medium text-muted transition-colors hover:border-primary hover:text-text"
                 >
                   <ImagePlus className="h-4 w-4" /> Paste a screenshot, or tap to attach
                 </button>
@@ -257,7 +257,7 @@ export function ReportDialog({
             {/* Captured context — collapsed by default */}
             {lines.length > 0 && (
               <div className="mt-3 rounded-card border border-border bg-surface-elevated/40">
-                <button type="button" onClick={() => setShowContext((v) => !v)} aria-expanded={showContext} className="flex w-full items-center justify-between px-3 py-2 text-xs font-semibold text-muted">
+                <button type="button" onClick={() => setShowContext((v) => !v)} aria-expanded={showContext} className="flex w-full items-center justify-between px-3 py-2 text-meta font-semibold text-muted">
                   <span>Page details we’ll include</span>
                   {showContext ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                 </button>
@@ -281,7 +281,7 @@ export function ReportDialog({
                   <Sparkles className="h-3.5 w-3.5" />
                   <span className="text-2xs font-bold uppercase tracking-wide">Vera</span>
                 </div>
-                <p className="text-sm leading-relaxed text-text">
+                <p className="text-body-sm leading-relaxed text-text">
                   {vera.answer ?? "I couldn’t find a sure answer in the help center. Go ahead and send it to the team."}
                 </p>
                 {vera.citations.length > 0 && (
@@ -294,14 +294,14 @@ export function ReportDialog({
                   </div>
                 )}
                 {vera.answer && (
-                  <button type="button" onClick={onClose} className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-success-bg/50 px-3 py-1.5 text-xs font-semibold text-success transition-colors hover:bg-success-bg/70">
+                  <button type="button" onClick={onClose} className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-success-bg/50 px-3 py-1.5 text-meta font-semibold text-success transition-colors hover:bg-success-bg/70">
                     <Check className="h-3.5 w-3.5" /> That solved it, close
                   </button>
                 )}
               </div>
             )}
 
-            {error && <p className="mt-3 text-xs text-danger">{error}</p>}
+            {error && <p className="mt-3 text-meta text-danger">{error}</p>}
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <button
@@ -309,7 +309,7 @@ export function ReportDialog({
                 onClick={askVera}
                 disabled={asking || !subject.trim()}
                 title="Check the help center before filing"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-signal/50 bg-signal-bg/30 px-3 py-2 text-sm font-semibold text-signal-strong transition-colors hover:bg-signal-bg/50 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-signal/50 bg-signal-bg/30 px-3 py-2 text-body-sm font-semibold text-signal-strong transition-colors hover:bg-signal-bg/50 disabled:opacity-50"
               >
                 {asking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                 Ask Vera first
@@ -318,12 +318,12 @@ export function ReportDialog({
                 type="button"
                 onClick={submit}
                 disabled={pending || !subject.trim()}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
               >
                 {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {pending ? 'Sending…' : vera ? 'Send to the team' : 'Send report'}
               </button>
-              <button type="button" onClick={onClose} className="rounded-xl px-3 py-2 text-sm font-semibold text-muted hover:text-text">
+              <button type="button" onClick={onClose} className="rounded-xl px-3 py-2 text-body-sm font-semibold text-muted hover:text-text">
                 Cancel
               </button>
             </div>

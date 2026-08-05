@@ -193,7 +193,7 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
       contactNote={
         !isOwner ? (
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs text-subtle">
+            <p className="text-meta text-subtle">
               {isService
                 ? 'Booking holds your slot; payment is secure on Stripe. The space gets paid directly, the fee stays low.'
                 : soldOut
@@ -211,7 +211,7 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
           <div className="mt-3 rounded-3xl border border-border bg-surface p-5 lift-1">
             {isService ? (
               isOwner ? (
-                <p className="text-sm text-subtle">This is your service. Members pick a time here to book.</p>
+                <p className="text-body-sm text-subtle">This is your service. Members pick a time here to book.</p>
               ) : (
                 <div className="space-y-4">
                   {/* Pricing Options P2: a Choose-your-price service shows the buyer control (suggested
@@ -219,7 +219,7 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
                       gated path). */}
                   {svc.priceModel === 'choose' && (
                     <div>
-                      <p className="mb-2 text-xs font-semibold text-subtle">Name your price</p>
+                      <p className="mb-2 text-meta font-semibold text-subtle">Name your price</p>
                       <PriceInput
                         price={serviceToPrice(product.priceCents, svc)}
                         idPrefix={`svc-${product.id}`}
@@ -235,9 +235,9 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
                 </div>
               )
             ) : soldOut ? (
-              <p className="text-sm font-medium text-subtle">Sold out.</p>
+              <p className="text-body-sm font-medium text-subtle">Sold out.</p>
             ) : isOwner ? (
-              <p className="text-sm text-subtle">
+              <p className="text-body-sm text-subtle">
                 {connectOnly
                   ? 'This is your listing. Buyers see a Contact seller button here.'
                   : 'This is your listing. Buyers see a Buy button here.'}
@@ -249,7 +249,7 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
                   Contact seller
                 </Link>
               ) : (
-                <p className="text-sm text-subtle">Message the seller to arrange this.</p>
+                <p className="text-body-sm text-subtle">Message the seller to arrange this.</p>
               )
             ) : hasVariants ? (
               <VariantPicker
@@ -281,7 +281,7 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
       }
     >
       {(sellerVerified || (isService && (svc.durationMin || svc.cancellationWindowHours))) && (
-        <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-subtle">
+        <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-subtle">
           {sellerVerified && <VerifiedBadge verified withLabel />}
           {isService && (svc.durationMin || svc.cancellationWindowHours) && (
             <span>

@@ -138,7 +138,7 @@ function profileFrom(puck: PuckArg): SpaceProfileData | undefined {
 // the rule is simply: nothing to show + editing ⇒ stub; nothing to show + live ⇒ render nothing.
 function EditorStub({ label, hint }: { label: string; hint: string }) {
   return (
-    <div className="rounded-card border border-dashed border-border bg-surface/60 px-4 py-12 text-center text-sm text-muted">
+    <div className="rounded-card border border-dashed border-border bg-surface/60 px-4 py-12 text-center text-body-sm text-muted">
       {label}
       <span className="mt-1 block text-2xs text-subtle">{hint}</span>
     </div>
@@ -190,7 +190,7 @@ function CardTitle({ eyebrow, heading, ink }: { eyebrow?: string; heading?: stri
         </p>
       )}
       {heading && (
-        <h2 className={`font-section mt-1.5 text-xl font-bold tracking-tight sm:text-2xl ${ink ? 'text-on-ink' : 'text-text'}`}>
+        <h2 className={`font-section mt-1.5 text-lead font-bold tracking-tight sm:text-page-title ${ink ? 'text-on-ink' : 'text-text'}`}>
           {heading}
         </h2>
       )}
@@ -243,7 +243,7 @@ function IdentityLockup({
               className="h-20 w-20 rounded-2xl border-4 border-surface bg-surface object-contain shadow-md sm:h-24 sm:w-24"
             />
           ) : (
-            <span className="flex h-20 w-20 items-center justify-center rounded-2xl border-4 border-surface bg-surface-elevated text-2xl font-bold text-subtle shadow-md sm:h-24 sm:w-24">
+            <span className="flex h-20 w-20 items-center justify-center rounded-2xl border-4 border-surface bg-surface-elevated text-page-title font-bold text-subtle shadow-md sm:h-24 sm:w-24">
               {getInitials(identity.name)}
             </span>
           )}
@@ -252,7 +252,7 @@ function IdentityLockup({
           <div className="flex flex-wrap items-center gap-2">
             <h1
               className={`min-w-0 break-words font-bold leading-tight ${
-                overlay ? 'text-3xl text-on-ink sm:text-4xl' : 'text-2xl text-text'
+                overlay ? 'text-3xl text-on-ink sm:text-4xl' : 'text-page-title text-text'
               }`}
             >
               {identity.name}
@@ -269,7 +269,7 @@ function IdentityLockup({
             )}
           </div>
           {identity.tagline && (
-            <p className={`mt-1 max-w-2xl text-sm ${overlay ? 'text-on-ink-muted' : 'text-muted'}`}>
+            <p className={`mt-1 max-w-2xl text-body-sm ${overlay ? 'text-on-ink-muted' : 'text-muted'}`}>
               {identity.tagline}
             </p>
           )}
@@ -280,14 +280,14 @@ function IdentityLockup({
           {identity.primaryCta && (
             <Link
               href={identity.primaryCta.href || '#'}
-              className="inline-flex items-center gap-2 rounded-control bg-primary px-6 py-2.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover shadow-pop"
+              className="inline-flex items-center gap-2 rounded-control bg-primary px-6 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover shadow-pop"
             >
               {identity.primaryCta.label}
             </Link>
           )}
           {showFollow && (
             <span
-              className={`inline-flex items-center gap-2 rounded-control border px-6 py-2.5 text-sm font-bold ${
+              className={`inline-flex items-center gap-2 rounded-control border px-6 py-2.5 text-body-sm font-bold ${
                 overlay ? 'border-on-ink/40 text-on-ink' : 'border-border-strong text-text'
               }`}
             >
@@ -405,7 +405,7 @@ export function SpaceAboutBlock({
     <InfoCard ink={ink}>
       <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
       {body && (
-        <div className={`space-y-3 text-base leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
+        <div className={`space-y-3 text-body leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
           {body.split('\n').filter(Boolean).map((p, i) => (
             <p key={i}>{p}</p>
           ))}
@@ -579,7 +579,7 @@ export function SpaceQuickLinksBlock({
               <a
                 href={href}
                 {...(isExt ? { target: '_blank', rel: 'noreferrer' } : {})}
-                className={`group flex items-center justify-between gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors ${
+                className={`group flex items-center justify-between gap-2 rounded-xl border px-4 py-3 text-body-sm font-semibold transition-colors ${
                   ink
                     ? 'border-on-ink/10 bg-on-ink/5 text-on-ink hover:bg-on-ink/10'
                     : 'border-border/60 bg-surface/60 text-text hover:border-primary/40 hover:bg-primary-bg/20'
@@ -645,10 +645,10 @@ export function SpaceEventsBlock({
                   }`}
                 >
                   <span className={`text-3xs font-bold leading-none ${ink ? 'text-primary' : 'text-primary-strong'}`}>{month}</span>
-                  <span className={`text-base font-bold leading-tight ${ink ? 'text-on-ink' : 'text-primary-strong'}`}>{day}</span>
+                  <span className={`text-body font-bold leading-tight ${ink ? 'text-on-ink' : 'text-primary-strong'}`}>{day}</span>
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className={`block truncate text-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{e.title}</span>
+                  <span className={`block truncate text-body-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{e.title}</span>
                   <span className={`block text-2xs ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>{when}</span>
                 </span>
                 <Calendar className={`h-4 w-4 shrink-0 ${ink ? 'text-primary' : 'text-primary-strong'}`} aria-hidden />
@@ -682,13 +682,13 @@ function PracticeRow({ item, hrefBase, fallbackEmoji, ink }: { item: SpacePracti
         }`}
       >
         <span
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${ink ? 'bg-on-ink/10' : 'bg-primary-bg'}`}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-body-lg ${ink ? 'bg-on-ink/10' : 'bg-primary-bg'}`}
           aria-hidden
         >
           {item.emoji || fallbackEmoji}
         </span>
         <span className="min-w-0 flex-1">
-          <span className={`block truncate text-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{item.title}</span>
+          <span className={`block truncate text-body-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{item.title}</span>
           {item.summary && (
             <span className={`mt-0.5 block line-clamp-2 text-2xs ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>{item.summary}</span>
           )}
@@ -728,7 +728,7 @@ export function SpacePracticesBlock({
         {practices.length > 0 && (
           <div>
             {practicesHeading && (
-              <h3 className={`mb-3 inline-flex items-center gap-2 text-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>
+              <h3 className={`mb-3 inline-flex items-center gap-2 text-body-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>
                 <Sparkles className={`h-4 w-4 ${ink ? 'text-primary' : 'text-primary-strong'}`} aria-hidden />
                 {practicesHeading}
               </h3>
@@ -743,7 +743,7 @@ export function SpacePracticesBlock({
         {journeys.length > 0 && (
           <div>
             {journeysHeading && (
-              <h3 className={`mb-3 inline-flex items-center gap-2 text-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>
+              <h3 className={`mb-3 inline-flex items-center gap-2 text-body-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>
                 <Route className={`h-4 w-4 ${ink ? 'text-primary' : 'text-primary-strong'}`} aria-hidden />
                 {journeysHeading}
               </h3>
@@ -793,7 +793,7 @@ export function SpaceCommunityBlock({
                   : 'border-border/60 bg-surface/60 hover:border-primary/40 hover:bg-primary-bg/20'
               }`}
             >
-              <span className={`truncate text-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{c.name}</span>
+              <span className={`truncate text-body-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{c.name}</span>
               {c.about && (
                 <span className={`mt-1 line-clamp-2 text-2xs ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>{c.about}</span>
               )}
@@ -841,9 +841,9 @@ export function SpaceBookingBlock({
         </span>
         <div className="min-w-0 flex-1">
           {heading && (
-            <h2 className={`font-section text-xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>
+            <h2 className={`font-section text-lead font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>
           )}
-          {body && <p className={`mt-1.5 text-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{body}</p>}
+          {body && <p className={`mt-1.5 text-body-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{body}</p>}
           <div className="mt-5">
             <CtaButton href={booking.href} label={ctaLabel || 'Book a time'} variant="primary" onInk={ink} withArrow />
           </div>
@@ -905,11 +905,11 @@ export function SpaceOfferingsBlock({
               >
                 <div className="flex items-start justify-between gap-3">
                   {o.title && (
-                    <h3 className={`text-lg font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>{o.title}</h3>
+                    <h3 className={`text-body-lg font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>{o.title}</h3>
                   )}
                   {price && (
                     <span
-                      className={`shrink-0 rounded-pill px-2.5 py-1 text-sm font-semibold ${
+                      className={`shrink-0 rounded-pill px-2.5 py-1 text-body-sm font-semibold ${
                         ink ? 'bg-on-ink/10 text-on-ink' : 'bg-primary-bg text-primary-strong'
                       }`}
                     >
@@ -918,15 +918,15 @@ export function SpaceOfferingsBlock({
                   )}
                 </div>
                 {meta.length > 0 && (
-                  <p className={`mt-1 text-xs font-medium ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
+                  <p className={`mt-1 text-meta font-medium ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
                     {meta.join(' · ')}
                   </p>
                 )}
                 {o.blurb && (
-                  <p className={`mt-2 text-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{o.blurb}</p>
+                  <p className={`mt-2 text-body-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{o.blurb}</p>
                 )}
                 {deposit && (
-                  <p className={`mt-auto pt-3 text-xs ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{deposit}</p>
+                  <p className={`mt-auto pt-3 text-meta ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{deposit}</p>
                 )}
               </div>
             )
@@ -1011,7 +1011,7 @@ export function SpaceContactBlock({
       <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
       <ul className="space-y-3">
         {rows.map((r, i) => (
-          <li key={i} className={`flex items-start gap-3 text-sm ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
+          <li key={i} className={`flex items-start gap-3 text-body-sm ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
             <span className={`mt-0.5 shrink-0 ${ink ? 'text-primary' : 'text-primary-strong'}`}>{r.icon}</span>
             <span className="min-w-0 break-words">{r.text}</span>
           </li>
@@ -1045,7 +1045,7 @@ function TeamAvatar({ card }: { card: TeamCard }) {
     return <img src={avatarSrc(card.avatar)} alt="" className="mx-auto h-16 w-16 rounded-pill object-cover" style={avatarFocusStyle(card.avatar)} />
   }
   return (
-    <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-pill bg-surface-elevated text-lg font-bold text-subtle">
+    <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-pill bg-surface-elevated text-body-lg font-bold text-subtle">
       {getInitials(card.name)}
     </span>
   )
@@ -1055,7 +1055,7 @@ function TeamCardTile({ card, ink }: { card: TeamCard; ink?: boolean }) {
   const body = (
     <>
       <TeamAvatar card={card} />
-      <div className={`mt-3 text-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{card.name}</div>
+      <div className={`mt-3 text-body-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{card.name}</div>
       {card.role && <div className={`text-2xs ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>{card.role}</div>}
     </>
   )
@@ -1154,8 +1154,8 @@ export function SpaceCTABlock({
   if (!heading && !ctaLabel) return null
   return (
     <InfoCard ink={ink} className={`text-center${accent ? ' border-primary/30 bg-primary-bg/30' : ''}`}>
-      {heading && <h2 className={`font-section text-xl font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>}
-      {body && <p className={`mx-auto mt-2 max-w-xl text-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{body}</p>}
+      {heading && <h2 className={`font-section text-lead font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>}
+      {body && <p className={`mx-auto mt-2 max-w-xl text-body-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{body}</p>}
       {ctaLabel && (
         <div className="mt-5 flex justify-center">
           <CtaButton href={ctaHref || '#'} label={ctaLabel} variant="primary" onInk={ink} withArrow />
@@ -1192,7 +1192,7 @@ export function SpaceActionBlock({
     <InfoCard ink={ink} className={`text-center${accent ? ' border-primary/30 bg-primary-bg/30' : ''}`}>
       <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
       {body && (
-        <p className={`mx-auto mt-2 max-w-xl text-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
+        <p className={`mx-auto mt-2 max-w-xl text-body-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
           {body}
         </p>
       )}
@@ -1244,7 +1244,7 @@ export function SpaceSectionTitleBlock({
       </h2>
       {subheading && (
         <p
-          className={`mt-3 max-w-2xl text-base leading-relaxed ${centered ? 'mx-auto' : ''} ${
+          className={`mt-3 max-w-2xl text-body leading-relaxed ${centered ? 'mx-auto' : ''} ${
             ink ? 'text-on-ink-muted' : 'text-muted'
           }`}
         >
@@ -1299,11 +1299,11 @@ export function SpaceCalloutBlock({
         </p>
       )}
       {heading && (
-        <h2 className={`font-section mt-1.5 text-2xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>
+        <h2 className={`font-section mt-1.5 text-page-title font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>
       )}
       {body && (
         <p
-          className={`mt-3 max-w-2xl text-base leading-relaxed ${centered ? 'mx-auto' : ''} ${
+          className={`mt-3 max-w-2xl text-body leading-relaxed ${centered ? 'mx-auto' : ''} ${
             ink ? 'text-on-ink-muted' : 'text-muted'
           }`}
         >
@@ -1398,7 +1398,7 @@ export function SpaceBusinessBlock({
               />
             ))}
           </span>
-          {ratingCount && <span className={`text-sm ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>{ratingCount}</span>}
+          {ratingCount && <span className={`text-body-sm ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>{ratingCount}</span>}
         </div>
       )}
       {shownLinks.length > 0 && (
@@ -1416,7 +1416,7 @@ export function SpaceBusinessBlock({
                 href={safeHref}
                 target="_blank"
                 rel="noreferrer"
-                className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors ${
+                className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-body-sm font-semibold transition-colors ${
                   ink
                     ? 'border-on-ink/10 bg-on-ink/5 text-on-ink hover:bg-on-ink/10'
                     : 'border-border/60 bg-surface/60 text-text hover:border-primary/40 hover:bg-primary-bg/20'

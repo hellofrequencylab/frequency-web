@@ -51,10 +51,10 @@ export function Campaigns({
       <div className="rounded-2xl border border-border bg-surface lift-1">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <div>
-            <h2 className="flex items-center gap-1.5 text-sm font-bold text-text">
+            <h2 className="flex items-center gap-1.5 text-body-sm font-bold text-text">
               <Trophy className="w-4 h-4 text-primary-strong" /> Campaign challenges
             </h2>
-            <p className="text-xs text-muted mt-0.5">
+            <p className="text-meta text-muted mt-0.5">
               A scavenger hunt. Members scan a set of codes to complete it and earn Zaps. Shows on
               their Quest challenges automatically.
             </p>
@@ -72,7 +72,7 @@ export function Campaigns({
         </div>
         {creating &&
           (codes.length === 0 ? (
-            <p className="p-4 text-xs text-muted">Create some dynamic links first. Campaigns are built from them.</p>
+            <p className="p-4 text-meta text-muted">Create some dynamic links first. Campaigns are built from them.</p>
           ) : (
             <div className="p-4">
               <CampaignForm codes={codes} onDone={() => setCreating(false)} onCancel={() => setCreating(false)} />
@@ -82,7 +82,7 @@ export function Campaigns({
 
       <div className="space-y-3">
         {campaigns.length === 0 && (
-          <p className="text-sm text-muted py-6 text-center">No campaigns yet.</p>
+          <p className="text-body-sm text-muted py-6 text-center">No campaigns yet.</p>
         )}
         {campaigns.map((c) => (
           <CampaignRow key={c.id} campaign={c} codes={codes} />
@@ -112,28 +112,28 @@ function CampaignRow({ campaign, codes }: { campaign: CampaignCard; codes: Campa
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold text-text truncate">{campaign.name}</h3>
+            <h3 className="text-body-sm font-bold text-text truncate">{campaign.name}</h3>
             <Badge tone={status.tone}>{status.label}</Badge>
           </div>
-          {campaign.description && <p className="text-xs text-muted mt-0.5">{campaign.description}</p>}
+          {campaign.description && <p className="text-meta text-muted mt-0.5">{campaign.description}</p>}
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <button
             onClick={() => setEditing((v) => !v)}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
           >
             <Pencil className="w-3 h-3" /> {editing ? 'Close' : 'Edit'}
           </button>
           <button
             onClick={remove}
             disabled={pending}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-danger transition-colors disabled:opacity-60"
+            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-danger transition-colors disabled:opacity-60"
           >
             <Trash2 className="w-3 h-3" /> Delete
           </button>
         </div>
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-meta text-muted">
         <span>
           Scan <span className="font-semibold text-text">{campaign.target}</span> of {campaign.codeCount} codes
         </span>
@@ -232,7 +232,7 @@ function CampaignForm({
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             placeholder="e.g. Downtown Scavenger Hunt"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="Reward (zaps)">
@@ -241,14 +241,14 @@ function CampaignForm({
             min={0}
             value={form.rewardZaps}
             onChange={(e) => setForm((f) => ({ ...f, rewardZaps: Number(e.target.value) }))}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="Goal">
           <select
             value={form.mode}
             onChange={(e) => setForm((f) => ({ ...f, mode: e.target.value as CampaignInput['mode'] }))}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           >
             <option value="collect_all">Scan all selected codes</option>
             <option value="collect_n">Scan any N of them</option>
@@ -262,7 +262,7 @@ function CampaignForm({
               max={form.codeIds.length || undefined}
               value={form.target}
               onChange={(e) => setForm((f) => ({ ...f, target: Number(e.target.value) }))}
-              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
             />
           </Field>
         )}
@@ -271,7 +271,7 @@ function CampaignForm({
             type="datetime-local"
             value={toLocalInput(form.validFrom)}
             onChange={(e) => setForm((f) => ({ ...f, validFrom: fromLocalInput(e.target.value) }))}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="Ends (optional)">
@@ -279,7 +279,7 @@ function CampaignForm({
             type="datetime-local"
             value={toLocalInput(form.validUntil)}
             onChange={(e) => setForm((f) => ({ ...f, validUntil: fromLocalInput(e.target.value) }))}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
       </div>
@@ -289,17 +289,17 @@ function CampaignForm({
           value={form.description}
           onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
           placeholder="What is the hunt about?"
-          className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+          className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
         />
       </Field>
 
       <div>
-        <span className="block text-xs font-medium text-subtle mb-1">
+        <span className="block text-meta font-medium text-subtle mb-1">
           Codes in the hunt ({form.codeIds.length} selected)
         </span>
         <div className="max-h-48 overflow-y-auto rounded-md border border-border divide-y divide-border">
           {codes.map((c) => (
-            <label key={c.id} className="flex items-center gap-2 px-2.5 py-1.5 text-sm hover:bg-surface-elevated cursor-pointer">
+            <label key={c.id} className="flex items-center gap-2 px-2.5 py-1.5 text-body-sm hover:bg-surface-elevated cursor-pointer">
               <input
                 type="checkbox"
                 checked={form.codeIds.includes(c.id)}
@@ -312,7 +312,7 @@ function CampaignForm({
         </div>
       </div>
 
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
 
       <div className="flex items-center gap-2">
         <Button size="sm" onClick={submit} disabled={pending} className="disabled:opacity-60">

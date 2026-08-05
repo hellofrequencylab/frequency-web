@@ -359,7 +359,10 @@ describe('per-zone wiring (source-level drift guard)', () => {
     expect(hero).toContain('HERO_ACTION_CLASS_ADAPTIVE')
     // and never at the cost of the seven non-profile heroes that pin the original byte for byte.
     expect(hero).toContain(
-      "'inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/40 bg-white/10 px-3 py-1.5 text-sm font-semibold text-on-ink backdrop-blur-sm transition-colors hover:bg-white/20'",
+      // text-body-sm, not text-body-sm, since the type-role sweep: same 0.875rem and the same
+      // line-height, now riding --type-scale. The byte this guard pins is the CLASS STRING,
+      // so a rename has to be reflected here or the guard pins a string nobody writes.
+      "'inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/40 bg-white/10 px-3 py-1.5 text-body-sm font-semibold text-on-ink backdrop-blur-sm transition-colors hover:bg-white/20'",
     )
     expect(css).toContain('color: var(--color-on-media);')
   })

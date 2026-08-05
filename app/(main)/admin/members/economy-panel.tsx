@@ -47,13 +47,13 @@ export function EconomyPanel({ profileId, displayName }: Props) {
 
   return (
     <div className="rounded-card border border-border bg-surface p-3 space-y-3">
-      <p className="text-xs font-bold text-text flex items-center gap-1.5">
+      <p className="text-meta font-bold text-text flex items-center gap-1.5">
         <CurrencyIcon className={`w-3.5 h-3.5 ${currencyColor}`} />
         Economy adjustment
       </p>
 
       {status && (
-        <p className={`text-xs px-2 py-1.5 rounded-lg ${status.ok ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'}`}>
+        <p className={`text-meta px-2 py-1.5 rounded-lg ${status.ok ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'}`}>
           {status.msg}
         </p>
       )}
@@ -61,7 +61,7 @@ export function EconomyPanel({ profileId, displayName }: Props) {
       <form onSubmit={handleSubmit} className="space-y-2.5">
         {/* Currency + op toggles */}
         <div className="flex gap-2">
-          <div className="flex rounded-lg border border-border overflow-hidden text-xs font-medium">
+          <div className="flex rounded-lg border border-border overflow-hidden text-meta font-medium">
             {(['gems', 'zaps'] as Currency[]).map(c => (
               <button
                 key={c}
@@ -73,7 +73,7 @@ export function EconomyPanel({ profileId, displayName }: Props) {
               </button>
             ))}
           </div>
-          <div className="flex rounded-lg border border-border overflow-hidden text-xs font-medium">
+          <div className="flex rounded-lg border border-border overflow-hidden text-meta font-medium">
             <button
               type="button"
               onClick={() => { setOp('grant'); setStatus(null) }}
@@ -103,7 +103,7 @@ export function EconomyPanel({ profileId, displayName }: Props) {
             onChange={e => { setAmount(e.target.value); setStatus(null) }}
             placeholder="Amount"
             required
-            className="w-24 rounded-lg border border-border bg-surface px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-border-strong/30"
+            className="w-24 rounded-lg border border-border bg-surface px-2 py-1.5 text-meta focus:outline-none focus:ring-1 focus:ring-border-strong/30"
           />
           <input
             type="text"
@@ -112,7 +112,7 @@ export function EconomyPanel({ profileId, displayName }: Props) {
             placeholder="Reason (required)"
             required
             maxLength={200}
-            className="flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-border-strong/30"
+            className="flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-meta focus:outline-none focus:ring-1 focus:ring-border-strong/30"
           />
         </div>
 
@@ -120,7 +120,7 @@ export function EconomyPanel({ profileId, displayName }: Props) {
           type="submit"
           disabled={isPending}
           // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
-          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-colors disabled:opacity-50 ${op === 'grant' ? 'bg-success hover:bg-success' : 'bg-danger hover:bg-danger'}`}
+          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-meta font-semibold text-white transition-colors disabled:opacity-50 ${op === 'grant' ? 'bg-success hover:bg-success' : 'bg-danger hover:bg-danger'}`}
         >
           {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : (op === 'grant' ? <PlusCircle className="w-3 h-3" /> : <MinusCircle className="w-3 h-3" />)}
           {op === 'grant' ? `Grant ${currency}` : `Revoke ${currency}`}

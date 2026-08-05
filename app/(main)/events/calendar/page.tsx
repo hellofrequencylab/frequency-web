@@ -83,7 +83,7 @@ export default async function EventsCalendarPage() {
         <EventCalendar events={events} initialYear={initialYear} initialMonth1={initialMonth1} />
 
         {events.length === 0 && (
-          <p className="rounded-card border border-dashed border-border bg-surface px-4 py-6 text-center text-sm text-muted">
+          <p className="rounded-card border border-dashed border-border bg-surface px-4 py-6 text-center text-body-sm text-muted">
             No upcoming public events yet. Check back soon, or subscribe to be notified as they are added.
           </p>
         )}
@@ -91,7 +91,7 @@ export default async function EventsCalendarPage() {
         <div>
           <Link
             href="/events"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-text"
+            className="inline-flex items-center gap-1.5 text-body-sm font-medium text-muted transition-colors hover:text-text"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden />
             Back to events

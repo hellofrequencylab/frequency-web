@@ -46,11 +46,11 @@ export function HostSchedule({
   if (!phases.length) return null
   return (
     <details className="mb-4 rounded-card border border-border bg-surface">
-      <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-text">
+      <summary className="cursor-pointer list-none px-4 py-3 text-body-sm font-semibold text-text">
         Host tools: schedule this Run&rsquo;s meetups
       </summary>
       <div className="space-y-2 border-t border-border px-4 py-3">
-        <p className="text-xs text-muted">
+        <p className="text-meta text-muted">
           Put each week&rsquo;s Circle Meetup and Weekend Gathering on the calendar. We pick a sensible
           time from the drip schedule; refine it on the event page.
         </p>
@@ -102,7 +102,7 @@ function Slot({
     return (
       <Link
         href={`/events/${event.slug}`}
-        className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs transition-colors hover:border-primary"
+        className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta transition-colors hover:border-primary"
       >
         <CalendarClock className="h-3.5 w-3.5 shrink-0 text-primary-strong" aria-hidden />
         <span className="min-w-0 flex-1">
@@ -119,7 +119,7 @@ function Slot({
         type="button"
         onClick={schedule}
         disabled={pending}
-        className="flex w-full items-center gap-1.5 rounded-lg border border-dashed border-border px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:border-primary hover:text-text disabled:opacity-60"
+        className="flex w-full items-center gap-1.5 rounded-lg border border-dashed border-border px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:border-primary hover:text-text disabled:opacity-60"
       >
         {pending ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden /> : <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden />}
         Schedule {label}

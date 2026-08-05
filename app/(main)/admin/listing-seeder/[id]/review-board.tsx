@@ -131,11 +131,11 @@ export function ReviewBoard({
     <div className="space-y-6">
       {/* Roll-up + publish */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4">
-        <div className="flex flex-wrap items-center gap-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2 text-body-sm">
           <StatusChip tone="success" size="sm">✅ {s.facts} from the paste</StatusChip>
           <StatusChip tone="warning" size="sm">⚠️ {s.inferred} inferred</StatusChip>
           <StatusChip tone="info" size="sm">✨ {s.generated} AI copy</StatusChip>
-          {s.empty > 0 && <span className="text-xs text-muted">{s.empty} field{s.empty === 1 ? '' : 's'} still empty</span>}
+          {s.empty > 0 && <span className="text-meta text-muted">{s.empty} field{s.empty === 1 ? '' : 's'} still empty</span>}
         </div>
         {!published && (
           <Button onClick={publish} disabled={publishing || !model.title || model.title === 'Untitled listing'}>
@@ -170,10 +170,10 @@ export function ReviewBoard({
       {/* Published: the claim link the operator sends the poster */}
       {published && (
         <div className="rounded-2xl border border-success/30 bg-success-bg p-4" role="status">
-          <p className="flex items-center gap-1.5 text-sm font-semibold text-success">
+          <p className="flex items-center gap-1.5 text-body-sm font-semibold text-success">
             <CheckCircle2 className="h-4 w-4" aria-hidden /> Published, held by Frequency
           </p>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 text-body-sm text-muted">
             The listing is live under the Frequency account. Send the poster the claim link so they can sign up
             and take ownership.
           </p>
@@ -202,8 +202,8 @@ export function ReviewBoard({
       {model.sections.map((section) => (
         <section key={section.key} className="space-y-2">
           <div>
-            <h3 className="text-base font-bold text-text">{section.title}</h3>
-            <p className="mt-0.5 text-sm text-muted">{section.desc}</p>
+            <h3 className="text-body font-bold text-text">{section.title}</h3>
+            <p className="mt-0.5 text-body-sm text-muted">{section.desc}</p>
           </div>
           <div className="divide-y divide-border rounded-2xl border border-border bg-surface">
             {section.fields.map((f) => (
@@ -303,7 +303,7 @@ function FieldRow({
             ) : (
               <StatusChip tone="neutral" size="sm">Not set</StatusChip>
             )}
-            <span className="text-xs font-semibold text-text">{field.label}</span>
+            <span className="text-meta font-semibold text-text">{field.label}</span>
           </div>
 
           {editing ? (
@@ -323,7 +323,7 @@ function FieldRow({
               />
             </div>
           ) : (
-            <p className={cn('mt-1 whitespace-pre-wrap break-words text-sm', field.display ? 'text-text' : 'italic text-subtle')}>
+            <p className={cn('mt-1 whitespace-pre-wrap break-words text-body-sm', field.display ? 'text-text' : 'italic text-subtle')}>
               {field.display || 'Not set'}
             </p>
           )}
@@ -363,7 +363,7 @@ function FieldRow({
 // ── The per-type editor ──────────────────────────────────────────────────────────────
 
 const inputCls =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:border-border-strong focus:outline-none'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none'
 
 function FieldEditor({
   field,
@@ -582,12 +582,12 @@ function PhotoStrip({
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-text">
+      <div className="flex items-center gap-2 text-body-sm font-semibold text-text">
         <ImagePlus className="h-4 w-4 text-primary-strong" aria-hidden />
         Photos
         {images.length > 0 && <span className="font-normal text-muted">· {images.length}</span>}
       </div>
-      <p className="mt-0.5 text-xs text-muted">The first photo is the primary. Add, remove, or set any photo as the primary.</p>
+      <p className="mt-0.5 text-meta text-muted">The first photo is the primary. Add, remove, or set any photo as the primary.</p>
 
       <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
         {images.map((url, i) => (

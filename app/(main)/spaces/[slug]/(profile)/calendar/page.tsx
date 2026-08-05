@@ -64,8 +64,8 @@ export default async function SpaceCalendarPage({ params }: { params: Promise<{ 
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-text">Calendar</h2>
-          <p className="text-sm text-muted">Upcoming events from {brandName}. Subscribe to add them to your own calendar.</p>
+          <h2 className="text-lead font-bold text-text">Calendar</h2>
+          <p className="text-body-sm text-muted">Upcoming events from {brandName}. Subscribe to add them to your own calendar.</p>
         </div>
         <CalendarSubscribeMenu
           httpsUrl={httpsUrl}
@@ -78,7 +78,7 @@ export default async function SpaceCalendarPage({ params }: { params: Promise<{ 
       <EventCalendar events={events} initialYear={initialYear} initialMonth1={initialMonth1} />
 
       {events.length === 0 && (
-        <p className="rounded-card border border-dashed border-border bg-surface px-4 py-6 text-center text-sm text-muted">
+        <p className="rounded-card border border-dashed border-border bg-surface px-4 py-6 text-center text-body-sm text-muted">
           No upcoming events yet. Check back soon, or subscribe to be notified when {brandName} adds one.
         </p>
       )}

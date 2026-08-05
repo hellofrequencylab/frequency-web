@@ -34,14 +34,14 @@ function StrategyCard({
     <div className="space-y-4 rounded-3xl border border-border bg-surface p-5 sm:p-6">
       <div className="flex items-center gap-2">
         <Icon className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-        <h3 className="text-base font-bold text-text">{title}</h3>
+        <h3 className="text-body font-bold text-text">{title}</h3>
       </div>
-      <p className="text-sm text-muted">{intro}</p>
+      <p className="text-body-sm text-muted">{intro}</p>
       <dl className="space-y-3">
         {bullets.map((b) => (
           <div key={b.term} className="rounded-2xl bg-surface-elevated px-4 py-3">
-            <dt className="text-sm font-semibold text-text">{b.term}</dt>
-            <dd className="mt-0.5 text-sm text-muted">{b.body}</dd>
+            <dt className="text-body-sm font-semibold text-text">{b.term}</dt>
+            <dd className="mt-0.5 text-body-sm text-muted">{b.body}</dd>
           </div>
         ))}
       </dl>

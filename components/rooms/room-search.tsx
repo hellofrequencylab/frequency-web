@@ -50,7 +50,7 @@ export function RoomSearch({ roomId }: { roomId: string }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="Search this room"
-        className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated"
+        className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated"
       >
         <Search className="h-3.5 w-3.5" /> Search
       </button>
@@ -65,7 +65,7 @@ export function RoomSearch({ roomId }: { roomId: string }) {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search this room…"
-                className="min-w-0 flex-1 bg-transparent text-sm text-text placeholder:text-subtle focus:outline-none"
+                className="min-w-0 flex-1 bg-transparent text-body-sm text-text placeholder:text-subtle focus:outline-none"
               />
               {q && (
                 <button type="button" onClick={() => { setQ(''); setHits([]); setSearched(false) }} aria-label="Clear">
@@ -76,7 +76,7 @@ export function RoomSearch({ roomId }: { roomId: string }) {
             <button
               type="submit"
               disabled={pending || !q.trim()}
-              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+              className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Go'}
             </button>
@@ -85,7 +85,7 @@ export function RoomSearch({ roomId }: { roomId: string }) {
           {searched && (
             <div className="mt-3">
               {hits.length === 0 ? (
-                <p className="px-1 py-2 text-xs text-subtle">No matching messages.</p>
+                <p className="px-1 py-2 text-meta text-subtle">No matching messages.</p>
               ) : (
                 <>
                   <p className="mb-1.5 flex items-center gap-1 px-1 text-2xs font-medium uppercase tracking-wide text-muted">
@@ -95,7 +95,7 @@ export function RoomSearch({ roomId }: { roomId: string }) {
                   <ul className="max-h-72 space-y-1 overflow-y-auto">
                     {hits.map((h) => (
                       <li key={h.id} className="rounded-lg px-2 py-1.5 hover:bg-surface-elevated">
-                        <p className="line-clamp-3 text-sm leading-snug text-text">{h.body}</p>
+                        <p className="line-clamp-3 text-body-sm leading-snug text-text">{h.body}</p>
                         <p className="mt-0.5 text-2xs text-muted">{relativeTime(h.created_at)}</p>
                       </li>
                     ))}

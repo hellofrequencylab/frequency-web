@@ -67,7 +67,7 @@ export function QrSplashForm({
       {!readOnly && (
         <section>
           {capReached ? (
-            <p className="rounded-2xl border border-dashed border-border bg-surface/50 px-4 py-3 text-sm text-muted">
+            <p className="rounded-2xl border border-dashed border-border bg-surface/50 px-4 py-3 text-body-sm text-muted">
               Your plan allows {codeCap} codes. Remove one to add another, or upgrade for more.
             </p>
           ) : (
@@ -164,7 +164,7 @@ function CreateCodeForm({ spaceId }: { spaceId: string }) {
           placeholder="https://example.com or /spaces/your-space"
           className="mt-1"
         />
-        <p className="mt-1 text-xs text-subtle">
+        <p className="mt-1 text-meta text-subtle">
           The code points here today. You can change where it goes any time, no reprint.
         </p>
       </div>
@@ -180,11 +180,11 @@ function CreateCodeForm({ spaceId }: { spaceId: string }) {
           maxLength={48}
           className="mt-1"
         />
-        <p className="mt-1 text-xs text-subtle">Leave blank for a short link we pick for you.</p>
+        <p className="mt-1 text-meta text-subtle">Leave blank for a short link we pick for you.</p>
       </div>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
+        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
@@ -213,8 +213,8 @@ function CodeRow({ code, slug, readOnly }: { code: SpaceCode; slug: string; read
     <li className="rounded-2xl border border-border bg-surface lift-1">
       <div className="flex items-center justify-between gap-4 px-4 py-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-text">{code.title}</p>
-          <p className="text-xs text-muted">
+          <p className="truncate text-body-sm font-semibold text-text">{code.title}</p>
+          <p className="text-meta text-muted">
             /q/{code.slug} · {code.scanCount} {code.scanCount === 1 ? 'scan' : 'scans'}
             {code.hasSplash ? ' · splash on' : ''}
             {!code.active ? ' · off' : ''}
@@ -306,7 +306,7 @@ function SplashEditor({
 
   return (
     <div className="space-y-4 border-t border-border px-4 py-4">
-      <p className="text-xs text-subtle">
+      <p className="text-meta text-subtle">
         A splash is a small landing page a scan lands on. Add a heading, a line or two, and a few
         links. The first link is the main button.
       </p>
@@ -367,7 +367,7 @@ function SplashEditor({
         {draft.links.map((l, i) => (
           <div key={i} className="flex flex-wrap items-end gap-2">
             <div className="min-w-0 flex-1">
-              <span className="text-xs font-medium text-muted">Label</span>
+              <span className="text-meta font-medium text-muted">Label</span>
               <Input
                 value={l.label}
                 onChange={(e) => updateLink(i, { label: e.target.value })}
@@ -377,7 +377,7 @@ function SplashEditor({
               />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="text-xs font-medium text-muted">Link</span>
+              <span className="text-meta font-medium text-muted">Link</span>
               <Input
                 value={l.url}
                 onChange={(e) => updateLink(i, { url: e.target.value })}
@@ -399,7 +399,7 @@ function SplashEditor({
           <button
             type="button"
             onClick={addLink}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong transition-colors hover:text-primary"
+            className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong transition-colors hover:text-primary"
           >
             <Plus className="h-4 w-4" aria-hidden /> Add a link
           </button>
@@ -407,7 +407,7 @@ function SplashEditor({
       </div>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
+        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
@@ -426,7 +426,7 @@ function SplashEditor({
         </Button>
         {saved && !pending && (
           <span
-            className="inline-flex items-center gap-1 text-sm font-medium text-success"
+            className="inline-flex items-center gap-1 text-body-sm font-medium text-success"
             role="status"
           >
             <Check className="h-4 w-4" aria-hidden /> Saved

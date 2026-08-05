@@ -28,7 +28,7 @@ export async function CrmToday() {
         />
       ) : (
         <div className="space-y-4">
-          <p className="text-sm text-text">{verdict}</p>
+          <p className="text-body-sm text-text">{verdict}</p>
           <TodayCards cards={cards} />
         </div>
       )}
@@ -44,13 +44,13 @@ export async function CrmToday() {
 function OwnerBriefGuidance() {
   return (
     <div className="mt-6 rounded-2xl border border-border bg-surface/50 p-5">
-      <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Your daily brief</p>
-      <p className="mt-1.5 text-sm text-text">
+      <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Your daily brief</p>
+      <p className="mt-1.5 text-body-sm text-text">
         Each morning Vera emails you these same moves, so you do not have to remember to check. She
         drafts the note, never sends on your behalf, and never touches a member. Every move is still
         a one-tap here.
       </p>
-      <ul className="mt-3 space-y-1.5 text-sm text-muted">
+      <ul className="mt-3 space-y-1.5 text-body-sm text-muted">
         <li>
           <span className="font-medium text-text">Turn it on or off:</span> it rides your lifecycle
           email preference. Manage it under{' '}

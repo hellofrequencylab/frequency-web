@@ -67,7 +67,7 @@ export async function PlanSection({
       <PastDueBanner state={paymentState} />
 
       {justUpgradedTo && (
-        <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-success/50 bg-success-bg/30 px-4 py-2.5 text-sm font-semibold text-success">
+        <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-success/50 bg-success-bg/30 px-4 py-2.5 text-body-sm font-semibold text-success">
           <Check className="h-4 w-4" />{' '}
           {justUpgradedTo === 'supporter'
             ? 'You’re in. Thank you for supporting Frequency.'
@@ -76,15 +76,15 @@ export async function PlanSection({
       )}
 
       <div className="rounded-card border border-border bg-surface p-5 lift-1">
-        <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Current plan</p>
-        <p className="mt-1 text-lg font-bold text-text">
+        <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Current plan</p>
+        <p className="mt-1 text-body-lg font-bold text-text">
           {ENTITLEMENT_LABEL[tier]}
           {paid ? '' : <span className="font-normal text-muted"> · free tier</span>}
         </p>
 
         <div className="mt-4">
           {!live ? (
-            <p className="text-sm leading-relaxed text-muted">
+            <p className="text-body-sm leading-relaxed text-muted">
               Paid memberships aren’t turned on yet. Everything is free during the beta. You can
               switch tiers on the{' '}
               <Link href="/upgrade" className="font-medium text-primary-strong hover:underline">
@@ -97,7 +97,7 @@ export async function PlanSection({
           ) : (
             <Link
               href="/upgrade"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
             >
               Join the Crew <ArrowRight className="h-4 w-4" />
             </Link>
@@ -110,20 +110,20 @@ export async function PlanSection({
         <div id="payouts" className="mt-4 scroll-mt-24 rounded-card border border-border bg-surface p-5 lift-1">
           <div className="flex items-center gap-2">
             <Wallet className="h-4 w-4 text-subtle" />
-            <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Receive payments</p>
+            <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Receive payments</p>
           </div>
 
           {!live ? (
-            <p className="mt-2 text-sm leading-relaxed text-muted">
+            <p className="mt-2 text-body-sm leading-relaxed text-muted">
               Payouts aren’t turned on yet. They go live with the rest of billing. You’ll set up
               where your earnings land here.
             </p>
           ) : payout.ready ? (
             <>
-              <p className="mt-1 inline-flex items-center gap-1.5 text-lg font-bold text-success">
+              <p className="mt-1 inline-flex items-center gap-1.5 text-body-lg font-bold text-success">
                 <Check className="h-4 w-4" /> Payouts active
               </p>
-              <p className="mt-1 text-sm leading-relaxed text-muted">
+              <p className="mt-1 text-body-sm leading-relaxed text-muted">
                 You’re set up to receive earnings from memberships, events, tips, and store sales.
                 Manage your bank details and payout schedule in your Stripe dashboard.
               </p>
@@ -133,8 +133,8 @@ export async function PlanSection({
             </>
           ) : payout.onboarded ? (
             <>
-              <p className="mt-1 text-lg font-bold text-text">Almost there</p>
-              <p className="mt-1 text-sm leading-relaxed text-muted">
+              <p className="mt-1 text-body-lg font-bold text-text">Almost there</p>
+              <p className="mt-1 text-body-sm leading-relaxed text-muted">
                 Stripe is reviewing your details. This usually clears quickly. Check back, or open
                 your dashboard to finish anything outstanding.
               </p>
@@ -144,7 +144,7 @@ export async function PlanSection({
             </>
           ) : (
             <>
-              <p className="mt-1 text-sm leading-relaxed text-muted">
+              <p className="mt-1 text-body-sm leading-relaxed text-muted">
                 Set up payouts to start receiving earnings from memberships, events, tips, and store
                 sales. Stripe handles the bank details and verification securely.
               </p>

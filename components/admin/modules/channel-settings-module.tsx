@@ -199,7 +199,7 @@ export function ChannelSettingsModule() {
       <div className="space-y-1.5">
         <span className={fieldLabel}>URL</span>
         <div className="flex items-center gap-2">
-          <span className="flex flex-1 items-center rounded-lg border border-border bg-surface px-3 text-sm text-subtle">
+          <span className="flex flex-1 items-center rounded-lg border border-border bg-surface px-3 text-body-sm text-subtle">
             <span className="shrink-0">/channels/</span>
             <input
               value={urlSlug}
@@ -212,7 +212,7 @@ export function ChannelSettingsModule() {
             type="button"
             onClick={handleSlug}
             disabled={slugPending || !urlSlug.trim() || urlSlug.trim() === data.slug}
-            className="inline-flex shrink-0 items-center rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
+            className="inline-flex shrink-0 items-center rounded-lg border border-border bg-surface px-3 py-2 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
           >
             {slugPending ? 'Saving…' : 'Update'}
           </button>
@@ -221,7 +221,7 @@ export function ChannelSettingsModule() {
           This is the Channel&apos;s web address. Changing it changes the URL, so any link people
           already shared to the old one stops working.
         </p>
-        {slugErr && <span className="text-xs font-medium text-danger">{slugErr}</span>}
+        {slugErr && <span className="text-meta font-medium text-danger">{slugErr}</span>}
       </div>
 
       {/* The rest of the Channel lives in the Manage hub (ADR-870/871) and the full editor
@@ -239,7 +239,7 @@ export function ChannelSettingsModule() {
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-bg text-primary-strong">
                 <Icon className="h-3.5 w-3.5" aria-hidden />
               </span>
-              <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">{label}</span>
+              <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-text">{label}</span>
               <ArrowRight
                 className="h-3.5 w-3.5 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong motion-reduce:transition-none"
                 aria-hidden

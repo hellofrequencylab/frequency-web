@@ -98,9 +98,9 @@ function ChallengeEditForm({
         <StudioFooter
           left={
             error ? (
-              <span className="text-xs text-danger">{error}</span>
+              <span className="text-meta text-danger">{error}</span>
             ) : (
-              <span className="text-xs text-subtle">
+              <span className="text-meta text-subtle">
                 {row.completed}/{row.started} completed{row.started > 0 ? ` · ${row.rate}%` : ''}
               </span>
             )
@@ -236,7 +236,7 @@ function ChallengeListItem({
     <div className={`flex flex-wrap items-center gap-3 px-4 py-3 ${active ? '' : 'opacity-60'}`}>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="truncate text-sm font-medium text-text">{challenge.name}</span>
+          <span className="truncate text-body-sm font-medium text-text">{challenge.name}</span>
           {isExpression ? (
             <span className="inline-flex items-center gap-1 rounded-pill bg-primary/10 px-2 py-0.5 text-2xs font-medium text-primary">
               <Mountain className="h-3 w-3" /> Expression
@@ -251,7 +251,7 @@ function ChallengeListItem({
           </span>
           {!active && <span className="rounded-pill bg-warning-bg px-2 py-0.5 text-2xs font-medium text-warning">Paused</span>}
         </div>
-        <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-subtle">
+        <p className="mt-0.5 inline-flex items-center gap-1 text-meta text-subtle">
           target {challenge.target} · <Zap className="h-3 w-3 text-primary" /> {challenge.zaps_reward} ·{' '}
           {challenge.completed}/{challenge.started} done{challenge.started > 0 ? ` (${challenge.rate}%)` : ''}
         </p>
@@ -419,15 +419,15 @@ export function ChallengeCreateForm({ journeys, onCreated }: { journeys: Express
               onClick={() => pickKind(opt.value)}
               className={
                 kind === opt.value
-                  ? 'rounded-md bg-surface px-3 py-2 text-sm font-medium text-text lift-1'
-                  : 'rounded-md px-3 py-2 text-sm text-muted transition-colors hover:text-text'
+                  ? 'rounded-md bg-surface px-3 py-2 text-body-sm font-medium text-text lift-1'
+                  : 'rounded-md px-3 py-2 text-body-sm text-muted transition-colors hover:text-text'
               }
             >
               {opt.label}
             </button>
           ))}
         </div>
-        <p className="mt-2 text-xs text-subtle">
+        <p className="mt-2 text-meta text-subtle">
           {isExpression
             ? 'The capstone for one Journey. Members complete it to finish that Journey.'
             : 'Lands on the season board for everyone. Criteria wiring stays with engineering.'}
@@ -522,8 +522,8 @@ export function ChallengeCreateForm({ journeys, onCreated }: { journeys: Express
             <Plus className="h-3.5 w-3.5" />{' '}
             {pending ? 'Adding…' : isExpression ? 'Add Expression Challenge' : 'Add challenge'}
           </Button>
-          {status === 'created' && <span className="text-xs text-success">Challenge added.</span>}
-          {status !== 'idle' && status !== 'created' && <span className="text-xs text-danger">{status}</span>}
+          {status === 'created' && <span className="text-meta text-success">Challenge added.</span>}
+          {status !== 'idle' && status !== 'created' && <span className="text-meta text-danger">{status}</span>}
         </div>
       </div>
     </div>
@@ -539,7 +539,7 @@ export function ChallengeCreateLauncher({ journeys }: { journeys: ExpressionJour
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
       >
         <Plus className="h-4 w-4" /> Add challenge
       </button>

@@ -56,7 +56,7 @@ export default async function AirwavesConsolePage({
         description="Turn on Airwaves for this space to host recordings and attach them anywhere."
         back={{ href: `/spaces/${slug}/manage`, label: 'Manage' }}
       >
-        <p className="rounded-2xl border border-border bg-surface p-6 text-sm text-muted">
+        <p className="rounded-2xl border border-border bg-surface p-6 text-body-sm text-muted">
           Airwaves is turned off for this space. Turn it on in the module settings to start adding recordings.
         </p>
       </FocusTemplate>

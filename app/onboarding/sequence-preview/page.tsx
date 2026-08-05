@@ -64,7 +64,7 @@ export default async function SequencePreviewPage({
     <div className="relative">
       <div className="sticky top-0 z-50 border-b border-border bg-surface/95 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-3xl flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-muted">
             <span className="inline-flex items-center gap-1.5 font-medium text-ink">
               <Icon name={icon('magic')} className="size-4 text-primary" />
               Sequence preview
@@ -81,8 +81,8 @@ export default async function SequencePreviewPage({
                   href={href}
                   className={
                     active
-                      ? 'rounded-pill bg-primary px-3 py-1 text-xs font-medium text-on-primary'
-                      : 'rounded-pill border border-border px-3 py-1 text-xs text-ink hover:bg-surface-elevated'
+                      ? 'rounded-pill bg-primary px-3 py-1 text-meta font-medium text-on-primary'
+                      : 'rounded-pill border border-border px-3 py-1 text-meta text-ink hover:bg-surface-elevated'
                   }
                   aria-current={active ? 'true' : undefined}
                 >
@@ -91,7 +91,7 @@ export default async function SequencePreviewPage({
               )
             })}
           </nav>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-meta text-muted">
             <span>
               Rendering: <span className="font-medium text-ink">{def.label}</span>
             </span>

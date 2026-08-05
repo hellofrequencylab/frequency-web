@@ -71,7 +71,7 @@ export default async function DiscoverPlacesPage() {
           living community rather than an empty directory. */}
       {cities.length > 0 && (totalCircles > 0 || totalEvents > 0) && (
         <div className="border-b border-border/60 bg-surface px-6 py-8">
-          <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-x-8 gap-y-2 text-center text-sm text-muted">
+          <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-x-8 gap-y-2 text-center text-body-sm text-muted">
             <span>
               <strong className="text-text">{cities.length}</strong>{' '}
               {cities.length === 1 ? 'town' : 'towns'}

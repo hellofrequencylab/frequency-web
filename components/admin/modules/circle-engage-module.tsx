@@ -114,7 +114,7 @@ export function CircleEngageModule() {
                 type="button"
                 onClick={handleAdopt}
                 disabled={pending || !pick}
-                className="inline-flex shrink-0 items-center rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                className="inline-flex shrink-0 items-center rounded-lg bg-primary px-3 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
               >
                 Adopt
               </button>
@@ -122,15 +122,15 @@ export function CircleEngageModule() {
           </div>
         )}
 
-        {error && <p className="mt-3 text-xs font-medium text-danger">{error}</p>}
+        {error && <p className="mt-3 text-meta font-medium text-danger">{error}</p>}
 
         {/* Adopted challenges with collective progress. */}
         <div className="mt-5 space-y-2">
           {data.adopted.length === 0 ? (
             <div className="rounded-card border border-dashed border-border bg-surface-elevated/40 p-4 text-center">
               <Trophy className="mx-auto mb-2 h-5 w-5 text-subtle" />
-              <p className="text-sm font-medium text-text">No shared challenges yet</p>
-              <p className="mt-1 text-xs text-muted">
+              <p className="text-body-sm font-medium text-text">No shared challenges yet</p>
+              <p className="mt-1 text-meta text-muted">
                 Adopt one above to give the circle a goal to chase together.
               </p>
             </div>
@@ -142,7 +142,7 @@ export function CircleEngageModule() {
                 return (
                   <li key={c.id} className="rounded-card border border-border bg-surface p-3">
                     <div className="flex items-start justify-between gap-2">
-                      <span className="min-w-0 text-sm font-semibold text-text">{c.name}</span>
+                      <span className="min-w-0 text-body-sm font-semibold text-text">{c.name}</span>
                       <button
                         type="button"
                         onClick={() => handleDrop(c.id)}
@@ -153,7 +153,7 @@ export function CircleEngageModule() {
                         <X className="h-4 w-4" />
                       </button>
                     </div>
-                    <div className="mt-2 flex items-center justify-between text-xs text-muted">
+                    <div className="mt-2 flex items-center justify-between text-meta text-muted">
                       <span>
                         {c.membersCompleted} of {c.memberCount} done
                         {c.membersInProgress > 0 && (

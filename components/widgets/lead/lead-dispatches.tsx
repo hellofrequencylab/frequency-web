@@ -131,8 +131,8 @@ export async function LeadDispatches(): Promise<React.ReactElement | null> {
                 <span className="block text-2xs font-semibold uppercase tracking-widest text-primary-strong">
                   {item.circleName}
                 </span>
-                <span className="mt-0.5 block truncate text-sm font-medium text-text">{item.label}</span>
-                <span className="mt-0.5 block text-xs text-subtle">{relativeTime(item.at)}</span>
+                <span className="mt-0.5 block truncate text-body-sm font-medium text-text">{item.label}</span>
+                <span className="mt-0.5 block text-meta text-subtle">{relativeTime(item.at)}</span>
               </span>
               <ArrowRight
                 className="mt-1 hidden h-4 w-4 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 sm:block"
@@ -144,7 +144,7 @@ export async function LeadDispatches(): Promise<React.ReactElement | null> {
       </ul>
       <Link
         href={footerHref}
-        className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary-strong transition-colors hover:text-primary motion-reduce:transition-none"
+        className="mt-3 inline-flex items-center gap-1.5 text-body-sm font-medium text-primary-strong transition-colors hover:text-primary motion-reduce:transition-none"
       >
         {footerLabel}
         <ArrowRight className="h-3.5 w-3.5" aria-hidden />

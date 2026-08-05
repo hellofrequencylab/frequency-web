@@ -51,13 +51,13 @@ export default async function GiftPage({ params }: { params: Promise<{ slug: str
             // eslint-disable-next-line @next/next/no-img-element
             <img src={avatarSrc(owner.avatar_url)} alt="" className="h-full w-full object-cover" style={avatarFocusStyle(owner.avatar_url)} />
           ) : (
-            <span className="text-lg font-bold">{getInitials(name)}</span>
+            <span className="text-body-lg font-bold">{getInitials(name)}</span>
           )}
         </div>
 
         <div className="mt-6 flex justify-center">
           {isSelf ? (
-            <p className="text-sm text-muted">This is your own code. Share it for others to gift you a Zap.</p>
+            <p className="text-body-sm text-muted">This is your own code. Share it for others to gift you a Zap.</p>
           ) : (
             <GiftButton slug={slug} />
           )}

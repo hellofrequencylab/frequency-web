@@ -65,7 +65,7 @@ export function NfcWriter({
       <span
         className={
           className ??
-          'inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-xs text-subtle'
+          'inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-meta text-subtle'
         }
         title="NFC writing needs Chrome on Android. Open this page on an Android phone to program a tag."
       >
@@ -81,7 +81,7 @@ export function NfcWriter({
         disabled={state === 'writing'}
         className={
           className ??
-          'inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-60'
+          'inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-60'
         }
       >
         {state === 'writing' ? (

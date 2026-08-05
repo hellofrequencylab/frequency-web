@@ -254,12 +254,12 @@ export default async function LoomStudioPage({
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
             <div className="flex items-baseline gap-2">
-              <h2 className="font-display text-lg uppercase text-text">{activeLabel}</h2>
-              <span className="text-sm text-subtle">
+              <h2 className="font-display text-body-lg uppercase text-text">{activeLabel}</h2>
+              <span className="text-body-sm text-subtle">
                 {pageResult.total} asset{pageResult.total === 1 ? '' : 's'}
               </span>
               {similarOf && (
-                <Link href="/admin/library" className="text-sm font-medium text-primary-strong hover:underline">
+                <Link href="/admin/library" className="text-body-sm font-medium text-primary-strong hover:underline">
                   Clear
                 </Link>
               )}
@@ -277,10 +277,10 @@ export default async function LoomStudioPage({
                   name="q"
                   defaultValue={q}
                   placeholder="Search title, category…"
-                  className="w-full rounded-2xl border border-border bg-surface py-2 pl-9 pr-3 text-sm"
+                  className="w-full rounded-2xl border border-border bg-surface py-2 pl-9 pr-3 text-body-sm"
                 />
               </span>
-              <select name="kind" defaultValue={kind} aria-label="Type" className="rounded-2xl border border-border bg-surface px-3 py-2 text-sm">
+              <select name="kind" defaultValue={kind} aria-label="Type" className="rounded-2xl border border-border bg-surface px-3 py-2 text-body-sm">
                 <option value="">All types</option>
                 {LIBRARY_KINDS.map((k) => (
                   <option key={k} value={k}>
@@ -288,7 +288,7 @@ export default async function LoomStudioPage({
                   </option>
                 ))}
               </select>
-              <select name="sort" defaultValue={sort} aria-label="Sort" className="rounded-2xl border border-border bg-surface px-3 py-2 text-sm">
+              <select name="sort" defaultValue={sort} aria-label="Sort" className="rounded-2xl border border-border bg-surface px-3 py-2 text-body-sm">
                 {SORTS.map((s) => (
                   <option key={s.value} value={s.value}>
                     {s.label}
@@ -297,7 +297,7 @@ export default async function LoomStudioPage({
               </select>
               <button
                 type="submit"
-                className="rounded-2xl border border-border-strong px-4 py-2 text-sm font-semibold text-text hover:bg-surface-elevated"
+                className="rounded-2xl border border-border-strong px-4 py-2 text-body-sm font-semibold text-text hover:bg-surface-elevated"
               >
                 Apply
               </button>
@@ -340,15 +340,15 @@ export default async function LoomStudioPage({
               <div className="mb-6 rounded-2xl border border-border bg-surface-elevated/40 p-4">
                 <div className="mb-3 flex items-center gap-1.5">
                   <Sparkles className="h-4 w-4 text-primary-strong" aria-hidden />
-                  <p className="font-display text-xs uppercase tracking-wide text-subtle">From the Splash lane</p>
-                  <span className="text-xs text-subtle">{splashLaneMatches.length}</span>
+                  <p className="font-display text-meta uppercase tracking-wide text-subtle">From the Splash lane</p>
+                  <span className="text-meta text-subtle">{splashLaneMatches.length}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {splashLaneMatches.map((t) => (
                     <Link
                       key={t.id}
                       href={`/admin/library?lane=splash&section=templates&q=${encodeURIComponent(t.title)}`}
-                      className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-sm text-text hover:bg-surface-elevated"
+                      className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm text-text hover:bg-surface-elevated"
                     >
                       <span className="truncate">{t.title}</span>
                       <span className="shrink-0 text-2xs uppercase tracking-wide text-muted">{t.kind}</span>
@@ -360,10 +360,10 @@ export default async function LoomStudioPage({
             {assets.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border-strong px-6 py-16 text-center">
                 <Images className="mx-auto mb-3 h-8 w-8 text-muted" aria-hidden />
-                <p className="text-base text-muted">
+                <p className="text-body text-muted">
                   {q || kind || category || collectionId ? 'No assets match.' : 'No assets yet.'}
                 </p>
-                <p className="mt-1 text-sm text-subtle">
+                <p className="mt-1 text-body-sm text-subtle">
                   {q || kind || category || collectionId
                     ? 'Try clearing the search or picking another folder.'
                     : 'Upload your first image to start the library.'}
@@ -376,11 +376,11 @@ export default async function LoomStudioPage({
                 {totalPages > 1 && (
                   <nav className="mt-8 flex flex-wrap items-center justify-center gap-1" aria-label="Pagination">
                     {currentPage > 1 ? (
-                      <Link href={pageHref(currentPage - 1)} className="rounded-control border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated" aria-label="Previous page">
+                      <Link href={pageHref(currentPage - 1)} className="rounded-control border border-border px-3 py-1.5 text-body-sm text-text hover:bg-surface-elevated" aria-label="Previous page">
                         <ChevronLeft className="h-4 w-4" />
                       </Link>
                     ) : (
-                      <span className="rounded-card border border-border px-3 py-1.5 text-sm text-subtle opacity-50">
+                      <span className="rounded-card border border-border px-3 py-1.5 text-body-sm text-subtle opacity-50">
                         <ChevronLeft className="h-4 w-4" />
                       </span>
                     )}
@@ -395,7 +395,7 @@ export default async function LoomStudioPage({
                           key={nn}
                           href={pageHref(nn)}
                           aria-current={nn === currentPage ? 'page' : undefined}
-                          className={`min-w-[2.25rem] rounded-xl border px-3 py-1.5 text-center text-sm ${
+                          className={`min-w-[2.25rem] rounded-xl border px-3 py-1.5 text-center text-body-sm ${
                             nn === currentPage
                               ? 'border-primary bg-primary text-on-primary'
                               : 'border-border text-text hover:bg-surface-elevated'
@@ -407,18 +407,18 @@ export default async function LoomStudioPage({
                     )}
 
                     {currentPage < totalPages ? (
-                      <Link href={pageHref(currentPage + 1)} className="rounded-control border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated" aria-label="Next page">
+                      <Link href={pageHref(currentPage + 1)} className="rounded-control border border-border px-3 py-1.5 text-body-sm text-text hover:bg-surface-elevated" aria-label="Next page">
                         <ChevronRight className="h-4 w-4" />
                       </Link>
                     ) : (
-                      <span className="rounded-card border border-border px-3 py-1.5 text-sm text-subtle opacity-50">
+                      <span className="rounded-card border border-border px-3 py-1.5 text-body-sm text-subtle opacity-50">
                         <ChevronRight className="h-4 w-4" />
                       </span>
                     )}
                   </nav>
                 )}
 
-                <p className="mt-3 text-center text-xs text-subtle">
+                <p className="mt-3 text-center text-meta text-subtle">
                   Showing {(currentPage - 1) * PAGE_SIZE + 1} to {(currentPage - 1) * PAGE_SIZE + assets.length} of{' '}
                   {pageResult.total}
                 </p>

@@ -89,8 +89,8 @@ export function PracticeSettingsModule() {
       >
         <Wand2 className="h-5 w-5 shrink-0 text-primary-strong" />
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-text">Open full editor</span>
-          <span className="block text-xs text-muted">
+          <span className="block text-body-sm font-semibold text-text">Open full editor</span>
+          <span className="block text-meta text-muted">
             The full guide, cadence, Pillar, and tags. Build or rework it with Vera.
           </span>
         </span>
@@ -154,7 +154,7 @@ export function PracticeSettingsModule() {
       <div className="space-y-1.5">
         <span className={fieldLabel}>Permalink</span>
         <div className="flex items-center gap-2">
-          <span className="flex flex-1 items-center rounded-lg border border-border bg-surface px-3 text-sm text-subtle">
+          <span className="flex flex-1 items-center rounded-lg border border-border bg-surface px-3 text-body-sm text-subtle">
             <span className="shrink-0">/practices/</span>
             <input
               value={permalink}
@@ -167,12 +167,12 @@ export function PracticeSettingsModule() {
             type="button"
             onClick={handlePermalink}
             disabled={permaPending || !permalink.trim() || permalink.trim() === (data.slug ?? '')}
-            className="inline-flex shrink-0 items-center rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
+            className="inline-flex shrink-0 items-center rounded-lg border border-border bg-surface px-3 py-2 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
           >
             {permaPending ? 'Saving…' : 'Update'}
           </button>
         </div>
-        {permaErr && <span className="text-xs font-medium text-danger">{permaErr}</span>}
+        {permaErr && <span className="text-meta font-medium text-danger">{permaErr}</span>}
       </div>
 
       <DangerDelete

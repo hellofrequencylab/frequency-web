@@ -101,7 +101,7 @@ export function MemberFooter({ role, staffRole = null, navAccess }: MemberFooter
                 <li key={`${col.title}-${link.label}-${link.href}`}>
                   <Link
                     href={link.href}
-                    className="text-sm text-muted transition-colors hover:text-text"
+                    className="text-body-sm text-muted transition-colors hover:text-text"
                   >
                     {link.label}
                   </Link>
@@ -117,7 +117,7 @@ export function MemberFooter({ role, staffRole = null, navAccess }: MemberFooter
                           }),
                         )
                       }
-                      className="mt-2 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-text"
+                      className="mt-2 inline-flex items-center gap-1.5 text-body-sm text-muted transition-colors hover:text-text"
                     >
                       <Bug className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
                       {BUG_REPORT.label}
@@ -136,7 +136,7 @@ export function MemberFooter({ role, staffRole = null, navAccess }: MemberFooter
           <span className="-ml-3.5 shrink-0">
             <BrandMark />
           </span>
-          <p className="text-sm text-muted">{SITE_TAGLINE}.</p>
+          <p className="text-body-sm text-muted">{SITE_TAGLINE}.</p>
         </div>
         <p className="text-2xs text-muted">
           &copy; {year} {ORG_LEGAL_NAME}

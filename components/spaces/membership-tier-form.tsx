@@ -187,7 +187,7 @@ export function MembershipTierForm({
     >
       <div className="space-y-4">
         {rows.length === 0 && (
-          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-sm text-muted">
+          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
             No tiers yet. Add one to open membership.
           </p>
         )}
@@ -197,7 +197,7 @@ export function MembershipTierForm({
             className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1"
           >
             <div className="flex items-start justify-between gap-3">
-              <span className="text-xs font-semibold text-subtle">Tier {i + 1}</span>
+              <span className="text-meta font-semibold text-subtle">Tier {i + 1}</span>
               <div className="flex items-center gap-1">
                 <IconButton
                   variant="bordered"
@@ -242,9 +242,9 @@ export function MembershipTierForm({
 
             <div className="flex flex-wrap gap-3">
               <label className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-muted">Price</span>
+                <span className="text-meta font-medium text-muted">Price</span>
                 <span className="flex items-center gap-1.5">
-                  <span className="text-sm text-muted">$</span>
+                  <span className="text-body-sm text-muted">$</span>
                   <input
                     inputMode="decimal"
                     value={r.price}
@@ -255,7 +255,7 @@ export function MembershipTierForm({
                 </span>
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-muted">Interval</span>
+                <span className="text-meta font-medium text-muted">Interval</span>
                 <select
                   value={r.interval}
                   onChange={(e) => update(i, { interval: e.target.value as MembershipInterval })}
@@ -269,7 +269,7 @@ export function MembershipTierForm({
                 </select>
               </label>
               <label className="flex flex-col justify-end gap-1">
-                <span className="text-xs font-medium text-muted">Active</span>
+                <span className="text-meta font-medium text-muted">Active</span>
                 <span className="flex h-[38px] items-center gap-2">
                   <input
                     type="checkbox"
@@ -277,7 +277,7 @@ export function MembershipTierForm({
                     onChange={(e) => update(i, { isActive: e.target.checked })}
                     className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
                   />
-                  <span className="text-sm text-muted">Show to members</span>
+                  <span className="text-body-sm text-muted">Show to members</span>
                 </span>
               </label>
             </div>
@@ -309,7 +309,7 @@ export function MembershipTierForm({
                 rows={3}
                 className="mt-1"
               />
-              <p className="mt-1 text-xs text-subtle">
+              <p className="mt-1 text-meta text-subtle">
                 Events this tier includes are set below under Event access and show on the join card
                 automatically.
               </p>
@@ -317,7 +317,7 @@ export function MembershipTierForm({
 
             <div className="flex flex-wrap gap-3">
               <label className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-muted">
+                <span className="text-meta font-medium text-muted">
                   Capacity <span className="font-normal text-subtle">(blank = unlimited)</span>
                 </span>
                 <input
@@ -329,7 +329,7 @@ export function MembershipTierForm({
                 />
               </label>
               <label className="flex flex-col justify-end gap-1">
-                <span className="text-xs font-medium text-muted">When full</span>
+                <span className="text-meta font-medium text-muted">When full</span>
                 <span className="flex h-[38px] items-center gap-2">
                   <input
                     type="checkbox"
@@ -337,7 +337,7 @@ export function MembershipTierForm({
                     onChange={(e) => update(i, { waitlist: e.target.checked })}
                     className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
                   />
-                  <span className="text-sm text-muted">Take a waitlist</span>
+                  <span className="text-body-sm text-muted">Take a waitlist</span>
                 </span>
               </label>
             </div>
@@ -347,19 +347,19 @@ export function MembershipTierForm({
         <button
           type="button"
           onClick={addRow}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong transition-colors hover:text-primary"
+          className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong transition-colors hover:text-primary"
         >
           <Plus className="h-4 w-4" aria-hidden /> Add a tier
         </button>
       </div>
 
-      <p className="text-xs text-subtle">
+      <p className="text-meta text-subtle">
         The price is what membership will cost. We do not take a payment when someone joins yet, so
         paid billing is coming later.
       </p>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
+        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
@@ -377,7 +377,7 @@ export function MembershipTierForm({
           )}
         </Button>
         {saved && !pending && (
-          <span className="inline-flex items-center gap-1 text-sm font-medium text-success" role="status">
+          <span className="inline-flex items-center gap-1 text-body-sm font-medium text-success" role="status">
             <Check className="h-4 w-4" aria-hidden /> Saved
           </span>
         )}

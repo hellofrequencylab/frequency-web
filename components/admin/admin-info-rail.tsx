@@ -100,11 +100,11 @@ function InfoStat({ label, value, href, icon: Icon }: { label: string; value: st
       href={href}
       className="flex items-center justify-between rounded-control px-3 py-2.5 transition-colors hover:bg-surface-elevated"
     >
-      <span className="flex items-center gap-2.5 text-sm font-medium text-muted">
+      <span className="flex items-center gap-2.5 text-body-sm font-medium text-muted">
         <Icon className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
         {label}
       </span>
-      <span className="text-base font-bold tabular-nums text-text">{value}</span>
+      <span className="text-body font-bold tabular-nums text-text">{value}</span>
     </Link>
   )
 }
@@ -117,12 +117,12 @@ function AttentionRow({ item }: { item: AttentionDef & { count: number; risk: bo
       href={item.href}
       className="flex items-center justify-between rounded-control px-3 py-2.5 transition-colors hover:bg-surface-elevated"
     >
-      <span className="flex items-center gap-2.5 text-sm font-medium text-muted">
+      <span className="flex items-center gap-2.5 text-body-sm font-medium text-muted">
         <item.Icon className={`h-4 w-4 shrink-0 ${item.risk ? 'text-danger' : 'text-warning'}`} aria-hidden />
         {item.label}
       </span>
       <span
-        className={`inline-flex min-w-[1.5rem] items-center justify-center rounded-pill px-2 py-0.5 text-xs font-bold tabular-nums ${
+        className={`inline-flex min-w-[1.5rem] items-center justify-center rounded-pill px-2 py-0.5 text-meta font-bold tabular-nums ${
           item.risk ? 'bg-danger-bg text-danger' : 'bg-warning-bg text-warning'
         }`}
       >
@@ -159,7 +159,7 @@ export async function AdminInfoRail({
   return (
     <div className="space-y-5">
       <section className="rounded-2xl border border-border bg-surface p-2">
-        <p className="px-3 pb-1.5 pt-2 text-xs font-semibold uppercase tracking-wide text-muted">Live</p>
+        <p className="px-3 pb-1.5 pt-2 text-meta font-semibold uppercase tracking-wide text-muted">Live</p>
         <InfoStat label="Members" value={d.members.toLocaleString()} href="/admin/members" icon={Users} />
         <InfoStat label="Active this week" value={d.wam} href="/admin/insights?tab=engagement" icon={Zap} />
         <InfoStat label="Upcoming events" value={d.eventsAhead} href="/admin/events" icon={CalendarDays} />
@@ -167,21 +167,21 @@ export async function AdminInfoRail({
 
       {candidates.length > 0 && (
         <section className="rounded-2xl border border-border bg-surface p-2">
-          <p className="px-3 pb-1.5 pt-2 text-xs font-semibold uppercase tracking-wide text-muted">
+          <p className="px-3 pb-1.5 pt-2 text-meta font-semibold uppercase tracking-wide text-muted">
             Needs attention
           </p>
           {attention.length > 0 ? (
             attention.map((a) => <AttentionRow key={a.id} item={a} />)
           ) : (
-            <p className="px-3 pb-2 pt-0.5 text-sm text-success">All clear. Nothing waiting.</p>
+            <p className="px-3 pb-2 pt-0.5 text-body-sm text-success">All clear. Nothing waiting.</p>
           )}
         </section>
       )}
 
       <section>
         <div className="flex items-baseline justify-between px-1 pb-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Just joined</p>
-          <Link href="/admin/members" className="text-xs font-semibold text-primary-strong hover:underline">
+          <p className="text-meta font-semibold uppercase tracking-wide text-muted">Just joined</p>
+          <Link href="/admin/members" className="text-meta font-semibold text-primary-strong hover:underline">
             Roster →
           </Link>
         </div>
@@ -192,13 +192,13 @@ export async function AdminInfoRail({
               href={`/people/${m.handle}`}
               className="flex items-center justify-between rounded-control px-3 py-2 transition-colors hover:bg-surface-elevated"
             >
-              <span className="min-w-0 truncate text-sm font-medium text-text">{m.display_name}</span>
-              <span className="shrink-0 pl-2 text-xs text-subtle">
+              <span className="min-w-0 truncate text-body-sm font-medium text-text">{m.display_name}</span>
+              <span className="shrink-0 pl-2 text-meta text-subtle">
                 {new Date(m.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
               </span>
             </Link>
           ))}
-          {d.newest.length === 0 && <p className="px-3 py-2 text-sm text-subtle">No members yet.</p>}
+          {d.newest.length === 0 && <p className="px-3 py-2 text-body-sm text-subtle">No members yet.</p>}
         </div>
       </section>
     </div>

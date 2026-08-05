@@ -129,7 +129,7 @@ export default async function DiscoverHubPage() {
         subtitle="Somewhere close to you, your people are already meeting this week. A standing time, a handful of regulars, a seat that gets noticed when it's empty. Browse the Circles, events, and Channels for free; sign up to join one, RSVP, or post."
       >
         {counts.members >= SOCIAL_PROOF_FLOOR ? (
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-on-ink/80">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-body-sm text-on-ink/80">
             <span><strong className="text-on-ink">{counts.members}</strong> members</span>
             <span className="text-on-ink/30">|</span>
             <span><strong className="text-on-ink">{counts.circles}</strong> circles</span>
@@ -137,7 +137,7 @@ export default async function DiscoverHubPage() {
             <span><strong className="text-on-ink">{events.length}</strong> upcoming events</span>
           </div>
         ) : (
-          <p className="text-sm text-on-ink/80">
+          <p className="text-body-sm text-on-ink/80">
             Forming now in {FOUNDING_PLACE}: explore the first Circles, Channels, and events below.
           </p>
         )}
@@ -145,7 +145,7 @@ export default async function DiscoverHubPage() {
           <Button href={BETA_CTA_HREF}>
             {BETA_CTA_LABEL} <ArrowRight className="w-4 h-4" />
           </Button>
-          <Link href="/discover/circles" className="text-sm font-semibold text-on-ink/80 hover:text-on-ink transition-colors">
+          <Link href="/discover/circles" className="text-body-sm font-semibold text-on-ink/80 hover:text-on-ink transition-colors">
             or just browse, no account needed →
           </Link>
         </div>
@@ -165,7 +165,7 @@ export default async function DiscoverHubPage() {
               title="Find your area"
               kicker="Every dot is neighbors already gathering."
             />
-            <p className="mt-5 text-lg text-muted leading-relaxed">
+            <p className="mt-5 text-body-lg text-muted leading-relaxed">
               Start with the map. Each marker is a real Circle taking root nearby. Close
               enough to walk to, small enough that you&apos;re missed when you don&apos;t come.
             </p>
@@ -184,8 +184,8 @@ export default async function DiscoverHubPage() {
             />
           ) : (
             <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-marketing-canvas p-8 text-center">
-              <p className="mb-1 text-lg font-semibold text-text">We&apos;re starting in {FOUNDING_PLACE}.</p>
-              <p className="mb-5 text-sm text-muted leading-relaxed">
+              <p className="mb-1 text-body-lg font-semibold text-text">We&apos;re starting in {FOUNDING_PLACE}.</p>
+              <p className="mb-5 text-body-sm text-muted leading-relaxed">
                 The first Circles are forming now. Be one of the first in your neighborhood.
               </p>
               <Button href={BETA_CTA_HREF}>
@@ -195,7 +195,7 @@ export default async function DiscoverHubPage() {
           )}
           {cityClusters.length > 0 && (
             <div className="text-center mt-8">
-              <Link href="/discover/places" className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong hover:underline">
+              <Link href="/discover/places" className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline">
                 Browse every town <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -218,7 +218,7 @@ export default async function DiscoverHubPage() {
                 title={<>Find what you <span className="text-primary">practice</span></>}
                 kicker="The thing you already love is a doorway to a room of people."
               />
-              <p className="mt-5 text-lg text-muted leading-relaxed">
+              <p className="mt-5 text-body-lg text-muted leading-relaxed">
                 Movement, spirituality, creative. Pick the Channel that&apos;s calling you,
                 and on the other side of it is a Circle living it near you this week.
               </p>
@@ -229,7 +229,7 @@ export default async function DiscoverHubPage() {
               ))}
             </div>
             <div className="text-center mt-8">
-              <Link href="/discover/topics" className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong hover:underline">
+              <Link href="/discover/topics" className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline">
                 Browse all Channels <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -253,7 +253,7 @@ export default async function DiscoverHubPage() {
                 title={<>Show up <span className="text-primary">this week</span></>}
                 kicker="These are real plans, on real days, with room for you."
               />
-              <p className="mt-5 text-lg text-muted leading-relaxed">
+              <p className="mt-5 text-body-lg text-muted leading-relaxed">
                 A sunrise on the bluff, a thermal circuit, a supper table. Pick one, RSVP, and
                 you&apos;re expected. The kind of plan that pulls you off the couch and into a room.
               </p>
@@ -264,7 +264,7 @@ export default async function DiscoverHubPage() {
               ))}
             </div>
             <div className="text-center mt-8">
-              <Link href="/discover/events" className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong hover:underline">
+              <Link href="/discover/events" className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline">
                 Browse all events <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -287,7 +287,7 @@ export default async function DiscoverHubPage() {
                 title={<>Circles forming <span className="text-primary">now</span></>}
                 kicker="Up to fifty neighbors, small enough to know everyone."
               />
-              <p className="mt-5 text-lg text-muted leading-relaxed">
+              <p className="mt-5 text-body-lg text-muted leading-relaxed">
                 Each one started with a few people, a standing time, and someone willing to say
                 see you next week. Find one that sounds like your people, or a reason to start your own.
               </p>
@@ -298,7 +298,7 @@ export default async function DiscoverHubPage() {
               ))}
             </div>
             <div className="text-center mt-8">
-              <Link href="/discover/circles" className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong hover:underline">
+              <Link href="/discover/circles" className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline">
                 Browse all circles <ArrowRight className="w-4 h-4" />
               </Link>
             </div>

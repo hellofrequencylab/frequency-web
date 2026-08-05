@@ -47,7 +47,7 @@ export async function SpaceCockpitBand({ spaceId, slug }: { spaceId: string; slu
   return (
     <section className="space-y-4">
       {/* The verdict line: the Space owner's whole week in one computed sentence. */}
-      <p className="text-sm text-muted">{verdict}</p>
+      <p className="text-body-sm text-muted">{verdict}</p>
 
       {/* Four Space-scoped StatCards. */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

@@ -17502,3 +17502,62 @@ reported as passing earlier the same night.
 **Consequence.** ⚠️ Variants and arbitrary values (`hover:bg-foo`, `bg-[#abc]`) are out of
 scope, so a phantom inside a variant still ships silently. Widening the pattern needs a way to
 tell a class from an English word first.
+
+## ADR-943 — Pass 1: 6,689 type literals onto the roles, and the line-height that nearly broke it (2026-08-05)
+
+ADR-941 ported DAWN's type vocabulary; nothing consumed it. This is the sweep that makes it
+reach the product: every `text-xs` / `text-sm` / `text-base` / `text-xl` / `text-2xl` in
+`app/**` and `components/**` moves to `text-meta` / `text-body-sm` / `text-body` /
+`text-lead` / `text-page-title`. 6,689 sites, 1,120 files.
+
+**Why this is worth doing when it changes nothing visible.** At the default preset the swap is
+pixel-identical. What it buys is that 6,689 elements start riding `--type-scale`, so the Feel
+axis reaches the product's type for the first time. The axis existed and was wired to almost
+nothing.
+
+### The prerequisite that nearly wasn't there
+
+Tailwind's `text-*` utilities emit **font-size AND line-height** (`--text-sm--line-height`
+etc). Ours emitted font-size only. Swapping in that state would have dropped the line-height
+on ~3,600 sites and let whatever cascades take over — a reflow of most of the product,
+shipped under a commit message about token cleanup.
+
+So the roles got paired line-heights, using **Tailwind's own ratios written as the identical
+`calc()` expressions** from `node_modules/tailwindcss/theme.css`. Not approximately equal:
+the same expression, so the swap is zero-change by construction rather than by estimate.
+
+**And declaring them in `:root` was not enough.** Tailwind v4 only pairs a line-height onto a
+`text-*` utility when it can see the `--text-{role}--line-height` companion inside `@theme`.
+The first attempt put them in `:root` alone, the utilities still emitted font-size only, and
+the verification caught it before a single call site was touched. That verification — compile
+`globals.css`, resolve both sides' var chains to literals, compare font-size AND line-height —
+is the only reason this ADR is not an incident report.
+
+**Moving to DAWN's `--leading-*` roles is deliberately NOT bundled here.** It is a real design
+change; doing it alongside 6,689 mechanical edits would move every baseline at the same moment
+and destroy the one property that makes this sweep reviewable — that a moved baseline means a
+mistake, not an intention.
+
+### What the sweep would not take, and why the remainder is 376
+
+- **`text-lg` / `3xl` / `4xl` / `5xl` (488 sites)** have no exact role. `text-lg` is 1.125rem;
+  the nearest role is `--text-card-title` at 1.0625rem. Swapping those is a design decision per
+  site, not a rename. Pass 2, and they are **not in the ratchet pattern** — gating a number
+  nobody can lower without a ruling is a gate that only nags.
+- **`components/page-editor/**` (~217 sites)** has its own render path and golden-markup
+  snapshots. Excluded here, excluded from the ratchet, pass 2.
+- **~130 sites inside template literals containing `${}`**. The sweep skips the WHOLE string
+  when it interpolates rather than risk a partial edit. Conservative on purpose.
+- **Variant-prefixed (`sm:text-xl`, `md:text-sm`)** are untouched: a breakpoint-scoped size is
+  usually a deliberate step, and flattening it to a role would erase the intent.
+
+`literal-type` is seeded at **376** on the existing `check:adoption` harness rather than as a
+new script, so it inherits provenance integrity, the basis fingerprint, and the asymmetric
+merge for free.
+
+**Consequences.** ✅ Three drift guards failed and were updated, which is them working: a
+source-level class assertion in `hero-contrast.test.ts` and two golden-markup snapshots in
+`block-render.test.tsx`. The snapshot diff was verified to be **class renames only** — no tag,
+attribute or content changed — before accepting it, because a blind `-u` on a golden snapshot
+is how a real regression gets laundered. ⚠️ Visual baselines should NOT move; if `pr-compare`
+reports a diff on this PR, that is a genuine mistake to investigate, not an expected cost.

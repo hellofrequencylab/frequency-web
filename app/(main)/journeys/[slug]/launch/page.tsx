@@ -63,7 +63,7 @@ async function EnrolleeBroadcastSection({ planId }: { planId: string }) {
     <section className="space-y-2.5">
       <div className="flex items-center gap-2">
         <Users className="h-4 w-4 text-primary-strong" aria-hidden />
-        <h2 className="text-sm font-semibold text-text">Message enrollees</h2>
+        <h2 className="text-body-sm font-semibold text-text">Message enrollees</h2>
       </div>
       <BroadcastComposer
         heading="Message enrollees"

@@ -33,9 +33,9 @@ export default async function MarketSellPage() {
           <div className="rounded-2xl border border-primary/30 bg-primary-bg/10 p-5">
             <div className="mb-2 flex items-center gap-2">
               <Store className="h-5 w-5 text-primary-strong" aria-hidden />
-              <h2 className="text-base font-bold text-text">Upgrade to sell</h2>
+              <h2 className="text-body font-bold text-text">Upgrade to sell</h2>
             </div>
-            <p className="mb-4 text-sm text-muted">
+            <p className="mb-4 text-body-sm text-muted">
               A paid membership lets you list products in the Market and take payment straight to
               your account. The platform fee stays low.
             </p>
@@ -47,9 +47,9 @@ export default async function MarketSellPage() {
           <div className="rounded-2xl border border-border bg-surface p-5">
             <div className="mb-2 flex items-center gap-2">
               <Tag className="h-5 w-5 text-muted" aria-hidden />
-              <h2 className="text-base font-bold text-text">Free to post in Classifieds</h2>
+              <h2 className="text-body font-bold text-text">Free to post in Classifieds</h2>
             </div>
-            <p className="mb-4 text-sm text-muted">
+            <p className="mb-4 text-body-sm text-muted">
               Swap, give away, lend, or ask for something with people nearby. No fee, no checkout.
             </p>
             <Link href="/classifieds" className={buttonClasses('secondary', 'md')}>
@@ -73,9 +73,9 @@ export default async function MarketSellPage() {
       <div className="mt-8 rounded-2xl border border-primary/30 bg-primary-bg/10 p-5">
         <div className="mb-2 flex items-center gap-2">
           <Store className="h-5 w-5 text-primary-strong" aria-hidden />
-          <h2 className="text-base font-bold text-text">Want a full shop?</h2>
+          <h2 className="text-body font-bold text-text">Want a full shop?</h2>
         </div>
-        <p className="mb-4 text-sm text-muted">
+        <p className="mb-4 text-body-sm text-muted">
           A Business Space gets a real storefront: products, bookable services, tickets, collections,
           and a lower fee. This member listing is the quick way to sell one thing.
         </p>

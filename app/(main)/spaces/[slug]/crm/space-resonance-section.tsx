@@ -34,7 +34,7 @@ export async function SpaceResonanceSection({ spaceId }: { spaceId: string }) {
             >
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-semibold text-text">{s.anchorName}</span>
-                <span className="text-sm text-subtle">and</span>
+                <span className="text-body-sm text-subtle">and</span>
                 {s.match.handle ? (
                   <Link href={`/people/${s.match.handle}`} className="font-semibold text-primary-strong hover:underline">
                     {s.match.name}
@@ -46,12 +46,12 @@ export async function SpaceResonanceSection({ spaceId }: { spaceId: string }) {
                   <Sparkles className="h-3 w-3" aria-hidden /> {matchStrengthLabel(s.match.score)}
                 </span>
               </div>
-              <p className="mt-1 text-sm text-muted">{matchWhyLine(s.match.reasons)}</p>
+              <p className="mt-1 text-body-sm text-muted">{matchWhyLine(s.match.reasons)}</p>
             </li>
           ))}
         </ul>
       )}
-      <p className="mt-3 text-xs text-subtle">
+      <p className="mt-3 text-meta text-subtle">
         Matches are reciprocal and consent first. Nothing is sent until both people say yes.
       </p>
     </section>

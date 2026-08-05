@@ -29,9 +29,9 @@ import { richParagraphs } from '@/lib/page-editor/richtext'
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TEXT_SIZE: Record<string, string> = {
-  sm: 'text-sm',
-  base: 'text-lg',
-  lg: 'text-xl',
+  sm: 'text-body-sm',
+  base: 'text-body-lg',
+  lg: 'text-lead',
 }
 
 export function TextBlock({

@@ -25,7 +25,7 @@ export function AdminModuleCard({
 }) {
   return (
     <SidebarCard title={title} Icon={Icon} action={status}>
-      {desc && <p className="px-4 pt-3 text-sm text-muted">{desc}</p>}
+      {desc && <p className="px-4 pt-3 text-body-sm text-muted">{desc}</p>}
       <div className="px-4 py-3">{children}</div>
       {footer && <div className="border-t border-border px-4 py-3">{footer}</div>}
     </SidebarCard>

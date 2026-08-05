@@ -70,7 +70,7 @@ export function AddToCalendar({
       <div className="flex items-center gap-2">
         <Link
           href={icsHref}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           title="Apple Calendar, Outlook, and any iCal-compatible app"
         >
           <CalendarPlus className="h-3.5 w-3.5" />
@@ -80,7 +80,7 @@ export function AddToCalendar({
           href={googleUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-border-strong hover:text-text"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:border-border-strong hover:text-text"
         >
           <ExternalLink className="h-3.5 w-3.5" />
           Google
@@ -93,7 +93,7 @@ export function AddToCalendar({
     <div className="flex items-center gap-2">
       <Link
         href={icsHref}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-border-strong hover:bg-surface"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:border-border-strong hover:bg-surface"
         title="Apple Calendar, Outlook, and any iCal-compatible app"
       >
         <CalendarDays className="h-3.5 w-3.5" />
@@ -103,7 +103,7 @@ export function AddToCalendar({
         href={googleUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-border-strong hover:bg-surface"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:border-border-strong hover:bg-surface"
       >
         <ExternalLink className="h-3.5 w-3.5" />
         Google

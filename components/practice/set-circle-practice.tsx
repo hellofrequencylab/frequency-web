@@ -22,11 +22,11 @@ export function SetCirclePractice({
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <span className="text-xs text-subtle">Set practice:</span>
+      <span className="text-meta text-subtle">Set practice:</span>
       <select
         value={val}
         onChange={(e) => setVal(e.target.value)}
-        className="rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text"
+        className="rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text"
       >
         <option value="">Choose a practice…</option>
         {library.map((p) => (
@@ -47,11 +47,11 @@ export function SetCirclePractice({
             }
           })
         }
-        className="rounded-lg bg-primary hover:bg-primary-hover text-on-primary px-3 py-1.5 text-sm font-semibold disabled:opacity-60 transition-colors"
+        className="rounded-lg bg-primary hover:bg-primary-hover text-on-primary px-3 py-1.5 text-body-sm font-semibold disabled:opacity-60 transition-colors"
       >
         {pending ? 'Setting…' : 'Set'}
       </button>
-      {err && <span className="text-xs text-danger">{err}</span>}
+      {err && <span className="text-meta text-danger">{err}</span>}
     </div>
   )
 }

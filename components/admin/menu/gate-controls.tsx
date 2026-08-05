@@ -44,12 +44,12 @@ export function GateControls({
   onSave: (patch: GatePatch) => void
 }) {
   const selClass =
-    'w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50'
+    'w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50'
 
   return (
     <div className="grid gap-3 rounded-lg border border-border bg-surface/50 p-3 sm:grid-cols-3">
       <div className="min-w-0">
-        <label className="mb-1 block text-xs font-semibold text-subtle">Minimum access</label>
+        <label className="mb-1 block text-meta font-semibold text-subtle">Minimum access</label>
         <select
           value={minAccess ?? 'visitor'}
           disabled={disabled}
@@ -65,7 +65,7 @@ export function GateControls({
       </div>
 
       <div className="min-w-0">
-        <label className="mb-1 block text-xs font-semibold text-subtle">Staff domain</label>
+        <label className="mb-1 block text-meta font-semibold text-subtle">Staff domain</label>
         <select
           value={staffDomain ?? ''}
           disabled={disabled}
@@ -87,7 +87,7 @@ export function GateControls({
       </div>
 
       <div className="min-w-0">
-        <label className="mb-1 block text-xs font-semibold text-subtle">Staff level</label>
+        <label className="mb-1 block text-meta font-semibold text-subtle">Staff level</label>
         <select
           value={staffLevel ?? 'write'}
           disabled={disabled || !staffDomain}

@@ -84,7 +84,7 @@ function KnowledgeCheck({ config }: { config: CheckConfig }) {
   const correct = picked !== null && picked === config.answer
   return (
     <div className="mt-5 max-w-prose space-y-3 rounded-card border border-border bg-surface-elevated/40 p-4">
-      <p className="text-sm font-semibold text-text">{config.question}</p>
+      <p className="text-body-sm font-semibold text-text">{config.question}</p>
       <div className="space-y-2">
         {config.options.map((opt, i) => {
           const chosen = picked === i
@@ -101,7 +101,7 @@ function KnowledgeCheck({ config }: { config: CheckConfig }) {
               type="button"
               onClick={() => setPicked(i)}
               disabled={correct}
-              className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${state}`}
+              className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left text-body-sm transition-colors ${state}`}
             >
               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-pill border border-current text-2xs font-bold">
                 {String.fromCharCode(65 + i)}
@@ -113,7 +113,7 @@ function KnowledgeCheck({ config }: { config: CheckConfig }) {
         })}
       </div>
       {picked !== null && (
-        <div className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text">
+        <div className="rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text">
           <span className={`font-semibold ${correct ? 'text-success' : 'text-text'}`}>{correct ? 'Correct.' : 'Not quite.'}</span>
           {config.explanation ? ` ${config.explanation}` : ''}
           {!correct && (
@@ -277,7 +277,7 @@ export function LearnPlayer({
 
       {/* Progress header — never-empty bar (endowed-progress effect, docs/JOURNEYS-DESIGN.md §1). */}
       <div className="rounded-card border border-border bg-surface p-4">
-        <div className="mb-2 flex items-center justify-between text-sm">
+        <div className="mb-2 flex items-center justify-between text-body-sm">
           <span className="font-semibold text-text">Your progress</span>
           <span className="tabular-nums text-muted">{tree.doneRequired} of {tree.totalRequired} done</span>
         </div>
@@ -295,7 +295,7 @@ export function LearnPlayer({
         type="button"
         onClick={() => setMobileToc((v) => !v)}
         aria-expanded={mobileToc}
-        className="flex w-full items-center gap-2 rounded-control border border-border bg-surface px-3 py-2.5 text-sm font-medium text-text lg:hidden"
+        className="flex w-full items-center gap-2 rounded-control border border-border bg-surface px-3 py-2.5 text-body-sm font-medium text-text lg:hidden"
       >
         <List className="h-4 w-4 text-subtle" />
         Contents
@@ -323,7 +323,7 @@ export function LearnPlayer({
                     {/* The "Week N" eyebrow only when the phase is a real, titled phase (a flat/
                         legacy journey has one untitled implicit phase — no week label there). */}
                     {p.title && <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">Week {pi + 1}</span>}
-                    <span className="block truncate text-sm font-semibold text-text">{p.title || `Phase ${pi + 1}`}</span>
+                    <span className="block truncate text-body-sm font-semibold text-text">{p.title || `Phase ${pi + 1}`}</span>
                     {locked && <span className="block text-2xs font-medium text-muted">{unlockLabel(lock?.unlockAt ?? null)}</span>}
                   </span>
                   {locked ? (
@@ -367,7 +367,7 @@ export function LearnPlayer({
                             if (locked) {
                               return (
                                 <li key={l.id}>
-                                  <div aria-disabled="true" className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm text-subtle opacity-70">
+                                  <div aria-disabled="true" className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-body-sm text-subtle opacity-70">
                                     <Lock className="h-3.5 w-3.5 shrink-0" />
                                     <span className="min-w-0 truncate">{l.title}</span>
                                   </div>
@@ -382,7 +382,7 @@ export function LearnPlayer({
                                   type="button"
                                   onClick={() => goTo(l.id)}
                                   aria-current={active ? 'true' : undefined}
-                                  className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors ${
+                                  className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-body-sm transition-colors ${
                                     active ? 'bg-primary-bg font-medium text-primary-strong' : 'text-text hover:bg-surface-elevated'
                                   }`}
                                 >
@@ -412,7 +412,7 @@ export function LearnPlayer({
                             <button
                               type="button"
                               onClick={() => mindless.open({ queue: q })}
-                              className="mt-1 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-primary-strong transition-colors hover:bg-primary-bg"
+                              className="mt-1 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary-bg"
                             >
                               <Layers className="h-3.5 w-3.5 shrink-0" aria-hidden /> Start all {q.length} as one session
                             </button>
@@ -430,12 +430,12 @@ export function LearnPlayer({
         {/* Lesson pane — one idea, one action. Reading content at a ~prose measure (rule 2). */}
         <article className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
           {!lesson ? (
-            <p className="text-sm text-muted">This journey has no lessons yet.</p>
+            <p className="text-body-sm text-muted">This journey has no lessons yet.</p>
           ) : selectedLocked ? (
             <div className="flex flex-col items-center gap-2 py-10 text-center">
               <Lock className="h-6 w-6 text-subtle" />
-              <p className="text-sm font-semibold text-text">This phase is still locked</p>
-              <p className="max-w-prose text-sm text-muted">
+              <p className="text-body-sm font-semibold text-text">This phase is still locked</p>
+              <p className="max-w-prose text-body-sm text-muted">
                 {unlockLabel(phaseLock.get(phaseOfLesson.get(selectedId!) ?? '')?.unlockAt ?? null)}. One phase opens at a time, so the whole Circle moves together. Catch up on the current phase while you wait.
               </p>
             </div>
@@ -445,7 +445,7 @@ export function LearnPlayer({
               {phaseFocus && (
                 <div className="mb-4 flex items-start gap-2 rounded-card border border-border bg-surface-elevated/40 p-3">
                   <Compass className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
-                  <p className="text-sm leading-relaxed text-muted">
+                  <p className="text-body-sm leading-relaxed text-muted">
                     <span className="font-semibold text-text">This week:</span> {phaseFocus}
                   </p>
                 </div>
@@ -455,7 +455,7 @@ export function LearnPlayer({
                 Lesson {idx + 1} of {order.length}{lesson.estMinutes ? ` · ${lesson.estMinutes} min` : ''}{lesson.required ? '' : ' · optional'}
               </p>
               <div className="mt-1 flex flex-wrap items-center gap-2">
-                <h2 className="text-xl font-bold text-text">{lesson.title}</h2>
+                <h2 className="text-lead font-bold text-text">{lesson.title}</h2>
                 {selectedId === anchorLessonId && (
                   <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
                     <Anchor className="h-3 w-3" aria-hidden /> Daily anchor
@@ -466,13 +466,13 @@ export function LearnPlayer({
                 )}
               </div>
               {selectedId === anchorLessonId && (
-                <p className="mt-1 text-xs text-muted">Your through-line. Do this one every day, all the way through.</p>
+                <p className="mt-1 text-meta text-muted">Your through-line. Do this one every day, all the way through.</p>
               )}
 
               {/* Extra-credit badge: a bonus task, above and beyond, that pays Zaps once on
                   completion. Optional, never gates finishing the Journey. */}
               {lesson.extraCredit && (
-                <div className="mt-2 inline-flex items-center gap-1.5 rounded-pill border border-signal/30 bg-signal-bg/50 px-2.5 py-1 text-xs font-semibold text-signal-strong">
+                <div className="mt-2 inline-flex items-center gap-1.5 rounded-pill border border-signal/30 bg-signal-bg/50 px-2.5 py-1 text-meta font-semibold text-signal-strong">
                   <Award className="h-3.5 w-3.5" aria-hidden /> Extra credit{lesson.bonusZaps > 0 ? ` · +${lesson.bonusZaps} Zaps` : ''}
                 </div>
               )}
@@ -493,11 +493,11 @@ export function LearnPlayer({
                 </div>
               )}
 
-              {/* Prose body — only when it isn't a bare video URL; constrained measure + text-base.
+              {/* Prose body — only when it isn't a bare video URL; constrained measure + text-body.
                   (Lesson / extra-credit blocks carry their own body here; practice steps render
                   their full library write-up in the pre-rendered detail node below.) */}
               {lesson.body && !video && (
-                <div className="mt-4 max-w-prose whitespace-pre-wrap text-base leading-relaxed text-text">{lesson.body}</div>
+                <div className="mt-4 max-w-prose whitespace-pre-wrap text-body leading-relaxed text-text">{lesson.body}</div>
               )}
 
               {/* Rich, server-rendered detail for the step (the practice write-up: summary ·
@@ -527,7 +527,7 @@ export function LearnPlayer({
               {lesson.coachingPrompt && (
                 <div className="mt-4 flex max-w-prose items-start gap-2 rounded-xl border border-primary/20 bg-primary-bg/30 p-3">
                   <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-                  <p className="text-sm leading-relaxed text-text">{lesson.coachingPrompt}</p>
+                  <p className="text-body-sm leading-relaxed text-text">{lesson.coachingPrompt}</p>
                 </div>
               )}
 
@@ -538,7 +538,7 @@ export function LearnPlayer({
               {gateOnLog && forceContinue && (
                 <div className="mt-5 flex max-w-prose items-start gap-2 rounded-xl border border-warning/30 bg-warning-bg/30 p-3">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
-                  <p className="text-sm leading-relaxed text-text">
+                  <p className="text-body-sm leading-relaxed text-text">
                     You haven&rsquo;t logged this practice yet. {selectedUsesTimer ? 'Run the timer' : 'Tap Log it'} above so it counts toward your Pillar balance, or continue without logging.
                   </p>
                 </div>
@@ -547,29 +547,29 @@ export function LearnPlayer({
               {/* One clear next action */}
               <div className="mt-6 flex items-center gap-2 border-t border-border pt-4">
                 {prevId && (
-                  <button type="button" onClick={() => goTo(prevId)} className="inline-flex items-center gap-1 rounded-lg px-2.5 py-2 text-sm text-muted hover:text-text">
+                  <button type="button" onClick={() => goTo(prevId)} className="inline-flex items-center gap-1 rounded-lg px-2.5 py-2 text-body-sm text-muted hover:text-text">
                     <ChevronLeft className="h-4 w-4" /> Back
                   </button>
                 )}
                 <div className="ml-auto flex items-center gap-2">
                   {isDone ? (
                     nextId && nextLocked ? (
-                      <span className="inline-flex items-center gap-1.5 text-sm font-medium text-subtle">
+                      <span className="inline-flex items-center gap-1.5 text-body-sm font-medium text-subtle">
                         <Lock className="h-4 w-4" /> {unlockLabel(phaseLock.get(phaseOfLesson.get(nextId) ?? '')?.unlockAt ?? null)}
                       </span>
                     ) : nextId ? (
-                      <button type="button" onClick={() => goTo(nextId)} className="inline-flex items-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover">
+                      <button type="button" onClick={() => goTo(nextId)} className="inline-flex items-center gap-1 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover">
                         Continue <ChevronRight className="h-4 w-4" />
                       </button>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-success"><Check className="h-4 w-4" /> Completed</span>
+                      <span className="inline-flex items-center gap-1 text-body-sm font-semibold text-success"><Check className="h-4 w-4" /> Completed</span>
                     )
                   ) : gateOnLog && !forceContinue ? (
                     // Grey until the practice is logged (#7). A first click reveals the escape hatch.
                     <button
                       type="button"
                       onClick={() => setForceContinue(true)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-4 py-2 text-sm font-semibold text-muted transition-colors hover:text-text"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-4 py-2 text-body-sm font-semibold text-muted transition-colors hover:text-text"
                     >
                       <Check className="h-4 w-4" /> Mark complete & continue
                     </button>
@@ -579,12 +579,12 @@ export function LearnPlayer({
                       type="button"
                       onClick={complete}
                       disabled={pending}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-warning/50 bg-surface px-4 py-2 text-sm font-semibold text-warning transition-colors hover:bg-warning-bg/40 disabled:opacity-60"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-warning/50 bg-surface px-4 py-2 text-body-sm font-semibold text-warning transition-colors hover:bg-warning-bg/40 disabled:opacity-60"
                     >
                       {pending ? 'Saving…' : 'Continue without logging'}
                     </button>
                   ) : (
-                    <button type="button" onClick={complete} disabled={pending} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">
+                    <button type="button" onClick={complete} disabled={pending} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">
                       <Check className="h-4 w-4" /> {pending ? 'Saving…' : 'Mark complete & continue'}
                     </button>
                   )}

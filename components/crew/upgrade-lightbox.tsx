@@ -72,22 +72,22 @@ export function UpgradeLightbox({
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
           <Zap className="h-6 w-6" />
         </div>
-        <h2 className="mt-4 text-xl font-bold text-text">{title ?? DEFAULT_COPY.title}</h2>
-        <p className="mt-2 text-sm leading-relaxed text-muted">{blurb ?? DEFAULT_COPY.blurb}</p>
+        <h2 className="mt-4 text-lead font-bold text-text">{title ?? DEFAULT_COPY.title}</h2>
+        <p className="mt-2 text-body-sm leading-relaxed text-muted">{blurb ?? DEFAULT_COPY.blurb}</p>
         {/* The reassurance: Crew costs nothing during the beta — a one-tap, no-card upgrade. */}
-        <p className="mt-3 rounded-xl bg-primary-bg/60 px-3 py-2 text-xs font-semibold leading-relaxed text-primary-strong">
+        <p className="mt-3 rounded-xl bg-primary-bg/60 px-3 py-2 text-meta font-semibold leading-relaxed text-primary-strong">
           Crew is free during the beta. Upgrade in one tap, no card, and keep everything you have.
         </p>
         <Link
           href="/upgrade"
-          className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           Upgrade to Crew, free
         </Link>
         <button
           type="button"
           onClick={onClose}
-          className="mt-2 w-full rounded-xl px-5 py-2 text-sm font-medium text-subtle transition-colors hover:text-text"
+          className="mt-2 w-full rounded-xl px-5 py-2 text-body-sm font-medium text-subtle transition-colors hover:text-text"
         >
           Maybe later
         </button>
@@ -145,7 +145,7 @@ export function CrewGateButton({
         onClick={() => setOpen(true)}
         className={
           buttonClassName ??
-          'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors'
+          'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors'
         }
       >
         <Lock className="h-3.5 w-3.5" />

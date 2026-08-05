@@ -54,7 +54,7 @@ export function PersonCard({
               className="h-11 w-11 rounded-pill object-cover"
             />
           ) : (
-            <div className="flex h-11 w-11 items-center justify-center rounded-pill bg-primary-bg text-sm font-semibold text-primary-strong select-none">
+            <div className="flex h-11 w-11 items-center justify-center rounded-pill bg-primary-bg text-body-sm font-semibold text-primary-strong select-none">
               {getInitials(displayName)}
             </div>
           )}

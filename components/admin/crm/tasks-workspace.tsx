@@ -78,7 +78,7 @@ export function TasksWorkspace({ tasks, viewerId }: { tasks: CrmTask[]; viewerId
       />
 
       {error && (
-        <p role="alert" className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger">
+        <p role="alert" className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm text-danger">
           {error}
         </p>
       )}
@@ -89,7 +89,7 @@ export function TasksWorkspace({ tasks, viewerId }: { tasks: CrmTask[]; viewerId
             key={t.key}
             type="button"
             onClick={() => setTab(t.key)}
-            className={`rounded-pill px-3 py-1 text-sm ${
+            className={`rounded-pill px-3 py-1 text-body-sm ${
               tab === t.key ? 'bg-primary text-on-primary' : 'bg-surface text-muted hover:text-text'
             }`}
           >
@@ -112,10 +112,10 @@ export function TasksWorkspace({ tasks, viewerId }: { tasks: CrmTask[]; viewerId
               className="flex items-start justify-between gap-3 rounded-lg border border-border bg-surface p-3"
             >
               <div className="min-w-0">
-                <p className={`text-sm font-medium ${t.status === 'done' ? 'text-muted line-through' : 'text-text'}`}>
+                <p className={`text-body-sm font-medium ${t.status === 'done' ? 'text-muted line-through' : 'text-text'}`}>
                   {t.title}
                 </p>
-                {t.notes && <p className="mt-0.5 truncate text-xs text-muted">{t.notes}</p>}
+                {t.notes && <p className="mt-0.5 truncate text-meta text-muted">{t.notes}</p>}
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-2xs text-muted">
                   {dueLabel(t, now) && (
                     <span className={overdue(t, now) ? 'text-danger' : ''}>{dueLabel(t, now)}</span>

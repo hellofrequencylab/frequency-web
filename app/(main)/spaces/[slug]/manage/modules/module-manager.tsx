@@ -214,7 +214,7 @@ export function ModuleManager({
   return (
     <div className="space-y-6">
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
+        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
@@ -251,7 +251,7 @@ export function ModuleManager({
                       </span>
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-semibold text-text">{row.label}</span>
+                          <span className="text-body-sm font-semibold text-text">{row.label}</span>
                           <span className="inline-flex items-center rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-muted">
                             {TIER_LABEL[row.tier]}
                           </span>
@@ -267,7 +267,7 @@ export function ModuleManager({
                             </span>
                           )}
                         </div>
-                        <p className="mt-0.5 text-xs text-muted">{row.desc}</p>
+                        <p className="mt-0.5 text-meta text-muted">{row.desc}</p>
                       </div>
                     </div>
 
@@ -410,8 +410,8 @@ function ReviewsOffDialog({
       className="max-w-sm"
     >
       <div className="relative w-full rounded-2xl border border-border bg-surface p-6 lift-3">
-        <h2 className="text-base font-bold leading-tight text-text">Are you sure?</h2>
-        <p className="mt-2 text-sm leading-relaxed text-muted">
+        <h2 className="text-body font-bold leading-tight text-text">Are you sure?</h2>
+        <p className="mt-2 text-body-sm leading-relaxed text-muted">
           Reviews build trust with new members. We recommend keeping them on. Turning {label.toLowerCase()} off
           hides the rating and review wall from your profile until you turn it back on.
         </p>
@@ -421,7 +421,7 @@ function ReviewsOffDialog({
           type="button"
           onClick={onKeepOn}
           disabled={pending}
-          className="mt-5 flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-70"
+          className="mt-5 flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-70"
         >
           Keep reviews on
         </button>
@@ -432,7 +432,7 @@ function ReviewsOffDialog({
           onClick={() => startTransition(() => void onConfirm())}
           disabled={pending}
           aria-busy={pending}
-          className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 text-xs font-medium text-subtle transition-colors hover:text-danger disabled:cursor-wait disabled:opacity-70"
+          className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 text-meta font-medium text-subtle transition-colors hover:text-danger disabled:cursor-wait disabled:opacity-70"
         >
           {pending ? (
             <>

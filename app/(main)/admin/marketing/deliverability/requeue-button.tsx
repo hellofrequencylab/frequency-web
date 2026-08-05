@@ -27,18 +27,18 @@ export function RequeueButton({ kind, label }: { kind?: string; label: string })
           if (!confirm(`Requeue ${scope}? They will retry on the next drain.`)) return
           start(async () => setResult(await requeueDeadLetters(kind)))
         }}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-on-primary text-xs font-semibold px-3 py-1.5 lift-1 transition-colors disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-on-primary text-meta font-semibold px-3 py-1.5 lift-1 transition-colors disabled:opacity-60"
       >
         <RefreshCw className={`h-3.5 w-3.5 ${pending ? 'animate-spin' : ''}`} />
         {pending ? 'Requeuing…' : label}
       </button>
       {result?.ok && (
-        <span className="inline-flex items-center gap-1 text-xs text-success font-medium">
+        <span className="inline-flex items-center gap-1 text-meta text-success font-medium">
           <Check className="h-3.5 w-3.5" /> Requeued {result.revived}
         </span>
       )}
       {result && !result.ok && (
-        <span className="inline-flex items-center gap-1 text-xs text-danger">
+        <span className="inline-flex items-center gap-1 text-meta text-danger">
           <AlertCircle className="h-3.5 w-3.5" /> {result.error}
         </span>
       )}
@@ -63,18 +63,18 @@ export function DiscardButton({ kind, label }: { kind?: string; label: string })
           if (!confirm(`Discard ${scope}? This is terminal: they will not retry. Use Requeue instead if the failure was a temporary outage.`)) return
           start(async () => setResult(await discardDeadLetters(kind)))
         }}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface hover:bg-surface-elevated text-muted hover:text-text text-xs font-semibold px-3 py-1.5 lift-1 transition-colors disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface hover:bg-surface-elevated text-muted hover:text-text text-meta font-semibold px-3 py-1.5 lift-1 transition-colors disabled:opacity-60"
       >
         <Trash2 className={`h-3.5 w-3.5 ${pending ? 'animate-pulse' : ''}`} />
         {pending ? 'Discarding…' : label}
       </button>
       {result?.ok && (
-        <span className="inline-flex items-center gap-1 text-xs text-muted font-medium">
+        <span className="inline-flex items-center gap-1 text-meta text-muted font-medium">
           <Check className="h-3.5 w-3.5" /> Discarded {result.discarded}
         </span>
       )}
       {result && !result.ok && (
-        <span className="inline-flex items-center gap-1 text-xs text-danger">
+        <span className="inline-flex items-center gap-1 text-meta text-danger">
           <AlertCircle className="h-3.5 w-3.5" /> {result.error}
         </span>
       )}
@@ -99,13 +99,13 @@ export function DrainQueueButton() {
           if (!confirm('Send every queued email and push now? This does the same work as the cron.')) return
           start(async () => setResult(await drainQueueNow()))
         }}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-on-primary text-xs font-semibold px-3 py-1.5 lift-1 transition-colors disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-on-primary text-meta font-semibold px-3 py-1.5 lift-1 transition-colors disabled:opacity-60"
       >
         <Send className={`h-3.5 w-3.5 ${pending ? 'animate-pulse' : ''}`} />
         {pending ? 'Sending…' : 'Send queued now'}
       </button>
       {result?.ok && (
-        <span className="inline-flex items-center gap-1 text-xs text-success font-medium">
+        <span className="inline-flex items-center gap-1 text-meta text-success font-medium">
           <Check className="h-3.5 w-3.5" />
           {result.processed === 0
             ? 'Queue was already empty'
@@ -113,7 +113,7 @@ export function DrainQueueButton() {
         </span>
       )}
       {result && !result.ok && (
-        <span className="inline-flex items-center gap-1 text-xs text-danger">
+        <span className="inline-flex items-center gap-1 text-meta text-danger">
           <AlertCircle className="h-3.5 w-3.5" /> {result.error}
         </span>
       )}

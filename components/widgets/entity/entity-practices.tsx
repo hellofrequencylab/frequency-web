@@ -46,7 +46,7 @@ export async function EntityPractices() {
                 title={p.title}
                 description={p.summary ?? p.description ?? undefined}
                 anchor={
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-bg text-lg" aria-hidden>
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-bg text-body-lg" aria-hidden>
                     {p.icon ?? '🌀'}
                   </span>
                 }
@@ -76,7 +76,7 @@ export async function EntityPractices() {
                 title={j.title}
                 description={j.summary ?? undefined}
                 anchor={
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-bg text-lg" aria-hidden>
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-bg text-body-lg" aria-hidden>
                     {j.emoji ?? '🧭'}
                   </span>
                 }

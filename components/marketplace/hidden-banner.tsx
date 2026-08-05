@@ -15,13 +15,13 @@ export async function MarketplaceHiddenBanner({ area }: { area: MarketArea }) {
   if (vis[area] || !operator) return null
   return (
     <div className="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-card border border-border bg-surface-elevated px-4 py-2.5">
-      <span className="inline-flex items-center gap-2 text-sm text-text">
+      <span className="inline-flex items-center gap-2 text-body-sm text-text">
         <EyeOff className="h-4 w-4 text-warning" aria-hidden />
         <span>
           {AREA_LABEL[area]} is <strong className="font-semibold">hidden from members</strong>. Only operators can see it.
         </span>
       </span>
-      <Link href="/admin/marketplace" className="text-sm font-medium text-primary hover:underline">
+      <Link href="/admin/marketplace" className="text-body-sm font-medium text-primary hover:underline">
         Visibility settings
       </Link>
     </div>

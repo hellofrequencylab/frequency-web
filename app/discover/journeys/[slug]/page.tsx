@@ -125,7 +125,7 @@ export default async function DiscoverJourneyPage({
             {author && (
               <Link
                 href={`/people/${author.handle}`}
-                className="inline-flex items-center gap-1 text-xs text-muted hover:text-text"
+                className="inline-flex items-center gap-1 text-meta text-muted hover:text-text"
               >
                 By <span className="font-semibold text-text">{author.displayName}</span>
               </Link>
@@ -138,12 +138,12 @@ export default async function DiscoverJourneyPage({
         badges={
           <span className="inline-flex flex-wrap items-center gap-1.5">
             {plan.official && (
-              <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-xs font-semibold text-primary-strong">
+              <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-semibold text-primary-strong">
                 <Flame className="h-3 w-3" /> Official
               </span>
             )}
             {topPillar && (
-              <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
+              <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-medium text-primary-strong">
                 {topPillar.name}
               </span>
             )}
@@ -188,8 +188,8 @@ export default async function DiscoverJourneyPage({
             <JourneyFaq plan={plan} />
 
             <div className="rounded-2xl border border-border bg-surface p-5 text-center lift-1">
-              <p className="mb-1 text-lg font-bold text-text">Start this Journey</p>
-              <p className="mx-auto mb-4 max-w-sm text-sm leading-relaxed text-muted">
+              <p className="mb-1 text-body-lg font-bold text-text">Start this Journey</p>
+              <p className="mx-auto mb-4 max-w-sm text-body-sm leading-relaxed text-muted">
                 Sign up free to start it. Its phases drip one per week, your Circle can run it
                 with you, and finishing earns the completion gems.
               </p>

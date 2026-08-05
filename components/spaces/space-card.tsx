@@ -100,7 +100,7 @@ export function SpaceCard({ space }: { space: NetworkedSpace }) {
           // cover. Rendered as a sibling anchor of the card's profile link, so the two are never nested.
           <Link
             href={space.action.href}
-            className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-semibold text-on-ink underline decoration-1 underline-offset-2 backdrop-blur-sm hover:decoration-2"
+            className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-meta font-semibold text-on-ink underline decoration-1 underline-offset-2 backdrop-blur-sm hover:decoration-2"
           >
             {space.action.label}
             <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />

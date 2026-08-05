@@ -29,7 +29,7 @@ export function CancelToggle({ id, isCancelled }: { id: string; isCancelled: boo
       <button
         onClick={handleClick}
         disabled={isPending}
-        className={`shrink-0 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+        className={`shrink-0 rounded-lg border px-3 py-1.5 text-meta font-medium transition-colors disabled:opacity-50 ${
           isCancelled
             ? 'border-success text-success hover:bg-success-bg dark:hover:bg-success-bg/30'
             : 'border-danger text-danger hover:bg-danger-bg'

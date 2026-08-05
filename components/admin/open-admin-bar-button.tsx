@@ -13,7 +13,7 @@ import { openAdminBar, type OpenAdminBarModuleMenu } from './open-admin-bar'
 // The default styling matches the entity edit buttons it replaced; pass `className` to override.
 
 const DEFAULT_CLASS =
-  'inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated'
+  'inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated'
 
 export function OpenAdminBarButton({
   scope,

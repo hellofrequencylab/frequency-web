@@ -71,7 +71,7 @@ export function PulseWelcomeRow({
     <div className="flex items-center gap-3">
       <PulseAvatar href={`/people/${handle}`} displayName={displayName} avatarUrl={avatarUrl} />
       <div className="min-w-0 flex-1">
-        <a href={`/people/${handle}`} className="block truncate text-sm font-semibold text-text hover:text-primary-strong">
+        <a href={`/people/${handle}`} className="block truncate text-body-sm font-semibold text-text hover:text-primary-strong">
           {displayName}
         </a>
         <p className="truncate text-2xs text-muted">{line}</p>

@@ -48,7 +48,7 @@ export function RequestControls({ collaborationId }: { collaborationId: string }
         <X className="h-4 w-4" aria-hidden />
         Decline
       </button>
-      {error && <span className="text-xs font-medium text-danger">{error}</span>}
+      {error && <span className="text-meta font-medium text-danger">{error}</span>}
     </div>
   )
 }
@@ -77,11 +77,11 @@ export function RevokeControl({ collaborationId, label = 'Remove' }: { collabora
             else router.refresh()
           })
         }}
-        className="text-xs font-medium text-muted underline decoration-dashed underline-offset-4 transition-colors hover:text-danger"
+        className="text-meta font-medium text-muted underline decoration-dashed underline-offset-4 transition-colors hover:text-danger"
       >
         {pending ? 'Working' : label}
       </button>
-      {error && <span className="text-xs font-medium text-danger">{error}</span>}
+      {error && <span className="text-meta font-medium text-danger">{error}</span>}
     </div>
   )
 }
@@ -117,7 +117,7 @@ export function ReinviteControl({
         {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <UserPlus className="h-4 w-4" aria-hidden />}
         Send again
       </button>
-      {error && <span className="text-xs font-medium text-danger">{error}</span>}
+      {error && <span className="text-meta font-medium text-danger">{error}</span>}
     </div>
   )
 }
@@ -148,8 +148,8 @@ export function InviteCollaborator({ spaceId }: { spaceId: string }) {
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
-      <p className="text-sm font-semibold text-text">Invite a collaborator</p>
-      <p className="mt-1 text-xs text-subtle">
+      <p className="text-body-sm font-semibold text-text">Invite a collaborator</p>
+      <p className="mt-1 text-meta text-subtle">
         Paste the other business space&rsquo;s link or slug. They run inside your space but keep their own
         business. They approve the invite from their own Collaborators page.
       </p>
@@ -168,8 +168,8 @@ export function InviteCollaborator({ spaceId }: { spaceId: string }) {
           Send invite
         </Button>
       </div>
-      {error && <p className="mt-2 text-sm font-medium text-danger">{error}</p>}
-      {notice && !error && <p className="mt-2 text-sm font-medium text-success">{notice}</p>}
+      {error && <p className="mt-2 text-body-sm font-medium text-danger">{error}</p>}
+      {notice && !error && <p className="mt-2 text-body-sm font-medium text-success">{notice}</p>}
     </div>
   )
 }

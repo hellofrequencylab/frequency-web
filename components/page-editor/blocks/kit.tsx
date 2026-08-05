@@ -93,7 +93,7 @@ export function Eyebrow({ children, ink }: { children: React.ReactNode; ink?: bo
     // bold-scoped rule, so the default look keeps this exact computed style.
     <p
       data-text-role="eyebrow"
-      className={`font-eyebrow text-sm font-bold uppercase tracking-[0.25em] mb-4 ${
+      className={`font-eyebrow text-body-sm font-bold uppercase tracking-[0.25em] mb-4 ${
         ink ? 'text-primary' : 'text-primary-strong'
       }`}
     >
@@ -127,7 +127,7 @@ export function DisplayHeading({
 }
 
 export function Kicker({ children, ink }: { children: React.ReactNode; ink?: boolean }) {
-  return <p className={`mt-4 text-xl italic ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{children}</p>
+  return <p className={`mt-4 text-lead italic ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{children}</p>
 }
 
 export type CtaVariant = 'primary' | 'secondary' | 'ghost'
@@ -150,7 +150,7 @@ export function CtaButton({
   onInk?: boolean
   withArrow?: boolean
 }) {
-  const base = 'inline-flex items-center gap-2 rounded-card px-8 py-3.5 text-base font-bold transition-colors'
+  const base = 'inline-flex items-center gap-2 rounded-card px-8 py-3.5 text-body font-bold transition-colors'
   const styles =
     variant === 'primary'
       ? 'bg-primary text-on-primary hover:bg-primary-hover shadow-pop'

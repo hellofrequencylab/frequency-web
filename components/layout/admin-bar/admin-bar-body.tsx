@@ -203,7 +203,7 @@ export function AdminBarBody({
                   names itself: it sits under a box whose header is a different noun, so dropping its
                   label would leave an anonymous control. */}
               {(item.depth || section.nodes.length > 1) && item.label && (
-                <h3 className="text-xs font-semibold text-text">{item.label}</h3>
+                <h3 className="text-meta font-semibold text-text">{item.label}</h3>
               )}
               {item.node}
             </div>
@@ -238,9 +238,9 @@ export function AdminBarBody({
               <>
                 <RowIcon className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-text">{app.label}</span>
+                  <span className="block truncate text-body-sm font-medium text-text">{app.label}</span>
                   {app.description && (
-                    <span className="block truncate text-xs text-muted">{app.description}</span>
+                    <span className="block truncate text-meta text-muted">{app.description}</span>
                   )}
                 </span>
               </>
@@ -291,15 +291,15 @@ export function AdminBarBody({
                 <div key={row.id} className="flex items-start gap-3 rounded-lg px-2 py-2">
                   <Lock className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-muted">
+                    <span className="block truncate text-body-sm font-medium text-muted">
                       <span className="sr-only">Locked. </span>
                       {row.label}
                     </span>
-                    <span className="block text-xs text-subtle">{row.reason}</span>
+                    <span className="block text-meta text-subtle">{row.reason}</span>
                     {row.cta && (
                       <a
                         href={row.cta.href}
-                        className="mt-1 inline-block text-xs font-medium text-primary hover:underline"
+                        className="mt-1 inline-block text-meta font-medium text-primary hover:underline"
                       >
                         {row.cta.label}
                       </a>
@@ -319,7 +319,7 @@ export function AdminBarBody({
               onToggle={(e) => setMoreOpen((e.target as HTMLDetailsElement).open)}
               className="group rounded-lg border border-border"
             >
-              <summary className="flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-subtle outline-none transition-colors hover:text-text focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-3 text-body-sm font-medium text-subtle outline-none transition-colors hover:text-text focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
                 More
                 <span
                   className="rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted"
@@ -351,7 +351,7 @@ export function AdminBarBody({
                     <a
                       key={link.href}
                       href={link.href}
-                      className="flex min-h-[44px] items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary motion-reduce:transition-none"
+                      className="flex min-h-[44px] items-center gap-2 rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary motion-reduce:transition-none"
                     >
                       <Icon className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
                       <span className="min-w-0 truncate">{link.label}</span>

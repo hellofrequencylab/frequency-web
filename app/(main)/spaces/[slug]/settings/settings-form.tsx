@@ -138,7 +138,7 @@ export function SpaceSettingsForm({
       type="button"
       onClick={onClick}
       disabled={busy || taglineBusy}
-      className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong transition-colors hover:text-primary disabled:opacity-50"
+      className="inline-flex items-center gap-1 text-meta font-semibold text-primary-strong transition-colors hover:text-primary disabled:opacity-50"
     >
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Sparkles className="h-3.5 w-3.5" aria-hidden />}
       {label}
@@ -203,7 +203,7 @@ export function SpaceSettingsForm({
             />
           </div>
           {imgPending && (
-            <p className="inline-flex items-center gap-1.5 text-xs text-muted" role="status">
+            <p className="inline-flex items-center gap-1.5 text-meta text-muted" role="status">
               <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Saving your image…
             </p>
           )}
@@ -238,7 +238,7 @@ export function SpaceSettingsForm({
               'Suggest with Vera',
             )}
           />
-          <p className="text-xs text-subtle">
+          <p className="text-meta text-subtle">
             Vera is AI. Suggest writes a starting point you review and edit; nothing is saved or published
             until you do. Your About, story, contact details, and links are in Info and Connect below.
           </p>
@@ -254,7 +254,7 @@ export function SpaceSettingsForm({
             and accent; changes the fonts, corners, and rhythm. */}
         <section className="space-y-3">
           <SectionHeader title="Page theme" />
-          <p className="text-xs text-muted">
+          <p className="text-meta text-muted">
             The look of your public page. Each theme keeps your colors and accent, and changes the fonts and
             shape. Bold is the standard look.
           </p>
@@ -279,13 +279,13 @@ export function SpaceSettingsForm({
                   }`}
                 >
                   <span className="flex items-center justify-between gap-2">
-                    <span className="font-display text-sm font-semibold text-text">{t.label}</span>
+                    <span className="font-display text-body-sm font-semibold text-text">{t.label}</span>
                     {selected && <Check className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />}
                   </span>
                   <span className="mt-0.5 block text-2xs font-medium uppercase tracking-wide text-muted">
                     {t.displayFont} · {t.bodyFont}
                   </span>
-                  <span className="mt-1 block text-xs leading-snug text-muted">{t.description}</span>
+                  <span className="mt-1 block text-meta leading-snug text-muted">{t.description}</span>
                 </button>
               )
             })}
@@ -299,7 +299,7 @@ export function SpaceSettingsForm({
         </section>
 
         {veraError && (
-          <p className="rounded-lg bg-warning-bg px-3 py-2 text-sm font-medium text-warning" role="status">
+          <p className="rounded-lg bg-warning-bg px-3 py-2 text-body-sm font-medium text-warning" role="status">
             {veraError}
           </p>
         )}
@@ -324,7 +324,7 @@ export function SpaceSettingsForm({
           </Button>
         )}
         {saved && !pending && (
-          <span className="inline-flex items-center gap-1 text-sm font-medium text-success" role="status">
+          <span className="inline-flex items-center gap-1 text-body-sm font-medium text-success" role="status">
             <Check className="h-4 w-4" aria-hidden /> Saved
           </span>
         )}

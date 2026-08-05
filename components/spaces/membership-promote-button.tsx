@@ -32,12 +32,12 @@ export function MembershipPromoteButton({ membershipId }: { membershipId: string
         type="button"
         onClick={promote}
         disabled={pending}
-        className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
+        className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
       >
         {pending ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> : null}
         Promote
       </button>
-      {error && <span className="text-xs text-danger">{error}</span>}
+      {error && <span className="text-meta text-danger">{error}</span>}
     </span>
   )
 }

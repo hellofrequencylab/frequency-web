@@ -15,7 +15,7 @@ import { isError, type ActionResult } from '@/lib/action-result'
 // viewers with admin.access; every action re-checks the capability server-side.
 
 const ITEM =
-  'flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated disabled:opacity-50'
+  'flex w-full items-center gap-2 px-3 py-2 text-left text-body-sm text-text hover:bg-surface-elevated disabled:opacity-50'
 
 export function PracticeAdminMenu({
   practiceId,

@@ -84,7 +84,7 @@ export function PracticeRowActions({
   if (logged) {
     return (
       <div className="flex items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 text-sm font-medium text-success">
+        <span className="inline-flex items-center gap-1.5 text-body-sm font-medium text-success">
           <Check className="h-4 w-4" aria-hidden /> Logged today
         </span>
         <UnlogPracticeButton practiceId={practiceId} onUnlogged={() => setLogged(false)} />
@@ -109,7 +109,7 @@ export function PracticeRowActions({
       {!compact && (
         <Link
           href={href}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
         >
           View practice <ArrowRight className="h-3.5 w-3.5" aria-hidden />
         </Link>
@@ -163,7 +163,7 @@ function OwnerMenu({ practiceId, title }: { practiceId: string; title: string })
           <Link
             href={`/practices/${practiceId}/edit`}
             role="menuitem"
-            className="flex items-center gap-2 px-3 py-2 text-sm text-text transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
+            className="flex items-center gap-2 px-3 py-2 text-body-sm text-text transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
           >
             <Pencil className="h-3.5 w-3.5 text-subtle" aria-hidden /> Edit practice
           </Link>

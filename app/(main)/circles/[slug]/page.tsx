@@ -307,7 +307,7 @@ export default async function CirclePage({
       {isDraft && (
         <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-warning/40 bg-warning-bg/50 px-4 py-3">
           <EyeOff className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
-          <div className="text-sm">
+          <div className="text-body-sm">
             <p className="font-semibold text-text">This circle is in draft</p>
             <p className="mt-0.5 text-muted">
               Only you can see it. It stays off the Circles directory, map, and search until you set the
@@ -379,18 +379,18 @@ export default async function CirclePage({
                   <CrewGateButton
                     isCrew={isCrew}
                     label="Join"
-                    buttonClassName="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary lift-1 hover:bg-primary-hover transition-colors"
+                    buttonClassName="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 hover:bg-primary-hover transition-colors"
                   >
                     <JoinCircleButton
                       circleId={circle.id}
                       circleSlug={circle.slug}
-                      className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary lift-1 hover:bg-primary-hover transition-colors"
+                      className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 hover:bg-primary-hover transition-colors"
                     />
                   </CrewGateButton>
                 )}
 
                 {!isMember && myProfileId && full && (
-                  <span className="shrink-0 inline-flex items-center justify-center rounded-lg border border-on-ink/40 bg-on-ink/10 px-3 py-1.5 text-sm font-semibold text-on-ink/70 backdrop-blur-sm cursor-not-allowed">
+                  <span className="shrink-0 inline-flex items-center justify-center rounded-lg border border-on-ink/40 bg-on-ink/10 px-3 py-1.5 text-body-sm font-semibold text-on-ink/70 backdrop-blur-sm cursor-not-allowed">
                     Full
                   </span>
                 )}
@@ -413,7 +413,7 @@ export default async function CirclePage({
                 />
                 <Link
                   href={`/circles/${circle.slug}/manage`}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
                 >
                   <LayoutDashboard className="h-4 w-4 text-subtle" />
                   Manage
@@ -423,14 +423,14 @@ export default async function CirclePage({
 
             {/* Status / mode chips — the rounded-pill chip grammar the event + Journey bands use. */}
             <span className="inline-flex flex-wrap items-center gap-1.5">
-              <span className={`inline-flex items-center rounded-pill px-2 py-0.5 text-xs font-semibold ${statusPill.cls}`}>
+              <span className={`inline-flex items-center rounded-pill px-2 py-0.5 text-meta font-semibold ${statusPill.cls}`}>
                 {statusPill.label}
               </span>
-              <span className="inline-flex items-center rounded-pill bg-signal-bg px-2 py-0.5 text-xs font-medium text-signal-strong">
+              <span className="inline-flex items-center rounded-pill bg-signal-bg px-2 py-0.5 text-meta font-medium text-signal-strong">
                 {typeLabel}
               </span>
               {nearCap && !full && (
-                <span className="inline-flex items-center rounded-pill bg-warning-bg px-2 py-0.5 text-xs font-medium text-warning">
+                <span className="inline-flex items-center rounded-pill bg-warning-bg px-2 py-0.5 text-meta font-medium text-warning">
                   Almost full
                 </span>
               )}
@@ -440,7 +440,7 @@ export default async function CirclePage({
                 Hubs/Nexuses surface here as the emergent "where this sits", never as
                 primary nav — a member reads it as place, not an org chart (IA §3a/§4). */}
             {circle.hub && (
-              <div className="flex items-center gap-1.5 text-sm text-subtle">
+              <div className="flex items-center gap-1.5 text-body-sm text-subtle">
                 <MapPin className="w-4 h-4 shrink-0" />
                 <span className="truncate">
                   {circle.hub.nexus?.outpost?.name && <>{circle.hub.nexus.outpost.name} · </>}
@@ -452,7 +452,7 @@ export default async function CirclePage({
             )}
 
             {/* Fact row — the events-header idiom: icon rows, the key fact a step stronger. */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-body-sm text-muted">
               <span className="flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-primary-strong shrink-0" />
                 <span className="font-semibold text-text">

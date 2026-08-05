@@ -87,8 +87,8 @@ export function QrStudio({
         <div className="rounded-2xl border border-border bg-surface lift-1">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <div>
-              <h2 className="text-sm font-bold text-text">New code</h2>
-              <p className="text-xs text-muted mt-0.5">
+              <h2 className="text-body-sm font-bold text-text">New code</h2>
+              <p className="text-meta text-muted mt-0.5">
                 A scannable code that earns zaps and a verified practice on check-in.
               </p>
             </div>
@@ -113,7 +113,7 @@ export function QrStudio({
       {/* List */}
       <div className="space-y-3">
         {initialNodes.length === 0 && (
-          <p className="text-sm text-muted py-6 text-center">
+          <p className="text-body-sm text-muted py-6 text-center">
             No codes yet. Create one above, then print or share the QR.
           </p>
         )}
@@ -190,7 +190,7 @@ function NodeCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h3 className="text-sm font-bold text-text truncate">
+              <h3 className="text-body-sm font-bold text-text truncate">
                 {node.label ?? 'Untitled code'}
               </h3>
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -216,13 +216,13 @@ function NodeCard({
             </div>
             <button
               onClick={() => setEditing((v) => !v)}
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors shrink-0"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors shrink-0"
             >
               <Pencil className="w-3 h-3" /> {editing ? 'Close' : 'Edit'}
             </button>
           </div>
 
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-meta text-muted">
             <span className="inline-flex items-center gap-1">
               <Zap className="w-3 h-3 text-primary" /> {node.zaps_value} zaps
             </span>
@@ -233,19 +233,19 @@ function NodeCard({
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <a
               href={`${apiBase}&format=png&download=${encodeURIComponent(downloadName)}`}
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
             >
               <Download className="w-3 h-3" /> PNG
             </a>
             <a
               href={`${apiBase}&format=svg&download=${encodeURIComponent(downloadName)}`}
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
             >
               <Download className="w-3 h-3" /> SVG
             </a>
             <button
               onClick={copyLink}
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
             >
               {copied ? <Check className="w-3 h-3 text-success" /> : <Copy className="w-3 h-3" />}
               {copied ? 'Copied' : 'Link'}
@@ -256,7 +256,7 @@ function NodeCard({
               href={`/print/qr?node=${encodeURIComponent(node.id)}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
             >
               <Printer className="w-3 h-3" /> Print
             </a>
@@ -264,7 +264,7 @@ function NodeCard({
               href={node.url}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
             >
               <ExternalLink className="w-3 h-3" /> Open
             </a>
@@ -272,21 +272,21 @@ function NodeCard({
               <button
                 onClick={toggleActive}
                 disabled={pending}
-                className="text-xs font-semibold text-muted hover:text-text transition-colors disabled:opacity-60"
+                className="text-meta font-semibold text-muted hover:text-text transition-colors disabled:opacity-60"
               >
                 {node.active ? 'Retire' : 'Re-activate'}
               </button>
               <button
                 onClick={remove}
                 disabled={pending}
-                className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted transition-colors hover:text-danger disabled:opacity-60"
+                className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted transition-colors hover:text-danger disabled:opacity-60"
               >
                 <Trash2 className="h-3 w-3" /> Delete
               </button>
             </div>
           </div>
           {error && (
-            <p role="alert" className="mt-2 text-xs text-danger">
+            <p role="alert" className="mt-2 text-meta text-danger">
               {error}
             </p>
           )}
@@ -397,7 +397,7 @@ export function NodeForm({
             value={form.label}
             onChange={(e) => set('label', e.target.value)}
             placeholder="e.g. Tuesday meditation check-in"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="City">
@@ -405,14 +405,14 @@ export function NodeForm({
             value={form.city ?? ''}
             onChange={(e) => set('city', e.target.value || null)}
             placeholder="e.g. Encinitas"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="Type">
           <select
             value={form.type}
             onChange={(e) => set('type', e.target.value)}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           >
             <option value="qr">QR code</option>
             <option value="nfc">NFC tag</option>
@@ -424,14 +424,14 @@ export function NodeForm({
             min={0}
             value={form.zaps_value}
             onChange={(e) => set('zaps_value', Number(e.target.value))}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="How often it can be claimed">
           <select
             value={form.capture_rule}
             onChange={(e) => set('capture_rule', e.target.value)}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           >
             <option value="once_per_user">Once per member</option>
             <option value="repeatable">Repeatable</option>
@@ -443,14 +443,14 @@ export function NodeForm({
             type="datetime-local"
             value={toLocalInput(form.valid_until)}
             onChange={(e) => set('valid_until', fromLocalInput(e.target.value))}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="Partner (optional)">
           <select
             value={form.partner_id ?? ''}
             onChange={(e) => set('partner_id', e.target.value || null)}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           >
             <option value="">Community code (no partner)</option>
             {partners.map((p) => (
@@ -467,13 +467,13 @@ export function NodeForm({
             value={form.maxClaims ?? ''}
             onChange={(e) => set('maxClaims', e.target.value === '' ? null : Number(e.target.value))}
             placeholder="Unlimited (e.g. 50 for first-50-win)"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
       </div>
 
       {form.partner_id && (
-        <p className="text-xs text-muted">
+        <p className="text-meta text-muted">
           Partner codes open the partner&apos;s active offer on scan and log a redemption (they
           don&apos;t award a verified practice).
         </p>
@@ -481,7 +481,7 @@ export function NodeForm({
 
       {/* Location-aware earning — gate the claim to within a radius of a point. */}
       <div className="rounded-lg border border-border bg-canvas/50 p-3">
-        <label className="flex items-center gap-2 text-xs font-medium text-subtle">
+        <label className="flex items-center gap-2 text-meta font-medium text-subtle">
           <input type="checkbox" checked={geoOn} onChange={(e) => toggleGeo(e.target.checked)} className="accent-primary" />
           <MapPin className="h-3.5 w-3.5 text-primary-strong" /> Location-aware (must be here to earn)
         </label>
@@ -495,7 +495,7 @@ export function NodeForm({
                   value={form.lat ?? ''}
                   onChange={(e) => set('lat', e.target.value === '' ? null : Number(e.target.value))}
                   placeholder="33.0000"
-                  className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+                  className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
                 />
               </Field>
               <Field label="Longitude">
@@ -505,7 +505,7 @@ export function NodeForm({
                   value={form.lng ?? ''}
                   onChange={(e) => set('lng', e.target.value === '' ? null : Number(e.target.value))}
                   placeholder="-117.0000"
-                  className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+                  className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
                 />
               </Field>
               <Field label="Radius (metres)">
@@ -515,14 +515,14 @@ export function NodeForm({
                   max={5000}
                   value={form.proximityM ?? 100}
                   onChange={(e) => set('proximityM', Number(e.target.value))}
-                  className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+                  className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
                 />
               </Field>
             </div>
             <button
               type="button"
               onClick={useMyLocation}
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <MapPin className="h-3 w-3" /> Use my current location
             </button>
@@ -531,7 +531,7 @@ export function NodeForm({
       </div>
 
       {/* Signed payload — the code carries a secret so a forged /n/<id> can't claim. */}
-      <label className="flex items-center gap-2 rounded-lg border border-border bg-canvas/50 p-3 text-xs font-medium text-subtle">
+      <label className="flex items-center gap-2 rounded-lg border border-border bg-canvas/50 p-3 text-meta font-medium text-subtle">
         <input
           type="checkbox"
           checked={form.requireSignature}
@@ -549,7 +549,7 @@ export function NodeForm({
         />
       )}
 
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
 
       <div className="flex items-center gap-2">
         <Button size="sm" onClick={submit} disabled={pending} className="disabled:opacity-60">

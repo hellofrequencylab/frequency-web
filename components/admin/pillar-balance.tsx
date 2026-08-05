@@ -48,7 +48,7 @@ export function PillarBalance({
     <div className={`rounded-2xl border border-border bg-surface p-3 ${className ?? ''}`}>
       <div className="flex items-center gap-1.5">
         <Scale className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
-        <span className="text-xs font-semibold uppercase tracking-wide text-subtle">
+        <span className="text-meta font-semibold uppercase tracking-wide text-subtle">
           Pillar Zap balance
         </span>
       </div>
@@ -69,7 +69,7 @@ export function PillarBalance({
               >
                 {PILLAR_LABEL[slug]}
               </dt>
-              <dd className="text-sm font-bold tabular-nums text-text">{totals[slug]}</dd>
+              <dd className="text-body-sm font-bold tabular-nums text-text">{totals[slug]}</dd>
             </div>
           )
         })}

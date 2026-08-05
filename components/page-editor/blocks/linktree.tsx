@@ -94,9 +94,9 @@ function Row({ children }: { children: React.ReactNode }) {
 function HeadingView({ text, level, tint }: { text: string; level: 2 | 3; tint?: BlockTint }) {
   if (!text) return null
   return level === 3 ? (
-    <h3 className="mt-2 text-base font-bold text-text" style={tintStyle(tint)}>{text}</h3>
+    <h3 className="mt-2 text-body font-bold text-text" style={tintStyle(tint)}>{text}</h3>
   ) : (
-    <h2 className="mt-2 text-lg font-bold text-text" style={tintStyle(tint)}>{text}</h2>
+    <h2 className="mt-2 text-body-lg font-bold text-text" style={tintStyle(tint)}>{text}</h2>
   )
 }
 
@@ -107,7 +107,7 @@ function HeadingView({ text, level, tint }: { text: string; level: 2 | 3; tint?:
 function TextView({ text, tint }: { text: string; tint?: BlockTint }) {
   if (!text) return null
   return (
-    <p className="whitespace-pre-wrap text-pretty text-sm leading-relaxed text-text" style={tintStyle(tint)}>
+    <p className="whitespace-pre-wrap text-pretty text-body-sm leading-relaxed text-text" style={tintStyle(tint)}>
       {text}
     </p>
   )
@@ -130,7 +130,7 @@ function LinkTreeView({ items, tint }: { items: LinkRow[]; tint?: BlockTint }) {
           href={item.url}
           target="_blank"
           rel="noopener noreferrer nofollow"
-          className="block rounded-control border border-border-strong bg-surface px-4 py-3 text-center text-sm font-semibold text-text shadow-sm transition-colors hover:bg-surface-elevated"
+          className="block rounded-control border border-border-strong bg-surface px-4 py-3 text-center text-body-sm font-semibold text-text shadow-sm transition-colors hover:bg-surface-elevated"
           style={tintStyle(tint)}
         >
           {item.label?.trim() || item.url}
@@ -151,7 +151,7 @@ function ImageView({
 }) {
   if (!assetPath) {
     return (
-      <div className="flex aspect-video items-center justify-center rounded-card border border-dashed border-border text-xs text-subtle">
+      <div className="flex aspect-video items-center justify-center rounded-card border border-dashed border-border text-meta text-subtle">
         Upload an image
       </div>
     )
@@ -183,7 +183,7 @@ function GalleryView({ items, publicBase }: { items: GalleryRow[]; publicBase: s
   const safe = items.filter((i) => i?.assetPath).slice(0, MAX_GALLERY_IMAGES)
   if (safe.length === 0) {
     return (
-      <div className="flex aspect-video items-center justify-center rounded-card border border-dashed border-border text-xs text-subtle">
+      <div className="flex aspect-video items-center justify-center rounded-card border border-dashed border-border text-meta text-subtle">
         Add gallery images
       </div>
     )
@@ -220,10 +220,10 @@ function QuoteView({ text, cite, tint }: { text: string; cite?: string; tint?: B
       className="border-l-4 border-primary-strong bg-surface/60 py-2 pl-4 pr-3"
       style={tint?.bg ? { backgroundColor: tint.bg } : undefined}
     >
-      <p className="text-pretty text-sm italic leading-relaxed text-text" style={{ color: tint?.text }}>
+      <p className="text-pretty text-body-sm italic leading-relaxed text-text" style={{ color: tint?.text }}>
         {text}
       </p>
-      {cite?.trim() && <footer className="mt-1.5 text-xs font-medium text-muted">— {cite}</footer>}
+      {cite?.trim() && <footer className="mt-1.5 text-meta font-medium text-muted">— {cite}</footer>}
     </blockquote>
   )
 }
@@ -241,8 +241,8 @@ function StatPill({ icon: Icon, value, label }: { icon: typeof Flame; value: str
   return (
     <div className="flex items-center gap-2 rounded-card border border-border bg-surface px-3 py-2">
       <Icon className="h-4 w-4 text-primary-strong" aria-hidden />
-      <span className="text-sm font-semibold text-text tabular-nums">{value}</span>
-      {label && <span className="text-xs text-muted">{label}</span>}
+      <span className="text-body-sm font-semibold text-text tabular-nums">{value}</span>
+      {label && <span className="text-meta text-muted">{label}</span>}
     </div>
   )
 }
@@ -264,7 +264,7 @@ function StatsView({ show, meta }: { show: SpotlightStatKey[]; meta: SpotlightRe
     return (
       <div className="flex flex-wrap gap-2">
         {show.map((key) => (
-          <div key={key} className="flex items-center gap-2 rounded-card border border-dashed border-border px-3 py-2 text-xs text-subtle">
+          <div key={key} className="flex items-center gap-2 rounded-card border border-dashed border-border px-3 py-2 text-meta text-subtle">
             {STAT_LABEL[key]}
           </div>
         ))}
@@ -283,8 +283,8 @@ function TopFriendsView({ title, meta }: { title?: string; meta: SpotlightRender
   if (friends.length === 0) {
     return (
       <section>
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-subtle">{title?.trim() || 'Top Friends'}</h2>
-        <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-xs text-subtle">
+        <h2 className="mb-3 text-meta font-semibold uppercase tracking-wide text-subtle">{title?.trim() || 'Top Friends'}</h2>
+        <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-meta text-subtle">
           Pick your Top Friends to fill this grid
         </p>
       </section>
@@ -292,7 +292,7 @@ function TopFriendsView({ title, meta }: { title?: string; meta: SpotlightRender
   }
   return (
     <section>
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-subtle">{title?.trim() || 'Top Friends'}</h2>
+      <h2 className="mb-3 text-meta font-semibold uppercase tracking-wide text-subtle">{title?.trim() || 'Top Friends'}</h2>
       <div className="grid grid-cols-4 gap-3">
         {friends.map((f) => {
           const name = f.displayName || `@${f.handle}`
@@ -305,11 +305,11 @@ function TopFriendsView({ title, meta }: { title?: string; meta: SpotlightRender
               {f.avatarUrl ? (
                 <Image src={avatarSrc(f.avatarUrl)} alt={name} width={64} height={64} className="h-14 w-14 rounded-pill object-cover" style={avatarFocusStyle(f.avatarUrl)} />
               ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-pill bg-primary-bg text-sm font-bold text-primary-strong">
+                <div className="flex h-14 w-14 items-center justify-center rounded-pill bg-primary-bg text-body-sm font-bold text-primary-strong">
                   {getInitials(name)}
                 </div>
               )}
-              <span className="w-full truncate text-xs font-medium text-text">{name}</span>
+              <span className="w-full truncate text-meta font-medium text-text">{name}</span>
             </Link>
           )
         })}
@@ -326,7 +326,7 @@ function TopFriendsView({ title, meta }: { title?: string; meta: SpotlightRender
 function EmbedView({ provider, embedRef }: { provider: EmbedProvider; embedRef: string }) {
   if (!embedRef) {
     return (
-      <div className="flex aspect-video items-center justify-center rounded-card border border-dashed border-border text-xs text-subtle">
+      <div className="flex aspect-video items-center justify-center rounded-card border border-dashed border-border text-meta text-subtle">
         Add a {provider} link
       </div>
     )

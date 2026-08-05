@@ -96,9 +96,9 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
           className="mb-6 flex w-full items-center gap-3 rounded-xl border border-broadcast-bg bg-broadcast-bg/50 px-4 py-2.5 text-left transition-colors hover:bg-broadcast-bg/70 dark:bg-broadcast-bg/30"
         >
           <Compass className="h-4 w-4 shrink-0 text-broadcast-strong" />
-          <span className="shrink-0 text-sm font-semibold text-text">Getting set up</span>
-          <span className="shrink-0 text-xs font-medium tabular-nums text-broadcast-strong/80">{status.doneCount} of {status.total}</span>
-          <span className="hidden min-w-0 flex-1 truncate text-xs font-medium text-broadcast-strong/90 sm:block">
+          <span className="shrink-0 text-body-sm font-semibold text-text">Getting set up</span>
+          <span className="shrink-0 text-meta font-medium tabular-nums text-broadcast-strong/80">{status.doneCount} of {status.total}</span>
+          <span className="hidden min-w-0 flex-1 truncate text-meta font-medium text-broadcast-strong/90 sm:block">
             Next: {current.label}
           </span>
           <ProgressTrack
@@ -143,8 +143,8 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
               ? 'Almost there. One step left'
               : `Step ${status.doneCount + 1} of ${status.total}`}
           </p>
-          <h2 className="text-base font-bold leading-tight text-text">{current.headline}</h2>
-          <p className="mt-0.5 text-sm leading-snug text-muted">{current.blurb}</p>
+          <h2 className="text-body font-bold leading-tight text-text">{current.headline}</h2>
+          <p className="mt-0.5 text-body-sm leading-snug text-muted">{current.blurb}</p>
         </div>
         <button
           type="button"
@@ -160,7 +160,7 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
           board's encouragement. Skipped on the last step, where the header already
           says "Almost there" (so we don't double up). */}
       {!lastStepLeft && (
-        <p className="mt-2 text-sm leading-snug text-broadcast-strong/90">
+        <p className="mt-2 text-body-sm leading-snug text-broadcast-strong/90">
           {activationNote(status.doneCount, status.total)}
         </p>
       )}
@@ -199,11 +199,11 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
                 {step.done ? <Check className="h-3 w-3" strokeWidth={3} /> : <span className="h-1.5 w-1.5 rounded-pill bg-current" />}
               </span>
               {step.done ? (
-                <span className="flex-1 text-sm text-subtle line-through decoration-broadcast/40">{step.label}</span>
+                <span className="flex-1 text-body-sm text-subtle line-through decoration-broadcast/40">{step.label}</span>
               ) : (
                 <Link
                   href={step.href}
-                  className={`flex-1 text-sm ${isCurrent ? 'font-semibold text-text' : 'text-muted hover:text-text'}`}
+                  className={`flex-1 text-body-sm ${isCurrent ? 'font-semibold text-text' : 'text-muted hover:text-text'}`}
                 >
                   {step.label}
                 </Link>
@@ -232,19 +232,19 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
         <button
           type="button"
           onClick={() => setTourOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-broadcast px-4 py-2 text-sm font-semibold text-on-broadcast transition-colors hover:opacity-90"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-broadcast px-4 py-2 text-body-sm font-semibold text-on-broadcast transition-colors hover:opacity-90"
         >
           <Route className="h-3.5 w-3.5" /> {tourLabel}
         </button>
         <Link
           href={current.href}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-broadcast-bg px-4 py-2 text-sm font-medium text-broadcast-strong transition-colors hover:bg-broadcast-bg/50"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-broadcast-bg px-4 py-2 text-body-sm font-medium text-broadcast-strong transition-colors hover:bg-broadcast-bg/50"
         >
           {current.cta} <ArrowRight className="h-3.5 w-3.5" />
         </Link>
         <Link
           href="/feed?welcome=vera&v=chat"
-          className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-broadcast-strong transition-colors hover:bg-broadcast-bg/50"
+          className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-body-sm font-medium text-broadcast-strong transition-colors hover:bg-broadcast-bg/50"
         >
           <Sparkles className="h-3.5 w-3.5" /> Ask Vera
         </Link>

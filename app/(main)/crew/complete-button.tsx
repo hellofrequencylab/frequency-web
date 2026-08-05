@@ -32,7 +32,7 @@ export function CompleteButton({ taskId, isDone, isRepeatable, requiresVerificat
       <CrewGateButton
         isCrew={false}
         label={label}
-        buttonClassName="shrink-0 flex min-h-11 items-center gap-1 rounded-lg px-3 py-1 text-xs font-semibold bg-surface-elevated text-subtle hover:bg-primary-bg hover:text-primary-strong transition-colors motion-reduce:transition-none"
+        buttonClassName="shrink-0 flex min-h-11 items-center gap-1 rounded-lg px-3 py-1 text-meta font-semibold bg-surface-elevated text-subtle hover:bg-primary-bg hover:text-primary-strong transition-colors motion-reduce:transition-none"
       />
     )
   }
@@ -48,7 +48,7 @@ export function CompleteButton({ taskId, isDone, isRepeatable, requiresVerificat
     <button
       onClick={handleClick}
       disabled={isPending}
-      className={`shrink-0 flex min-h-11 items-center gap-1 rounded-lg px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50 motion-reduce:transition-none ${
+      className={`shrink-0 flex min-h-11 items-center gap-1 rounded-lg px-3 py-1 text-meta font-semibold transition-colors disabled:opacity-50 motion-reduce:transition-none ${
         isDone
           ? 'bg-surface-elevated text-muted hover:bg-border-strong'
           : 'bg-primary text-on-primary hover:bg-primary-hover'

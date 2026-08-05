@@ -38,7 +38,7 @@ export default async function MarketReadPage() {
             }}
           />
         </div>
-        <p className="mt-3 text-xs text-subtle">
+        <p className="mt-3 text-meta text-subtle">
           Prototype: in-app behavior is live. GA acquisition + external social listening slot in here next.
         </p>
       </AdminSection>
@@ -53,11 +53,11 @@ export default async function MarketReadPage() {
       </AdminSection>
 
       <div className="rounded-2xl bg-surface-elevated/60 p-4">
-        <p className="flex items-center gap-2 text-sm font-semibold text-text">
+        <p className="flex items-center gap-2 text-body-sm font-semibold text-text">
           <Sparkles className="w-4 h-4 text-primary-strong" />
           How this grows
         </p>
-        <p className="mt-1 text-sm text-muted leading-relaxed">
+        <p className="mt-1 text-body-sm text-muted leading-relaxed">
           The synthesis + drafting are deterministic today (the same copilot-first pattern as the
           Agent console). Next: a live Claude operator drafts behind this read; low-risk drafts can
           auto-publish once the audit log earns trust (graduated autonomy), while anything public
@@ -75,14 +75,14 @@ function PainPointCard({ pain }: { pain: PainPoint }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-base font-bold text-text">{pain.title}</h3>
+            <h3 className="text-body font-bold text-text">{pain.title}</h3>
             <StatusChip tone={pain.basis === 'live' ? 'success' : 'neutral'} size="sm">
               {pain.basis === 'live' ? 'Live signal' : 'Baseline'}
             </StatusChip>
             <StatusChip tone="info" size="sm">{pain.persona}</StatusChip>
           </div>
-          <p className="mt-2 text-lg font-semibold text-text leading-snug text-balance">“{pain.ache}”</p>
-          <p className="mt-2 text-sm text-muted leading-relaxed">{pain.evidence}</p>
+          <p className="mt-2 text-body-lg font-semibold text-text leading-snug text-balance">“{pain.ache}”</p>
+          <p className="mt-2 text-body-sm text-muted leading-relaxed">{pain.evidence}</p>
         </div>
       </div>
 
@@ -107,9 +107,9 @@ function IdeaCard({ idea }: { idea: ContentIdea }) {
       <span className="self-start">
         <StatusChip tone={CHANNEL_TONE[idea.channel]} size="sm">{idea.channel}</StatusChip>
       </span>
-      <p className="mt-2 text-sm font-semibold text-text leading-snug">{idea.hook}</p>
-      {idea.body && <p className="mt-1.5 text-sm text-muted leading-relaxed">{idea.body}</p>}
-      <div className="mt-auto pt-3 flex items-center gap-3 text-xs text-subtle">
+      <p className="mt-2 text-body-sm font-semibold text-text leading-snug">{idea.hook}</p>
+      {idea.body && <p className="mt-1.5 text-body-sm text-muted leading-relaxed">{idea.body}</p>}
+      <div className="mt-auto pt-3 flex items-center gap-3 text-meta text-subtle">
         <span>Draft · awaiting approval</span>
       </div>
     </div>

@@ -162,7 +162,7 @@ export async function EntityCta() {
         )
       ) : (
         <div className="space-y-3">
-          <p className="text-sm text-muted">Pick a time that works. You&apos;ll RSVP on the session page.</p>
+          <p className="text-body-sm text-muted">Pick a time that works. You&apos;ll RSVP on the session page.</p>
           <div className="grid gap-4 @lg:grid-cols-2">
             {live.map((e) => {
               const start = new Date(e.starts_at)

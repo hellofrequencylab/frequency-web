@@ -111,7 +111,7 @@ export function HeroSection({
         focal={focalClass(focal)}
         minHeight={minHeight === 'screen' ? 'screen' : undefined}
         facts={dock.length > 0 ? dock : undefined}
-        footer={note ? <p className="mx-auto mt-7 max-w-xl text-sm leading-relaxed text-on-ink/60">{note}</p> : undefined}
+        footer={note ? <p className="mx-auto mt-7 max-w-xl text-body-sm leading-relaxed text-on-ink/60">{note}</p> : undefined}
       >
         {(ctaPrimaryLabel && ctaPrimaryHref) || (ctaSecondaryLabel && ctaSecondaryHref)
           ? ctas
@@ -161,7 +161,7 @@ export function HeroSection({
               </div>
             )}
             {note && (
-              <p className={`mt-6 text-sm ${ink2 ? 'text-on-ink-subtle' : 'text-subtle'}`}>
+              <p className={`mt-6 text-body-sm ${ink2 ? 'text-on-ink-subtle' : 'text-subtle'}`}>
                 {note}
               </p>
             )}
@@ -218,7 +218,7 @@ export function HeroSection({
         </div>
       )}
       {note && (
-        <p className={`mt-6 text-sm ${ink3 ? 'text-on-ink-subtle' : 'text-subtle'}`}>{note}</p>
+        <p className={`mt-6 text-body-sm ${ink3 ? 'text-on-ink-subtle' : 'text-subtle'}`}>{note}</p>
       )}
     </Band>
   )
@@ -272,7 +272,7 @@ export function CallToActionSection({
             {heading}
           </h2>
           {body && (
-            <p className="text-xl text-on-ink-muted mb-9 leading-relaxed">{body}</p>
+            <p className="text-lead text-on-ink-muted mb-9 leading-relaxed">{body}</p>
           )}
           <div
             className={`flex flex-wrap gap-3 ${centered ? 'justify-center' : ''}`}
@@ -302,7 +302,7 @@ export function CallToActionSection({
       <div className={`max-w-2xl mx-auto ${centered ? 'text-center' : ''}`}>
         {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
         <h2 className={`font-display uppercase mb-6 ${emphScale} ${emphAccent || 'text-text'}`}>{heading}</h2>
-        {body && <p className="text-xl text-muted mb-9 leading-relaxed">{body}</p>}
+        {body && <p className="text-lead text-muted mb-9 leading-relaxed">{body}</p>}
         <div className={`flex flex-wrap gap-3 ${centered ? 'justify-center' : ''}`}>
           {ctaPrimaryLabel && ctaPrimaryHref && (
             <CtaButton href={ctaPrimaryHref} label={ctaPrimaryLabel} variant="primary" />
@@ -376,7 +376,7 @@ export function QuoteSection({
           </blockquote>
           {attribution && (
             <figcaption
-              className={`mt-7 text-sm font-bold uppercase tracking-[0.25em] ${
+              className={`mt-7 text-body-sm font-bold uppercase tracking-[0.25em] ${
                 ink ? 'text-on-ink-subtle' : 'text-subtle'
               }`}
             >
@@ -397,7 +397,7 @@ export function QuoteSection({
         }`}
       >
         <blockquote
-          className={`font-display uppercase text-2xl sm:text-3xl lg:text-4xl leading-[1.1] text-balance ${
+          className={`font-display uppercase text-page-title sm:text-3xl lg:text-4xl leading-[1.1] text-balance ${
             ink ? 'text-on-ink' : 'text-text'
           }`}
         >
@@ -412,13 +412,13 @@ export function QuoteSection({
           <div>
             {attribution && (
               <p
-                className={`text-base font-bold ${ink ? 'text-on-ink' : 'text-text'}`}
+                className={`text-body font-bold ${ink ? 'text-on-ink' : 'text-text'}`}
               >
                 {attribution}
               </p>
             )}
             {role && (
-              <p className={`text-sm ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{role}</p>
+              <p className={`text-body-sm ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{role}</p>
             )}
           </div>
         </figcaption>

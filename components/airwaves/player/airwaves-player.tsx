@@ -419,8 +419,8 @@ export function AirwavesPlayer({
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-text">{title}</p>
-            {spaceName && <p className="truncate text-xs text-muted">{spaceName}</p>}
+            <p className="truncate text-body-sm font-semibold text-text">{title}</p>
+            {spaceName && <p className="truncate text-meta text-muted">{spaceName}</p>}
           </div>
           {spinning && <LoaderCircle className="h-5 w-5 shrink-0 animate-spin text-subtle" aria-hidden />}
           {/* Audio still needs a real media element; it carries no visual, so it lives here. */}
@@ -439,8 +439,8 @@ export function AirwavesPlayer({
         <div className="flex items-center gap-3 p-4">
           <TriangleAlert className="h-5 w-5 shrink-0 text-danger" aria-hidden />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-text">This recording will not play right now.</p>
-            <p className="text-xs text-muted">Check your connection and try again.</p>
+            <p className="text-body-sm font-semibold text-text">This recording will not play right now.</p>
+            <p className="text-meta text-muted">Check your connection and try again.</p>
           </div>
           <button
             type="button"
@@ -448,7 +448,7 @@ export function AirwavesPlayer({
               setErrored(false)
               mediaRef.current?.load()
             }}
-            className="ml-auto rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-text hover:bg-surface-elevated"
+            className="ml-auto rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-text hover:bg-surface-elevated"
           >
             Try again
           </button>
@@ -461,14 +461,14 @@ export function AirwavesPlayer({
               <button
                 type="button"
                 onClick={useResume}
-                className="text-sm font-semibold text-primary-strong hover:underline"
+                className="text-body-sm font-semibold text-primary-strong hover:underline"
               >
                 {describeResume(resumeAt)}
               </button>
               <button
                 type="button"
                 onClick={() => setResumeAt(null)}
-                className="ml-auto text-xs text-subtle hover:text-text"
+                className="ml-auto text-meta text-subtle hover:text-text"
               >
                 Start over
               </button>
@@ -559,7 +559,7 @@ export function AirwavesPlayer({
             <button
               type="button"
               onClick={() => cycleRatePref(1)}
-              className="ml-1 min-w-[3rem] rounded-lg border border-border px-2 py-1.5 text-xs font-semibold tabular-nums text-text transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="ml-1 min-w-[3rem] rounded-lg border border-border px-2 py-1.5 text-meta font-semibold tabular-nums text-text transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label={`Playback speed, ${formatRate(rate)}. Tap to change.`}
               title="Playback speed"
             >
@@ -607,7 +607,7 @@ export function AirwavesPlayer({
                   onClick={toggleCaptions}
                   aria-pressed={captionsOn}
                   className={cn(
-                    'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                    'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-meta font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
                     captionsOn ? 'border-primary bg-primary-bg text-primary-strong' : 'border-border text-muted hover:bg-surface-elevated',
                   )}
                 >
@@ -619,7 +619,7 @@ export function AirwavesPlayer({
                   type="button"
                   onClick={() => setChaptersOpen((v) => !v)}
                   aria-expanded={chaptersOpen}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <ListMusic className="h-3.5 w-3.5" aria-hidden /> Chapters
                   <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', chaptersOpen && 'rotate-180')} aria-hidden />
@@ -630,7 +630,7 @@ export function AirwavesPlayer({
                   type="button"
                   onClick={() => setTranscriptOpen((v) => !v)}
                   aria-expanded={transcriptOpen}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <FileText className="h-3.5 w-3.5" aria-hidden /> Transcript
                   <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', transcriptOpen && 'rotate-180')} aria-hidden />
@@ -640,7 +640,7 @@ export function AirwavesPlayer({
                 <button
                   type="button"
                   onClick={share}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   aria-label="Share"
                 >
                   {copied ? <Link2 className="h-3.5 w-3.5" aria-hidden /> : <Share2 className="h-3.5 w-3.5" aria-hidden />}
@@ -650,7 +650,7 @@ export function AirwavesPlayer({
                   <a
                     href={src}
                     download
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     <Download className="h-3.5 w-3.5" aria-hidden /> Download
                   </a>
@@ -672,7 +672,7 @@ export function AirwavesPlayer({
                     }}
                     aria-current={i === activeChapter ? 'true' : undefined}
                     className={cn(
-                      'flex w-full items-center gap-3 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-surface-elevated',
+                      'flex w-full items-center gap-3 rounded-lg px-2.5 py-1.5 text-left text-body-sm transition-colors hover:bg-surface-elevated',
                       i === activeChapter ? 'bg-primary-bg font-medium text-primary-strong' : 'text-text',
                     )}
                   >
@@ -686,7 +686,7 @@ export function AirwavesPlayer({
 
           {/* Transcript — expandable, crawlable text. */}
           {transcript && transcriptOpen && (
-            <div className="max-h-80 overflow-y-auto whitespace-pre-wrap border-t border-border pt-3 text-sm leading-relaxed text-muted">
+            <div className="max-h-80 overflow-y-auto whitespace-pre-wrap border-t border-border pt-3 text-body-sm leading-relaxed text-muted">
               {transcript}
             </div>
           )}

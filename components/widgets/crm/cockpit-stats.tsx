@@ -66,7 +66,7 @@ export async function CrmCockpitStats() {
     <>
       {/* The computed verdict line: the whole cockpit in one sentence (the 5-second test). */}
       <AdminSection>
-        <p className="text-sm text-text">{verdict}</p>
+        <p className="text-body-sm text-text">{verdict}</p>
       </AdminSection>
 
       {/* The LIVE stat row: the platform's health at a glance, each colored by the legend. */}

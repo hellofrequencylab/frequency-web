@@ -59,7 +59,7 @@ function labelFor(key: string, field: AnyField): string {
 function Row({ label, htmlFor, children }: { label: string; htmlFor?: string; children: React.ReactNode }) {
   return (
     <div className="border-b border-border px-4 py-4">
-      <label htmlFor={htmlFor} className="mb-2 block text-sm font-medium text-text">
+      <label htmlFor={htmlFor} className="mb-2 block text-body-sm font-medium text-text">
         {label}
       </label>
       {children}
@@ -161,7 +161,7 @@ function FieldControl({
                   role="radio"
                   aria-checked={active}
                   onClick={() => onChange(o.value)}
-                  className={`min-h-[44px] rounded-lg border px-4 text-sm font-medium transition-colors ${
+                  className={`min-h-[44px] rounded-lg border px-4 text-body-sm font-medium transition-colors ${
                     active
                       ? 'border-primary bg-primary text-on-primary'
                       : 'border-border bg-surface text-text hover:bg-surface-elevated'
@@ -200,7 +200,7 @@ function FieldControl({
         field.getItemSummary?.(item, i) || summarizeObject(sub, item) || `Item ${i + 1}`
       return (
         <div className="border-b border-border px-4 py-4">
-          <div className="mb-2 text-sm font-medium text-text">{label}</div>
+          <div className="mb-2 text-body-sm font-medium text-text">{label}</div>
           <ul className="space-y-2">
             {arr.map((item, i) => (
               <li key={i} className="flex items-stretch gap-2">
@@ -218,7 +218,7 @@ function FieldControl({
                       },
                     })
                   }
-                  className="flex min-h-[44px] flex-1 items-center justify-between rounded-lg border border-border bg-surface px-3 text-left text-sm text-text hover:bg-surface-elevated"
+                  className="flex min-h-[44px] flex-1 items-center justify-between rounded-lg border border-border bg-surface px-3 text-left text-body-sm text-text hover:bg-surface-elevated"
                 >
                   <span className="truncate">{summarize(item, i)}</span>
                   <ChevronRight className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
@@ -265,7 +265,7 @@ function FieldControl({
       // than hide the field, we say so plainly (no em dash, verb-led).
       return (
         <Row label={label}>
-          <p className="text-sm text-subtle">Edit this on a larger screen.</p>
+          <p className="text-body-sm text-subtle">Edit this on a larger screen.</p>
         </Row>
       )
   }
@@ -280,8 +280,8 @@ function PushRow({ label, summary, onPress }: { label: string; summary: string; 
       className="flex min-h-[56px] w-full items-center justify-between border-b border-border px-4 py-3 text-left hover:bg-surface-elevated"
     >
       <span>
-        <span className="block text-sm font-medium text-text">{label}</span>
-        {summary && <span className="mt-0.5 block truncate text-xs text-subtle">{summary}</span>}
+        <span className="block text-body-sm font-medium text-text">{label}</span>
+        {summary && <span className="mt-0.5 block truncate text-meta text-subtle">{summary}</span>}
       </span>
       <ChevronRight className="h-5 w-5 shrink-0 text-subtle" aria-hidden />
     </button>

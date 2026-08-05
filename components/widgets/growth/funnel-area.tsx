@@ -122,14 +122,14 @@ export async function GrowthFunnel() {
           caption="Last 30 days · distinct founders reaching each step, as a share of the first."
         >
           {d.steps.length === 0 ? (
-            <p className="text-sm text-muted">No funnel signal yet.</p>
+            <p className="text-body-sm text-muted">No funnel signal yet.</p>
           ) : (
             <div className="space-y-2.5">
               {d.steps.map((s) => {
                 const width = top > 0 ? Math.round((s.actors / top) * 100) : 0
                 return (
                   <div key={s.step}>
-                    <div className="flex items-baseline justify-between gap-2 text-sm">
+                    <div className="flex items-baseline justify-between gap-2 text-body-sm">
                       <span className="truncate text-text">{s.step}</span>
                       <span className="shrink-0 tabular-nums text-muted">
                         {s.actors.toLocaleString()}
@@ -144,7 +144,7 @@ export async function GrowthFunnel() {
               })}
             </div>
           )}
-          <p className="mt-3 text-xs text-subtle">Activation is {d.activationPct}% over the last 7 days.</p>
+          <p className="mt-3 text-meta text-subtle">Activation is {d.activationPct}% over the last 7 days.</p>
         </Tile>
       </TileGrid>
     </DashArea>

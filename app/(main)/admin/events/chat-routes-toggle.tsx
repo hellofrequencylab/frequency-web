@@ -41,13 +41,13 @@ export function ChatRoutesToggle({ retired }: { retired: boolean }) {
           disabled={pending}
           saveState={pending ? 'saving' : saved ? 'saved' : 'idle'}
         />
-        <span className="text-sm font-medium text-text">
+        <span className="text-body-sm font-medium text-text">
           {retired
             ? 'Dock only: opening a message hands it to the chat dock'
             : 'Both: the full message page still opens'}
         </span>
       </div>
-      <p className="text-xs text-muted">
+      <p className="text-meta text-muted">
         On is the intended setting: direct and group messages happen in the chat dock, and the dock
         can rename a group, leave one, and show who is in it. Turning it off brings the full message
         page back, which is the thing to do if the dock ever misbehaves. Rooms are separate and this

@@ -179,7 +179,7 @@ export function StoryBlock({ intro }: { intro: string | null }) {
   return (
     <section>
       <SectionHeader title="The story" />
-      <div className="whitespace-pre-wrap rounded-2xl border border-border bg-surface p-5 text-sm leading-relaxed text-text">
+      <div className="whitespace-pre-wrap rounded-2xl border border-border bg-surface p-5 text-body-sm leading-relaxed text-text">
         {intro}
       </div>
     </section>
@@ -193,7 +193,7 @@ export function OutcomesBlock({ summary }: { summary: string | null }) {
     <section>
       <SectionHeader title="What you'll learn" />
       <div className="rounded-2xl border border-border bg-surface p-5">
-        <p className="text-sm leading-relaxed text-text">
+        <p className="text-body-sm leading-relaxed text-text">
           <span className="font-semibold">By the end you&apos;ll</span> {lowerFirst(summary)}
         </p>
       </div>
@@ -239,13 +239,13 @@ export function PathBlock({
                 <details className="group" {...(i === 0 ? { open: true } : {})}>
                   <summary className="flex cursor-pointer list-none items-center gap-3 p-4 [&::-webkit-details-marker]:hidden">
                     <span
-                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-pill text-xs font-bold tabular-nums"
+                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-pill text-meta font-bold tabular-nums"
                       style={{ backgroundColor: accentTint(accent, 16), color: accentColor(accent) }}
                     >
                       {i + 1}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold text-text">
+                      <span className="block truncate text-body-sm font-semibold text-text">
                         {p.title || `Phase ${i + 1}`}
                       </span>
                       <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-2xs text-muted">
@@ -281,7 +281,7 @@ export function PathBlock({
                   </summary>
                   <ul className="space-y-1 border-t border-border px-4 pb-4 pt-3">
                     {lessons.map((l) => (
-                      <li key={l.id} className="flex items-center gap-2 text-sm">
+                      <li key={l.id} className="flex items-center gap-2 text-body-sm">
                         <span className="h-1.5 w-1.5 shrink-0 rounded-pill bg-border-strong" />
                         <span className="min-w-0 truncate text-text">{l.title}</span>
                         {l.estMinutes ? (
@@ -320,7 +320,7 @@ export function PillarBalanceBlock({
           return (
             <span
               key={pl.slug}
-              className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-xs font-medium ${
+              className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-meta font-medium ${
                 n > 0 ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-subtle'
               }`}
             >
@@ -359,13 +359,13 @@ export function InstructorBlock({
         {author.avatarUrl ? (
           <Image src={avatarSrc(author.avatarUrl)} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(author.avatarUrl)} />
         ) : (
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-sm font-bold text-muted">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-body-sm font-bold text-muted">
             {author.displayName.slice(0, 1).toUpperCase()}
           </span>
         )}
         <span className="min-w-0">
-          <span className="block truncate text-sm font-semibold text-text">{author.displayName}</span>
-          <span className="block text-xs text-muted">Built this Journey. See their profile.</span>
+          <span className="block truncate text-body-sm font-semibold text-text">{author.displayName}</span>
+          <span className="block text-meta text-muted">Built this Journey. See their profile.</span>
         </span>
       </Link>
     </section>
@@ -401,13 +401,13 @@ export function JourneyFaq({ plan }: { plan: Pick<JourneyPlan, 'drip_interval_da
             className="group overflow-hidden rounded-2xl border border-border bg-surface lift-1"
           >
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
-              <span className="text-sm font-semibold text-text">{f.q}</span>
+              <span className="text-body-sm font-semibold text-text">{f.q}</span>
               <ChevronDown
                 className="h-4 w-4 shrink-0 text-subtle transition-transform group-open:rotate-180 motion-reduce:transition-none"
                 aria-hidden
               />
             </summary>
-            <p className="border-t border-border px-4 pb-4 pt-3 text-sm leading-relaxed text-muted">
+            <p className="border-t border-border px-4 pb-4 pt-3 text-body-sm leading-relaxed text-muted">
               {f.a}
             </p>
           </details>
@@ -553,7 +553,7 @@ export function AtAGlanceCard({
 
         <dl className="space-y-2 border-t border-border pt-4">
           {included.map((row) => (
-            <div key={row.text} className="flex items-center gap-2 text-xs text-muted">
+            <div key={row.text} className="flex items-center gap-2 text-meta text-muted">
               <row.icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
               <span className="min-w-0">{row.text}</span>
             </div>

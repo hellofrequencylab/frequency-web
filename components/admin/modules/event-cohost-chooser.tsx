@@ -113,16 +113,16 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
           }}
           placeholder="Invite a cohost by name or @handle"
           disabled={pending}
-          className="min-w-0 flex-1 bg-transparent text-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
+          className="min-w-0 flex-1 bg-transparent text-body-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
         />
       </div>
 
       {invited && (
-        <p className="flex items-center gap-1.5 text-xs text-success">
+        <p className="flex items-center gap-1.5 text-meta text-success">
           <Check className="h-3.5 w-3.5" /> Invite sent to @{invited}.
         </p>
       )}
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
 
       {/* Current cohosts + pending invites, each removable (owner directive). Removal re-checks
           the host gate server-side; a pending invite cancels without a confirm. */}
@@ -145,7 +145,7 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-semibold text-text">{c.displayName}</p>
+                <p className="truncate text-meta font-semibold text-text">{c.displayName}</p>
                 {c.handle && <p className="truncate text-2xs text-muted">@{c.handle}</p>}
               </div>
               <span className="shrink-0 rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
@@ -194,7 +194,7 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-semibold text-text">{p.display_name}</p>
+                <p className="truncate text-meta font-semibold text-text">{p.display_name}</p>
                 <p className="truncate text-2xs text-muted">@{p.handle}</p>
               </div>
             </button>

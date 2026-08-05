@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { completeOnboarding } from './actions'
 import { getInitials } from '@/lib/utils'
+import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { WizardShell } from '@/components/templates'
 
 type Region = { id: string; name: string }
@@ -182,12 +183,18 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
   const STEP_LABELS = ['You', 'About you', 'Your region', 'Review']
 
   function renderAvatar(size: 'md' | 'lg' = 'md') {
-    const dim = size === 'lg' ? 'w-20 h-20 text-2xl' : 'w-16 h-16 text-xl'
-    if (avatarPreview) {
+    const dim = size === 'lg' ? 'w-20 h-20 text-page-title' : 'w-16 h-16 text-lead'
+    // Guarded like its three siblings. This is the site the helper's own comment claimed
+    // was covered and was not: `safeUploadPreviewSrc` was written for "the onboarding
+    // avatar step" and then applied to the Beta induction, the composer and the report
+    // dialog, never here. A rejected URL falls through to initials, which is the honest
+    // failure for an image.
+    const previewSrc = safeUploadPreviewSrc(avatarPreview)
+    if (previewSrc) {
       return (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={avatarPreview}
+          src={previewSrc}
           alt="Avatar preview"
           className={`${dim} rounded-pill object-cover shrink-0 ring-2 ring-primary-bg`}
         />
@@ -204,7 +211,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
   }
 
   const inputBase =
-    'w-full rounded-card border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/25'
+    'w-full rounded-card border border-border bg-surface px-4 py-3 text-body text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/25'
 
   // ── Steps ─────────────────────────────────────────────────────────────────
 
@@ -266,7 +273,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
       {step === 1 && (
         <div className="mt-2 space-y-4">
                   <div>
-                    <label htmlFor="displayName" className="mb-1.5 block text-sm font-medium text-text">
+                    <label htmlFor="displayName" className="mb-1.5 block text-body-sm font-medium text-text">
                       Display name <span className="text-danger">*</span>
                     </label>
                     <input
@@ -286,11 +293,11 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                   </div>
 
                   <div>
-                    <label htmlFor="handle" className="mb-1.5 block text-sm font-medium text-text">
+                    <label htmlFor="handle" className="mb-1.5 block text-body-sm font-medium text-text">
                       Handle <span className="text-danger">*</span>
                     </label>
                     <div className="relative">
-                      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-subtle">
+                      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-body text-subtle">
                         @
                       </span>
                       <input
@@ -306,7 +313,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                         aria-describedby="handle-status"
                         className={`${inputBase} pl-8 pr-9`}
                       />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm leading-none" aria-hidden>
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-body-sm leading-none" aria-hidden>
                         {handleStatus === 'checking' && <span className="animate-pulse text-subtle">•••</span>}
                         {handleStatus === 'available' && <span className="text-success">✓</span>}
                         {handleStatus === 'taken' && <span className="text-danger">✗</span>}
@@ -319,7 +326,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                       aria-live="polite"
                       className={
                         handleStatus === 'taken' || (handle && !HANDLE_RE.test(handle))
-                          ? 'mt-1.5 text-xs text-danger'
+                          ? 'mt-1.5 text-meta text-danger'
                           : 'sr-only'
                       }
                     >
@@ -346,7 +353,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="text-sm font-semibold text-primary-strong hover:underline"
+                        className="text-body-sm font-semibold text-primary-strong hover:underline"
                       >
                         {avatarPreview ? 'Change photo' : 'Upload a photo'}
                       </button>
@@ -359,12 +366,12 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                             setAvatarUrl('')
                             if (fileInputRef.current) fileInputRef.current.value = ''
                           }}
-                          className="text-sm text-subtle hover:text-muted"
+                          className="text-body-sm text-subtle hover:text-muted"
                         >
                           Remove
                         </button>
                       )}
-                      <p className="text-xs text-subtle">JPG, PNG, or GIF up to 5 MB</p>
+                      <p className="text-meta text-subtle">JPG, PNG, or GIF up to 5 MB</p>
                     </div>
                     <input
                       ref={fileInputRef}
@@ -374,10 +381,10 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                       onChange={(e) => void handleFileChange(e)}
                     />
                   </div>
-                  {uploadError && <p className="text-xs text-danger">{uploadError}</p>}
+                  {uploadError && <p className="text-meta text-danger">{uploadError}</p>}
 
                   <div>
-                    <label htmlFor="bio" className="mb-1.5 block text-sm font-medium text-text">
+                    <label htmlFor="bio" className="mb-1.5 block text-body-sm font-medium text-text">
                       One line about you
                     </label>
                     <textarea
@@ -388,7 +395,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                       rows={4}
                       className={`${inputBase} resize-none`}
                     />
-                    <p className={`mt-1.5 text-right text-xs tabular-nums ${bio.length >= 260 ? 'text-primary' : 'text-subtle'}`}>
+                    <p className={`mt-1.5 text-right text-meta tabular-nums ${bio.length >= 260 ? 'text-primary' : 'text-subtle'}`}>
                       {bio.length} / 280
                     </p>
                   </div>
@@ -398,11 +405,11 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
       {/* ── Step 3: Region ── */}
       {step === 3 && (
                 <div className="mt-2">
-                  <label htmlFor="region" className="mb-1.5 block text-sm font-medium text-text">
+                  <label htmlFor="region" className="mb-1.5 block text-body-sm font-medium text-text">
                     Region <span className="text-danger">*</span>
                   </label>
                   {regions.length === 0 ? (
-                    <p className="rounded-card border border-dashed border-border bg-surface/50 px-4 py-6 text-center text-sm text-subtle">
+                    <p className="rounded-card border border-dashed border-border bg-surface/50 px-4 py-6 text-center text-body-sm text-subtle">
                       No regions available yet. Check back soon.
                     </p>
                   ) : (
@@ -429,22 +436,22 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                   <div className="flex items-center gap-4 p-5">
                     {renderAvatar('lg')}
                     <div className="min-w-0">
-                      <p className="truncate text-lg font-semibold text-text">{displayName}</p>
-                      <p className="text-sm text-muted">@{handle}</p>
+                      <p className="truncate text-body-lg font-semibold text-text">{displayName}</p>
+                      <p className="text-body-sm text-muted">@{handle}</p>
                     </div>
                   </div>
 
                   {bio && (
                     <div className="px-5 py-4">
-                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">Bio</p>
-                      <p className="whitespace-pre-wrap text-sm text-text">{bio}</p>
+                      <p className="mb-1 text-meta font-semibold uppercase tracking-wide text-subtle">Bio</p>
+                      <p className="whitespace-pre-wrap text-body-sm text-text">{bio}</p>
                     </div>
                   )}
 
                   {regionId && (
                     <div className="px-5 py-4">
-                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">Region</p>
-                      <p className="text-sm text-text">{regions.find((r) => r.id === regionId)?.name}</p>
+                      <p className="mb-1 text-meta font-semibold uppercase tracking-wide text-subtle">Region</p>
+                      <p className="text-body-sm text-text">{regions.find((r) => r.id === regionId)?.name}</p>
                     </div>
                   )}
                 </div>
@@ -470,8 +477,8 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
             {emailOptIn && <Check className="h-3.5 w-3.5" />}
           </span>
           <span className="min-w-0">
-            <span className="block text-sm font-semibold text-text">Keep me in the loop</span>
-            <span className="mt-0.5 block text-sm text-muted">
+            <span className="block text-body-sm font-semibold text-text">Keep me in the loop</span>
+            <span className="mt-0.5 block text-body-sm text-muted">
               New circles near you, events worth showing up for, and the occasional note from the team. No noise,
               and you can turn it off anytime in Settings.
             </span>

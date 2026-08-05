@@ -21,16 +21,16 @@ export async function ResonanceMatches() {
   if (!consent.optedIn) {
     return (
       <section className="rounded-2xl border border-primary/30 bg-primary-bg/40 p-5">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-text">
+        <h2 className="flex items-center gap-2 text-body-sm font-bold text-text">
           <Sparkles className="h-4 w-4 text-primary-strong" aria-hidden /> People you would click with
         </h2>
-        <p className="mt-1 text-sm text-muted">
+        <p className="mt-1 text-body-sm text-muted">
           Turn on Resonance matching and Frequency will quietly find the few people you would most
           enjoy meeting, from what you already share. You decide before anyone is introduced.
         </p>
         <Link
           href="/settings/connections"
-          className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           Turn on matching <ArrowRight className="h-4 w-4" aria-hidden />
         </Link>
@@ -42,10 +42,10 @@ export async function ResonanceMatches() {
   if (matches.length === 0) {
     return (
       <section className="rounded-2xl border border-border bg-surface p-5">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-text">
+        <h2 className="flex items-center gap-2 text-body-sm font-bold text-text">
           <Sparkles className="h-4 w-4 text-primary-strong" aria-hidden /> People you would click with
         </h2>
-        <p className="mt-1 text-sm text-muted">
+        <p className="mt-1 text-body-sm text-muted">
           No matches yet. As you show up in Circles and practices, we will find the people you resonate
           with. Matches are private to you.
         </p>
@@ -55,10 +55,10 @@ export async function ResonanceMatches() {
 
   return (
     <section className="rounded-2xl border border-border bg-surface p-5">
-      <h2 className="flex items-center gap-2 text-sm font-bold text-text">
+      <h2 className="flex items-center gap-2 text-body-sm font-bold text-text">
         <Sparkles className="h-4 w-4 text-primary-strong" aria-hidden /> People you would click with
       </h2>
-      <p className="mt-1 text-sm text-muted">
+      <p className="mt-1 text-body-sm text-muted">
         The few people you most resonate with, by what you share. Tap to ask for an intro. No one is
         introduced until you both say yes, and a human sends the hello.
       </p>
@@ -76,13 +76,13 @@ export async function ResonanceMatches() {
                 style={avatarFocusStyle(m.avatarUrl)}
               />
             ) : (
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-sm font-semibold text-primary-strong" aria-hidden>
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-body-sm font-semibold text-primary-strong" aria-hidden>
                 {m.name.slice(0, 1).toUpperCase()}
               </span>
             )}
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-text">{m.name}</p>
-              <p className="truncate text-xs text-muted">
+              <p className="truncate text-body-sm font-semibold text-text">{m.name}</p>
+              <p className="truncate text-meta text-muted">
                 {matchStrengthLabel(m.score)} · {matchWhyLine(m.reasons)}
               </p>
             </div>

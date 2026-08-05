@@ -61,7 +61,7 @@ function GenerateButton({
 
   return (
     <div className="flex items-center gap-2">
-      {message && <span className={`text-xs ${error ? 'text-danger' : 'text-muted'}`}>{message}</span>}
+      {message && <span className={`text-meta ${error ? 'text-danger' : 'text-muted'}`}>{message}</span>}
       <Button size="sm" onClick={generate} disabled={pending}>
         <Icon className="h-3.5 w-3.5" /> {pending ? busyLabel : label}
       </Button>
@@ -126,7 +126,7 @@ function EvidenceChips({ evidence }: { evidence: Record<string, unknown> }) {
   return (
     <div className="mt-1.5 flex flex-wrap gap-1.5">
       {chips.map((c) => (
-        <span key={c} className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-xs tabular-nums text-muted">
+        <span key={c} className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-meta tabular-nums text-muted">
           {c}
         </span>
       ))}
@@ -178,8 +178,8 @@ export function TipDraftCard({
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span className="text-sm font-semibold text-text">{creatorName}</span>
-        <span className="text-xs text-subtle">
+        <span className="text-body-sm font-semibold text-text">{creatorName}</span>
+        <span className="text-meta text-subtle">
           {title ? `"${title}"` : about} · drafted {relativeTime(createdAt)}
         </span>
       </div>
@@ -192,7 +192,7 @@ export function TipDraftCard({
         aria-label="Tip text"
       />
       <div className="mt-2 flex items-center gap-2">
-        {error && <span className="text-xs text-danger">{error}</span>}
+        {error && <span className="text-meta text-danger">{error}</span>}
         <div className="ml-auto flex items-center gap-2">
           <Button size="sm" variant="ghost" onClick={dismiss} disabled={pending}>
             <X className="h-3.5 w-3.5" /> Dismiss
@@ -249,16 +249,16 @@ export function FlagReviewCard({
         <StatusChip tone="warning" size="sm">
           <Flag className="h-3 w-3" aria-hidden /> Spam flag
         </StatusChip>
-        <span className="text-sm font-semibold text-text">{posterName}</span>
-        <span className="text-xs text-subtle">posted events · flagged {relativeTime(createdAt)}</span>
+        <span className="text-body-sm font-semibold text-text">{posterName}</span>
+        <span className="text-meta text-subtle">posted events · flagged {relativeTime(createdAt)}</span>
       </div>
       <EvidenceChips evidence={evidence} />
-      <p className="mt-3 text-sm text-text">{draftText}</p>
-      <p className="mt-1.5 text-xs text-subtle">
+      <p className="mt-3 text-body-sm text-text">{draftText}</p>
+      <p className="mt-1.5 text-meta text-subtle">
         Internal only. The member never sees this, and the honesty band already scales their reward.
       </p>
       <div className="mt-2 flex items-center gap-2">
-        {error && <span className="text-xs text-danger">{error}</span>}
+        {error && <span className="text-meta text-danger">{error}</span>}
         <div className="ml-auto flex items-center gap-2">
           <Button size="sm" variant="ghost" onClick={dismiss} disabled={pending}>
             <X className="h-3.5 w-3.5" /> Dismiss

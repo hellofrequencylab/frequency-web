@@ -96,7 +96,7 @@ export function StyleEditor({
   )
 
   const controls = (
-    <div className="space-y-4 text-xs">
+    <div className="space-y-4 text-meta">
       {/* ── Colors ─────────────────────────────────────────────────────────── */}
       <Group label="Colors">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -326,7 +326,7 @@ export function StyleEditor({
       <div className="rounded-card border border-border bg-canvas/50 p-4">
         <div className="flex items-center gap-1.5 mb-3">
           <Palette className="w-4 h-4 text-primary-strong" />
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-text">Design</h4>
+          <h4 className="text-meta font-semibold uppercase tracking-wider text-text">Design</h4>
         </div>
 
         {renderCompact({
@@ -354,7 +354,7 @@ export function StyleEditor({
     <div className="rounded-card border border-border bg-canvas/50 p-4">
       <div className="flex items-center gap-1.5 mb-3">
         <Palette className="w-4 h-4 text-primary-strong" />
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-text">Design</h4>
+        <h4 className="text-meta font-semibold uppercase tracking-wider text-text">Design</h4>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-4">

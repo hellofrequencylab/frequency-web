@@ -36,8 +36,8 @@ export function ContactImportModal({
     <StudioWindow open={open} onClose={onClose} eyebrow="Contacts · Import" closeLabel="Close importer">
       <div className="space-y-4">
         <div>
-          <h2 className="text-lg font-semibold text-text">{titleFor(target, spaceName)}</h2>
-          <p className="mt-1 text-sm text-muted">
+          <h2 className="text-body-lg font-semibold text-text">{titleFor(target, spaceName)}</h2>
+          <p className="mt-1 text-body-sm text-muted">
             Drop in a file or two, or paste a list. We match the columns, dedupe against what you already
             have, and show a preview before anything is saved.
           </p>

@@ -27,7 +27,7 @@ export function Counter({
   return (
     <span className="inline-flex items-baseline gap-1.5" title={`${value.toLocaleString()} ${label}`}>
       {Glyph && <Glyph className="h-3.5 w-3.5 shrink-0 self-center text-subtle" aria-hidden />}
-      <span className="font-mono text-sm font-semibold tabular-nums leading-none text-text">
+      <span className="font-mono text-body-sm font-semibold tabular-nums leading-none text-text">
         {value.toLocaleString()}
       </span>
       <span className="text-2xs font-medium text-muted">{label}</span>

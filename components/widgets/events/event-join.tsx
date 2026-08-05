@@ -15,7 +15,7 @@ export const EventJoin = async () => {
   // An "RSVP" heading sits above the action box, matching the Activity section's heading style.
   return (
     <section>
-      <h2 className="mb-3 text-sm font-bold text-text">RSVP</h2>
+      <h2 className="mb-3 text-body-sm font-bold text-text">RSVP</h2>
       {ctx.joinActions}
     </section>
   )

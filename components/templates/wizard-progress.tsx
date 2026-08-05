@@ -65,7 +65,7 @@ export function WizardProgress({
           />
         ))}
       </div>
-      <p className="mt-3 text-xs font-medium text-subtle" aria-live="polite">
+      <p className="mt-3 text-meta font-medium text-subtle" aria-live="polite">
         Step {current} of {total}
         {label && <> · <span className="text-muted">{label}</span></>}
       </p>

@@ -102,8 +102,8 @@ const STEP_LABELS = ['Goal', 'A few questions', 'How to build']
 function GoalStep({ onPick, selected }: { onPick: (key: string) => void; selected: string | null }) {
   return (
     <div>
-      <h2 className="text-lg font-bold text-text">What are you trying to do?</h2>
-      <p className="mt-0.5 text-sm text-muted">Pick a goal. Each one starts you from a best-practice shape.</p>
+      <h2 className="text-body-lg font-bold text-text">What are you trying to do?</h2>
+      <p className="mt-0.5 text-body-sm text-muted">Pick a goal. Each one starts you from a best-practice shape.</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         {MESSAGING_GOALS.map((g) => {
           const Icon = g.object === 'funnel' ? Activity : Megaphone
@@ -126,8 +126,8 @@ function GoalStep({ onPick, selected }: { onPick: (key: string) => void; selecte
                   {g.object === 'funnel' ? 'Funnel' : 'Campaign'}
                 </span>
               </span>
-              <span className="text-sm font-semibold text-text">{g.label}</span>
-              <span className="text-xs leading-snug text-muted">{g.blurb}</span>
+              <span className="text-body-sm font-semibold text-text">{g.label}</span>
+              <span className="text-meta leading-snug text-muted">{g.blurb}</span>
             </button>
           )
         })}
@@ -164,15 +164,15 @@ function QuestionsStep({
   onNext: () => void
 }) {
   const fieldCls =
-    'mt-1 w-full rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-text outline-none focus:border-primary'
+    'mt-1 w-full rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
   return (
     <div>
-      <h2 className="text-lg font-bold text-text">{goal.label}</h2>
-      <p className="mt-0.5 text-sm text-muted">A few plain questions. You can change all of this later.</p>
+      <h2 className="text-body-lg font-bold text-text">{goal.label}</h2>
+      <p className="mt-0.5 text-body-sm text-muted">A few plain questions. You can change all of this later.</p>
 
       <div className="mt-4 space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-text" htmlFor="msg-name">
+          <label className="block text-meta font-semibold text-text" htmlFor="msg-name">
             Name it
           </label>
           <input
@@ -187,7 +187,7 @@ function QuestionsStep({
 
         {goal.object === 'campaign' && (
           <div>
-            <label className="block text-xs font-semibold text-text" htmlFor="msg-audience">
+            <label className="block text-meta font-semibold text-text" htmlFor="msg-audience">
               Who is it for?
             </label>
             <select id="msg-audience" value={audience} onChange={(e) => setAudience(e.target.value)} className={fieldCls}>
@@ -202,13 +202,13 @@ function QuestionsStep({
 
         {goal.object === 'funnel' && goal.triggerHint && (
           <div className="rounded-card border border-border bg-surface px-3 py-2.5">
-            <p className="text-xs font-semibold text-text">Trigger</p>
-            <p className="text-xs text-muted">{goal.triggerHint}. You can wire the exact event in the flow view.</p>
+            <p className="text-meta font-semibold text-text">Trigger</p>
+            <p className="text-meta text-muted">{goal.triggerHint}. You can wire the exact event in the flow view.</p>
           </div>
         )}
 
         <div>
-          <label className="block text-xs font-semibold text-text" htmlFor="msg-tone">
+          <label className="block text-meta font-semibold text-text" htmlFor="msg-tone">
             Tone
           </label>
           <select id="msg-tone" value={tone} onChange={(e) => setTone(e.target.value)} className={fieldCls}>
@@ -221,7 +221,7 @@ function QuestionsStep({
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-text" htmlFor="msg-details">
+          <label className="block text-meta font-semibold text-text" htmlFor="msg-details">
             Anything to add? <span className="font-normal text-subtle">(optional)</span>
           </label>
           <textarea
@@ -236,12 +236,12 @@ function QuestionsStep({
 
         {/* Best-practice tips ride along (ask #6). */}
         <div className="rounded-xl border border-info/30 bg-info-bg px-3 py-2.5">
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-info">
+          <p className="flex items-center gap-1.5 text-meta font-semibold text-info">
             <Lightbulb className="h-3.5 w-3.5" aria-hidden /> Best practice
           </p>
           <ul className="mt-1 space-y-1">
             {goal.tips.map((t, i) => (
-              <li key={i} className="text-xs text-text/80">
+              <li key={i} className="text-meta text-text/80">
                 {t}
               </li>
             ))}
@@ -251,7 +251,7 @@ function QuestionsStep({
         {/* The best-practice series preview for a funnel goal. */}
         {goal.object === 'funnel' && goal.outline && (
           <div>
-            <p className="text-xs font-semibold text-text">The series we will set up</p>
+            <p className="text-meta font-semibold text-text">The series we will set up</p>
             <ol className="mt-1.5 space-y-1.5">
               {goal.outline.map((s, i) => (
                 <li key={i} className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
@@ -259,7 +259,7 @@ function QuestionsStep({
                     {i + 1}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-xs font-semibold text-text">{s.title}</span>
+                    <span className="block text-meta font-semibold text-text">{s.title}</span>
                     <span className="block text-2xs text-muted">{s.note}</span>
                   </span>
                   <span className="shrink-0 text-2xs text-muted">{s.timing}</span>
@@ -304,8 +304,8 @@ function BuildStep({
   const manualBusy = pending && buildMode === 'manual'
   return (
     <div>
-      <h2 className="text-lg font-bold text-text">How do you want to build it?</h2>
-      <p className="mt-0.5 text-sm text-muted">
+      <h2 className="text-body-lg font-bold text-text">How do you want to build it?</h2>
+      <p className="mt-0.5 text-body-sm text-muted">
         Let Vera write the first draft, or start from the {isSequence ? 'best-practice series' : 'template'} for{' '}
         {name || goal.suggestedName}. Either way you review and edit before anything sends.
       </p>
@@ -330,8 +330,8 @@ function BuildStep({
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-on-primary">
             {veraBusy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Sparkles className="h-5 w-5" aria-hidden />}
           </span>
-          <span className="text-sm font-semibold text-text">Let Vera draft it</span>
-          <span className="text-xs leading-snug text-muted">
+          <span className="text-body-sm font-semibold text-text">Let Vera draft it</span>
+          <span className="text-meta leading-snug text-muted">
             {veraBusy
               ? isSequence
                 ? 'Vera is writing your series. This takes a few seconds.'
@@ -355,8 +355,8 @@ function BuildStep({
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
             {manualBusy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <PencilRuler className="h-5 w-5" aria-hidden />}
           </span>
-          <span className="text-sm font-semibold text-text">Build it manually</span>
-          <span className="text-xs leading-snug text-muted">
+          <span className="text-body-sm font-semibold text-text">Build it manually</span>
+          <span className="text-meta leading-snug text-muted">
             {isSequence
               ? 'Open the flow view with the series set up, ready for you to write.'
               : 'Open the composer with the audience preset, ready to write.'}

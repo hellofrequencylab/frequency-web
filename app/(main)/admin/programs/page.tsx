@@ -163,8 +163,8 @@ async function SeasonStats() {
     >
       <TileGrid>
         <Tile label="Active season">
-          <p className="text-xl font-bold leading-tight text-text">{season ? season.name : 'None'}</p>
-          <p className="mt-1.5 text-xs font-medium text-muted">
+          <p className="text-lead font-bold leading-tight text-text">{season ? season.name : 'None'}</p>
+          <p className="mt-1.5 text-meta font-medium text-muted">
             {season ? `Season ${season.season_number}` : 'No season running'}
           </p>
         </Tile>
@@ -235,11 +235,11 @@ async function ManageSections() {
               <ArrowUpRight className="h-4 w-4 shrink-0 text-subtle opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-text">{c.label}</p>
-              <p className="mt-0.5 text-xs leading-snug text-muted">{c.desc}</p>
+              <p className="text-body-sm font-semibold text-text">{c.label}</p>
+              <p className="mt-0.5 text-meta leading-snug text-muted">{c.desc}</p>
             </div>
             <p className="mt-auto flex items-baseline gap-1.5">
-              {c.stat && <span className="text-lg font-bold tabular-nums text-text">{c.stat}</span>}
+              {c.stat && <span className="text-body-lg font-bold tabular-nums text-text">{c.stat}</span>}
               <span className="text-2xs font-medium uppercase tracking-wide text-muted">{c.statLabel}</span>
             </p>
           </Link>
@@ -253,7 +253,7 @@ async function ManageSections() {
 function DashSkeleton({ title }: { title: string }) {
   return (
     <section className="border-t border-border/70 pt-8 first:border-t-0 first:pt-0 sm:pt-9">
-      <h2 className="text-xl font-bold tracking-tight text-text">{title}</h2>
+      <h2 className="text-lead font-bold tracking-tight text-text">{title}</h2>
       <div className="mt-2 h-4 w-2/3 animate-pulse rounded bg-surface-elevated" />
       <div className="mt-5 grid grid-cols-2 gap-3.5 lg:grid-cols-3">
         <div className="h-32 animate-pulse rounded-2xl bg-surface-elevated/70" />

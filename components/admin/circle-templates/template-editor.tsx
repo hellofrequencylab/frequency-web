@@ -52,8 +52,8 @@ function FormSection({
   return (
     <section className="space-y-4 rounded-2xl border border-border bg-surface p-4 sm:p-5">
       <div>
-        <h2 className="text-base font-bold text-text">{title}</h2>
-        {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
+        <h2 className="text-body font-bold text-text">{title}</h2>
+        {description && <p className="mt-0.5 text-body-sm text-muted">{description}</p>}
       </div>
       {children}
     </section>
@@ -321,7 +321,7 @@ export function TemplateEditor({ template }: { template: CircleTemplate }) {
       >
         <input type="hidden" name="callout_count" value={callouts.length} />
         {callouts.length === 0 && (
-          <p className="text-sm text-muted">No extra callouts on this template yet.</p>
+          <p className="text-body-sm text-muted">No extra callouts on this template yet.</p>
         )}
         <div className="space-y-3">
           {callouts.map((c, i) => (
@@ -347,7 +347,7 @@ export function TemplateEditor({ template }: { template: CircleTemplate }) {
                   type="button"
                   onClick={() => removeCallout(i)}
                   aria-label="Remove callout"
-                  className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger-bg"
+                  className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg"
                 >
                   <Trash2 className="h-3.5 w-3.5" aria-hidden /> Remove
                 </button>
@@ -388,7 +388,7 @@ export function TemplateEditor({ template }: { template: CircleTemplate }) {
           )}
           Save changes
         </Button>
-        {saved && <span className="text-xs font-medium text-success">Saved.</span>}
+        {saved && <span className="text-meta font-medium text-success">Saved.</span>}
       </div>
     </form>
   )

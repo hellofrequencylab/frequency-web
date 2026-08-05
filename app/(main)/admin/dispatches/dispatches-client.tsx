@@ -48,8 +48,8 @@ const TYPE_TONE: Record<DispatchType, StatusTone> = {
 
 type CommunityRole = 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
-const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
-const lbl   = 'block text-xs font-medium text-muted mb-1'
+const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
+const lbl   = 'block text-meta font-medium text-muted mb-1'
 
 function DispatchForm({
   initial,
@@ -131,7 +131,7 @@ function DispatchForm({
               key={t}
               type="button"
               onClick={() => setDispatchType(t)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-meta font-semibold border transition-colors ${
                 dispatchType === t
                   ? 'border-primary bg-primary text-on-primary'
                   : 'border-border bg-surface text-text hover:border-primary'
@@ -150,13 +150,13 @@ function DispatchForm({
           <button
             type="button"
             onClick={() => setPreview(p => !p)}
-            className="text-xs text-primary-strong hover:text-primary-strong transition-colors"
+            className="text-meta text-primary-strong hover:text-primary-strong transition-colors"
           >
             {preview ? 'Edit' : 'Preview'}
           </button>
         </div>
         {preview ? (
-          <div className="min-h-[160px] rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text prose-preview">
+          <div className="min-h-[160px] rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text prose-preview">
             <MarkdownPreview text={body} />
           </div>
         ) : (
@@ -167,7 +167,7 @@ function DispatchForm({
             rows={8}
             required
             disabled={isPending}
-            className={`${input} resize-y font-mono text-xs leading-relaxed`}
+            className={`${input} resize-y font-mono text-meta leading-relaxed`}
           />
         )}
       </div>
@@ -206,7 +206,7 @@ function DispatchForm({
               <button
                 type="button"
                 onClick={() => setPollOptions([...pollOptions, ''])}
-                className="text-xs text-primary-strong hover:text-primary-strong flex items-center gap-1 transition-colors"
+                className="text-meta text-primary-strong hover:text-primary-strong flex items-center gap-1 transition-colors"
               >
                 <Plus className="w-3 h-3" /> Add option
               </button>
@@ -308,7 +308,7 @@ function DispatchForm({
 function MarkdownPreview({ text }: { text: string }) {
   if (!text.trim()) return <span className="text-subtle italic">Nothing to preview yet.</span>
   // Render as pre-wrap for now; the full react-markdown render is on the public page
-  return <pre className="whitespace-pre-wrap font-sans text-sm">{text}</pre>
+  return <pre className="whitespace-pre-wrap font-sans text-body-sm">{text}</pre>
 }
 
 const STATUS_TONE: Record<string, StatusTone> = {
@@ -411,7 +411,7 @@ export function DispatchesClient({
                   <div className="flex items-center gap-2 flex-wrap mb-0.5">
                     <Link
                       href={`/broadcast/${d.id}`}
-                      className="text-sm font-semibold text-text hover:text-primary-strong dark:hover:text-primary-strong transition-colors"
+                      className="text-body-sm font-semibold text-text hover:text-primary-strong dark:hover:text-primary-strong transition-colors"
                     >
                       {d.title}
                     </Link>
@@ -428,10 +428,10 @@ export function DispatchesClient({
                     </StatusChip>
                   </div>
                   {d.excerpt && (
-                    <p className="text-xs text-subtle line-clamp-1">{d.excerpt}</p>
+                    <p className="text-meta text-subtle line-clamp-1">{d.excerpt}</p>
                   )}
                   {d.linked_task && (
-                    <p className="text-xs text-primary-strong mt-0.5">Challenge: {d.linked_task.name}</p>
+                    <p className="text-meta text-primary-strong mt-0.5">Challenge: {d.linked_task.name}</p>
                   )}
                 </div>
 

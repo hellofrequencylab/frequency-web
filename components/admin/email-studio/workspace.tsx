@@ -183,20 +183,20 @@ export function EmailStudioWorkspace({
           type="button"
           onClick={onNew}
           disabled={pending}
-          className="flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-border py-2.5 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-border py-2.5 text-body-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text disabled:opacity-50"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Plus className="h-4 w-4" aria-hidden />}
           New email
         </button>
 
         {error && (
-          <p className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger" role="alert">
+          <p className="rounded-lg bg-danger-bg px-3 py-2 text-meta font-medium text-danger" role="alert">
             {error}
           </p>
         )}
 
         {cards.length === 0 ? (
-          <p className="rounded-card border border-dashed border-border px-3 py-8 text-center text-xs text-muted">
+          <p className="rounded-card border border-dashed border-border px-3 py-8 text-center text-meta text-muted">
             No emails yet. Start one above.
           </p>
         ) : (
@@ -218,7 +218,7 @@ export function EmailStudioWorkspace({
                     >
                       <span className="flex items-center gap-1.5">
                         <Mail className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
-                        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-text">
+                        <span className="min-w-0 flex-1 truncate text-body-sm font-semibold text-text">
                           {card.subject.trim() || 'Untitled'}
                         </span>
                       </span>
@@ -252,7 +252,7 @@ export function EmailStudioWorkspace({
       <section className="min-w-0">
         {selectedId == null ? (
           <div className="flex h-full min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-border">
-            <p className="text-sm text-muted">Select an email, or start a new one.</p>
+            <p className="text-body-sm text-muted">Select an email, or start a new one.</p>
           </div>
         ) : loading || !loaded ? (
           <div className="flex h-full min-h-[320px] items-center justify-center rounded-2xl border border-border">

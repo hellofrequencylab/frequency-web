@@ -77,14 +77,14 @@ export function HostPersonCredit({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="mt-3 w-full rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="mt-3 w-full rounded-xl bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           Message Host
         </button>
       ) : (
         <Link
           href={signInHref}
-          className="mt-3 block w-full rounded-control border border-border px-3 py-2 text-center text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+          className="mt-3 block w-full rounded-control border border-border px-3 py-2 text-center text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
         >
           Sign in to message the host
         </Link>
@@ -104,13 +104,13 @@ export function HostPersonCredit({
                 style={avatarFocusStyle(host.avatar_url)}
               />
             ) : (
-              <div className="flex h-16 w-16 select-none items-center justify-center rounded-pill bg-primary-bg text-lg font-semibold text-primary-strong">
+              <div className="flex h-16 w-16 select-none items-center justify-center rounded-pill bg-primary-bg text-body-lg font-semibold text-primary-strong">
                 {getInitials(host.display_name)}
               </div>
             )}
             <div className="min-w-0">
-              <h2 className="truncate text-lg font-bold text-text">{host.display_name}</h2>
-              <Link href={`/people/${host.handle}`} className="text-sm text-subtle hover:text-text">
+              <h2 className="truncate text-body-lg font-bold text-text">{host.display_name}</h2>
+              <Link href={`/people/${host.handle}`} className="text-body-sm text-subtle hover:text-text">
                 @{host.handle}
               </Link>
             </div>
@@ -118,12 +118,12 @@ export function HostPersonCredit({
 
           {sentConversationId ? (
             <>
-              <p className="mt-5 text-sm text-muted">Your message is on its way to {firstName}.</p>
+              <p className="mt-5 text-body-sm text-muted">Your message is on its way to {firstName}.</p>
               <div className="mt-5 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={close}
-                  className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+                  className="rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
                 >
                   Done
                 </button>
@@ -133,7 +133,7 @@ export function HostPersonCredit({
                     openDockThread({ kind: 'dm', id: sentConversationId, title: host.display_name })
                     close()
                   }}
-                  className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                  className="rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
                 >
                   Open the conversation
                 </button>
@@ -141,7 +141,7 @@ export function HostPersonCredit({
             </>
           ) : (
             <>
-              <label htmlFor="host-message" className="mt-5 block text-sm font-medium text-text">
+              <label htmlFor="host-message" className="mt-5 block text-body-sm font-medium text-text">
                 Send {firstName} a message
               </label>
               <textarea
@@ -152,16 +152,16 @@ export function HostPersonCredit({
                 rows={4}
                 maxLength={2000}
                 placeholder={`Say hello or ask ${firstName} about the event.`}
-                className="mt-2 w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30"
+                className="mt-2 w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30"
               />
 
-              {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+              {error && <p className="mt-2 text-body-sm text-danger">{error}</p>}
 
               <div className="mt-4 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={close}
-                  className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+                  className="rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
                 >
                   Cancel
                 </button>
@@ -169,7 +169,7 @@ export function HostPersonCredit({
                   type="button"
                   onClick={submit}
                   disabled={isPending || !body.trim()}
-                  className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+                  className="rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
                 >
                   {isPending ? 'Sending...' : 'Send message'}
                 </button>

@@ -130,9 +130,9 @@ function NoSpacesSplash() {
   return (
     <section className="overflow-hidden rounded-2xl border border-border bg-surface p-8 sm:p-10">
       <div className="max-w-2xl">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary-strong">Go Business</p>
-        <h2 className="text-balance text-2xl font-bold text-text sm:text-3xl">Run your whole business here</h2>
-        <p className="mt-3 text-base leading-relaxed text-muted">
+        <p className="mb-2 text-meta font-semibold uppercase tracking-widest text-primary-strong">Go Business</p>
+        <h2 className="text-balance text-page-title font-bold text-text sm:text-3xl">Run your whole business here</h2>
+        <p className="mt-3 text-body leading-relaxed text-muted">
           You do not run any Spaces yet. A Business Space is one page for everything you sell, everyone
           you serve, and every event you run. Your people find it in the same network they already
           browse, so getting listed is getting discovered.
@@ -146,8 +146,8 @@ function NoSpacesSplash() {
               <Icon className="h-5 w-5" aria-hidden />
             </span>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-text">{title}</p>
-              <p className="mt-0.5 text-sm leading-relaxed text-muted">{body}</p>
+              <p className="text-body-sm font-semibold text-text">{title}</p>
+              <p className="mt-0.5 text-body-sm leading-relaxed text-muted">{body}</p>
             </div>
           </li>
         ))}
@@ -161,7 +161,7 @@ function NoSpacesSplash() {
         <Link href="/spaces/directory" className={buttonClasses('secondary', 'md')}>
           Browse the directory
         </Link>
-        <p className="text-sm text-subtle">Free to start. One connected network, shared discovery.</p>
+        <p className="text-body-sm text-subtle">Free to start. One connected network, shared discovery.</p>
       </div>
     </section>
   )

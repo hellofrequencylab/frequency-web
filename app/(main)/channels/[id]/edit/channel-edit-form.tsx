@@ -119,7 +119,7 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
 
       <form onSubmit={onSubmit} className="space-y-6">
         <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
-          <h2 className="text-sm font-semibold text-text">Basics</h2>
+          <h2 className="text-body-sm font-semibold text-text">Basics</h2>
 
           <FieldBlock label="Name">
             <input name="name" defaultValue={channel.name} required className={input} />
@@ -129,7 +129,7 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
             label="URL"
             hint="The Channel's web address. Changing it changes the URL, so any link people already shared to the old one stops working."
           >
-            <span className="flex items-center rounded-lg border border-border bg-surface px-3 text-sm text-subtle focus-within:border-border-strong focus-within:ring-2 focus-within:ring-border-strong/30">
+            <span className="flex items-center rounded-lg border border-border bg-surface px-3 text-body-sm text-subtle focus-within:border-border-strong focus-within:ring-2 focus-within:ring-border-strong/30">
               <span className="shrink-0">/channels/</span>
               <input
                 name="slug"
@@ -153,7 +153,7 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
         </section>
 
         <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
-          <h2 className="text-sm font-semibold text-text">Where it sits</h2>
+          <h2 className="text-body-sm font-semibold text-text">Where it sits</h2>
 
           <FieldBlock
             label="Category"
@@ -212,7 +212,7 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
         </section>
 
         {error && (
-          <p role="alert" className="text-sm font-medium text-danger">
+          <p role="alert" className="text-body-sm font-medium text-danger">
             {error}
           </p>
         )}
@@ -231,7 +231,7 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
 
       {/* The rest of the Channel lives in the Manage hub. Link out, never rebuild. */}
       <section className="space-y-2 rounded-2xl border border-border bg-surface p-5 lift-1">
-        <h2 className="text-sm font-semibold text-text">The rest of this Channel</h2>
+        <h2 className="text-body-sm font-semibold text-text">The rest of this Channel</h2>
         <p className="text-2xs text-muted">
           Who is tuned in, which Circles practice here, and the Chapter blueprint are run from the
           Channel console.
@@ -246,7 +246,7 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-bg text-primary-strong">
                 <Icon className="h-3.5 w-3.5" aria-hidden />
               </span>
-              <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">{label}</span>
+              <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-text">{label}</span>
               <ArrowRight
                 className="h-3.5 w-3.5 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong motion-reduce:transition-none"
                 aria-hidden

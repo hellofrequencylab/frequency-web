@@ -140,7 +140,7 @@ export default async function DispatchDetailPage({ params }: Props) {
       {/* Back */}
       <Link
         href="/broadcast"
-        className="inline-flex items-center gap-1.5 text-xs text-subtle hover:text-primary-strong transition-colors mb-8"
+        className="inline-flex items-center gap-1.5 text-meta text-subtle hover:text-primary-strong transition-colors mb-8"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         Back to Dispatches
@@ -152,11 +152,11 @@ export default async function DispatchDetailPage({ params }: Props) {
           title={dispatch.title}
           badges={
             <>
-              <span className="inline-flex items-center gap-1.5 rounded-md bg-primary-bg px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary-strong">
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-primary-bg px-2 py-0.5 text-meta font-semibold uppercase tracking-wide text-primary-strong">
                 <Megaphone className="w-3.5 h-3.5" />
                 {dispatch.audience_scope} broadcast
               </span>
-              <span className={`text-xs px-2 py-0.5 rounded-md font-semibold ${TYPE_COLORS[dispType]}`}>
+              <span className={`text-meta px-2 py-0.5 rounded-md font-semibold ${TYPE_COLORS[dispType]}`}>
                 {TYPE_LABELS[dispType] ?? dispType}
               </span>
             </>
@@ -212,18 +212,18 @@ export default async function DispatchDetailPage({ params }: Props) {
           <div className="mt-10 rounded-2xl border-2 border-warning bg-warning-bg/20 lift-1 px-5 py-4">
             <div className="flex items-center gap-2 mb-1">
               <Zap className="w-4 h-4 text-primary" />
-              <span className="text-xs font-black uppercase tracking-[0.12em] text-warning">
+              <span className="text-meta font-black uppercase tracking-[0.12em] text-warning">
                 Challenge linked to this dispatch
               </span>
             </div>
-            <p className="text-sm font-bold text-text mb-1">{linkedTask.name}</p>
+            <p className="text-body-sm font-bold text-text mb-1">{linkedTask.name}</p>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted capitalize">{linkedTask.task_type}</span>
+              <span className="text-meta text-muted capitalize">{linkedTask.task_type}</span>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-black text-primary">{linkedTask.zaps_value} Zaps</span>
+                <span className="text-body-sm font-black text-primary">{linkedTask.zaps_value} Zaps</span>
                 <Link
                   href="/crew"
-                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-on-primary hover:bg-primary-hover transition-colors"
+                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-meta font-bold text-on-primary hover:bg-primary-hover transition-colors"
                 >
                   Complete challenge →
                 </Link>

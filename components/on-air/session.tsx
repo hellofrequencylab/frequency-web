@@ -1336,7 +1336,7 @@ export function OnAirSession({
         {/* Sequenced run (P6): a progress chip; when more practices remain, closing this reveal
             rolls into the next one. */}
         {queuePosition && (
-          <div className="mx-auto mb-3 w-full max-w-sm rounded-pill bg-surface-elevated px-3 py-1.5 text-center text-xs font-medium text-muted">
+          <div className="mx-auto mb-3 w-full max-w-sm rounded-pill bg-surface-elevated px-3 py-1.5 text-center text-meta font-medium text-muted">
             Practice {queuePosition.index + 1} of {queuePosition.total}
             {hasNext ? ' · closing this starts the next' : ' · last one'}
           </div>
@@ -1346,15 +1346,15 @@ export function OnAirSession({
             no em or en dashes. */}
         {payload.partial && (
           <div className="mx-auto mb-4 w-full max-w-sm rounded-2xl border border-primary/50 bg-primary-bg/30 px-4 py-3 text-center">
-            <p className="text-sm font-semibold text-text">You banked the day and earned 1 Zap.</p>
-            <p className="mt-1 text-xs text-muted">
+            <p className="text-body-sm font-semibold text-text">You banked the day and earned 1 Zap.</p>
+            <p className="mt-1 text-meta text-muted">
               Finish the sit any time today and the rest of the Zaps are yours.
             </p>
             {(practice?.durationMin ?? 0) > 0 && (
               <button
                 type="button"
                 onClick={finishTheRest}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 Finish the sit <ChevronRight className="h-3.5 w-3.5" aria-hidden />
               </button>
@@ -1363,8 +1363,8 @@ export function OnAirSession({
         )}
         {payload.finished && (
           <div className="mx-auto mb-4 w-full max-w-sm rounded-2xl border border-success/50 bg-success-bg/40 px-4 py-3 text-center">
-            <p className="text-sm font-semibold text-text">You finished it. The rest of the Zaps are in.</p>
-            <p className="mt-1 text-xs text-muted">Full sit, full reward. Nice work.</p>
+            <p className="text-body-sm font-semibold text-text">You finished it. The rest of the Zaps are in.</p>
+            <p className="mt-1 text-meta text-muted">Full sit, full reward. Nice work.</p>
           </div>
         )}
         <Reveal payload={payload} onClose={closeReveal} onAction={onLeaveViaLink ?? onExit} />
@@ -1377,7 +1377,7 @@ export function OnAirSession({
       <Overlay>
       <CenterScreen>
         <OnAirIcon className="h-8 w-8 animate-pulse text-primary" />
-        <p className="text-sm font-medium text-muted">Tuning back in. Counting it up…</p>
+        <p className="text-body-sm font-medium text-muted">Tuning back in. Counting it up…</p>
       </CenterScreen>
       </Overlay>
     )
@@ -1387,7 +1387,7 @@ export function OnAirSession({
     return (
       <Overlay>
       <CenterScreen>
-        <p className="text-sm font-medium text-text">That didn’t save. Your sit still happened.</p>
+        <p className="text-body-sm font-medium text-text">That didn’t save. Your sit still happened.</p>
         <button
           type="button"
           onClick={() => {
@@ -1397,7 +1397,7 @@ export function OnAirSession({
             if (a) void finishWith(a.seconds, a.startedIso, a.practiceIdOverride, a.modeOverride)
             else void finishWith(Math.round((Date.now() - startedAt) / 1000), new Date(startedAt).toISOString())
           }}
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
+          className="rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
         >
           Try again
         </button>
@@ -1432,7 +1432,7 @@ export function OnAirSession({
         {/* The content scrolls if it has to; the controls below DOCK to the bottom and stay
             tappable on a short screen (owner layout directive, item #5). */}
         <div className="flex flex-1 flex-col items-center justify-center gap-5 pt-[max(3rem,env(safe-area-inset-top))] pb-6">
-          <p className="flex animate-pulse items-center gap-2.5 text-sm font-bold uppercase tracking-[0.3em] text-primary-strong [animation-duration:3s]">
+          <p className="flex animate-pulse items-center gap-2.5 text-body-sm font-bold uppercase tracking-[0.3em] text-primary-strong [animation-duration:3s]">
             <LotusIcon className="h-[18px] w-[18px]" /> Mindless
           </p>
 
@@ -1443,7 +1443,7 @@ export function OnAirSession({
             {preroll !== null ? (
               <>
                 <p
-                  className="text-xs font-bold uppercase tracking-[0.3em] text-primary-strong"
+                  className="text-meta font-bold uppercase tracking-[0.3em] text-primary-strong"
                   aria-live="polite"
                 >
                   Warm up
@@ -1452,7 +1452,7 @@ export function OnAirSession({
                 {/* The warm-up message (ADR-592): a Journey step's override (P5) wins over the
                     practice's own creator-authored message; shown as the timer counts in. */}
                 {(warmupMessageOverride ?? practice?.warmupMessage) && (
-                  <p className="mt-3 max-w-sm text-balance text-base font-medium text-text/80">{warmupMessageOverride ?? practice?.warmupMessage}</p>
+                  <p className="mt-3 max-w-sm text-balance text-body font-medium text-text/80">{warmupMessageOverride ?? practice?.warmupMessage}</p>
                 )}
               </>
             ) : (
@@ -1469,13 +1469,13 @@ export function OnAirSession({
                   </p>
                 )}
                 {showBreath && (
-                  <p className="text-base tabular-nums text-subtle">
+                  <p className="text-body tabular-nums text-subtle">
                     {ended ? `Going deeper ${overLabel}` : `${mm}:${String(ss).padStart(2, '0')} left`}
                   </p>
                 )}
                 {showBreath && (
                   <div className="flex max-w-xs flex-col items-center gap-1.5 text-center">
-                    <p className="text-xs text-subtle">{pattern.blurb}</p>
+                    <p className="text-meta text-subtle">{pattern.blurb}</p>
                     <button
                       type="button"
                       onClick={() => setShowInstructions(true)}
@@ -1490,8 +1490,8 @@ export function OnAirSession({
                     minutes to the next one. The quiet pull deeper each day (ADR-443). */}
                 {cue && (
                   <div className="flex max-w-xs flex-col items-center gap-0.5 text-center">
-                    <p className="text-sm font-semibold text-primary-strong">{cue.reached}</p>
-                    <p className="text-xs text-muted">{cue.toNext}</p>
+                    <p className="text-body-sm font-semibold text-primary-strong">{cue.reached}</p>
+                    <p className="text-meta text-muted">{cue.toNext}</p>
                   </div>
                 )}
                 {/* Journal: the note field lives here so the member writes while they sit. Optional. */}
@@ -1503,14 +1503,14 @@ export function OnAirSession({
                     maxLength={2000}
                     placeholder="Jot a line or two. Or do not. Up to you."
                     aria-label="Session note"
-                    className="w-full max-w-xs resize-none rounded-control border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+                    className="w-full max-w-xs resize-none rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
                   />
                 )}
               </>
             )}
             {/* The target the member is about to do (item #5): shown below the timer through the
                 warm-up countdown and KEPT once the run begins (it does not vanish on start). */}
-            <p className="text-sm tabular-nums text-subtle">
+            <p className="text-body-sm tabular-nums text-subtle">
               {preroll !== null ? `Settling into ${targetMin} min` : `${targetMin} min session`}
             </p>
             {/* After an automatic resume, a small non-blocking chip to re-arm sound (item #4). The
@@ -1519,7 +1519,7 @@ export function OnAirSession({
               <button
                 type="button"
                 onClick={restoreCues}
-                className="rounded-pill border border-primary/50 bg-primary-bg/40 px-3 py-1.5 text-xs font-medium text-primary-strong transition-colors hover:bg-primary-bg/60"
+                className="rounded-pill border border-primary/50 bg-primary-bg/40 px-3 py-1.5 text-meta font-medium text-primary-strong transition-colors hover:bg-primary-bg/60"
               >
                 Tap to restore sound
               </button>
@@ -1534,12 +1534,12 @@ export function OnAirSession({
             inflates airtime. Voice: plain, no narrated feelings, no em dashes. */}
         {preroll === null && runOverPrompt && (
           <div className="mx-auto mb-2 w-full max-w-sm rounded-2xl border border-primary/50 bg-primary-bg/30 px-4 py-3 text-center">
-            <p className="text-sm font-semibold text-text">Still practicing?</p>
-            <p className="mt-0.5 text-xs text-muted">Confirm to keep logging.</p>
+            <p className="text-body-sm font-semibold text-text">Still practicing?</p>
+            <p className="mt-0.5 text-meta text-muted">Confirm to keep logging.</p>
             <button
               type="button"
               onClick={confirmRunOver}
-              className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+              className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
             >
               Still here
             </button>
@@ -1556,14 +1556,14 @@ export function OnAirSession({
               if (ended) { void finish(false); return }
               togglePause()
             }}
-            className="min-w-44 rounded-pill bg-primary px-10 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+            className="min-w-44 rounded-pill bg-primary px-10 py-3 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
           >
             {preroll !== null ? 'Begin now' : ended ? 'Finish' : paused ? 'Resume' : 'Pause'}
           </button>
           <button
             type="button"
             onClick={() => void finish(!ended)}
-            className="rounded-pill px-4 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
+            className="rounded-pill px-4 py-1.5 text-meta font-medium text-subtle transition-colors hover:text-text"
           >
             Close &amp; Log Session
           </button>
@@ -1607,7 +1607,7 @@ export function OnAirSession({
         // Standalone /on-air route: no toggle, the sit's own masthead (unchanged).
         <>
           <div className="relative flex items-center justify-center pb-2">
-            <p className="flex items-center gap-2.5 text-base font-bold uppercase tracking-[0.35em] text-primary-strong lg:text-lg">
+            <p className="flex items-center gap-2.5 text-body font-bold uppercase tracking-[0.35em] text-primary-strong lg:text-body-lg">
               <LotusIcon className="h-6 w-6 lg:h-7 lg:w-7" /> Mindless
             </p>
             <button
@@ -1619,7 +1619,7 @@ export function OnAirSession({
               <X className="h-4 w-4" />
             </button>
           </div>
-          <p className="pb-6 text-center text-xs text-subtle lg:pb-7">The world can wait a few minutes.</p>
+          <p className="pb-6 text-center text-meta text-subtle lg:pb-7">The world can wait a few minutes.</p>
         </>
       )}
 
@@ -1691,7 +1691,7 @@ export function OnAirSession({
               maxLength={2000}
               placeholder="What happened? A line is plenty. Optional."
               aria-label="Note"
-              className="mt-2 w-full resize-none rounded-control border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+              className="mt-2 w-full resize-none rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
             />
           </div>
         )}
@@ -1706,7 +1706,7 @@ export function OnAirSession({
                   type="button"
                   onClick={() => setPatternSlug(p.slug)}
                   title={p.blurb}
-                  className={`rounded-xl border px-2 py-1.5 text-sm transition-colors ${
+                  className={`rounded-xl border px-2 py-1.5 text-body-sm transition-colors ${
                     p.slug === patternSlug
                       ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                       : 'border-border text-muted hover:bg-surface-elevated'
@@ -1719,7 +1719,7 @@ export function OnAirSession({
                 type="button"
                 onClick={() => setPatternSlug('custom')}
                 title="Your counts. Set each phase to what fits."
-                className={`rounded-xl border px-2 py-1.5 text-sm transition-colors ${
+                className={`rounded-xl border px-2 py-1.5 text-body-sm transition-colors ${
                   patternSlug === 'custom'
                     ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                     : 'border-border text-muted hover:bg-surface-elevated'
@@ -1729,7 +1729,7 @@ export function OnAirSession({
               </button>
             </div>
             <div className="mt-2 flex items-start gap-2">
-              <p className="flex-1 text-xs text-subtle">{pattern.blurb}</p>
+              <p className="flex-1 text-meta text-subtle">{pattern.blurb}</p>
               <button
                 type="button"
                 onClick={() => setShowInstructions(true)}
@@ -1754,7 +1754,7 @@ export function OnAirSession({
           <div>
             <Label>Minutes</Label>
             <div className="mt-2 flex items-center justify-between rounded-card border border-border bg-surface-elevated/40 px-3.5 py-2.5">
-              <span className="text-sm font-semibold tabular-nums text-text">{minutes}m</span>
+              <span className="text-body-sm font-semibold tabular-nums text-text">{minutes}m</span>
               <span className="text-2xs text-muted">Set by the practice</span>
             </div>
           </div>
@@ -1773,7 +1773,7 @@ export function OnAirSession({
                   key={m}
                   type="button"
                   onClick={() => setMinutes(m)}
-                  className={`rounded-xl border px-2 py-1.5 text-sm tabular-nums transition-colors ${
+                  className={`rounded-xl border px-2 py-1.5 text-body-sm tabular-nums transition-colors ${
                     m === minutes
                       ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                       : 'border-border text-muted hover:bg-surface-elevated'
@@ -1793,7 +1793,7 @@ export function OnAirSession({
               >
                 <Minus className="h-3.5 w-3.5" />
               </button>
-              <span className="text-sm font-semibold tabular-nums text-text">{minutes}m</span>
+              <span className="text-body-sm font-semibold tabular-nums text-text">{minutes}m</span>
               <button
                 type="button"
                 onClick={() => setMinutes((m) => clampMinutes(m + 1))}
@@ -1853,7 +1853,7 @@ export function OnAirSession({
                     type="button"
                     aria-pressed={w === warmupSec}
                     onClick={() => setWarmupSec(w)}
-                    className={`rounded-xl border px-2 py-1.5 text-xs tabular-nums transition-colors ${
+                    className={`rounded-xl border px-2 py-1.5 text-meta tabular-nums transition-colors ${
                       w === warmupSec
                         ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                         : 'border-border text-muted hover:bg-surface-elevated'
@@ -1874,7 +1874,7 @@ export function OnAirSession({
                     <button
                       type="button"
                       onClick={() => selectAmbient(null)}
-                      className={`rounded-xl border px-2 py-1.5 text-xs transition-colors ${
+                      className={`rounded-xl border px-2 py-1.5 text-meta transition-colors ${
                         ambientSlug === null
                           ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                           : 'border-border text-muted hover:bg-surface-elevated'
@@ -1887,7 +1887,7 @@ export function OnAirSession({
                         key={t.slug}
                         type="button"
                         onClick={() => selectAmbient(t.slug)}
-                        className={`rounded-xl border px-2 py-1.5 text-xs transition-colors ${
+                        className={`rounded-xl border px-2 py-1.5 text-meta transition-colors ${
                           ambientSlug === t.slug
                             ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                             : 'border-border text-muted hover:bg-surface-elevated'
@@ -1939,7 +1939,7 @@ export function OnAirSession({
                             // preview is a nicety
                           }
                         }}
-                        className={`rounded-xl border px-2 py-1.5 text-xs transition-colors ${
+                        className={`rounded-xl border px-2 py-1.5 text-meta transition-colors ${
                           t.slug === bellToneSlug
                             ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                             : 'border-border text-muted hover:bg-surface-elevated'
@@ -1991,7 +1991,7 @@ export function OnAirSession({
                           key={iv.value}
                           type="button"
                           onClick={() => setBellEveryMin(iv.value)}
-                          className={`rounded-xl border px-2 py-1.5 text-xs tabular-nums transition-colors ${
+                          className={`rounded-xl border px-2 py-1.5 text-meta tabular-nums transition-colors ${
                             iv.value === bellEveryMin
                               ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                               : 'border-border text-muted hover:bg-surface-elevated'
@@ -2010,7 +2010,7 @@ export function OnAirSession({
                   aria-pressed={endBell}
                   onClick={() => setEndBell(!endBell)}
                   title="A double strike when the sit ends."
-                  className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-xs transition-colors ${
+                  className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-meta transition-colors ${
                     endBell
                       ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                       : 'border-border text-muted hover:bg-surface-elevated'
@@ -2048,7 +2048,7 @@ export function OnAirSession({
               </span>
             </p>
           )}
-          <p className="flex min-w-0 items-center gap-1.5 text-sm text-text">
+          <p className="flex min-w-0 items-center gap-1.5 text-body-sm text-text">
             <span className="shrink-0 text-subtle">Logs as</span>
             <span className="truncate font-semibold">{runPractice.title}</span>
             {runPractice.loggedToday && <Check className="h-3.5 w-3.5 shrink-0 text-success" />}
@@ -2088,7 +2088,7 @@ export function OnAirSession({
               type="button"
               onClick={() => beginResolved(false)}
               disabled={!runPracticeId}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               <OnAirIcon className="h-4 w-4" /> Continue
             </button>
@@ -2096,7 +2096,7 @@ export function OnAirSession({
               type="button"
               onClick={() => beginResolved(true)}
               disabled={!runPracticeId}
-              className="flex flex-1 items-center justify-center rounded-control border border-border bg-surface px-4 py-3.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+              className="flex flex-1 items-center justify-center rounded-control border border-border bg-surface px-4 py-3.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
             >
               New Practice
             </button>
@@ -2106,7 +2106,7 @@ export function OnAirSession({
             type="button"
             onClick={() => beginResolved(false)}
             disabled={!runPracticeId}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
           >
             <OnAirIcon className="h-4 w-4" /> {mode === 'log' ? 'Log it' : 'Start Practice'}
           </button>
@@ -2160,12 +2160,12 @@ function InstructionsPopup({
         >
           <X className="h-4 w-4" />
         </button>
-        <h2 className="pr-6 text-lg font-semibold text-text">{pattern.name}</h2>
-        <p className="mt-3 text-sm leading-relaxed text-muted">{pattern.instructions}</p>
+        <h2 className="pr-6 text-body-lg font-semibold text-text">{pattern.name}</h2>
+        <p className="mt-3 text-body-sm leading-relaxed text-muted">{pattern.instructions}</p>
         <button
           type="button"
           onClick={onClose}
-          className="mt-5 w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+          className="mt-5 w-full rounded-xl bg-primary px-4 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
         >
           Close
         </button>
@@ -2176,7 +2176,7 @@ function InstructionsPopup({
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-xs font-semibold uppercase tracking-wider text-subtle">{children}</p>
+    <p className="text-meta font-semibold uppercase tracking-wider text-subtle">{children}</p>
   )
 }
 
@@ -2202,7 +2202,7 @@ function ModeButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+      className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2 text-meta transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
         active
           ? 'border-primary bg-primary-bg/40 font-semibold text-text'
           : 'border-border text-muted hover:bg-surface-elevated disabled:hover:bg-transparent'
@@ -2233,7 +2233,7 @@ function ToggleChip({
       aria-pressed={active}
       onClick={onClick}
       title={title}
-      className={`flex items-center justify-center gap-2 rounded-xl border px-2 py-2 text-xs transition-colors ${
+      className={`flex items-center justify-center gap-2 rounded-xl border px-2 py-2 text-meta transition-colors ${
         active
           ? 'border-primary bg-primary-bg/40 font-semibold text-text'
           : 'border-border text-muted hover:bg-surface-elevated'
@@ -2258,7 +2258,7 @@ function PhaseSlider({
   onChange: (v: number) => void
 }) {
   return (
-    <label className="block text-xs text-muted">
+    <label className="block text-meta text-muted">
       <span className="mb-1 flex items-baseline justify-between">
         <span>{label}</span>
         <span className="font-semibold tabular-nums text-text">

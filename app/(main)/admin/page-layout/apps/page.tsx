@@ -73,7 +73,7 @@ export default async function AppOverridesAdminPage({
                 key={s.key}
                 href={`/admin/page-layout/apps?scope=${s.key}`}
                 aria-current={active ? 'true' : undefined}
-                className={`rounded-pill border px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`rounded-pill border px-3 py-1.5 text-body-sm font-medium transition-colors ${
                   active
                     ? 'border-primary-strong bg-primary-strong text-on-primary'
                     : 'border-border bg-surface text-muted hover:text-text'
@@ -94,7 +94,7 @@ export default async function AppOverridesAdminPage({
             : 'Every App follows the catalog default at this scope.'
         }
       >
-        <div className="mb-3 flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 text-sm text-muted">
+        <div className="mb-3 flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 text-body-sm text-muted">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
           <p>
             Changes take effect live: the rail merges each override on the next request. Order is a
@@ -103,7 +103,7 @@ export default async function AppOverridesAdminPage({
         </div>
 
         {apps.length === 0 ? (
-          <p className="rounded-2xl border border-border bg-surface p-4 text-sm text-muted">
+          <p className="rounded-2xl border border-border bg-surface p-4 text-body-sm text-muted">
             No Apps attach to this scope yet.
           </p>
         ) : (

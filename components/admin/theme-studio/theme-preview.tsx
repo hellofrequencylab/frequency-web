@@ -33,7 +33,7 @@ export function ThemePreview({ tokens }: { tokens: ThemeTokens }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted">Live preview</p>
+        <p className="text-meta font-semibold uppercase tracking-wide text-muted">Live preview</p>
         <div
           className="inline-flex rounded-lg border border-border bg-surface p-0.5"
           role="group"
@@ -43,7 +43,7 @@ export function ThemePreview({ tokens }: { tokens: ThemeTokens }) {
             type="button"
             aria-pressed={mode === 'light'}
             onClick={() => setMode('light')}
-            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
+            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-meta font-semibold transition-colors ${
               mode === 'light' ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
             }`}
           >
@@ -53,7 +53,7 @@ export function ThemePreview({ tokens }: { tokens: ThemeTokens }) {
             type="button"
             aria-pressed={mode === 'dark'}
             onClick={() => setMode('dark')}
-            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
+            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-meta font-semibold transition-colors ${
               mode === 'dark' ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
             }`}
           >
@@ -90,7 +90,7 @@ export function ThemePreview({ tokens }: { tokens: ThemeTokens }) {
             className="space-y-3 border p-4 lift-1"
           >
             <div className="flex items-center justify-between gap-2">
-              <h4 style={{ color: 'var(--color-text)' }} className="text-base font-bold">
+              <h4 style={{ color: 'var(--color-text)' }} className="text-body font-bold">
                 A representative card
               </h4>
               {/* A badge — primary tint */}
@@ -100,17 +100,17 @@ export function ThemePreview({ tokens }: { tokens: ThemeTokens }) {
                   color: 'var(--color-primary-strong)',
                   borderRadius: 'var(--radius-pill)',
                 }}
-                className="inline-flex items-center px-2 py-0.5 text-xs font-semibold"
+                className="inline-flex items-center px-2 py-0.5 text-meta font-semibold"
               >
                 Badge
               </span>
             </div>
             {/* Body + muted text */}
-            <p style={{ color: 'var(--color-text-muted)' }} className="text-sm leading-relaxed">
+            <p style={{ color: 'var(--color-text-muted)' }} className="text-body-sm leading-relaxed">
               Body copy in the muted text color. The quick brown fox jumps over the lazy dog to
               show how reading text sits on this surface.
             </p>
-            <p style={{ color: 'var(--color-text-subtle)' }} className="text-xs">
+            <p style={{ color: 'var(--color-text-subtle)' }} className="text-meta">
               A subtle caption line.
             </p>
             <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -123,7 +123,7 @@ export function ThemePreview({ tokens }: { tokens: ThemeTokens }) {
                   borderRadius: 'var(--radius-control)',
                   transitionDuration: 'var(--motion-fast)',
                 }}
-                className="px-3.5 py-2 text-sm font-semibold"
+                className="px-3.5 py-2 text-body-sm font-semibold"
               >
                 Primary action
               </button>
@@ -136,7 +136,7 @@ export function ThemePreview({ tokens }: { tokens: ThemeTokens }) {
                   color: 'var(--color-text)',
                   borderRadius: 'var(--radius-control)',
                 }}
-                className="border px-3.5 py-2 text-sm font-semibold"
+                className="border px-3.5 py-2 text-body-sm font-semibold"
               >
                 Secondary
               </button>
@@ -154,7 +154,7 @@ export function ThemePreview({ tokens }: { tokens: ThemeTokens }) {
               <span
                 key={label}
                 style={{ background: bg, color: fg, borderRadius: 'var(--radius-pill)' }}
-                className="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold"
+                className="inline-flex items-center px-2.5 py-0.5 text-meta font-semibold"
               >
                 {label}
               </span>
@@ -170,17 +170,17 @@ export function ThemePreview({ tokens }: { tokens: ThemeTokens }) {
             }}
             className="space-y-1 border p-4"
           >
-            <p style={{ color: 'var(--color-on-ink)' }} className="text-sm font-semibold">
+            <p style={{ color: 'var(--color-on-ink)' }} className="text-body-sm font-semibold">
               A dark band
             </p>
-            <p style={{ color: 'var(--color-on-ink-muted)' }} className="text-xs">
+            <p style={{ color: 'var(--color-on-ink-muted)' }} className="text-meta">
               Text on ink, in the muted tone.
             </p>
           </div>
         </div>
       </div>
 
-      <p className="text-xs text-subtle">
+      <p className="text-meta text-subtle">
         This previews the {mode} palette plus the shared feel. A token left blank inherits the
         base look, just like the live site.
       </p>

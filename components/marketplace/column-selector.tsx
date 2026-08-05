@@ -180,7 +180,7 @@ export function MarketplaceColumns({ className }: { className?: string }) {
   const { desktop, mobile } = usePrefs()
   return (
     <div className={`flex items-center gap-2 ${className ?? ''}`}>
-      <span className="text-sm font-medium text-muted">Columns</span>
+      <span className="text-body-sm font-medium text-muted">Columns</span>
       {/* Desktop: 2 / 3 / 4 */}
       <div className="hidden lg:block">
         <Segment

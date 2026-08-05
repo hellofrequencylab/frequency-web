@@ -94,10 +94,10 @@ export function RecapAlbum({
 
   return (
     <section>
-      <h2 className="text-sm font-bold text-text mb-3">
+      <h2 className="text-body-sm font-bold text-text mb-3">
         Recap album
         {photos.length > 0 && (
-          <span className="ml-2 text-xs font-normal text-subtle">{photos.length}</span>
+          <span className="ml-2 text-meta font-normal text-subtle">{photos.length}</span>
         )}
       </h2>
 
@@ -129,14 +129,14 @@ export function RecapAlbum({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={pending}
-              className="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-border px-4 py-6 text-sm font-medium text-muted transition-colors hover:border-primary-bg hover:text-primary-strong disabled:opacity-40"
+              className="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-border px-4 py-6 text-body-sm font-medium text-muted transition-colors hover:border-primary-bg hover:text-primary-strong disabled:opacity-40"
             >
               <ImagePlus className="h-4 w-4" />
               Add a photo
             </button>
           )}
 
-          {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
+          {error && <p className="mt-1.5 text-meta text-danger">{error}</p>}
 
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => void pickImage(e)} />
 
@@ -149,13 +149,13 @@ export function RecapAlbum({
                 placeholder="Add a caption (optional)"
                 maxLength={280}
                 disabled={pending}
-                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
+                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
               />
               <button
                 type="button"
                 onClick={submit}
                 disabled={pending}
-                className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+                className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {pending ? 'Adding…' : 'Add photo'}
               </button>
@@ -165,7 +165,7 @@ export function RecapAlbum({
       )}
 
       {photos.length === 0 ? (
-        <p className="text-sm text-subtle">No photos yet. Drop in the first one from the day.</p>
+        <p className="text-body-sm text-subtle">No photos yet. Drop in the first one from the day.</p>
       ) : (
         <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {photos.map((photo) => {

@@ -56,21 +56,21 @@ export function DangerModal({
             <AlertTriangle className="h-5 w-5" aria-hidden />
           </span>
           <div className="min-w-0">
-            <h2 id="danger-title" className="text-base font-bold text-text">{title}</h2>
-            <div className="mt-1 text-sm leading-relaxed text-muted">{body}</div>
+            <h2 id="danger-title" className="text-body font-bold text-text">{title}</h2>
+            <div className="mt-1 text-body-sm leading-relaxed text-muted">{body}</div>
           </div>
         </div>
 
         {requireTyping !== undefined && (
           <label className="mt-4 block">
-            <span className="text-xs font-medium text-muted">
+            <span className="text-meta font-medium text-muted">
               Type <span className="font-bold text-text">{requireTyping}</span> to confirm
             </span>
             <input
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
               autoComplete="off"
-              className="mt-1 w-full rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-text focus:border-danger focus:outline-none focus:ring-2 focus:ring-danger/30"
+              className="mt-1 w-full rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text focus:border-danger focus:outline-none focus:ring-2 focus:ring-danger/30"
             />
           </label>
         )}
@@ -80,7 +80,7 @@ export function DangerModal({
             ref={cancelRef}
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+            className="rounded-lg border border-border px-3 py-1.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
           >
             Cancel
           </button>
@@ -91,7 +91,7 @@ export function DangerModal({
               onConfirm()
               onClose()
             }}
-            className="rounded-lg bg-danger px-3 py-1.5 text-sm font-semibold text-on-danger transition-colors hover:bg-danger/90 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-lg bg-danger px-3 py-1.5 text-body-sm font-semibold text-on-danger transition-colors hover:bg-danger/90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {confirmLabel}
           </button>

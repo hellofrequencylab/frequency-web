@@ -63,8 +63,8 @@ export async function SequenceLaneView({ q = '', editId = '' }: { q?: string; ed
       <AdminSection>
         <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="flex items-baseline gap-2">
-            <h2 className="font-display text-lg uppercase text-text">Flows</h2>
-            <span className="text-sm text-subtle">
+            <h2 className="font-display text-body-lg uppercase text-text">Flows</h2>
+            <span className="text-body-sm text-subtle">
               {page.total} flow{page.total === 1 ? '' : 's'}
             </span>
           </div>
@@ -75,9 +75,9 @@ export async function SequenceLaneView({ q = '', editId = '' }: { q?: string; ed
               name="q"
               defaultValue={q}
               placeholder="Search flows…"
-              className="min-w-[180px] flex-1 rounded-2xl border border-border bg-surface px-3 py-2 text-sm sm:max-w-xs sm:flex-none"
+              className="min-w-[180px] flex-1 rounded-2xl border border-border bg-surface px-3 py-2 text-body-sm sm:max-w-xs sm:flex-none"
             />
-            <button type="submit" className="rounded-2xl border border-border-strong px-4 py-2 text-sm font-semibold text-text hover:bg-surface-elevated">
+            <button type="submit" className="rounded-2xl border border-border-strong px-4 py-2 text-body-sm font-semibold text-text hover:bg-surface-elevated">
               Apply
             </button>
           </form>
@@ -86,8 +86,8 @@ export async function SequenceLaneView({ q = '', editId = '' }: { q?: string; ed
         {page.items.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border-strong px-6 py-16 text-center">
             <Route className="mx-auto mb-3 h-8 w-8 text-subtle" aria-hidden />
-            <p className="text-base text-muted">{q ? 'No flows match.' : 'No managed onboarding flows yet.'}</p>
-            <p className="mt-1 text-sm text-subtle">
+            <p className="text-body text-muted">{q ? 'No flows match.' : 'No managed onboarding flows yet.'}</p>
+            <p className="mt-1 text-body-sm text-subtle">
               {q ? 'Try clearing the search.' : 'New members follow the code default until you publish a flow. Create one to override it.'}
             </p>
           </div>
@@ -106,16 +106,16 @@ export async function SequenceLaneView({ q = '', editId = '' }: { q?: string; ed
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="truncate text-sm font-semibold text-text">{item.title || 'Untitled flow'}</span>
+                        <span className="truncate text-body-sm font-semibold text-text">{item.title || 'Untitled flow'}</span>
                         <span
-                          className={`rounded-pill px-2 py-0.5 text-xs font-medium ${
+                          className={`rounded-pill px-2 py-0.5 text-meta font-medium ${
                             live ? 'bg-primary text-on-primary' : 'border border-border text-muted'
                           }`}
                         >
                           {item.status}
                         </span>
                       </div>
-                      <p className="mt-0.5 truncate text-xs text-subtle">
+                      <p className="mt-0.5 truncate text-meta text-subtle">
                         {steps} step{steps === 1 ? '' : 's'} · {summary}
                       </p>
                     </div>

@@ -90,11 +90,11 @@ function Category({
 }) {
   return (
     <section className="space-y-3">
-      <h2 className="flex items-center gap-2 border-b border-border pb-2 text-base font-bold text-text">
+      <h2 className="flex items-center gap-2 border-b border-border pb-2 text-body font-bold text-text">
         <Icon className="h-4 w-4 text-primary-strong" />
         {title}
         {typeof count === 'number' && (
-          <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">{count}</span>
+          <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-medium text-muted">{count}</span>
         )}
       </h2>
       {children}

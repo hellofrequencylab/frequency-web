@@ -92,14 +92,14 @@ export function EventPlacementField({ eventId, slug }: { eventId: string; slug: 
         <CurrentPlacement view={view} pending={pending} onClear={clear} />
       ) : (
         <>
-          <p className="text-xs text-subtle">
+          <p className="text-meta text-subtle">
             Search for a Space or Circle. The steward there approves before your event shows up under it.
           </p>
           <ScopeSearch pending={pending} onPick={pick} />
         </>
       )}
 
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
 
       {/* WHO HOSTS IT (ADR-819) — the hosting entity: you personally, or a Space you help run.
           Space-hosted = the space is the billed + displayed host ("Hosted by <space>"), and ticket
@@ -172,7 +172,7 @@ function HostEntityControl({ eventId, slug }: { eventId: string; slug: string })
 
   return (
     <div>
-      <p className="flex items-center gap-1.5 text-xs font-semibold text-text">
+      <p className="flex items-center gap-1.5 text-meta font-semibold text-text">
         <Building2 className="h-3.5 w-3.5 text-subtle" /> Hosted by
       </p>
       <p className="mt-0.5 text-2xs text-muted">
@@ -185,7 +185,7 @@ function HostEntityControl({ eventId, slug }: { eventId: string; slug: string })
           value={hostSpace?.id ?? 'personal'}
           onChange={(e) => choose(e.target.value)}
           disabled={pending}
-          className="mt-1.5 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text outline-none focus:border-border-strong disabled:opacity-60"
+          className="mt-1.5 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-border-strong disabled:opacity-60"
         >
           <option value="personal">You (personal event)</option>
           {options.map((s) => (
@@ -200,7 +200,7 @@ function HostEntityControl({ eventId, slug }: { eventId: string; slug: string })
       ) : hostSpace ? (
         <p className="mt-1 text-2xs text-muted">Only someone who helps run {hostSpace.name} can change this.</p>
       ) : null}
-      {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+      {error && <p className="mt-1 text-meta text-danger">{error}</p>}
     </div>
   )
 }
@@ -256,7 +256,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
+        className="inline-flex items-center gap-1.5 text-meta font-medium text-subtle transition-colors hover:text-text"
       >
         <Crown className="h-3.5 w-3.5" /> Transfer host role
       </button>
@@ -266,7 +266,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
   return (
     <div className="rounded-lg bg-surface p-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold text-text">Transfer host role</p>
+        <p className="text-meta font-semibold text-text">Transfer host role</p>
         <button
           type="button"
           onClick={() => {
@@ -283,7 +283,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
 
       {choice ? (
         <div className="mt-2">
-          <p className="text-xs text-muted">
+          <p className="text-meta text-muted">
             Make <span className="font-semibold text-text">@{choice.handle}</span> the host? You will
             stay on as a cohost.
           </p>
@@ -292,7 +292,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
               type="button"
               onClick={confirm}
               disabled={pending}
-              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+              className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               {pending ? 'Transferring…' : 'Confirm transfer'}
             </button>
@@ -300,7 +300,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
               type="button"
               onClick={() => setChoice(null)}
               disabled={pending}
-              className="rounded-lg px-2 py-1.5 text-xs font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
+              className="rounded-lg px-2 py-1.5 text-meta font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
             >
               Back
             </button>
@@ -317,7 +317,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
             }}
             placeholder="New host by name or @handle"
             disabled={pending}
-            className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
           />
           {hits.length > 0 && (
             <div className="mt-1 overflow-hidden rounded-card border border-border bg-surface py-1 lift-3">
@@ -336,7 +336,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-semibold text-text">{p.display_name}</p>
+                    <p className="truncate text-meta font-semibold text-text">{p.display_name}</p>
                     <p className="truncate text-2xs text-muted">@{p.handle}</p>
                   </div>
                 </button>
@@ -346,7 +346,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
         </div>
       )}
 
-      {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
+      {error && <p className="mt-1.5 text-meta text-danger">{error}</p>}
     </div>
   )
 }
@@ -367,8 +367,8 @@ function CurrentPlacement({
     <div className="flex items-center gap-2.5 rounded-lg bg-surface px-3 py-2">
       <TargetIcon className="h-4 w-4 shrink-0 text-subtle" />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-text">{target.name}</p>
-        <p className="flex items-center gap-1 text-xs text-subtle">
+        <p className="truncate text-body-sm font-medium text-text">{target.name}</p>
+        <p className="flex items-center gap-1 text-meta text-subtle">
           {live ? (
             <>
               <Check className="h-3 w-3 text-success" /> Lives here
@@ -388,7 +388,7 @@ function CurrentPlacement({
         onClick={onClear}
         disabled={pending}
         aria-label={live ? 'Remove from this Space or Circle' : 'Cancel request'}
-        className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-subtle transition-colors hover:text-danger disabled:opacity-40"
+        className="shrink-0 rounded-lg px-2 py-1 text-meta font-medium text-subtle transition-colors hover:text-danger disabled:opacity-40"
       >
         {live ? 'Remove' : 'Cancel'}
       </button>
@@ -443,7 +443,7 @@ function ScopeSearch({
           }}
           placeholder="Search Spaces and Circles by name"
           disabled={pending}
-          className="min-w-0 flex-1 bg-transparent text-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
+          className="min-w-0 flex-1 bg-transparent text-body-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
         />
       </div>
 
@@ -490,7 +490,7 @@ function ResultGroup({
               {getInitials(h.name)}
             </div>
           )}
-          <span className="min-w-0 flex-1 truncate text-xs font-semibold text-text">{h.name}</span>
+          <span className="min-w-0 flex-1 truncate text-meta font-semibold text-text">{h.name}</span>
         </button>
       ))}
     </div>

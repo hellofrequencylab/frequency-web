@@ -213,7 +213,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
                 caps={Array.from(journeyCaps)}
                 label="Manage"
                 icon={<SlidersHorizontal className="h-4 w-4" />}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
               />
             )}
             {isAuthor && (
@@ -228,7 +228,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
       {kickoff && (
         <Link
           href={`/events/${kickoff.slug}`}
-          className="mb-4 flex items-center gap-2 rounded-control border border-border bg-surface px-3 py-2.5 text-sm transition-colors hover:border-primary"
+          className="mb-4 flex items-center gap-2 rounded-control border border-border bg-surface px-3 py-2.5 text-body-sm transition-colors hover:border-primary"
         >
           <CalendarClock className="h-4 w-4 shrink-0 text-primary-strong" />
           <span className="font-medium text-text">Kickoff meetup</span>
@@ -241,7 +241,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
         <div className="mb-4 space-y-2">
           <CohortMeter progress={cohort} />
           {anchorStart && (
-            <p className="flex items-center gap-2 text-xs text-muted">
+            <p className="flex items-center gap-2 text-meta text-muted">
               <CalendarClock className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
               Your Run runs{' '}
               {new Date(anchorStart).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} through{' '}

@@ -115,7 +115,7 @@ export function DetailTemplate({
         {back && (
           <Link
             href={back.href}
-            className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text"
+            className="mb-2 inline-flex items-center gap-1 text-body-sm font-medium text-muted transition-colors hover:text-text"
           >
             <ChevronLeft className="h-4 w-4" />
             {back.label}
@@ -129,7 +129,7 @@ export function DetailTemplate({
               <div className="flex items-center gap-2 flex-wrap">
                 <h1
                   className={`${
-                    titleScale === 'display' ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-xl sm:text-2xl'
+                    titleScale === 'display' ? 'text-page-title sm:text-3xl lg:text-4xl' : 'text-lead sm:text-page-title'
                   } font-bold text-text break-words`}
                 >
                   {title}
@@ -137,7 +137,7 @@ export function DetailTemplate({
                 {badges}
               </div>
               {subtitle && (
-                <div className="mt-1 text-sm text-muted">{subtitle}</div>
+                <div className="mt-1 text-body-sm text-muted">{subtitle}</div>
               )}
             </div>
             {actions && <div className="flex items-center gap-2 flex-wrap sm:shrink-0">{actions}</div>}
@@ -151,7 +151,7 @@ export function DetailTemplate({
               <Link
                 key={tab.href}
                 href={tab.href}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                className={`px-3 py-1.5 rounded-lg text-body-sm font-medium whitespace-nowrap transition-colors ${
                   tab.active
                     ? 'bg-primary-bg text-primary-strong'
                     : 'text-muted hover:bg-surface-elevated hover:text-text'

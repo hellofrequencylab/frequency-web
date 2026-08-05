@@ -22,9 +22,9 @@ export function SectionHeader({
   href?: string
 }) {
   const heading = (
-    <h2 className="flex items-baseline gap-2 text-sm font-bold tracking-tight text-text transition-colors group-hover:text-primary-strong">
+    <h2 className="flex items-baseline gap-2 text-body-sm font-bold tracking-tight text-text transition-colors group-hover:text-primary-strong">
       {title}
-      {count != null && <span className="text-xs font-medium tabular-nums text-subtle">{count}</span>}
+      {count != null && <span className="text-meta font-medium tabular-nums text-subtle">{count}</span>}
       {href && (
         <ArrowUpRight className="h-3.5 w-3.5 shrink-0 self-center text-subtle transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary-strong" />
       )}

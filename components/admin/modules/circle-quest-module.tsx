@@ -47,7 +47,7 @@ export function CircleQuestModule() {
   // No card chrome — sits flush on the panel's white surface. The rail supplies the title ("Circle Quest").
   return (
     <section className="space-y-5">
-      <p className="text-sm text-muted">The journeys and practices your group has taken on.</p>
+      <p className="text-body-sm text-muted">The journeys and practices your group has taken on.</p>
 
       <QuestList label="Journeys" items={data.adoptedJourneys} empty="No journeys adopted yet" />
       <QuestList label="Practices" items={data.adoptedPractices} empty="No practices adopted yet" />
@@ -64,14 +64,14 @@ function QuestList({ label, items, empty }: { label: string; items: CircleQuestI
     <div className="space-y-2">
       <SectionLabel>{label}</SectionLabel>
       {items.length === 0 ? (
-        <p className="text-sm text-subtle">{empty}</p>
+        <p className="text-body-sm text-subtle">{empty}</p>
       ) : (
         <ul className="space-y-1">
           {items.map((item) => (
             <li key={item.id}>
               <Link
                 href={item.href}
-                className="block truncate rounded-md px-2 py-1 text-sm text-text hover:bg-surface-elevated hover:text-primary-strong transition-colors"
+                className="block truncate rounded-md px-2 py-1 text-body-sm text-text hover:bg-surface-elevated hover:text-primary-strong transition-colors"
               >
                 {item.title}
               </Link>

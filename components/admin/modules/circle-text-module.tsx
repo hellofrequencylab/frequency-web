@@ -64,7 +64,7 @@ export function CircleTextModule() {
           className={`${fieldClasses} resize-y`}
         />
       </label>
-      <p className="text-xs text-muted">
+      <p className="text-meta text-muted">
         Formatting: <code>**bold**</code>, <code>*italic*</code>, <code>[label](/path)</code>. Place it anywhere from
         Layout below.
       </p>

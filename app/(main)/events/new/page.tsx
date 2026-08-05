@@ -330,19 +330,19 @@ export default async function NewEventPage({
   return (
     <EventEditorWindow backHref="/events">
       {droppedSpaceLink && (
-        <p className="mb-4 rounded-xl border border-warning/40 bg-warning-bg/30 px-4 py-3 text-sm leading-relaxed text-text">
+        <p className="mb-4 rounded-xl border border-warning/40 bg-warning-bg/30 px-4 py-3 text-body-sm leading-relaxed text-text">
           You opened this from a space you do not help run, so the event below will be a personal
           event. To create it for the space, ask its owner to make you an editor first.
         </p>
       )}
       {droppedCircleLink && (
-        <p className="mb-4 rounded-xl border border-warning/40 bg-warning-bg/30 px-4 py-3 text-sm leading-relaxed text-text">
+        <p className="mb-4 rounded-xl border border-warning/40 bg-warning-bg/30 px-4 py-3 text-body-sm leading-relaxed text-text">
           You opened this from a Circle you do not run, so the event below will be a personal
           event. To create it for the Circle, ask its host to add it for you.
         </p>
       )}
       {droppedJourneyLink && (
-        <p className="mb-4 rounded-xl border border-warning/40 bg-warning-bg/30 px-4 py-3 text-sm leading-relaxed text-text">
+        <p className="mb-4 rounded-xl border border-warning/40 bg-warning-bg/30 px-4 py-3 text-body-sm leading-relaxed text-text">
           You opened this from a Journey you do not run, so the event below will not be part of it.
           To add it to the Journey, ask whoever runs the Journey to link it.
         </p>

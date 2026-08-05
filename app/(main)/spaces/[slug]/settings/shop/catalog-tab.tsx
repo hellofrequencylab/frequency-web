@@ -79,13 +79,13 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
     <div className="mt-4 space-y-6">
       {!readOnly && (
         <details className="rounded-2xl border border-border bg-surface p-4">
-          <summary className="cursor-pointer text-sm font-semibold text-text">+ New item</summary>
+          <summary className="cursor-pointer text-body-sm font-semibold text-text">+ New item</summary>
           <ItemForm slug={slug} mode="create" />
         </details>
       )}
 
       {items.length > 0 && !readOnly && (
-        <p className="text-xs text-muted">
+        <p className="text-meta text-muted">
           Publish shows an item on your Shop tab. Add to Market also lists it in the community Market,
           where anyone can find it.
         </p>
@@ -129,10 +129,10 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
                     <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
                       {GROUP_LABEL[group]}
                     </span>
-                    <span className="text-sm font-bold text-text">{priceLabel(p)}</span>
+                    <span className="text-body-sm font-bold text-text">{priceLabel(p)}</span>
                   </div>
                   <p className="mt-1.5 line-clamp-2 font-semibold text-text">{p.title}</p>
-                  {policy && <p className="mt-0.5 line-clamp-1 text-xs text-muted">{policy}</p>}
+                  {policy && <p className="mt-0.5 line-clamp-1 text-meta text-muted">{policy}</p>}
 
                   {!readOnly && (
                     <div className="mt-auto pt-3">
@@ -174,7 +174,7 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
                       </div>
 
                       <details className="mt-3 border-t border-border/60 pt-2">
-                        <summary className="cursor-pointer text-sm font-medium text-text">Edit</summary>
+                        <summary className="cursor-pointer text-body-sm font-medium text-text">Edit</summary>
                         <ItemForm
                           slug={slug}
                           mode="edit"

@@ -43,7 +43,7 @@ export function UnlogPracticeButton({
           if (!isError(res) && res.data.unlogged) onUnlogged?.()
         })
       }
-      className="inline-flex items-center gap-1 text-xs font-medium text-subtle underline-offset-2 transition-colors hover:text-text hover:underline disabled:opacity-60 motion-reduce:transition-none"
+      className="inline-flex items-center gap-1 text-meta font-medium text-subtle underline-offset-2 transition-colors hover:text-text hover:underline disabled:opacity-60 motion-reduce:transition-none"
     >
       <Undo2 className="h-3 w-3" aria-hidden />
       {pending ? 'Undoing…' : 'Undo'}

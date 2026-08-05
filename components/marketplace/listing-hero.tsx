@@ -43,7 +43,7 @@ export function ListingHero({
       {/* TOP-LEFT: the short price badge (the hero-ad price tag). */}
       {priceShort && (
         <span
-          className={`absolute left-4 top-4 inline-flex items-center rounded-card px-3 py-1.5 text-lg font-bold lift-1 sm:text-xl ${
+          className={`absolute left-4 top-4 inline-flex items-center rounded-card px-3 py-1.5 text-body-lg font-bold lift-1 sm:text-lead ${
             image ? 'bg-white text-black' : 'bg-primary text-on-primary'
           }`}
         >
@@ -64,7 +64,7 @@ export function ListingHero({
 
       {/* BOTTOM: the title (h1) + the primary action, anchored to the base of the scrim. */}
       <div className={`absolute inset-x-0 bottom-0 flex flex-col gap-3 p-4 sm:flex-row sm:items-end sm:justify-between sm:gap-4 sm:p-6 ${image ? 'text-white' : 'text-text'}`}>
-        <h1 className="min-w-0 text-2xl font-bold leading-tight break-words sm:text-3xl">{title}</h1>
+        <h1 className="min-w-0 text-page-title font-bold leading-tight break-words sm:text-3xl">{title}</h1>
         {actionSlot && <div className="shrink-0">{actionSlot}</div>}
       </div>
     </div>

@@ -23,7 +23,7 @@ export async function ImpersonationBanner() {
   }
 
   return (
-    <div className="sticky top-0 z-[200] flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-danger px-4 py-2 text-center text-sm font-semibold text-on-danger shadow">
+    <div className="sticky top-0 z-[200] flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-danger px-4 py-2 text-center text-body-sm font-semibold text-on-danger shadow">
       <span className="inline-flex items-center gap-1.5">
         <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
         Acting as @{targetHandle}
@@ -32,7 +32,7 @@ export async function ImpersonationBanner() {
       <form action={stopActingAsMember}>
         <button
           type="submit"
-          className="rounded-md bg-on-primary/20 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-on-primary transition-colors hover:bg-on-primary/30"
+          className="rounded-md bg-on-primary/20 px-2.5 py-0.5 text-meta font-bold uppercase tracking-wide text-on-primary transition-colors hover:bg-on-primary/30"
         >
           Exit
         </button>

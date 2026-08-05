@@ -158,7 +158,7 @@ export function BookingScheduleForm({
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-muted">Buffer before</span>
+          <span className="text-meta font-medium text-muted">Buffer before</span>
           <select
             value={bufferBefore}
             onChange={(e) => {
@@ -175,7 +175,7 @@ export function BookingScheduleForm({
           </select>
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-muted">Buffer after</span>
+          <span className="text-meta font-medium text-muted">Buffer after</span>
           <select
             value={bufferAfter}
             onChange={(e) => {
@@ -192,7 +192,7 @@ export function BookingScheduleForm({
           </select>
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-muted">Minimum notice</span>
+          <span className="text-meta font-medium text-muted">Minimum notice</span>
           <select
             value={minNotice}
             onChange={(e) => {
@@ -209,7 +209,7 @@ export function BookingScheduleForm({
           </select>
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-muted">Booking window</span>
+          <span className="text-meta font-medium text-muted">Booking window</span>
           <select
             value={windowDays}
             onChange={(e) => {
@@ -229,11 +229,11 @@ export function BookingScheduleForm({
 
       <div className="space-y-3">
         <Label className="font-semibold">Date overrides</Label>
-        <p className="-mt-1 text-xs text-subtle">
+        <p className="-mt-1 text-meta text-subtle">
           Take a day off, or set one-off hours for a specific date. These win over your weekly times.
         </p>
         {overrides.length === 0 && (
-          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-sm text-muted">
+          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
             No overrides. Your weekly times apply every week.
           </p>
         )}
@@ -243,7 +243,7 @@ export function BookingScheduleForm({
             className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface-elevated/40 p-3"
           >
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-muted">Date</span>
+              <span className="text-meta font-medium text-muted">Date</span>
               <Input
                 type="date"
                 value={o.date}
@@ -252,7 +252,7 @@ export function BookingScheduleForm({
               />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-muted">Type</span>
+              <span className="text-meta font-medium text-muted">Type</span>
               <select
                 value={o.isBlackout ? 'off' : 'hours'}
                 onChange={(e) => updateOverride(i, { isBlackout: e.target.value === 'off' })}
@@ -265,7 +265,7 @@ export function BookingScheduleForm({
             {!o.isBlackout && (
               <>
                 <label className="flex flex-col gap-1">
-                  <span className="text-xs font-medium text-muted">Start</span>
+                  <span className="text-meta font-medium text-muted">Start</span>
                   <input
                     type="time"
                     value={o.start}
@@ -274,7 +274,7 @@ export function BookingScheduleForm({
                   />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-xs font-medium text-muted">End</span>
+                  <span className="text-meta font-medium text-muted">End</span>
                   <input
                     type="time"
                     value={o.end}
@@ -297,14 +297,14 @@ export function BookingScheduleForm({
         <button
           type="button"
           onClick={addOverride}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong transition-colors hover:text-primary"
+          className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong transition-colors hover:text-primary"
         >
           <Plus className="h-4 w-4" aria-hidden /> Add an override
         </button>
       </div>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
+        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
@@ -322,7 +322,7 @@ export function BookingScheduleForm({
           )}
         </Button>
         {saved && !pending && (
-          <span className="inline-flex items-center gap-1 text-sm font-medium text-success" role="status">
+          <span className="inline-flex items-center gap-1 text-body-sm font-medium text-success" role="status">
             <Check className="h-4 w-4" aria-hidden /> Saved
           </span>
         )}

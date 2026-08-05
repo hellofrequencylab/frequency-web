@@ -220,7 +220,7 @@ export function SpaceTasksPanel({
       )}
 
       {error && (
-        <p className="mb-3 rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
+        <p className="mb-3 rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
@@ -283,14 +283,14 @@ export function SpaceTasksPanel({
                       type="button"
                       onClick={() => !readOnly && beginEdit(task)}
                       disabled={readOnly}
-                      className="block w-full text-left text-sm font-medium text-text disabled:cursor-default"
+                      className="block w-full text-left text-body-sm font-medium text-text disabled:cursor-default"
                     >
                       {task.title}
                     </button>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
                       <DueChip dueAt={task.due_at} />
                       {task.linkLabel && (
-                        <span className="truncate text-xs text-subtle">{task.linkLabel}</span>
+                        <span className="truncate text-meta text-subtle">{task.linkLabel}</span>
                       )}
                     </div>
                   </div>
@@ -317,7 +317,7 @@ export function SpaceTasksPanel({
           <button
             type="button"
             onClick={() => setShowDone((v) => !v)}
-            className="text-xs font-medium text-muted transition-colors hover:text-text"
+            className="text-meta font-medium text-muted transition-colors hover:text-text"
             aria-expanded={showDone}
           >
             {showDone ? 'Hide' : 'Show'} completed ({done.length})
@@ -336,8 +336,8 @@ export function SpaceTasksPanel({
                     <Check className="h-3.5 w-3.5" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-muted line-through">{task.title}</p>
-                    {task.linkLabel && <p className="mt-0.5 truncate text-xs text-subtle">{task.linkLabel}</p>}
+                    <p className="text-body-sm text-muted line-through">{task.title}</p>
+                    {task.linkLabel && <p className="mt-0.5 truncate text-meta text-subtle">{task.linkLabel}</p>}
                   </div>
                   {!readOnly && (
                     <button
@@ -362,7 +362,7 @@ export function SpaceTasksPanel({
 
 function DueChip({ dueAt }: { dueAt: string | null }) {
   const tone = dueTone(dueAt)
-  if (!dueAt || !tone) return <span className="text-xs text-subtle">No due date</span>
+  if (!dueAt || !tone) return <span className="text-meta text-subtle">No due date</span>
   const label = dueFmt.format(new Date(dueAt))
   const cls =
     tone === 'overdue'
@@ -372,7 +372,7 @@ function DueChip({ dueAt }: { dueAt: string | null }) {
         : 'bg-surface-elevated text-muted'
   const prefix = tone === 'overdue' ? 'Overdue ' : 'Due '
   return (
-    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${cls}`}>
+    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-meta font-medium ${cls}`}>
       {prefix}
       {label}
     </span>

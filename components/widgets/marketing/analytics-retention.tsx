@@ -24,10 +24,10 @@ export async function MarketingAnalyticsRetention() {
         />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-border bg-surface lift-1">
-          <table className="w-full text-sm">
+          <table className="w-full text-body-sm">
             <caption className="sr-only">Weekly practice-retention cohorts</caption>
             <thead>
-              <tr className="border-b border-border bg-surface-elevated/50 text-xs uppercase tracking-wide text-muted">
+              <tr className="border-b border-border bg-surface-elevated/50 text-meta uppercase tracking-wide text-muted">
                 <th scope="col" className="px-3 py-2.5 text-left font-semibold">Cohort (week of)</th>
                 <th scope="col" className="px-3 py-2.5 text-right font-semibold">Members</th>
                 {Array.from({ length: maxWeeks }).map((_, i) => (

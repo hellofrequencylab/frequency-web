@@ -126,7 +126,7 @@ export function SpaceLoomStudio({
         onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => { e.preventDefault(); setDragging(false); void doUpload(Array.from(e.dataTransfer.files)) }}
-        className={`flex items-center justify-center gap-2 rounded-2xl border border-dashed px-4 py-6 text-sm transition-colors ${dragging ? 'border-primary bg-primary-bg/40 text-primary-strong' : 'border-border text-muted'}`}
+        className={`flex items-center justify-center gap-2 rounded-2xl border border-dashed px-4 py-6 text-body-sm transition-colors ${dragging ? 'border-primary bg-primary-bg/40 text-primary-strong' : 'border-border text-muted'}`}
       >
         {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
         <span>
@@ -155,11 +155,11 @@ export function SpaceLoomStudio({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search this library"
-            className="min-w-0 flex-1 bg-transparent text-sm text-text outline-none placeholder:text-subtle"
+            className="min-w-0 flex-1 bg-transparent text-body-sm text-text outline-none placeholder:text-subtle"
           />
         </div>
         {tag && (
-          <button type="button" onClick={() => setTag(null)} className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2.5 py-1 text-xs font-medium text-primary-strong">
+          <button type="button" onClick={() => setTag(null)} className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2.5 py-1 text-meta font-medium text-primary-strong">
             {tag} <X className="h-3 w-3" />
           </button>
         )}
@@ -171,7 +171,7 @@ export function SpaceLoomStudio({
               key={t}
               type="button"
               onClick={() => setTag(t)}
-              className="rounded-pill border border-border bg-surface px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-primary/50 hover:text-text"
+              className="rounded-pill border border-border bg-surface px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:border-primary/50 hover:text-text"
             >
               {t}
             </button>
@@ -183,11 +183,11 @@ export function SpaceLoomStudio({
 
       {/* Grid */}
       {loading ? (
-        <p className="flex items-center justify-center gap-2 py-16 text-sm text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading</p>
+        <p className="flex items-center justify-center gap-2 py-16 text-body-sm text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading</p>
       ) : assets.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-16 text-center">
           <ImageIcon className="h-8 w-8 text-subtle" />
-          <p className="text-sm text-subtle">{query || tag ? 'No images match.' : 'No images yet. Upload one to get started.'}</p>
+          <p className="text-body-sm text-subtle">{query || tag ? 'No images match.' : 'No images yet. Upload one to get started.'}</p>
         </div>
       ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">

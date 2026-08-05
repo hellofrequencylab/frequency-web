@@ -44,7 +44,7 @@ export async function MarketingDeliverabilityDeadLetters() {
   }))
 
   const columns: ColumnDef<DeadRow>[] = [
-    { key: 'kind', header: 'Kind', render: (r) => <code className="rounded bg-surface-elevated px-1 py-0.5 text-xs text-text">{r.kind}</code> },
+    { key: 'kind', header: 'Kind', render: (r) => <code className="rounded bg-surface-elevated px-1 py-0.5 text-meta text-text">{r.kind}</code> },
     { key: 'attempts', header: 'Attempts', align: 'right', render: (r) => <span className="tabular-nums text-muted">{r.attempts}</span> },
     {
       key: 'lastError',
@@ -65,7 +65,7 @@ export async function MarketingDeliverabilityDeadLetters() {
           <DiscardButton label="Discard all" />
           {summary.map((s) => (
             <span key={s.kind} className="inline-flex items-center gap-2">
-              <span className="text-xs text-muted">
+              <span className="text-meta text-muted">
                 <code className="rounded bg-surface-elevated px-1 py-0.5 text-text">{s.kind}</code>: {s.count}
               </span>
               <RequeueButton kind={s.kind} label={`Requeue ${s.kind}`} />

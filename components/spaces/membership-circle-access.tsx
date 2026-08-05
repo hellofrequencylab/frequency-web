@@ -33,7 +33,7 @@ export function MembershipCircleAccess({
 
   if (tiers.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-sm text-muted">
+      <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
         No membership tiers yet. Create a tier above, then pick the circle it includes.
       </p>
     )
@@ -43,7 +43,7 @@ export function MembershipCircleAccess({
     <div className="space-y-2">
       {tiers.map((t) => (
         <div key={t.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2">
-          <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">{t.name}</span>
+          <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-text">{t.name}</span>
           {savingId === t.id && isPending && <Loader2 className="h-4 w-4 animate-spin text-subtle" />}
           <select
             aria-label={`Circle included with ${t.name}`}
@@ -84,8 +84,8 @@ export function MembershipCircleAccess({
           </select>
         </div>
       ))}
-      {error && <p className="text-xs text-danger">{error}</p>}
-      {note && <p className="text-xs text-muted">{note}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
+      {note && <p className="text-meta text-muted">{note}</p>}
     </div>
   )
 }

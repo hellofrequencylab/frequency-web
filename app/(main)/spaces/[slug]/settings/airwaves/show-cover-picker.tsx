@@ -63,7 +63,7 @@ export function ShowCoverPicker({
             type="button"
             onClick={() => setOpen(true)}
             disabled={disabled}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-50"
           >
             <ImageIcon className="h-3.5 w-3.5" aria-hidden /> {value ? 'Change cover' : 'Choose cover art'}
           </button>
@@ -72,7 +72,7 @@ export function ShowCoverPicker({
               type="button"
               onClick={() => onChange(null)}
               disabled={disabled}
-              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-meta font-medium text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
             >
               <Trash2 className="h-3.5 w-3.5" aria-hidden /> Remove
             </button>
@@ -86,7 +86,7 @@ export function ShowCoverPicker({
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="Choose cover art from the Loom" className="max-w-lg">
         <div className="rounded-2xl border border-border bg-canvas p-4 lift-3">
           <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-text">Your Loom</h2>
+            <h2 className="text-body-sm font-semibold text-text">Your Loom</h2>
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -104,14 +104,14 @@ export function ShowCoverPicker({
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search the Loom"
-              className="w-full bg-transparent py-2 text-sm outline-none"
+              className="w-full bg-transparent py-2 text-body-sm outline-none"
             />
           </div>
 
           {loading ? (
-            <p className="px-1 py-8 text-center text-xs text-subtle">Loading</p>
+            <p className="px-1 py-8 text-center text-meta text-subtle">Loading</p>
           ) : items.length === 0 ? (
-            <p className="px-1 py-8 text-center text-xs text-subtle">
+            <p className="px-1 py-8 text-center text-meta text-subtle">
               No images in your Loom yet. Add photos through the space, then pick one here.
             </p>
           ) : (

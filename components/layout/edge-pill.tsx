@@ -104,7 +104,7 @@ export function EdgePill({
       onClick={handleClick}
       aria-label={ariaLabel}
       aria-haspopup="dialog"
-      className={`fixed top-1/2 -translate-y-1/2 z-40 flex h-11 items-center justify-center text-sm font-semibold lift-1 transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${
+      className={`fixed top-1/2 -translate-y-1/2 z-40 flex h-11 items-center justify-center text-body-sm font-semibold lift-1 transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${
         expanded
           ? `gap-1.5 px-4 ${onLeft ? 'flex-row-reverse pl-3' : 'pr-3'}`
           : 'w-7 md:w-11'

@@ -88,7 +88,7 @@ export default async function DiscoverTopicsPage() {
               title={<>One name that finds your <span className="text-primary">people</span></>}
               kicker="Say what you practice and you skip the small talk."
             />
-            <p className="mt-5 text-lg text-muted leading-relaxed">
+            <p className="mt-5 text-body-lg text-muted leading-relaxed">
               Frequency sorts into four Pillars, and the seven Channels live under them.
               A Channel is the thing you already do: breathwork, surfing, sound, a supper
               table. Name it, and you land in a room of people who care about the same
@@ -102,11 +102,11 @@ export default async function DiscoverTopicsPage() {
               {sections.map((channel) => (
                 <div key={channel.id}>
                   <div className="mb-6">
-                    <h3 className="font-display uppercase text-text text-2xl sm:text-3xl">
+                    <h3 className="font-display uppercase text-text text-page-title sm:text-3xl">
                       {channel.name}
                     </h3>
                     {channel.description && (
-                      <p className="mt-2 text-base text-muted leading-relaxed max-w-2xl">
+                      <p className="mt-2 text-body text-muted leading-relaxed max-w-2xl">
                         {channel.description}
                       </p>
                     )}

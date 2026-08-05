@@ -35,7 +35,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">1. Acceptance of terms</h2>
+            <h2 className="text-body-lg font-semibold text-text">1. Acceptance of terms</h2>
             <p className="text-muted leading-relaxed">
               Frequency is operated by Frequency Labs Holdings (&quot;Frequency,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;).
               These terms cover your use of our platform at frequencylocal.com and related services.
@@ -45,7 +45,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">2. Who can use Frequency</h2>
+            <h2 className="text-body-lg font-semibold text-text">2. Who can use Frequency</h2>
             <p className="text-muted leading-relaxed">
               You need to be at least 18 years old to use Frequency. By using it, you confirm that
               you are 18 or older and that you can agree to these terms. If you are using Frequency
@@ -54,7 +54,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">3. Your account</h2>
+            <h2 className="text-body-lg font-semibold text-text">3. Your account</h2>
             <p className="text-muted leading-relaxed">
               You are responsible for your account and for keeping your login secure. Use accurate
               information when you sign up, and keep it up to date. Tell us right away if you think
@@ -64,7 +64,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">4. Acceptable use</h2>
+            <h2 className="text-body-lg font-semibold text-text">4. Acceptable use</h2>
             <p className="text-muted leading-relaxed">
               Frequency is about real connection. Treat other members the way you would in a room
               together. Do not:
@@ -82,7 +82,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">5. Member content and our content</h2>
+            <h2 className="text-body-lg font-semibold text-text">5. Member content and our content</h2>
             <p className="text-muted leading-relaxed">
               <strong className="text-text">Your content:</strong> You keep ownership of the posts,
               comments, photos, and other content you create. By posting on Frequency, you give us
@@ -98,7 +98,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">6. Paid memberships and billing</h2>
+            <h2 className="text-body-lg font-semibold text-text">6. Paid memberships and billing</h2>
             <p className="text-muted leading-relaxed">
               Some parts of Frequency are part of a paid membership. If you sign up for a paid tier,
               you agree to pay the listed price and any taxes. Payments are handled by our payment
@@ -109,7 +109,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">7. SMS and messaging consent</h2>
+            <h2 className="text-body-lg font-semibold text-text">7. SMS and messaging consent</h2>
             <p className="text-muted leading-relaxed">
               Frequency can send you text messages, such as event reminders and group messages. We
               only send these if you opt in. Message and data rates may apply, and message frequency
@@ -121,7 +121,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">8. Disclaimers</h2>
+            <h2 className="text-body-lg font-semibold text-text">8. Disclaimers</h2>
             <p className="text-muted leading-relaxed">
               Frequency is provided as is. We work hard to keep it running and useful, but we do not
               promise it will always be available or error free. Frequency supports connection and
@@ -131,7 +131,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">9. Limitation of liability</h2>
+            <h2 className="text-body-lg font-semibold text-text">9. Limitation of liability</h2>
             <p className="text-muted leading-relaxed">
               To the extent the law allows, Frequency is not liable for indirect, incidental, or
               consequential damages that come from using or not being able to use the platform. This
@@ -140,7 +140,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">10. Changes to these terms</h2>
+            <h2 className="text-body-lg font-semibold text-text">10. Changes to these terms</h2>
             <p className="text-muted leading-relaxed">
               We may update these terms from time to time. We will notify members of material changes
               by email or an in-app announcement. If you keep using Frequency after a change takes
@@ -149,7 +149,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">11. Governing law</h2>
+            <h2 className="text-body-lg font-semibold text-text">11. Governing law</h2>
             <p className="text-muted leading-relaxed">
               These terms are governed by the laws of the State of California, without regard to its
               conflict of laws rules. This section is part of the draft pending legal review.
@@ -157,7 +157,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">12. How to contact us</h2>
+            <h2 className="text-body-lg font-semibold text-text">12. How to contact us</h2>
             <p className="text-muted leading-relaxed">
               Questions about these terms? Email us at{' '}
               <a href="mailto:hello@frequencylocal.com" className="text-primary-strong hover:underline">

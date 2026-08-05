@@ -72,7 +72,7 @@ export default async function VaultLedgerPage() {
             value={
               rank && rank !== 'ghost' ? (
                 <span className="flex items-center gap-1.5">
-                  <span className="rank-badge text-sm leading-tight" style={seasonRankStyle(rank)}>
+                  <span className="rank-badge text-body-sm leading-tight" style={seasonRankStyle(rank)}>
                     {RANK_LABELS[rank] ?? rank}
                   </span>
                   <span>{formatAmplitude(totals.amplitude)}</span>
@@ -98,14 +98,14 @@ export default async function VaultLedgerPage() {
             return (
               <div key={type} className="rounded-2xl bg-surface-elevated/60 p-4">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-medium text-subtle">{label}</p>
+                  <p className="text-meta font-medium text-subtle">{label}</p>
                   <Icon className="h-4 w-4 shrink-0 text-subtle" />
                 </div>
-                <p className="mt-1 flex items-baseline gap-1 text-2xl font-bold tabular-nums leading-none text-text">
+                <p className="mt-1 flex items-baseline gap-1 text-page-title font-bold tabular-nums leading-none text-text">
                   {current}
-                  <span className="text-xs font-medium text-subtle">wk</span>
+                  <span className="text-meta font-medium text-subtle">wk</span>
                 </p>
-                <p className="mt-2 text-xs text-subtle">Best {longest}w</p>
+                <p className="mt-2 text-meta text-subtle">Best {longest}w</p>
               </div>
             )
           })}
@@ -143,11 +143,11 @@ export default async function VaultLedgerPage() {
                           <Icon className="h-4 w-4" strokeWidth={2.5} />
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-text">{ledgerLabel(e.actionType)}</p>
-                          <p className="text-xs text-subtle">{clockLabel(e.createdAt)}</p>
+                          <p className="truncate text-body-sm font-medium text-text">{ledgerLabel(e.actionType)}</p>
+                          <p className="text-meta text-subtle">{clockLabel(e.createdAt)}</p>
                         </div>
                         <span
-                          className={`shrink-0 text-sm font-bold tabular-nums ${
+                          className={`shrink-0 text-body-sm font-bold tabular-nums ${
                             isZap ? 'text-primary' : 'text-signal-strong'
                           }`}
                         >

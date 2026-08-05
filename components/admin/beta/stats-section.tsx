@@ -113,7 +113,7 @@ async function FunnelBlock({ windowDays }: { windowDays: number }) {
           </Tile>
           <Tile label="Induction → verified" caption="End-to-end activation conversion.">
             {activationConversion == null || (activationTop?.actors ?? 0) === 0 ? (
-              <p className="text-sm text-subtle">Not enough activity in the window yet.</p>
+              <p className="text-body-sm text-subtle">Not enough activity in the window yet.</p>
             ) : (
               <RingGauge
                 pct={activationConversion}
@@ -189,7 +189,7 @@ async function EmailBlock({ windowDays }: { windowDays: number }) {
           </Tile>
         </div>
       )}
-      <div className="mt-3 flex flex-wrap gap-4 text-xs text-subtle">
+      <div className="mt-3 flex flex-wrap gap-4 text-meta text-subtle">
         <span className="inline-flex items-center gap-1">
           <Send className="h-3.5 w-3.5" aria-hidden /> {e.sent.toLocaleString()} sent
         </span>
@@ -261,7 +261,7 @@ function FunnelList({ steps }: { steps: BetaFunnelStep[] }) {
         return (
           <li key={s.key}>
             <div className="flex items-baseline justify-between gap-3">
-              <span className="text-sm font-medium text-text">
+              <span className="text-body-sm font-medium text-text">
                 {s.label}
                 {s.scope === 'global' && (
                   <span className="ml-2 rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-muted">
@@ -269,7 +269,7 @@ function FunnelList({ steps }: { steps: BetaFunnelStep[] }) {
                   </span>
                 )}
               </span>
-              <span className="shrink-0 text-sm tabular-nums text-muted">
+              <span className="shrink-0 text-body-sm tabular-nums text-muted">
                 {s.value != null ? s.value.toLocaleString() : 'To instrument'}
                 {s.dropPct != null && s.dropPct > 0 && (
                   <span className="ml-2 text-2xs font-semibold text-danger">-{s.dropPct}%</span>

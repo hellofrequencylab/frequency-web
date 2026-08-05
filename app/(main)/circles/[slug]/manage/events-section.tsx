@@ -161,7 +161,7 @@ export async function CircleEventsSection({
   ])
 
   const banner = notice?.error ? (
-    <p className="rounded-xl border border-danger/30 bg-danger-bg px-4 py-2.5 text-sm text-danger">
+    <p className="rounded-xl border border-danger/30 bg-danger-bg px-4 py-2.5 text-body-sm text-danger">
       {notice.error === 'missing'
         ? 'Pick an event first.'
         : notice.error === 'denied'
@@ -173,7 +173,7 @@ export async function CircleEventsSection({
               : 'That did not save. Try again.'}
     </p>
   ) : notice?.saved ? (
-    <p className="rounded-xl border border-success/30 bg-success-bg px-4 py-2.5 text-sm text-success">
+    <p className="rounded-xl border border-success/30 bg-success-bg px-4 py-2.5 text-body-sm text-success">
       Saved.
     </p>
   ) : null
@@ -183,12 +183,12 @@ export async function CircleEventsSection({
   const addForm = (
     <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
       <SectionHeader title="Add an event" />
-      <p className="mb-3 text-sm text-muted">
+      <p className="mb-3 text-body-sm text-muted">
         Bring an event you already run onto this circle. It shows on the circle page, and your
         members can find and RSVP to it there.
       </p>
       {attachable.length === 0 ? (
-        <p className="text-sm text-subtle">
+        <p className="text-body-sm text-subtle">
           No events to add right now. Upcoming events you manage that are not already here will
           show in this list.
         </p>
@@ -247,10 +247,10 @@ export async function CircleEventsSection({
               <Link href={`/events/${e.slug}`} className="block truncate font-medium text-text hover:underline">
                 {e.title}
               </Link>
-              {e.location && <span className="block truncate text-xs text-subtle">{e.location}</span>}
+              {e.location && <span className="block truncate text-meta text-subtle">{e.location}</span>}
             </div>
             {e.starts_at && (
-              <span className="shrink-0 text-xs text-subtle">{fmtWhen(e.starts_at)}</span>
+              <span className="shrink-0 text-meta text-subtle">{fmtWhen(e.starts_at)}</span>
             )}
           </li>
         ))}

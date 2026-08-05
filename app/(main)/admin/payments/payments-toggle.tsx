@@ -40,7 +40,7 @@ export function PayoutsToggle({
   return (
     <div>
       <div className="flex items-center justify-between gap-4">
-        <span className={`text-sm font-semibold ${on ? 'text-success' : 'text-subtle'}`}>
+        <span className={`text-body-sm font-semibold ${on ? 'text-success' : 'text-subtle'}`}>
           {on ? 'Payouts are ON' : 'Payouts are OFF'}
         </span>
         <Toggle
@@ -53,10 +53,10 @@ export function PayoutsToggle({
       </div>
 
       {!isPending && !saved && on && !stripeConfigured && (
-        <p className="mt-2 text-xs text-warning">Stripe key not configured, still dormant until keys are set.</p>
+        <p className="mt-2 text-meta text-warning">Stripe key not configured, still dormant until keys are set.</p>
       )}
 
-      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+      {error && <p className="mt-2 text-body-sm text-danger">{error}</p>}
     </div>
   )
 }

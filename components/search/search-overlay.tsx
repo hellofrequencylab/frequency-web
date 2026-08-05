@@ -140,7 +140,7 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
             onChange={handleChange}
             placeholder="Search people, posts, events…"
             autoComplete="off"
-            className="flex-1 bg-transparent py-3.5 text-base text-text outline-none placeholder:text-subtle"
+            className="flex-1 bg-transparent py-3.5 text-body text-text outline-none placeholder:text-subtle"
           />
           {loading && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-subtle" />}
           <button
@@ -156,9 +156,9 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
         {/* Results */}
         <div className="flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
           {!hasQuery ? (
-            <p className="px-4 py-12 text-center text-sm text-subtle">Type at least 2 characters to search.</p>
+            <p className="px-4 py-12 text-center text-body-sm text-subtle">Type at least 2 characters to search.</p>
           ) : !loading && total === 0 ? (
-            <p className="px-4 py-12 text-center text-sm text-subtle">No results for “{trimmed}”.</p>
+            <p className="px-4 py-12 text-center text-body-sm text-subtle">No results for “{trimmed}”.</p>
           ) : (
             <div className="py-2">
               <ResultGroup label="Go to" icon={Compass} count={pages.length}>
@@ -175,9 +175,9 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
                         <Icon className="h-5 w-5" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold text-text">{pg.label}</span>
+                        <span className="block truncate text-body-sm font-semibold text-text">{pg.label}</span>
                         {(pg.group || pg.mode === 'studio') && (
-                          <span className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-subtle">
+                          <span className="mt-0.5 flex items-center gap-1.5 truncate text-meta text-subtle">
                             {pg.mode === 'studio' && (
                               <span className="shrink-0 rounded bg-surface-elevated px-1 py-0.5 text-3xs font-semibold uppercase tracking-wide text-muted">
                                 Studio
@@ -234,7 +234,7 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
           <Link
             href={`/search?q=${encodeURIComponent(trimmed)}`}
             onClick={onClose}
-            className="flex shrink-0 items-center justify-center gap-1.5 border-t border-border py-3 text-sm font-semibold text-primary-strong hover:bg-surface-elevated transition-colors"
+            className="flex shrink-0 items-center justify-center gap-1.5 border-t border-border py-3 text-body-sm font-semibold text-primary-strong hover:bg-surface-elevated transition-colors"
           >
             See all results
             <ArrowRight className="h-4 w-4" />
@@ -281,22 +281,22 @@ function ResultRow({
       {dateIso ? (
         <span className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
           <span className="text-3xs font-semibold uppercase leading-none">{new Date(dateIso).toLocaleDateString('en-US', { month: 'short' })}</span>
-          <span className="text-sm font-bold leading-tight">{new Date(dateIso).getDate()}</span>
+          <span className="text-body-sm font-bold leading-tight">{new Date(dateIso).getDate()}</span>
         </span>
       ) : avatar ? (
         <Image src={avatarSrc(avatar)} alt="" width={40} height={40} style={avatarFocusStyle(avatar)} className="h-10 w-10 shrink-0 rounded-pill object-cover" />
       ) : (
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-sm font-semibold text-primary-strong select-none">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-body-sm font-semibold text-primary-strong select-none">
           {getInitials(fallback ?? '?')}
         </span>
       )}
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
-          <span className="truncate text-sm font-semibold text-text">{title}</span>
+          <span className="truncate text-body-sm font-semibold text-text">{title}</span>
           {badge && <span className="shrink-0 rounded-md bg-danger-bg px-1.5 py-0.5 text-3xs font-medium text-danger">{badge}</span>}
         </span>
         {subtitle && (
-          <span className={`mt-0.5 block text-xs text-subtle ${clampSubtitle ? 'line-clamp-1' : 'truncate'}`}>{subtitle}</span>
+          <span className={`mt-0.5 block text-meta text-subtle ${clampSubtitle ? 'line-clamp-1' : 'truncate'}`}>{subtitle}</span>
         )}
       </span>
     </Link>

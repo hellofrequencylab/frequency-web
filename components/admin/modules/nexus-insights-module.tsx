@@ -55,7 +55,7 @@ export function NexusInsightsModule() {
         <div className="grid grid-cols-2 gap-2 @sm:grid-cols-4">
           {stats.map((s) => (
             <div key={s.label} className="rounded-card border border-border bg-surface p-3">
-              <div className="text-lg font-bold text-text tabular-nums">{s.value.toLocaleString()}</div>
+              <div className="text-body-lg font-bold text-text tabular-nums">{s.value.toLocaleString()}</div>
               <div className="text-2xs font-medium uppercase tracking-wide text-muted">{s.label}</div>
             </div>
           ))}
@@ -64,7 +64,7 @@ export function NexusInsightsModule() {
         {/* Capacity fill. */}
         {fillPct !== null && (
           <div className="mt-3 space-y-1.5">
-            <div className="flex items-center justify-between text-xs text-muted">
+            <div className="flex items-center justify-between text-meta text-muted">
               <span>How full</span>
               <span className="font-medium text-text">
                 {data.totalMembers} / {data.memberCap}

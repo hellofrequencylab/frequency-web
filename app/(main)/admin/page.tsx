@@ -208,7 +208,7 @@ function HeaderKpis({
     <div className="flex gap-7 pr-2 sm:gap-9 sm:pr-8">
       {items.map((k) => (
         <div key={k.label}>
-          <p className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-muted">
+          <p className="whitespace-nowrap text-meta font-semibold uppercase tracking-wide text-muted">
             {k.label}
           </p>
           <p className="mt-1.5 text-3xl font-bold leading-none tabular-nums text-text">
@@ -239,11 +239,11 @@ function RingTile({ pct, label, sub }: { pct: number; label: string; sub?: strin
 
 // A ranked value→count list (top pages / features) for a white graph tile.
 function RankList({ items }: { items: { value: string; n: number }[] }) {
-  if (items.length === 0) return <p className="text-xs text-subtle">No signal yet this week.</p>
+  if (items.length === 0) return <p className="text-meta text-subtle">No signal yet this week.</p>
   return (
     <ul className="space-y-1">
       {items.map((i) => (
-        <li key={i.value} className="flex items-baseline justify-between gap-3 text-sm">
+        <li key={i.value} className="flex items-baseline justify-between gap-3 text-body-sm">
           <span className="truncate text-muted">{i.value}</span>
           <span className="shrink-0 font-semibold tabular-nums text-text">{i.n.toLocaleString()}</span>
         </li>
@@ -405,11 +405,11 @@ async function CommunityArea({
         </Tile>
         <Tile label="Circles by fill" span={2} caption="Fullest first, where capacity pressure is building.">
           {fullest.length === 0 ? (
-            <p className="text-xs text-subtle">No circles yet.</p>
+            <p className="text-meta text-subtle">No circles yet.</p>
           ) : (
             <ul className="space-y-2">
               {fullest.map((c) => (
-                <li key={c.id} className="flex items-baseline justify-between gap-3 text-sm">
+                <li key={c.id} className="flex items-baseline justify-between gap-3 text-body-sm">
                   <Link href={`/circles/${c.slug}`} className="truncate text-muted hover:text-text">
                     {c.name}
                     {c.hub?.name ? <span className="text-subtle"> · {c.hub.name}</span> : null}
@@ -489,11 +489,11 @@ async function GrowthArea() {
         {topSignal && (
           <Tile label="Strongest signal">
             <p className="leading-none">
-              <span className="text-2xl font-bold tabular-nums text-text">{Math.round(topSignal.score)}</span>
-              <span className="text-sm text-subtle">/100</span>
+              <span className="text-page-title font-bold tabular-nums text-text">{Math.round(topSignal.score)}</span>
+              <span className="text-body-sm text-subtle">/100</span>
             </p>
-            <p className="mt-2 text-sm font-semibold text-text">{topSignal.city}</p>
-            <p className="mt-0.5 text-xs uppercase tracking-wide text-subtle">{topSignal.stage} stage</p>
+            <p className="mt-2 text-body-sm font-semibold text-text">{topSignal.city}</p>
+            <p className="mt-0.5 text-meta uppercase tracking-wide text-subtle">{topSignal.stage} stage</p>
           </Tile>
         )}
       </TileGrid>
@@ -571,7 +571,7 @@ const DAY = 24 * 60 * 60 * 1000
 function DashSkeleton({ title }: { title: string }) {
   return (
     <section className="border-t border-border/70 pt-7 first:border-t-0 first:pt-0 sm:pt-8">
-      <h2 className="text-lg font-bold text-text">{title}</h2>
+      <h2 className="text-body-lg font-bold text-text">{title}</h2>
       <div className="mt-2 h-4 w-2/3 animate-pulse rounded bg-surface-elevated" />
       <div className="mt-5 grid grid-cols-2 gap-3.5 lg:grid-cols-3">
         <div className="h-28 animate-pulse rounded-2xl bg-surface-elevated/70" />
@@ -599,13 +599,13 @@ async function VeraReadSection() {
     >
       <TileGrid>
         <Tile span={3}>
-          <p className="text-sm font-medium text-text">{read.summary}</p>
+          <p className="text-body-sm font-medium text-text">{read.summary}</p>
           {top.length > 0 && (
             <ul className="mt-3 space-y-2.5">
               {top.map((i) => (
                 <li key={i.id} className="flex items-start gap-2.5">
                   <SeverityChip severity={i.severity} />
-                  <div className="min-w-0 text-sm leading-snug">
+                  <div className="min-w-0 text-body-sm leading-snug">
                     <span className="font-semibold text-text">{i.title}.</span>{' '}
                     <span className="text-muted">{i.finding}</span>{' '}
                     <span className="text-text">→ {i.recommendation}</span>
@@ -639,12 +639,12 @@ function CircleRow({
     >
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <span className="truncate text-sm font-medium text-text">{name}</span>
+          <span className="truncate text-body-sm font-medium text-text">{name}</span>
           <StatusBadge status={status} />
         </div>
-        <p className="mt-0.5 text-xs text-subtle">{meta}</p>
+        <p className="mt-0.5 text-meta text-subtle">{meta}</p>
       </div>
-      <span className="text-xs text-subtle">→</span>
+      <span className="text-meta text-subtle">→</span>
     </Link>
   )
 }
@@ -655,7 +655,7 @@ function EmptyCta({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
     >
       <Plus className="h-3.5 w-3.5" />
       {label}
@@ -795,7 +795,7 @@ async function GuidePanel({ profileId, canManage }: { profileId: string; canMana
             title={hub.name}
             actions={
               hub.nexus && (
-                <Link href={`/nexuses/${hub.nexus.slug}`} className="text-xs text-primary-strong hover:underline">
+                <Link href={`/nexuses/${hub.nexus.slug}`} className="text-meta text-primary-strong hover:underline">
                   {hub.nexus.name} →
                 </Link>
               )

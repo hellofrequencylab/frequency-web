@@ -21,13 +21,13 @@ export function ClaimButton({ token }: { token: string }) {
   return (
     <div className="space-y-2">
       {error && (
-        <p className="rounded-lg border border-danger/40 bg-danger-bg px-3 py-2 text-sm text-danger">{error}</p>
+        <p className="rounded-lg border border-danger/40 bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>
       )}
       <button
         type="button"
         onClick={handleClaim}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
         {pending ? 'Claiming' : 'Claim this listing'}

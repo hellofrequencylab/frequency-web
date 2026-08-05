@@ -63,7 +63,7 @@ async function smsConsentCounts(): Promise<ConsentCounts> {
 function EnvFlagRow({ label, set }: { label: string; set: boolean }) {
   return (
     <div className="flex items-center justify-between gap-4 border-t border-border/70 py-2.5 first:border-t-0 first:pt-0">
-      <span className="text-sm text-text">{label}</span>
+      <span className="text-body-sm text-text">{label}</span>
       <StatusChip tone={set ? 'success' : 'neutral'} size="sm">
         {set ? 'Set' : 'Not set'}
       </StatusChip>
@@ -126,7 +126,7 @@ export default async function AdminSmsPage() {
             <EnvFlagRow label="A2P 10DLC campaign" set={campaignSet} />
             <EnvFlagRow label="Twilio Messaging Service" set={serviceSet} />
             <div className="mt-3 flex items-center justify-between gap-4 border-t border-border pt-3">
-              <span className="text-sm font-semibold text-text">Registration complete</span>
+              <span className="text-body-sm font-semibold text-text">Registration complete</span>
               <StatusChip tone={provisioned ? 'success' : 'warning'}>
                 {provisioned ? 'Ready' : 'Not ready'}
               </StatusChip>
@@ -141,16 +141,16 @@ export default async function AdminSmsPage() {
           {consent ? (
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-card border border-border bg-surface p-3">
-                <p className="text-2xl font-bold tabular-nums text-text">{consent.consented.toLocaleString()}</p>
-                <p className="mt-0.5 text-xs text-muted">Opted in</p>
+                <p className="text-page-title font-bold tabular-nums text-text">{consent.consented.toLocaleString()}</p>
+                <p className="mt-0.5 text-meta text-muted">Opted in</p>
               </div>
               <div className="rounded-card border border-border bg-surface p-3">
-                <p className="text-2xl font-bold tabular-nums text-text">{consent.optedOut.toLocaleString()}</p>
-                <p className="mt-0.5 text-xs text-muted">Opted out</p>
+                <p className="text-page-title font-bold tabular-nums text-text">{consent.optedOut.toLocaleString()}</p>
+                <p className="mt-0.5 text-meta text-muted">Opted out</p>
               </div>
               <div className="rounded-card border border-border bg-surface p-3">
-                <p className="text-2xl font-bold tabular-nums text-text">{consent.pending.toLocaleString()}</p>
-                <p className="mt-0.5 text-xs text-muted">Pending or failed</p>
+                <p className="text-page-title font-bold tabular-nums text-text">{consent.pending.toLocaleString()}</p>
+                <p className="mt-0.5 text-meta text-muted">Pending or failed</p>
               </div>
             </div>
           ) : (

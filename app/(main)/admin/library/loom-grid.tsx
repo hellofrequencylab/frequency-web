@@ -210,12 +210,12 @@ export function LoomGrid({
                   <span className="block h-10 w-14 shrink-0 overflow-hidden rounded-lg bg-surface-elevated">
                     <Thumb asset={a} fit="cover" />
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm text-text" title={a.title}>
+                  <span className="min-w-0 flex-1 truncate text-body-sm text-text" title={a.title}>
                     {a.title}
                   </span>
-                  <span className="hidden w-20 shrink-0 truncate text-xs text-subtle sm:block">{a.kind}</span>
-                  <span className="hidden w-32 shrink-0 truncate text-xs text-subtle md:block">{a.category ?? ''}</span>
-                  <span className="w-16 shrink-0 text-right text-xs text-subtle">{human(a.bytes)}</span>
+                  <span className="hidden w-20 shrink-0 truncate text-meta text-subtle sm:block">{a.kind}</span>
+                  <span className="hidden w-32 shrink-0 truncate text-meta text-subtle md:block">{a.category ?? ''}</span>
+                  <span className="w-16 shrink-0 text-right text-meta text-subtle">{human(a.bytes)}</span>
                 </button>
               </div>
             )
@@ -256,10 +256,10 @@ export function LoomGrid({
                     </span>
                   ) : (
                     <span className="flex items-center justify-between gap-2 px-3 py-2">
-                      <span className="truncate text-sm text-text" title={a.title}>
+                      <span className="truncate text-body-sm text-text" title={a.title}>
                         {a.title}
                       </span>
-                      <span className="shrink-0 text-xs text-muted">{human(a.bytes)}</span>
+                      <span className="shrink-0 text-meta text-muted">{human(a.bytes)}</span>
                     </span>
                   )}
                 </button>
@@ -337,20 +337,20 @@ function BulkBar({
   }
 
   const btn =
-    'inline-flex items-center gap-1.5 rounded-control border border-border px-2.5 py-1.5 text-sm text-text hover:bg-surface-elevated disabled:opacity-50'
+    'inline-flex items-center gap-1.5 rounded-control border border-border px-2.5 py-1.5 text-body-sm text-text hover:bg-surface-elevated disabled:opacity-50'
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface-elevated/60 px-3 py-2">
       <button
         type="button"
         onClick={onToggleAll}
-        className="inline-flex items-center gap-2 rounded-control px-2 py-1 text-sm font-medium text-text hover:bg-surface-elevated"
+        className="inline-flex items-center gap-2 rounded-control px-2 py-1 text-body-sm font-medium text-text hover:bg-surface-elevated"
       >
         {allSelected ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <Circle className="h-5 w-5 text-subtle" />}
         {allSelected ? 'Clear page' : 'Select page'}
       </button>
 
-      <span className="text-sm text-subtle">{n > 0 ? `${n} selected` : 'Select assets to edit in bulk'}</span>
+      <span className="text-body-sm text-subtle">{n > 0 ? `${n} selected` : 'Select assets to edit in bulk'}</span>
 
       {pending && <Loader2 className="h-4 w-4 animate-spin text-subtle" aria-label="Working" />}
 
@@ -364,17 +364,17 @@ function BulkBar({
             {menu && (
               <div className="absolute right-0 z-20 mt-1 max-h-64 w-56 overflow-auto rounded-card border border-border bg-surface p-1 shadow-pop">
                 {collections.length === 0 && (
-                  <p className="px-3 py-2 text-xs text-subtle">No collections yet.</p>
+                  <p className="px-3 py-2 text-meta text-subtle">No collections yet.</p>
                 )}
                 {collections.map((c) => (
                   <button
                     key={c.id}
                     type="button"
                     onClick={() => run(() => addAssetsToCollection(c.id, ids))}
-                    className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-left text-sm text-text hover:bg-surface-elevated"
+                    className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-left text-body-sm text-text hover:bg-surface-elevated"
                   >
                     <span className="truncate">{c.title}</span>
-                    <span className="shrink-0 text-xs text-subtle">{c.count}</span>
+                    <span className="shrink-0 text-meta text-subtle">{c.count}</span>
                   </button>
                 ))}
                 <button
@@ -388,7 +388,7 @@ function BulkBar({
                       return addAssetsToCollection(created.id, ids)
                     })
                   }}
-                  className="mt-1 flex w-full items-center gap-2 rounded-lg border-t border-border px-3 py-1.5 text-left text-sm font-medium text-primary-strong hover:bg-surface-elevated"
+                  className="mt-1 flex w-full items-center gap-2 rounded-lg border-t border-border px-3 py-1.5 text-left text-body-sm font-medium text-primary-strong hover:bg-surface-elevated"
                 >
                   <FolderInput className="h-4 w-4" /> New collection…
                 </button>
@@ -404,7 +404,7 @@ function BulkBar({
               </button>
               {styleMenu && (
                 <div className="absolute right-0 z-20 mt-1 w-64 rounded-card border border-border bg-surface p-3 shadow-pop">
-                  <p className="mb-2 text-xs text-subtle">
+                  <p className="mb-2 text-meta text-subtle">
                     Teach a house look from these {n} image{n === 1 ? '' : 's'}. Pick it later in the studio to match a whole set.
                   </p>
                   <input
@@ -413,7 +413,7 @@ function BulkBar({
                     onChange={(e) => setStyleName(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && trainStyle()}
                     placeholder="Style name (e.g. Warm icon set)"
-                    className="mb-2 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm"
+                    className="mb-2 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm"
                   />
                   <div className="mb-2 inline-flex rounded-card border border-border p-0.5">
                     {(['vector', 'raster'] as const).map((l) => (
@@ -422,7 +422,7 @@ function BulkBar({
                         type="button"
                         onClick={() => setStyleLane(l)}
                         aria-pressed={styleLane === l}
-                        className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${
+                        className={`rounded-lg px-2.5 py-1 text-meta font-semibold ${
                           styleLane === l ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'
                         }`}
                       >
@@ -434,7 +434,7 @@ function BulkBar({
                     type="button"
                     onClick={trainStyle}
                     disabled={pending || !styleName.trim()}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
                   >
                     <Palette className="h-4 w-4" /> Train style
                   </button>
@@ -499,14 +499,14 @@ function BulkBar({
               if (window.confirm(`Permanently delete ${n} asset${n === 1 ? '' : 's'}? This cannot be undone.`))
                 run(() => bulkDelete(ids))
             }}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-danger px-2.5 py-1.5 text-sm text-danger hover:bg-danger/10 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-danger px-2.5 py-1.5 text-body-sm text-danger hover:bg-danger/10 disabled:opacity-50"
           >
             <Trash2 className="h-4 w-4" /> Delete
           </button>
         </div>
       )}
 
-      {err && <p className="w-full text-sm text-danger">{err}</p>}
+      {err && <p className="w-full text-body-sm text-danger">{err}</p>}
     </div>
   )
 }
@@ -682,9 +682,9 @@ function DetailDrawer({
     if (asset.url) void downloadImageUrl(asset.url, `${asset.slug || 'image'}.${extForMime(asset.mime)}`)
   }
 
-  const inputCls = 'w-full rounded-2xl border border-border bg-surface px-3 py-2 text-sm'
+  const inputCls = 'w-full rounded-2xl border border-border bg-surface px-3 py-2 text-body-sm'
   const chipCls =
-    'inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated'
+    'inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-body-sm text-text hover:bg-surface-elevated'
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label="Asset details">
@@ -696,7 +696,7 @@ function DetailDrawer({
       />
       <div className="relative flex h-full w-full max-w-md flex-col overflow-y-auto bg-surface shadow-pop">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h2 className="font-display text-lg uppercase text-text">Asset</h2>
+          <h2 className="font-display text-body-lg uppercase text-text">Asset</h2>
           <button type="button" onClick={onClose} className="rounded-pill p-1 text-subtle hover:bg-surface-elevated" aria-label="Close">
             <X className="h-5 w-5" />
           </button>
@@ -718,10 +718,10 @@ function DetailDrawer({
             )}
           </div>
           {safeOverride && (
-            <p className="-mt-2 text-xs text-primary-strong">Vera edit preview. Save to keep it, or revert.</p>
+            <p className="-mt-2 text-meta text-primary-strong">Vera edit preview. Save to keep it, or revert.</p>
           )}
 
-          <p className="text-xs text-subtle">
+          <p className="text-meta text-subtle">
             {asset.kind}
             {asset.width && asset.height ? ` · ${asset.width}×${asset.height}` : ''}
             {asset.bytes ? ` · ${human(asset.bytes)}` : ''}
@@ -733,7 +733,7 @@ function DetailDrawer({
               <button
                 type="button"
                 onClick={copyUrl}
-                className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated"
+                className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-body-sm text-text hover:bg-surface-elevated"
               >
                 {copied ? <Check className="h-4 w-4 text-signal" /> : <Copy className="h-4 w-4" />}
                 {copied ? 'Copied' : 'Copy URL'}
@@ -772,7 +772,7 @@ function DetailDrawer({
           {/* Design with Vera — edit this graphic by describing the change (SVG elements only). */}
           {isElement && (
             <div className="rounded-2xl border border-border bg-surface-elevated/50 p-3">
-              <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-text">
+              <p className="mb-2 flex items-center gap-1.5 text-body-sm font-semibold text-text">
                 <Sparkles className="h-4 w-4 text-primary-strong" aria-hidden />
                 Design with Vera
               </p>
@@ -783,7 +783,7 @@ function DetailDrawer({
                 onChange={(e) => setInstruction(e.target.value)}
                 placeholder="e.g. thin the stroke a little, make the center leaf translucent"
               />
-              <p className="mt-1.5 text-xs text-subtle">
+              <p className="mt-1.5 text-meta text-subtle">
                 <b className="font-semibold text-text">Tweak</b> keeps it nearly identical (small changes).{' '}
                 <b className="font-semibold text-text">Redraw</b> rebuilds it (bigger changes). Both keep the original
                 colors.
@@ -794,7 +794,7 @@ function DetailDrawer({
                   onClick={() => askVera('tweak')}
                   disabled={veraBusy || reviewing || !instruction.trim()}
                   title="A small, surgical change that keeps the graphic nearly identical"
-                  className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-3 py-1.5 text-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+                  className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-3 py-1.5 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
                 >
                   {veraBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                   {veraBusy ? 'Working…' : 'Tweak'}
@@ -804,7 +804,7 @@ function DetailDrawer({
                   onClick={() => askVera('redraw')}
                   disabled={veraBusy || reviewing || !instruction.trim()}
                   title="Rebuild the whole graphic from scratch, for bigger changes"
-                  className="inline-flex items-center gap-1.5 rounded-2xl border border-border-strong px-3 py-1.5 text-sm font-semibold text-text hover:bg-surface-elevated disabled:opacity-70"
+                  className="inline-flex items-center gap-1.5 rounded-2xl border border-border-strong px-3 py-1.5 text-body-sm font-semibold text-text hover:bg-surface-elevated disabled:opacity-70"
                 >
                   <RefreshCw className="h-4 w-4" /> Redraw
                 </button>
@@ -813,7 +813,7 @@ function DetailDrawer({
                   onClick={() => void reviewCurrent()}
                   disabled={veraBusy || reviewing}
                   title="Vera renders it, looks at it, and fixes anything clearly broken"
-                  className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated disabled:opacity-70"
+                  className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-body-sm text-text hover:bg-surface-elevated disabled:opacity-70"
                 >
                   {reviewing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
                   {reviewing ? 'Checking…' : 'Check her work'}
@@ -824,7 +824,7 @@ function DetailDrawer({
                       type="button"
                       onClick={saveVera}
                       disabled={veraBusy || reviewing}
-                      className="rounded-2xl bg-signal px-3 py-1.5 text-sm font-bold text-on-signal hover:bg-signal-strong disabled:opacity-70"
+                      className="rounded-2xl bg-signal px-3 py-1.5 text-body-sm font-bold text-on-signal hover:bg-signal-strong disabled:opacity-70"
                     >
                       Save changes
                     </button>
@@ -835,7 +835,7 @@ function DetailDrawer({
                         setVeraErr(null)
                         setReviewNote(null)
                       }}
-                      className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-sm text-muted hover:bg-surface-elevated"
+                      className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-body-sm text-muted hover:bg-surface-elevated"
                     >
                       <Undo2 className="h-4 w-4" /> Revert
                     </button>
@@ -843,11 +843,11 @@ function DetailDrawer({
                 )}
               </div>
               {reviewNote && (
-                <p className="mt-2 flex items-start gap-1.5 text-sm text-signal-strong">
+                <p className="mt-2 flex items-start gap-1.5 text-body-sm text-signal-strong">
                   <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden /> {reviewNote}
                 </p>
               )}
-              {veraErr && <p className="mt-2 text-sm text-danger">{veraErr}</p>}
+              {veraErr && <p className="mt-2 text-body-sm text-danger">{veraErr}</p>}
             </div>
           )}
 
@@ -860,30 +860,30 @@ function DetailDrawer({
           <AssetAvPanel assetId={asset.id} kind={asset.kind} hasFile={!!asset.url} />
 
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-subtle">Title</span>
+            <span className="mb-1 block text-meta font-semibold uppercase tracking-wide text-subtle">Title</span>
             <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-subtle">Alt text</span>
+            <span className="mb-1 block text-meta font-semibold uppercase tracking-wide text-subtle">Alt text</span>
             <input className={inputCls} value={alt} onChange={(e) => setAlt(e.target.value)} placeholder="Describe the image" />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-subtle">Category</span>
+            <span className="mb-1 block text-meta font-semibold uppercase tracking-wide text-subtle">Category</span>
             <input className={inputCls} value={category} onChange={(e) => setCategory(e.target.value)} />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-subtle">Tags</span>
+            <span className="mb-1 block text-meta font-semibold uppercase tracking-wide text-subtle">Tags</span>
             <input className={inputCls} value={tags} onChange={(e) => setTags(e.target.value)} placeholder="comma, separated" />
           </label>
 
-          {err && <p className="text-sm text-danger">{err}</p>}
+          {err && <p className="text-body-sm text-danger">{err}</p>}
 
           <div className="flex items-center gap-2 pt-1">
             <button
               type="button"
               onClick={save}
               disabled={pending}
-              className="rounded-2xl bg-primary px-4 py-2 text-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+              className="rounded-2xl bg-primary px-4 py-2 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
             >
               {pending ? 'Saving…' : 'Save'}
             </button>
@@ -891,7 +891,7 @@ function DetailDrawer({
               type="button"
               onClick={archive}
               disabled={pending}
-              className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-2 text-sm text-muted hover:bg-surface-elevated disabled:opacity-70"
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-2 text-body-sm text-muted hover:bg-surface-elevated disabled:opacity-70"
             >
               <Archive className="h-4 w-4" /> Archive
             </button>
@@ -899,7 +899,7 @@ function DetailDrawer({
               type="button"
               onClick={() => (confirmDelete ? remove() : setConfirmDelete(true))}
               disabled={pending}
-              className="ml-auto inline-flex items-center gap-1.5 rounded-2xl border border-danger px-3 py-2 text-sm text-danger hover:bg-danger/10 disabled:opacity-70"
+              className="ml-auto inline-flex items-center gap-1.5 rounded-2xl border border-danger px-3 py-2 text-body-sm text-danger hover:bg-danger/10 disabled:opacity-70"
             >
               <Trash2 className="h-4 w-4" /> {confirmDelete ? 'Confirm delete' : 'Delete'}
             </button>

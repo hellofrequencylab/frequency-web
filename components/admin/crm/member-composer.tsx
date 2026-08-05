@@ -65,7 +65,7 @@ export interface MemberComposerProps {
 }
 
 const inputClass =
-  'w-full rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none'
+  'w-full rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none'
 
 export function MemberComposer({
   profileId,
@@ -257,20 +257,20 @@ export function MemberComposer({
     <section className="space-y-4 rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="flex items-center gap-2">
         <Mail className="h-4 w-4 text-primary" aria-hidden />
-        <h3 className="text-sm font-bold text-text">Send a message</h3>
+        <h3 className="text-body-sm font-bold text-text">Send a message</h3>
       </div>
 
       {/* AUDIENCE — chips + search + one-tap group chips. */}
       <div className="space-y-2">
-        <span className="text-xs font-medium text-subtle">To</span>
+        <span className="text-meta font-medium text-subtle">To</span>
         <div className="flex flex-wrap gap-1.5">
           {chips.length === 0 && (
-            <span className="text-xs text-muted">No recipients yet. Add someone below.</span>
+            <span className="text-meta text-muted">No recipients yet. Add someone below.</span>
           )}
           {chips.map((chip) => (
             <span
               key={chip.key}
-              className="inline-flex items-center gap-1 rounded-pill border border-border bg-canvas px-2.5 py-1 text-xs font-medium text-text"
+              className="inline-flex items-center gap-1 rounded-pill border border-border bg-canvas px-2.5 py-1 text-meta font-medium text-text"
             >
               {chip.kind === 'group' && <Users className="h-3 w-3 text-subtle" aria-hidden />}
               {chip.label}
@@ -296,7 +296,7 @@ export function MemberComposer({
                   key={`circle:${c.id}`}
                   type="button"
                   onClick={() => addChip({ key: `circle:${c.id}`, label: `Everyone in ${c.name}`, kind: 'group' })}
-                  className="inline-flex items-center gap-1 rounded-pill border border-dashed border-border px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-primary hover:text-text"
+                  className="inline-flex items-center gap-1 rounded-pill border border-dashed border-border px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:border-primary hover:text-text"
                 >
                   <Plus className="h-3 w-3" aria-hidden /> Everyone in {c.name}
                 </button>
@@ -308,7 +308,7 @@ export function MemberComposer({
                   key={`event:${e.id}`}
                   type="button"
                   onClick={() => addChip({ key: `event:${e.id}`, label: `Everyone who RSVP'd ${e.title}`, kind: 'group' })}
-                  className="inline-flex items-center gap-1 rounded-pill border border-dashed border-border px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-primary hover:text-text"
+                  className="inline-flex items-center gap-1 rounded-pill border border-dashed border-border px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:border-primary hover:text-text"
                 >
                   <Plus className="h-3 w-3" aria-hidden /> Everyone who RSVP&apos;d {e.title}
                 </button>
@@ -330,11 +330,11 @@ export function MemberComposer({
           {(searching || results.length > 0) && query.trim().length >= 2 && (
             <ul className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-border bg-surface lift-1">
               {searching && results.length === 0 ? (
-                <li className="flex items-center gap-2 px-3 py-2 text-xs text-muted">
+                <li className="flex items-center gap-2 px-3 py-2 text-meta text-muted">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Searching
                 </li>
               ) : results.length === 0 ? (
-                <li className="px-3 py-2 text-xs text-muted">No matches.</li>
+                <li className="px-3 py-2 text-meta text-muted">No matches.</li>
               ) : (
                 results.map((r) => {
                   const already = chipKeys.has(r.segmentKey)
@@ -348,7 +348,7 @@ export function MemberComposer({
                           setQuery('')
                           setResults([])
                         }}
-                        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-surface-elevated disabled:opacity-50"
+                        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-meta transition-colors hover:bg-surface-elevated disabled:opacity-50"
                       >
                         <span className="min-w-0">
                           <span className="block truncate font-semibold text-text">{r.displayName}</span>
@@ -389,7 +389,7 @@ export function MemberComposer({
           {count != null && `: ${count.toLocaleString()}`}
         </Button>
         {count != null && (
-          <span className="text-xs text-muted">
+          <span className="text-meta text-muted">
             {count.toLocaleString()} in this audience before the consent and suppression gate.
           </span>
         )}

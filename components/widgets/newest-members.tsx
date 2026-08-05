@@ -34,7 +34,7 @@ export async function NewestMembers() {
                   {name.slice(0, 1)}
                 </span>
               )}
-              <span className="truncate text-xs text-text">{name}</span>
+              <span className="truncate text-meta text-text">{name}</span>
             </li>
           )
         })}

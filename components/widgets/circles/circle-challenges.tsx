@@ -19,7 +19,7 @@ export const CircleChallengesBlock = async () => {
 
   return (
     <div className="@container rounded-2xl border border-border bg-surface p-4">
-      <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-text">
+      <h3 className="mb-3 flex items-center gap-2 text-body-sm font-bold text-text">
         <Trophy className="h-4 w-4 shrink-0 text-primary-strong" />
         Challenges we&apos;re taking on
       </h3>
@@ -29,9 +29,9 @@ export const CircleChallengesBlock = async () => {
             c.memberCount > 0 ? Math.min(100, Math.round((c.membersCompleted / c.memberCount) * 100)) : 0
           return (
             <li key={c.id} className="space-y-1.5">
-              <div className="flex items-center justify-between gap-2 text-sm">
+              <div className="flex items-center justify-between gap-2 text-body-sm">
                 <span className="min-w-0 truncate font-medium text-text">{c.name}</span>
-                <span className="shrink-0 text-xs text-muted">
+                <span className="shrink-0 text-meta text-muted">
                   {c.membersCompleted} of {c.memberCount} done
                 </span>
               </div>

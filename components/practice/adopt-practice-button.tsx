@@ -76,7 +76,7 @@ export function AdoptPracticeButton({
     }
   }, [panel])
 
-  const base = `inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors disabled:opacity-60 ${
+  const base = `inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-body-sm font-semibold transition-colors disabled:opacity-60 ${
     fullWidth ? 'w-full' : ''
   }`
 
@@ -155,7 +155,7 @@ export function AdoptPracticeButton({
           style={{ position: 'fixed', top: panel.top, left: panel.left, width: PANEL_W }}
           className="z-50 rounded-card border border-border bg-surface-elevated p-3 lift-3"
         >
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-text">
+          <p className="flex items-center gap-1.5 text-meta font-semibold text-text">
             <ArrowLeftRight className="h-3.5 w-3.5 text-primary-strong" aria-hidden />
             You hold {ACTIVE_PRACTICE_CAP} already. Swap one out?
           </p>
@@ -170,7 +170,7 @@ export function AdoptPracticeButton({
                 type="button"
                 disabled={pending}
                 onClick={() => swapWith(h.id)}
-                className="block w-full truncate rounded-lg border border-border px-2 py-1.5 text-left text-xs font-medium text-text transition-colors hover:border-primary hover:bg-primary-bg/20 disabled:opacity-60"
+                className="block w-full truncate rounded-lg border border-border px-2 py-1.5 text-left text-meta font-medium text-text transition-colors hover:border-primary hover:bg-primary-bg/20 disabled:opacity-60"
               >
                 {h.title}
               </button>
@@ -199,7 +199,7 @@ export function AdoptPracticeButton({
           style={{ position: 'fixed', top: panel.top, left: panel.left, width: PANEL_W }}
           className="z-50 rounded-card border border-border bg-surface-elevated p-3 lift-3"
         >
-          <p className="text-xs font-semibold text-text">How long will you take it on for?</p>
+          <p className="text-meta font-semibold text-text">How long will you take it on for?</p>
           <div className="mt-2 grid grid-cols-2 gap-1.5">
             {TERM_PRESETS.map((p) => (
               <button
@@ -208,7 +208,7 @@ export function AdoptPracticeButton({
                 type="button"
                 title={p.hint}
                 onClick={() => adoptWith(p.weeks)}
-                className={`rounded-lg border px-2 py-1.5 text-xs font-semibold transition-colors ${
+                className={`rounded-lg border px-2 py-1.5 text-meta font-semibold transition-colors ${
                   p.default
                     ? 'border-primary bg-primary-bg/40 text-text hover:bg-primary-bg/60'
                     : 'border-border text-muted hover:border-primary hover:text-text'
@@ -230,7 +230,7 @@ export function AdoptPracticeButton({
               maxLength={140}
               onChange={(e) => setCue(e.target.value)}
               placeholder="After my morning coffee"
-              className="mt-1 w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-xs text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-meta text-text placeholder:text-subtle focus:border-primary focus:outline-none"
             />
           </label>
         </div>

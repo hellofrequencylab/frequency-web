@@ -65,7 +65,7 @@ export default function SubscribePage() {
       <Section tone="surface" pad="pb-16 sm:pb-20">
         <div className="max-w-md mx-auto">
           <SubscribeForm />
-          <p className="mt-4 text-center text-xs text-subtle leading-relaxed">
+          <p className="mt-4 text-center text-meta text-subtle leading-relaxed">
             We email you to confirm first, so you only hear from us if you actually want to.
           </p>
         </div>
@@ -74,7 +74,7 @@ export default function SubscribePage() {
       {/* ── How it works ───────────────────────────────────────────────────── */}
       <Section tone="canvas">
         <div className="text-center mb-10">
-          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
+          <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
             How it works
           </p>
           <h2 className="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)]">
@@ -87,8 +87,8 @@ export default function SubscribePage() {
               <span className="inline-flex w-10 h-10 rounded-2xl bg-primary-bg items-center justify-center mb-4">
                 <Icon className="w-5 h-5 text-primary-strong" aria-hidden />
               </span>
-              <p className="text-lg font-bold text-text">{t}</p>
-              <p className="mt-1.5 text-sm text-muted leading-relaxed">{b}</p>
+              <p className="text-body-lg font-bold text-text">{t}</p>
+              <p className="mt-1.5 text-body-sm text-muted leading-relaxed">{b}</p>
             </li>
           ))}
         </ol>
@@ -97,7 +97,7 @@ export default function SubscribePage() {
       {/* ── FAQ ────────────────────────────────────────────────────────────── */}
       <Section tone="surface">
         <div className="mb-8">
-          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
+          <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
             Straight answers
           </p>
           <h2 className="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)]">
@@ -105,7 +105,7 @@ export default function SubscribePage() {
           </h2>
         </div>
         <FaqList items={FAQS} />
-        <p className="mt-10 text-sm text-muted">
+        <p className="mt-10 text-body-sm text-muted">
           Want the bigger picture first?{' '}
           <Link href="/the-community" className="font-semibold text-primary-strong hover:underline">
             See what Frequency is

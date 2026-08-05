@@ -34,12 +34,12 @@ export function AvatarNudge() {
         <Camera className="h-4.5 w-4.5" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-text">Add a profile photo</p>
-        <p className="text-xs text-muted">A face helps your people recognize you. It takes one tap.</p>
+        <p className="text-body-sm font-semibold text-text">Add a profile photo</p>
+        <p className="text-meta text-muted">A face helps your people recognize you. It takes one tap.</p>
       </div>
       <Link
         href="/settings/profile"
-        className="shrink-0 rounded-lg bg-primary px-3.5 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        className="shrink-0 rounded-lg bg-primary px-3.5 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
       >
         Add photo
       </Link>

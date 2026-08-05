@@ -13,15 +13,15 @@ export default function NotFound() {
         <p className="text-5xl font-bold text-subtle/60 dark:text-text mb-4 tabular-nums">
           404
         </p>
-        <h1 className="text-xl font-semibold text-text mb-2">
+        <h1 className="text-lead font-semibold text-text mb-2">
           Page not found
         </h1>
-        <p className="text-sm text-muted leading-relaxed mb-8">
+        <p className="text-body-sm text-muted leading-relaxed mb-8">
           This page doesn&apos;t exist or may have moved.
         </p>
         <Link
           href="/feed"
-          className="inline-flex items-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors"
+          className="inline-flex items-center rounded-xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors"
         >
           Back to feed
         </Link>

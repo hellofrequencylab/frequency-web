@@ -76,15 +76,15 @@ export function RouteChromeRow({
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="truncate text-sm font-bold text-text">{label}</span>
+          <span className="truncate text-body-sm font-bold text-text">{label}</span>
           {isOverridden && (
             <span className="shrink-0 rounded-pill bg-broadcast-bg px-2 py-0.5 text-2xs font-semibold text-broadcast-strong">
               Override
             </span>
           )}
         </div>
-        <code className="mt-0.5 block truncate text-xs text-subtle">{route}</code>
-        {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+        <code className="mt-0.5 block truncate text-meta text-subtle">{route}</code>
+        {error && <p className="mt-1 text-meta text-danger">{error}</p>}
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -100,7 +100,7 @@ export function RouteChromeRow({
           value={effective}
           disabled={isPending}
           onChange={(e) => pick(e.target.value as Rail)}
-          className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm font-medium text-text disabled:opacity-50"
+          className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm font-medium text-text disabled:opacity-50"
         >
           {RAIL_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>

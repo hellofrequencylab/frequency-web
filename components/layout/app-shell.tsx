@@ -442,7 +442,7 @@ function ProfileCard({
       <Link
         key={it.id}
         href={it.href}
-        className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
+        className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-body-sm font-medium text-text hover:bg-surface-elevated transition-colors"
       >
         <Icon className="w-4 h-4 text-muted shrink-0" />
         {it.label}
@@ -472,14 +472,14 @@ function ProfileCard({
               className="w-11 h-11 rounded-pill object-cover"
             />
           ) : (
-            <div className="w-11 h-11 rounded-pill bg-primary text-on-primary text-sm font-bold flex items-center justify-center select-none">
+            <div className="w-11 h-11 rounded-pill bg-primary text-on-primary text-body-sm font-bold flex items-center justify-center select-none">
               {getInitials(profile.display_name)}
             </div>
           )}
         </Link>
         <div className="flex-1 min-w-0">
           <Link href={profileHref}>
-            <p className="text-sm font-semibold text-text truncate leading-tight">
+            <p className="text-body-sm font-semibold text-text truncate leading-tight">
               {profile.display_name}
             </p>
           </Link>
@@ -528,7 +528,7 @@ function ProfileCard({
             <ContextSwitcher context={context} available={availableContexts} />
             <Link
               href={profileHref}
-              className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
+              className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-body-sm font-medium text-text hover:bg-surface-elevated transition-colors"
             >
               <User className="w-4 h-4 text-muted shrink-0" />
               View profile
@@ -620,7 +620,7 @@ function AccountDropdown({
         key={it.id}
         href={it.href}
         onClick={() => setOpen(false)}
-        className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
+        className="flex items-center gap-2.5 px-3 py-2 text-body-sm text-text hover:bg-surface-elevated transition-colors"
       >
         <Icon className="w-4 h-4 text-subtle" />
         {it.label}
@@ -650,10 +650,10 @@ function AccountDropdown({
             <p className="text-2xs font-semibold uppercase tracking-wider text-muted mb-0.5">
               Account
             </p>
-            <p className="text-sm font-semibold text-text truncate">
+            <p className="text-body-sm font-semibold text-text truncate">
               {profile.display_name}
             </p>
-            <p className="text-xs text-subtle truncate">@{profile.handle}</p>
+            <p className="text-meta text-subtle truncate">@{profile.handle}</p>
           </div>
 
           {/* Account links — the editable `profile` menu (ADR-390), a prioritized, grouped
@@ -678,7 +678,7 @@ function AccountDropdown({
                 <Link
                   href={profileHref}
                   onClick={() => setOpen(false)}
-                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-2 text-body-sm text-text hover:bg-surface-elevated transition-colors"
                 >
                   <User className="w-4 h-4 text-subtle" />
                   View profile
@@ -688,7 +688,7 @@ function AccountDropdown({
               {s.label === 'You' && (
                 <button
                   onClick={() => { cycleTheme() }}
-                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated w-full text-left transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-2 text-body-sm text-text hover:bg-surface-elevated w-full text-left transition-colors"
                 >
                   <ThemeIcon className="w-4 h-4 text-subtle" />
                   {themeLabel}
@@ -698,7 +698,7 @@ function AccountDropdown({
                 <button
                   type="button"
                   onClick={() => { setOpen(false); window.dispatchEvent(new Event('open-invite')) }}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated transition-colors"
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-body-sm text-text hover:bg-surface-elevated transition-colors"
                 >
                   <Gift className="w-4 h-4 text-primary-strong" />
                   Invite friends · earn Zaps
@@ -708,7 +708,7 @@ function AccountDropdown({
                 <button
                   type="button"
                   onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent('open-support', { detail: { type: 'bug' } })) }}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated transition-colors"
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-body-sm text-text hover:bg-surface-elevated transition-colors"
                 >
                   <Bug className="w-4 h-4 text-subtle" />
                   Report a bug
@@ -724,14 +724,14 @@ function AccountDropdown({
               <Link
                 href={profileHref}
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2 text-body-sm text-text hover:bg-surface-elevated transition-colors"
               >
                 <User className="w-4 h-4 text-subtle" />
                 View profile
               </Link>
               <button
                 onClick={() => { cycleTheme() }}
-                className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated w-full text-left transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2 text-body-sm text-text hover:bg-surface-elevated w-full text-left transition-colors"
               >
                 <ThemeIcon className="w-4 h-4 text-subtle" />
                 {themeLabel}
@@ -743,7 +743,7 @@ function AccountDropdown({
               <button
                 type="button"
                 onClick={() => { setOpen(false); window.dispatchEvent(new Event('open-invite')) }}
-                className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated transition-colors"
+                className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-body-sm text-text hover:bg-surface-elevated transition-colors"
               >
                 <Gift className="w-4 h-4 text-primary-strong" />
                 Invite friends · earn Zaps
@@ -755,7 +755,7 @@ function AccountDropdown({
               <button
                 type="button"
                 onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent('open-support', { detail: { type: 'bug' } })) }}
-                className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated transition-colors"
+                className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-body-sm text-text hover:bg-surface-elevated transition-colors"
               >
                 <Bug className="w-4 h-4 text-subtle" />
                 Report a bug
@@ -768,7 +768,7 @@ function AccountDropdown({
             <form action="/auth/signout" method="POST">
               <button
                 type="submit"
-                className="flex items-center gap-2.5 px-3 py-2 text-sm text-danger hover:bg-danger-bg w-full text-left transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2 text-body-sm text-danger hover:bg-danger-bg w-full text-left transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 Sign out
@@ -833,7 +833,7 @@ function NavLinkList({
   const nestClass = (depth?: number) => (depth ? 'ml-3 border-l border-border ' : '')
 
   const itemClass = (active: boolean, emphasize = false, depth = 0) =>
-    `${nestClass(depth)}flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+    `${nestClass(depth)}flex items-center gap-2.5 px-3 py-2 rounded-lg text-body-sm transition-colors ${
       emphasize
         ? `font-bold text-[var(--brand-mark)] ${active ? 'bg-primary-bg' : 'hover:bg-surface-elevated'}`
         : active
@@ -909,7 +909,7 @@ function NavLinkList({
                     ghostTier={item.ghostTier}
                     ghostMessage={item.ghostMessage}
                     ariaLabel={label}
-                    className={`${nest}flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-subtle`}
+                    className={`${nest}flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm font-medium text-subtle`}
                   >
                     <Icon className="h-[18px] w-[18px] shrink-0 text-subtle" strokeWidth={2} aria-hidden />
                     {label}
@@ -995,7 +995,7 @@ function NavLinkList({
                   href={href}
                   onClick={onNavigate}
                   title="Preview. Sign in or upgrade to engage"
-                  className={`${nest}flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  className={`${nest}flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm font-medium transition-colors ${
                     active ? 'bg-surface-elevated text-muted' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
                   }`}
                 >
@@ -1011,7 +1011,7 @@ function NavLinkList({
                   key={href}
                   aria-disabled="true"
                   title="You don't have access to this yet"
-                  className={`${nest}flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-subtle opacity-50 cursor-not-allowed select-none`}
+                  className={`${nest}flex items-center gap-2.5 px-3 py-2 rounded-lg text-body-sm font-medium text-subtle opacity-50 cursor-not-allowed select-none`}
                 >
                   <Icon className="w-[18px] h-[18px] shrink-0 text-subtle" strokeWidth={2} />
                   {label}
@@ -1183,12 +1183,12 @@ function MobileLeftDrawer({
                 className="h-10 w-10 rounded-pill object-cover shrink-0"
               />
             ) : (
-              <div className="h-10 w-10 rounded-pill bg-primary text-on-primary text-sm font-bold flex items-center justify-center select-none shrink-0">
+              <div className="h-10 w-10 rounded-pill bg-primary text-on-primary text-body-sm font-bold flex items-center justify-center select-none shrink-0">
                 {getInitials(profile.display_name)}
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-text truncate leading-tight">
+              <p className="text-body-sm font-semibold text-text truncate leading-tight">
                 {profile.display_name}
               </p>
               <span
@@ -1236,7 +1236,7 @@ function MobileLeftDrawer({
             <button
               onClick={onClose}
               aria-label="Close navigation"
-              className="w-full flex items-center justify-center gap-2 rounded-lg bg-surface-elevated text-text text-sm font-medium py-3 hover:bg-border-strong transition-colors"
+              className="w-full flex items-center justify-center gap-2 rounded-lg bg-surface-elevated text-text text-body-sm font-medium py-3 hover:bg-border-strong transition-colors"
             >
               <X className="w-4 h-4" />
               Close
@@ -1750,7 +1750,7 @@ export default function AppShell({
           Bypass Blocks). Placed before the top bar so it wins tab order even on an editor takeover. */}
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-text focus:shadow-pop"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-body-sm focus:font-semibold focus:text-text focus:shadow-pop"
       >
         Skip to content
       </a>
@@ -1823,7 +1823,7 @@ export default function AppShell({
             type="button"
             onClick={() => setSearchOpen(true)}
             title="Search (⌘K)"
-            className="hidden sm:flex items-center gap-2 rounded-pill border border-border bg-surface-elevated/70 pl-3 pr-2 py-1.5 text-sm text-muted hover:text-text hover:border-border-strong hover:bg-surface-elevated transition-colors"
+            className="hidden sm:flex items-center gap-2 rounded-pill border border-border bg-surface-elevated/70 pl-3 pr-2 py-1.5 text-body-sm text-muted hover:text-text hover:border-border-strong hover:bg-surface-elevated transition-colors"
           >
             <Search className="w-4 h-4" />
             <span>Search</span>
@@ -1870,11 +1870,11 @@ export default function AppShell({
                 <Link
                   href="/admin/support"
                   aria-label={`Bug Alert: ${openSupportTickets} open support ${openSupportTickets === 1 ? 'ticket' : 'tickets'}. Open the support queue`}
-                  className="inline-flex items-center gap-1.5 rounded-pill bg-danger px-3 py-1.5 text-sm font-bold text-on-danger shadow-sm ring-1 ring-danger/40 transition-transform hover:scale-105 motion-safe:animate-pulse"
+                  className="inline-flex items-center gap-1.5 rounded-pill bg-danger px-3 py-1.5 text-body-sm font-bold text-on-danger shadow-sm ring-1 ring-danger/40 transition-transform hover:scale-105 motion-safe:animate-pulse"
                 >
                   <Bug className="h-4 w-4" />
                   <span className="hidden sm:inline">Bug</span>
-                  <span className="inline-flex min-w-5 items-center justify-center rounded-pill bg-on-primary/20 px-1.5 text-xs leading-5">
+                  <span className="inline-flex min-w-5 items-center justify-center rounded-pill bg-on-primary/20 px-1.5 text-meta leading-5">
                     {openSupportTickets}
                   </span>
                 </Link>

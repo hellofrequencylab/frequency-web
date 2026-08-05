@@ -55,7 +55,7 @@ function PublishButton({ slug }: { slug: string }) {
       onClick={handlePublish}
       disabled={!active || status === 'publishing'}
       title={dirty ? 'Publish your changes. They go live immediately' : 'No changes to publish'}
-      className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors ${
+      className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-body-sm font-semibold transition-colors ${
         active
           ? 'bg-primary text-on-primary shadow-sm hover:bg-primary-hover'
           : 'bg-surface-elevated text-subtle cursor-default'
@@ -98,7 +98,7 @@ function UnpublishButton({ slug }: { slug: string }) {
       onClick={handleUnpublish}
       disabled={status === 'working'}
       title="Take the editor version offline. The public page reverts to the coded design"
-      className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-danger hover:text-danger"
+      className="inline-flex items-center px-3 py-1.5 text-body-sm font-medium text-danger hover:text-danger"
     >
       {status === 'working' ? 'Unpublishing…' : status === 'error' ? 'Retry unpublish' : 'Unpublish'}
     </button>
@@ -129,7 +129,7 @@ export function PageEditor({
             <>
               <Link
                 href="/pages"
-                className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-muted hover:text-text"
+                className="inline-flex items-center px-3 py-1.5 text-body-sm font-medium text-muted hover:text-text"
               >
                 ← Exit
               </Link>

@@ -145,7 +145,7 @@ export function DockThreadDetails({
       className="absolute inset-0 z-10 flex min-h-0 flex-col bg-surface outline-none"
     >
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
-        <h2 className="text-sm font-semibold text-text">Details</h2>
+        <h2 className="text-body-sm font-semibold text-text">Details</h2>
         <button
           type="button"
           onClick={onClose}
@@ -175,25 +175,25 @@ export function DockThreadDetails({
                   autoFocus
                   disabled={renaming}
                   aria-busy={renaming}
-                  // text-base below sm: iOS Safari zooms the viewport for any input under 16px,
+                  // text-body below sm: iOS Safari zooms the viewport for any input under 16px,
                   // and a zoom-and-restore jump inside a 68dvh sheet is far worse than on a page.
-                  className="mt-1 w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-base text-text outline-none focus:border-border-strong focus:ring-1 focus:ring-border-strong/30 sm:text-sm"
+                  className="mt-1 w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-body text-text outline-none focus:border-border-strong focus:ring-1 focus:ring-border-strong/30 sm:text-body-sm"
                 />
                 <p className="mt-1 text-3xs text-muted">Leave it blank to go back to the members&rsquo; names.</p>
-                {renameError && <p role="alert" className="mt-1 text-xs text-danger">{renameError}</p>}
+                {renameError && <p role="alert" className="mt-1 text-meta text-danger">{renameError}</p>}
                 <div className="mt-2 flex gap-2">
                   <button
                     type="button"
                     onClick={() => void saveRename()}
                     disabled={renaming}
-                    className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-medium text-on-primary transition-opacity hover:opacity-90 disabled:opacity-60"
+                    className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 text-body-sm font-medium text-on-primary transition-opacity hover:opacity-90 disabled:opacity-60"
                   >
                     {renaming && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />} Save
                   </button>
                   <button
                     type="button"
                     onClick={cancelRename}
-                    className="inline-flex min-h-10 items-center justify-center rounded-lg border border-border px-3 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated"
+                    className="inline-flex min-h-10 items-center justify-center rounded-lg border border-border px-3 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated"
                   >
                     Cancel
                   </button>
@@ -203,13 +203,13 @@ export function DockThreadDetails({
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-2xs font-semibold uppercase tracking-wider text-muted">Group name</p>
-                  <p className="truncate text-sm text-text">{name || 'Not set'}</p>
+                  <p className="truncate text-body-sm text-text">{name || 'Not set'}</p>
                 </div>
                 <button
                   ref={renameTriggerRef}
                   type="button"
                   onClick={() => { setEditing(true); setRenameError(null) }}
-                  className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+                  className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
                 >
                   <Pencil className="h-3.5 w-3.5" aria-hidden /> Rename
                 </button>
@@ -240,7 +240,7 @@ export function DockThreadDetails({
                     </span>
                   )}
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-xs font-medium text-text">
+                    <span className="block truncate text-meta font-medium text-text">
                       {p.display_name}
                       {p.id === myProfileId && <span className="ml-1 font-normal text-subtle">(You)</span>}
                     </span>
@@ -256,9 +256,9 @@ export function DockThreadDetails({
           <div className="shrink-0 border-t border-border px-3 py-2.5">
             {confirming ? (
               <div>
-                <p className="text-sm font-medium text-text">Leave this conversation?</p>
-                <p className="mt-0.5 text-xs text-muted">You will stop getting its messages. The others stay.</p>
-                {leaveError && <p role="alert" className="mt-1 text-xs text-danger">{leaveError}</p>}
+                <p className="text-body-sm font-medium text-text">Leave this conversation?</p>
+                <p className="mt-0.5 text-meta text-muted">You will stop getting its messages. The others stay.</p>
+                {leaveError && <p role="alert" className="mt-1 text-meta text-danger">{leaveError}</p>}
                 <div className="mt-2 flex gap-2">
                   <button
                     type="button"
@@ -266,14 +266,14 @@ export function DockThreadDetails({
                     disabled={leaving}
                     aria-busy={leaving}
                     autoFocus
-                    className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg bg-danger px-3 text-sm font-medium text-on-danger transition-opacity hover:opacity-90 disabled:opacity-60"
+                    className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg bg-danger px-3 text-body-sm font-medium text-on-danger transition-opacity hover:opacity-90 disabled:opacity-60"
                   >
                     {leaving && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />} Yes, leave
                   </button>
                   <button
                     type="button"
                     onClick={cancelLeave}
-                    className="inline-flex min-h-10 items-center justify-center rounded-lg border border-border px-3 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated"
+                    className="inline-flex min-h-10 items-center justify-center rounded-lg border border-border px-3 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated"
                   >
                     Cancel
                   </button>
@@ -281,7 +281,7 @@ export function DockThreadDetails({
               </div>
             ) : (
               <>
-                {leaveError && <p role="alert" className="mb-1 text-xs text-danger">{leaveError}</p>}
+                {leaveError && <p role="alert" className="mb-1 text-meta text-danger">{leaveError}</p>}
                 {/* Two steps, and NOT the browser's native confirm: that dialog is unstyleable
                     and untestable, and on iOS it dismisses the keyboard and can freeze a
                     mid-animation bottom sheet. The page has no confirmation at all today, so
@@ -290,7 +290,7 @@ export function DockThreadDetails({
                   ref={leaveTriggerRef}
                   type="button"
                   onClick={() => { setConfirming(true); setLeaveError(null) }}
-                  className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-danger px-3 text-sm font-medium text-danger transition-colors hover:bg-danger-bg"
+                  className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-danger px-3 text-body-sm font-medium text-danger transition-colors hover:bg-danger-bg"
                 >
                   <LogOut className="h-3.5 w-3.5" aria-hidden /> Leave conversation
                 </button>

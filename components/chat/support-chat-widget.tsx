@@ -123,7 +123,7 @@ export function SupportChatWidget() {
         <div className="mb-3 flex h-[32rem] max-h-[calc(100dvh-6rem)] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-pop">
           <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-text">Contact us</p>
+              <p className="text-body-sm font-semibold text-text">Contact us</p>
               <p className="text-2xs text-muted">Send us a message. We reply by email and right here.</p>
             </div>
             <button
@@ -163,20 +163,20 @@ function SentConfirmation({
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
       <CheckCircle2 className="h-8 w-8 text-success" aria-hidden />
-      <p className="text-sm font-semibold text-text">Your message is in.</p>
-      <p className="text-xs text-muted">
+      <p className="text-body-sm font-semibold text-text">Your message is in.</p>
+      <p className="text-meta text-muted">
         We will reply to your email, and the conversation stays right here whenever you want to check it.
       </p>
       {sessionExists && (
         <button
           type="button"
           onClick={onView}
-          className="mt-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="mt-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           View conversation
         </button>
       )}
-      <button type="button" onClick={onNew} className="text-xs font-medium text-muted hover:text-text">
+      <button type="button" onClick={onNew} className="text-meta font-medium text-muted hover:text-text">
         Send another message
       </button>
     </div>
@@ -195,8 +195,8 @@ function MemberDoorway({ authed, nextPath }: { authed: boolean; nextPath: string
         >
           <UserRound className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
           <span className="min-w-0">
-            <span className="block text-sm font-medium text-text">Open the app</span>
-            <span className="block truncate text-xs text-muted">Your Messages and Vera live inside.</span>
+            <span className="block text-body-sm font-medium text-text">Open the app</span>
+            <span className="block truncate text-meta text-muted">Your Messages and Vera live inside.</span>
           </span>
         </a>
       ) : (
@@ -206,8 +206,8 @@ function MemberDoorway({ authed, nextPath }: { authed: boolean; nextPath: string
         >
           <UserRound className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
           <span className="min-w-0">
-            <span className="block text-sm font-medium text-text">Log in or register</span>
-            <span className="block truncate text-xs text-muted">Message members and chat with Vera inside.</span>
+            <span className="block text-body-sm font-medium text-text">Log in or register</span>
+            <span className="block truncate text-meta text-muted">Message members and chat with Vera inside.</span>
           </span>
         </a>
       )}
@@ -237,7 +237,7 @@ function StartForm({ onStarted }: { onStarted: (s: { ref: string; token: string;
   }
 
   const input =
-    'w-full rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-text focus:border-border-strong focus:outline-none'
+    'w-full rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none'
 
   return (
     <form onSubmit={submit} className="flex flex-1 flex-col gap-2 overflow-y-auto p-4">
@@ -258,14 +258,14 @@ function StartForm({ onStarted }: { onStarted: (s: { ref: string; token: string;
         required
       />
       {error && (
-        <p role="alert" className="text-xs text-danger">
+        <p role="alert" className="text-meta text-danger">
           {error}
         </p>
       )}
       <button
         type="submit"
         disabled={pending}
-        className="mt-auto inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+        className="mt-auto inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
         Send message
@@ -303,7 +303,7 @@ function ChatSession({ session, viewerId, onBack }: { session: Session; viewerId
         <button type="button" onClick={onBack} aria-label="Back" className="rounded-lg p-1 text-muted hover:bg-surface-elevated hover:text-text">
           <ArrowLeft className="h-4 w-4" aria-hidden />
         </button>
-        <span className="text-xs font-medium text-muted">Your conversation</span>
+        <span className="text-meta font-medium text-muted">Your conversation</span>
       </div>
       <div className="flex-1 space-y-2 overflow-y-auto p-3">
         {loading && <p className="text-center text-2xs text-muted">Loading…</p>}
@@ -313,7 +313,7 @@ function ChatSession({ session, viewerId, onBack }: { session: Session; viewerId
         {messages.map((m) => (
           <div key={m.id} className={m.author === 'visitor' ? 'flex justify-end' : 'flex justify-start'}>
             <div
-              className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm ${
+              className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-body-sm ${
                 m.author === 'visitor' ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-text'
               }`}
             >
@@ -352,7 +352,7 @@ function ChatSession({ session, viewerId, onBack }: { session: Session; viewerId
           }}
           rows={1}
           placeholder="Write a message…"
-          className="max-h-24 flex-1 resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-text focus:border-border-strong focus:outline-none"
+          className="max-h-24 flex-1 resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none"
         />
         <button
           type="button"

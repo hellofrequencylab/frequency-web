@@ -349,7 +349,7 @@ export default async function MessagesPage({
         <Link
           key={f.value}
           href={threadsHref(f.value, sort)}
-          className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+          className={`rounded-md px-2.5 py-1 text-meta font-medium transition-colors ${
             filter === f.value ? 'bg-surface text-text lift-1' : 'text-muted hover:text-text'
           }`}
         >
@@ -365,7 +365,7 @@ export default async function MessagesPage({
         <Link
           key={s.value}
           href={threadsHref(filter, s.value)}
-          className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+          className={`rounded-md px-2.5 py-1 text-meta font-medium transition-colors ${
             sort === s.value ? 'bg-surface text-text lift-1' : 'text-muted hover:text-text'
           }`}
         >
@@ -381,7 +381,7 @@ export default async function MessagesPage({
         <span className="flex items-center gap-2">
           {pageTitle}
           {totalUnread > 0 && (
-            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-pill bg-primary px-1.5 text-xs font-bold text-on-primary">
+            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-pill bg-primary px-1.5 text-meta font-bold text-on-primary">
               {totalUnread > 9 ? '9+' : totalUnread}
             </span>
           )}
@@ -396,7 +396,7 @@ export default async function MessagesPage({
           {ctaLabel && ctaHref && (
             <a
               href={ctaHref}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
             >
               {ctaLabel}
             </a>
@@ -470,12 +470,12 @@ export default async function MessagesPage({
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-semibold text-text">{room.name}</span>
+                      <span className="truncate text-body-sm font-semibold text-text">{room.name}</span>
                       {room.last_message_at && (
-                        <span className="shrink-0 text-xs text-subtle">{relativeTime(room.last_message_at)}</span>
+                        <span className="shrink-0 text-meta text-subtle">{relativeTime(room.last_message_at)}</span>
                       )}
                     </div>
-                    <p className="truncate text-xs text-subtle">Open channel room · anyone tuned in can post</p>
+                    <p className="truncate text-meta text-subtle">Open channel room · anyone tuned in can post</p>
                   </div>
                 </Link>
               ))}
@@ -528,12 +528,12 @@ function RoomRowItem({ room }: { room: RoomRow }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-semibold text-text truncate">{room.name}</span>
+          <span className="text-body-sm font-semibold text-text truncate">{room.name}</span>
           {room.last_message_at && (
-            <span className="text-xs text-subtle shrink-0">{relativeTime(room.last_message_at)}</span>
+            <span className="text-meta text-subtle shrink-0">{relativeTime(room.last_message_at)}</span>
           )}
         </div>
-        <p className="text-xs text-subtle truncate">
+        <p className="text-meta text-subtle truncate">
           <Users className="w-3 h-3 inline mr-1 -mt-px" />
           {room.member_count} {room.member_count === 1 ? 'member' : 'members'}
           {room.visibility === 'private' && <> &middot; Private</>}
@@ -577,7 +577,7 @@ async function DMRowItem({ conv, myProfileId, onlineIds }: { conv: ConversationR
         ) : conv.participants[0]?.avatar_url ? (
           <Image src={avatarSrc(conv.participants[0].avatar_url!)} alt={conv.participants[0].display_name} width={40} height={40} style={avatarFocusStyle(conv.participants[0].avatar_url)} className="w-10 h-10 rounded-pill object-cover" />
         ) : (
-          <div className="w-10 h-10 rounded-pill bg-primary-bg text-primary-strong text-sm font-semibold flex items-center justify-center select-none">
+          <div className="w-10 h-10 rounded-pill bg-primary-bg text-primary-strong text-body-sm font-semibold flex items-center justify-center select-none">
             {conv.participants[0] ? getInitials(conv.participants[0].display_name) : '?'}
           </div>
         )}
@@ -585,15 +585,15 @@ async function DMRowItem({ conv, myProfileId, onlineIds }: { conv: ConversationR
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <span className={`text-sm truncate ${hasUnread ? 'font-semibold text-text' : 'font-medium text-text'}`}>
+          <span className={`text-body-sm truncate ${hasUnread ? 'font-semibold text-text' : 'font-medium text-text'}`}>
             {display}
           </span>
           {conv.lastMessage && (
-            <span className="text-xs text-subtle shrink-0">{relativeTime(conv.lastMessage.created_at)}</span>
+            <span className="text-meta text-subtle shrink-0">{relativeTime(conv.lastMessage.created_at)}</span>
           )}
         </div>
         <div className="flex items-center gap-1.5 mt-0.5">
-          <p className={`text-xs truncate flex-1 ${hasUnread ? 'text-text font-medium' : 'text-subtle'}`}>
+          <p className={`text-meta truncate flex-1 ${hasUnread ? 'text-text font-medium' : 'text-subtle'}`}>
             {conv.lastMessage
               ? conv.lastMessage.sender_id === myProfileId ? `You: ${conv.lastMessage.body}` : conv.lastMessage.body
               : 'No messages yet'}
@@ -620,7 +620,7 @@ function GroupAvatars({ participants }: { participants: Profile[] }) {
             className={`${size} ${pos} rounded-pill object-cover ring-2 ring-surface`} />
         ) : (
           <div key={p.id}
-            className={`${size} ${pos} rounded-pill bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center ring-2 ring-surface`}>
+            className={`${size} ${pos} rounded-pill bg-primary-bg text-primary-strong text-meta font-semibold flex items-center justify-center ring-2 ring-surface`}>
             {getInitials(p.display_name)}
           </div>
         )

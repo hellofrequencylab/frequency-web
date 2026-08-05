@@ -117,7 +117,7 @@ export default async function QrStatsPage() {
         {locations.length > 0 && (
           <ul className="mt-3 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
             {locations.slice(0, 6).map((l) => (
-              <li key={l.key} className="flex items-center justify-between rounded-lg border border-border bg-surface px-3 py-1.5 text-sm">
+              <li key={l.key} className="flex items-center justify-between rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm">
                 <span className="truncate text-text">
                   {l.city}
                   {l.country ? <span className="text-subtle"> · {l.country}</span> : null}
@@ -167,7 +167,7 @@ export default async function QrStatsPage() {
             <RankTile title="By channel" rows={acquisition.byChannel} />
             <RankTile title="By source / campaign" rows={acquisition.bySource} />
             <div className="lg:col-span-2">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Top codes (scan → signup)</p>
+              <p className="mb-2 text-meta font-semibold uppercase tracking-wide text-muted">Top codes (scan → signup)</p>
               <DataTable
                 rows={topAcqCodes}
                 getRowId={(c) => c.slug}
@@ -194,13 +194,13 @@ export default async function QrStatsPage() {
 function RankTile({ title, rows }: { title: string; rows: { key: string; count: number }[] }) {
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted">{title}</p>
+      <p className="text-meta font-semibold uppercase tracking-wide text-muted">{title}</p>
       {rows.length === 0 ? (
-        <p className="mt-2 text-sm text-muted">No data yet.</p>
+        <p className="mt-2 text-body-sm text-muted">No data yet.</p>
       ) : (
         <ul className="mt-3 space-y-1.5">
           {rows.slice(0, 6).map((r) => (
-            <li key={r.key} className="flex items-baseline justify-between gap-3 text-sm">
+            <li key={r.key} className="flex items-baseline justify-between gap-3 text-body-sm">
               <span className="truncate text-text">{r.key}</span>
               <span className="shrink-0 font-semibold tabular-nums text-text">{r.count.toLocaleString()}</span>
             </li>

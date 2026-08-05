@@ -22,7 +22,7 @@ export default function CodeUnavailablePage() {
           <div className="w-14 h-14 mx-auto rounded-2xl bg-surface-elevated text-muted flex items-center justify-center">
             <QrCode className="w-7 h-7" />
           </div>
-          <Link href="/" className="inline-block mt-5 text-sm font-semibold text-primary hover:underline">
+          <Link href="/" className="inline-block mt-5 text-body-sm font-semibold text-primary hover:underline">
             Go to Frequency →
           </Link>
         </div>

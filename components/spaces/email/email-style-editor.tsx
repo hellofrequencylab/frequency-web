@@ -113,8 +113,8 @@ export function EmailStyleEditor({
                   className="h-9 w-9 shrink-0 cursor-pointer rounded-lg border border-border bg-transparent disabled:cursor-not-allowed"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-text">{f.label}</p>
-                  <p className="text-xs text-muted">{f.desc}</p>
+                  <p className="text-body-sm font-semibold text-text">{f.label}</p>
+                  <p className="text-meta text-muted">{f.desc}</p>
                 </div>
                 <input
                   type="text"
@@ -123,7 +123,7 @@ export function EmailStyleEditor({
                   disabled={readOnly}
                   spellCheck={false}
                   onChange={(e) => setField(f.key, e.target.value)}
-                  className="w-24 rounded-lg border border-border bg-surface-elevated/50 px-2 py-1.5 text-xs text-text placeholder:text-subtle focus:border-primary focus:outline-none disabled:opacity-60"
+                  className="w-24 rounded-lg border border-border bg-surface-elevated/50 px-2 py-1.5 text-meta text-text placeholder:text-subtle focus:border-primary focus:outline-none disabled:opacity-60"
                 />
                 <button
                   type="button"
@@ -144,7 +144,7 @@ export function EmailStyleEditor({
             type="button"
             onClick={onSave}
             disabled={readOnly || pending}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             Save style
@@ -153,14 +153,14 @@ export function EmailStyleEditor({
             type="button"
             onClick={resetAll}
             disabled={readOnly}
-            className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-2 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text disabled:opacity-50"
           >
             Reset to brand
           </button>
           {note && (
             <span
               role="status"
-              className={`text-xs font-medium ${note.kind === 'ok' ? 'text-success' : 'text-danger'}`}
+              className={`text-meta font-medium ${note.kind === 'ok' ? 'text-success' : 'text-danger'}`}
             >
               {note.text}
             </span>
@@ -176,23 +176,23 @@ export function EmailStyleEditor({
             className="mx-auto max-w-[18rem] rounded-xl p-5"
             style={{ background: preview.surface, border: `1px solid ${preview.border}` }}
           >
-            <p className="text-lg font-black lowercase" style={{ color: preview.primaryStrong }}>
+            <p className="text-body-lg font-black lowercase" style={{ color: preview.primaryStrong }}>
               frequency
             </p>
-            <p className="mt-3 text-sm font-bold" style={{ color: preview.primaryStrong }}>
+            <p className="mt-3 text-body-sm font-bold" style={{ color: preview.primaryStrong }}>
               A quick hello
             </p>
-            <p className="mt-1.5 text-xs leading-relaxed" style={{ color: preview.text }}>
+            <p className="mt-1.5 text-meta leading-relaxed" style={{ color: preview.text }}>
               This is how your emails will look. Plain words, your colors.
             </p>
             <div
-              className="mt-3 rounded-lg p-2.5 text-xs"
+              className="mt-3 rounded-lg p-2.5 text-meta"
               style={{ background: preview.primaryBg, color: preview.text }}
             >
               A highlighted note sits in here.
             </div>
             <span
-              className="mt-3 inline-block rounded-lg px-3 py-1.5 text-xs font-semibold"
+              className="mt-3 inline-block rounded-lg px-3 py-1.5 text-meta font-semibold"
               style={{ background: preview.primary, color: preview.onPrimary }}
             >
               Take a look

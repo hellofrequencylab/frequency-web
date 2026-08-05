@@ -66,11 +66,11 @@ export function EntryPointsManager({
       {/* Create */}
       <section className="rounded-2xl border border-border bg-surface lift-1">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <h2 className="text-sm font-bold text-text">New entry point</h2>
+          <h2 className="text-body-sm font-bold text-text">New entry point</h2>
           {!creating && (
             <button
               onClick={() => setCreating(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               <Plus className="h-3.5 w-3.5" /> Start one
             </button>
@@ -96,7 +96,7 @@ export function EntryPointsManager({
       {/* List */}
       <section className="space-y-3">
         {cards.length === 0 && !creating && (
-          <p className="rounded-2xl border border-dashed border-border bg-surface px-4 py-8 text-center text-sm text-muted">
+          <p className="rounded-2xl border border-dashed border-border bg-surface px-4 py-8 text-center text-body-sm text-muted">
             No entry points yet. Start one above. It takes about a minute.
           </p>
         )}
@@ -113,8 +113,8 @@ function TemplatePicker({ templates, onPick, onCancel }: { templates?: EntryTemp
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <p className="text-sm font-semibold text-text">What are you making?</p>
-        <button onClick={onCancel} className="text-xs font-medium text-muted hover:text-text">
+        <p className="text-body-sm font-semibold text-text">What are you making?</p>
+        <button onClick={onCancel} className="text-meta font-medium text-muted hover:text-text">
           Cancel
         </button>
       </div>
@@ -125,10 +125,10 @@ function TemplatePicker({ templates, onPick, onCancel }: { templates?: EntryTemp
             onClick={() => onPick(t)}
             className="flex items-start gap-3 rounded-2xl border border-border bg-canvas/40 px-4 py-3 text-left transition-colors hover:border-primary/40"
           >
-            <span className="text-2xl leading-none" aria-hidden>{t.emoji}</span>
+            <span className="text-page-title leading-none" aria-hidden>{t.emoji}</span>
             <span>
-              <span className="block text-sm font-bold text-text">{t.label}</span>
-              <span className="mt-0.5 block text-xs text-muted">{t.blurb}</span>
+              <span className="block text-body-sm font-bold text-text">{t.label}</span>
+              <span className="mt-0.5 block text-meta text-muted">{t.blurb}</span>
             </span>
           </button>
         ))}
@@ -209,14 +209,14 @@ export function EntryForm({
     })
   }
 
-  const field = 'w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text'
-  const labelCls = 'block text-xs font-medium text-subtle mb-1'
+  const field = 'w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text'
+  const labelCls = 'block text-meta font-medium text-subtle mb-1'
 
   return (
     <div className="grid gap-5 md:grid-cols-[1fr_auto]">
       <div className="space-y-3">
         {onBack && (
-          <button onClick={onBack} className="inline-flex items-center gap-1 text-xs font-medium text-muted hover:text-text">
+          <button onClick={onBack} className="inline-flex items-center gap-1 text-meta font-medium text-muted hover:text-text">
             <ArrowLeft className="h-3 w-3" /> {template.label} · change
           </button>
         )}
@@ -249,17 +249,17 @@ export function EntryForm({
           <input value={form.footer} onChange={(e) => set('footer', e.target.value)} className={field} maxLength={40} />
         </label>
 
-        {error && <p className="text-xs text-danger">{error}</p>}
+        {error && <p className="text-meta text-danger">{error}</p>}
 
         <div className="flex items-center gap-2 pt-1">
           <button
             onClick={submit}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
           >
             {pending ? 'Saving…' : card ? 'Save changes' : 'Create entry point'}
           </button>
-          <button onClick={onDone} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-muted hover:text-text">
+          <button onClick={onDone} className="rounded-lg px-3 py-1.5 text-meta font-semibold text-muted hover:text-text">
             Cancel
           </button>
         </div>
@@ -301,7 +301,7 @@ export function EntryRow({ card, destinationGroups }: { card: EntryCard; destina
   }
 
   const action =
-    'inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted transition-colors hover:bg-surface-elevated hover:text-text'
+    'inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted transition-colors hover:bg-surface-elevated hover:text-text'
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-3 lift-1">
@@ -312,11 +312,11 @@ export function EntryRow({ card, destinationGroups }: { card: EntryCard; destina
           dangerouslySetInnerHTML={{ __html: card.qrSvg }}
         />
         <div className="min-w-0 flex-1">
-          <h3 className="flex items-center gap-1.5 truncate text-sm font-bold text-text">
+          <h3 className="flex items-center gap-1.5 truncate text-body-sm font-bold text-text">
             <span aria-hidden>{template.emoji}</span> {card.title}
           </h3>
-          <p className="truncate text-xs text-muted">→ {destinationLabel(destinationGroups, card.destination)}</p>
-          <p className="mt-0.5 text-xs text-muted">
+          <p className="truncate text-meta text-muted">→ {destinationLabel(destinationGroups, card.destination)}</p>
+          <p className="mt-0.5 text-meta text-muted">
             <span className="font-semibold text-text">{card.scans}</span> scan{card.scans === 1 ? '' : 's'}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">

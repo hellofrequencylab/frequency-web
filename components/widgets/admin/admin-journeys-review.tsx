@@ -30,13 +30,13 @@ export async function AdminJourneysReview() {
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/journeys/${j.slug}`}
-                    className="flex items-center gap-1.5 text-sm font-medium text-text hover:underline"
+                    className="flex items-center gap-1.5 text-body-sm font-medium text-text hover:underline"
                   >
                     {j.emoji && <span aria-hidden="true">{j.emoji}</span>}
                     <span className="truncate">{j.title}</span>
                     <ExternalLink className="h-3 w-3 shrink-0 text-subtle" aria-hidden />
                   </Link>
-                  <p className="mt-0.5 text-xs text-muted">
+                  <p className="mt-0.5 text-meta text-muted">
                     by {j.author?.display_name ?? j.author?.handle ?? 'Unknown'} · {j.adopt_count} adopted ·{' '}
                     {j.forked_count} remixed
                   </p>

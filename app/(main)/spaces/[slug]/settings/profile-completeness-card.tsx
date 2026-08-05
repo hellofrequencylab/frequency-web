@@ -34,10 +34,10 @@ export function ProfileCompletenessCard({ input }: { input: CompletenessInput })
       className="mb-6 rounded-2xl border border-border bg-surface p-5"
     >
       <div className="flex items-baseline justify-between gap-3">
-        <h2 id="profile-readiness-heading" className="text-sm font-bold tracking-tight text-text">
+        <h2 id="profile-readiness-heading" className="text-body-sm font-bold tracking-tight text-text">
           Search readiness
         </h2>
-        <span className={cn('text-sm font-bold tabular-nums', scoreColor)}>{report.score}%</span>
+        <span className={cn('text-body-sm font-bold tabular-nums', scoreColor)}>{report.score}%</span>
       </div>
 
       {/* The meter. ProgressTrack carries the progressbar role and the score for a screen reader. */}
@@ -50,7 +50,7 @@ export function ProfileCompletenessCard({ input }: { input: CompletenessInput })
         label="Profile completeness"
       />
 
-      <p className="mt-2.5 text-xs text-muted">{headline}</p>
+      <p className="mt-2.5 text-meta text-muted">{headline}</p>
 
       {/* The checklist: every tracked field, done first (a quiet check) then the still-missing ones with
           their plain "why it matters" hint. When everything is done the list still shows the finished
@@ -66,13 +66,13 @@ export function ProfileCompletenessCard({ input }: { input: CompletenessInput })
             <div className="min-w-0">
               <p
                 className={cn(
-                  'text-sm font-medium',
+                  'text-body-sm font-medium',
                   item.done ? 'text-subtle line-through decoration-subtle/40' : 'text-text',
                 )}
               >
                 {item.label}
               </p>
-              {!item.done && <p className="text-xs text-muted">{item.hint}</p>}
+              {!item.done && <p className="text-meta text-muted">{item.hint}</p>}
             </div>
           </li>
         ))}

@@ -58,11 +58,11 @@ export function DemoOverview({
             <StatusChip tone={on ? 'success' : 'neutral'} size="sm">
               {on ? 'Visible' : 'Hidden'}
             </StatusChip>
-            <p className="text-sm font-semibold text-text">
+            <p className="text-body-sm font-semibold text-text">
               {on ? 'Demo content is live across the app' : 'Demo content is hidden everywhere'}
             </p>
           </div>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 text-body-sm text-muted">
             {on
               ? 'Visible across the directory, circles, events, and feeds. The ⚡ marks it as sample content.'
               : 'The rows still exist. Flip back on any time, or purge them for good in the Danger zone below.'}

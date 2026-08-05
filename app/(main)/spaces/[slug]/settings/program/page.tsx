@@ -70,7 +70,7 @@ export default async function SpaceProgramPage({
         description="Run your model as a Program. Your flagship circle becomes the blueprint, and members start Chapters anywhere."
         back={{ href: `/spaces/${slug}/manage`, label: 'Manage' }}
       >
-        <p className="rounded-2xl border border-border bg-surface p-6 text-sm text-muted">
+        <p className="rounded-2xl border border-border bg-surface p-6 text-body-sm text-muted">
           Program is turned off for this space, or your role does not include it. An admin can turn it on
           in the module settings.
         </p>
@@ -120,12 +120,12 @@ export default async function SpaceProgramPage({
           />
         )}
         {errorMsg && (
-          <p className="rounded-lg border border-danger/30 bg-danger-bg px-3 py-2 text-sm text-danger">
+          <p className="rounded-lg border border-danger/30 bg-danger-bg px-3 py-2 text-body-sm text-danger">
             {errorMsg}
           </p>
         )}
         {!errorMsg && saved && (
-          <p className="rounded-lg border border-success/30 bg-success-bg px-3 py-2 text-sm text-success">
+          <p className="rounded-lg border border-success/30 bg-success-bg px-3 py-2 text-body-sm text-success">
             Saved.
           </p>
         )}
@@ -146,14 +146,14 @@ export default async function SpaceProgramPage({
                             View the Channel
                           </Link>
                         ) : (
-                          <span className="rounded-pill border border-warning/60 px-3 py-1 text-xs font-medium text-warning">
+                          <span className="rounded-pill border border-warning/60 px-3 py-1 text-meta font-medium text-warning">
                             Paused
                           </span>
                         )
                       }
                     />
-                    {program.description && <p className="text-sm text-muted">{program.description}</p>}
-                    <div className="mt-4 space-y-3 text-sm">
+                    {program.description && <p className="text-body-sm text-muted">{program.description}</p>}
+                    <div className="mt-4 space-y-3 text-body-sm">
                       <p className="flex items-center gap-2 text-text">
                         <UsersRound className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
                         {chapters.length === 0
@@ -174,7 +174,7 @@ export default async function SpaceProgramPage({
                     className="space-y-4 rounded-2xl border border-border bg-surface p-6"
                   >
                     <SectionHeader title="Edit your Program" />
-                    <p className="text-sm text-muted">
+                    <p className="text-body-sm text-muted">
                       Renaming keeps the Channel at the same address, so every shared link keeps working.
                     </p>
                     <Field label="Program name" hint="The name members see on the Channel.">
@@ -191,7 +191,7 @@ export default async function SpaceProgramPage({
                     className="space-y-4 rounded-2xl border border-border bg-surface p-6"
                   >
                     <SectionHeader title="Blueprint" />
-                    <p className="text-sm text-muted">
+                    <p className="text-body-sm text-muted">
                       The blueprint is the snapshot every new Chapter starts from, saved when you created
                       this Program. Refresh it to save the current setup of one of your live circles
                       instead. Chapters already running keep what they have; only future Chapters start
@@ -216,7 +216,7 @@ export default async function SpaceProgramPage({
 
                   <section className="space-y-4 rounded-2xl border border-border bg-surface p-6">
                     <SectionHeader title={program.isActive ? 'Pause your Program' : 'Resume your Program'} />
-                    <p className="text-sm text-muted">
+                    <p className="text-body-sm text-muted">
                       {program.isActive
                         ? 'Paused: the Channel page is hidden and no new Chapters can start. Members and Chapters keep everything they have.'
                         : 'This Program is paused. The Channel page is hidden and no new Chapters can start. Resuming brings both straight back.'}
@@ -230,7 +230,7 @@ export default async function SpaceProgramPage({
                 </div>
               )
             })}
-            <p className="text-xs text-subtle">Deleting a Program goes through the crew. Everything else here is yours.</p>
+            <p className="text-meta text-subtle">Deleting a Program goes through the crew. Everything else here is yours.</p>
           </>
         ) : liveCircles.length === 0 ? (
           <EmptyState
@@ -249,7 +249,7 @@ export default async function SpaceProgramPage({
             className="space-y-4 rounded-2xl border border-border bg-surface p-6"
           >
             <SectionHeader title="Create your Program" />
-            <p className="text-sm text-muted">
+            <p className="text-body-sm text-muted">
               Pick your flagship circle and we save its setup as the blueprint. Your Program gets its own
               Channel, and members anywhere can start a Chapter from it.
             </p>

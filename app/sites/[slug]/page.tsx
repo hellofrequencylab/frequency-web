@@ -51,14 +51,14 @@ export default async function SpaceWebsiteComingSoon({
             <Radio className="h-7 w-7" aria-hidden />
           </span>
           <h1 className="mt-6 font-display text-3xl font-bold tracking-tight text-text">Coming soon</h1>
-          <p className="mt-3 text-base leading-relaxed text-muted">
+          <p className="mt-3 text-body leading-relaxed text-muted">
             The standalone website for {brandName} is on its way. For now, everything lives on the
             {' '}
             {brandName} page on Frequency.
           </p>
           <Link
             href={`/spaces/${space.slug}`}
-            className="mt-8 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-on-primary transition-opacity hover:opacity-90"
+            className="mt-8 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-body-sm font-bold text-on-primary transition-opacity hover:opacity-90"
           >
             Visit {brandName} on Frequency
             <ArrowRight className="h-4 w-4" aria-hidden />

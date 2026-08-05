@@ -171,7 +171,7 @@ async function ActivityPanel({ profileId }: { profileId: string }) {
   return (
     <section>
       <div className="mb-2 px-1">
-        <h3 className="text-sm font-bold tracking-tight text-text">Your activity</h3>
+        <h3 className="text-body-sm font-bold tracking-tight text-text">Your activity</h3>
       </div>
       <ActivityChart activity={activity} />
     </section>
@@ -186,7 +186,7 @@ async function SignaturePanel({ profileId }: { profileId: string }) {
   return (
     <section>
       <div className="mb-2 px-1">
-        <h3 className="text-sm font-bold tracking-tight text-text">Your Frequency Signature</h3>
+        <h3 className="text-body-sm font-bold tracking-tight text-text">Your Frequency Signature</h3>
       </div>
       <FrequencySignature signature={signature} variant="full" layout="stack" />
     </section>

@@ -122,7 +122,7 @@ export async function SiteHeader({ profile: profileProp, variant = 'light', auth
           Pointer users never see it. Mirrors the MarketingHeader pattern. */}
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-text focus:shadow-pop"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-body-sm focus:font-semibold focus:text-text focus:shadow-pop"
       >
         Skip to content
       </a>
@@ -175,7 +175,7 @@ export async function SiteHeader({ profile: profileProp, variant = 'light', auth
       <SearchLink
         clientAuth={clientAuth}
         isAuth={isAuth}
-        className={`hidden sm:flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+        className={`hidden sm:flex items-center gap-2 rounded-lg border px-3 py-1.5 text-body-sm transition-colors ${
           isDark
             ? 'border-on-ink/20 bg-on-ink/10 text-on-ink-muted hover:bg-on-ink/20 hover:text-on-ink'
             : 'border-border bg-surface-elevated text-muted hover:border-border-strong'

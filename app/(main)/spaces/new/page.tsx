@@ -48,8 +48,8 @@ export default async function NewSpacePage() {
             <Sparkles className="h-4 w-4" aria-hidden />
           </span>
           <span className="min-w-0">
-            <span className="block text-sm font-semibold text-text">Running a business? Start here</span>
-            <span className="block text-xs text-muted">Drop your name and links, get a ready-to-fill page in under a minute.</span>
+            <span className="block text-body-sm font-semibold text-text">Running a business? Start here</span>
+            <span className="block text-meta text-muted">Drop your name and links, get a ready-to-fill page in under a minute.</span>
           </span>
         </span>
         <ArrowRight className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />

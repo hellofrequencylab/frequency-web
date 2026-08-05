@@ -78,7 +78,7 @@ export function AdminSubNav({ sections, viewer }: Props) {
               key={l.id}
               href={l.href}
               aria-current={active ? 'page' : undefined}
-              className={`shrink-0 rounded-md px-2.5 py-1 text-sm transition-colors ${
+              className={`shrink-0 rounded-md px-2.5 py-1 text-body-sm transition-colors ${
                 active
                   ? 'font-semibold text-text underline decoration-primary decoration-2 underline-offset-8'
                   : 'text-muted hover:text-text hover:bg-surface-elevated'

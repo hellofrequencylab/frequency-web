@@ -22,7 +22,7 @@ export async function PopularChannels() {
           <li key={channel.id}>
             <Link
               href={`/channels/${channel.id}`}
-              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-text hover:bg-border"
+              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-meta text-text hover:bg-border"
             >
               <Hash className="h-3.5 w-3.5 shrink-0 text-muted" aria-hidden />
               <span className="truncate">{channel.name}</span>

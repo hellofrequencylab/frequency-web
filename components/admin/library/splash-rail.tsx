@@ -38,13 +38,13 @@ function Row({
     <Link
       href={href}
       aria-current={active ? 'true' : undefined}
-      className={`flex min-w-0 items-center gap-1.5 rounded-xl px-2 py-1.5 text-xs transition-colors sm:gap-2 sm:px-2.5 sm:text-sm ${
+      className={`flex min-w-0 items-center gap-1.5 rounded-xl px-2 py-1.5 text-meta transition-colors sm:gap-2 sm:px-2.5 sm:text-body-sm ${
         active ? 'bg-primary-bg font-semibold text-primary-strong' : 'text-muted hover:bg-surface-elevated'
       }`}
     >
       <span className="shrink-0 text-subtle">{icon}</span>
       <span className="min-w-0 flex-1 truncate">{label}</span>
-      {count !== undefined && <span className="hidden shrink-0 text-xs text-subtle sm:inline">{count}</span>}
+      {count !== undefined && <span className="hidden shrink-0 text-meta text-subtle sm:inline">{count}</span>}
     </Link>
   )
 }
@@ -59,7 +59,7 @@ export function SplashRail({ counts, active, base }: { counts: Counts; active: A
     <nav className="space-y-0.5" aria-label="Splash folders">
       <Link
         href="/admin/library"
-        className="mb-1 flex items-center gap-1.5 rounded-control px-2 py-1.5 text-xs text-subtle transition-colors hover:bg-surface-elevated hover:text-text sm:px-2.5 sm:text-sm"
+        className="mb-1 flex items-center gap-1.5 rounded-control px-2 py-1.5 text-meta text-subtle transition-colors hover:bg-surface-elevated hover:text-text sm:px-2.5 sm:text-body-sm"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden /> Library
       </Link>

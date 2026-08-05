@@ -76,7 +76,7 @@ export function FeatureTierRange({ ladder, currentTier, upgradeHref, live = fals
 
   return (
     <section className="mt-4 rounded-2xl border border-border bg-surface p-4 lift-1">
-      <p className="text-xs font-semibold uppercase tracking-widest text-subtle">{ladder.title} plans</p>
+      <p className="text-meta font-semibold uppercase tracking-widest text-subtle">{ladder.title} plans</p>
 
       {/* The segmented range: one radio per tier. Roving tabindex + arrow keys. */}
       <div
@@ -104,12 +104,12 @@ export function FeatureTierRange({ ladder, currentTier, upgradeHref, live = fals
               ].join(' ')}
             >
               <span className="flex w-full items-center justify-between gap-1">
-                <span className="text-sm font-semibold text-text">{s.label}</span>
+                <span className="text-body-sm font-semibold text-text">{s.label}</span>
                 {viewerHere && (
                   <Check className="h-3.5 w-3.5 text-primary-strong" aria-hidden />
                 )}
               </span>
-              <span className="mt-0.5 text-sm font-bold text-text">{s.price}</span>
+              <span className="mt-0.5 text-body-sm font-bold text-text">{s.price}</span>
               {viewerHere && <span className="mt-0.5 text-2xs font-medium text-primary-strong">Your plan</span>}
             </button>
           )
@@ -117,7 +117,7 @@ export function FeatureTierRange({ ladder, currentTier, upgradeHref, live = fals
       </div>
 
       {/* The selected tier's unlock line. */}
-      <p className="mt-3 flex items-start gap-2 text-sm text-muted">
+      <p className="mt-3 flex items-start gap-2 text-body-sm text-muted">
         {step.unlocked ? (
           <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
         ) : (
@@ -132,13 +132,13 @@ export function FeatureTierRange({ ladder, currentTier, upgradeHref, live = fals
           already on or below (nothing to upgrade to there). */}
       <div className="mt-3 flex flex-wrap items-center gap-3">
         {isCurrent ? (
-          <p className="text-sm font-medium text-muted">You are on the {step.label} plan.</p>
+          <p className="text-body-sm font-medium text-muted">You are on the {step.label} plan.</p>
         ) : isBelowCurrent ? (
-          <p className="text-sm font-medium text-muted">Included on your current plan.</p>
+          <p className="text-body-sm font-medium text-muted">Included on your current plan.</p>
         ) : (
           <Link
             href={upgradeHref}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             See {step.label} plans
           </Link>

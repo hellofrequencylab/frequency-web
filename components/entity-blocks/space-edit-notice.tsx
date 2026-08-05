@@ -13,8 +13,8 @@ export function SpaceEditNotice() {
     <div className="mb-4 flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary-bg/40 px-4 py-3">
       <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
       <div className="space-y-0.5">
-        <p className="text-sm font-semibold text-text">You&rsquo;re editing your Space</p>
-        <p className="text-sm leading-relaxed text-muted">
+        <p className="text-body-sm font-semibold text-text">You&rsquo;re editing your Space</p>
+        <p className="text-body-sm leading-relaxed text-muted">
           Click any block on the page to edit its words and photos. Use the panel on the right to add,
           rearrange, and style your blocks.
         </p>

@@ -35,7 +35,7 @@ function TrophyTile({ trophy }: { trophy: JourneyTrophy }) {
   const inner = (
     <span className="flex h-full items-start gap-3" style={seasonRankStyle(trophy.rankEarned)}>
       <span
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-lg lift-1"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-body-lg lift-1"
         style={{
           background: 'color-mix(in srgb, var(--rank) 16%, var(--color-surface))',
           color: 'var(--rank-deep)',
@@ -45,7 +45,7 @@ function TrophyTile({ trophy }: { trophy: JourneyTrophy }) {
         {trophy.emoji ?? <Trophy className="h-5 w-5" />}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-semibold leading-tight text-text">
+        <span className="block truncate text-body-sm font-semibold leading-tight text-text">
           {trophy.title}
         </span>
         <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -111,7 +111,7 @@ function SeasonSummary({
       {stats.map((s) => (
         <span key={s.label} className="flex items-center gap-1.5 text-text">
           <s.icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
-          <span className="text-xs font-bold tabular-nums">{s.value}</span>
+          <span className="text-meta font-bold tabular-nums">{s.value}</span>
           <span className="text-2xs font-medium text-muted">{s.label}</span>
         </span>
       ))}
@@ -127,7 +127,7 @@ function SeasonGroup({ block, isCurrent }: { block: SeasonBlock; isCurrent: bool
   return (
     <section aria-label={heading}>
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h3 className="text-sm font-bold tracking-tight text-text">{heading}</h3>
+        <h3 className="text-body-sm font-bold tracking-tight text-text">{heading}</h3>
         <span className="text-2xs font-medium tabular-nums text-muted">
           {isCurrent ? 'This season' : 'Kept'} ·{' '}
           {block.trophies.length} {block.trophies.length === 1 ? 'Trophy' : 'Trophies'}
@@ -188,7 +188,7 @@ export function TrophyCase({
           <p className="text-2xs font-semibold uppercase tracking-widest text-muted">
             Yours to keep
           </p>
-          <p className="text-sm font-bold text-text">
+          <p className="text-body-sm font-bold text-text">
             {totalTrophies} {totalTrophies === 1 ? 'Trophy' : 'Trophies'} across{' '}
             {seasons.length} {seasons.length === 1 ? 'season' : 'seasons'}
           </p>

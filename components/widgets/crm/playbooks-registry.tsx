@@ -84,22 +84,22 @@ function PlaybookRow({ playbook, paused }: { playbook: Playbook; paused: boolean
     <li className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-bold text-text">{playbook.name}</p>
+          <p className="truncate text-body-sm font-bold text-text">{playbook.name}</p>
           {paused && (
-            <span className="inline-flex items-center gap-1 rounded-pill bg-danger/10 px-2 py-0.5 text-xs font-semibold text-danger">
+            <span className="inline-flex items-center gap-1 rounded-pill bg-danger/10 px-2 py-0.5 text-meta font-semibold text-danger">
               <PauseCircle className="h-3 w-3" aria-hidden /> Paused
             </span>
           )}
         </div>
-        <p className="mt-0.5 text-xs text-muted">{triggerLabel(playbook.trigger)}</p>
-        <p className="mt-1 text-sm text-subtle">{playbook.rationale}</p>
+        <p className="mt-0.5 text-meta text-muted">{triggerLabel(playbook.trigger)}</p>
+        <p className="mt-1 text-body-sm text-subtle">{playbook.rationale}</p>
       </div>
       <div className="flex shrink-0 items-center gap-3 sm:flex-col sm:items-end sm:gap-1">
-        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-text">
+        <span className="inline-flex items-center gap-1.5 text-meta font-semibold text-text">
           <span className={`h-2 w-2 rounded-pill ${TIER_DOT[playbook.autonomyTier]}`} aria-hidden />
           {TIER_LABEL[playbook.autonomyTier]}
         </span>
-        <span className="text-xs text-subtle">
+        <span className="text-meta text-subtle">
           {stepCount === 0 ? 'no steps' : `${stepCount} ${stepCount === 1 ? 'step' : 'steps'}`}
           {inProductOnly && stepCount > 0 ? ' · in product' : ''}
         </span>

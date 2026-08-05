@@ -15,7 +15,7 @@ export interface RankItem {
 }
 
 export function RankList({ items, empty = 'No signal yet.' }: { items: RankItem[]; empty?: string }) {
-  if (items.length === 0) return <p className="text-xs text-subtle">{empty}</p>
+  if (items.length === 0) return <p className="text-meta text-subtle">{empty}</p>
   return (
     <ul className="space-y-1.5">
       {items.map((i) => {
@@ -26,7 +26,7 @@ export function RankList({ items, empty = 'No signal yet.' }: { items: RankItem[
           </>
         )
         return (
-          <li key={i.value} className="flex items-baseline justify-between gap-3 text-sm">
+          <li key={i.value} className="flex items-baseline justify-between gap-3 text-body-sm">
             {i.href ? (
               <Link href={i.href} className="flex w-full items-baseline justify-between gap-3 hover:underline">
                 {row}

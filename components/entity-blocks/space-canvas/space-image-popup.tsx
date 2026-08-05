@@ -93,13 +93,13 @@ export function SpaceImagePopup({
       <div className="overflow-hidden rounded-3xl border border-border bg-surface lift-3">
         <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
           <div>
-            <h2 className="text-base font-bold text-text">Choose a photo</h2>
-            <p className="text-xs text-muted">Pick from your Loom or paste an image link, then add alt text.</p>
+            <h2 className="text-body font-bold text-text">Choose a photo</h2>
+            <p className="text-meta text-muted">Pick from your Loom or paste an image link, then add alt text.</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+            className="rounded-lg px-2.5 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
           >
             Close
           </button>
@@ -114,14 +114,14 @@ export function SpaceImagePopup({
               // eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset
               <img src={previewSrc.trim()} alt={alt} className="max-h-52 w-full object-contain" />
             ) : (
-              <p className="px-3 py-10 text-center text-xs text-muted">Upload a photo, or paste a link and press Use, to preview it here.</p>
+              <p className="px-3 py-10 text-center text-meta text-muted">Upload a photo, or paste a link and press Use, to preview it here.</p>
             )}
           </div>
 
           <button
             type="button"
             onClick={() => setLoomOpen(true)}
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
           >
             <ImagePlus className="h-4 w-4" aria-hidden /> Choose from your Loom
           </button>
@@ -134,7 +134,7 @@ export function SpaceImagePopup({
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://"
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
             />
           </div>
 
@@ -145,12 +145,12 @@ export function SpaceImagePopup({
               onChange={(e) => setAlt(e.target.value)}
               rows={2}
               placeholder="Describe the photo for screen readers and when images are off."
-              className="w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+              className="w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
             />
           </div>
 
           {error && (
-            <p className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger" role="alert">
+            <p className="rounded-lg bg-danger-bg px-3 py-2 text-meta font-medium text-danger" role="alert">
               {error}
             </p>
           )}
@@ -160,7 +160,7 @@ export function SpaceImagePopup({
               type="button"
               onClick={commit}
               disabled={!url.trim()}
-              className="flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-bold text-on-primary transition-opacity hover:opacity-90 disabled:opacity-40"
+              className="flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-bold text-on-primary transition-opacity hover:opacity-90 disabled:opacity-40"
             >
               Use this photo
             </button>
@@ -168,7 +168,7 @@ export function SpaceImagePopup({
               <button
                 type="button"
                 onClick={clear}
-                className="flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-danger transition-colors hover:bg-danger-bg"
+                className="flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-body-sm font-medium text-danger transition-colors hover:bg-danger-bg"
               >
                 <Trash2 className="h-4 w-4" aria-hidden /> Remove photo
               </button>

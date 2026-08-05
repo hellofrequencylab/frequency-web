@@ -29,7 +29,7 @@ function nextAccess(a: Access): Access {
 }
 
 function cellClasses(a: Access, isDefault: boolean): string {
-  const base = 'inline-flex h-7 w-9 items-center justify-center rounded-md text-xs font-bold tabular-nums transition-colors disabled:opacity-50'
+  const base = 'inline-flex h-7 w-9 items-center justify-center rounded-md text-meta font-bold tabular-nums transition-colors disabled:opacity-50'
   const tone =
     a === 'write'
       ? 'bg-success-bg text-success'
@@ -92,28 +92,28 @@ export function CapabilityGrid({
   return (
     <section className="mt-8 rounded-2xl border border-border bg-surface lift-1">
       <div className="border-b border-border p-4">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-text">
+        <h2 className="flex items-center gap-2 text-body-sm font-semibold text-text">
           <Grid3x3 className="h-4 w-4 text-primary-strong" />
           Per-function permissions
         </h2>
-        <p className="mt-0.5 text-xs text-muted">
+        <p className="mt-0.5 text-meta text-muted">
           Grant or deny each staff role at the capability level, finer than the route grid above.
           Click a cell to cycle No access → Read → Write. A ringed cell differs from its default;
           set it back to default to clear the override. Changes save instantly.
         </p>
       </div>
 
-      {error && <p className="px-4 pt-3 text-sm text-danger">{error}</p>}
+      {error && <p className="px-4 pt-3 text-body-sm text-danger">{error}</p>}
 
       <div className="overflow-x-auto p-2">
-        <table className="w-full border-collapse text-sm">
+        <table className="w-full border-collapse text-body-sm">
           <thead>
             <tr>
-              <th className="sticky left-0 z-10 bg-surface px-3 py-2 text-left text-xs font-semibold text-subtle">
+              <th className="sticky left-0 z-10 bg-surface px-3 py-2 text-left text-meta font-semibold text-subtle">
                 Capability
               </th>
               {STAFF_ROLES.map((role) => (
-                <th key={role} className="px-2 py-2 text-center text-xs font-semibold text-muted">
+                <th key={role} className="px-2 py-2 text-center text-meta font-semibold text-muted">
                   {STAFF_ROLE_LABEL[role]}
                 </th>
               ))}

@@ -135,7 +135,7 @@ export default async function CityCategoryHubPage({ params }: Params) {
 
         {siblings.length > 0 && (
           <section className="mt-14">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-subtle">
+            <h2 className="text-body-sm font-semibold uppercase tracking-wide text-subtle">
               More in {hub.city}
             </h2>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -143,7 +143,7 @@ export default async function CityCategoryHubPage({ params }: Params) {
                 <Link
                   key={s.category.slug}
                   href={`/discover/events/in/${s.citySlug}/${s.category.slug}`}
-                  className="rounded-pill border border-border bg-surface px-4 py-2 text-sm font-medium text-text transition-colors hover:border-border-strong"
+                  className="rounded-pill border border-border bg-surface px-4 py-2 text-body-sm font-medium text-text transition-colors hover:border-border-strong"
                 >
                   {s.category.label} ({s.events.length})
                 </Link>

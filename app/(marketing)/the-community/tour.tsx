@@ -62,7 +62,10 @@ export function ProductTour() {
   // Home/End jump to the ends. Pairs with the roving tabIndex below.
   function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     const i = STEPS.findIndex((s) => s.key === active)
-    let next = i
+    // No initialiser: every branch that reaches the assignment below sets it, and the
+    // `else` returns. Seeding it with `i` looked like a safe default but was dead — it
+    // could never survive to be read, so it only hid which keys the handler answers to.
+    let next: number
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (i + 1) % STEPS.length
     else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (i - 1 + STEPS.length) % STEPS.length
     else if (e.key === 'Home') next = 0
@@ -94,7 +97,7 @@ export function ProductTour() {
               aria-controls={`${baseId}-panel-${step.key}`}
               tabIndex={selected ? 0 : -1}
               onClick={() => setActive(step.key)}
-              className={`inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-bold uppercase tracking-wide transition-colors ${
+              className={`inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-body-sm font-bold uppercase tracking-wide transition-colors ${
                 selected
                   ? 'bg-primary text-on-primary'
                   : 'border border-border text-muted hover:border-border-strong hover:text-text'
@@ -109,7 +112,7 @@ export function ProductTour() {
 
       {/* Benefit caption */}
       <p
-        className="mt-7 text-center text-xl italic text-muted max-w-2xl mx-auto"
+        className="mt-7 text-center text-lead italic text-muted max-w-2xl mx-auto"
         aria-live="polite"
       >
         {activeStep.benefit}
@@ -157,7 +160,7 @@ export function PhoneFrame({ children }: { children: React.ReactNode }) {
         <div className="overflow-hidden rounded-[2rem] border border-border bg-canvas">
           {/* Status / app bar */}
           <div className="flex items-center justify-between px-5 pt-4 pb-3 bg-surface border-b border-border">
-            <span className="font-display uppercase text-lg text-text leading-none">
+            <span className="font-display uppercase text-body-lg text-text leading-none">
               Frequency
             </span>
             <span className="inline-flex items-center gap-1.5 text-2xs font-bold uppercase tracking-widest text-primary-strong">
@@ -183,7 +186,7 @@ function Avatar({ initials, role }: { initials: string; role: 'jade' | 'teal' | 
         : 'bg-surface-elevated text-muted'
   return (
     <div
-      className={`w-10 h-10 rounded-pill ${tint} text-xs font-bold flex items-center justify-center shrink-0 select-none`}
+      className={`w-10 h-10 rounded-pill ${tint} text-meta font-bold flex items-center justify-center shrink-0 select-none`}
       aria-hidden
     >
       {initials}
@@ -199,26 +202,26 @@ function FeedPanel() {
           <Avatar initials="MR" role="jade" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-sm font-semibold text-text truncate">Maya R.</span>
+              <span className="text-body-sm font-semibold text-text truncate">Maya R.</span>
               <RoleBadge role="host" className="text-[9px] leading-tight" />
             </div>
             <p className="text-2xs text-muted mt-0.5">@maya · 12m · Sunrise Breathwork</p>
           </div>
         </div>
-        <p className="text-sm text-text leading-relaxed">
+        <p className="text-body-sm text-text leading-relaxed">
           Eleven of us on the bluff before work this morning. Cold, gold, quiet. I
           forget how much I need this until I&apos;m back in it.
         </p>
         <div className="mt-3 flex items-center gap-5 text-subtle">
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium">
+          <span className="inline-flex items-center gap-1.5 text-meta font-medium">
             <Heart className="w-4 h-4 text-primary" aria-hidden />
             <span className="text-text">9</span>
           </span>
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium">
+          <span className="inline-flex items-center gap-1.5 text-meta font-medium">
             <MessageCircle className="w-4 h-4" aria-hidden />
             <span className="text-text">4</span>
           </span>
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium">
+          <span className="inline-flex items-center gap-1.5 text-meta font-medium">
             <Zap className="w-4 h-4 text-signal-strong" aria-hidden />
             <span className="text-text">3</span>
           </span>
@@ -230,13 +233,13 @@ function FeedPanel() {
           <Avatar initials="DT" role="stone" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-sm font-semibold text-text truncate">Devon T.</span>
+              <span className="text-body-sm font-semibold text-text truncate">Devon T.</span>
               <RoleBadge role="crew" className="text-[9px] leading-tight" />
             </div>
             <p className="text-2xs text-muted mt-0.5">@devon · 1h · Saturday Sauna</p>
           </div>
         </div>
-        <p className="text-sm text-text leading-relaxed">
+        <p className="text-body-sm text-text leading-relaxed">
           Who&apos;s in for the thermal circuit Saturday? Three rounds, then coffee at
           the connection bar. First-timers welcome.
         </p>
@@ -255,10 +258,10 @@ function CirclesPanel() {
             Movement
           </span>
         </div>
-        <h3 className="font-display uppercase text-text text-2xl mt-2 leading-none">
+        <h3 className="font-display uppercase text-text text-page-title mt-2 leading-none">
           Sunrise Breathwork
         </h3>
-        <p className="text-sm text-muted mt-2 leading-relaxed">
+        <p className="text-body-sm text-muted mt-2 leading-relaxed">
           Mornings on Moonlight Beach. Eight regulars, room for a few more.
         </p>
         <div className="mt-4 flex items-center justify-between">
@@ -290,10 +293,10 @@ function CirclesPanel() {
           <Sparkles className="w-3 h-3" aria-hidden />
           Human relating
         </span>
-        <h3 className="font-display uppercase text-text text-2xl mt-2 leading-none">
+        <h3 className="font-display uppercase text-text text-page-title mt-2 leading-none">
           Thursday Men&apos;s Table
         </h3>
-        <p className="text-sm text-muted mt-2 leading-relaxed">
+        <p className="text-body-sm text-muted mt-2 leading-relaxed">
           Small by design. Filling up: a second table seeds soon.
         </p>
       </div>
@@ -316,10 +319,10 @@ function EventRow({
     <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 lift-1">
       <div className="shrink-0 w-11 h-11 rounded-xl bg-primary-bg flex flex-col items-center justify-center">
         <span className="text-[8px] font-bold text-primary-strong leading-none">{month}</span>
-        <span className="text-base font-bold text-primary-strong leading-tight">{day}</span>
+        <span className="text-body font-bold text-primary-strong leading-tight">{day}</span>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-text truncate">{title}</p>
+        <p className="text-body-sm font-semibold text-text truncate">{title}</p>
         <p className="text-2xs text-muted mt-0.5">{meta}</p>
       </div>
       <span className="text-2xs font-bold uppercase tracking-widest text-primary-strong shrink-0">
@@ -352,7 +355,7 @@ function ZapExample({ note, to }: { note: string; to: string }) {
       >
         <Zap className="h-3.5 w-3.5" />
       </span>
-      <p className="text-sm leading-snug text-text">
+      <p className="text-body-sm leading-snug text-text">
         <span className="font-semibold">{note}</span> <span className="text-muted">to {to}</span>
       </p>
     </div>
@@ -377,7 +380,7 @@ function ZapsPanel() {
       </div>
       <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 lift-1">
         <Repeat className="w-5 h-5 text-primary shrink-0" aria-hidden />
-        <p className="text-xs text-muted leading-relaxed">
+        <p className="text-meta text-muted leading-relaxed">
           Zaps are gratitude, not points. Give one when someone shows up for you.
         </p>
       </div>

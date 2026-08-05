@@ -28,7 +28,7 @@ export interface MemberProfileCode {
 
 export function MemberProfileCodes({ codes }: { codes: MemberProfileCode[] }) {
   if (codes.length === 0) {
-    return <p className="text-sm text-muted py-4">No member profile codes yet. They’re minted on a member’s first visit to their codes page.</p>
+    return <p className="text-body-sm text-muted py-4">No member profile codes yet. They’re minted on a member’s first visit to their codes page.</p>
   }
   return (
     <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
@@ -68,11 +68,11 @@ function MemberCard({ code }: { code: MemberProfileCode }) {
           dangerouslySetInnerHTML={{ __html: code.svg }}
         />
         <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-1 truncate text-sm font-bold text-text">
+          <p className="flex items-center gap-1 truncate text-body-sm font-bold text-text">
             <UserCircle className="h-3.5 w-3.5 shrink-0 text-subtle" /> {code.displayName || `@${code.handle}`}
           </p>
-          <p className="truncate text-xs text-subtle">@{code.handle}</p>
-          <p className="mt-1 text-xs text-muted">{code.scans} scan{code.scans === 1 ? '' : 's'}</p>
+          <p className="truncate text-meta text-subtle">@{code.handle}</p>
+          <p className="mt-1 text-meta text-muted">{code.scans} scan{code.scans === 1 ? '' : 's'}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             <a href={`${api}&format=png&download=${encodeURIComponent(name)}`} className={DL}>
               <Download className="h-3 w-3" /> PNG
@@ -98,7 +98,7 @@ function MemberCard({ code }: { code: MemberProfileCode }) {
             <Button size="sm" onClick={saveStyle} disabled={pending} className="disabled:opacity-60">
               <Palette className="h-3.5 w-3.5" /> {pending ? 'Saving…' : 'Save design'}
             </Button>
-            {saved && <span className="text-xs text-success">Saved.</span>}
+            {saved && <span className="text-meta text-success">Saved.</span>}
           </div>
           <VcardEditor
             config={code.vcard}
@@ -112,4 +112,4 @@ function MemberCard({ code }: { code: MemberProfileCode }) {
 }
 
 const DL =
-  'inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted transition-colors hover:bg-surface-elevated hover:text-text'
+  'inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted transition-colors hover:bg-surface-elevated hover:text-text'

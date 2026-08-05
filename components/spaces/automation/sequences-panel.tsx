@@ -131,8 +131,8 @@ export function SequencesPanel({
             >
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-text">{seq.name}</p>
-                  <p className="truncate text-xs text-muted">
+                  <p className="truncate text-body-sm font-semibold text-text">{seq.name}</p>
+                  <p className="truncate text-meta text-muted">
                     To {audienceLabel(seq.audience, segments)} · {seq.steps.length}{' '}
                     {seq.steps.length === 1 ? 'step' : 'steps'}
                   </p>
@@ -143,7 +143,7 @@ export function SequencesPanel({
                       type="button"
                       onClick={() => onStart(seq.id)}
                       disabled={pending}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-muted transition-colors hover:text-text disabled:opacity-50"
+                      className="inline-flex items-center gap-1 text-meta font-medium text-muted transition-colors hover:text-text disabled:opacity-50"
                       aria-label="Start sequence for its audience"
                     >
                       <Play className="h-3.5 w-3.5" /> Start
@@ -183,8 +183,8 @@ export function SequencesPanel({
         </ul>
       )}
 
-      {error && <p className="text-sm text-danger">{error}</p>}
-      {notice && <p className="text-sm text-muted">{notice}</p>}
+      {error && <p className="text-body-sm text-danger">{error}</p>}
+      {notice && <p className="text-body-sm text-muted">{notice}</p>}
 
       {!readOnly &&
         (showForm ? (
@@ -297,11 +297,11 @@ function StepList({
               key={step.id}
               className="flex items-center justify-between gap-3 rounded-lg bg-surface-elevated/50 px-3 py-2"
             >
-              <div className="flex min-w-0 items-center gap-2 text-sm">
-                <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-pill bg-surface text-xs font-semibold text-muted">
+              <div className="flex min-w-0 items-center gap-2 text-body-sm">
+                <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-pill bg-surface text-meta font-semibold text-muted">
                   {i + 1}
                 </span>
-                <span className="inline-flex items-center gap-1 text-xs text-muted">
+                <span className="inline-flex items-center gap-1 text-meta text-muted">
                   <Clock className="h-3 w-3" /> {delayLabel(step.delayHours)}
                 </span>
                 <span className="truncate text-text">{step.subject}</span>
@@ -369,7 +369,7 @@ function StepList({
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted hover:text-text"
+            className="inline-flex items-center gap-1.5 text-meta font-medium text-muted hover:text-text"
           >
             <Plus className="h-3.5 w-3.5" /> Add step
           </button>

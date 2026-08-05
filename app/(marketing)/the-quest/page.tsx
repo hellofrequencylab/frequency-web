@@ -234,10 +234,10 @@ function LegacyTheQuest() {
             <div className="w-11 h-11 rounded-2xl bg-signal-bg flex items-center justify-center mb-4">
               <Zap className="w-5 h-5 text-signal-strong" aria-hidden />
             </div>
-            <h3 className="font-display uppercase text-text text-2xl leading-none">
+            <h3 className="font-display uppercase text-text text-page-title leading-none">
               Zaps
             </h3>
-            <p className="mt-3 text-base text-muted leading-relaxed">
+            <p className="mt-3 text-body text-muted leading-relaxed">
               The real-world currency. Earned when you show up, host, bring someone
               new into the room, or make something others use. Your season standing,
               the part no screen can fake.
@@ -247,10 +247,10 @@ function LegacyTheQuest() {
             <div className="w-11 h-11 rounded-2xl bg-primary-bg flex items-center justify-center mb-4">
               <Gem className="w-5 h-5 text-primary-strong" aria-hidden />
             </div>
-            <h3 className="font-display uppercase text-text text-2xl leading-none">
+            <h3 className="font-display uppercase text-text text-page-title leading-none">
               Gems
             </h3>
-            <p className="mt-3 text-base text-muted leading-relaxed">
+            <p className="mt-3 text-body text-muted leading-relaxed">
               The online currency. Earned by welcoming newcomers, filling the
               calendar, and keeping the thread warm between gatherings. The Gems
               you spend in the Vault.
@@ -266,7 +266,7 @@ function LegacyTheQuest() {
           title="Ranks you earn by finishing."
           kicker="Not a leaderboard. A record of how many Journeys you completed this season."
         />
-        <p className="text-lg text-muted leading-relaxed mb-9">
+        <p className="text-body-lg text-muted leading-relaxed mb-9">
           Each season has three Journeys: Mind, Body, Spirit. Finish one and
           you become an Initiate. Finish two and you are Adept. Finish all
           three and you reach Master. There is no points threshold to cross,
@@ -286,14 +286,14 @@ function LegacyTheQuest() {
                   </span>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
-                  <h3 className="font-display uppercase text-text text-2xl leading-none">
+                  <h3 className="font-display uppercase text-text text-page-title leading-none">
                     {r.name}
                   </h3>
-                  <span className="text-xs font-bold uppercase tracking-widest text-primary-strong">
+                  <span className="text-meta font-bold uppercase tracking-widest text-primary-strong">
                     {r.tag}
                   </span>
                 </div>
-                <p className="mt-3 text-sm text-muted leading-relaxed">{r.body}</p>
+                <p className="mt-3 text-body-sm text-muted leading-relaxed">{r.body}</p>
               </Card>
             </li>
           ))}
@@ -411,10 +411,10 @@ function LegacyTheQuest() {
           watch the path light up. Finish a Journey and you earn a Trophy. Finish
           three and you reach Master. All it takes is a Circle and a standing time.
         </Body>
-        <p className="mt-7 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.2em] text-primary-strong">
+        <p className="mt-7 inline-flex items-center gap-2 text-body-sm font-bold uppercase tracking-[0.2em] text-primary-strong">
           <Trophy className="w-4 h-4" aria-hidden /> Season one is open
         </p>
-        <p className="mt-6 text-base text-muted leading-relaxed">
+        <p className="mt-6 text-body text-muted leading-relaxed">
           <a className="text-primary-strong font-semibold hover:underline" href="/discover">
             Find a Circle near you
           </a>{' '}
@@ -437,10 +437,10 @@ function LegacyTheQuest() {
         <dl className="space-y-6">
           {QUEST_FAQ.map((item) => (
             <div key={item.q} className="rounded-2xl border border-border bg-canvas p-6">
-              <dt className="font-display uppercase text-text text-xl leading-tight mb-2">
+              <dt className="font-display uppercase text-text text-lead leading-tight mb-2">
                 {item.q}
               </dt>
-              <dd className="text-base text-muted leading-relaxed">{item.a}</dd>
+              <dd className="text-body text-muted leading-relaxed">{item.a}</dd>
             </div>
           ))}
         </dl>
@@ -471,9 +471,9 @@ function Guard({
     <Card tone="feature">
       <div className="flex items-center gap-2.5 mb-3">
         <Icon className="w-5 h-5 text-primary-strong" aria-hidden />
-        <h3 className="font-bold text-text text-lg leading-snug">{title}</h3>
+        <h3 className="font-bold text-text text-body-lg leading-snug">{title}</h3>
       </div>
-      <p className="text-sm text-muted leading-relaxed">{text}</p>
+      <p className="text-body-sm text-muted leading-relaxed">{text}</p>
     </Card>
   )
 }

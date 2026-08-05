@@ -55,8 +55,8 @@ function MarketingToolCard({ id, href }: { id: string; href: string }) {
           <Icon className="h-4 w-4" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-text">{label}</span>
-          <span className="mt-0.5 block text-xs text-muted">{mod.desc}</span>
+          <span className="block text-body-sm font-semibold text-text">{label}</span>
+          <span className="mt-0.5 block text-meta text-muted">{mod.desc}</span>
         </span>
         <ArrowUpRight
           className="h-4 w-4 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary-strong motion-reduce:transition-none"

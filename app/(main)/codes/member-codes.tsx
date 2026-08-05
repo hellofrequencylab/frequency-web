@@ -108,7 +108,7 @@ function CodeCard({
 
   return (
     <div className="rounded-2xl border border-border bg-surface lift-1 p-4 flex flex-col">
-      <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-subtle">
+      <div className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wide text-subtle">
         <Icon className="w-3.5 h-3.5" /> {card.title}
       </div>
 
@@ -118,8 +118,8 @@ function CodeCard({
         dangerouslySetInnerHTML={{ __html: card.svg }}
       />
 
-      <p className="mt-3 text-xs text-muted">{blurb}</p>
-      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+      <p className="mt-3 text-meta text-muted">{blurb}</p>
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-muted">
         <span>
           <span className="font-semibold text-text">{card.scans}</span> scan{card.scans === 1 ? '' : 's'}
         </span>
@@ -131,19 +131,19 @@ function CodeCard({
           type="button"
           onClick={downloadPng}
           disabled={pngBusy}
-          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors disabled:opacity-60"
+          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors disabled:opacity-60"
         >
           {pngBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />} PNG
         </button>
         <a
           href={`${apiBase}&format=svg&download=${encodeURIComponent(card.slug)}`}
-          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
         >
           <Download className="w-3 h-3" /> SVG
         </a>
         <button
           onClick={copy}
-          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
         >
           {copied ? <Check className="w-3 h-3 text-success" /> : <Copy className="w-3 h-3" />}
           {copied ? 'Copied' : 'Link'}
@@ -151,14 +151,14 @@ function CodeCard({
         {walletEnabled && card.purpose === 'connect' && (
           <a
             href={`/api/wallet/google?code=${encodeURIComponent(card.id)}`}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
           >
             <Wallet className="w-3 h-3" /> Wallet
           </a>
         )}
         <button
           onClick={() => setEditing((v) => !v)}
-          className="ml-auto inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+          className="ml-auto inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
         >
           <Palette className="w-3 h-3" /> {editing ? 'Close' : 'Customize'}
         </button>
@@ -171,11 +171,11 @@ function CodeCard({
             <button
               onClick={save}
               disabled={pending}
-              className="rounded-lg bg-primary text-on-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60"
+              className="rounded-lg bg-primary text-on-primary px-3 py-1.5 text-meta font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60"
             >
               {pending ? 'Saving…' : 'Save design'}
             </button>
-            {saved && <span className="text-xs text-success">Saved.</span>}
+            {saved && <span className="text-meta text-success">Saved.</span>}
           </div>
         </div>
       )}

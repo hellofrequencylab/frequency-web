@@ -147,21 +147,21 @@ export function FunnelFlow({ funnel }: { funnel: FlowFunnel }) {
       {/* ── The flow canvas ─────────────────────────────────────────────────── */}
       <div>
         {error && (
-          <p className="mb-3 rounded-lg border border-danger bg-danger-bg px-3 py-2 text-sm font-medium text-danger">
+          <p className="mb-3 rounded-lg border border-danger bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger">
             {error}
           </p>
         )}
 
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <p className="text-sm font-bold text-text">Flow</p>
+            <p className="text-body-sm font-bold text-text">Flow</p>
             {pending && <Loader2 className="h-3.5 w-3.5 animate-spin text-subtle" aria-hidden />}
           </div>
           <StatusChip tone={statusMeta.tone} size="sm">
             {statusMeta.glyph} {statusMeta.label}
           </StatusChip>
         </div>
-        <p className="mb-4 mt-0.5 text-xs text-muted">
+        <p className="mb-4 mt-0.5 text-meta text-muted">
           Drag a step to reorder it, or use the arrows. Click a step to edit its settings on the right.
         </p>
 
@@ -206,12 +206,12 @@ export function FunnelFlow({ funnel }: { funnel: FlowFunnel }) {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
-                      <span className="truncate text-sm font-semibold text-text">{stage.label}</span>
+                      <span className="truncate text-body-sm font-semibold text-text">{stage.label}</span>
                       <span className="shrink-0 rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium uppercase tracking-wide text-muted">
                         {kindMeta.label}
                       </span>
                     </span>
-                    <span className="mt-0.5 block truncate text-xs text-muted">
+                    <span className="mt-0.5 block truncate text-meta text-muted">
                       {TIMING_HINTS[Math.min(index, TIMING_HINTS.length - 1)]}
                       {stage.links.length > 0 && ` · ${stage.links.length} link${stage.links.length === 1 ? '' : 's'}`}
                     </span>
@@ -258,8 +258,8 @@ export function FunnelFlow({ funnel }: { funnel: FlowFunnel }) {
         <div className="mt-4 flex items-center gap-2 rounded-2xl border border-dashed border-border p-3">
           <GitBranch className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-text">Add a split</p>
-            <p className="text-xs text-muted">Send people down a yes or no path. Coming next.</p>
+            <p className="text-body-sm font-medium text-text">Add a split</p>
+            <p className="text-meta text-muted">Send people down a yes or no path. Coming next.</p>
           </div>
           <Button type="button" variant="secondary" size="sm" disabled>
             Soon
@@ -279,7 +279,7 @@ export function FunnelFlow({ funnel }: { funnel: FlowFunnel }) {
             onRemoveLink={(linkId) => run(() => removeStageLink(linkId))}
           />
         ) : (
-          <div className="rounded-2xl border border-border bg-surface p-4 text-sm text-muted">
+          <div className="rounded-2xl border border-border bg-surface p-4 text-body-sm text-muted">
             Add a step to start editing.
           </div>
         )}
@@ -322,7 +322,7 @@ function FlowBanner({
         <p className={cn('text-2xs font-bold uppercase tracking-wide', tone === 'trigger' ? 'text-info' : 'text-success')}>
           {title}
         </p>
-        <p className="truncate text-sm font-medium text-text">{line}</p>
+        <p className="truncate text-body-sm font-medium text-text">{line}</p>
       </div>
     </div>
   )
@@ -361,9 +361,9 @@ function StagePanel({
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
       <p className="text-2xs font-bold uppercase tracking-wide text-muted">{kindMeta.label} step</p>
-      <p className="mt-0.5 text-xs text-muted">{kindMeta.blurb}</p>
+      <p className="mt-0.5 text-meta text-muted">{kindMeta.blurb}</p>
 
-      <label className="mt-4 block text-xs font-semibold text-text" htmlFor={`label-${stage.id}`}>
+      <label className="mt-4 block text-meta font-semibold text-text" htmlFor={`label-${stage.id}`}>
         Step name
       </label>
       <input
@@ -378,13 +378,13 @@ function StagePanel({
             ;(e.target as HTMLInputElement).blur()
           }
         }}
-        className="mt-1 w-full rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+        className="mt-1 w-full rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
       />
 
       <div className="mt-4">
-        <p className="text-xs font-semibold text-text">Wired to</p>
+        <p className="text-meta font-semibold text-text">Wired to</p>
         {stage.links.length === 0 ? (
-          <p className="mt-1 text-xs text-muted">Nothing yet. Point this step at a page, campaign, or flow.</p>
+          <p className="mt-1 text-meta text-muted">Nothing yet. Point this step at a page, campaign, or flow.</p>
         ) : (
           <ul className="mt-1.5 space-y-1.5">
             {stage.links.map((link) => (
@@ -396,7 +396,7 @@ function StagePanel({
                   <span className="block text-2xs font-medium uppercase tracking-wide text-muted">
                     {REF_TYPE_META[link.refType]?.label ?? link.refType}
                   </span>
-                  <span className="block truncate text-xs text-text">{link.refKey ?? link.refId ?? ''}</span>
+                  <span className="block truncate text-meta text-text">{link.refKey ?? link.refId ?? ''}</span>
                 </span>
                 <button
                   type="button"
@@ -423,7 +423,7 @@ function StagePanel({
           value={refType}
           disabled={pending}
           onChange={(e) => setRefType(e.target.value as StageRefType)}
-          className="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text outline-none focus:border-primary"
+          className="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text outline-none focus:border-primary"
         >
           {REF_TYPE_OPTIONS.map((t) => (
             <option key={t} value={t}>
@@ -444,7 +444,7 @@ function StagePanel({
               submitLink()
             }
           }}
-          className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+          className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
         />
         <Button type="button" variant="secondary" size="sm" disabled={pending || !refValue.trim()} onClick={submitLink}>
           <Plus className="h-3.5 w-3.5" aria-hidden /> Wire it up

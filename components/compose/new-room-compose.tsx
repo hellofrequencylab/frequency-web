@@ -15,7 +15,7 @@ type Visibility = 'public' | 'private'
 // Add/Edit surface. Creates the room (createRoom) then drops you into it.
 export function NewRoomCompose({
   buttonLabel = 'New Room',
-  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
+  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
 }: {
   buttonLabel?: string
   buttonClass?: string
@@ -68,9 +68,9 @@ export function NewRoomCompose({
             <StudioFooter
               left={
                 error ? (
-                  <span className="text-xs text-danger">{error}</span>
+                  <span className="text-meta text-danger">{error}</span>
                 ) : (
-                  <span className="text-xs text-subtle">A board your circle can gather in.</span>
+                  <span className="text-meta text-subtle">A board your circle can gather in.</span>
                 )
               }
             >
@@ -78,7 +78,7 @@ export function NewRoomCompose({
                 type="button"
                 onClick={() => setOpen(false)}
                 disabled={isPending}
-                className="rounded-control border border-border px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+                className="rounded-control border border-border px-4 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -86,7 +86,7 @@ export function NewRoomCompose({
                 type="button"
                 onClick={submit}
                 disabled={!name.trim() || isPending}
-                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+                className="rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
               >
                 {isPending ? 'Creating…' : 'Create board'}
               </button>
@@ -137,7 +137,7 @@ export function NewRoomCompose({
                   >
                     <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${visibility === v ? 'text-primary-strong' : 'text-subtle'}`} />
                     <span className="min-w-0">
-                      <span className={`block text-xs font-semibold ${visibility === v ? 'text-primary-strong' : 'text-text'}`}>{title}</span>
+                      <span className={`block text-meta font-semibold ${visibility === v ? 'text-primary-strong' : 'text-text'}`}>{title}</span>
                       <span className="block text-2xs text-muted">{sub}</span>
                     </span>
                   </button>

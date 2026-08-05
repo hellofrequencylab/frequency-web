@@ -147,7 +147,7 @@ export function BookingServiceTypesForm({
       <div className="space-y-3">
         <Label className="font-semibold">Services</Label>
         {rows.length === 0 && (
-          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-sm text-muted">
+          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
             No services yet. Add one so members know what they are booking.
           </p>
         )}
@@ -158,7 +158,7 @@ export function BookingServiceTypesForm({
           >
             <div className="flex flex-wrap items-end gap-3">
               <label className="flex min-w-48 flex-1 flex-col gap-1">
-                <span className="text-xs font-medium text-muted">Name</span>
+                <span className="text-meta font-medium text-muted">Name</span>
                 <Input
                   value={r.name}
                   onChange={(e) => update(i, { name: e.target.value })}
@@ -167,7 +167,7 @@ export function BookingServiceTypesForm({
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-muted">Length</span>
+                <span className="text-meta font-medium text-muted">Length</span>
                 <select
                   value={r.durationMinutes}
                   onChange={(e) => update(i, { durationMinutes: Number(e.target.value) })}
@@ -190,7 +190,7 @@ export function BookingServiceTypesForm({
               </button>
             </div>
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-muted">Description (optional)</span>
+              <span className="text-meta font-medium text-muted">Description (optional)</span>
               <Textarea
                 value={r.description}
                 onChange={(e) => update(i, { description: e.target.value })}
@@ -202,7 +202,7 @@ export function BookingServiceTypesForm({
 
             {/* Booking questions (P3): asked when a member books this service. */}
             <div className="space-y-2 rounded-lg border border-dashed border-border p-3">
-              <span className="text-xs font-semibold text-muted">Booking questions (optional)</span>
+              <span className="text-meta font-semibold text-muted">Booking questions (optional)</span>
               {r.questions.map((q, j) => (
                 <div key={q.id} className="flex flex-wrap items-center gap-2">
                   <Input
@@ -220,7 +220,7 @@ export function BookingServiceTypesForm({
                     <option value="short">Short</option>
                     <option value="long">Long</option>
                   </select>
-                  <label className="flex items-center gap-1.5 text-xs font-medium text-muted">
+                  <label className="flex items-center gap-1.5 text-meta font-medium text-muted">
                     <input
                       type="checkbox"
                       checked={q.required}
@@ -241,7 +241,7 @@ export function BookingServiceTypesForm({
               <button
                 type="button"
                 onClick={() => addQuestion(i)}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-strong transition-colors hover:text-primary"
+                className="inline-flex items-center gap-1.5 text-meta font-semibold text-primary-strong transition-colors hover:text-primary"
               >
                 <Plus className="h-3.5 w-3.5" aria-hidden /> Add a question
               </button>
@@ -251,14 +251,14 @@ export function BookingServiceTypesForm({
         <button
           type="button"
           onClick={addRow}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong transition-colors hover:text-primary"
+          className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong transition-colors hover:text-primary"
         >
           <Plus className="h-4 w-4" aria-hidden /> Add a service
         </button>
       </div>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
+        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
@@ -276,7 +276,7 @@ export function BookingServiceTypesForm({
           )}
         </Button>
         {saved && !pending && (
-          <span className="inline-flex items-center gap-1 text-sm font-medium text-success" role="status">
+          <span className="inline-flex items-center gap-1 text-body-sm font-medium text-success" role="status">
             <Check className="h-4 w-4" aria-hidden /> Saved
           </span>
         )}

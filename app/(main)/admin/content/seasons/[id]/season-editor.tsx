@@ -126,14 +126,14 @@ export function SeasonEditor({
             {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Save className="h-4 w-4" aria-hidden />}
             Save changes
           </Button>
-          {saved && <span className="text-xs font-medium text-success">Saved.</span>}
+          {saved && <span className="text-meta font-medium text-success">Saved.</span>}
         </div>
       )}
 
       {/* Lifecycle */}
       <div className="border-t border-border pt-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-subtle">Lifecycle</span>
+          <span className="text-meta font-semibold uppercase tracking-wide text-subtle">Lifecycle</span>
           <StateBadge state={state} size="sm" />
         </div>
 
@@ -152,7 +152,7 @@ export function SeasonEditor({
             <LifecycleHint state={state} />
           </div>
         ) : (
-          <p className="mt-2 text-xs text-muted">Moving the season through its lifecycle is janitor-only.</p>
+          <p className="mt-2 text-meta text-muted">Moving the season through its lifecycle is janitor-only.</p>
         )}
       </div>
 
@@ -199,7 +199,7 @@ function LifecycleControls({
   // Pre-live states (Draft / Scheduled) can schedule and go live; only the live season
   // can end. An ended season is terminal here (the reset opens the next one).
   if (state === 'ended') {
-    return <p className="text-xs text-muted">This season has ended. The next season opens from the season reset in Gamification.</p>
+    return <p className="text-meta text-muted">This season has ended. The next season opens from the season reset in Gamification.</p>
   }
 
   const preLive = state === 'draft' || state === 'scheduled'
@@ -249,5 +249,5 @@ function LifecycleHint({ state }: { state: SeasonState }) {
     live: 'Live: this is the running season members see. Ending it is the only move left here.',
     ended: 'Ended.',
   }
-  return <p className="text-xs text-muted">{hint[state]}</p>
+  return <p className="text-meta text-muted">{hint[state]}</p>
 }

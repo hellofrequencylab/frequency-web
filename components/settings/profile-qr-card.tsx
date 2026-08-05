@@ -48,14 +48,14 @@ export function ProfileQrCard({
     }
   }
 
-  const btn = 'inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60'
+  const btn = 'inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60'
 
   return (
     <section className="mt-6 rounded-2xl border border-border bg-surface p-5 lift-1">
-      <h2 className="flex items-center gap-1.5 text-sm font-bold text-text">
+      <h2 className="flex items-center gap-1.5 text-body-sm font-bold text-text">
         <QrCode className="h-4 w-4 text-primary-strong" /> Your QR code
       </h2>
-      <p className="mt-0.5 text-xs text-muted">
+      <p className="mt-0.5 text-meta text-muted">
         Linked to your account. Print it or share it, and every scan lands on your profile.
         Downloads match this exact style &amp; colour.
       </p>
@@ -66,7 +66,7 @@ export function ProfileQrCard({
         />
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex items-center gap-2">
-            <code className="min-w-0 flex-1 truncate rounded-lg border border-border bg-surface-elevated/50 px-2.5 py-1.5 font-mono text-xs text-muted" title={link}>{link}</code>
+            <code className="min-w-0 flex-1 truncate rounded-lg border border-border bg-surface-elevated/50 px-2.5 py-1.5 font-mono text-meta text-muted" title={link}>{link}</code>
             <button type="button" onClick={copy} className={btn}>
               {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Link2 className="h-3.5 w-3.5" />}
               {copied ? 'Copied' : 'Copy'}

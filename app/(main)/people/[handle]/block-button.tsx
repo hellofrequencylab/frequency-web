@@ -25,14 +25,14 @@ export function BlockButton({
 
   const isLink = variant === 'link'
   const base = isLink
-    ? 'inline-flex items-center gap-1 text-xs font-medium transition-colors'
-    : 'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors'
+    ? 'inline-flex items-center gap-1 text-meta font-medium transition-colors'
+    : 'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors'
   const icon = isLink ? 'w-3 h-3' : 'w-3.5 h-3.5'
 
   const withError = (control: React.ReactNode) => (
     <span className="inline-flex flex-col gap-1">
       {control}
-      {error && <span className="text-xs text-danger">{error}</span>}
+      {error && <span className="text-meta text-danger">{error}</span>}
     </span>
   )
 

@@ -37,14 +37,14 @@ export async function CheckinRoster({ spaceId }: { spaceId: string }) {
             {entry.handle ? (
               <Link
                 href={`/people/${entry.handle}`}
-                className="truncate text-sm font-semibold text-text transition-colors hover:text-primary-strong"
+                className="truncate text-body-sm font-semibold text-text transition-colors hover:text-primary-strong"
               >
                 {entry.name}
               </Link>
             ) : (
-              <p className="truncate text-sm font-semibold text-text">{entry.name}</p>
+              <p className="truncate text-body-sm font-semibold text-text">{entry.name}</p>
             )}
-            <p className="text-xs text-muted">{timeFmt.format(new Date(entry.checkedInAt))}</p>
+            <p className="text-meta text-muted">{timeFmt.format(new Date(entry.checkedInAt))}</p>
           </div>
         </li>
       ))}

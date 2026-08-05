@@ -25,7 +25,7 @@ export function SeriesDatesRail({
 
   return (
     <section className={className} aria-labelledby="series-dates-heading">
-      <h2 id="series-dates-heading" className="flex items-center gap-2 text-sm font-semibold text-text">
+      <h2 id="series-dates-heading" className="flex items-center gap-2 text-body-sm font-semibold text-text">
         <CalendarDays className="h-4 w-4 text-primary-strong" aria-hidden />
         Upcoming dates
       </h2>
@@ -38,7 +38,7 @@ export function SeriesDatesRail({
               <li key={d.id}>
                 <span
                   aria-current="page"
-                  className="inline-flex items-center rounded-control border border-primary bg-primary-bg px-3 py-1.5 text-sm font-medium text-primary-strong"
+                  className="inline-flex items-center rounded-control border border-primary bg-primary-bg px-3 py-1.5 text-body-sm font-medium text-primary-strong"
                 >
                   {label}
                 </span>
@@ -53,7 +53,7 @@ export function SeriesDatesRail({
                 // its own RSVP. That is the one thing a member cannot infer from a date, so the
                 // hover title says it rather than leaving the chip to imply it.
                 title={`Go to ${label}, which has its own page and RSVP`}
-                className="inline-flex items-center rounded-control border border-border px-3 py-1.5 text-sm text-muted transition-colors hover:border-primary hover:text-text"
+                className="inline-flex items-center rounded-control border border-border px-3 py-1.5 text-body-sm text-muted transition-colors hover:border-primary hover:text-text"
               >
                 {label}
               </Link>

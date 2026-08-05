@@ -115,14 +115,14 @@ function DirectoryPager({
   if (total <= DEFAULT_PER_PAGE && per === DEFAULT_PER_PAGE) return null
 
   const sizePill = (n: number) =>
-    `rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+    `rounded-lg px-2.5 py-1 text-meta font-medium transition-colors ${
       n === per ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface hover:text-text'
     }`
 
   return (
     <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-border pt-6 sm:flex-row">
       {/* Page-size selector — resets to page 1 (a new window over the same set). */}
-      <div className="flex items-center gap-2 text-xs text-subtle">
+      <div className="flex items-center gap-2 text-meta text-subtle">
         <span>Per page</span>
         <div className="flex items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
           {PER_PAGE_OPTIONS.map((n) => (
@@ -134,7 +134,7 @@ function DirectoryPager({
       </div>
 
       {/* Prev / Next + position. A disabled edge renders as a static, muted span (not a link). */}
-      <div className="flex items-center gap-3 text-xs">
+      <div className="flex items-center gap-3 text-meta">
         {page > 1 ? (
           <Link href={buildDirectoryHref(basePath, urlBase, { page: page - 1 })} className={buttonClasses('secondary', 'sm')}>
             <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
@@ -184,9 +184,9 @@ export function StartBusinessCTA() {
   return (
     <section className="mt-12 overflow-hidden rounded-2xl border border-border bg-surface p-8 sm:p-10">
       <div className="max-w-2xl">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary-strong">Go Business</p>
-        <h2 className="text-balance text-2xl font-bold text-text sm:text-3xl">Run your whole business here</h2>
-        <p className="mt-3 text-base leading-relaxed text-muted">
+        <p className="mb-2 text-meta font-semibold uppercase tracking-widest text-primary-strong">Go Business</p>
+        <h2 className="text-balance text-page-title font-bold text-text sm:text-3xl">Run your whole business here</h2>
+        <p className="mt-3 text-body leading-relaxed text-muted">
           One page for everything you sell, everyone you serve, and every event you run. Your people find
           it in the same network they already browse, so getting listed is getting discovered.
         </p>
@@ -194,7 +194,7 @@ export function StartBusinessCTA() {
 
       <ul className="mt-7 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
         {BUSINESS_FEATURES.map(({ Icon, label }) => (
-          <li key={label} className="flex items-center gap-2.5 text-sm text-text">
+          <li key={label} className="flex items-center gap-2.5 text-body-sm text-text">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
               <Icon className="h-4 w-4" aria-hidden />
             </span>
@@ -208,7 +208,7 @@ export function StartBusinessCTA() {
           <Plus className="h-4 w-4" aria-hidden />
           Start a Business page
         </Link>
-        <p className="text-sm text-subtle">One connected network, shared discovery. Free to start.</p>
+        <p className="text-body-sm text-subtle">One connected network, shared discovery. Free to start.</p>
       </div>
     </section>
   )

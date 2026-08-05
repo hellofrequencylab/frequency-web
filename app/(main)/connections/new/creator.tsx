@@ -10,10 +10,11 @@ import { deskewCardCanvas } from '@/lib/connections/deskew'
 import { DetailsEditor } from '@/components/connections/contact-details-fields'
 import type { ExtractedContact, ContactDetails, ContactSource, Visibility } from '@/lib/connections/types'
 import { scanCard, veraAssist, createProfile } from '../actions'
+import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
 const BUCKET = 'network-contacts'
-const input = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50'
-const lbl = 'block text-xs font-medium text-muted mb-1'
+const input = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50'
+const lbl = 'block text-meta font-medium text-muted mb-1'
 
 type FormState = {
   displayName: string
@@ -477,6 +478,11 @@ export function Creator({ userId }: { userId: string }) {
         ? 'border-primary/40 bg-primary-bg text-primary-strong'
         : 'border-danger/40 bg-danger-bg text-danger')
 
+  // Resolved once rather than called in both the guard and the `src`: the same allowlist
+  // the Beta induction, the onboarding step, the composer and the report dialog use.
+  const avatarSrc = safeUploadPreviewSrc(avatarPreview)
+  const logoSrc = safeUploadPreviewSrc(logoPreview)
+
   return (
     <div className="space-y-5">
       {/* Tabs */}
@@ -485,14 +491,14 @@ export function Creator({ userId }: { userId: string }) {
         <TabBtn active={tab === 'manual'} onClick={() => setTab('manual')} icon={Pencil} label="Manual entry" />
       </div>
 
-      {msg && <p className={`rounded-lg border px-3 py-2 text-sm ${banner}`}>{msg.text}</p>}
+      {msg && <p className={`rounded-lg border px-3 py-2 text-body-sm ${banner}`}>{msg.text}</p>}
 
       {tab === 'scan' ? (
         <div className="space-y-3">
           <div className="rounded-2xl border border-dashed border-border-strong bg-surface p-5 text-center">
             <ScanText className="mx-auto h-8 w-8 text-primary-strong" />
-            <p className="mt-3 text-sm font-medium text-text">Snap the card, front and back</p>
-            <p className="mt-1 text-xs text-subtle">
+            <p className="mt-3 text-body-sm font-medium text-text">Snap the card, front and back</p>
+            <p className="mt-1 text-meta text-subtle">
               Get the whole card in frame, squared up, no glare. Vera reads both sides, keeps the
               card on your file, harvests every detail, and cuts out a profile photo.
             </p>
@@ -518,7 +524,7 @@ export function Creator({ userId }: { userId: string }) {
             <button
               type="button"
               onClick={() => extraRef.current?.click()}
-              className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-primary-strong hover:underline"
+              className="mt-3 inline-flex items-center gap-1.5 text-meta font-medium text-primary-strong hover:underline"
             >
               <Upload className="h-3.5 w-3.5" /> Add extra shots (a flyer, their booth, them)
             </button>
@@ -547,14 +553,14 @@ export function Creator({ userId }: { userId: string }) {
           {/* Quality gate: the model flagged the capture; offer a retake. */}
           {pendingScan && (
             <div className="rounded-xl border border-warning/40 bg-warning-bg p-3">
-              <p className="text-sm font-medium text-warning">
+              <p className="text-body-sm font-medium text-warning">
                 {pendingScan.quality.note || 'That capture looks hard to read.'}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => { setPendingScan(null); clearScanFiles() }}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
                 >
                   <Camera className="h-3.5 w-3.5" /> Retake
                 </button>
@@ -562,7 +568,7 @@ export function Creator({ userId }: { userId: string }) {
                   type="button"
                   onClick={useAnyway}
                   disabled={scanning}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
                 >
                   {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                   Use it anyway
@@ -572,14 +578,14 @@ export function Creator({ userId }: { userId: string }) {
           )}
 
           <div className="flex items-center justify-between gap-3">
-            <button type="button" className="text-xs font-medium text-primary-strong hover:underline" onClick={() => setTab('manual')}>
+            <button type="button" className="text-meta font-medium text-primary-strong hover:underline" onClick={() => setTab('manual')}>
               Enter manually
             </button>
             <button
               type="button"
               onClick={runScan}
               disabled={scanning || !frontFile}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : pendingScan ? <RefreshCcw className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
               {scanning ? 'Reading…' : pendingScan ? 'Scan again' : 'Scan'}
@@ -614,21 +620,21 @@ export function Creator({ userId }: { userId: string }) {
                 <button
                   type="button"
                   onClick={() => { const s = pickSide; setPickSide(null); (s === 'back' ? backCamRef : frontCamRef).current?.click() }}
-                  className="flex w-full items-center gap-3 rounded-control px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  className="flex w-full items-center gap-3 rounded-control px-4 py-3 text-left text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
                 >
                   <Camera className="h-5 w-5 text-primary-strong" /> Take photo
                 </button>
                 <button
                   type="button"
                   onClick={() => { const s = pickSide; setPickSide(null); (s === 'back' ? backRef : frontRef).current?.click() }}
-                  className="flex w-full items-center gap-3 rounded-control px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  className="flex w-full items-center gap-3 rounded-control px-4 py-3 text-left text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
                 >
                   <Upload className="h-5 w-5 text-primary-strong" /> Choose from library
                 </button>
                 <button
                   type="button"
                   onClick={() => setPickSide(null)}
-                  className="flex w-full items-center justify-center rounded-control px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated"
+                  className="flex w-full items-center justify-center rounded-control px-4 py-2.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated"
                 >
                   Cancel
                 </button>
@@ -647,7 +653,7 @@ export function Creator({ userId }: { userId: string }) {
               className="flex w-full items-center gap-1.5 text-left"
             >
               <Sparkles className="h-4 w-4 text-primary-strong" />
-              <span className="text-sm font-semibold text-text">Vera assist</span>
+              <span className="text-body-sm font-semibold text-text">Vera assist</span>
               <ChevronDown className={`ml-auto h-4 w-4 text-subtle transition-transform ${assistOpen ? '' : '-rotate-90'}`} />
             </button>
             {assistOpen && (
@@ -663,7 +669,7 @@ export function Creator({ userId }: { userId: string }) {
                   type="button"
                   onClick={handleAssist}
                   disabled={assisting || !assistText.trim()}
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                 >
                   {assisting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   {assisting ? 'Thinking…' : 'Fill it in with Vera'}
@@ -674,34 +680,34 @@ export function Creator({ userId }: { userId: string }) {
 
           {/* Photo */}
           <div className="flex items-center gap-4">
-            {avatarPreview ? (
+            {avatarSrc ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarPreview} alt="" className="h-16 w-16 shrink-0 rounded-pill object-cover ring-2 ring-surface" />
+              <img src={avatarSrc} alt="" className="h-16 w-16 shrink-0 rounded-pill object-cover ring-2 ring-surface" />
             ) : (
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-muted">
                 <User className="h-6 w-6" />
               </div>
             )}
             <div className="flex flex-col gap-1">
-              <button type="button" onClick={() => photoRef.current?.click()} className="text-sm font-medium text-primary-strong hover:underline">
+              <button type="button" onClick={() => photoRef.current?.click()} className="text-body-sm font-medium text-primary-strong hover:underline">
                 {avatarPreview ? 'Change photo' : 'Add a photo'}
               </button>
               {avatarPreview && (
                 <button
                   type="button"
                   onClick={() => { setAvatarPath(null); setAvatarPreview(null) }}
-                  className="text-left text-xs text-subtle hover:text-muted"
+                  className="text-left text-meta text-subtle hover:text-muted"
                 >
                   Remove
                 </button>
               )}
-              <p className="text-xs text-subtle">Private. Stored just for you.</p>
+              <p className="text-meta text-subtle">Private. Stored just for you.</p>
             </div>
-            {logoPreview && (
+            {logoSrc && (
               <div className="ml-auto flex flex-col items-center gap-1">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={logoPreview} alt="" className="h-12 w-12 shrink-0 rounded-lg border border-border object-cover" />
-                <span className="text-xs text-subtle">Logo</span>
+                <img src={logoSrc} alt="" className="h-12 w-12 shrink-0 rounded-lg border border-border object-cover" />
+                <span className="text-meta text-subtle">Logo</span>
               </div>
             )}
             <input
@@ -730,7 +736,7 @@ export function Creator({ userId }: { userId: string }) {
 
           {/* Everything harvested from the card, as editable rows. */}
           <div className="rounded-2xl border border-border bg-surface-elevated/40 p-4">
-            <p className="mb-3 text-sm font-semibold text-text">From the card</p>
+            <p className="mb-3 text-body-sm font-semibold text-text">From the card</p>
             <DetailsEditor value={form.details} onChange={(d) => set('details', d)} />
           </div>
 
@@ -738,7 +744,7 @@ export function Creator({ userId }: { userId: string }) {
           <Field label="Tags">
             <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border-strong bg-surface px-2 py-1.5">
               {form.tags.map((t) => (
-                <span key={t} className="inline-flex items-center gap-1 rounded-md bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
+                <span key={t} className="inline-flex items-center gap-1 rounded-md bg-primary-bg px-2 py-0.5 text-meta font-medium text-primary-strong">
                   {t}
                   <button type="button" onClick={() => set('tags', form.tags.filter((x) => x !== t))} aria-label={`Remove ${t}`}>
                     <X className="h-3 w-3" />
@@ -752,7 +758,7 @@ export function Creator({ userId }: { userId: string }) {
                   if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(tagDraft) }
                 }}
                 placeholder={form.tags.length ? 'Add tag…' : 'yoga, investor, met at SXSW…'}
-                className="min-w-[8rem] flex-1 bg-transparent px-1 py-0.5 text-sm text-text placeholder-subtle focus:outline-none"
+                className="min-w-[8rem] flex-1 bg-transparent px-1 py-0.5 text-body-sm text-text placeholder-subtle focus:outline-none"
               />
             </div>
           </Field>
@@ -778,7 +784,7 @@ export function Creator({ userId }: { userId: string }) {
 
           {/* One-time intro invite — shown only when there's an email */}
           {form.email.trim() && (
-            <label className="flex items-start gap-2.5 rounded-control border border-border bg-surface-elevated/40 p-3 text-sm">
+            <label className="flex items-start gap-2.5 rounded-control border border-border bg-surface-elevated/40 p-3 text-body-sm">
               <input
                 type="checkbox"
                 checked={sendInvite}
@@ -796,7 +802,7 @@ export function Creator({ userId }: { userId: string }) {
             type="button"
             onClick={handleSave}
             disabled={saving || !form.displayName.trim()}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             {saving ? 'Saving…' : 'Save profile'}
@@ -830,14 +836,14 @@ function CardSlot({
         ) : (
           <>
             <Camera className="h-5 w-5 text-subtle" />
-            <span className="text-xs font-medium text-text">{label}</span>
-            <span className="text-xs text-subtle">{hint}</span>
+            <span className="text-meta font-medium text-text">{label}</span>
+            <span className="text-meta text-subtle">{hint}</span>
           </>
         )}
       </button>
       {/* KEEP the black/white pair below: a scrim chip painted on a photo thumbnail, not on a themed surface. */}
       {thumb && (
-        <span className="pointer-events-none absolute bottom-1 left-1 rounded bg-black/55 px-1.5 py-0.5 text-xs font-medium text-white">
+        <span className="pointer-events-none absolute bottom-1 left-1 rounded bg-black/55 px-1.5 py-0.5 text-meta font-medium text-white">
           {label}
         </span>
       )}
@@ -860,7 +866,7 @@ function TabBtn({ active, onClick, icon: Icon, label }: { active: boolean; onCli
     <button
       type="button"
       onClick={onClick}
-      className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+      className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-body-sm font-medium transition-colors ${
         active ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
       }`}
     >

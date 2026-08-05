@@ -22,7 +22,7 @@ export function PracticeAuthor({
   if (!creator?.handle) return null
   const name = creator.display_name?.trim() || creator.handle
   return (
-    <p className={`flex items-center gap-1.5 text-xs text-subtle ${className}`}>
+    <p className={`flex items-center gap-1.5 text-meta text-subtle ${className}`}>
       <span>{prefix}</span>
       <Link
         href={`/people/${creator.handle}`}

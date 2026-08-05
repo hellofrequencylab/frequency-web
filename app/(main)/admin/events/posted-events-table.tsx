@@ -35,10 +35,10 @@ function formatDate(iso: string | null): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-const thCls = 'px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-subtle'
-const tdCls = 'px-3 py-2.5 align-top text-sm'
+const thCls = 'px-3 py-2 text-left text-meta font-semibold uppercase tracking-wide text-subtle'
+const tdCls = 'px-3 py-2.5 align-top text-body-sm'
 const actionBtn =
-  'inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50'
+  'inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50'
 
 export function PostedEventsTable({ rows, canManage }: { rows: PostedEventRow[]; canManage: boolean }) {
   return (
@@ -68,22 +68,22 @@ function StatusCell({ row }: { row: PostedEventRow }) {
   if (row.status === 'removed') {
     return (
       <div>
-        <span className="inline-flex items-center rounded-md bg-danger-bg px-1.5 py-0.5 text-xs font-medium text-danger">
+        <span className="inline-flex items-center rounded-md bg-danger-bg px-1.5 py-0.5 text-meta font-medium text-danger">
           Removed
         </span>
-        {row.removedReason && <p className="mt-1 max-w-[16rem] text-xs text-subtle">{row.removedReason}</p>}
+        {row.removedReason && <p className="mt-1 max-w-[16rem] text-meta text-subtle">{row.removedReason}</p>}
       </div>
     )
   }
   if (row.status === 'claimed') {
     return (
-      <span className="inline-flex items-center rounded-md bg-success-bg px-1.5 py-0.5 text-xs font-medium text-success">
+      <span className="inline-flex items-center rounded-md bg-success-bg px-1.5 py-0.5 text-meta font-medium text-success">
         Claimed by {row.claimedBy ?? 'a member'}
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center rounded-md border border-border bg-surface-elevated px-1.5 py-0.5 text-xs font-medium text-muted">
+    <span className="inline-flex items-center rounded-md border border-border bg-surface-elevated px-1.5 py-0.5 text-meta font-medium text-muted">
       Unclaimed
     </span>
   )
@@ -192,8 +192,8 @@ function PostedRow({ row, canManage }: { row: PostedEventRow; canManage: boolean
               </button>
             )}
           </div>
-          {notice && <p className="mt-1.5 text-right text-xs text-success">{notice}</p>}
-          {error && panel === 'none' && <p className="mt-1.5 text-right text-xs text-danger">{error}</p>}
+          {notice && <p className="mt-1.5 text-right text-meta text-success">{notice}</p>}
+          {error && panel === 'none' && <p className="mt-1.5 text-right text-meta text-danger">{error}</p>}
         </td>
       </tr>
       {panel === 'assign' && (
@@ -281,7 +281,7 @@ function AssignHostPanel({
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-medium text-muted">
+      <p className="text-meta font-medium text-muted">
         Hand this event to the organizer. They become the host, the claim link dies, and the poster
         hears about it.
       </p>
@@ -303,17 +303,17 @@ function AssignHostPanel({
               <button
                 type="button"
                 onClick={() => setSelected(hit)}
-                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-text transition-colors hover:bg-surface-elevated"
+                className="flex w-full items-center justify-between px-3 py-2 text-left text-body-sm text-text transition-colors hover:bg-surface-elevated"
               >
                 <span>{hit.displayName ?? 'Member'}</span>
-                {hit.handle && <span className="text-xs text-subtle">@{hit.handle}</span>}
+                {hit.handle && <span className="text-meta text-subtle">@{hit.handle}</span>}
               </button>
             </li>
           ))}
         </ul>
       )}
       {query.trim().length >= 2 && hits.length === 0 && !pending && !selected && (
-        <p className="text-xs text-subtle">No members match that search.</p>
+        <p className="text-meta text-subtle">No members match that search.</p>
       )}
       {selected && (
         <div className="flex flex-wrap items-center gap-2">
@@ -321,7 +321,7 @@ function AssignHostPanel({
             type="button"
             onClick={handleAssign}
             disabled={pending}
-            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {pending ? 'Assigning…' : `Make ${selected.displayName ?? 'this member'} the host`}
           </button>
@@ -330,7 +330,7 @@ function AssignHostPanel({
           </button>
         </div>
       )}
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
     </div>
   )
 }
@@ -367,7 +367,7 @@ function RemovePanel({
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-medium text-muted">
+      <p className="text-meta font-medium text-muted">
         Remove “{title}”? Members stop seeing it, the posting Zaps are returned, and the poster is
         told why. A reason is required.
       </p>
@@ -384,7 +384,7 @@ function RemovePanel({
           onClick={handleRemove}
           disabled={pending || !reason.trim()}
           // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
-          className="shrink-0 rounded-lg bg-danger px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-50"
+          className="shrink-0 rounded-lg bg-danger px-3 py-1.5 text-meta font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-50"
         >
           {pending ? 'Removing…' : 'Remove event'}
         </button>
@@ -392,7 +392,7 @@ function RemovePanel({
           Cancel
         </button>
       </div>
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
     </div>
   )
 }

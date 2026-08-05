@@ -49,7 +49,7 @@ function AdminBarTopBar({
           }}
           aria-label="Search settings"
           placeholder="Search settings"
-          className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
       <button

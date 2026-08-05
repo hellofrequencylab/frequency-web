@@ -59,7 +59,7 @@ export async function PracticeContributorRecognition() {
                 <span className="block text-2xs font-semibold uppercase tracking-widest text-primary-strong">
                   #{i + 1} most remixed
                 </span>
-                <span className="mt-0.5 block text-sm leading-relaxed text-text">
+                <span className="mt-0.5 block text-body-sm leading-relaxed text-text">
                   <span className="font-semibold">{c.name}</span> wrote {c.originated}{' '}
                   {c.originated === 1 ? 'original' : 'originals'}, remixed{' '}
                   {c.remixesReceived} {c.remixesReceived === 1 ? 'time' : 'times'}.

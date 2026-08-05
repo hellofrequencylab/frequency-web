@@ -103,7 +103,7 @@ export function CreateModal({
             <div className={`w-9 h-9 shrink-0 rounded-xl ${colors.bg} flex items-center justify-center`}>
               <Icon className={`w-[18px] h-[18px] ${colors.text}`} />
             </div>
-            <h2 className="text-lg font-bold text-text truncate">{title}</h2>
+            <h2 className="text-body-lg font-bold text-text truncate">{title}</h2>
           </div>
           <button
             type="button"
@@ -118,7 +118,7 @@ export function CreateModal({
         {/* Body */}
         <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
           {error && (
-            <p className="text-xs text-danger bg-danger-bg/30 border border-danger rounded-lg px-3 py-2">
+            <p className="text-meta text-danger bg-danger-bg/30 border border-danger rounded-lg px-3 py-2">
               {error}
             </p>
           )}
@@ -148,4 +148,4 @@ export function CreateModal({
 // tone with a soft neutral halo, NOT a loud amber ring. (This class wins over the
 // global amber :focus-visible ring on these fields, by specificity.)
 export const cmInput = fieldClasses
-export const cmLabel = 'block text-xs font-medium text-muted mb-1'
+export const cmLabel = 'block text-meta font-medium text-muted mb-1'

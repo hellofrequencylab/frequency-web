@@ -117,11 +117,11 @@ export function PlanLadder({
   const rungs = currentPlan === 'independent' ? [...RUNGS, INDEPENDENT_RUNG] : RUNGS
   return (
     <section aria-labelledby="collective-ladder-heading" className="rounded-2xl border border-border bg-surface px-5 py-5 lift-1">
-      <h2 id="collective-ladder-heading" className="text-base font-bold text-text">
+      <h2 id="collective-ladder-heading" className="text-body font-bold text-text">
         The Community Collective
       </h2>
       {/* The promise, stated plainly (CONTENT-VOICE §1a, brand promise #1 + #4). No guilt, no hype. */}
-      <p className="mt-1 text-sm leading-relaxed text-muted">
+      <p className="mt-1 text-body-sm leading-relaxed text-muted">
         Everything is included. Paid plans raise the limits, and you keep 100% of what you bring in. We
         earn only on the business the network sends you, at a rate that drops as your plan rises. A paid
         plan buys down that rate.
@@ -149,13 +149,13 @@ export function PlanLadder({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                  <span className="text-sm font-bold text-text">{SPACE_PLAN_LABEL[rung.plan]}</span>
-                  <span className="text-sm font-semibold text-text">{priceLabel(rung.plan)}</span>
+                  <span className="text-body-sm font-bold text-text">{SPACE_PLAN_LABEL[rung.plan]}</span>
+                  <span className="text-body-sm font-semibold text-text">{priceLabel(rung.plan)}</span>
                   {(rung.note ?? betaNote(rung.plan)) && betaActive && (
                     <span className="text-2xs font-medium text-primary-strong">{rung.note ?? betaNote(rung.plan)}</span>
                   )}
                 </div>
-                <p className="mt-0.5 text-xs leading-relaxed text-muted">{rung.blurb}</p>
+                <p className="mt-0.5 text-meta leading-relaxed text-muted">{rung.blurb}</p>
               </div>
               {canChoose ? (
                 <ChoosePlanButton

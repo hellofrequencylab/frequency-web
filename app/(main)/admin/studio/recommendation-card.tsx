@@ -21,7 +21,7 @@ export function RevertButton({ logId }: { logId: string }) {
         })
       }
       disabled={isPending}
-      className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-60 motion-reduce:transition-none"
+      className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-60 motion-reduce:transition-none"
     >
       {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Revert'}
     </button>
@@ -61,12 +61,12 @@ export function RecommendationCard({ rec }: { rec: StudioRec }) {
           <StatusChip tone={SEV_TONE[rec.severity]} size="sm">
             {SEV_LABEL[rec.severity]}
           </StatusChip>
-          <span className="text-xs font-medium uppercase tracking-wide text-subtle">{rec.category}</span>
-          <span className="text-xs text-subtle">· {rec.confidence} confidence</span>
+          <span className="text-meta font-medium uppercase tracking-wide text-subtle">{rec.category}</span>
+          <span className="text-meta text-subtle">· {rec.confidence} confidence</span>
         </div>
-        <h3 className="text-sm font-bold text-text">{rec.title}</h3>
-        <p className="mt-1 text-sm text-muted">{rec.finding}</p>
-        <p className="mt-1.5 text-sm text-text">
+        <h3 className="text-body-sm font-bold text-text">{rec.title}</h3>
+        <p className="mt-1 text-body-sm text-muted">{rec.finding}</p>
+        <p className="mt-1.5 text-body-sm text-text">
           <span className="font-semibold">Do:</span> {rec.recommendation}
         </p>
       </div>
@@ -74,7 +74,7 @@ export function RecommendationCard({ rec }: { rec: StudioRec }) {
       {rec.action && (
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
           {done ? (
-            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-success">
+            <span className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-success">
               <Check className="h-4 w-4" /> Applied
             </span>
           ) : confirming ? (
@@ -83,7 +83,7 @@ export function RecommendationCard({ rec }: { rec: StudioRec }) {
               <button
                 onClick={apply}
                 disabled={isPending}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60 motion-reduce:transition-none"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60 motion-reduce:transition-none"
               >
                 {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 Confirm: {rec.action.label}
@@ -91,7 +91,7 @@ export function RecommendationCard({ rec }: { rec: StudioRec }) {
               <button
                 onClick={() => setConfirming(false)}
                 disabled={isPending}
-                className="rounded-control border border-border px-3 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60 motion-reduce:transition-none"
+                className="rounded-control border border-border px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60 motion-reduce:transition-none"
               >
                 Cancel
               </button>
@@ -99,13 +99,13 @@ export function RecommendationCard({ rec }: { rec: StudioRec }) {
           ) : (
             <button
               onClick={() => setConfirming(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
             >
               <Zap className="h-4 w-4" />
               {rec.action.label}
             </button>
           )}
-          {error && <span className="text-sm text-danger">{error}</span>}
+          {error && <span className="text-body-sm text-danger">{error}</span>}
         </div>
       )}
     </div>

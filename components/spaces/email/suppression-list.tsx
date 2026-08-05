@@ -60,7 +60,7 @@ export async function SuppressionList({ spaceId, limit }: { spaceId: string; lim
   return (
     <section aria-labelledby="space-email-suppressions">
       <SectionHeader title="Opted out" count={suppressions.length} />
-      <p className="mb-3 text-xs text-muted">
+      <p className="mb-3 text-meta text-muted">
         These people asked not to hear from you, or their address bounced. We keep them off every
         send. Global opt-outs apply across all of Frequency.
       </p>
@@ -68,8 +68,8 @@ export async function SuppressionList({ spaceId, limit }: { spaceId: string; lim
         {suppressions.map((s) => (
           <li key={s.id} className="flex items-center justify-between gap-4 px-4 py-3">
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-text">{s.email}</p>
-              <p className="text-xs text-muted">
+              <p className="truncate text-body-sm font-semibold text-text">{s.email}</p>
+              <p className="text-meta text-muted">
                 {reasonLabel(s.reason)}
                 {s.isGlobal ? ' · Global' : ''} · {dateFmt.format(new Date(s.createdAt))}
               </p>

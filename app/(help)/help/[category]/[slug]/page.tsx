@@ -77,19 +77,19 @@ export default async function HelpArticlePage({ params }: Params) {
       }
     >
       <div className="max-w-3xl">
-        {article.description && <p className="text-lg text-muted">{article.description}</p>}
+        {article.description && <p className="text-body-lg text-muted">{article.description}</p>}
 
         <div className="mt-8">
           <HelpMarkdown>{article.body}</HelpMarkdown>
         </div>
 
         {article.updated && (
-          <p className="mt-10 border-t border-border pt-4 text-xs text-subtle">
+          <p className="mt-10 border-t border-border pt-4 text-meta text-subtle">
             Last updated {article.updated}
           </p>
         )}
 
-        <nav className="mt-6 flex justify-between gap-4 text-sm">
+        <nav className="mt-6 flex justify-between gap-4 text-body-sm">
           {prev ? (
             <Link href={helpHref(cat.slug, prev.slug)} className="text-primary-strong hover:underline">
               &larr; {prev.title}

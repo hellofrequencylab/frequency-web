@@ -25,8 +25,8 @@ export function PastDueBanner({ state }: { state: MemberPaymentState }) {
       <div className="flex items-start gap-3">
         <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-text">{title}</p>
-          <p className="mt-1 text-sm leading-relaxed text-muted">{body}</p>
+          <p className="text-body-sm font-semibold text-text">{title}</p>
+          <p className="mt-1 text-body-sm leading-relaxed text-muted">{body}</p>
           <div className="mt-3">
             <ManageBillingButton />
           </div>

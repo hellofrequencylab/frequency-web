@@ -294,10 +294,10 @@ function Splash({
         subtitle="Frequency is a Community Collective. Start a Circle, host Events, and grow a Space alongside people building the same thing. You keep 100% of your own bookings. We earn only on what the network sends you."
         footer={
           <>
-            <p className="mt-8 text-base font-semibold text-on-ink/90">
+            <p className="mt-8 text-body font-semibold text-on-ink/90">
               0% on your own bookings, always. We earn only a small, shrinking network-only take-rate on what the network sends you.
             </p>
-            <p className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-on-ink/70">
+            <p className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-body-sm text-on-ink/70">
               <span>Never a cut of your bookings</span>
               <span aria-hidden className="text-on-ink/25">·</span>
               <span>One honest price, no surprise invoices</span>
@@ -306,7 +306,7 @@ function Splash({
               <span aria-hidden className="text-on-ink/25">·</span>
               <span>See what the network earned you</span>
             </p>
-            <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-sm text-on-ink/55">
+            <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-body-sm text-on-ink/55">
               <span>Member free</span>
               <span aria-hidden className="text-on-ink/25">·</span>
               <span>Crew {CREW_NOTE.fromLabel}</span>
@@ -319,12 +319,12 @@ function Splash({
               <span aria-hidden className="text-on-ink/25">·</span>
               <span>Independent {INDEPENDENT_PRICE}</span>
             </p>
-            <p className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-on-ink/55">
+            <p className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-body-sm text-on-ink/55">
               <span className="font-semibold text-on-ink/75">Free during the beta.</span>
               <span aria-hidden className="text-on-ink/25">·</span>
               <span>No card. Crew is pay what you want. Leave anytime.</span>
             </p>
-            <p className="mt-2 text-sm text-on-ink/40">
+            <p className="mt-2 text-body-sm text-on-ink/40">
               The first Lab is taking root in {FOUNDING_PLACE}.{' '}
               <Link href="/sign-in" className="underline hover:text-on-ink/70 transition-colors">
                 Already a member? Sign in
@@ -336,7 +336,7 @@ function Splash({
       >
         <div className="flex flex-col items-center justify-center gap-4">
           {referrer && (
-            <div className="inline-flex items-center gap-2.5 rounded-pill border border-on-ink/20 bg-on-ink/10 px-4 py-2 text-sm text-on-ink lift-1 backdrop-blur-sm">
+            <div className="inline-flex items-center gap-2.5 rounded-pill border border-on-ink/20 bg-on-ink/10 px-4 py-2 text-body-sm text-on-ink lift-1 backdrop-blur-sm">
               {referrer.avatarUrl ? (
                 <Image
                   src={avatarSrc(referrer.avatarUrl)}
@@ -347,7 +347,7 @@ function Splash({
                   style={avatarFocusStyle(referrer.avatarUrl)}
                 />
               ) : (
-                <span className="flex h-7 w-7 items-center justify-center rounded-pill bg-on-ink/20 text-xs font-bold">
+                <span className="flex h-7 w-7 items-center justify-center rounded-pill bg-on-ink/20 text-meta font-bold">
                   {getInitials(referrer.displayName)}
                 </span>
               )}
@@ -362,7 +362,7 @@ function Splash({
           {referrer?.vcardEnabled && (
             <a
               href={`/people/${referrer.handle}/vcard`}
-              className="inline-flex items-center gap-1.5 rounded-pill border border-on-ink/20 bg-on-ink/5 px-3.5 py-1.5 text-sm font-semibold text-on-ink lift-1 backdrop-blur-sm transition-colors hover:bg-on-ink/15"
+              className="inline-flex items-center gap-1.5 rounded-pill border border-on-ink/20 bg-on-ink/5 px-3.5 py-1.5 text-body-sm font-semibold text-on-ink lift-1 backdrop-blur-sm transition-colors hover:bg-on-ink/15"
             >
               Save {referrer.displayName.trim().split(/\s+/)[0]}&rsquo;s contact
             </a>
@@ -373,7 +373,7 @@ function Splash({
             </Button>
             <Link
               href={BETA_CTA_HREF}
-              className="text-sm font-semibold text-on-ink/70 underline-offset-4 hover:text-on-ink hover:underline"
+              className="text-body-sm font-semibold text-on-ink/70 underline-offset-4 hover:text-on-ink hover:underline"
             >
               {BETA_CTA_LABEL}
             </Link>
@@ -396,7 +396,7 @@ function Splash({
             kicker="It does not take a big personality. It takes a standing time and a door someone holds open."
           />
         </Reveal>
-        <Reveal delay={100} className="space-y-5 text-lg text-muted leading-relaxed">
+        <Reveal delay={100} className="space-y-5 text-body-lg text-muted leading-relaxed">
           <p>
             Most of a generation reports feeling lonely, not for lack of people, but for lack of{' '}
             <em>places</em>. The corner café, the town square, the gathering ground all quietly
@@ -439,8 +439,8 @@ function Splash({
                 <div className="mb-5 flex h-28 items-center justify-center">
                   <Illustration name={role.illustration} className="h-full" />
                 </div>
-                <h3 className="mb-2 font-display uppercase text-2xl text-text">{role.label}</h3>
-                <p className="mb-6 text-base leading-relaxed text-muted">{role.blurb}</p>
+                <h3 className="mb-2 font-display uppercase text-page-title text-text">{role.label}</h3>
+                <p className="mb-6 text-body leading-relaxed text-muted">{role.blurb}</p>
                 <div className="mt-auto">
                   <Button href={role.href} size="sm">
                     {role.cta} <ArrowRight className="h-4 w-4" aria-hidden />
@@ -450,7 +450,7 @@ function Splash({
             ))}
           </div>
         </Reveal>
-        <p className="mt-10 text-center text-sm text-subtle">
+        <p className="mt-10 text-center text-body-sm text-subtle">
           Not sure yet? Any door works.{' '}
           <Link href="/start" className="font-semibold text-primary-strong hover:underline">
             Help me pick
@@ -514,7 +514,7 @@ function Splash({
         <div className="amber-glow absolute inset-0 pointer-events-none" />
         <div className="relative z-10 mx-auto max-w-5xl px-6 py-28 sm:py-40">
           <Reveal>
-            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary mb-5">
+            <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary mb-5">
               Moonlight Beach · 2020
             </p>
             <h2 className="font-display uppercase text-on-ink text-5xl sm:text-6xl lg:text-8xl leading-[0.9] text-balance">
@@ -525,7 +525,7 @@ function Splash({
           </Reveal>
           <div className="mt-12 grid gap-10 lg:grid-cols-12">
             <Reveal as="div" delay={100} className="lg:col-span-7 lg:col-start-6">
-              <div className="space-y-5 text-lg sm:text-xl text-on-ink/85 leading-relaxed">
+              <div className="space-y-5 text-body-lg sm:text-lead text-on-ink/85 leading-relaxed">
                 <p>
                   A few people started gathering on the cliffs at Moonlight Beach to meditate, every
                   single morning. They kept showing up for more than 500 days straight.
@@ -537,7 +537,7 @@ function Splash({
               </div>
               <Link
                 href="/about"
-                className="mt-7 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-primary hover:underline"
+                className="mt-7 inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide text-primary hover:underline"
               >
                 Read the full story <ArrowRight className="w-4 h-4" aria-hidden />
               </Link>
@@ -548,7 +548,7 @@ function Splash({
               <p className="font-display text-5xl sm:text-7xl text-on-ink">
                 <CountUp value={500} />+
               </p>
-              <p className="mt-3 text-xs uppercase tracking-widest font-bold text-on-ink/50">
+              <p className="mt-3 text-meta uppercase tracking-widest font-bold text-on-ink/50">
                 Mornings in a row
               </p>
             </div>
@@ -556,13 +556,13 @@ function Splash({
               <p className="font-display text-5xl sm:text-7xl text-on-ink">
                 <CountUp value={1000} />+
               </p>
-              <p className="mt-3 text-xs uppercase tracking-widest font-bold text-on-ink/50">
+              <p className="mt-3 text-meta uppercase tracking-widest font-bold text-on-ink/50">
                 People came through
               </p>
             </div>
             <div>
               <p className="font-display text-5xl sm:text-7xl text-primary">{MEMBER_PRICE}</p>
-              <p className="mt-3 text-xs uppercase tracking-widest font-bold text-on-ink/50">
+              <p className="mt-3 text-meta uppercase tracking-widest font-bold text-on-ink/50">
                 To show up
               </p>
             </div>
@@ -590,7 +590,7 @@ function Splash({
             kicker="Leaderful, never leader-dependent."
           />
         </Reveal>
-        <Reveal delay={100} className="space-y-5 text-lg text-muted leading-relaxed">
+        <Reveal delay={100} className="space-y-5 text-body-lg text-muted leading-relaxed">
           <p>
             No guru, no franchise. Leaders rise from the people who simply keep showing up. Circles
             fill and split, neighborhoods multiply, and where enough people gather in one place, the
@@ -620,7 +620,7 @@ function Splash({
         <div className="amber-glow absolute inset-0 pointer-events-none" />
         <div className="relative z-10 mx-auto max-w-3xl px-6 py-24 sm:py-28 text-center">
           <Reveal>
-            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary mb-4">
+            <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary mb-4">
               The honest part
             </p>
             <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl mb-6 text-balance">
@@ -628,7 +628,7 @@ function Splash({
             </h2>
           </Reveal>
           <Reveal delay={100}>
-            <div className="mx-auto max-w-xl space-y-4 text-lg text-on-ink-muted leading-relaxed">
+            <div className="mx-auto max-w-xl space-y-4 text-body-lg text-on-ink-muted leading-relaxed">
               <p>
                 We won&apos;t pretend there are Circles on every corner yet. There aren&apos;t. The
                 first ones are forming in {FOUNDING_PLACE}, and the rest of the map is open.
@@ -708,7 +708,7 @@ function Splash({
           <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl mb-6 text-balance">
             Be the reason your people have somewhere to go.
           </h2>
-          <p className="text-xl text-on-ink-muted mb-9 leading-relaxed">
+          <p className="text-lead text-on-ink-muted mb-9 leading-relaxed">
             Get people together, do things on purpose. Three ways in: build a Circle, start a practice
             today, or bring one person. Pick yours and we&apos;ll point you at the first move.
           </p>
@@ -718,7 +718,7 @@ function Splash({
             </Button>
             <Link
               href={BETA_CTA_HREF}
-              className="text-sm font-semibold text-on-ink-muted underline-offset-4 hover:text-on-ink hover:underline"
+              className="text-body-sm font-semibold text-on-ink-muted underline-offset-4 hover:text-on-ink hover:underline"
             >
               {BETA_CTA_LABEL}
             </Link>
@@ -754,7 +754,7 @@ async function LiveProof() {
         <div className="amber-glow absolute inset-0 pointer-events-none" />
         <div className="relative z-10 mx-auto max-w-3xl text-center">
           <Reveal>
-            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary mb-4">
+            <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary mb-4">
               Not a someday idea
             </p>
             <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl mb-6">
@@ -763,7 +763,7 @@ async function LiveProof() {
           </Reveal>
           {hasProof ? (
             <Reveal delay={100}>
-              <p className="text-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto mb-12">
+              <p className="text-body-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto mb-12">
                 Real people, real Circles, real gatherings, taking root in {FOUNDING_PLACE} right now.
               </p>
               <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
@@ -774,7 +774,7 @@ async function LiveProof() {
             </Reveal>
           ) : (
             <Reveal delay={100}>
-              <p className="text-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto">
+              <p className="text-body-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto">
                 The first Circles are forming in {FOUNDING_PLACE}. The early members are shaping what
                 this becomes. Come be one of them.
               </p>
@@ -810,14 +810,14 @@ async function LiveProof() {
         <section className="bg-surface px-6 py-20 sm:py-24">
           <div className="max-w-2xl mx-auto">
             <Reveal className="text-center">
-              <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
+              <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
                 In their own words
               </p>
               <h2 className={`font-display uppercase text-text text-3xl sm:text-4xl text-balance ${postsCurated ? 'mb-3' : 'mb-10'}`}>
                 People showing up for each other
               </h2>
               {postsCurated && (
-                <p className="mb-10 text-sm text-subtle">Hand-picked by Vera</p>
+                <p className="mb-10 text-body-sm text-subtle">Hand-picked by Vera</p>
               )}
             </Reveal>
             <div className="space-y-4">
@@ -857,20 +857,20 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
           style={avatarFocusStyle(a.avatar_url)}
         />
       ) : (
-        <div className="w-10 h-10 rounded-pill bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+        <div className="w-10 h-10 rounded-pill bg-surface-elevated text-muted text-meta font-semibold flex items-center justify-center shrink-0 select-none">
           {initials}
         </div>
       )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-base font-semibold text-text truncate">
+          <span className="text-body font-semibold text-text truncate">
             {a?.display_name ?? 'Community member'}
           </span>
           {showRole && (
             <RoleBadge role={a!.community_role as CommunityRole} className="text-3xs leading-tight" />
           )}
         </div>
-        <p className="text-xs text-subtle mt-0.5">
+        <p className="text-meta text-subtle mt-0.5">
           {a?.handle && <>@{a.handle} · </>}
           {relativeTime(post.created_at)}
         </p>
@@ -889,7 +889,7 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
           <div className="flex items-start gap-3 mb-3">{identity}</div>
         )}
 
-        <p className="text-base text-text leading-relaxed line-clamp-3">{post.body}</p>
+        <p className="text-body text-text leading-relaxed line-clamp-3">{post.body}</p>
 
         {post.media_urls?.length > 0 && (
           <div className="relative mt-3 h-72 w-full rounded-card overflow-hidden border border-border">
@@ -915,18 +915,18 @@ function EventRow({ event }: { event: LiveEvent }) {
     <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface px-5 py-4 lift-1">
       <div className="shrink-0 flex h-12 w-12 flex-col items-center justify-center rounded-xl bg-primary-bg">
         <span className="text-3xs font-bold leading-none text-primary-strong">{month}</span>
-        <span className="text-base font-bold leading-tight text-primary-strong">{day}</span>
+        <span className="text-body font-bold leading-tight text-primary-strong">{day}</span>
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-base font-semibold text-text">{event.title}</p>
-        <p className="mt-0.5 text-sm text-subtle">
+        <p className="truncate text-body font-semibold text-text">{event.title}</p>
+        <p className="mt-0.5 text-body-sm text-subtle">
           {dateStr}
           {event.city && <> &middot; {event.city}</>}
         </p>
       </div>
       <Link
         href={communityHref(`/events/${event.slug}`, false)}
-        className="flex shrink-0 items-center gap-1 text-sm font-semibold text-primary-strong hover:underline"
+        className="flex shrink-0 items-center gap-1 text-body-sm font-semibold text-primary-strong hover:underline"
       >
         Join <ArrowRight className="h-3 w-3" aria-hidden />
       </Link>

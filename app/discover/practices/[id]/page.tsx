@@ -62,7 +62,7 @@ export default async function PublicPracticePage({
 
       <Link
         href="/discover/practices"
-        className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text"
+        className="mb-4 inline-flex items-center gap-1 text-body-sm font-medium text-muted transition-colors hover:text-text"
       >
         <ChevronLeft className="h-4 w-4" />
         Practices
@@ -80,20 +80,20 @@ export default async function PublicPracticePage({
         }
         badges={
           practice.subcategory ? (
-            <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-xs font-medium text-muted">
+            <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-meta font-medium text-muted">
               {practice.subcategory.name}
             </span>
           ) : undefined
         }
       >
         {(practice.summary || practice.description) && (
-          <p className="mb-8 max-w-2xl text-lg leading-relaxed text-muted">
+          <p className="mb-8 max-w-2xl text-body-lg leading-relaxed text-muted">
             {practice.summary ?? practice.description}
           </p>
         )}
 
         {practice.body && (
-          <div className="mb-8 max-w-2xl whitespace-pre-line text-base leading-relaxed text-text">
+          <div className="mb-8 max-w-2xl whitespace-pre-line text-body leading-relaxed text-text">
             {practice.body}
           </div>
         )}
@@ -101,7 +101,7 @@ export default async function PublicPracticePage({
         {practice.tags.length > 0 && (
           <div className="mb-10 flex flex-wrap gap-2">
             {practice.tags.map((t) => (
-              <span key={t.slug} className="rounded-pill bg-surface-elevated px-2.5 py-1 text-xs text-subtle">
+              <span key={t.slug} className="rounded-pill bg-surface-elevated px-2.5 py-1 text-meta text-subtle">
                 {t.label}
               </span>
             ))}

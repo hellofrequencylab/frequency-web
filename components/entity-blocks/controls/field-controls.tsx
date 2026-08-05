@@ -434,7 +434,7 @@ export function PickerControl({
         {createHref ? (
           <Link
             href={createHref}
-            className="inline-flex items-center gap-1 rounded-lg border border-dashed border-border px-2.5 py-2 text-xs font-semibold text-primary-strong transition-colors hover:border-primary"
+            className="inline-flex items-center gap-1 rounded-lg border border-dashed border-border px-2.5 py-2 text-meta font-semibold text-primary-strong transition-colors hover:border-primary"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden /> {createLabel ?? 'Create the first one'}
           </Link>
@@ -471,7 +471,7 @@ export function PickerControl({
                 type="button"
                 aria-pressed={on}
                 onClick={() => toggle(it.id)}
-                className={`flex min-w-0 flex-1 items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-xs font-medium transition-colors ${
+                className={`flex min-w-0 flex-1 items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-meta font-medium transition-colors ${
                   on
                     ? 'border-primary bg-primary-bg text-text'
                     : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text'
@@ -594,7 +594,7 @@ export function IconPicker({
               value={query}
               placeholder={source === 'icon' ? 'Search icons' : 'Search emoji'}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text placeholder:text-subtle outline-none focus:border-primary"
+              className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta text-text placeholder:text-subtle outline-none focus:border-primary"
               autoFocus
             />
 
@@ -621,7 +621,7 @@ export function IconPicker({
                       aria-label={e.keywords.split(' ')[0]}
                       title={e.keywords.split(' ')[0]}
                       onClick={() => pick(e.char)}
-                      className={`flex h-8 w-8 items-center justify-center rounded-md border text-lg leading-none transition-colors hover:bg-surface-elevated ${
+                      className={`flex h-8 w-8 items-center justify-center rounded-md border text-body-lg leading-none transition-colors hover:bg-surface-elevated ${
                         value === e.char ? 'border-primary bg-primary-bg' : 'border-transparent'
                       }`}
                     >

@@ -54,13 +54,13 @@ export default async function AdminStorePage() {
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             {item.icon && (
-              <span className="text-base leading-none" aria-hidden="true">
+              <span className="text-body leading-none" aria-hidden="true">
                 {item.icon}
               </span>
             )}
-            <span className="truncate text-sm font-medium text-text">{item.name}</span>
+            <span className="truncate text-body-sm font-medium text-text">{item.name}</span>
           </div>
-          <span className="mt-0.5 block truncate text-xs text-subtle">{item.slug}</span>
+          <span className="mt-0.5 block truncate text-meta text-subtle">{item.slug}</span>
         </div>
       ),
     },

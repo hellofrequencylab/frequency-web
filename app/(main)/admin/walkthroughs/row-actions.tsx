@@ -38,7 +38,7 @@ export function NewWalkthroughButton() {
       >
         <Plus className="h-4 w-4" aria-hidden /> {pending ? 'Creating…' : 'New walkthrough'}
       </Button>
-      {error && <p role="alert" className="text-xs font-medium text-danger">{error}</p>}
+      {error && <p role="alert" className="text-meta font-medium text-danger">{error}</p>}
     </div>
   )
 }
@@ -64,7 +64,7 @@ export function EditNextStepsButton() {
       >
         <ListChecks className="h-4 w-4" aria-hidden /> {pending ? 'Opening…' : 'Edit Next Steps'}
       </Button>
-      {error && <p role="alert" className="text-xs font-medium text-danger">{error}</p>}
+      {error && <p role="alert" className="text-meta font-medium text-danger">{error}</p>}
     </div>
   )
 }

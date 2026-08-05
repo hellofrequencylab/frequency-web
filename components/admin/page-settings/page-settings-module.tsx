@@ -42,16 +42,16 @@ export function PageSettingsModule({
     return (
       <div className="min-w-0">
         <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Page</p>
-        <p className="mb-3 mt-0.5 text-xs text-muted">
+        <p className="mb-3 mt-0.5 text-meta text-muted">
           Tune what shows inside this page. The app shell (the global rails and header) stays put.
         </p>
         <div className="space-y-4">
           <div>
             <div className="mb-1 flex items-center gap-2">
               <Type className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-              <span className="text-sm font-semibold text-text">Subtitle</span>
+              <span className="text-body-sm font-semibold text-text">Subtitle</span>
             </div>
-            <p className="mb-2 text-xs text-muted">Set the line shown under the page title.</p>
+            <p className="mb-2 text-meta text-muted">Set the line shown under the page title.</p>
             <SubtitleEditor />
           </div>
           {/* Layout only shows where the page renders <PageModules>. */}
@@ -59,9 +59,9 @@ export function PageSettingsModule({
             <div>
               <div className="mb-1 flex items-center gap-2">
                 <LayoutGrid className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-                <span className="text-sm font-semibold text-text">Layout</span>
+                <span className="text-body-sm font-semibold text-text">Layout</span>
               </div>
-              <p className="mb-2 text-xs text-muted">
+              <p className="mb-2 text-meta text-muted">
                 Choose which blocks show inside the page and their order. Tunes the page, never the app shell.
               </p>
               <LayoutEditor spaceId={spaceId} />
@@ -85,7 +85,7 @@ export function PageSettingsModule({
   return (
     <div className="min-w-0">
       <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Page</p>
-      <p className="mb-3 mt-0.5 text-xs text-muted">
+      <p className="mb-3 mt-0.5 text-meta text-muted">
         Tune what shows inside this page. The app shell (the global rails and header) stays put.
       </p>
       <div className="space-y-4">
@@ -97,9 +97,9 @@ export function PageSettingsModule({
               <div key={section.id}>
                 <div className="mb-1 flex items-center gap-2">
                   <Icon className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-                  <span className="text-sm font-semibold text-text">{section.label}</span>
+                  <span className="text-body-sm font-semibold text-text">{section.label}</span>
                 </div>
-                <p className="mb-2 text-xs text-muted">{section.hint}</p>
+                <p className="mb-2 text-meta text-muted">{section.hint}</p>
                 {section.id === 'basics' && <SeoEditor spaceId={spaceId} pane="basics" />}
                 {section.id === 'status' && <StatusEditor spaceId={spaceId} />}
                 {section.id === 'seo' && <SeoEditor spaceId={spaceId} pane="meta" />}
@@ -116,12 +116,12 @@ export function PageSettingsModule({
               <Icon className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-text">{section.label}</span>
+                  <span className="text-body-sm font-semibold text-text">{section.label}</span>
                   <span className="shrink-0 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
                     Next
                   </span>
                 </div>
-                <p className="mt-0.5 text-xs text-muted">{section.hint}</p>
+                <p className="mt-0.5 text-meta text-muted">{section.hint}</p>
               </div>
             </div>
           )

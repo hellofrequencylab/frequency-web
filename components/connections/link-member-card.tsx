@@ -19,7 +19,7 @@ interface MemberHit {
 function Avatar({ url, name }: { url: string | null; name: string | null }) {
   if (url) return <Image src={avatarSrc(url)} alt="" width={32} height={32} className="h-8 w-8 rounded-pill object-cover" style={avatarFocusStyle(url)} />
   return (
-    <span className="flex h-8 w-8 items-center justify-center rounded-pill bg-surface-elevated text-xs font-semibold text-muted">
+    <span className="flex h-8 w-8 items-center justify-center rounded-pill bg-surface-elevated text-meta font-semibold text-muted">
       {getInitials(name ?? '?')}
     </span>
   )
@@ -83,7 +83,7 @@ export function LinkMemberCard({
 
   return (
     <section className="mt-6 rounded-2xl border border-border bg-surface p-4 lift-1">
-      <h2 className="flex items-center gap-1.5 text-sm font-bold text-text">
+      <h2 className="flex items-center gap-1.5 text-body-sm font-bold text-text">
         <UserRoundCheck className="h-4 w-4 text-primary-strong" /> On Frequency
       </h2>
 
@@ -91,14 +91,14 @@ export function LinkMemberCard({
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <Avatar url={linked.avatarUrl} name={linked.displayName} />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-text">{linked.displayName ?? 'Member'}</p>
-            {linked.handle && <p className="truncate text-xs text-subtle">@{linked.handle}</p>}
+            <p className="truncate text-body-sm font-semibold text-text">{linked.displayName ?? 'Member'}</p>
+            {linked.handle && <p className="truncate text-meta text-subtle">@{linked.handle}</p>}
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             {linked.handle && (
               <Link
                 href={`/people/${linked.handle}`}
-                className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-text transition-colors hover:border-border-strong"
+                className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong"
               >
                 <ExternalLink className="h-3.5 w-3.5" /> View profile
               </Link>
@@ -107,7 +107,7 @@ export function LinkMemberCard({
               type="button"
               onClick={unlink}
               disabled={pending}
-              className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted transition-colors hover:text-danger disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-meta text-muted transition-colors hover:text-danger disabled:opacity-50"
             >
               <Link2Off className="h-3.5 w-3.5" /> Unlink
             </button>
@@ -118,7 +118,7 @@ export function LinkMemberCard({
         </div>
       ) : (
         <div className="mt-3 space-y-2">
-          <p className="text-xs text-muted">
+          <p className="text-meta text-muted">
             Is {contactName ?? 'this contact'} a member? Link the two and their live profile rides along with your notes.
             (The automatic match only fires when the email or phone is the same on both.)
           </p>
@@ -128,24 +128,24 @@ export function LinkMemberCard({
               value={q}
               onChange={(e) => onQuery(e.target.value)}
               placeholder="Search members by name or @handle…"
-              className="w-full rounded-lg border border-border bg-canvas py-2 pl-8 pr-3 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+              className="w-full rounded-lg border border-border bg-canvas py-2 pl-8 pr-3 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
             />
           </div>
-          {error && <p className="text-xs text-danger">{error}</p>}
+          {error && <p className="text-meta text-danger">{error}</p>}
           {hits.length > 0 && (
             <ul className="divide-y divide-border overflow-hidden rounded-card border border-border">
               {hits.map((h) => (
                 <li key={h.id} className="flex items-center gap-2.5 bg-surface p-2.5">
                   <Avatar url={h.avatarUrl} name={h.displayName} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-text">{h.displayName ?? 'Member'}</p>
-                    {h.handle && <p className="truncate text-xs text-subtle">@{h.handle}</p>}
+                    <p className="truncate text-body-sm font-medium text-text">{h.displayName ?? 'Member'}</p>
+                    {h.handle && <p className="truncate text-meta text-subtle">@{h.handle}</p>}
                   </div>
                   <button
                     type="button"
                     onClick={() => link(h.id)}
                     disabled={pending}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
                   >
                     <UserRoundCheck className="h-3.5 w-3.5" /> Link
                   </button>
@@ -154,7 +154,7 @@ export function LinkMemberCard({
             </ul>
           )}
           {searched && hits.length === 0 && (
-            <p className="text-xs text-subtle">No members match that search.</p>
+            <p className="text-meta text-subtle">No members match that search.</p>
           )}
         </div>
       )}

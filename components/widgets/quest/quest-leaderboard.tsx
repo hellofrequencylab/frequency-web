@@ -61,7 +61,7 @@ export async function QuestLeaderboard() {
                 isSelf ? 'bg-primary-bg/60 dark:bg-primary-bg' : ''
               }`}
             >
-              <span className={`w-5 shrink-0 text-sm font-bold ${rankColor}`}>{i + 1}</span>
+              <span className={`w-5 shrink-0 text-body-sm font-bold ${rankColor}`}>{i + 1}</span>
 
               {member.avatarUrl ? (
                 <Image
@@ -73,7 +73,7 @@ export async function QuestLeaderboard() {
                   style={avatarFocusStyle(member.avatarUrl)}
                 />
               ) : (
-                <div className="flex h-7 w-7 shrink-0 select-none items-center justify-center rounded-pill bg-primary-bg text-xs font-semibold text-primary-strong">
+                <div className="flex h-7 w-7 shrink-0 select-none items-center justify-center rounded-pill bg-primary-bg text-meta font-semibold text-primary-strong">
                   {getInitials(member.displayName)}
                 </div>
               )}
@@ -81,22 +81,22 @@ export async function QuestLeaderboard() {
               <div className="min-w-0 flex-1">
                 <Link
                   href={`/people/${member.handle}`}
-                  className={`truncate text-xs font-medium hover:underline ${
+                  className={`truncate text-meta font-medium hover:underline ${
                     isSelf ? 'text-primary-strong' : 'text-text'
                   }`}
                 >
                   {member.displayName}
-                  {isSelf && <span className="ml-1 text-xs font-normal text-primary-strong">(you)</span>}
+                  {isSelf && <span className="ml-1 text-meta font-normal text-primary-strong">(you)</span>}
                 </Link>
               </div>
 
               <div className="flex shrink-0 items-center gap-1.5">
-                <span className={`rounded-md px-1.5 py-0.5 text-xs font-bold text-white ${memberRankDef.color}`}>
+                <span className={`rounded-md px-1.5 py-0.5 text-meta font-bold text-white ${memberRankDef.color}`}>
                   {memberRankDef.label}
                 </span>
                 <div className="flex items-center gap-0.5">
                   <Zap className="h-3 w-3 text-primary" />
-                  <span className="text-xs font-semibold text-text">{member.seasonZaps.toLocaleString()}</span>
+                  <span className="text-meta font-semibold text-text">{member.seasonZaps.toLocaleString()}</span>
                 </div>
               </div>
             </div>

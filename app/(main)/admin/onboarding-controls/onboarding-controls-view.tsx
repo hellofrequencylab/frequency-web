@@ -25,7 +25,7 @@ const fmtWhen = (s: string | null) =>
 function AuditLog({ events }: { events: OnboardingSwitchEvent[] }) {
   if (events.length === 0) {
     return (
-      <p className="mt-3 flex items-center gap-1.5 text-xs text-subtle">
+      <p className="mt-3 flex items-center gap-1.5 text-meta text-subtle">
         <History className="h-3.5 w-3.5" aria-hidden /> No changes recorded yet.
       </p>
     )
@@ -33,7 +33,7 @@ function AuditLog({ events }: { events: OnboardingSwitchEvent[] }) {
   return (
     <ul className="mt-3 space-y-2">
       {events.map((e) => (
-        <li key={e.id} className="flex items-center gap-3 text-sm">
+        <li key={e.id} className="flex items-center gap-3 text-body-sm">
           <StatusChip tone={e.value ? 'success' : 'danger'} size="sm">
             {e.value ? 'On' : 'Off'}
           </StatusChip>
@@ -41,7 +41,7 @@ function AuditLog({ events }: { events: OnboardingSwitchEvent[] }) {
             {e.who}
             {e.source !== 'admin' && <span className="text-subtle"> · {e.source}</span>}
           </span>
-          <span className="shrink-0 text-xs tabular-nums text-subtle">{fmtWhen(e.createdAt)}</span>
+          <span className="shrink-0 text-meta tabular-nums text-subtle">{fmtWhen(e.createdAt)}</span>
         </li>
       ))}
     </ul>
@@ -86,7 +86,7 @@ export function OnboardingControlsView({ data }: { data: Data }) {
             <AuditLog events={referralsAudit} />
           </div>
           <div className="rounded-card border border-border bg-surface-elevated/50 px-3 py-2.5">
-            <p className="flex items-center justify-between gap-2 text-sm">
+            <p className="flex items-center justify-between gap-2 text-body-sm">
               <span className="inline-flex items-center gap-1.5 font-semibold text-text">
                 <Zap className="h-3.5 w-3.5 text-primary" aria-hidden /> Reward when a referral is accepted
               </span>
@@ -101,7 +101,7 @@ export function OnboardingControlsView({ data }: { data: Data }) {
                 )}
               </span>
             </p>
-            <p className="mt-1 text-xs text-muted">
+            <p className="mt-1 text-meta text-muted">
               The amount is read-only here. Edit it in{' '}
               <Link href="/admin/gamification" className="font-semibold text-primary-strong hover:text-primary-hover">
                 Gamification
@@ -118,22 +118,22 @@ export function OnboardingControlsView({ data }: { data: Data }) {
         description="Where every personal QR code lands a scanner. A same-site path (default /, the splash). Saving retargets all existing codes too. The printed image never changes."
       >
         <form action={setReferralLanding} className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium text-subtle">{siteHost}</span>
+          <span className="text-body-sm font-medium text-subtle">{siteHost}</span>
           <input
             name="path"
             defaultValue={landing}
             spellCheck={false}
             placeholder="/"
-            className="w-40 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-primary focus:outline-none"
+            className="w-40 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none"
           />
           <button
             type="submit"
-            className="rounded-lg bg-primary px-3.5 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="rounded-lg bg-primary px-3.5 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             Save
           </button>
         </form>
-        <p className="mt-2 text-xs text-muted">
+        <p className="mt-2 text-meta text-muted">
           Must start with <code className="rounded bg-surface-elevated px-1">/</code> (same-site only). For example,{' '}
           <code className="rounded bg-surface-elevated px-1">/</code> for the splash or{' '}
           <code className="rounded bg-surface-elevated px-1">/welcome</code> for a campaign page.

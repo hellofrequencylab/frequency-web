@@ -57,8 +57,8 @@ export async function MembershipJoin({
       return (
         <div className="rounded-2xl border border-border bg-surface-elevated px-6 py-8 text-center">
           <Users className="mx-auto mb-3 h-8 w-8 text-muted" aria-hidden />
-          <p className="text-sm font-semibold text-text">You are on the waitlist.</p>
-          <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
+          <p className="text-body-sm font-semibold text-text">You are on the waitlist.</p>
+          <p className="mx-auto mt-1 max-w-sm text-body-sm text-muted">
             {mine.tierName}, waiting since {since}. You become a member when a spot opens.
           </p>
           <div className="mt-4 flex justify-center">
@@ -70,8 +70,8 @@ export async function MembershipJoin({
     return (
       <div className="rounded-2xl border border-success/30 bg-success-bg px-6 py-8 text-center">
         <BadgeCheck className="mx-auto mb-3 h-8 w-8 text-success" aria-hidden />
-        <p className="text-sm font-semibold text-text">You are a member.</p>
-        <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
+        <p className="text-body-sm font-semibold text-text">You are a member.</p>
+        <p className="mx-auto mt-1 max-w-sm text-body-sm text-muted">
           {mine.tierName} since {since}.
         </p>
         <div className="mt-4 flex justify-center">
@@ -113,7 +113,7 @@ export async function MembershipJoin({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted">
+      <p className="text-body-sm text-muted">
         {billingOn
           ? 'Pick a tier to join. A paid tier opens secure checkout; a free tier registers you right away.'
           : 'Pick a tier to join. Joining registers you as a member. We do not take a payment yet, so paid billing is coming later.'}

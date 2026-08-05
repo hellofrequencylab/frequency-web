@@ -23,7 +23,7 @@ export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Marketplace · Admin' }
 
 const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
 
 function usd(cents: number, currency = 'usd') {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100)
@@ -36,7 +36,7 @@ function CatalogRow({ p, oversight = false }: { p: CommerceProduct; oversight?: 
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-3">
       <div className="min-w-0">
         <p className="truncate font-medium text-text">{p.title}</p>
-        <p className="text-xs text-subtle">
+        <p className="text-meta text-subtle">
           {usd(p.priceCents, p.currency)} · <span className="uppercase tracking-wide">{STATUS_LABEL[p.status] ?? p.status}</span>
           {p.stock != null && <span> · {p.stock} in stock</span>}
         </p>

@@ -68,8 +68,8 @@ export function SeatEditor({
     <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-base font-bold text-text">Operator seats</h2>
-          <p className="mt-1 text-sm text-muted">
+          <h2 className="text-body font-bold text-text">Operator seats</h2>
+          <p className="mt-1 text-body-sm text-muted">
             Set how many extra operators you license. Your own seat is included, so this is the team beyond
             you. Changes are prorated on your next invoice.
           </p>
@@ -85,7 +85,7 @@ export function SeatEditor({
             >
               <Minus className="h-4 w-4" aria-hidden />
             </button>
-            <span className="min-w-10 text-center text-sm font-semibold tabular-nums text-text" aria-live="polite">
+            <span className="min-w-10 text-center text-body-sm font-semibold tabular-nums text-text" aria-live="polite">
               {seats}
             </span>
             <button
@@ -102,7 +102,7 @@ export function SeatEditor({
             type="button"
             onClick={save}
             disabled={pending || !dirty}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Check className="h-4 w-4" aria-hidden />}
             Save
@@ -111,7 +111,7 @@ export function SeatEditor({
       </div>
       {/* The running cost of the chosen seats, so the count is never priceless. */}
       {seatMonthlyCents > 0 && (
-        <p className="mt-3 text-xs font-medium text-text">
+        <p className="mt-3 text-meta font-medium text-text">
           {seats} {seats === 1 ? 'seat' : 'seats'} x {usd(seatMonthlyCents)} = {usd(seatMonthlyCents * seats)}/mo,
           prorated on your next invoice.
         </p>

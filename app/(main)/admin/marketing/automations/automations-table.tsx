@@ -25,7 +25,7 @@ function ToggleCell({ rule }: { rule: AutomationRule }) {
             if (!res.ok) setError(res.error ?? 'Could not update the rule.')
           })
         }}
-        className={`rounded-pill px-2.5 py-0.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+        className={`rounded-pill px-2.5 py-0.5 text-meta font-semibold transition-colors disabled:opacity-50 ${
           rule.enabled
             ? 'bg-success-bg text-success hover:bg-surface-elevated'
             : 'bg-surface-elevated text-muted hover:bg-primary-bg hover:text-primary-strong'
@@ -116,7 +116,7 @@ export function AutomationsTable({
       header: 'Trigger',
       render: (r) => (
         <span className="text-muted">
-          on <code className="rounded bg-surface-elevated px-1 py-0.5 text-xs text-text">{r.triggerEvent}</code>
+          on <code className="rounded bg-surface-elevated px-1 py-0.5 text-meta text-text">{r.triggerEvent}</code>
           {r.conditions.length > 0 && (
             <>
               {' '}· {r.conditions.length} condition{r.conditions.length === 1 ? '' : 's'}

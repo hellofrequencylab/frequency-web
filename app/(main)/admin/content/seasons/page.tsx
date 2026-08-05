@@ -125,7 +125,7 @@ export default async function AdminSeasonsPage() {
           activeSeason ? (
             <Link
               href={`/admin/content/seasons/${activeSeason.id}`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
             >
               Edit &amp; compose <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
@@ -152,7 +152,7 @@ export default async function AdminSeasonsPage() {
       </AdminSection>
 
       <AdminSection>
-        <p className="text-xs text-muted">
+        <p className="text-meta text-muted">
           Ending the active season (trophies, Zap to Gem conversion, resets) lives in{' '}
           <Link
             href="/admin/gamification"

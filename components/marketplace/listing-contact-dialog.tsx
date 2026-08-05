@@ -111,7 +111,7 @@ export function ListingContactDialog({
         aria-expanded={open}
         className={
           triggerClassName ??
-          'inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary/90'
+          'inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary/90'
         }
       >
         <MessageCircle className="h-4 w-4" aria-hidden />
@@ -126,9 +126,9 @@ export function ListingContactDialog({
                 <span className="flex h-8 w-8 items-center justify-center rounded-pill bg-success/15 text-success">
                   <Check className="h-4 w-4" aria-hidden />
                 </span>
-                <h2 className="text-base font-semibold text-text">Message sent</h2>
+                <h2 className="text-body font-semibold text-text">Message sent</h2>
               </div>
-              <p className="text-sm text-muted">
+              <p className="text-body-sm text-muted">
                 Message sent. {sellerName} will see it in messages.
               </p>
               <div className="flex items-center gap-2">
@@ -141,14 +141,14 @@ export function ListingContactDialog({
                     openDockThread({ kind: 'dm', id: sent.conversationId, title: sellerName })
                     close()
                   }}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary/90"
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary/90"
                 >
                   Open messages
                 </button>
                 <button
                   type="button"
                   onClick={close}
-                  className="inline-flex items-center justify-center rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  className="inline-flex items-center justify-center rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
                 >
                   Close
                 </button>
@@ -156,11 +156,11 @@ export function ListingContactDialog({
             </div>
           ) : !viewerSignedIn ? (
             <div className="space-y-4">
-              <h2 className="text-base font-semibold text-text">Contact {sellerName}</h2>
-              <p className="text-sm text-muted">Sign in to contact the seller.</p>
+              <h2 className="text-body font-semibold text-text">Contact {sellerName}</h2>
+              <p className="text-body-sm text-muted">Sign in to contact the seller.</p>
               <Link
                 href="/sign-in"
-                className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary/90"
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary/90"
               >
                 Sign in
               </Link>
@@ -168,7 +168,7 @@ export function ListingContactDialog({
           ) : (
             <div className="space-y-4">
               <div>
-                <h2 className="text-base font-semibold text-text">Contact {sellerName}</h2>
+                <h2 className="text-body font-semibold text-text">Contact {sellerName}</h2>
                 <p className="mt-1 text-2xs text-muted">
                   This opens a message. No payment happens here.
                 </p>
@@ -185,7 +185,7 @@ export function ListingContactDialog({
                   rows={4}
                   autoFocus
                   placeholder={`Ask ${sellerName} a question or say you are interested.`}
-                  className="w-full resize-y rounded-lg border border-border bg-surface-elevated/50 px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+                  className="w-full resize-y rounded-lg border border-border bg-surface-elevated/50 px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
                 />
               </div>
 
@@ -196,7 +196,7 @@ export function ListingContactDialog({
                   </label>
                   <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-elevated/50 px-3 py-2 focus-within:border-primary">
                     <Tag className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-                    <span className="text-sm text-muted">$</span>
+                    <span className="text-body-sm text-muted">$</span>
                     <input
                       id="listing-contact-offer"
                       type="text"
@@ -204,7 +204,7 @@ export function ListingContactDialog({
                       value={offer}
                       onChange={(e) => setOffer(e.target.value)}
                       placeholder="0"
-                      className="w-full bg-transparent text-sm text-text placeholder:text-subtle focus:outline-none"
+                      className="w-full bg-transparent text-body-sm text-text placeholder:text-subtle focus:outline-none"
                     />
                   </div>
                   {highestOfferCents != null && (
@@ -213,7 +213,7 @@ export function ListingContactDialog({
                 </div>
               )}
 
-              {error && <p className="text-sm text-danger">{error}</p>}
+              {error && <p className="text-body-sm text-danger">{error}</p>}
 
               <div className="flex items-center gap-2">
                 <button
@@ -221,7 +221,7 @@ export function ListingContactDialog({
                   onClick={submit}
                   disabled={pending}
                   className={cn(
-                    'inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary/90',
+                    'inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary/90',
                     pending && 'opacity-60',
                   )}
                 >
@@ -231,7 +231,7 @@ export function ListingContactDialog({
                 <button
                   type="button"
                   onClick={close}
-                  className="inline-flex items-center justify-center rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  className="inline-flex items-center justify-center rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
                 >
                   Cancel
                 </button>

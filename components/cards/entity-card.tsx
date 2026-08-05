@@ -105,18 +105,18 @@ export function EntityCard({
             {anchor && <div className="shrink-0">{anchor}</div>}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
-                <h3 className="truncate text-base font-bold leading-tight text-text">{title}</h3>
+                <h3 className="truncate text-body font-bold leading-tight text-text">{title}</h3>
                 {badge}
               </div>
-              {context && <p className="mt-1 truncate text-xs text-subtle">{context}</p>}
+              {context && <p className="mt-1 truncate text-meta text-subtle">{context}</p>}
             </div>
           </div>
           {description && (
-            <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-muted">{description}</p>
+            <p className="mt-3 line-clamp-2 text-body-sm leading-relaxed text-muted">{description}</p>
           )}
           {meta && (
             <div
-              className={`mt-auto flex items-center pt-3 text-xs text-subtle ${
+              className={`mt-auto flex items-center pt-3 text-meta text-subtle ${
                 metaNoWrap ? 'flex-nowrap gap-x-2.5 overflow-hidden' : 'flex-wrap gap-x-3 gap-y-1'
               }`}
             >

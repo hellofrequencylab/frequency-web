@@ -93,7 +93,7 @@ export default async function DiscoverCirclesPage() {
             title={<>A crowd can&apos;t miss you. A <span className="text-primary">Circle</span> can.</>}
             kicker="Small enough to learn every name, big enough to always have plans."
           />
-          <p className="mt-5 text-lg text-muted leading-relaxed max-w-prose mx-auto">
+          <p className="mt-5 text-body-lg text-muted leading-relaxed max-w-prose mx-auto">
             You can have a thousand followers and still walk to the car alone. A Circle is
             the opposite shape: a few faces that light up when you arrive, a seat that gets
             noticed the week it&apos;s empty, a near-stranger who texts to ask where you&apos;ve
@@ -112,7 +112,7 @@ export default async function DiscoverCirclesPage() {
         <div className="relative max-w-4xl mx-auto">
           <div className="mb-9 max-w-prose">
             <SectionHeading eyebrow="Near you" title="Browse the Circles" />
-            <p className="mt-5 text-lg text-muted leading-relaxed">
+            <p className="mt-5 text-body-lg text-muted leading-relaxed">
               Every Circle here is real and forming in North County San Diego. Read the rooms,
               the practices, the standing times. Find one that sounds like your people, or a
               reason to gather your own. The first night is the hardest. After that, you&apos;re

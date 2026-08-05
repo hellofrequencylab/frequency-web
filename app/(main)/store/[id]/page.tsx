@@ -88,7 +88,7 @@ export default async function ShopProductPage({ params }: { params: Promise<{ id
         back={{ href: '/store', label: 'Frequency Store' }}
         title={product.title}
         subtitle={<span className="font-semibold text-text">{usd(product.priceCents, product.currency)}</span>}
-        badges={product.category ? <span className="text-xs text-subtle">{product.category}</span> : undefined}
+        badges={product.category ? <span className="text-meta text-subtle">{product.category}</span> : undefined}
       >
         <div className="rounded-3xl border border-border bg-surface p-5 lift-1">
           {product.images.length > 0 && (
@@ -106,11 +106,11 @@ export default async function ShopProductPage({ params }: { params: Promise<{ id
           )}
 
           {product.description && (
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">{product.description}</p>
+            <p className="whitespace-pre-wrap text-body-sm leading-relaxed text-text">{product.description}</p>
           )}
 
           <div className="mt-5 border-t border-border pt-4">
-            {soldOut ? <p className="text-sm font-medium text-subtle">Sold out.</p> : <BuyButton productId={product.id} />}
+            {soldOut ? <p className="text-body-sm font-medium text-subtle">Sold out.</p> : <BuyButton productId={product.id} />}
           </div>
         </div>
       </DetailTemplate>

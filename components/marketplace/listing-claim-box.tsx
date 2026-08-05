@@ -35,16 +35,16 @@ export function ListingClaimBox({
 
   return (
     <div className="space-y-2">
-      <p className="text-sm text-muted">Frequency posted this for you. Claim it to make it yours to edit or close.</p>
+      <p className="text-body-sm text-muted">Frequency posted this for you. Claim it to make it yours to edit or close.</p>
       {error && (
-        <p className="rounded-lg border border-danger/40 bg-danger-bg px-3 py-2 text-sm text-danger">{error}</p>
+        <p className="rounded-lg border border-danger/40 bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>
       )}
       {signedIn ? (
         <button
           type="button"
           onClick={claim}
           disabled={pending}
-          className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" aria-hidden />}
           {pending ? 'Claiming' : 'Claim listing'}
@@ -52,7 +52,7 @@ export function ListingClaimBox({
       ) : (
         <Link
           href={signInHref}
-          className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           <Zap className="h-4 w-4" aria-hidden /> Sign in to claim
         </Link>

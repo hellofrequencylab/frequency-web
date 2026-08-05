@@ -54,8 +54,8 @@ export function HostPromptCardShell({
           <Sparkles className="h-4.5 w-4.5" />
         </span>
         <div className="min-w-0 pr-6">
-          <h3 className="text-sm font-bold text-text">{title}</h3>
-          <p className="mt-1 text-sm text-muted">{body}</p>
+          <h3 className="text-body-sm font-bold text-text">{title}</h3>
+          <p className="mt-1 text-body-sm text-muted">{body}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">{children}</div>
         </div>
       </div>

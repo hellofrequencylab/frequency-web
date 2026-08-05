@@ -27,7 +27,7 @@ export const EventDescription = async () => {
           save={updateEventField.bind(null, event.id, event.slug, 'description')}
         >
           {event.description ? (
-            <p className="text-sm text-text leading-relaxed whitespace-pre-wrap">{event.description}</p>
+            <p className="text-body-sm text-text leading-relaxed whitespace-pre-wrap">{event.description}</p>
           ) : (
             <StartEditingLink label="+ Add a description" />
           )}
@@ -37,6 +37,6 @@ export const EventDescription = async () => {
   }
 
   return (
-    <p className="max-w-2xl text-sm text-text leading-relaxed whitespace-pre-wrap">{event.description}</p>
+    <p className="max-w-2xl text-body-sm text-text leading-relaxed whitespace-pre-wrap">{event.description}</p>
   )
 }

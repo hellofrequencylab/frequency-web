@@ -56,7 +56,7 @@ export function ConfirmSubscribeButton({ e, x, t }: { e: string; x: string; t: s
             {status === 'loading' ? 'One sec…' : 'Confirm subscription'}
           </button>
           {error && (
-            <p className="mt-4 text-sm text-danger" role="alert">
+            <p className="mt-4 text-body-sm text-danger" role="alert">
               {error}
             </p>
           )}

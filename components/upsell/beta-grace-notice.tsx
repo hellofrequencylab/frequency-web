@@ -89,12 +89,12 @@ export function BetaGraceNotice({ notice }: { notice: BetaNotice }) {
         <Gem className="h-4 w-4" aria-hidden />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-text">{notice.title}</p>
-        <p className="mt-1 text-sm leading-relaxed text-muted">{notice.body}</p>
-        <p className="mt-1 text-sm leading-relaxed text-muted">{notice.invite}</p>
+        <p className="text-body-sm font-semibold text-text">{notice.title}</p>
+        <p className="mt-1 text-body-sm leading-relaxed text-muted">{notice.body}</p>
+        <p className="mt-1 text-body-sm leading-relaxed text-muted">{notice.invite}</p>
         <Link
           href={notice.href}
-          className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface"
+          className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface"
         >
           {notice.cta}
         </Link>

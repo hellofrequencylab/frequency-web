@@ -27,7 +27,7 @@ const MINDLESS_LABEL: Record<string, string> = {
 // "Build it myself" creates a blank draft and opens the editor straight away.
 
 const FIELD =
-  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
+  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-body-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
 const CADENCE_CHOICES: { key: PracticeCadenceHint; label: string }[] = [
   { key: 'daily', label: 'Daily' },
@@ -150,9 +150,9 @@ export function PracticeSpark() {
       <WizardProgress current={current} total={total} label={label} />
 
       <div className="mt-7">
-        <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-primary-strong">New Practice</p>
-        <h1 className="text-2xl font-bold text-text">{heading.title}</h1>
-        <p className="mt-1 text-sm leading-relaxed text-muted">{heading.description}</p>
+        <p className="mb-1.5 text-meta font-semibold uppercase tracking-widest text-primary-strong">New Practice</p>
+        <h1 className="text-page-title font-bold text-text">{heading.title}</h1>
+        <p className="mt-1 text-body-sm leading-relaxed text-muted">{heading.description}</p>
 
         <div className="mt-5">
           {/* WRITTEN path — paste a Practice you already have and let Vera shape it. */}
@@ -178,8 +178,8 @@ export function PracticeSpark() {
               >
                 <Upload className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-text">Already have the practice written?</span>
-                  <span className="block text-xs leading-snug text-muted">Paste what you wrote and Vera shapes it into a Practice for you to review.</span>
+                  <span className="block text-body-sm font-semibold text-text">Already have the practice written?</span>
+                  <span className="block text-meta leading-snug text-muted">Paste what you wrote and Vera shapes it into a Practice for you to review.</span>
                 </span>
               </button>
             </>
@@ -197,7 +197,7 @@ export function PracticeSpark() {
                 <div className="flex flex-wrap items-center gap-2">
                   {CADENCE_CHOICES.map((c) => (
                     <button key={c.key} type="button" onClick={() => setCadence(c.key)} aria-pressed={cadence === c.key}
-                      className={`rounded-pill border px-3.5 py-1.5 text-sm font-medium transition-colors ${cadence === c.key ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}>
+                      className={`rounded-pill border px-3.5 py-1.5 text-body-sm font-medium transition-colors ${cadence === c.key ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}>
                       {c.label}
                     </button>
                   ))}
@@ -209,8 +209,8 @@ export function PracticeSpark() {
                   {([['light', 'Light', 'Five minutes or less'], ['medium', 'Medium', 'Ten to twenty minutes']] as const).map(([key, lbl, hint]) => (
                     <button key={key} type="button" onClick={() => setPace(key)} aria-pressed={pace === key}
                       className={`rounded-control border px-3 py-2.5 text-left transition-colors ${pace === key ? 'border-primary/50 bg-primary-bg' : 'border-border bg-surface hover:bg-surface-elevated'}`}>
-                      <span className="block text-sm font-semibold text-text">{lbl}</span>
-                      <span className="block text-xs text-muted">{hint}</span>
+                      <span className="block text-body-sm font-semibold text-text">{lbl}</span>
+                      <span className="block text-meta text-muted">{hint}</span>
                     </button>
                   ))}
                 </div>
@@ -222,7 +222,7 @@ export function PracticeSpark() {
           {onReview && (
             <div className="space-y-3">
               {pending && !title ? (
-                <p className="flex items-center gap-2 rounded-card border border-border bg-canvas px-4 py-3 text-sm text-muted">
+                <p className="flex items-center gap-2 rounded-card border border-border bg-canvas px-4 py-3 text-body-sm text-muted">
                   <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary-strong" aria-hidden /> Vera is shaping your Practice…
                 </p>
               ) : (
@@ -252,7 +252,7 @@ export function PracticeSpark() {
                           type="button"
                           onClick={() => setPillars((prev) => (prev.includes(p.key) ? prev.filter((x) => x !== p.key) : [...prev, p.key]))}
                           aria-pressed={pillars.includes(p.key)}
-                          className={`rounded-pill border px-3 py-1 text-xs font-medium transition-colors ${pillars.includes(p.key) ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}
+                          className={`rounded-pill border px-3 py-1 text-meta font-medium transition-colors ${pillars.includes(p.key) ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}
                         >
                           {p.label}
                         </button>
@@ -263,7 +263,7 @@ export function PracticeSpark() {
                   {timer && (
                     <div className="rounded-card border border-border bg-canvas px-3.5 py-2.5">
                       <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">How it&apos;s done</span>
-                      <p className="mt-0.5 text-sm font-medium text-text">
+                      <p className="mt-0.5 text-body-sm font-medium text-text">
                         {timerPreview({
                           timerKind: timer.timerKind,
                           movementConfig: timer.movementMode ? { mode: timer.movementMode } : null,
@@ -284,7 +284,7 @@ export function PracticeSpark() {
           )}
         </div>
 
-        {error && <p className="mt-4 text-sm text-warning">{error}</p>}
+        {error && <p className="mt-4 text-body-sm text-warning">{error}</p>}
 
         <div className="mt-7 flex gap-3">
           {(step > 1 || (usingWritten && !onReview)) && (
@@ -306,7 +306,7 @@ export function PracticeSpark() {
       </div>
 
       {!onReview && (
-        <p className="mt-8 text-center text-xs text-subtle">
+        <p className="mt-8 text-center text-meta text-subtle">
           {!usingWritten && (
             <>
               <button type="button" onClick={() => { setUsingWritten(true); setStep(1) }} className="underline-offset-4 transition-colors hover:text-muted hover:underline">

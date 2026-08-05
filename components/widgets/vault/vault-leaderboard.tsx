@@ -17,8 +17,8 @@ export async function VaultLeaderboard() {
           <TrendingUp className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-bold text-text">Leaderboard and streaks</h3>
-          <p className="mt-0.5 text-xs text-muted">
+          <h3 className="text-body-sm font-bold text-text">Leaderboard and streaks</h3>
+          <p className="mt-0.5 text-meta text-muted">
             Your Circle&apos;s shared goal, where you stand, and your daily practice streak.
           </p>
         </div>

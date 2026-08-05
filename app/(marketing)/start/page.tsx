@@ -86,8 +86,8 @@ export default function StartPage() {
               <div className="h-28 mb-5 flex items-center justify-center">
                 <Illustration name={role.illustration} className="h-full" />
               </div>
-              <h2 className="font-display uppercase text-text text-2xl mb-2">{role.label}</h2>
-              <p className="text-base text-muted leading-relaxed mb-6">{role.blurb}</p>
+              <h2 className="font-display uppercase text-text text-page-title mb-2">{role.label}</h2>
+              <p className="text-body text-muted leading-relaxed mb-6">{role.blurb}</p>
               <div className="mt-auto">
                 <Button href={role.href} size="sm">
                   {role.cta} <ArrowRight className="w-4 h-4" aria-hidden />
@@ -96,7 +96,7 @@ export default function StartPage() {
             </Card>
           ))}
         </div>
-        <p className="mt-10 text-center text-sm text-subtle">
+        <p className="mt-10 text-center text-body-sm text-subtle">
           Not sure yet? Any door works. You can change your mind, and most people end up doing a little of all three.
         </p>
       </Section>

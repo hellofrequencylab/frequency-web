@@ -44,20 +44,20 @@ function PersonaRow({ row, trust }: { row: PersonaQueueRow; trust?: number }) {
         {row.avatarUrl ? (
           <Image src={avatarSrc(row.avatarUrl)} alt={row.displayName} width={36} height={36} className="h-9 w-9 rounded-pill object-cover" style={avatarFocusStyle(row.avatarUrl)} />
         ) : (
-          <div className="flex h-9 w-9 items-center justify-center rounded-pill bg-primary-bg text-xs font-semibold text-primary-strong">
+          <div className="flex h-9 w-9 items-center justify-center rounded-pill bg-primary-bg text-meta font-semibold text-primary-strong">
             {getInitials(row.displayName)}
           </div>
         )}
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-text">{row.displayName}</p>
-          <p className="truncate text-xs text-subtle">
+          <p className="truncate text-body-sm font-semibold text-text">{row.displayName}</p>
+          <p className="truncate text-meta text-subtle">
             {meta.emoji} {meta.label}
             {row.handle ? ` · @${row.handle}` : ''}
           </p>
         </div>
       </Link>
       {/* Operator-only trust readout (ADR-247) — context for the verify decision. */}
-      <span className="text-xs font-medium text-subtle tabular-nums" title="Global trust score">
+      <span className="text-meta font-medium text-subtle tabular-nums" title="Global trust score">
         Trust {trust ?? 0}
       </span>
       {bindingMeta && (

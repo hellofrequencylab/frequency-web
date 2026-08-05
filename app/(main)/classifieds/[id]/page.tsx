@@ -76,7 +76,7 @@ export default async function ListingPage({
       myProfileId={profileId}
       contactNote={
         !isOwner ? (
-          <p className="text-xs text-subtle">
+          <p className="text-meta text-subtle">
             No payment happens in the app. Message {firstName} to arrange it offline.
           </p>
         ) : undefined

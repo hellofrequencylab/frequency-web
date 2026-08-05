@@ -153,7 +153,7 @@ export function BookingAvailabilityForm({
           placeholder="America/New_York"
           className="mt-1"
         />
-        <p className="mt-1 text-xs text-subtle">
+        <p className="mt-1 text-meta text-subtle">
           An IANA name like America/New_York or Europe/London. Members see your times in this zone.
         </p>
       </div>
@@ -161,7 +161,7 @@ export function BookingAvailabilityForm({
       <div className="space-y-3">
         <Label className="font-semibold">Weekly windows</Label>
         {rows.length === 0 && (
-          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-sm text-muted">
+          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
             No windows yet. Add one to start taking bookings.
           </p>
         )}
@@ -171,7 +171,7 @@ export function BookingAvailabilityForm({
             className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface-elevated/40 p-3"
           >
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-muted">Day</span>
+              <span className="text-meta font-medium text-muted">Day</span>
               <select
                 value={r.weekday}
                 onChange={(e) => update(i, { weekday: Number(e.target.value) })}
@@ -185,7 +185,7 @@ export function BookingAvailabilityForm({
               </select>
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-muted">Start</span>
+              <span className="text-meta font-medium text-muted">Start</span>
               <input
                 type="time"
                 value={r.start}
@@ -194,7 +194,7 @@ export function BookingAvailabilityForm({
               />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-muted">End</span>
+              <span className="text-meta font-medium text-muted">End</span>
               <input
                 type="time"
                 value={r.end}
@@ -203,7 +203,7 @@ export function BookingAvailabilityForm({
               />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-muted">Slot length</span>
+              <span className="text-meta font-medium text-muted">Slot length</span>
               <select
                 value={r.slotMinutes}
                 onChange={(e) => update(i, { slotMinutes: Number(e.target.value) })}
@@ -229,14 +229,14 @@ export function BookingAvailabilityForm({
         <button
           type="button"
           onClick={addRow}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong transition-colors hover:text-primary"
+          className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong transition-colors hover:text-primary"
         >
           <Plus className="h-4 w-4" aria-hidden /> Add a window
         </button>
       </div>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
+        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
@@ -254,7 +254,7 @@ export function BookingAvailabilityForm({
           )}
         </Button>
         {saved && !pending && (
-          <span className="inline-flex items-center gap-1 text-sm font-medium text-success" role="status">
+          <span className="inline-flex items-center gap-1 text-body-sm font-medium text-success" role="status">
             <Check className="h-4 w-4" aria-hidden /> Saved
           </span>
         )}

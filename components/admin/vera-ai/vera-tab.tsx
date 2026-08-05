@@ -24,11 +24,11 @@ export async function VeraTab() {
             <Bot className="h-5 w-5" aria-hidden />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="flex items-center gap-1 text-sm font-semibold text-text">
+            <span className="flex items-center gap-1 text-body-sm font-semibold text-text">
               Agent console
               <ArrowRight className="h-3.5 w-3.5 text-subtle transition-colors group-hover:text-broadcast-strong" aria-hidden />
             </span>
-            <span className="mt-0.5 block text-xs leading-relaxed text-muted">
+            <span className="mt-0.5 block text-meta leading-relaxed text-muted">
               The operator proposes winbacks and content drafts; you approve. Every action runs through
               the consent/suppression spine.
             </span>

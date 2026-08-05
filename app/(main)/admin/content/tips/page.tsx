@@ -93,12 +93,12 @@ export default async function AdminContentTipsPage() {
             <div className="divide-y divide-border/50">
               {reviewedFlags.map((t) => (
                 <div key={t.id} className="px-4 py-3">
-                  <p className="flex items-center gap-1.5 text-xs text-subtle">
+                  <p className="flex items-center gap-1.5 text-meta text-subtle">
                     <Flag className="h-3 w-3 text-warning" aria-hidden />
                     {t.creator?.display_name ?? t.creator?.handle ?? 'Unknown member'} · posted events
                     {typeof t.evidence?.band === 'string' ? ` · band: ${t.evidence.band}` : ''}
                   </p>
-                  <p className="mt-1 text-sm text-text">{t.draft_text}</p>
+                  <p className="mt-1 text-body-sm text-text">{t.draft_text}</p>
                 </div>
               ))}
             </div>
@@ -119,7 +119,7 @@ export default async function AdminContentTipsPage() {
             <div className="divide-y divide-border/50">
               {sent.map((t) => (
                 <div key={t.id} className="px-4 py-3">
-                  <p className="text-xs text-subtle">
+                  <p className="text-meta text-subtle">
                     To {t.creator?.display_name ?? t.creator?.handle ?? 'Unknown member'} · about{' '}
                     {typeof t.evidence?.title === 'string'
                       ? `"${t.evidence.title}"`
@@ -128,7 +128,7 @@ export default async function AdminContentTipsPage() {
                         : `a ${t.content_type}`}{' '}
                     · {t.sent_at ? new Date(t.sent_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
                   </p>
-                  <p className="mt-1 text-sm text-text">{t.sent_text ?? t.draft_text}</p>
+                  <p className="mt-1 text-body-sm text-text">{t.sent_text ?? t.draft_text}</p>
                 </div>
               ))}
             </div>

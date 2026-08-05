@@ -110,8 +110,8 @@ export function CreateSpaceForm({ choices }: { choices: SpaceModeChoice[] }) {
                     : 'border-border bg-surface text-muted hover:border-border-strong',
                 )}
               >
-                <span className="block text-sm font-semibold text-text">{c.label}</span>
-                <span className="mt-0.5 block text-xs text-muted">{c.hint}</span>
+                <span className="block text-body-sm font-semibold text-text">{c.label}</span>
+                <span className="mt-0.5 block text-meta text-muted">{c.hint}</span>
               </button>
             )
           })}
@@ -143,7 +143,7 @@ export function CreateSpaceForm({ choices }: { choices: SpaceModeChoice[] }) {
           maxLength={40}
         />
         {!slugValid && (
-          <p className="mt-1 text-xs font-medium text-danger">
+          <p className="mt-1 text-meta font-medium text-danger">
             Use lowercase letters, numbers, and hyphens only.
           </p>
         )}

@@ -32,8 +32,8 @@ function urlToStoragePath(ref: string): string {
 // calls updateProductAction. No em or en dashes.
 
 const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary'
-const LABEL = 'mb-1 block text-sm font-medium text-text'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
+const LABEL = 'mb-1 block text-body-sm font-medium text-text'
 
 type FormKind = 'product' | 'service' | 'ticket'
 
@@ -309,7 +309,7 @@ export function ItemForm({
             <option value="service">Service</option>
             <option value="ticket">Ticket</option>
           </select>
-          <p className="mt-1 text-xs text-subtle">
+          <p className="mt-1 text-meta text-subtle">
             Product ships or hands over. Service is a booking on your calendar. Ticket is a spot at one of
             your events.
           </p>
@@ -331,7 +331,7 @@ export function ItemForm({
             defaultValue={product ? product.priceCents / 100 : ''}
           />
           {isService && (priceModel === 'free' || priceModel === 'contact') && (
-            <p className="mt-1 text-xs text-subtle">
+            <p className="mt-1 text-meta text-subtle">
               {priceModel === 'free'
                 ? 'This service shows as Free. Set the price to 0.'
                 : 'Buyers contact you for pricing, so the price is not shown.'}
@@ -361,7 +361,7 @@ export function ItemForm({
 
       <div>
         <div className="mb-1 flex items-center justify-between gap-2">
-          <label htmlFor={`title-${mode}-${product?.id ?? 'new'}`} className="text-sm font-medium text-text">
+          <label htmlFor={`title-${mode}-${product?.id ?? 'new'}`} className="text-body-sm font-medium text-text">
             Name
           </label>
           <button
@@ -445,7 +445,7 @@ export function ItemForm({
           </label>
           <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1.5 focus-within:border-primary">
             {tags.map((t) => (
-              <span key={t} className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-xs text-text">
+              <span key={t} className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-meta text-text">
                 {t}
                 <button
                   type="button"
@@ -463,18 +463,18 @@ export function ItemForm({
               onChange={(e) => setTagDraft(e.target.value)}
               onKeyDown={onTagKeyDown}
               onBlur={() => tagDraft.trim() && commitTags(tagDraft)}
-              className="min-w-[6rem] flex-1 bg-transparent px-1 py-0.5 text-sm text-text outline-none"
+              className="min-w-[6rem] flex-1 bg-transparent px-1 py-0.5 text-body-sm text-text outline-none"
               placeholder={tags.length ? 'Add another' : 'e.g. ceramic, handmade'}
             />
           </div>
-          <p className="mt-1 text-xs text-subtle">Enter or comma to add. Up to 12.</p>
+          <p className="mt-1 text-meta text-subtle">Enter or comma to add. Up to 12.</p>
         </div>
       </div>
 
       {kind === 'product' && (
         <fieldset className="space-y-3 rounded-card border border-border/70 p-3">
-          <legend className="px-1 text-xs text-subtle">Variants (optional)</legend>
-          <p className="text-xs text-muted">
+          <legend className="px-1 text-meta text-subtle">Variants (optional)</legend>
+          <p className="text-meta text-muted">
             Add options like size or color. Leave price blank to use the item price. Leave stock blank for
             unlimited.
           </p>
@@ -508,7 +508,7 @@ export function ItemForm({
           {variantRows.map((row, idx) => (
             <div key={idx} className="space-y-2 rounded-lg border border-border/60 bg-surface p-3">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-medium text-subtle">Variant {idx + 1}</span>
+                <span className="text-meta font-medium text-subtle">Variant {idx + 1}</span>
                 <button
                   type="button"
                   onClick={() => removeVariantRow(idx)}
@@ -577,8 +577,8 @@ export function ItemForm({
 
       {isService && (
         <fieldset className="space-y-3 rounded-card border border-border/70 p-3">
-          <legend className="px-1 text-xs text-subtle">For services</legend>
-          <p className="text-xs text-muted">
+          <legend className="px-1 text-meta text-subtle">For services</legend>
+          <p className="text-meta text-muted">
             A service is a booking on your calendar. Members pick a time from your Booking hours, so set
             those in Booking first or there will be no times to pick.
           </p>
@@ -600,7 +600,7 @@ export function ItemForm({
               ))}
             </select>
             {showChoose && (
-              <p className="mt-1 text-xs text-subtle">
+              <p className="mt-1 text-meta text-subtle">
                 Buyers name the amount. Set a suggested amount to anchor them, and an optional floor.
               </p>
             )}
@@ -622,7 +622,7 @@ export function ItemForm({
                   placeholder="e.g. 60"
                   defaultValue={svc?.suggestedCents != null ? svc.suggestedCents / 100 : ''}
                 />
-                <p className="mt-1 text-xs text-subtle">
+                <p className="mt-1 text-meta text-subtle">
                   Buyers see this filled in first. Set one so nobody starts from a blank box.
                 </p>
               </div>
@@ -641,7 +641,7 @@ export function ItemForm({
                   placeholder="Optional floor"
                   defaultValue={svc?.minCents != null ? svc.minCents / 100 : ''}
                 />
-                <p className="mt-1 text-xs text-subtle">The least a buyer can pay. Leave blank for any amount.</p>
+                <p className="mt-1 text-meta text-subtle">The least a buyer can pay. Leave blank for any amount.</p>
               </div>
             </div>
           )}
@@ -675,7 +675,7 @@ export function ItemForm({
                 placeholder="e.g. 10"
                 defaultValue={svc?.depositCents != null ? svc.depositCents / 100 : ''}
               />
-              <p className="mt-1 text-xs text-subtle">
+              <p className="mt-1 text-meta text-subtle">
                 Bookings charge the full price at checkout for now. Deposits are coming.
               </p>
             </div>
@@ -696,7 +696,7 @@ export function ItemForm({
                   placeholder="e.g. 24"
                   defaultValue={svc?.cancellationWindowHours ?? ''}
                 />
-                <p className="mt-1 text-xs text-subtle">Hours before the booking that a free cancel closes.</p>
+                <p className="mt-1 text-meta text-subtle">Hours before the booking that a free cancel closes.</p>
               </div>
               <div>
                 <label htmlFor={`noShowFeePct-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
@@ -713,7 +713,7 @@ export function ItemForm({
                   placeholder="e.g. 50"
                   defaultValue={svc?.noShowFeePct ?? ''}
                 />
-                <p className="mt-1 text-xs text-subtle">Charged for a no-show or a late cancel.</p>
+                <p className="mt-1 text-meta text-subtle">Charged for a no-show or a late cancel.</p>
               </div>
             </div>
           )}
@@ -746,8 +746,8 @@ export function ItemForm({
           onChange={(e) => setMarketPublished(e.target.checked)}
         />
         <span>
-          <span className="block text-sm font-medium text-text">List in the marketplace</span>
-          <span className="mt-0.5 block text-xs text-subtle">
+          <span className="block text-body-sm font-medium text-text">List in the marketplace</span>
+          <span className="mt-0.5 block text-meta text-subtle">
             Off keeps it on your Space page and Shop only. On also lists it in the Frequency Market so people
             browsing across Spaces can find it. You can change this anytime.
           </span>

@@ -93,7 +93,7 @@ function RosterGroup({ title, guests }: { title: string; guests: ManageGuest[] }
               <div className="min-w-0 flex-1">
                 <GuestName guest={g} />
                 {g.plusOnes > 0 && (
-                  <span className="ml-2 text-xs text-subtle">
+                  <span className="ml-2 text-meta text-subtle">
                     +{g.plusOnes} {g.plusOnes === 1 ? 'guest' : 'guests'}
                     {g.plusOneNames.length > 0 && ` (${g.plusOneNames.join(', ')})`}
                   </span>
@@ -105,7 +105,7 @@ function RosterGroup({ title, guests }: { title: string; guests: ManageGuest[] }
                   Checked in
                 </span>
               )}
-              <span className="shrink-0 text-xs text-muted">{fmtDate(g.createdAt)}</span>
+              <span className="shrink-0 text-meta text-muted">{fmtDate(g.createdAt)}</span>
             </li>
           )
         })}
@@ -166,7 +166,7 @@ export async function ApprovalsSection({ eventId, slug }: { eventId: string; slu
             ) : (
               <span className="block truncate font-medium text-text">{p.displayName}</span>
             )}
-            <span className="text-xs text-subtle">requested {fmtDate(p.createdAt)}</span>
+            <span className="text-meta text-subtle">requested {fmtDate(p.createdAt)}</span>
           </div>
           <ApproveButton eventId={eventId} slug={slug} guestProfileId={p.profileId} />
         </li>
@@ -223,12 +223,12 @@ export async function QuestionnaireSection({
             />
           ) : (
             <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
-              <table className="w-full text-left text-sm">
+              <table className="w-full text-left text-body-sm">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="px-4 py-2.5 text-xs font-semibold text-subtle">Guest</th>
+                    <th className="px-4 py-2.5 text-meta font-semibold text-subtle">Guest</th>
                     {questions.map((q) => (
-                      <th key={q.id} className="px-4 py-2.5 text-xs font-semibold text-subtle">
+                      <th key={q.id} className="px-4 py-2.5 text-meta font-semibold text-subtle">
                         {q.prompt}
                       </th>
                     ))}
@@ -437,13 +437,13 @@ export async function InvitedGuestsSection({ eventId }: { eventId: string }) {
     <div>
       <SectionHeader title="Captured guests" count={guests.length} />
       <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-left text-body-sm">
           <thead>
             <tr className="border-b border-border">
-              <th className="px-4 py-2.5 text-xs font-semibold text-subtle">Guest</th>
-              <th className="px-4 py-2.5 text-xs font-semibold text-subtle">RSVP</th>
-              <th className="px-4 py-2.5 text-xs font-semibold text-subtle">Invited by</th>
-              <th className="px-4 py-2.5 text-xs font-semibold text-subtle">Captured</th>
+              <th className="px-4 py-2.5 text-meta font-semibold text-subtle">Guest</th>
+              <th className="px-4 py-2.5 text-meta font-semibold text-subtle">RSVP</th>
+              <th className="px-4 py-2.5 text-meta font-semibold text-subtle">Invited by</th>
+              <th className="px-4 py-2.5 text-meta font-semibold text-subtle">Captured</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -451,7 +451,7 @@ export async function InvitedGuestsSection({ eventId }: { eventId: string }) {
               <tr key={g.id} className="align-top">
                 <td className="px-4 py-2.5">
                   <p className="font-medium text-text">{g.displayName || 'A guest'}</p>
-                  {g.email && <p className="text-xs text-subtle">{g.email}</p>}
+                  {g.email && <p className="text-meta text-subtle">{g.email}</p>}
                 </td>
                 <td className="px-4 py-2.5">
                   <GuestRsvpChip status={g.rsvpStatus} />
@@ -502,10 +502,10 @@ export async function DispatchesSection({ eventId }: { eventId: string }) {
         <li key={d.id} className="rounded-2xl border border-border bg-surface p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              {d.title && <p className="text-sm font-bold text-text">{d.title}</p>}
-              <p className="mt-0.5 whitespace-pre-wrap text-sm text-muted">{d.body}</p>
+              {d.title && <p className="text-body-sm font-bold text-text">{d.title}</p>}
+              <p className="mt-0.5 whitespace-pre-wrap text-body-sm text-muted">{d.body}</p>
             </div>
-            <span className="shrink-0 text-xs text-subtle">{fmtDate(d.createdAt)}</span>
+            <span className="shrink-0 text-meta text-subtle">{fmtDate(d.createdAt)}</span>
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-2xs text-muted">
             <span className="inline-flex items-center gap-1">

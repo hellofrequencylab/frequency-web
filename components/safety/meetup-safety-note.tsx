@@ -17,7 +17,7 @@ export function MeetupSafetyNote({ acknowledged }: { acknowledged: boolean }) {
   return (
     <div className="flex items-start gap-2.5 rounded-card border border-border bg-surface-elevated px-3.5 py-2.5">
       <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
-      <p className="min-w-0 text-xs text-muted">
+      <p className="min-w-0 text-meta text-muted">
         Meeting someone new? The easiest way is at a circle or a public event, where you&rsquo;re never
         on your own.{' '}
         <Link href="/help/safety/meeting-people-safely" className="font-semibold text-primary-strong hover:underline">

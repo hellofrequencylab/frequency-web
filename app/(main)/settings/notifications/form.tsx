@@ -100,7 +100,7 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
   return (
     <div className="space-y-3">
       {/* Guidance: topics vs frequency, in plain terms. */}
-      <div className="rounded-card border border-border bg-surface-elevated px-4 py-3 text-sm text-muted">
+      <div className="rounded-card border border-border bg-surface-elevated px-4 py-3 text-body-sm text-muted">
         <p className="text-text font-medium">Choose what you hear about, and how often.</p>
         <p className="mt-1">
           Each row is a topic. The switches pick the channels. Frequency sets the pace: realtime
@@ -120,20 +120,20 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
           is the single most common reason to open this page. */}
       <div className="rounded-card border border-border bg-surface lift-1 overflow-x-auto">
         <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 px-4 py-3 border-b border-border bg-surface-elevated">
-          <span className="text-xs font-semibold text-muted uppercase tracking-wide">Topic</span>
+          <span className="text-meta font-semibold text-muted uppercase tracking-wide">Topic</span>
           {CHANNELS.map(({ key, label, Icon, disabled }) => (
             <div key={key} className="flex items-center gap-1.5 w-16 justify-center">
               <Icon className={`w-3.5 h-3.5 ${disabled ? 'text-subtle' : 'text-muted'}`} />
-              <span className={`text-xs font-semibold uppercase tracking-wide ${disabled ? 'text-subtle' : 'text-muted'}`}>
+              <span className={`text-meta font-semibold uppercase tracking-wide ${disabled ? 'text-subtle' : 'text-muted'}`}>
                 {label}
               </span>
             </div>
           ))}
           <div className="flex items-center gap-1.5 w-12 justify-center" title={SMS_PLACEHOLDER_TITLE}>
             <MessageSquare className="w-3.5 h-3.5 text-subtle" />
-            <span className="text-xs font-semibold uppercase tracking-wide text-subtle">SMS</span>
+            <span className="text-meta font-semibold uppercase tracking-wide text-subtle">SMS</span>
           </div>
-          <span className="text-xs font-semibold text-muted uppercase tracking-wide w-28 text-center">
+          <span className="text-meta font-semibold text-muted uppercase tracking-wide w-28 text-center">
             Frequency
           </span>
         </div>
@@ -142,8 +142,8 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
           {CATEGORIES.map(({ key, label, description }) => (
             <div key={key} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 items-center px-4 py-3.5">
               <div className="min-w-0">
-                <p className="text-sm font-medium text-text">{label}</p>
-                <p className="text-xs text-muted mt-0.5">{description}</p>
+                <p className="text-body-sm font-medium text-text">{label}</p>
+                <p className="text-meta text-muted mt-0.5">{description}</p>
               </div>
               {CHANNELS.map(({ key: channel, disabled }) => {
                 const prefKey = `${channel}_${key}` as keyof NotificationSettings
@@ -188,7 +188,7 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
                   value={(settings[`freq_${key}` as keyof NotificationSettings] as NotificationFrequency) ?? 'realtime'}
                   onChange={(e) => setFrequency(key, e.target.value as NotificationFrequency)}
                   aria-label={`${key} frequency`}
-                  className="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-xs text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-meta text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
                 >
                   {NOTIFICATION_FREQUENCIES.map((f) => (
                     <option key={f} value={f}>{FREQUENCY_LABELS[f]}</option>
@@ -203,8 +203,8 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
       {/* Events from Spaces you follow: a separate, opt-in email. Off by default. */}
       <div className="flex items-start justify-between gap-4 rounded-card border border-border bg-surface px-4 py-3.5 lift-1">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-text">Events from Spaces you follow</p>
-          <p className="text-xs text-muted mt-0.5">
+          <p className="text-body-sm font-medium text-text">Events from Spaces you follow</p>
+          <p className="text-meta text-muted mt-0.5">
             Remind me about upcoming events from Spaces I follow that I have not RSVP&apos;d to. Public
             events only, by email. Off unless you turn it on.
           </p>
@@ -231,7 +231,7 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
       </div>
 
       {/* Transactional carve-out: always-on, stated plainly. */}
-      <div className="flex items-start gap-2.5 rounded-card border border-border bg-surface px-4 py-3 text-xs text-muted">
+      <div className="flex items-start gap-2.5 rounded-card border border-border bg-surface px-4 py-3 text-meta text-muted">
         <ShieldCheck className="w-4 h-4 mt-0.5 text-success shrink-0" />
         <p>
           Account and security email always sends: sign-in codes, receipts, password resets, and
@@ -240,7 +240,7 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
       </div>
 
       {/* Footer status */}
-      <div className="flex items-center gap-2 text-xs text-muted px-1">
+      <div className="flex items-center gap-2 text-meta text-muted px-1">
         {isPending ? (
           <span>Saving…</span>
         ) : saveError ? (

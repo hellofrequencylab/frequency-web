@@ -44,7 +44,7 @@ export function OnOffToggle({
           }`}
         />
       </button>
-      <span className="text-xs font-medium text-subtle">{on ? 'On' : 'Off'}</span>
+      <span className="text-meta font-medium text-subtle">{on ? 'On' : 'Off'}</span>
     </span>
   )
 }

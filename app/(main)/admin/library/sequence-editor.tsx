@@ -44,7 +44,7 @@ type EditStep = {
 }
 
 const inputBase =
-  'w-full rounded-card border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/20'
+  'w-full rounded-card border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/20'
 
 /** The operator-editable copy field keys for a step type, read from its Zod contentSchema shape. */
 function contentFieldsFor(type: StepType): string[] {
@@ -118,7 +118,7 @@ function StatusBadge({ status }: { status: string }) {
   const live = LIVE.has(status)
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-0.5 text-xs font-medium ${
+      className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-0.5 text-meta font-medium ${
         live ? 'bg-primary text-on-primary' : 'border border-border text-muted'
       }`}
     >
@@ -254,7 +254,7 @@ export function SequenceEditor({
           <Link
             href="/onboarding/sequence-preview"
             target="_blank"
-            className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-2 text-sm font-medium text-text hover:bg-surface-elevated"
+            className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-2 text-body-sm font-medium text-text hover:bg-surface-elevated"
           >
             <Eye className="h-4 w-4" aria-hidden />
             Preview
@@ -263,7 +263,7 @@ export function SequenceEditor({
             type="button"
             onClick={togglePublish}
             disabled={pending}
-            className={`inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 text-sm font-semibold disabled:opacity-60 ${
+            className={`inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 text-body-sm font-semibold disabled:opacity-60 ${
               live
                 ? 'border border-border-strong text-text hover:bg-surface-elevated'
                 : 'bg-primary text-on-primary hover:opacity-90'
@@ -276,15 +276,15 @@ export function SequenceEditor({
       actionsAlign="end"
     >
       <div className="mb-4">
-        <Link href="/admin/library?lane=sequence" className="text-sm font-medium text-primary-strong hover:underline">
+        <Link href="/admin/library?lane=sequence" className="text-body-sm font-medium text-primary-strong hover:underline">
           ← All onboarding flows
         </Link>
       </div>
 
       {errors.length > 0 && (
         <div role="alert" className="mb-4 rounded-2xl border border-danger/40 bg-danger/5 p-4">
-          <p className="text-sm font-semibold text-danger">This flow could not be saved.</p>
-          <ul className="mt-1 list-disc pl-5 text-sm text-danger">
+          <p className="text-body-sm font-semibold text-danger">This flow could not be saved.</p>
+          <ul className="mt-1 list-disc pl-5 text-body-sm text-danger">
             {errors.map((e, i) => (
               <li key={i}>{e}</li>
             ))}
@@ -292,7 +292,7 @@ export function SequenceEditor({
         </div>
       )}
       {saved && !pending && errors.length === 0 && (
-        <div className="mb-4 rounded-2xl border border-border bg-surface-elevated/50 p-3 text-sm text-muted">
+        <div className="mb-4 rounded-2xl border border-border bg-surface-elevated/50 p-3 text-body-sm text-muted">
           Saved. A version was snapshotted before the change.
         </div>
       )}
@@ -300,11 +300,11 @@ export function SequenceEditor({
       <AdminSection title="Flow details" description="The label and the quiet kicker shown above every step's heading.">
         <div className="grid gap-4 @xl:grid-cols-2">
           <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-text">Label</span>
+            <span className="mb-1.5 block text-body-sm font-medium text-text">Label</span>
             <input value={label} onChange={(e) => { setLabel(e.target.value); setSaved(false) }} className={inputBase} placeholder="Every new member" />
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-text">Eyebrow</span>
+            <span className="mb-1.5 block text-body-sm font-medium text-text">Eyebrow</span>
             <input value={eyebrow} onChange={(e) => { setEyebrow(e.target.value); setSaved(false) }} className={inputBase} placeholder="Welcome home" />
           </label>
         </div>
@@ -321,11 +321,11 @@ export function SequenceEditor({
             return (
               <div key={step.id} className="rounded-2xl border border-border bg-surface p-4">
                 <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
+                  <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-medium text-muted">
                     Step {index + 1}
                   </span>
                   {isLast && (
-                    <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
+                    <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-medium text-primary-strong">
                       Completes onboarding
                     </span>
                   )}
@@ -344,7 +344,7 @@ export function SequenceEditor({
 
                 <div className="grid gap-3 @xl:grid-cols-2">
                   <label className="block">
-                    <span className="mb-1.5 block text-sm font-medium text-text">Type</span>
+                    <span className="mb-1.5 block text-body-sm font-medium text-text">Type</span>
                     <select
                       value={step.type}
                       onChange={(e) => changeType(index, e.target.value as StepType)}
@@ -358,7 +358,7 @@ export function SequenceEditor({
                     </select>
                   </label>
                   <label className="block">
-                    <span className="mb-1.5 block text-sm font-medium text-text">Progress label</span>
+                    <span className="mb-1.5 block text-body-sm font-medium text-text">Progress label</span>
                     <input
                       value={step.label}
                       onChange={(e) => patchStep(index, { label: e.target.value })}
@@ -372,7 +372,7 @@ export function SequenceEditor({
                   <div className="mt-3 space-y-3 border-t border-border pt-3">
                     {fields.map((key) => (
                       <label key={key} className="block">
-                        <span className="mb-1.5 block text-sm font-medium text-text">{humanizeKey(key)}</span>
+                        <span className="mb-1.5 block text-body-sm font-medium text-text">{humanizeKey(key)}</span>
                         {MULTILINE.test(key) ? (
                           <textarea
                             value={step.content[key] ?? ''}
@@ -399,7 +399,7 @@ export function SequenceEditor({
             type="button"
             onClick={addStep}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-2xl border border-dashed border-border-strong px-4 py-2 text-sm font-medium text-text hover:bg-surface-elevated disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-2xl border border-dashed border-border-strong px-4 py-2 text-body-sm font-medium text-text hover:bg-surface-elevated disabled:opacity-60"
           >
             <Plus className="h-4 w-4" aria-hidden />
             Add step
@@ -413,7 +413,7 @@ export function SequenceEditor({
       >
         <div className="space-y-4">
           <div>
-            <span className="mb-2 block text-sm font-medium text-text">Personas</span>
+            <span className="mb-2 block text-body-sm font-medium text-text">Personas</span>
             <div className="flex flex-wrap gap-2">
               {allPersonas.map((p) => {
                 const on = personas.includes(p.id)
@@ -426,7 +426,7 @@ export function SequenceEditor({
                       setSaved(false)
                     }}
                     aria-pressed={on}
-                    className={`rounded-pill px-3 py-1.5 text-sm font-medium ${
+                    className={`rounded-pill px-3 py-1.5 text-body-sm font-medium ${
                       on ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:bg-surface-elevated'
                     }`}
                   >
@@ -437,14 +437,14 @@ export function SequenceEditor({
             </div>
           </div>
           <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-text">Region ids</span>
+            <span className="mb-1.5 block text-body-sm font-medium text-text">Region ids</span>
             <input
               value={regionInput}
               onChange={(e) => { setRegionInput(e.target.value); setSaved(false) }}
               placeholder="Optional. Comma-separated nexus_region_id values."
               className={inputBase}
             />
-            <span className="mt-1 block text-xs text-subtle">Advanced. Leave empty to serve every region.</span>
+            <span className="mt-1 block text-meta text-subtle">Advanced. Leave empty to serve every region.</span>
           </label>
         </div>
       </AdminSection>
@@ -454,13 +454,13 @@ export function SequenceEditor({
           type="button"
           onClick={save}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary hover:opacity-90 disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary hover:opacity-90 disabled:opacity-60"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
           Save changes
         </button>
         {live && (
-          <span className="text-xs text-subtle">This flow is live. Saving updates what matching members see.</span>
+          <span className="text-meta text-subtle">This flow is live. Saving updates what matching members see.</span>
         )}
       </div>
 
@@ -471,11 +471,11 @@ export function SequenceEditor({
               <li key={v.id} className="flex items-center gap-3 px-4 py-3">
                 <History className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-text">
+                  <p className="text-body-sm font-medium text-text">
                     Version {v.version}
-                    {v.isCurrent && <span className="ml-2 text-xs font-normal text-primary-strong">current</span>}
+                    {v.isCurrent && <span className="ml-2 text-meta font-normal text-primary-strong">current</span>}
                   </p>
-                  <p className="truncate text-xs text-subtle">
+                  <p className="truncate text-meta text-subtle">
                     {v.note ?? 'Edit'} · {v.createdAt ? new Date(v.createdAt).toLocaleString() : ''}
                   </p>
                 </div>
@@ -484,7 +484,7 @@ export function SequenceEditor({
                     type="button"
                     onClick={() => rollback(v.id)}
                     disabled={pending}
-                    className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-xs font-medium text-text hover:bg-surface-elevated disabled:opacity-60"
+                    className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-medium text-text hover:bg-surface-elevated disabled:opacity-60"
                   >
                     <RotateCcw className="h-3.5 w-3.5" aria-hidden />
                     Restore
@@ -526,12 +526,12 @@ export function NewSequenceButton() {
         type="button"
         onClick={create}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:opacity-90 disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:opacity-90 disabled:opacity-60"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Plus className="h-4 w-4" aria-hidden />}
         New onboarding flow
       </button>
-      {error && <span className="text-sm text-danger">{error}</span>}
+      {error && <span className="text-body-sm text-danger">{error}</span>}
     </div>
   )
 }

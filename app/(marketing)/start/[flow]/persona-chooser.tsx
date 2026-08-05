@@ -62,7 +62,7 @@ export function PersonaChooser({
 
   return (
     <div>
-      <p className="text-center text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">{prompt}</p>
+      <p className="text-center text-body-sm font-bold uppercase tracking-[0.25em] text-primary-strong">{prompt}</p>
 
       <div className="mx-auto mt-7 grid max-w-3xl gap-3 sm:grid-cols-2">
         {personas.map((id) => {
@@ -85,8 +85,8 @@ export function PersonaChooser({
                 <p.Icon className="h-5 w-5" />
               </span>
               <span>
-                <span className="block text-base font-bold text-text">{p.label}</span>
-                <span className="mt-0.5 block text-sm text-muted">{p.pitch}</span>
+                <span className="block text-body font-bold text-text">{p.label}</span>
+                <span className="mt-0.5 block text-body-sm text-muted">{p.pitch}</span>
               </span>
             </button>
           )
@@ -96,10 +96,10 @@ export function PersonaChooser({
       {/* Selected → what we'll show them + the way in. */}
       {chosen && (
         <div className="mx-auto mt-8 max-w-xl rounded-3xl border border-border bg-surface p-7 text-center lift-1">
-          <p className="font-display uppercase text-2xl text-text">{chosen.track.headline}</p>
+          <p className="font-display uppercase text-page-title text-text">{chosen.track.headline}</p>
           <ul className="mx-auto mt-4 max-w-md space-y-2 text-left">
             {chosen.track.shows.map((s) => (
-              <li key={s} className="flex items-start gap-2.5 text-sm text-muted">
+              <li key={s} className="flex items-start gap-2.5 text-body-sm text-muted">
                 <span className="mt-0.5 text-primary" aria-hidden>✓</span>
                 {s}
               </li>
@@ -115,22 +115,22 @@ export function PersonaChooser({
               placeholder="you@example.com"
               autoComplete="email"
               aria-label="Email address"
-              className="mt-6 w-full rounded-control border border-border bg-marketing-canvas px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none"
+              className="mt-6 w-full rounded-control border border-border bg-marketing-canvas px-4 py-3 text-body text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none"
             />
           )}
 
-          {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+          {error && <p className="mt-3 text-body-sm text-danger">{error}</p>}
 
           <div className="mt-6 flex flex-col items-center gap-3">
             <button
               onClick={go}
               disabled={busy || (captureEmail && !email.trim())}
-              className="text-emboss inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-8 py-3.5 text-base font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed"
+              className="text-emboss inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-8 py-3.5 text-body font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {busy ? 'One sec…' : `Continue as ${chosen.label}`}
               {!busy && <ArrowRight />}
             </button>
-            <Link href={chosen.track.learnMoreHref} className="text-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline">
+            <Link href={chosen.track.learnMoreHref} className="text-body-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline">
               Or first, {chosen.track.learnMoreLabel.toLowerCase()}
             </Link>
           </div>

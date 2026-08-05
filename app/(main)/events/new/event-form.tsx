@@ -142,7 +142,7 @@ function FormSection({
   return (
     <section className="space-y-4 border-t border-border pt-6 first:border-t-0 first:pt-0">
       <div className="space-y-0.5">
-        <h2 className="text-sm font-semibold text-text">{title}</h2>
+        <h2 className="text-body-sm font-semibold text-text">{title}</h2>
         {hint ? <p className="text-2xs leading-relaxed text-muted">{hint}</p> : null}
       </div>
       {children}
@@ -420,7 +420,7 @@ export function EventForm({
     <form onSubmit={submit} className="space-y-8">
       {/* Instructional header — set the tone: fill in what you have, refine the rest later. */}
       <div className="rounded-card border border-border bg-surface-elevated/40 p-4">
-        <h1 className="text-base font-semibold text-text">
+        <h1 className="text-body font-semibold text-text">
           {isEdit ? 'Edit your event' : 'Set up your event'}
         </h1>
         <p className="mt-1 text-2xs leading-relaxed text-muted">
@@ -435,7 +435,7 @@ export function EventForm({
         {/* Title + kind sit side by side on desktop, single column on mobile. */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label className="text-sm text-text" htmlFor="event-title">
+            <Label className="text-body-sm text-text" htmlFor="event-title">
               Event title <span className="text-danger">*</span>
             </Label>
             <Input id="event-title"
@@ -449,7 +449,7 @@ export function EventForm({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-sm text-text" htmlFor="event-category">What kind of gathering is this?</Label>
+            <Label className="text-body-sm text-text" htmlFor="event-category">What kind of gathering is this?</Label>
             <select id="event-category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -478,7 +478,7 @@ export function EventForm({
 
         {/* Gallery — tucked inside a disclosure so it stays out of the way until wanted. */}
         <details className="group rounded-card border border-border bg-surface-elevated/40">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-medium text-text [&::-webkit-details-marker]:hidden">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-body-sm font-medium text-text [&::-webkit-details-marker]:hidden">
             <span>
               More photos{' '}
               {galleryImagePaths.length > 0 && (
@@ -507,7 +507,7 @@ export function EventForm({
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Description — the wide left column (~2/3). */}
           <div className="space-y-1.5 lg:col-span-2">
-            <Label className="text-sm text-text" htmlFor="event-description">
+            <Label className="text-body-sm text-text" htmlFor="event-description">
               Description <span className="text-2xs font-normal text-muted">(optional)</span>
             </Label>
             <Textarea id="event-description"
@@ -523,7 +523,7 @@ export function EventForm({
           {/* Time rail — the narrow right column (~1/3): Starts, Ends, Repeats stacked. */}
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-sm text-text" htmlFor="event-starts-at">
+              <Label className="text-body-sm text-text" htmlFor="event-starts-at">
                 Starts at <span className="text-danger">*</span>
               </Label>
               <Input id="event-starts-at"
@@ -535,7 +535,7 @@ export function EventForm({
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm text-text" htmlFor="event-ends-at">
+              <Label className="text-body-sm text-text" htmlFor="event-ends-at">
                 Ends at <span className="text-2xs font-normal text-muted">(optional)</span>
               </Label>
               <Input id="event-ends-at"
@@ -552,7 +552,7 @@ export function EventForm({
             <div className="space-y-1.5">
               {/* A button group is not a labelable control, so `htmlFor` has nothing to point at:
                   the accessible name comes from role="group" + aria-labelledby instead. */}
-              <Label className="text-sm text-text" id="event-repeats-label">Repeats</Label>
+              <Label className="text-body-sm text-text" id="event-repeats-label">Repeats</Label>
               <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="event-repeats-label">
                 {RECURRENCE_OPTIONS.map(({ value, label, helper }) => {
                   const active = recurrenceType === value
@@ -568,7 +568,7 @@ export function EventForm({
                           : 'border-border bg-surface hover:border-border-strong'
                       } disabled:opacity-60`}
                     >
-                      <p className={`text-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
+                      <p className={`text-body-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
                         {label}
                       </p>
                       <p className="mt-0.5 text-2xs text-muted">{helper}</p>
@@ -606,7 +606,7 @@ export function EventForm({
       {/* ── Where ─────────────────────────────────────────────────────────── */}
       <FormSection title="Where" hint="Add an address for in-person events so people nearby can find it on the map.">
         <div className="space-y-1.5">
-          <Label className="text-sm text-text" id="event-attendance-label">How do people attend?</Label>
+          <Label className="text-body-sm text-text" id="event-attendance-label">How do people attend?</Label>
           <div className="grid grid-cols-3 gap-2" role="group" aria-labelledby="event-attendance-label">
             {ATTENDANCE_OPTIONS.map(({ value, label }) => {
               const active = attendanceMode === value
@@ -616,7 +616,7 @@ export function EventForm({
                   key={value}
                   onClick={() => setAttendanceMode(value)}
                   disabled={isPending}
-                  className={`rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors ${
+                  className={`rounded-lg border px-3 py-2 text-center text-body-sm font-medium transition-colors ${
                     active
                       ? 'border-primary bg-primary-bg text-primary-strong ring-2 ring-primary/30'
                       : 'border-border bg-surface text-text hover:border-border-strong'
@@ -632,7 +632,7 @@ export function EventForm({
         {/* Online join link (online / hybrid only) */}
         {attendanceMode !== 'in_person' && (
           <div className="space-y-1.5">
-            <Label className="text-sm text-text" htmlFor="event-online-url">
+            <Label className="text-body-sm text-text" htmlFor="event-online-url">
               Join link <span className="text-2xs font-normal text-muted">(optional)</span>
             </Label>
             <Input id="event-online-url"
@@ -647,7 +647,7 @@ export function EventForm({
         )}
 
         <div className="space-y-1.5">
-          <Label className="text-sm text-text" htmlFor="event-location">
+          <Label className="text-body-sm text-text" htmlFor="event-location">
             Location <span className="text-2xs font-normal text-muted">(optional)</span>
           </Label>
           <Input id="event-location"
@@ -676,7 +676,7 @@ export function EventForm({
               aria-labelledby="event-address-label"
             >
               <div className="space-y-1">
-                <Label className="text-sm text-text" id="event-address-label">
+                <Label className="text-body-sm text-text" id="event-address-label">
                   Address <span className="text-2xs font-normal text-muted">(optional, for the map)</span>
                 </Label>
                 <p className="text-2xs text-muted">
@@ -768,11 +768,11 @@ export function EventForm({
         <div className="space-y-1.5">
           {/* On EDIT the scope is fixed and renders as static text, so there is no control to point
               at and the label is a plain heading; on CREATE it names the select. */}
-          <Label className="text-sm text-text" htmlFor={isEdit ? undefined : 'event-scope'}>
+          <Label className="text-body-sm text-text" htmlFor={isEdit ? undefined : 'event-scope'}>
             Where does it live? {!isEdit && <span className="text-danger">*</span>}
           </Label>
           {isEdit ? (
-            <p className="rounded-lg border border-border bg-surface-elevated/40 px-3 py-2 text-sm text-muted">
+            <p className="rounded-lg border border-border bg-surface-elevated/40 px-3 py-2 text-body-sm text-muted">
               {currentScopeName ?? 'This event'}
             </p>
           ) : (
@@ -830,7 +830,7 @@ export function EventForm({
             undone at any time without moving the event. */}
         {showJourneyField && (
           <div className="space-y-1.5">
-            <Label className="text-sm text-text" htmlFor="event-journey">Part of a Journey?</Label>
+            <Label className="text-body-sm text-text" htmlFor="event-journey">Part of a Journey?</Label>
             <select
               id="event-journey"
               value={journeyId}
@@ -852,7 +852,7 @@ export function EventForm({
         )}
 
         <div className="space-y-1.5">
-          <Label className="text-sm text-text" htmlFor="event-visibility">Who can see this?</Label>
+          <Label className="text-body-sm text-text" htmlFor="event-visibility">Who can see this?</Label>
           <select id="event-visibility"
             value={visibility}
             onChange={(e) => setVisibility(e.target.value)}
@@ -878,7 +878,7 @@ export function EventForm({
         <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
           {/* Price — free RSVP or a set ticket price (events.price_cents). */}
           <div className="space-y-1.5">
-            <Label className="text-sm text-text" id="event-price-label">Price</Label>
+            <Label className="text-body-sm text-text" id="event-price-label">Price</Label>
             <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="event-price-label">
               {([
                 { value: 'free' as const, label: 'Free' },
@@ -891,7 +891,7 @@ export function EventForm({
                     key={value}
                     onClick={() => setPriceMode(value)}
                     disabled={isPending}
-                    className={`rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors ${
+                    className={`rounded-lg border px-3 py-2 text-center text-body-sm font-medium transition-colors ${
                       active
                         ? 'border-primary bg-primary-bg text-primary-strong ring-2 ring-primary/30'
                         : 'border-border bg-surface text-text hover:border-border-strong'
@@ -904,7 +904,7 @@ export function EventForm({
             </div>
             {priceMode === 'paid' && (
               <div className="relative mt-2">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-body-sm text-muted">
                   $
                 </span>
                 <Input
@@ -942,7 +942,7 @@ export function EventForm({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-sm text-text" htmlFor="event-capacity">
+            <Label className="text-body-sm text-text" htmlFor="event-capacity">
               Group size <span className="text-2xs font-normal text-muted">(optional)</span>
             </Label>
             <Input id="event-capacity"
@@ -958,7 +958,7 @@ export function EventForm({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-sm text-text" htmlFor="event-energy">
+            <Label className="text-body-sm text-text" htmlFor="event-energy">
               Energy <span className="text-2xs font-normal text-muted">(optional)</span>
             </Label>
             <select id="event-energy"
@@ -980,7 +980,7 @@ export function EventForm({
 
           {/* Special instructions — practical notes for attendees. */}
           <div className="space-y-1.5">
-            <Label className="text-sm text-text" htmlFor="event-special-instructions">
+            <Label className="text-body-sm text-text" htmlFor="event-special-instructions">
               Special instructions <span className="text-2xs font-normal text-muted">(optional)</span>
             </Label>
             <Textarea id="event-special-instructions"
@@ -999,7 +999,7 @@ export function EventForm({
       </FormSection>
 
       {submitError && (
-        <p className="rounded-lg border border-danger/40 bg-danger-bg/40 px-3 py-2 text-sm text-danger">
+        <p className="rounded-lg border border-danger/40 bg-danger-bg/40 px-3 py-2 text-body-sm text-danger">
           {submitError}
         </p>
       )}
@@ -1008,13 +1008,13 @@ export function EventForm({
         <button
           type="submit"
           disabled={!title.trim() || !scopeId || !startsAt || !!recurrenceError || isPending}
-          className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-lg bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isPending ? (isEdit ? 'Saving…' : 'Creating…') : isEdit ? 'Save changes' : 'Create Event'}
         </button>
         <Link
           href={backHref ?? '/events'}
-          className="text-sm text-muted transition-colors hover:text-text"
+          className="text-body-sm text-muted transition-colors hover:text-text"
         >
           Cancel
         </Link>

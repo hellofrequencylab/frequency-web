@@ -69,7 +69,7 @@ export function PreferenceCenter({
 
   if (unsubscribedAll) {
     return (
-      <p className="text-sm text-muted leading-relaxed">
+      <p className="text-body-sm text-muted leading-relaxed">
         You&apos;re unsubscribed from all email from {spaceName}. This only stops this one sender,
         not Frequency itself. Changed your mind? Reply to one of their emails and they can add you
         back.
@@ -79,7 +79,7 @@ export function PreferenceCenter({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted leading-relaxed">
+      <p className="text-body-sm text-muted leading-relaxed">
         Pick what you&apos;d like to keep hearing from {spaceName}. Turn off a topic and you&apos;ll
         stop getting that kind of email, while keeping the rest.
       </p>
@@ -91,8 +91,8 @@ export function PreferenceCenter({
           return (
             <div key={topic} className="flex items-start gap-3 px-4 py-3.5">
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-text">{meta.label}</p>
-                <p className="mt-0.5 text-xs text-muted">{meta.help}</p>
+                <p className="text-body-sm font-medium text-text">{meta.label}</p>
+                <p className="mt-0.5 text-meta text-muted">{meta.help}</p>
               </div>
               <button
                 type="button"
@@ -110,7 +110,7 @@ export function PreferenceCenter({
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <span className="text-xs text-muted">
+        <span className="text-meta text-muted">
           {isPending ? (
             'Saving…'
           ) : error ? (
@@ -126,7 +126,7 @@ export function PreferenceCenter({
         <button
           type="button"
           onClick={unsubscribeAll}
-          className="text-xs font-semibold text-muted underline underline-offset-2 hover:text-text transition-colors"
+          className="text-meta font-semibold text-muted underline underline-offset-2 hover:text-text transition-colors"
         >
           Unsubscribe from everything
         </button>

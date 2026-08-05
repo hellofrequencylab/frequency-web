@@ -192,7 +192,7 @@ async function BoardSection({
     return (
       <section aria-labelledby="board-heading">
         <SectionHeader title="Where people stand" />
-        <p className="-mt-2 mb-3 text-sm text-muted" id="board-heading">
+        <p className="-mt-2 mb-3 text-body-sm text-muted" id="board-heading">
           The individual board is part of competing. You still count toward the shared goal above.
         </p>
         <CompeteLocked />
@@ -210,7 +210,7 @@ async function BoardSection({
   return (
     <section aria-labelledby="board-heading">
       <SectionHeader title="Where people stand" />
-      <p className="-mt-2 mb-3 text-sm text-muted" id="board-heading">
+      <p className="-mt-2 mb-3 text-body-sm text-muted" id="board-heading">
         {trackNote}
       </p>
 
@@ -230,7 +230,7 @@ async function BoardSection({
       )}
 
       {optedOut && (
-        <p className="mt-3 text-xs text-muted">
+        <p className="mt-3 text-meta text-muted">
           You are hidden from this board right now. You still count toward the shared goal above.
         </p>
       )}
@@ -371,7 +371,7 @@ async function EntryPointsBoard({ profileId }: { profileId: string }) {
       back={{ href: '/crew/leaderboard', label: 'Back to the leaderboard' }}
     >
       {me && (
-        <div className="mb-4 rounded-2xl bg-primary-bg/50 px-4 py-2.5 text-sm font-medium text-primary-strong">
+        <div className="mb-4 rounded-2xl bg-primary-bg/50 px-4 py-2.5 text-body-sm font-medium text-primary-strong">
           #{myIdx + 1} of {rows.length} · {me.tier.emoji} {me.tier.label} · {me.signups} signup{me.signups === 1 ? '' : 's'} from {me.scans} scan{me.scans === 1 ? '' : 's'}
           {nextTier && (
             <span className="font-normal text-muted"> · {nextTier.remaining} more to {nextTier.next.label}</span>
@@ -393,27 +393,27 @@ async function EntryPointsBoard({ profileId }: { profileId: string }) {
                     isSelf ? 'bg-primary-bg/60 dark:bg-primary-bg' : 'bg-surface-elevated/40 hover:bg-surface-elevated'
                   }`}
                 >
-                  <span className="w-6 shrink-0 text-center text-sm font-semibold tabular-nums text-subtle">{i + 1}</span>
+                  <span className="w-6 shrink-0 text-center text-body-sm font-semibold tabular-nums text-subtle">{i + 1}</span>
                   {entry.avatarUrl ? (
                     <Image src={avatarSrc(entry.avatarUrl)} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(entry.avatarUrl)} />
                   ) : (
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-xs font-bold text-primary-strong" aria-hidden>
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-meta font-bold text-primary-strong" aria-hidden>
                       {getInitials(entry.displayName)}
                     </span>
                   )}
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className={`text-sm leading-tight ${isSelf ? 'font-bold text-primary-strong' : 'font-semibold text-text'}`}>
+                    <span className={`text-body-sm leading-tight ${isSelf ? 'font-bold text-primary-strong' : 'font-semibold text-text'}`}>
                       {entry.displayName}
-                      {isSelf && <span className="ml-1.5 text-xs font-medium text-primary-strong">you</span>}
+                      {isSelf && <span className="ml-1.5 text-meta font-medium text-primary-strong">you</span>}
                     </span>
-                    <span className="text-xs font-medium text-muted">{entry.tier.emoji} {entry.tier.label}</span>
+                    <span className="text-meta font-medium text-muted">{entry.tier.emoji} {entry.tier.label}</span>
                   </span>
                   <span className="flex shrink-0 flex-col items-end gap-0.5 text-right">
-                    <span className="inline-flex items-center gap-1 text-sm font-bold tabular-nums text-text">
+                    <span className="inline-flex items-center gap-1 text-body-sm font-bold tabular-nums text-text">
                       <UserPlus className="h-3.5 w-3.5 text-primary" aria-hidden />
                       {entry.signups.toLocaleString()}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-xs tabular-nums text-muted">
+                    <span className="inline-flex items-center gap-1 text-meta tabular-nums text-muted">
                       <QrCode className="h-3 w-3" aria-hidden />
                       {entry.scans.toLocaleString()}
                     </span>

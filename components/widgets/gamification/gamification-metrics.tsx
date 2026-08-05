@@ -130,16 +130,16 @@ export async function GamificationMetrics() {
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {metrics.map((m) => (
           <div key={m.label} className="flex items-center gap-3 rounded-card border border-border bg-surface px-3 py-2.5">
-            <span className="text-sm">{m.ok === null ? '·' : m.ok ? '✅' : '⚠️'}</span>
+            <span className="text-body-sm">{m.ok === null ? '·' : m.ok ? '✅' : '⚠️'}</span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-medium text-text">{m.label}</p>
-              <p className="text-xs text-subtle">healthy: {m.band}</p>
+              <p className="truncate text-meta font-medium text-text">{m.label}</p>
+              <p className="text-meta text-subtle">healthy: {m.band}</p>
             </div>
-            <span className="shrink-0 text-sm font-bold tabular-nums text-text">{m.value}</span>
+            <span className="shrink-0 text-body-sm font-bold tabular-nums text-text">{m.value}</span>
           </div>
         ))}
       </div>
-      <p className="mt-2 text-xs text-subtle">
+      <p className="mt-2 text-meta text-subtle">
         Tuning levers, in priority order: Full Day bonus first, base practice rates second (±2 max), thresholds never mid-season.
       </p>
     </AdminSection>

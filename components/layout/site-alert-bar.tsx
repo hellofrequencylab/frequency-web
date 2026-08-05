@@ -59,7 +59,7 @@ export function SiteAlertBar() {
       {/* The message + button are centered as one group; the dismiss X is pinned right so it never
           offsets that centering. The horizontal padding clears the pinned X. */}
       <div className="relative mx-auto flex w-full max-w-[105rem] flex-wrap items-center justify-center gap-x-3 gap-y-1 px-12 py-2">
-        <p className="text-center text-sm text-primary-strong">
+        <p className="text-center text-body-sm text-primary-strong">
           Hey Friends <span aria-hidden>👋🏼</span> Frequency will be in Beta until September 1st. Feel free to browse
           around, make some friends, and please report any bugs!
         </p>

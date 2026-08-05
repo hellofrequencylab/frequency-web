@@ -32,9 +32,9 @@ export async function QuestMyPractices() {
                 className="group flex items-center gap-3 rounded-2xl bg-surface-elevated/60 p-3 transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold leading-tight text-text">{p.title}</p>
+                  <p className="truncate text-body-sm font-semibold leading-tight text-text">{p.title}</p>
                   {(p.cadence || p.summary) && (
-                    <p className="mt-0.5 truncate text-xs text-muted">{p.cadence ?? p.summary}</p>
+                    <p className="mt-0.5 truncate text-meta text-muted">{p.cadence ?? p.summary}</p>
                   )}
                 </div>
                 {pillar && <PillarBadge name={pillar.name} />}

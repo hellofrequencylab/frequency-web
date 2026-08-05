@@ -59,7 +59,7 @@ function CopyLink({ url }: { url: string }) {
         readOnly
         value={url}
         onFocus={(e) => e.currentTarget.select()}
-        className={cn(fieldClasses, 'min-w-0 flex-1 font-mono text-xs')}
+        className={cn(fieldClasses, 'min-w-0 flex-1 font-mono text-meta')}
         aria-label="Invite link"
       />
       <Button type="button" variant="secondary" size="sm" onClick={copy} className="shrink-0">
@@ -189,7 +189,7 @@ export function InviteForm({
           </Button>
         </div>
 
-        <p className="text-xs text-subtle">
+        <p className="text-meta text-subtle">
           We email your teammate the invite with a link to join. You can also copy the link below and
           share it yourself. When they open it while signed in, they join your team at the role you
           picked.
@@ -197,7 +197,7 @@ export function InviteForm({
 
         {error && (
           <p
-            className="rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger"
+            className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger"
             role="alert"
           >
             {error}
@@ -205,7 +205,7 @@ export function InviteForm({
         )}
         {justInvited && !error && (
           <p
-            className="inline-flex items-center gap-1 text-sm font-medium text-success"
+            className="inline-flex items-center gap-1 text-body-sm font-medium text-success"
             role="status"
           >
             <Check className="h-4 w-4" aria-hidden /> Invite sent to {justInvited}. You can also copy
@@ -215,17 +215,17 @@ export function InviteForm({
       </form>
 
       <div>
-        <h3 className="mb-3 text-sm font-bold tracking-tight text-text">
+        <h3 className="mb-3 text-body-sm font-bold tracking-tight text-text">
           Pending invites
           {invites.length > 0 && (
-            <span className="ml-2 text-xs font-medium tabular-nums text-subtle">
+            <span className="ml-2 text-meta font-medium tabular-nums text-subtle">
               {invites.length}
             </span>
           )}
         </h3>
 
         {invites.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-sm text-muted">
+          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
             No invites waiting. Invite a teammate above to add them to your team.
           </p>
         ) : (
@@ -238,7 +238,7 @@ export function InviteForm({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate font-medium text-text">{invite.email}</p>
-                    <p className="text-xs text-muted">
+                    <p className="text-meta text-muted">
                       Invited as {ROLE_LABEL[invite.role]}
                     </p>
                   </div>

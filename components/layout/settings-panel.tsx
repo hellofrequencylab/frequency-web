@@ -98,9 +98,9 @@ function layoutBlock(noun: 'circle' | 'event' | 'practice'): ReactNode {
     <div className="min-w-0">
       <div className="mb-1 flex items-center gap-2">
         <LayoutGrid className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-        <span className="text-sm font-semibold text-text">Layout</span>
+        <span className="text-body-sm font-semibold text-text">Layout</span>
       </div>
-      <p className="mb-2 text-xs text-muted">
+      <p className="mb-2 text-meta text-muted">
         Choose which blocks show inside the {noun} page and their order. Tunes the page, never the app shell.
       </p>
       <LayoutEditor />

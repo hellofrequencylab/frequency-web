@@ -72,7 +72,7 @@ export async function AvailabilitySection({
           preview stays read-only via the same disabled fieldset the availability form uses. */}
       <section>
         <SectionHeader title="Services" />
-        <p className="-mt-2 mb-4 text-sm text-muted">
+        <p className="-mt-2 mb-4 text-body-sm text-muted">
           Name what members can book and how long each one runs. Members pick a service, then a time.
         </p>
         <fieldset disabled={staffViewing} className="contents">
@@ -95,7 +95,7 @@ export async function AvailabilitySection({
           The pure slot generator reads these as additive options. Staff preview stays read-only. */}
       <section>
         <SectionHeader title="Scheduling rules" />
-        <p className="-mt-2 mb-4 text-sm text-muted">
+        <p className="-mt-2 mb-4 text-body-sm text-muted">
           Add buffers between sessions, a minimum notice, how far ahead members can book, and any days
           off or one-off hours.
         </p>

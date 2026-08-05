@@ -75,7 +75,7 @@ export async function CrewLeadQuickAction() {
   return (
     <NewGroupDMCompose
       buttonLabel="Message my circle"
-      buttonClass="inline-flex items-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-xs font-semibold text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg/50 transition-colors whitespace-nowrap"
+      buttonClass="inline-flex items-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-meta font-semibold text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg/50 transition-colors whitespace-nowrap"
       defaultRecipients={friendRecipients}
       defaultName={`${circle.name} Crew`}
     />

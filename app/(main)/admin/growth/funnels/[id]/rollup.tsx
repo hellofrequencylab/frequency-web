@@ -28,7 +28,7 @@ export async function FunnelRollup({ promise }: { promise: Promise<FunnelRollupS
         const width = top > 0 ? Math.round((s.actors / top) * 100) : 0
         return (
           <div key={s.stageId}>
-            <div className="flex items-baseline justify-between gap-2 text-sm">
+            <div className="flex items-baseline justify-between gap-2 text-body-sm">
               <span className="truncate text-text">
                 <span className="text-2xs uppercase tracking-wide text-muted">{s.kind}</span>{' '}
                 {s.label}

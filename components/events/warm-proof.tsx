@@ -56,8 +56,8 @@ export function WarmProof({
   if (going <= 0) {
     return (
       <div className={shell}>
-        <p className="text-sm font-medium text-text">Be the first to RSVP.</p>
-        <p className="mt-0.5 text-xs text-subtle">
+        <p className="text-body-sm font-medium text-text">Be the first to RSVP.</p>
+        <p className="mt-0.5 text-meta text-subtle">
           Your circles will see you’re going. A warm start gets others to join.
         </p>
       </div>
@@ -105,7 +105,7 @@ export function WarmProof({
         </div>
       )}
 
-      <p className="text-sm text-muted">
+      <p className="text-body-sm text-muted">
         <span className="font-semibold text-text">
           {going} going
         </span>
@@ -113,7 +113,7 @@ export function WarmProof({
       </p>
 
       {nearFull && typeof spotsLeft === 'number' && spotsLeft > 0 && (
-        <p className="text-xs font-medium text-primary-strong">
+        <p className="text-meta font-medium text-primary-strong">
           Filling up. {spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left
         </p>
       )}

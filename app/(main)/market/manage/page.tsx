@@ -53,7 +53,7 @@ function ProductRow({ p }: { p: CommerceProduct }) {
         <Link href={`/market/${p.id}`} className="font-medium text-text hover:text-primary">
           {p.title}
         </Link>
-        <p className="text-sm text-subtle">
+        <p className="text-body-sm text-subtle">
           {usd(p.priceCents, p.currency)} · <span className="uppercase tracking-wide">{STATUS_LABEL[p.status] ?? p.status}</span>
         </p>
       </div>
@@ -113,10 +113,10 @@ export default async function MakerManagePage() {
             <Wallet className="h-5 w-5 text-subtle" aria-hidden />
           )}
           <div>
-            <p className="text-sm font-medium text-text">
+            <p className="text-body-sm font-medium text-text">
               {connect.ready ? 'Payouts are set up' : 'Set up payouts to get paid'}
             </p>
-            <p className="text-xs text-subtle">
+            <p className="text-meta text-subtle">
               {!live
                 ? 'Listing is open now. Paid checkout turns on when the platform enables payments.'
                 : connect.ready
@@ -133,7 +133,7 @@ export default async function MakerManagePage() {
       </div>
 
       {sales.length > 0 && (
-        <p className="mb-6 text-sm text-muted">
+        <p className="mb-6 text-body-sm text-muted">
           <span className="font-semibold text-text">{sales.length}</span> {sales.length === 1 ? 'sale' : 'sales'} ·{' '}
           <span className="font-semibold text-text">{usd(salesTotal)}</span> gross
         </p>

@@ -36,7 +36,7 @@ export function PracticeDetail({
           {pillar && <PillarBadge name={pillar.name} />}
           <span className="text-2xs font-semibold uppercase tracking-wide text-muted">The practice</span>
         </div>
-        {practice.summary && <p className="text-sm leading-relaxed text-text">{practice.summary}</p>}
+        {practice.summary && <p className="text-body-sm leading-relaxed text-text">{practice.summary}</p>}
       </div>
 
       {/* Cadence · time · reward — the at-a-glance facts a follower needs to do it. */}
@@ -58,7 +58,7 @@ export function PracticeDetail({
           <HelpMarkdown>{practice.body}</HelpMarkdown>
         </div>
       ) : practice.description ? (
-        <p className="border-t border-border pt-4 text-sm leading-relaxed text-muted">{practice.description}</p>
+        <p className="border-t border-border pt-4 text-body-sm leading-relaxed text-muted">{practice.description}</p>
       ) : null}
 
       {/* A quiet cross-link to the practice's own page. The follower's "do it now" action (Practice

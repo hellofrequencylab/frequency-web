@@ -166,8 +166,8 @@ export function SpotlightTour({
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-2xs font-semibold uppercase tracking-wider text-primary-strong">Vera</p>
-            <h2 id="spotlight-title" className="mt-0.5 text-sm font-bold text-text">{stop.title}</h2>
-            <p className="mt-1 text-sm leading-snug text-muted">{stop.body}</p>
+            <h2 id="spotlight-title" className="mt-0.5 text-body-sm font-bold text-text">{stop.title}</h2>
+            <p className="mt-1 text-body-sm leading-snug text-muted">{stop.body}</p>
           </div>
           <button
             type="button"
@@ -193,7 +193,7 @@ export function SpotlightTour({
           <button
             type="button"
             onClick={pause}
-            className="inline-flex items-center gap-1 text-xs font-medium text-subtle transition-colors hover:text-muted"
+            className="inline-flex items-center gap-1 text-meta font-medium text-subtle transition-colors hover:text-muted"
           >
             <Pause className="h-3.5 w-3.5" aria-hidden /> Pause
           </button>
@@ -202,7 +202,7 @@ export function SpotlightTour({
               <button
                 type="button"
                 onClick={() => setI((n) => n - 1)}
-                className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted transition-colors hover:text-text"
+                className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:text-text"
               >
                 <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back
               </button>
@@ -210,7 +210,7 @@ export function SpotlightTour({
             <button
               type="button"
               onClick={next}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               {last ? 'Done' : 'Next'} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </button>

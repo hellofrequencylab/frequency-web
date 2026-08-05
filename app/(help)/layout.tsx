@@ -47,14 +47,14 @@ export default async function HelpLayout({ children }: { children: React.ReactNo
               <HelpSearch index={index} />
               <Link
                 href="/help"
-                className="block text-sm font-medium text-muted hover:text-text"
+                className="block text-body-sm font-medium text-muted hover:text-text"
               >
                 Help home
               </Link>
               <HelpNav categories={nav} />
               <Link
                 href="/help/changelog"
-                className="block text-xs text-subtle hover:text-text"
+                className="block text-meta text-subtle hover:text-text"
               >
                 What&rsquo;s new
               </Link>

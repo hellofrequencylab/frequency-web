@@ -33,7 +33,7 @@ function DateChip({ iso }: { iso: string }) {
   return (
     <div className="flex flex-col items-center justify-center w-10 h-10 rounded-lg bg-success-bg text-success shrink-0">
       <span className="text-3xs font-semibold uppercase leading-none">{month}</span>
-      <span className="text-sm font-bold leading-tight">{day}</span>
+      <span className="text-body-sm font-bold leading-tight">{day}</span>
     </div>
   )
 }
@@ -123,8 +123,8 @@ export async function EventsPanel({ circleIds }: { circleIds: string[] }) {
           >
             <DateChip iso={event.starts_at} />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-text truncate">{event.title}</p>
-              <p className="text-xs text-subtle mt-0.5">
+              <p className="text-body-sm font-semibold text-text truncate">{event.title}</p>
+              <p className="text-meta text-subtle mt-0.5">
                 {new Date(event.starts_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                 {event.location && (
                   <span className="ml-1.5 inline-flex items-center gap-0.5">
@@ -138,7 +138,7 @@ export async function EventsPanel({ circleIds }: { circleIds: string[] }) {
         ))}
       </div>
       <div className="px-1 pt-3">
-        <Link href="/events" className="text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+        <Link href="/events" className="text-body-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           See all events →
         </Link>
       </div>
@@ -208,7 +208,7 @@ export async function MembersPanel({ profileId, circleIds }: { profileId: string
                 {m.profile.avatar_url ? (
                   <Image src={avatarSrc(m.profile.avatar_url)} alt={m.profile.display_name} width={32} height={32} style={avatarFocusStyle(m.profile.avatar_url)} className="w-8 h-8 rounded-pill object-cover" />
                 ) : (
-                  <div className="w-8 h-8 rounded-pill bg-border-strong flex items-center justify-center text-xs font-bold text-muted dark:text-subtle select-none">
+                  <div className="w-8 h-8 rounded-pill bg-border-strong flex items-center justify-center text-meta font-bold text-muted dark:text-subtle select-none">
                     {getInitials(m.profile.display_name ?? '')}
                   </div>
                 )}
@@ -216,13 +216,13 @@ export async function MembersPanel({ profileId, circleIds }: { profileId: string
                   <span aria-label="Online now" className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-pill bg-success ring-2 ring-surface" />
                 )}
               </div>
-              <span className="text-sm font-medium text-text truncate flex-1">{m.profile.display_name}</span>
+              <span className="text-body-sm font-medium text-text truncate flex-1">{m.profile.display_name}</span>
             </Link>
           )
         })}
       </div>
       <div className="px-1 pt-3">
-        <Link href="/people" className="text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+        <Link href="/people" className="text-body-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           View directory →
         </Link>
       </div>
@@ -248,14 +248,14 @@ export async function DispatchesPanel({ profileId, circleIds }: { profileId: str
               {d.linkedTaskId ? <Zap className="w-3.5 h-3.5 text-primary" /> : <Megaphone className="w-3.5 h-3.5 text-signal-strong" />}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-text line-clamp-1 leading-snug">{d.title}</p>
-              <p className="text-xs text-subtle mt-0.5">{d.authorName} · {relativeTime(d.publishedAt)}</p>
+              <p className="text-body-sm font-semibold text-text line-clamp-1 leading-snug">{d.title}</p>
+              <p className="text-meta text-subtle mt-0.5">{d.authorName} · {relativeTime(d.publishedAt)}</p>
             </div>
           </Link>
         ))}
       </div>
       <div className="px-1 pt-3">
-        <Link href="/broadcast" className="text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+        <Link href="/broadcast" className="text-body-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           View all Dispatches →
         </Link>
       </div>
@@ -291,29 +291,29 @@ export async function LeaderboardPanel() {
             href={`/people/${member.handle}`}
             className="flex items-center gap-2.5 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
           >
-            <span className={`text-sm font-bold w-4 shrink-0 tabular-nums ${rankColors[i]}`}>{i + 1}</span>
+            <span className={`text-body-sm font-bold w-4 shrink-0 tabular-nums ${rankColors[i]}`}>{i + 1}</span>
             {member.avatar_url ? (
               <Image src={avatarSrc(member.avatar_url)} alt={member.display_name} width={32} height={32} style={avatarFocusStyle(member.avatar_url)} className="w-8 h-8 rounded-pill object-cover shrink-0" />
             ) : (
-              <div className="w-8 h-8 rounded-pill bg-border-strong flex items-center justify-center text-xs font-bold text-muted shrink-0">
+              <div className="w-8 h-8 rounded-pill bg-border-strong flex items-center justify-center text-meta font-bold text-muted shrink-0">
                 {getInitials(member.display_name ?? '')}
               </div>
             )}
-            <span className="text-sm flex-1 truncate text-text">{member.display_name}</span>
+            <span className="text-body-sm flex-1 truncate text-text">{member.display_name}</span>
             <div className="flex items-center gap-1 shrink-0">
               <span className="rank-badge text-3xs font-bold leading-tight" style={seasonRankStyle(member.current_season_rank)}>
                 {RANK_LABELS[member.current_season_rank] ?? member.current_season_rank}
               </span>
               <div className="flex items-center gap-0.5">
                 <Zap className="w-2.5 h-2.5 text-primary" />
-                <span className="text-xs font-semibold text-muted">{(member.current_season_zaps ?? 0).toLocaleString()}</span>
+                <span className="text-meta font-semibold text-muted">{(member.current_season_zaps ?? 0).toLocaleString()}</span>
               </div>
             </div>
           </Link>
         ))}
       </div>
       <div className="px-1 pt-3">
-        <Link href="/crew/leaderboard" className="text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+        <Link href="/crew/leaderboard" className="text-body-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           Full leaderboard →
         </Link>
       </div>
@@ -352,8 +352,8 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
           <span className="inline-flex items-center gap-1"><Compass className="h-3 w-3" /> Next step</span>
           {status && <span className="tabular-nums">{status.pct}%</span>}
         </p>
-        <p className="mt-1 text-sm font-bold leading-snug text-text">{nextStep.headline}</p>
-        <p className="mt-0.5 line-clamp-2 text-xs text-muted">{nextStep.blurb}</p>
+        <p className="mt-1 text-body-sm font-bold leading-snug text-text">{nextStep.headline}</p>
+        <p className="mt-0.5 line-clamp-2 text-meta text-muted">{nextStep.blurb}</p>
         <p className="mt-2 flex items-center justify-between">
           <span className="inline-flex items-center gap-1 text-2xs font-semibold text-signal">
             <Gem className="h-3 w-3" /> Earn Gems for finishing
@@ -374,7 +374,7 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
               className="group flex items-center gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5 transition-colors hover:border-broadcast/50 hover:bg-broadcast-bg/20"
             >
               <span className="h-1.5 w-1.5 shrink-0 rounded-pill bg-broadcast-bg ring-1 ring-broadcast/40" />
-              <span className="min-w-0 flex-1 truncate text-xs font-medium text-text">{s.label}</span>
+              <span className="min-w-0 flex-1 truncate text-meta font-medium text-text">{s.label}</span>
               <ArrowRight className="h-3 w-3 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5" />
             </Link>
           ))}
@@ -417,7 +417,7 @@ export async function WhoOnlinePanel({ profileId }: { profileId: string }) {
         ))}
       </div>
       <div className="px-1 pt-3">
-        <Link href="/people" className="text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+        <Link href="/people" className="text-body-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           See who’s around →
         </Link>
       </div>
@@ -452,8 +452,8 @@ export async function CirclesPanel({ circleIds }: { circleIds: string[] }) {
               <Users className="h-4 w-4" aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-text">{c.name}</p>
-              <p className="text-xs text-subtle">
+              <p className="truncate text-body-sm font-semibold text-text">{c.name}</p>
+              <p className="text-meta text-subtle">
                 {c.neighborhood ? `${c.neighborhood} · ` : ''}{(c.member_count ?? 0).toLocaleString()} member{c.member_count === 1 ? '' : 's'}
               </p>
             </div>
@@ -461,7 +461,7 @@ export async function CirclesPanel({ circleIds }: { circleIds: string[] }) {
         ))}
       </div>
       <div className="px-1 pt-3">
-        <Link href="/circles" className="text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+        <Link href="/circles" className="text-body-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           Browse all circles →
         </Link>
       </div>
@@ -516,8 +516,8 @@ export async function NewCirclesPanel({ circleIds }: { circleIds: string[] }) {
               <Sparkles className="h-4 w-4" aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-text">{c.name}</p>
-              <p className="text-xs text-subtle">
+              <p className="truncate text-body-sm font-semibold text-text">{c.name}</p>
+              <p className="text-meta text-subtle">
                 {c.neighborhood ? `${c.neighborhood} · ` : ''}
                 {fellBack
                   ? `${(c.member_count ?? 0).toLocaleString()} members`
@@ -528,7 +528,7 @@ export async function NewCirclesPanel({ circleIds }: { circleIds: string[] }) {
         ))}
       </div>
       <div className="px-1 pt-3">
-        <Link href="/circles" className="text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+        <Link href="/circles" className="text-body-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           Browse all circles →
         </Link>
       </div>
@@ -591,7 +591,7 @@ export async function ActiveNowPanel({ profileId }: { profileId: string }) {
                 {p.avatar_url ? (
                   <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={32} height={32} style={avatarFocusStyle(p.avatar_url)} className="h-8 w-8 rounded-pill object-cover" />
                 ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-pill bg-border-strong text-xs font-bold text-muted dark:text-subtle select-none">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-pill bg-border-strong text-meta font-bold text-muted dark:text-subtle select-none">
                     {getInitials(p.display_name ?? '')}
                   </div>
                 )}
@@ -600,8 +600,8 @@ export async function ActiveNowPanel({ profileId }: { profileId: string }) {
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-text">{p.display_name}</p>
-                <p className="text-xs text-subtle">
+                <p className="truncate text-body-sm font-medium text-text">{p.display_name}</p>
+                <p className="text-meta text-subtle">
                   {fellBack
                     ? p.created_at ? `joined ${relativeTime(p.created_at)}` : 'new here'
                     : online ? 'Online now' : p.last_seen_at ? `active ${relativeTime(p.last_seen_at)}` : 'recently active'}
@@ -612,7 +612,7 @@ export async function ActiveNowPanel({ profileId }: { profileId: string }) {
         })}
       </div>
       <div className="px-1 pt-3">
-        <Link href="/people" className="text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+        <Link href="/people" className="text-body-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           {fellBack ? 'Meet the community →' : 'See who’s around →'}
         </Link>
       </div>
@@ -655,7 +655,7 @@ export async function PulsePanel() {
             className="flex flex-col items-center gap-0.5 rounded-lg px-1 py-2 text-center transition-colors hover:bg-surface-elevated"
           >
             <Icon className="h-4 w-4 text-primary-strong" aria-hidden />
-            <span className="text-lg font-bold leading-none tabular-nums text-text">{value.toLocaleString()}</span>
+            <span className="text-body-lg font-bold leading-none tabular-nums text-text">{value.toLocaleString()}</span>
             <span className="text-2xs text-muted">{label}</span>
           </Link>
         ))}

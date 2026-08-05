@@ -8,7 +8,7 @@ import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
 export function NewNexusCompose({
   outposts,
   buttonLabel = 'New Nexus',
-  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
+  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
 }: {
   outposts: { id: string; name: string }[]
   buttonLabel?: string

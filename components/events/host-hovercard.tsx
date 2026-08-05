@@ -41,13 +41,13 @@ export function HostHovercard({
               style={avatarFocusStyle(host.avatar_url)}
             />
           ) : (
-            <span className="flex h-11 w-11 shrink-0 select-none items-center justify-center rounded-pill bg-primary-bg text-sm font-semibold text-primary-strong">
+            <span className="flex h-11 w-11 shrink-0 select-none items-center justify-center rounded-pill bg-primary-bg text-body-sm font-semibold text-primary-strong">
               {getInitials(host.display_name)}
             </span>
           )}
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-bold text-text">{host.display_name}</span>
-            <span className="block truncate text-xs text-subtle">@{host.handle}</span>
+            <span className="block truncate text-body-sm font-bold text-text">{host.display_name}</span>
+            <span className="block truncate text-meta text-subtle">@{host.handle}</span>
             <span className="mt-0.5 block text-2xs font-semibold uppercase tracking-wide text-primary-strong">
               Host
             </span>

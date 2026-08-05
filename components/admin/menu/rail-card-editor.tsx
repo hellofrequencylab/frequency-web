@@ -80,11 +80,11 @@ export function RailCardEditor({
           ) : (
             <ChevronRight className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
           )}
-          <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">
+          <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-text">
             {card.title || 'Untitled card'}
           </span>
         </button>
-        <span className="shrink-0 rounded-pill bg-surface-elevated px-1.5 py-0.5 text-xs font-semibold capitalize text-muted">
+        <span className="shrink-0 rounded-pill bg-surface-elevated px-1.5 py-0.5 text-meta font-semibold capitalize text-muted">
           {card.side}
         </span>
         <OnOffToggle
@@ -106,11 +106,11 @@ export function RailCardEditor({
 
       {open && (
         <div className="space-y-4 border-t border-border px-3 py-3">
-          {error && <p className="text-sm text-danger">{error}</p>}
+          {error && <p className="text-body-sm text-danger">{error}</p>}
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="min-w-0">
-              <label className="mb-1 block text-xs font-semibold text-subtle" htmlFor={`ct-${card.id}`}>
+              <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`ct-${card.id}`}>
                 Title
               </label>
               <input
@@ -120,11 +120,11 @@ export function RailCardEditor({
                 disabled={isPending}
                 onChange={(e) => setTitle(e.target.value)}
                 onBlur={() => title !== card.title && title && save({ title }, { title })}
-                className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
               />
             </div>
             <div className="min-w-0">
-              <label className="mb-1 block text-xs font-semibold text-subtle" htmlFor={`cs-${card.id}`}>
+              <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`cs-${card.id}`}>
                 Side
               </label>
               <select
@@ -137,7 +137,7 @@ export function RailCardEditor({
                     { side: e.target.value as 'left' | 'right' },
                   )
                 }
-                className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
               >
                 <option value="left">Left</option>
                 <option value="right">Right</option>
@@ -146,7 +146,7 @@ export function RailCardEditor({
           </div>
 
           <div className="min-w-0">
-            <label className="mb-1 block text-xs font-semibold text-subtle" htmlFor={`cb-${card.id}`}>
+            <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`cb-${card.id}`}>
               Body
             </label>
             <textarea
@@ -156,14 +156,14 @@ export function RailCardEditor({
               disabled={isPending}
               onChange={(e) => setBody(e.target.value)}
               onBlur={() => body !== card.body && body && save({ body }, { body })}
-              className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+              className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
             />
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <LinkTargetField value={href} disabled={isPending} onChange={setHref} id={`ch-${card.id}`} />
             <div className="min-w-0">
-              <label className="mb-1 block text-xs font-semibold text-subtle" htmlFor={`cc-${card.id}`}>
+              <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`cc-${card.id}`}>
                 Call to action
               </label>
               <input
@@ -176,7 +176,7 @@ export function RailCardEditor({
                 onBlur={() =>
                   cta !== (card.cta ?? '') && save({ cta: cta || null }, { cta: cta || undefined })
                 }
-                className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
               />
             </div>
           </div>
@@ -184,7 +184,7 @@ export function RailCardEditor({
             <button
               type="button"
               onClick={() => save({ href }, { href })}
-              className="text-xs font-semibold text-primary-strong hover:underline"
+              className="text-meta font-semibold text-primary-strong hover:underline"
             >
               Save link target
             </button>

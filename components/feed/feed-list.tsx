@@ -355,7 +355,7 @@ export async function FeedList({
       <div className="space-y-6">
         {days.map((day) => (
           <section key={day.label}>
-            <h3 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-subtle">{day.label}</h3>
+            <h3 className="mb-2 px-1 text-meta font-bold uppercase tracking-wide text-subtle">{day.label}</h3>
             <div className="space-y-4">
               {day.items.map(({ data: post }) => (
                 <PostCard key={post.id} post={post} myProfileId={myProfileId} viewerRole={viewerRole} />
@@ -430,15 +430,15 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
               </span>
             )}
           </div>
-          <p className="text-sm font-bold text-text group-hover:text-broadcast-strong transition-colors line-clamp-1">
+          <p className="text-body-sm font-bold text-text group-hover:text-broadcast-strong transition-colors line-clamp-1">
             {d.title}
           </p>
           {/* For an Event Dispatch, name the event under the title so the link's
               destination is obvious; otherwise show the broadcast excerpt. */}
           {isEvent ? (
-            <p className="text-xs text-muted line-clamp-1 mt-0.5">{d.event!.title}</p>
+            <p className="text-meta text-muted line-clamp-1 mt-0.5">{d.event!.title}</p>
           ) : (
-            d.excerpt && <p className="text-xs text-muted line-clamp-1 mt-0.5">{d.excerpt}</p>
+            d.excerpt && <p className="text-meta text-muted line-clamp-1 mt-0.5">{d.excerpt}</p>
           )}
           <div className="flex items-center justify-between mt-1.5">
             <span className="text-2xs text-muted">
@@ -467,14 +467,14 @@ function EventFeedCard({ event: e }: { event: { id: string; title: string; start
       <div className="flex items-center gap-3">
         <div className="shrink-0 w-10 h-10 rounded-lg bg-success-bg flex flex-col items-center justify-center">
           <span className="text-3xs font-bold text-success leading-none">{month}</span>
-          <span className="text-sm font-bold text-success leading-tight">{day}</span>
+          <span className="text-body-sm font-bold text-success leading-tight">{day}</span>
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <CalendarDays className="w-3 h-3 text-success" />
             <span className="text-3xs font-black uppercase tracking-widest text-success">Upcoming event</span>
           </div>
-          <p className="text-sm font-bold text-text group-hover:text-success transition-colors line-clamp-1">
+          <p className="text-body-sm font-bold text-text group-hover:text-success transition-colors line-clamp-1">
             {e.title}
           </p>
           <div className="flex items-center gap-2 mt-0.5">
@@ -496,7 +496,7 @@ function EmptyState({ message }: { message: string }) {
   return (
     <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-12 text-center">
       <MessageSquare className="w-8 h-8 text-subtle/60 mx-auto mb-3" />
-      <p className="text-sm text-muted">{message}</p>
+      <p className="text-body-sm text-muted">{message}</p>
     </div>
   )
 }

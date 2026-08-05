@@ -41,15 +41,15 @@ export function CircleTextDefaultEditor({ initial }: { initial: string }) {
           className={`${fieldClasses} resize-y`}
         />
       </label>
-      <p className="text-xs text-muted">
+      <p className="text-meta text-muted">
         Formatting: <code>**bold**</code>, <code>*italic*</code>, <code>[label](/path)</code>. Each circle can override
         this from its own Settings, and operators place the block from the circle Layout editor.
       </p>
 
       <div className="flex items-center justify-end gap-2 pt-1">
-        {err && <span className="text-xs font-medium text-danger">{err}</span>}
+        {err && <span className="text-meta font-medium text-danger">{err}</span>}
         {saved && (
-          <span className="flex items-center gap-1 text-xs font-medium text-primary-strong">
+          <span className="flex items-center gap-1 text-meta font-medium text-primary-strong">
             <Check className="h-3.5 w-3.5" /> Saved
           </span>
         )}
@@ -57,7 +57,7 @@ export function CircleTextDefaultEditor({ initial }: { initial: string }) {
           type="button"
           onClick={handleSave}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
         >
           {pending ? 'Saving…' : 'Save default'}
         </button>

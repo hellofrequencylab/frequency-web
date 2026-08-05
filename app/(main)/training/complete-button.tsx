@@ -18,7 +18,7 @@ export function CompleteButton({ reward }: { reward: number }) {
           if (r.ok) router.refresh()
         })
       }
-      className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+      className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
     >
       <Check className="h-4 w-4" aria-hidden />
       {pending ? 'Saving…' : `I’ve done these. Finish (+${reward} Gems)`}

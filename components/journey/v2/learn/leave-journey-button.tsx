@@ -33,7 +33,7 @@ export function LeaveJourneyButton({ planId, journeyTitle }: { planId: string; j
       <button
         type="button"
         onClick={() => setArmed(true)}
-        className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-text"
+        className="inline-flex items-center gap-1.5 text-body-sm text-muted transition-colors hover:text-text"
       >
         <LogOut className="h-3.5 w-3.5" aria-hidden />
         Leave this Journey
@@ -42,7 +42,7 @@ export function LeaveJourneyButton({ planId, journeyTitle }: { planId: string; j
   }
 
   return (
-    <div className="space-y-1.5 text-sm">
+    <div className="space-y-1.5 text-body-sm">
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-muted">
           Leave {journeyTitle}? Its practices step back from your list. Anything you adopted
@@ -65,7 +65,7 @@ export function LeaveJourneyButton({ planId, journeyTitle }: { planId: string; j
           Keep going
         </button>
       </div>
-      {error && <p className="text-xs font-medium text-danger">{error}</p>}
+      {error && <p className="text-meta font-medium text-danger">{error}</p>}
     </div>
   )
 }

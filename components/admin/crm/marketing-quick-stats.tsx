@@ -26,7 +26,7 @@ export function MarketingQuickStats({
       <div className="grid grid-cols-3 gap-x-4 gap-y-3.5">
         {stats.map((s) => (
           <div key={s.label} className="min-w-0">
-            <p className="text-base font-extrabold leading-none tabular-nums text-text">
+            <p className="text-body font-extrabold leading-none tabular-nums text-text">
               {s.value.toLocaleString()}
             </p>
             <p className="mt-0.5 truncate text-2xs font-medium text-muted">{s.label}</p>

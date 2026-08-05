@@ -126,7 +126,7 @@ export function EventGallery({ images }: { images: string[] }) {
             </button>
           )}
 
-          <span className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-pill bg-white/10 px-3 py-1 text-xs font-medium text-white">
+          <span className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-pill bg-white/10 px-3 py-1 text-meta font-medium text-white">
             {open + 1} / {count}
           </span>
         </div>

@@ -35,8 +35,8 @@ export default async function SegmentsPage() {
               </span>
             )}
           </p>
-          <p className="mt-0.5 truncate font-mono text-xs text-muted">{describeSegment(s.definition)}</p>
-          {s.description && <p className="mt-1 max-w-md text-xs text-muted">{s.description}</p>}
+          <p className="mt-0.5 truncate font-mono text-meta text-muted">{describeSegment(s.definition)}</p>
+          {s.description && <p className="mt-1 max-w-md text-meta text-muted">{s.description}</p>}
         </div>
       ),
     },
@@ -51,19 +51,19 @@ export default async function SegmentsPage() {
       header: 'Who is in it',
       render: (s) =>
         s.sample.length === 0 ? (
-          <span className="text-xs text-subtle">No members yet</span>
+          <span className="text-meta text-subtle">No members yet</span>
         ) : (
           <div className="flex flex-wrap gap-1.5">
             {s.sample.map((m) => (
               <span
                 key={m.handle || m.displayName}
-                className="rounded-md bg-surface-elevated px-2 py-0.5 text-xs text-muted"
+                className="rounded-md bg-surface-elevated px-2 py-0.5 text-meta text-muted"
               >
                 {m.handle ? `@${m.handle}` : m.displayName}
               </span>
             ))}
             {s.count > s.sample.length && (
-              <span className="px-1 py-0.5 text-xs text-subtle">+{s.count - s.sample.length} more</span>
+              <span className="px-1 py-0.5 text-meta text-subtle">+{s.count - s.sample.length} more</span>
             )}
           </div>
         ),

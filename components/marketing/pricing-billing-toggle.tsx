@@ -73,7 +73,7 @@ export function PricingBillingToggle({
         />
       </div>
       {interval === 'year' && (
-        <p className="mb-8 -mt-4 text-center text-sm font-semibold text-primary-strong">{yearlyNote}</p>
+        <p className="mb-8 -mt-4 text-center text-body-sm font-semibold text-primary-strong">{yearlyNote}</p>
       )}
     </div>
   )
@@ -94,7 +94,7 @@ function IntervalButton({
       role="radio"
       aria-checked={active}
       onClick={onClick}
-      className={`rounded-xl px-5 py-2 text-sm font-bold transition-colors ${
+      className={`rounded-xl px-5 py-2 text-body-sm font-bold transition-colors ${
         active ? 'bg-primary text-on-primary lift-1' : 'text-muted hover:text-text'
       }`}
     >

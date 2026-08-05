@@ -34,8 +34,8 @@ type HostOption = { id: string; display_name: string }
 
 const STATUSES = ['forming', 'active', 'paused', 'archived'] as const
 
-const input  = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
-const lbl    = 'block text-xs font-medium text-muted mb-1'
+const input  = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
+const lbl    = 'block text-meta font-medium text-muted mb-1'
 
 // The one status vocabulary (retired the local STATUS_COLOR dict, ADR-233 §4).
 const STATUS_TONE: Record<string, StatusTone> = {
@@ -207,14 +207,14 @@ function CircleForm({
       </div>
 
       <div className="sm:col-span-2">
-        <label className="flex items-center gap-2 text-sm text-text">
+        <label className="flex items-center gap-2 text-body-sm text-text">
           <input type="checkbox" checked={resonancePublic} onChange={e => setResonancePublic(e.target.checked)} disabled={isPending} className="h-4 w-4 rounded border-border-strong text-primary focus:ring-2 focus:ring-primary/40" />
           Show this circle&apos;s resonance publicly
         </label>
       </div>
 
       {error && (
-        <p role="alert" className="text-xs text-danger sm:col-span-2">
+        <p role="alert" className="text-meta text-danger sm:col-span-2">
           {error}
         </p>
       )}
@@ -313,7 +313,7 @@ export function CirclesClient({
     <div>
       {/* Archive failures (the editor is closed) surface here; save failures show in the form. */}
       {error && !editingCircle && (
-        <p role="alert" className="mb-3 text-xs text-danger">
+        <p role="alert" className="mb-3 text-meta text-danger">
           {error}
         </p>
       )}
@@ -348,14 +348,14 @@ export function CirclesClient({
 
       {archived.length > 0 && (
         <details className="mt-6">
-          <summary className="cursor-pointer select-none text-xs font-medium text-subtle hover:text-muted">
+          <summary className="cursor-pointer select-none text-meta font-medium text-subtle hover:text-muted">
             {archived.length} archived circle{archived.length > 1 ? 's' : ''}
           </summary>
           <div className="mt-2 space-y-2 opacity-60">
             {archived.map(circle => (
               <div key={circle.id} className="flex items-center gap-3 rounded-card border border-border px-4 py-3">
-                <span className="flex-1 text-sm text-muted">{circle.name}</span>
-                <span className="text-xs text-subtle">archived</span>
+                <span className="flex-1 text-body-sm text-muted">{circle.name}</span>
+                <span className="text-meta text-subtle">archived</span>
               </div>
             ))}
           </div>

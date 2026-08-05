@@ -183,7 +183,7 @@ export function MessageThread({
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {groups.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-sm text-subtle">
+            <p className="text-body-sm text-subtle">
               No messages yet. Say hello!
             </p>
           </div>
@@ -245,7 +245,7 @@ export function MessageThread({
                         </span>
                       )}
                       <div
-                        className={`px-3 py-2 text-sm leading-relaxed break-words ${
+                        className={`px-3 py-2 text-body-sm leading-relaxed break-words ${
                           isMine
                             ? 'bg-primary text-on-primary rounded-2xl rounded-br-md'
                             : 'bg-surface-elevated text-text rounded-2xl rounded-bl-md'
@@ -278,7 +278,7 @@ export function MessageThread({
       {/* ── Composer ──────────────────────────────── */}
       <div className="shrink-0 border-t border-border bg-surface px-4 py-3">
         {error && (
-          <p className="mb-2 text-xs text-danger" role="alert">
+          <p className="mb-2 text-meta text-danger" role="alert">
             {error}
           </p>
         )}
@@ -295,7 +295,7 @@ export function MessageThread({
             placeholder="Message…"
             rows={1}
             disabled={isPending}
-            className="flex-1 resize-none text-sm text-text placeholder-subtle outline-none leading-relaxed bg-surface rounded-control px-3 py-2.5 max-h-32 disabled:opacity-60"
+            className="flex-1 resize-none text-body-sm text-text placeholder-subtle outline-none leading-relaxed bg-surface rounded-control px-3 py-2.5 max-h-32 disabled:opacity-60"
             style={{ minHeight: '42px' }}
           />
           <button

@@ -24,9 +24,9 @@ export function ModuleCard({
     return (
       <section className="rounded-2xl border border-border bg-surface p-4 lift-1">
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-bold tracking-tight text-text">{title}</h3>
+          <h3 className="text-body-sm font-bold tracking-tight text-text">{title}</h3>
           {badge && (
-            <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
+            <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-medium text-muted">
               {badge}
             </span>
           )}
@@ -39,11 +39,11 @@ export function ModuleCard({
   return (
     <section>
       <div className="flex items-center justify-between px-1 mb-2">
-        <h3 className="text-sm font-bold tracking-tight text-text">
+        <h3 className="text-body-sm font-bold tracking-tight text-text">
           {title}
         </h3>
         {badge && (
-          <span className="text-xs px-2 py-0.5 rounded-pill bg-surface-elevated text-muted font-medium">
+          <span className="text-meta px-2 py-0.5 rounded-pill bg-surface-elevated text-muted font-medium">
             {badge}
           </span>
         )}

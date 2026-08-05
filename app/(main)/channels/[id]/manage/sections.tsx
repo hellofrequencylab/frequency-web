@@ -168,9 +168,9 @@ export async function MembersSection({ channelId }: { channelId: string }) {
             ) : (
               <span className="block truncate font-medium text-text">{m.displayName}</span>
             )}
-            {m.handle && <span className="text-xs text-subtle">@{m.handle}</span>}
+            {m.handle && <span className="text-meta text-subtle">@{m.handle}</span>}
           </div>
-          <span className="shrink-0 text-xs text-subtle">tuned in {fmtDate(m.joinedAt)}</span>
+          <span className="shrink-0 text-meta text-subtle">tuned in {fmtDate(m.joinedAt)}</span>
         </li>
       ))}
     </ul>
@@ -203,7 +203,7 @@ export async function CirclesSection({
   const noun = isProgramChannel ? 'Chapter' : 'Circle'
 
   const banner = notice?.error ? (
-    <p className="rounded-xl border border-danger/30 bg-danger-bg px-4 py-2.5 text-sm text-danger">
+    <p className="rounded-xl border border-danger/30 bg-danger-bg px-4 py-2.5 text-body-sm text-danger">
       {notice.error === 'missing'
         ? 'Pick a Circle first.'
         : notice.error === 'denied'
@@ -213,7 +213,7 @@ export async function CirclesSection({
             : 'That did not save. Try again.'}
     </p>
   ) : notice?.saved ? (
-    <p className="rounded-xl border border-success/30 bg-success-bg px-4 py-2.5 text-sm text-success">
+    <p className="rounded-xl border border-success/30 bg-success-bg px-4 py-2.5 text-body-sm text-success">
       Saved.
     </p>
   ) : null
@@ -224,12 +224,12 @@ export async function CirclesSection({
   const addForm = (
     <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
       <SectionHeader title={`Add a ${noun}`} />
-      <p className="mb-3 text-sm text-muted">
+      <p className="mb-3 text-body-sm text-muted">
         Bring an existing Circle into this Channel. It keeps its host, members, and events; it
         starts practicing here.
       </p>
       {assignable.length === 0 ? (
-        <p className="text-sm text-subtle">Every live Circle already practices somewhere here.</p>
+        <p className="text-body-sm text-subtle">Every live Circle already practices somewhere here.</p>
       ) : (
         <form action={addChannelCircleAction.bind(null, channelId, idOrSlug)} className="space-y-3">
           <label className="block space-y-1">
@@ -276,13 +276,13 @@ export async function CirclesSection({
     <div className="space-y-5">
       {banner}
       <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-left text-body-sm">
           <thead>
             <tr className="border-b border-border">
-              <th className="px-4 py-2.5 text-xs font-semibold text-subtle">{noun}</th>
-              <th className="px-4 py-2.5 text-xs font-semibold text-subtle">Status</th>
-              <th className="px-4 py-2.5 text-xs font-semibold text-subtle">Where</th>
-              <th className="px-4 py-2.5 text-xs font-semibold text-subtle">Members</th>
+              <th className="px-4 py-2.5 text-meta font-semibold text-subtle">{noun}</th>
+              <th className="px-4 py-2.5 text-meta font-semibold text-subtle">Status</th>
+              <th className="px-4 py-2.5 text-meta font-semibold text-subtle">Where</th>
+              <th className="px-4 py-2.5 text-meta font-semibold text-subtle">Members</th>
               <th className="px-4 py-2.5">
                 <span className="sr-only">Actions</span>
               </th>
@@ -355,7 +355,7 @@ export async function ProgramSection({
   }
 
   const banner = notice?.error ? (
-    <p className="rounded-xl border border-danger/30 bg-danger-bg px-4 py-2.5 text-sm text-danger">
+    <p className="rounded-xl border border-danger/30 bg-danger-bg px-4 py-2.5 text-body-sm text-danger">
       {notice.error === 'missing'
         ? 'Pick a source first.'
         : notice.error === 'denied'
@@ -365,7 +365,7 @@ export async function ProgramSection({
             : 'That did not save. Check the source and try again.'}
     </p>
   ) : notice?.saved ? (
-    <p className="rounded-xl border border-success/30 bg-success-bg px-4 py-2.5 text-sm text-success">
+    <p className="rounded-xl border border-success/30 bg-success-bg px-4 py-2.5 text-body-sm text-success">
       Saved.
     </p>
   ) : null
@@ -380,7 +380,7 @@ export async function ProgramSection({
       <SectionHeader title="Owner Space" />
       {data.ownerSpace ? (
         <>
-          <p className="mb-3 text-sm text-muted">
+          <p className="mb-3 text-body-sm text-muted">
             <Link href={`/spaces/${data.ownerSpace.slug}`} className="font-medium text-text hover:underline">
               {data.ownerSpace.name}
             </Link>{' '}
@@ -395,7 +395,7 @@ export async function ProgramSection({
         </>
       ) : (
         <>
-          <p className="mb-3 text-sm text-muted">
+          <p className="mb-3 text-body-sm text-muted">
             Frequency runs this Channel. Assign an owner Space to hand it to that Space&apos;s
             team. A Space can own one Channel.
           </p>
@@ -431,7 +431,7 @@ export async function ProgramSection({
       <div className="space-y-5">
         {banner}
         {ownerCard}
-        <p className="max-w-2xl text-sm text-muted">
+        <p className="max-w-2xl text-body-sm text-muted">
           A Program is a Channel with a Chapter blueprint attached. Members anywhere can start a
           Chapter from it: a local Circle running the same model. Pick where the blueprint comes
           from.
@@ -439,7 +439,7 @@ export async function ProgramSection({
 
         <ProgramCard>
           <SectionHeader title="Snapshot a live Circle" />
-          <p className="mb-3 text-sm text-muted">
+          <p className="mb-3 text-body-sm text-muted">
             Copies the Circle&apos;s setup (rhythm, agreements, format) into the blueprint. The
             Circle itself is untouched.
           </p>
@@ -467,7 +467,7 @@ export async function ProgramSection({
 
         <ProgramCard>
           <SectionHeader title="Clone a Starter Circle" />
-          <p className="mb-3 text-sm text-muted">
+          <p className="mb-3 text-body-sm text-muted">
             Makes this Program its own copy of a Starter from the catalog. The original Starter
             stays in the catalog, untouched.
           </p>
@@ -500,7 +500,7 @@ export async function ProgramSection({
   return (
     <div className="space-y-5">
       {banner}
-      <p className="max-w-2xl text-sm text-muted">
+      <p className="max-w-2xl text-body-sm text-muted">
         This Channel runs a Program. The blueprint below is what every new Chapter starts from.
         {!data.channel.isActive && ' The Program is paused right now: the page is hidden and no new Chapters can start.'}
       </p>
@@ -509,7 +509,7 @@ export async function ProgramSection({
 
       <ProgramCard>
         <SectionHeader title="Name and one liner" />
-        <p className="mb-3 text-sm text-muted">
+        <p className="mb-3 text-body-sm text-muted">
           Edits the Channel and keeps the blueprint&apos;s card copy in step. The address never
           changes, so shared links keep working.
         </p>
@@ -536,7 +536,7 @@ export async function ProgramSection({
 
       <ProgramCard>
         <SectionHeader title="Refresh the blueprint" />
-        <p className="mb-3 text-sm text-muted">
+        <p className="mb-3 text-body-sm text-muted">
           Re-snapshot from any live Circle. Existing Chapters keep the setup they started with;
           only future Chapters see the new one.
         </p>
@@ -566,7 +566,7 @@ export async function ProgramSection({
 
       <ProgramCard>
         <SectionHeader title={data.channel.isActive ? 'Pause the Program' : 'Resume the Program'} />
-        <p className="mb-3 text-sm text-muted">
+        <p className="mb-3 text-body-sm text-muted">
           {data.channel.isActive
             ? 'Paused, the Channel page is hidden and no new Chapters can start. Members and Chapters keep everything they have. Resume is one click.'
             : 'Resuming brings the Channel page straight back and reopens Chapter starts.'}
@@ -582,7 +582,7 @@ export async function ProgramSection({
 
       <ProgramCard>
         <SectionHeader title="Detach the blueprint" />
-        <p className="mb-3 text-sm text-muted">
+        <p className="mb-3 text-body-sm text-muted">
           The Channel goes back to a plain focus area. The blueprint is retired (never listed as a
           Starter), and existing Chapters keep everything they have.
         </p>

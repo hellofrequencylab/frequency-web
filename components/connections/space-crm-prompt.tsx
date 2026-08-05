@@ -42,14 +42,14 @@ export function SpaceCrmPrompt() {
         <Briefcase className="h-5 w-5" aria-hidden />
       </span>
       <div className="min-w-0 flex-1">
-        <h2 className="text-sm font-semibold text-text">Running this as a business?</h2>
-        <p className="mt-0.5 text-sm text-muted">
+        <h2 className="text-body-sm font-semibold text-text">Running this as a business?</h2>
+        <p className="mt-0.5 text-body-sm text-muted">
           Your contacts can graduate into a Space CRM: a pipeline with stages and deals for the people
           you work with. Bring them over in one step and keep your private list as it is.
         </p>
         <Link
           href="/spaces/directory"
-          className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong hover:underline"
+          className="mt-2 inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline"
         >
           See spaces
         </Link>

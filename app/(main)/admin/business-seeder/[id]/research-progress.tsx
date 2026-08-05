@@ -74,11 +74,11 @@ export function ResearchProgress({
     <div className="mx-auto max-w-2xl">
       <div className="rounded-2xl border border-border bg-surface p-6 lift-1 sm:p-8">
         <div className="mb-6 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-text">
+          <div className="flex items-center gap-2 text-body-sm font-semibold text-text">
             <RefreshCw className="h-4 w-4 animate-spin text-primary-strong" aria-hidden />
             Researching this business
           </div>
-          <span className="tabular-nums text-xs text-muted" aria-live="off">
+          <span className="tabular-nums text-meta text-muted" aria-live="off">
             {elapsedLabel(elapsedMs)} · usually ~2 min
           </span>
         </div>
@@ -106,15 +106,15 @@ export function ResearchProgress({
                 <div className="min-w-0">
                   <p
                     className={cn(
-                      'text-sm font-semibold',
+                      'text-body-sm font-semibold',
                       done ? 'text-text' : active ? 'text-text' : 'text-muted',
                     )}
                   >
                     {stage.label}
-                    {active && <span className="ml-2 text-xs font-medium text-primary-strong">In progress</span>}
-                    {done && <span className="ml-2 text-xs font-medium text-success">Done</span>}
+                    {active && <span className="ml-2 text-meta font-medium text-primary-strong">In progress</span>}
+                    {done && <span className="ml-2 text-meta font-medium text-success">Done</span>}
                   </p>
-                  <p className="mt-0.5 text-xs text-muted">{stage.blurb}</p>
+                  <p className="mt-0.5 text-meta text-muted">{stage.blurb}</p>
                 </div>
               </li>
             )
@@ -122,14 +122,14 @@ export function ResearchProgress({
         </ol>
 
         {slow && (
-          <p className="mt-5 rounded-lg bg-warning-bg px-3 py-2 text-xs text-warning" role="status">
+          <p className="mt-5 rounded-lg bg-warning-bg px-3 py-2 text-meta text-warning" role="status">
             This is taking longer than usual. It will still finish in the background, or you can re-run it
             from the Business Seeder list.
           </p>
         )}
 
         <div className="mt-6 flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="flex items-start gap-2 text-xs text-muted">
+          <p className="flex items-start gap-2 text-meta text-muted">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
             This runs in the background. You can safely leave this page or keep working, and your reviewed
             draft will be waiting here when it is ready. This page updates itself.
@@ -137,7 +137,7 @@ export function ResearchProgress({
           <button
             type="button"
             onClick={() => router.refresh()}
-            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
           >
             <RefreshCw className="h-3.5 w-3.5" aria-hidden />
             Check now

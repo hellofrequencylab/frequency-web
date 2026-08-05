@@ -72,7 +72,7 @@ function MergeControl({
         value={intoId}
         disabled={disabled}
         onChange={(e) => setIntoId(e.target.value)}
-        className="h-8 max-w-36 rounded-lg border border-border bg-surface px-2 text-xs text-text focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
+        className="h-8 max-w-36 rounded-lg border border-border bg-surface px-2 text-meta text-text focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
       >
         <option value="">Merge into…</option>
         {choices.map((t) => (
@@ -134,7 +134,7 @@ function PromoteButton({
       type="button"
       disabled={disabled}
       onClick={promote}
-      className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs font-semibold text-primary-strong transition-colors hover:bg-primary/10 disabled:opacity-50"
+      className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary/10 disabled:opacity-50"
     >
       <Check className="h-3.5 w-3.5" aria-hidden /> Promote
     </button>
@@ -171,7 +171,7 @@ export function TagGovernancePanel({
       {feedback && (
         <p
           role="status"
-          className={`text-xs font-medium ${feedback.tone === 'danger' ? 'text-danger' : 'text-success'}`}
+          className={`text-meta font-medium ${feedback.tone === 'danger' ? 'text-danger' : 'text-success'}`}
         >
           {feedback.text}
         </p>
@@ -179,19 +179,19 @@ export function TagGovernancePanel({
 
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
         <div className="border-b border-border bg-surface-elevated/50 px-4 py-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+          <p className="text-meta font-semibold uppercase tracking-wide text-muted">
             Canonical tags
             <span className="ml-1.5 font-medium tabular-nums text-subtle">{canonical.length}</span>
           </p>
         </div>
         <div className="divide-y divide-border/60">
           {canonical.length === 0 ? (
-            <p className="px-4 py-3 text-xs text-subtle">No canonical tags yet. Promote a proposed tag below.</p>
+            <p className="px-4 py-3 text-meta text-subtle">No canonical tags yet. Promote a proposed tag below.</p>
           ) : (
             canonical.map((t) => (
               <div key={t.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5">
-                <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">{t.label}</span>
-                <span className="text-xs tabular-nums text-subtle">
+                <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-text">{t.label}</span>
+                <span className="text-meta tabular-nums text-subtle">
                   {t.usageCount} {t.usageCount === 1 ? 'practice' : 'practices'}
                 </span>
                 <StatusChip tone="success" size="sm">
@@ -205,19 +205,19 @@ export function TagGovernancePanel({
 
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
         <div className="border-b border-border bg-surface-elevated/50 px-4 py-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+          <p className="text-meta font-semibold uppercase tracking-wide text-muted">
             Proposed tags
             <span className="ml-1.5 font-medium tabular-nums text-subtle">{proposed.length}</span>
           </p>
         </div>
         <div className="divide-y divide-border/60">
           {proposed.length === 0 ? (
-            <p className="px-4 py-3 text-xs text-subtle">Nothing waiting. Every tag is canonical.</p>
+            <p className="px-4 py-3 text-meta text-subtle">Nothing waiting. Every tag is canonical.</p>
           ) : (
             proposed.map((t) => (
               <div key={t.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5">
                 <div className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-text">{t.label}</span>
+                  <span className="block truncate text-body-sm font-medium text-text">{t.label}</span>
                   <span className="text-2xs text-muted">
                     {t.usageCount} {t.usageCount === 1 ? 'practice' : 'practices'}
                     {t.source && SOURCE_LABEL[t.source] ? ` · ${SOURCE_LABEL[t.source]}` : ''}

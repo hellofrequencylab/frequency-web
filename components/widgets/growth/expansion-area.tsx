@@ -49,11 +49,11 @@ export async function GrowthExpansion() {
         {topSignal && (
           <Tile label="Strongest signal">
             <p className="leading-none">
-              <span className="text-2xl font-bold tabular-nums text-text">{Math.round(topSignal.score)}</span>
-              <span className="text-sm text-subtle">/100</span>
+              <span className="text-page-title font-bold tabular-nums text-text">{Math.round(topSignal.score)}</span>
+              <span className="text-body-sm text-subtle">/100</span>
             </p>
-            <p className="mt-2 text-sm font-semibold text-text">{topSignal.city}</p>
-            <p className="mt-0.5 text-xs uppercase tracking-wide text-subtle">{topSignal.stage} stage</p>
+            <p className="mt-2 text-body-sm font-semibold text-text">{topSignal.city}</p>
+            <p className="mt-0.5 text-meta uppercase tracking-wide text-subtle">{topSignal.stage} stage</p>
           </Tile>
         )}
       </TileGrid>

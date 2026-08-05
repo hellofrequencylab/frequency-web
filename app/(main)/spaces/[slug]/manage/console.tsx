@@ -163,7 +163,7 @@ function AccessBadge({ level }: { level: AccessLevel }) {
  *  story in one line (owner overhaul 2026-07): everything is included, a paid plan raises the limits. */
 function AccessLegend() {
   return (
-    <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted">
+    <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-meta text-muted">
       <span className="font-semibold text-text">Everything is included. Paid plans raise the limits.</span>
       {(['included', 'freemium', 'premium'] as const).map((level) => (
         <span key={level} className="inline-flex items-center gap-1.5">
@@ -213,7 +213,7 @@ function SectionRow({
           <Icon className={nested ? 'h-3 w-3' : 'h-3.5 w-3.5'} aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
-          <span className={`block truncate font-medium text-text ${nested ? 'text-xs' : 'text-sm'}`}>{module.label}</span>
+          <span className={`block truncate font-medium text-text ${nested ? 'text-meta' : 'text-body-sm'}`}>{module.label}</span>
           {!nested && module.freeNote && (
             <span className="mt-0.5 block truncate text-2xs text-muted">{module.freeNote}</span>
           )}
@@ -255,7 +255,7 @@ function DangerRow({
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-danger-bg text-danger">
           <Trash2 className="h-3.5 w-3.5" aria-hidden />
         </span>
-        <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">{module.label}</span>
+        <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-text">{module.label}</span>
       </div>
       {canDelete && (
         <div className="mt-2">
@@ -300,7 +300,7 @@ function HubNav({
             scroll={false}
             aria-current={on ? 'page' : undefined}
             className={
-              'rounded-pill px-3 py-1.5 text-sm font-medium transition-colors ' +
+              'rounded-pill px-3 py-1.5 text-body-sm font-medium transition-colors ' +
               (on
                 ? 'bg-primary text-on-primary'
                 : 'border border-border text-muted hover:bg-surface-elevated hover:text-text')
@@ -384,7 +384,7 @@ export function SpaceManageConsole({
         {/* Resonance + Marketing render their own full surfaces (with their own headers / sub-nav); no hub
             blurb there. Every other tab keeps its short blurb above the feature cards. */}
         {blurb && section !== 'dashboard' && section !== 'resonance' && section !== 'marketing' && (
-          <p className="mb-4 max-w-2xl text-sm text-muted">{blurb}</p>
+          <p className="mb-4 max-w-2xl text-body-sm text-muted">{blurb}</p>
         )}
         {section === 'dashboard' ? (
           dashboardEmbed
@@ -412,7 +412,7 @@ export function SpaceManageConsole({
             {inSection.length > 0 ? (
               <FeatureGrid modules={inSection} slug={slug} emphasis={emphasis} />
             ) : (
-              <p className="text-sm text-subtle">Nothing here yet for this space.</p>
+              <p className="text-body-sm text-subtle">Nothing here yet for this space.</p>
             )}
             <div className="mt-6">
               <AccessLegend />
@@ -456,8 +456,8 @@ export function SpaceSettingsSurface({
           <SlidersHorizontal className="h-4 w-4" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-text">Menu and features</span>
-          <span className="mt-0.5 block text-xs text-muted">Turn on more tools or tidy which ones show in your menu.</span>
+          <span className="block text-body-sm font-semibold text-text">Menu and features</span>
+          <span className="mt-0.5 block text-meta text-muted">Turn on more tools or tidy which ones show in your menu.</span>
         </span>
         <ArrowRight
           className="h-4 w-4 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong motion-reduce:transition-none"
@@ -476,8 +476,8 @@ export function SpaceSettingsSurface({
           <Compass className="h-4 w-4" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-text">Mode and focus</span>
-          <span className="mt-0.5 block text-xs text-muted">Choose what your space leads with, and what its main button opens.</span>
+          <span className="block text-body-sm font-semibold text-text">Mode and focus</span>
+          <span className="mt-0.5 block text-meta text-muted">Choose what your space leads with, and what its main button opens.</span>
         </span>
         <ArrowRight
           className="h-4 w-4 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong motion-reduce:transition-none"

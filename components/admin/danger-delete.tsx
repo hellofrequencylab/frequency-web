@@ -65,24 +65,24 @@ export function DangerDelete({
 
   const body = (
     <>
-      <p className="text-sm font-semibold text-danger">Delete this {entity}</p>
-      <p className="mt-0.5 text-xs text-muted">{warning}</p>
-      {err && <p className="mt-1.5 text-xs font-medium text-danger">{err}</p>}
+      <p className="text-body-sm font-semibold text-danger">Delete this {entity}</p>
+      <p className="mt-0.5 text-meta text-muted">{warning}</p>
+      {err && <p className="mt-1.5 text-meta font-medium text-danger">{err}</p>}
       <div className="mt-2.5">
         {!confirming ? (
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-danger/40 px-3 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger-bg/40"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-danger/40 px-3 py-1.5 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg/40"
           >
             <Trash2 className="h-3.5 w-3.5" /> Delete {entity}
           </button>
         ) : (
           <div className="space-y-2">
-            <span className="block text-xs font-medium text-danger">This can’t be undone.</span>
+            <span className="block text-meta font-medium text-danger">This can’t be undone.</span>
             {confirmText && (
               <label className="block space-y-1">
-                <span className="block text-xs text-muted">
+                <span className="block text-meta text-muted">
                   Type <span className="font-semibold text-text">{confirmText}</span> to confirm.
                 </span>
                 <input
@@ -92,7 +92,7 @@ export function DangerDelete({
                   spellCheck={false}
                   autoComplete="off"
                   aria-label={`Type ${confirmText} to confirm deletion`}
-                  className="w-40 rounded-lg border border-danger/40 bg-surface px-2.5 py-1.5 text-xs text-text outline-none focus:border-danger"
+                  className="w-40 rounded-lg border border-danger/40 bg-surface px-2.5 py-1.5 text-meta text-text outline-none focus:border-danger"
                 />
               </label>
             )}
@@ -101,7 +101,7 @@ export function DangerDelete({
                 type="button"
                 onClick={run}
                 disabled={pending || !matched}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-danger px-3 py-1.5 text-xs font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-danger px-3 py-1.5 text-meta font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50"
               >
                 {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                 Yes, delete
@@ -109,7 +109,7 @@ export function DangerDelete({
               <button
                 type="button"
                 onClick={reset}
-                className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:text-text"
+                className="rounded-lg px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:text-text"
               >
                 Cancel
               </button>

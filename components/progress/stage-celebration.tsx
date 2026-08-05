@@ -32,10 +32,10 @@ export function StageCelebration({
         <Sparkles className="h-4 w-4" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-bold text-text">
+        <p className="text-body-sm font-bold text-text">
           New stage reached: {stageLabel}
         </p>
-        <p className="mt-0.5 text-xs text-muted">{tagline}</p>
+        <p className="mt-0.5 text-meta text-muted">{tagline}</p>
       </div>
       <button
         type="button"

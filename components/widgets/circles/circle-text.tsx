@@ -12,7 +12,7 @@ export const CircleText = async () => {
   const body = ctx?.layoutText?.trim()
   if (!body) return null
   return (
-    <div className="space-y-3 text-sm leading-relaxed text-muted [&_a]:font-medium [&_strong]:text-text">
+    <div className="space-y-3 text-body-sm leading-relaxed text-muted [&_a]:font-medium [&_strong]:text-text">
       {richParagraphs(body)}
     </div>
   )

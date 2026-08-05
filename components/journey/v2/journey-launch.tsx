@@ -57,7 +57,7 @@ export interface LaunchAccessView {
 }
 
 const FIELD =
-  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
+  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-body-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
 /** "Tue, Aug 4 at 9:00 AM" in the reader's own zone. Falls back to the raw value if unparseable. */
 function sendAtLabel(iso: string): string {
@@ -191,9 +191,9 @@ export function JourneyLaunch({
       <section className="space-y-2.5">
         <div className="flex items-center gap-2">
           <Megaphone className="h-4 w-4 text-primary-strong" aria-hidden />
-          <h2 className="text-sm font-semibold text-text">The launch series</h2>
+          <h2 className="text-body-sm font-semibold text-text">The launch series</h2>
         </div>
-        <p className="text-xs leading-relaxed text-muted">
+        <p className="text-meta leading-relaxed text-muted">
           Four sends that carry {title} from announcement to day one. The dates come from your run
           window. Read each one, change anything, then set it going.
         </p>
@@ -212,7 +212,7 @@ export function JourneyLaunch({
                   {i + 1}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
+                  <span className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
                     {d.name}
                     {done && (
                       <span className="inline-flex items-center gap-1 rounded-pill bg-success-bg px-1.5 py-0.5 text-2xs font-semibold text-success">
@@ -220,7 +220,7 @@ export function JourneyLaunch({
                       </span>
                     )}
                   </span>
-                  <span className="block text-xs leading-snug text-muted">{d.purpose}</span>
+                  <span className="block text-meta leading-snug text-muted">{d.purpose}</span>
                   <span className="mt-0.5 flex items-center gap-1 text-2xs text-muted">
                     <CalendarClock className="h-3 w-3" aria-hidden /> {sendAtLabel(edit?.sendAt ?? d.sendAt)}
                   </span>
@@ -274,7 +274,7 @@ export function JourneyLaunch({
                     type="button"
                     onClick={() => scheduleOne(d.key)}
                     disabled={pending || !canSchedule}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
                   >
                     {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     Schedule this one
@@ -286,13 +286,13 @@ export function JourneyLaunch({
         })}
 
         {!canSchedule && (
-          <p className="rounded-card border border-border bg-canvas px-3 py-2.5 text-xs text-muted">
+          <p className="rounded-card border border-border bg-canvas px-3 py-2.5 text-meta text-muted">
             {LAUNCH_NEEDS_SPACE_MESSAGE}
           </p>
         )}
 
         {access.upsell && (
-          <p className="rounded-card border border-border bg-canvas px-3 py-2.5 text-xs text-muted">
+          <p className="rounded-card border border-border bg-canvas px-3 py-2.5 text-meta text-muted">
             {access.upsell}{' '}
             <Link href="/upgrade" className="font-medium text-primary-strong underline-offset-4 hover:underline">
               See plans
@@ -307,14 +307,14 @@ export function JourneyLaunch({
           <div className="flex items-start gap-3">
             <Network className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-text">Build the funnel</p>
-              <p className="text-xs leading-snug text-muted">
+              <p className="text-body-sm font-semibold text-text">Build the funnel</p>
+              <p className="text-meta leading-snug text-muted">
                 Wire the scheduled sends into a Growth OS funnel so you can watch what each one moves.
               </p>
               {funnelId ? (
                 <Link
                   href={`/admin/growth/funnels/${funnelId}`}
-                  className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary-strong underline-offset-4 hover:underline"
+                  className="mt-2 inline-flex items-center gap-1.5 text-body-sm font-medium text-primary-strong underline-offset-4 hover:underline"
                 >
                   <Check className="h-4 w-4" aria-hidden /> Open the funnel
                 </Link>
@@ -323,7 +323,7 @@ export function JourneyLaunch({
                   type="button"
                   onClick={buildFunnel}
                   disabled={pending || scheduledIds.length === 0}
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
                 >
                   {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Network className="h-4 w-4" />}
                   Build the funnel
@@ -340,9 +340,9 @@ export function JourneyLaunch({
       {/* ── Message enrollees (the shared BroadcastComposer, streamed by the page) ── */}
       {children}
 
-      {note && <p className="text-sm text-success">{note}</p>}
+      {note && <p className="text-body-sm text-success">{note}</p>}
       {error && (
-        <p className="text-sm text-danger">
+        <p className="text-body-sm text-danger">
           {error}{' '}
           <Link href="/upgrade" className="font-medium text-primary-strong underline-offset-4 hover:underline">
             See plans
@@ -356,7 +356,7 @@ export function JourneyLaunch({
           type="button"
           onClick={scheduleAll}
           disabled={pending}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           {remaining.length === drafts.length
@@ -365,7 +365,7 @@ export function JourneyLaunch({
         </button>
       )}
 
-      <p className="text-center text-xs text-subtle">
+      <p className="text-center text-meta text-subtle">
         <Link
           href={`/journeys/${slug}/learn`}
           className="underline-offset-4 transition-colors hover:text-muted hover:underline"

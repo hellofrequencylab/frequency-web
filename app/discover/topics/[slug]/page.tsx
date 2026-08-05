@@ -87,7 +87,7 @@ export default async function TopicPage({
 
       <Link
         href="/discover/topics"
-        className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text"
+        className="mb-4 inline-flex items-center gap-1 text-body-sm font-medium text-muted transition-colors hover:text-text"
       >
         <ChevronLeft className="h-4 w-4" />
         Channels
@@ -110,7 +110,7 @@ export default async function TopicPage({
         {/* Circles in this topic */}
         {circles.length > 0 ? (
           <>
-            <h2 className="text-lg font-semibold text-text mb-5">
+            <h2 className="text-body-lg font-semibold text-text mb-5">
               {circles.length} {circles.length === 1 ? 'circle' : 'circles'} in {channel.name}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-16">
@@ -121,7 +121,7 @@ export default async function TopicPage({
           </>
         ) : (
           <div className="rounded-2xl border border-border bg-marketing-canvas p-10 text-center mb-16">
-            <p className="text-lg font-semibold text-text mb-1">
+            <p className="text-body-lg font-semibold text-text mb-1">
               No circles in {channel.name} yet.
             </p>
             <p className="text-muted leading-relaxed max-w-md mx-auto">

@@ -45,7 +45,7 @@ export default function GroupMap({
   if (!venue) {
     return (
       <div className="flex h-[320px] w-full items-center justify-center rounded-2xl border border-dashed border-border bg-surface/60 px-6 text-center">
-        <p className="text-sm text-muted">No location set for this circle yet.</p>
+        <p className="text-body-sm text-muted">No location set for this circle yet.</p>
       </div>
     )
   }

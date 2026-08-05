@@ -143,7 +143,7 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
       ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-muted">
+            <p className="text-body-sm text-muted">
               {upcomingCount > 0
                 ? `${upcomingCount} upcoming event${upcomingCount === 1 ? '' : 's'}.`
                 : 'No upcoming events yet. Create your first one.'}
@@ -157,7 +157,7 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
               />
               <Link
                 href={`/events/new?space=${space.id}`}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 <Plus className="h-4 w-4" aria-hidden /> New event
               </Link>
@@ -171,13 +171,13 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
             <EventCalendar events={events} initialYear={initialYear} initialMonth1={initialMonth1} />
           ) : (
             <div className="rounded-card border border-dashed border-border bg-surface px-4 py-10 text-center">
-              <p className="text-sm font-semibold text-text">Your calendar is ready.</p>
-              <p className="mt-1 text-sm text-muted">
+              <p className="text-body-sm font-semibold text-text">Your calendar is ready.</p>
+              <p className="mt-1 text-body-sm text-muted">
                 Create an event and it shows up here, on your public Calendar tab, and in the subscribe feed.
               </p>
               <Link
                 href={`/events/new?space=${space.id}`}
-                className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+                className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 <Plus className="h-4 w-4" aria-hidden /> Create your first event
               </Link>

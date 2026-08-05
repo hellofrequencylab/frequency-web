@@ -59,8 +59,8 @@ function RunRow({ run }: { run: PlaybookRunRow }) {
     <li className="flex items-center gap-3 px-4 py-3">
       <present.Icon className={`h-4 w-4 shrink-0 ${present.tone}`} aria-hidden />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-text">{run.playbookName}</p>
-        <p className="text-xs text-muted">
+        <p className="truncate text-body-sm font-semibold text-text">{run.playbookName}</p>
+        <p className="text-meta text-muted">
           {present.label}
           {when ? ` · ${when}` : ''}
           {run.outcome ? ` · ${run.outcome}` : ''}

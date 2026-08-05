@@ -46,10 +46,10 @@ export function QrGenerator({
     <section className="overflow-hidden rounded-2xl border border-border bg-surface lift-1">
       {/* Header */}
       <div className="border-b border-border px-5 py-4">
-        <h2 className="flex items-center gap-1.5 text-sm font-bold text-text">
+        <h2 className="flex items-center gap-1.5 text-body-sm font-bold text-text">
           <QrCode className="h-4 w-4 text-primary-strong" /> Generate a code
         </h2>
-        <p className="mt-0.5 text-xs text-muted">Preview and pick a look, design it, then configure it.</p>
+        <p className="mt-0.5 text-meta text-muted">Preview and pick a look, design it, then configure it.</p>
       </div>
 
       {/* Three columns, read left→right: [preview + presets + type] | [design] |

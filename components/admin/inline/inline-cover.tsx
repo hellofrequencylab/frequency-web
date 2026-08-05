@@ -115,7 +115,7 @@ export function InlineCover({
           type="button"
           onClick={openSource}
           disabled={pending}
-          className="flex h-40 w-full items-center justify-center gap-2 text-sm text-muted transition-colors hover:text-text disabled:opacity-50 sm:h-52"
+          className="flex h-40 w-full items-center justify-center gap-2 text-body-sm text-muted transition-colors hover:text-text disabled:opacity-50 sm:h-52"
         >
           {pending ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImagePlus className="h-5 w-5" />}
           Add a cover image
@@ -128,7 +128,7 @@ export function InlineCover({
             type="button"
             onClick={openSource}
             disabled={pending}
-            className="inline-flex items-center gap-1 rounded-lg bg-surface/90 px-2.5 py-1 text-xs font-medium text-text lift-1 backdrop-blur transition-colors hover:bg-surface disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-lg bg-surface/90 px-2.5 py-1 text-meta font-medium text-text lift-1 backdrop-blur transition-colors hover:bg-surface disabled:opacity-50"
           >
             {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
             Change
@@ -138,7 +138,7 @@ export function InlineCover({
             onClick={onRemove}
             disabled={pending}
             aria-label="Remove cover"
-            className="inline-flex items-center rounded-lg bg-surface/90 px-2 py-1 text-xs text-muted lift-1 backdrop-blur transition-colors hover:text-danger disabled:opacity-50"
+            className="inline-flex items-center rounded-lg bg-surface/90 px-2 py-1 text-meta text-muted lift-1 backdrop-blur transition-colors hover:text-danger disabled:opacity-50"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -154,7 +154,7 @@ export function InlineCover({
           title="Choose a cover image"
         />
       )}
-      {err && <p className="px-3 py-1.5 text-xs text-danger">{err}</p>}
+      {err && <p className="px-3 py-1.5 text-meta text-danger">{err}</p>}
     </div>
   )
 }

@@ -64,7 +64,7 @@ function FactRow({ label, children }: { label: string; children: React.ReactNode
       <dt className="w-14 shrink-0 text-2xs font-semibold uppercase tracking-wide text-muted">
         {label}
       </dt>
-      <dd className="min-w-0 text-sm font-medium text-text">{children}</dd>
+      <dd className="min-w-0 text-body-sm font-medium text-text">{children}</dd>
     </div>
   )
 }
@@ -115,7 +115,7 @@ export const EventWhenWhere = async () => {
 
   return (
     <div className="@container rounded-2xl border border-border bg-surface p-4">
-      <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-text">
+      <h3 className="mb-3 flex items-center gap-2 text-body-sm font-bold text-text">
         <CalendarClock className="h-4 w-4 shrink-0 text-primary-strong" />
         Event Details
       </h3>
@@ -151,7 +151,7 @@ export const EventWhenWhere = async () => {
         {nextLine && <FactRow label="Next">{nextLine}</FactRow>}
       </dl>
       {(opensLine || closesLine) && (
-        <ul className="mt-3 space-y-1 text-sm text-muted">
+        <ul className="mt-3 space-y-1 text-body-sm text-muted">
           {opensLine && (
             <li>
               <span className="font-medium text-text">RSVPs open</span> {opensLine}
