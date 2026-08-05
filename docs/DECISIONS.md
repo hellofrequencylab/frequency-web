@@ -17614,3 +17614,44 @@ footer brand block grows from a 24px mark to a 49px lockup — an intended, revi
 carries the tagline as a second line in the header band, in inline styles. ⚠️ `mark` is a CSS length
 string rather than a Tailwind class, because the component does arithmetic on it and a class name is
 not a number; the type makes it required exactly when `tagline` is set.
+
+---
+
+## ADR-945 — Growth OS Engine 3 is gone from the schema, and the card that outlived it (2026-08-05)
+
+**Status:** Accepted · corroborated by `components/widgets/growth/manage.tsx`,
+`supabase/migrations/20270212000000_retire_growth_engine3_intakes.sql`, and the production schema
+
+**Context.** ADR-933 deleted the Engine 3 intake surfaces — `/apply`, `/waitlist`, `lib/applications/*`
+and the operator review queue at `/admin/growth/applications`. The migration that drops the two tables
+was authored in the same pass but **never applied**, and one caller was missed.
+
+**The bug that survived.** `components/widgets/growth/manage.tsx` still counted
+`public.applications` and still rendered an "Applications" card linking to `/admin/growth/applications`
+— a route that no longer exists. On the operator's Growth dashboard it read **"0 open"**.
+
+That zero is the interesting part. The module's own comment describes its error handling as degrading
+to *"honest zeros"*, and `applicationsC.count ?? 0` looks like exactly that. But a zero from a **table
+that is not there** is not honest — it is a fabricated number that is indistinguishable from a true
+empty queue. The card was a live, clickable, plausible-looking link to a 404, and nothing could ever
+make it look broken. A fail-safe that cannot be told apart from a success is not a fail-safe.
+
+**Decision.**
+
+1. **Drop the card, its count, and its `ClipboardList` import.** The surface it fronts does not exist.
+2. **Apply the migration.** Verified against production immediately beforehand: `applications` 0 rows,
+   `waitlist_entries` 0 rows, 0 `engagement_events` of type `waitlist.joined`, and **0 dependent objects**
+   on either table. Both confirmed absent afterwards.
+3. **Remove both table types from `lib/database.types.ts` surgically** rather than regenerating the whole
+   file. A full regen would have produced a many-thousand-line diff in which the two intended deletions
+   were unreviewable.
+4. **Fix the docs in the same pass**, per AGENTS.md: `GROWTH-OS-BUILD-PLAN.md` §Engine 3 now carries a
+   RETIRED banner over its historical task list, and `MARKETING-FUNNEL-PLAN.md`'s Applications row is
+   struck through. While there, the funnels row's *"⚠️ confirm it's live in prod"* was resolved — it is
+   live, as `20260913000000`.
+
+**Consequences.** ✅ The Growth dashboard no longer offers a dead door. ✅ The schema stops describing a
+product that does not exist. ⚠️ Applying through the platform records the migration under a fresh
+timestamp, so the repo file `20270212000000` shows as version-drifted against the remote ledger — the
+same drift the seven migrations before it already carry. That is a pre-existing bookkeeping wrinkle in
+how this project applies migrations, not a schema difference; the applied SQL is byte-equivalent.

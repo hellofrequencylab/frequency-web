@@ -173,7 +173,25 @@ analytics rollup (entry→wedge→capture→convert with drop-off).
   `context.funnel_id` / `context.funnel_stage` onto the engagement events those components emit so the
   rollup populates without manual context.
 
-### Engine 3 — Waitlist + Application/Intake System  ·  🟡 core ✅ (GE3-1..4, ADR-456); GE3-5/6 deferred
+### Engine 3 — Waitlist + Application/Intake System  ·  🔴 RETIRED IN FULL (ADR-933 / ADR-945, Aug 2026)
+
+> **This engine no longer exists.** Every surface below was deleted and both tables were dropped:
+> the two member routes (`/apply`, `/waitlist`), their server actions, `lib/applications/*`, and the
+> operator review queue at `/admin/growth/applications`. `public.applications` and
+> `public.waitlist_entries` were dropped by `20270212000000_retire_growth_engine3_intakes.sql`.
+>
+> **Why, and it was not merely "no inbound links":** nobody ever used them (zero rows in either
+> table, zero `waitlist.joined` events); no anonymous visitor could reach them, since both routes
+> lived under `app/(main)` whose layout redirects a signed-out visitor to `/`, so neither was ever
+> indexable; and they promised something no code could deliver — `waitlist_entries.status` carried
+> `invited` and `converted` and **nothing anywhere ever moved a row off `waiting`**. The page said
+> "We will reach out the moment your area opens." That is the empty frame ADR-933 set out to remove.
+>
+> **Not the Beta waitlist.** Two things were named "waitlist"; the Beta one was retired separately in
+> `20270211000000_retire_beta_waitlist.sql`. They shared no table, no module and no route — only the word.
+>
+> The task list below is kept as the historical record of what was built. Do not treat any ✅ as a
+> live surface.
 **Purpose:** the dual-track top of funnel: **builders apply** (review queue → accept → host
 onboarding), **seekers join** manifesto-first with a **referral position**; plus **operator
 applications** (coach/practitioner/business/nonprofit/etc.).

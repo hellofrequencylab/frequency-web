@@ -37,13 +37,13 @@
 
 | System | Where | What it is |
 |---|---|---|
-| **Funnels-as-object** (Growth OS Engine 2, ADR-455) | `admin/growth/funnels`, `lib/funnels/*`, migration `20260913000000_funnels.sql` | Named path of 4 canonical stages **entry → wedge → capture → convert**; each stage a typed soft-ref (`entry_point`/`campaign`/`page`/`lead_flow`/`nurture`/`custom`); `goal_event` measured via `funnel_rollup` RPC over `engagement_events`. 4 seed templates. ⚠️ migration header says "NOT APPLIED" — confirm it's live in prod. |
+| **Funnels-as-object** (Growth OS Engine 2, ADR-455) | `admin/growth/funnels`, `lib/funnels/*`, migration `20260913000000_funnels.sql` | Named path of 4 canonical stages **entry → wedge → capture → convert**; each stage a typed soft-ref (`entry_point`/`campaign`/`page`/`lead_flow`/`nurture`/`custom`); `goal_event` measured via `funnel_rollup` RPC over `engagement_events`. 4 seed templates. ✅ Applied — confirmed live in prod as migration `20260913000000 funnels` (checked 2026-08-05); the "NOT APPLIED" note in the migration header is stale. |
 | **Campaign builder** (ADR-126) | `admin/marketing/funnels`, `lib/entry-points/campaigns.ts`, `20260606000000_entry_points.sql` | `entry_campaigns` = themed groups of **Entry Points** (an owner-owned `qr_codes` row + `template_id` + flyer). Templates: event/circle/invite/waitlist/partner. Branded flyers + QR + scan tracking. |
 | **QR / short-links** | `app/q/[slug]/route.ts` (+ `/n/[nodeId]` earn-nodes, `/g/[slug]` gift-Zap, `/u/scan` unsubscribe) | Universal resolver: `url`/`node`/`action`(referral\|gift_zap)/`circle`/`event`/`splash`; sets first-touch + channel + A/B (`fq_var`) + referral (`fq_ref`) cookies. |
 | **Link Generator** | `admin/growth/links`, `lib/growth/link-compose.ts` | UTM-tracked destination → `qr_codes` short-link + QR. |
 | **Referral** | `profiles.referred_by_profile_id` + `fq_ref` + `reward_grants referral.activated:*`; `/admin/referrals`; flag `referrals_enabled` | Member-get-member. |
 | **Beta waitlist** | `requestBetaAccess` → `contacts` double-opt-in; `/admin/marketing/beta`; `/beta/confirm` | Email lead capture (distinct from the open `/onboarding/beta` induction). |
-| **Applications** (Growth OS Engine 3) | `applications` table; `/admin/growth/applications` | Dual-track review queue. |
+| ~~**Applications** (Growth OS Engine 3)~~ | 🔴 **RETIRED** (ADR-933 / ADR-945) | Routes, module and review queue deleted; `applications` + `waitlist_entries` dropped by `20270212000000`. Zero rows ever, never reachable by a signed-out visitor, and nothing ever moved a row off `waiting`. |
 | **Attribution** | `applyEntryPointConversion` at signup (`onboarding/actions.ts`) | Persists first-touch/channel/referral cookies onto the new member. |
 | **Primary induction** | `BETA_CTA_HREF = /onboarding/beta` (open beta); secondary `/sign-in` | Where every marketing CTA lands. |
 
