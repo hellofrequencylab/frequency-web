@@ -1900,8 +1900,14 @@ h1, h2, h3, h4, h5, h6 {
   background-size: 240% 100%;
   background-position: 240% 0;
   /* The WORDMARK crop, not the full logo: the original had the retired tagline baked in, and
-     this mask painted it onto the in-app header. The aspect ratio in
-     components/layout/brand-mark.tsx must match this asset (963x130). */
+     this mask painted it onto the in-app header.
+     THE ASPECT LIVES HERE, with the asset. It used to be an `aspect-[963/170]` class repeated at
+     five call sites, and when the asset became 963x130 one moved and four did not -- the mask is
+     `contain`, so those four drew the mark at 130/170 = 76% of their box height with dead bands
+     above and below, reading as an undersized, vertically-adrift logo. A ratio that must equal the
+     asset's is the asset's business, not the caller's: now a swap is one edit here, and a caller
+     that still passes its own aspect-[…] simply overrides this one and is visibly wrong. */
+  aspect-ratio: 963 / 130;
   -webkit-mask: url('/frequency-wordmark.png') left center / contain no-repeat;
           mask: url('/frequency-wordmark.png') left center / contain no-repeat;
   opacity: 0.9;

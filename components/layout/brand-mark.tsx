@@ -47,7 +47,7 @@ export function BrandMark({
 
   return (
     <Link href="/feed" aria-label="Frequency, home feed" className={linkClass}>
-      <span className="brandmark h-[22px] md:h-8 aspect-[963/130]" aria-hidden />
+      <span className="brandmark h-[22px] md:h-8" aria-hidden />
     </Link>
   )
 }

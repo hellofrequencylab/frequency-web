@@ -21,7 +21,7 @@ export function EventEditorWindow({ backHref, children }: { backHref: string; ch
         {/* Header band (Canvas): the Frequency brandmark beside a warm one-line invitation, with the close
             control on the right so this single bar is the whole header. */}
         <header className="flex items-center gap-3 bg-canvas px-4 py-4 sm:px-6">
-          <span className="brandmark h-5 shrink-0 aspect-[963/170]" aria-hidden />
+          <span className="brandmark h-5 shrink-0" aria-hidden />
           <p className="text-body-sm font-semibold text-text">Share an Event with the community!</p>
           <button
             type="button"

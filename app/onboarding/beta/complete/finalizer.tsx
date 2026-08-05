@@ -61,7 +61,7 @@ export function BetaCompleteFinalizer() {
   return (
     <main className="relative flex min-h-screen items-center justify-center bg-canvas px-6">
       <div className="relative z-10 max-w-sm text-center">
-        <span className="brandmark mx-auto block h-10 aspect-[963/170]" aria-hidden />
+        <span className="brandmark mx-auto block h-10" aria-hidden />
         {mode === 'error' ? (
           <p className="mt-6 text-body-sm text-muted">{error} Taking you back…</p>
         ) : (

@@ -133,7 +133,7 @@ export default function FeatureFunnel({
     <main className="theme-light-lock relative min-h-screen overflow-hidden bg-canvas">
       <div className="amber-glow pointer-events-none absolute inset-0" aria-hidden />
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-10">
-        <span className="brandmark mb-8 block h-10 aspect-[963/170]" aria-hidden />
+        <span className="brandmark mb-8 block h-10" aria-hidden />
 
         <div className="w-full max-w-4xl">
           {step === 1 && (

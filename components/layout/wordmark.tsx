@@ -21,8 +21,9 @@ import { SITE_NAME } from '@/lib/site'
 // real pixel size. Those two are next/image's ASPECT RATIO, not a display size — every call site
 // sizes with `h-* w-auto`, so height is CSS-driven and any aspect works. Getting W/H wrong does
 // not resize the mark, it STRETCHES it, which is the failure the nine hardcoded copies were one
-// asset swap away from. Note `.brandmark` in app/globals.css masks the same file and carries its
-// own `aspect-[…]` in components/layout/brand-mark.tsx — that ratio has to move with these.
+// asset swap away from. `.brandmark` in app/globals.css masks the same file and now declares
+// `aspect-ratio` itself, so there is no second number to keep in step — an earlier version of this
+// note asked callers to do that and four of the five did not.
 const WORDMARK_SRC = '/frequency-wordmark.png'
 const WORDMARK_W = 963
 const WORDMARK_H = 130

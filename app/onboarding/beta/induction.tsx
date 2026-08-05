@@ -559,7 +559,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             Welcome
           </span>
           <span className="brandmark-link mt-5 block">
-            <span className="brandmark h-12 aspect-[963/170] sm:h-[52px]" aria-hidden />
+            <span className="brandmark h-12 sm:h-[52px]" aria-hidden />
           </span>
 
           {/* Scanned in via a member's QR code → a warm "Invited by {name}" chip with
