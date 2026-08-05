@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { AdminBar, type AdminBarState } from '@/components/layout/admin-bar/admin-bar'
+import { RAIL_END_SENTINEL_ID } from '@/components/layout/dock-bar'
 
 // The admin RIGHT-rail column — the admin twin of the shell's member rail column, so the
 // Settings drawer behaves IDENTICALLY on admin pages (owner directive: "in every instance"
@@ -37,6 +38,10 @@ export function AdminRailDrawerColumn({ children }: { children: React.ReactNode 
       <aside className="hidden w-64 shrink-0 xl:block">
         <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] max-h-[calc(100vh-4.5rem)] overflow-y-auto pb-6 pt-2.5">
           {children}
+          {/* The rail's end. DockBar measures this to align the operator dock to THIS column and
+              to know when to ride up — the same sentinel, and therefore the same bar, the member
+              rail uses. Zero-height and aria-hidden: a ruler, not content. */}
+          <div id={RAIL_END_SENTINEL_ID} aria-hidden className="h-0" />
         </div>
       </aside>
 

@@ -16,6 +16,7 @@ export function PageHeading({
   actions,
   back,
   divider = true,
+  size = 'default',
   inlineActions = false,
   actionsAlign = 'start',
   adminBar = true,
@@ -30,6 +31,9 @@ export function PageHeading({
   back?: { href: string; label: string }
   /** Hairline under the header (default on; Focus can drop it for a lighter band). */
   divider?: boolean
+  /** Heading scale. `default` is the page-title role; `hero` is the display-h3 role, for a
+   *  header that opens the page rather than labelling it (a Stream's greeting). */
+  size?: 'default' | 'hero'
   /** Keep the action beside the title on MOBILE too (default stacks it below).
    *  Use only for compact actions (a small button/menu) that fit next to a
    *  phone-width title without crushing it. */
@@ -84,9 +88,28 @@ export function PageHeading({
               a fifth smaller than the design and headings stepped at an arbitrary
               breakpoint instead of holding one role. `--text-page-title` rides
               --type-scale, so the generation axis reaches h1 for the first time. */}
-          <h1 className="mb-1 text-balance text-page-title font-bold text-text">{title}</h1>
+          {/* TWO SIZES, one role each. `default` is --text-page-title (1.5rem), the page title
+              role. `hero` is --text-display-h3 (clamp 1.75→2.25rem), used where the heading IS
+              the top of the page rather than a label on it — a Stream's greeting, which DAWN
+              renders at 1.9rem, right inside that clamp. Both ride --type-scale, so the
+              generation axis still reaches the h1. This is a variant rather than a one-off
+              class on the feed because the register belongs to the TEMPLATE: every Stream should
+              open the same way, and the next stream should not have to rediscover the number. */}
+          <h1
+            className={`mb-1 text-balance font-bold text-text ${
+              size === 'hero' ? 'text-display-h3 tracking-tight-display' : 'text-page-title'
+            }`}
+          >
+            {title}
+          </h1>
           {description && (
-            <p className="max-w-2xl text-body-sm leading-relaxed text-muted">{description}</p>
+            <p
+              className={`max-w-2xl leading-relaxed text-muted ${
+                size === 'hero' ? 'text-body' : 'text-body-sm'
+              }`}
+            >
+              {description}
+            </p>
           )}
         </div>
         {actions && (

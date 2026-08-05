@@ -41,26 +41,40 @@ export const RAIL_END_SENTINEL_ID = 'fq-rail-end'
 export function DockBar({ vault }: { vault: React.ReactNode }) {
   const barRef = useRef<HTMLDivElement>(null)
   const [lift, setLift] = useState(0)
+  /** The rail's measured left edge + width. Null until the first measure, which is why the bar
+   *  stays invisible rather than painting at a guessed position for a frame. */
+  const [span, setSpan] = useState<{ left: number; width: number } | null>(null)
 
   const measure = useCallback(() => {
     const bar = barRef.current
     if (!bar) return
-    // Only lg+ has a rail to meet. Below that the sentinel is inside a `hidden` column, so its
-    // rect is all zeros -- and a zero `bottom` would read as "the rail ended at the top of the
-    // screen" and throw the bar a full viewport height into the air.
-    if (!window.matchMedia('(min-width: 1024px)').matches) {
-      setLift(0)
-      return
-    }
+    // WHICH RAIL, AND WHETHER IT IS THERE. The member rail is lg+, the admin rail is xl+, and
+    // both mount this same bar — so a hardcoded breakpoint could only ever be right for one of
+    // them. Ask the ELEMENT instead: a rail inside a `hidden` column reports a zero-size rect,
+    // and zero is the tell. That also fixes the original hazard this guard was written for —
+    // a zero `bottom` reads as "the rail ended at the top of the screen" and throws the bar a
+    // full viewport into the air.
     const sentinel = document.getElementById(RAIL_END_SENTINEL_ID)
-    if (!sentinel) {
+    const rail = sentinel?.parentElement
+    const rect = rail?.getBoundingClientRect()
+    if (!sentinel || !rect || rect.width === 0 || rect.height === 0) {
       setLift(0)
+      // Clearing matters on a resize DOWN: a stale span from a wide viewport would strand the
+      // bar off-screen. Null hands placement back to the class fallback.
+      setSpan(null)
       return
     }
+
     // How far the rail's end sits ABOVE the bar's resting line (the window's bottom edge).
-    // Positive means the rail has ended on screen and the bar should climb by that much.
+    // Positive means the rail has ended on screen and the bar should climb by that much — which
+    // is the ride-up: on a long page the bar stays pinned to the window while the rail is taller
+    // than the viewport, then rises to meet the rail's end as you reach it, and returns as you
+    // scroll back. It is scroll-linked on purpose (no transition), so it tracks rather than
+    // chases.
     const railBottom = sentinel.getBoundingClientRect().bottom
     setLift(Math.max(0, Math.round(window.innerHeight - railBottom)))
+
+    setSpan({ left: Math.round(rect.left), width: Math.round(rect.width) })
   }, [])
 
   useEffect(() => {
@@ -95,16 +109,30 @@ export function DockBar({ vault }: { vault: React.ReactNode }) {
   return (
     <div
       ref={barRef}
-      style={{ transform: lift ? `translateY(-${lift}px)` : undefined }}
-      className="pointer-events-none fixed bottom-0 right-3 z-40 hidden w-72 items-end gap-2 md:flex print:hidden"
+      style={{
+        transform: lift ? `translateY(-${lift}px)` : undefined,
+        ...(span ? { left: span.left, width: span.width, right: 'auto' } : {}),
+      }}
+      // ONE TAB, not two objects with a gap between them. The bar owns the surface — the crest,
+      // the hairline, the blur — and the two segments sit inside it, divided by a rule rather
+      // than by empty space. Previously `gap-2` put 8.5px of canvas between the Vault and the
+      // chat button and each drew its own rounded box, so the corner read as two unrelated
+      // controls that happened to be adjacent, which is exactly what it looked like.
+      // `overflow-hidden` clips both segments to the crest, so the chat button's own square
+      // corner cannot poke out past the rounded top.
+      // `right-3 w-72` stays as the FALLBACK for md–lg, where the bar renders but no rail
+      // exists to measure. At lg+ the inline span overrides both. It must not be `invisible`
+      // while unmeasured: on a tablet there is no rail and there never will be, so hiding on a
+      // null span would delete the score from that whole range.
+      className="pointer-events-none fixed bottom-0 right-3 z-40 hidden w-72 items-stretch overflow-hidden rounded-t-card border-x border-t border-chrome-border bg-chrome/95 backdrop-blur-sm md:flex print:hidden"
     >
       {/* The Vault segment. min-w-0 so its head can shrink rather than push the chat off. */}
       <div className="pointer-events-auto min-w-0 flex-1">{vault}</div>
 
-      {/* The chat segment. Same bottom edge and the same top-only rounding as the Vault, so the
-          two read as one anchored system, but primary-filled and square so they never read as
-          one control. The launcher portals its button in here. */}
-      <div id={DOCK_CHAT_SLOT_ID} className="pointer-events-auto shrink-0" />
+      {/* The chat segment, divided from the Vault by the rail's own hairline. Same bar, same
+          bottom edge, same crest — one anchored system, two jobs. The launcher portals its
+          button in here and owns its own tone (muted at rest, full amber on an unread). */}
+      <div id={DOCK_CHAT_SLOT_ID} className="pointer-events-auto shrink-0 border-l border-chrome-border" />
     </div>
   )
 }

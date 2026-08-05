@@ -59,7 +59,7 @@ export function PracticePrompt({
   // progress bar + the expand chevron. Reminders/checkpoints only show when open.
   if (collapsed) {
     return (
-      <div className="mb-6 rounded-xl border border-primary-bg bg-primary-bg/30 px-3 py-1.5">
+      <div className="mb-6 rounded-card border border-border bg-surface-elevated px-3 py-1.5">
         <div className="flex items-center gap-2.5">
           <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-surface text-primary-strong lift-1">
             <Flame className="h-3.5 w-3.5" />
@@ -86,7 +86,10 @@ export function PracticePrompt({
   }
 
   return (
-    <div className="mb-6 rounded-xl border border-primary-bg bg-primary-bg/30 p-4">
+    // NEUTRAL, not tinted (DAWN index.html StreakBar): surface-elevated + border, so the
+    // strip does not read as a second amber block under the amber eyebrow. The only amber
+    // left inside is the Zap/flame glyph and the milestone dots.
+    <div className="mb-6 rounded-card border border-border bg-surface-elevated p-4">
       {/* Streak header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
@@ -154,7 +157,7 @@ export function PracticePrompt({
       </div>
 
       {/* Reminders. Also unconditional: the collapsed tree above never renders them. */}
-      <div className="mt-3 border-t border-primary-bg pt-3">
+      <div className="mt-3 border-t border-border pt-3">
         {hasReminders ? (
           <ul className="space-y-2">
             {/* Partials first — a started-but-unfinished sit reads "Continue Practice" and

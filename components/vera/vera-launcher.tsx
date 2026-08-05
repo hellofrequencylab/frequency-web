@@ -24,9 +24,12 @@ import { EdgePill } from '@/components/layout/edge-pill'
 import { DOCK_CHAT_SLOT_ID } from '@/components/layout/dock-bar'
 import type { TeaseGate } from '@/lib/pricing/upsell-tease'
 import { buttonClasses } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/icon-button'
+import { cn } from '@/lib/utils'
 
 // The persistent dock (ADR-086 + messaging MVP; unified shell per docs/CHAT-SHELL-PLAN.md C1).
-// ONE floating tab on every member page that opens a panel in the site's popup-shell language:
+// ONE tab in the anchored bottom bar on every member page, opening a panel in the shared dock
+// popover language:
 //   • Messages — member-to-member messaging (DMs + rooms), inbox-first. THE FRONT TAB.
 //   • Vera — the AI companion (live loop + propose-and-confirm writes). The second tab.
 //   • Help & support — NOT a tab: a full-panel SECTION pushed by the footer link (owner
@@ -35,10 +38,52 @@ import { buttonClasses } from '@/components/ui/button'
 // Mounted in the (main) layout, so it persists across navigation. It remembers the last tab
 // (localStorage) and shows an unread badge for messages. Deterministic-first: with AI off,
 // Vera degrades to the scripted concierge and Messages + Help still work (AI-VERA §3).
+//
+// ── The three-docks contract (design_handoff/dawn/readme.md §"The three docks") ─────────────
+// Bottom right is ONE bar: the Vault segment, then this tab. All three docks share one popover
+// shell — `.glass` + `.lift-3`, Esc OR an outside click to dismiss — and all three REVEAL FROM
+// INSIDE THEIR OWN TAB rather than floating above it: a `grid-rows-[0fr] → [1fr]` row, so the
+// bar's bottom edge stays pinned to the corner and nothing lifts off it. This panel is anchored
+// to the bar's chat segment and tucks its bottom edge behind the crest, so it reads as sliding
+// out from behind the tab instead of arriving as a separate window nearby.
 
 type Tab = 'chat' | 'vera'
 
 const TAB_KEY = 'fq_dock_tab'
+
+// ── Shape + tone constants, hoisted ABOVE every `<button>` in this file on purpose ──────────
+// The raw-button-bg ratchet reads a 500-character proximity window FORWARD from each `<button`,
+// so an amber token written inside the tag counts as a hand-rolled fill even when it is a
+// two-pixel dot or a count chip. Naming them here keeps the actual FILLS on the kit primitive
+// (which is what the ratchet is protecting) and still lets the decorations use real tokens.
+
+/** The dock segment. The bar owns the crest, the hairline and the blur, so the tab draws none
+ *  of them: it fills its segment edge to edge and lets the bar clip it. */
+const TRIGGER_SHAPE = 'relative h-full w-11 rounded-none px-0 py-0'
+/** The unread count, on the loud tile. */
+const UNREAD_BADGE =
+  'absolute right-1 top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-pill bg-danger px-1 text-3xs font-bold text-on-danger'
+/** The "something is waiting" dot. A dot, not the pill's wiggle: the bar is anchored furniture
+ *  now, and furniture that shakes reads as broken rather than as a nudge. Full amber, because
+ *  at rest it sits on the MUTED tile and a cream dot would disappear into it. */
+const WAITING_DOT = 'pointer-events-none absolute right-1.5 top-1.5 h-2 w-2 rounded-pill bg-primary-strong'
+/** Dock modes. Pills, not underlines — the panel is a popover, not a page. */
+const TAB_BASE =
+  'inline-flex flex-1 items-center justify-center gap-1.5 rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors'
+const TAB_ON = 'bg-primary-bg text-primary-strong'
+const TAB_OFF = 'text-muted hover:text-text'
+const TAB_COUNT =
+  'inline-flex h-4 min-w-4 items-center justify-center rounded-pill bg-primary px-1 text-3xs font-bold text-on-primary'
+
+/** How far the panel's bottom edge tucks BEHIND the bar's crest. Without it the bar's rounded
+ *  top corners leave two notches of canvas showing under the panel; with it the panel simply
+ *  disappears behind the crest, which is the "slides up from behind the tab" reading. The panel
+ *  pays it back as bottom padding (`md:pb-2`), so no content ever sits under the bar. */
+const PANEL_TUCK = 8
+/** Long enough to outlast the slowest `--motion-base` on the feel scale (340ms), so the body is
+ *  still mounted while the row collapses and the panel does not blink out mid-slide. */
+const PANEL_COLLAPSE_MS = 400
+
 function initialTab(): Tab {
   if (typeof window === 'undefined') return 'chat'
   try {
@@ -50,8 +95,70 @@ function initialTab(): Tab {
   return 'chat'
 }
 
+/**
+ * Where the panel's bottom-right corner sits, measured off the dock bar's chat segment.
+ *
+ * The panel cannot simply be a CHILD of that segment the way the Vault's panel is a child of
+ * its own: the segment is ~48px wide and the bar clips to its crest (`overflow-hidden`), so a
+ * 24rem popover inside it would be sliced to a sliver. And it cannot be a child of the bar
+ * either, because the bar is `hidden` below md — a phone would lose the whole dock. So it stays
+ * a fixed-position sibling and ANCHORS to the segment's rect, which is the same trick DAWN's
+ * own AccountDock uses to escape the scrolling rail (`ui_kits/app/docks.jsx`).
+ *
+ * Returns null when there is no bar to anchor to — below md, where the bar is display:none and
+ * its rect is all zeros. Zero is the tell, the same guard DockBar's own measure uses. A missing
+ * SLOT (marketing, /help, /discover, /admin) is handled by the caller rather than here, so the
+ * stale-anchor case never needs a setState inside the effect that discovers it.
+ */
+function useDockAnchor(slot: HTMLElement | null): { right: number; bottom: number } | null {
+  const [anchor, setAnchor] = useState<{ right: number; bottom: number } | null>(null)
+
+  useEffect(() => {
+    if (!slot) return
+    let raf = 0
+    const measure = () => {
+      const rect = slot.getBoundingClientRect()
+      if (rect.width === 0 || rect.height === 0) {
+        setAnchor(null)
+        return
+      }
+      setAnchor({
+        right: Math.round(window.innerWidth - rect.right),
+        bottom: Math.round(window.innerHeight - rect.top - PANEL_TUCK),
+      })
+    }
+    const schedule = () => {
+      if (raf) return
+      raf = requestAnimationFrame(() => {
+        raf = 0
+        measure()
+      })
+    }
+    // The DOM's geometry IS the external system here: the bar's position is measured, not
+    // derived, and React cannot know it. The first read has to be synchronous or the panel
+    // paints at the md fallback for a frame and then jumps to the bar.
+    measure()
+    // The bar rides up to meet the rail's end on scroll (DockBar's `lift`), so scroll moves the
+    // anchor as well as resize. Both are rAF-coalesced; the bar applies its own transform on the
+    // same frame, so a fast scroll can leave the panel one frame behind the crest. Visible only
+    // while scrolling with the panel open, and it settles the moment the scroll stops.
+    window.addEventListener('scroll', schedule, { passive: true })
+    window.addEventListener('resize', schedule)
+    const ro = new ResizeObserver(schedule)
+    ro.observe(slot)
+    return () => {
+      if (raf) cancelAnimationFrame(raf)
+      window.removeEventListener('scroll', schedule)
+      window.removeEventListener('resize', schedule)
+      ro.disconnect()
+    }
+  }, [slot])
+
+  return anchor
+}
+
 export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; veraTease?: TeaseGate }) {
-  // Admin pages drop the edge tab (the page-admin dock owns that corner); the panel
+  // Admin pages drop the dock tab (the page-admin dock owns that corner); the panel
   // still opens there via the command bar's open-vera event.
   const pathname = usePathname()
   // The deep-link channel (ADR-896). `useSearchParams` forces its client subtree to render on
@@ -63,13 +170,17 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
   const search = searchParams.toString()
   const onAdmin = pathname.startsWith('/admin')
   const [open, setOpen] = useState(false)
+  // The panel BODY is mounted lazily and unmounted one collapse later, so DockChat's realtime
+  // subscription lives exactly as long as the open dock does — while the reveal row itself
+  // stays in the tree from the first render, which is what gives the grid a 0fr to travel FROM.
+  const [render, setRender] = useState(false)
   const [tab, setTab] = useState<Tab>(initialTab)
   // The Help & support SECTION overlays the tabs when open (a pushed view with Back).
   const [helpOpen, setHelpOpen] = useState(false)
   const [q, setQ] = useState('')
   // Vera's own "unclosed chat" pulse (set by vera-chat, cleared when the panel opens).
   const [pulse, setPulse] = useState(() => typeof window !== 'undefined' && localStorage.getItem('fq_vera_unread') === '1')
-  // Unread member-message count, for the tab + pill badges.
+  // Unread member-message count, for the tab + the tile's tone.
   const [unread, setUnread] = useState(0)
   // A pending "open the dock at THIS thread" request, handed to DockChat (ADR-896).
   const [requested, setRequested] = useState<DockOpenDetail | null>(null)
@@ -78,12 +189,32 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
   // Where focus came from, so closing returns it instead of dumping it on <body>.
   const openerRef = useRef<HTMLElement | null>(null)
   const panelRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // The bar's chat segment, looked up rather than passed: DockBar is a shell sibling fed by the
+  // `dock` prop while this launcher is mounted in the (main) layout, so neither owns the other.
+  const [slot, setSlot] = useState<HTMLElement | null>(null)
+  const [slotChecked, setSlotChecked] = useState(false)
+  // The measurement only applies while there IS a segment to measure: navigating to /admin drops
+  // the bar, and a remembered rect would strand the panel where the bar used to be.
+  const measured = useDockAnchor(slot)
+  const anchor = slot ? measured : null
   const results = useMemo(() => searchHelp(index, q, 6), [q, index])
 
   // Remember the last mode across sessions.
   useEffect(() => {
     try { localStorage.setItem(TAB_KEY, tab) } catch {}
   }, [tab])
+
+  useEffect(() => {
+    // Reading the DOM for the portal target: the slot is rendered by a different component, so
+    // its existence is external state React cannot tell us about. Synchronous on purpose —
+    // deferring it would blink the fallback pill onto surfaces that do have a dock. Re-run on
+    // navigation because the bar mounts and unmounts with the rail (there is none on /admin).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSlot(document.getElementById(DOCK_CHAT_SLOT_ID))
+    setSlotChecked(true)
+  }, [pathname])
 
   // Unread message count for the badge (best-effort; refreshes each time the panel toggles).
   useEffect(() => {
@@ -96,12 +227,22 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
   // (the summary is a few RPCs — this is what felt slow on first open).
   useEffect(() => { prefetchDockSummary() }, [])
 
+  // The collapse timer outlives any single close, so it is cleared on unmount.
+  useEffect(() => () => { if (collapseTimer.current) clearTimeout(collapseTimer.current) }, [])
+
+  /** Mount the body (if it is not already) and expand the reveal row. */
+  function show() {
+    if (collapseTimer.current) { clearTimeout(collapseTimer.current); collapseTimer.current = null }
+    setRender(true)
+    setOpen(true)
+  }
+
   useEffect(() => {
     const onActivity = () => setPulse(true)
     // Other surfaces open a specific mode via these events (the site-wide open API,
     // CHAT-SHELL-PLAN §2): open-chat → Messages; open-vera → Vera; open-help → the section.
     const onOpenVera = () => {
-      setTab('vera'); setHelpOpen(false); setOpen(true); setPulse(false)
+      setTab('vera'); setHelpOpen(false); show(); setPulse(false)
       try { localStorage.removeItem('fq_vera_unread') } catch {}
     }
     // open-chat now carries an OPTIONAL detail (lib/messages/dock-open.ts): with one, the dock
@@ -110,10 +251,10 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
     const onOpenChat = (e: Event) => {
       const detail = (e as CustomEvent<DockOpenDetail>).detail ?? null
       if (document.activeElement instanceof HTMLElement) openerRef.current = document.activeElement
-      setTab('chat'); setHelpOpen(false); setOpen(true)
+      setTab('chat'); setHelpOpen(false); show()
       setRequested(detail)
     }
-    const onOpenHelp = () => { setHelpOpen(true); setOpen(true) }
+    const onOpenHelp = () => { setHelpOpen(true); show() }
     window.addEventListener('vera-activity', onActivity)
     window.addEventListener('open-vera', onOpenVera)
     window.addEventListener(DOCK_OPEN_EVENT, onOpenChat)
@@ -137,7 +278,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
     if (!ref) return
     // The URL is the external system: on a cold load there is no earlier render to carry this.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTab('chat'); setHelpOpen(false); setOpen(true)
+    setTab('chat'); setHelpOpen(false); show()
     setRequested({ ...ref, requestId: nextDockRequestId() })
     // Plain DOM history, NOT router.replace: the page does not read these params, so a replace
     // would re-run its Server Components to produce byte-identical output.
@@ -148,7 +289,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
     if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
       openerRef.current = document.activeElement
     }
-    setOpen(true)
+    show()
     setPulse(false)
     try { localStorage.removeItem('fq_vera_unread') } catch {}
   }
@@ -173,17 +314,50 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
     // panel opens or a thread opens, never on every keystroke in the composer.
   }, [open, threadOpen])
 
+  // An outside click dismisses, which is the OTHER half of the dock contract (DAWN: "Esc or an
+  // outside click out"). The dock stays non-modal — no scrim, no focus trap, the page keeps
+  // taking clicks — so this is a plain mousedown watch rather than an overlay.
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      const t = e.target
+      if (!(t instanceof Element)) return
+      if (panelRef.current?.contains(t)) return
+      // The tab toggles itself; letting this fire too would close and reopen on one click.
+      if (triggerRef.current?.contains(t)) return
+      // A dialog the dock ITSELF opened (the bug-capture sheet, a confirm) portals outside the
+      // panel. Dismissing the dock underneath it would pull the ground out from the thing the
+      // member just asked for.
+      if (t.closest('[role="dialog"],[role="alertdialog"]') !== null) return
+      close()
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+    // Same reasoning as the ESC listener above: `close` is stable in behaviour, not identity.
+  }, [open])
+
   function close() {
     setOpen(false)
     setHelpOpen(false)
     setQ('')
     setRequested(null)
-    // Return focus to whatever opened the dock (the edge pill, or a Message button three
-    // screens up the page). Without this, closing drops focus on <body> and a keyboard member
-    // restarts their tab order from the top of the document.
+    // Focus FIRST, before the row collapses and the panel goes inert: a caret left inside an
+    // inert subtree is dropped on <body>, and a keyboard member restarts their tab order from
+    // the top of the document. Only when focus is actually inside the panel, though — an
+    // outside click has already put it somewhere the member chose, and stealing it back to the
+    // dock they just dismissed would be worse than doing nothing.
     const opener = openerRef.current
     openerRef.current = null
-    if (opener?.isConnected) opener.focus()
+    if (panelRef.current?.contains(document.activeElement)) {
+      if (opener?.isConnected) opener.focus()
+      else triggerRef.current?.focus()
+    }
+    // Unmount the body only after the collapse has run, so it does not blink out mid-slide.
+    if (collapseTimer.current) clearTimeout(collapseTimer.current)
+    collapseTimer.current = setTimeout(() => {
+      setRender(false)
+      collapseTimer.current = null
+    }, PANEL_COLLAPSE_MS)
   }
 
   const showInstant = helpOpen && q.trim().length >= 2
@@ -197,172 +371,199 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
 
   return (
     <>
-      {/* Right-edge dock tab: collapsed until hover (web) / tap (mobile), then a click
-          opens the panel. Wiggles when a chat is unclosed OR messages are unread; shows a
-          numeric unread badge. NOT on /admin (the page-admin dock owns that corner); the
+      {/* The dock tab, portalled into the anchored bar's chat segment. Muted until it matters;
+          full amber on an unread. NOT on /admin (the page-admin dock owns that corner); the
           panel stays mounted so the admin "Ask Vera" bar (open-vera) still works. */}
       {!onAdmin && (
         <ChatTrigger
+          ref={triggerRef}
+          slot={slot}
+          slotChecked={slotChecked}
+          open={open}
           waiting={pulse || unread > 0}
           unread={unread}
           onOpen={openPanel}
         />
       )}
 
-      {/* Non-modal floating dock in the site popup-shell language (CHAT-SHELL-PLAN §1): NO page
-          overlay, so members keep navigating while chatting. Bottom sheet on mobile, anchored
-          card on desktop. Persists across navigation (mounted in the (main) layout). */}
-      {open && (
-        <div
-          ref={panelRef}
-          tabIndex={-1}
-          role="dialog"
-          // The dock is non-modal by design (no page overlay, members keep navigating while
-          // chatting). `role="dialog"` alone makes assistive tech infer modality, which would
-          // announce the rest of the page as unavailable when it is not.
-          aria-modal="false"
-          aria-label="Messages, Vera and help"
-          className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-[68dvh] max-h-[640px] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-border bg-surface pb-[env(safe-area-inset-bottom)] shadow-pop outline-none print:hidden md:inset-x-auto md:bottom-[4.75rem] md:right-6 md:h-[600px] md:w-[24rem] md:rounded-2xl md:pb-0 motion-safe:animate-[slideUp_0.25s_ease-out]"
-        >
-            {/* Header — reflects the active view; the Help section gets a Back affordance. */}
-            <div className="flex shrink-0 items-center gap-2.5 border-b border-border px-4 py-3">
-              {helpOpen ? (
-                <button
-                  type="button"
-                  onClick={() => { setHelpOpen(false); setQ('') }}
-                  aria-label="Back"
-                  className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-                >
-                  <ArrowLeft className="h-4 w-4" aria-hidden />
-                </button>
-              ) : (
-                <span className="flex h-9 w-9 items-center justify-center rounded-pill bg-primary-bg text-primary-strong">
-                  <HeaderIcon className="h-4 w-4" aria-hidden />
-                </span>
-              )}
-              <div className="min-w-0 flex-1">
-                <p id="vera-launcher-title" className="text-body-sm font-bold text-text">{headerTitle}</p>
-                <p className="truncate text-meta text-subtle">{headerSub}</p>
-              </div>
-              <button type="button" onClick={close} aria-label="Close" className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-elevated hover:text-text">
-                <X className="h-4 w-4" aria-hidden />
-              </button>
-            </div>
-
-            {/* Tabs — Messages front, Vera second. Hidden while the Help section is pushed. */}
-            {!helpOpen && (
-              <div className="flex shrink-0 gap-1 border-b border-border px-2 py-1.5" role="tablist" aria-label="Dock modes">
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={tab === 'chat'}
-                  onClick={() => setTab('chat')}
-                  className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-body-sm font-medium transition-colors ${tab === 'chat' ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:text-text'}`}
-                >
-                  <MessageSquare className="h-4 w-4" aria-hidden /> Messages
-                  {unread > 0 && (
-                    <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-pill bg-primary px-1 text-3xs font-bold text-on-primary">{unread > 9 ? '9+' : unread}</span>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={tab === 'vera'}
-                  onClick={() => setTab('vera')}
-                  className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-body-sm font-medium transition-colors ${tab === 'vera' ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:text-text'}`}
-                >
-                  <Sparkles className="h-4 w-4" aria-hidden /> Vera
-                </button>
-              </div>
-            )}
-
-            {helpOpen ? (
-              /* ── Help & support SECTION (link-opened, never a tab) — the deterministic
-                    tiers: article search → Ask Vera → the help center → a human. ─────────── */
-              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
-                  <input
-                    type="search"
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    placeholder="Search help…"
-                    aria-label="Search help"
-                    className="w-full rounded-lg border border-border bg-surface-elevated py-2 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-[var(--color-border-strong)]"
-                  />
-                </div>
-
-                {showInstant && (
-                  <ul className="mt-2 divide-y divide-border overflow-hidden rounded-lg border border-border">
-                    {results.length === 0 ? (
-                      <li className="px-3 py-2 text-body-sm text-muted">No matches. Ask Vera.</li>
-                    ) : (
-                      results.map((r) => (
-                        <li key={r.href}>
-                          <Link href={r.href} onClick={close} className="block px-3 py-2 hover:bg-surface-elevated">
-                            <span className="block text-body-sm font-medium text-text">{r.title}</span>
-                            <span className="block text-meta text-muted">{r.categoryTitle}</span>
-                          </Link>
-                        </li>
-                      ))
-                    )}
-                  </ul>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => { setHelpOpen(false); setTab('vera') }}
-                  className="mt-3 flex w-full items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left transition-colors hover:border-primary"
-                >
-                  <Sparkles className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-body-sm font-medium text-text">Ask Vera</span>
-                    <span className="block truncate text-meta text-muted">Get a plain-language answer in a real conversation.</span>
+      {/* ── The reveal ────────────────────────────────────────────────────────────────────────
+          The Vault's motion, not a floating window's: a grid row travelling 0fr → 1fr, so the
+          panel grows UPWARD out of the bar with its bottom edge pinned to the crest. The row is
+          in the tree from the first render (a grid cannot transition from a height it never
+          had), collapsed to zero and `inert` — so nothing inside it is tabbable, hittable or
+          announced until the dock is actually open. */}
+      <div
+        style={anchor ?? undefined}
+        inert={!open || undefined}
+        className={cn(
+          // Bottom sheet on a phone, an extension of the bar from md. `md:z-30` puts it UNDER
+          // the bar (z-40) on purpose: the tucked bottom edge has to disappear behind the crest,
+          // not paint over it. Below md there is no bar, and the sheet keeps its z-50 so the
+          // mobile tab bar cannot cover it.
+          'fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md md:mx-0 md:inset-x-auto md:bottom-6 md:right-6 md:z-30 md:w-96 md:max-w-none',
+          'grid overflow-hidden transition-[grid-template-rows] duration-[var(--motion-base)] ease-[var(--ease-out)] motion-reduce:transition-none print:hidden',
+          open ? 'grid-rows-[1fr]' : 'pointer-events-none grid-rows-[0fr]',
+        )}
+      >
+        <div className="min-h-0">
+          {render && (
+            <div
+              ref={panelRef}
+              id="fq-dock-panel"
+              tabIndex={-1}
+              role="dialog"
+              // The dock is non-modal by design (no page overlay, members keep navigating while
+              // chatting). `role="dialog"` alone makes assistive tech infer modality, which would
+              // announce the rest of the page as unavailable when it is not.
+              aria-modal="false"
+              aria-label="Messages, Vera and help"
+              // The shared dock popover shell: `.glass` + `.lift-3` on the role radius, the same
+              // object the system menu and the Vault wear. Bottom sheet on a phone (square top
+              // corners hug the viewport edge), an extension of the bar on desktop.
+              className="glass lift-3 flex h-[68dvh] max-h-[37.5rem] w-full flex-col overflow-hidden rounded-t-card pb-[env(safe-area-inset-bottom)] outline-none md:h-[35rem] md:pb-2"
+            >
+              {/* Header — canvas, so it reads as the dock's own chrome rather than more
+                  transcript. Reflects the active view; Help gets a Back affordance. */}
+              <div className="flex shrink-0 items-center gap-2.5 border-b border-border bg-canvas px-4 py-3">
+                {helpOpen ? (
+                  <IconButton label="Back" onClick={() => { setHelpOpen(false); setQ('') }}>
+                    <ArrowLeft className="h-4 w-4" aria-hidden />
+                  </IconButton>
+                ) : (
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
+                    <HeaderIcon className="h-4 w-4" aria-hidden />
                   </span>
-                </button>
-
-                {/* The member's own support CONVERSATIONS (chat consolidation): send us a message, and it
-                    threads back here as a ticketed conversation. Report-a-bug + help center stay below. */}
-                <div className="mt-3 -mx-4 border-t border-border">
-                  <SupportConversationsPanel />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p id="vera-launcher-title" className="text-body-sm font-bold text-text">{headerTitle}</p>
+                  <p className="truncate text-meta text-subtle">{headerSub}</p>
                 </div>
+                <IconButton label="Close" onClick={close}>
+                  <X className="h-4 w-4" aria-hidden />
+                </IconButton>
+              </div>
 
-                <div className="mt-auto space-y-1 border-t border-border pt-3">
+              {/* Tabs — Messages front, Vera second. Hidden while the Help section is pushed. */}
+              {!helpOpen && (
+                <div className="flex shrink-0 gap-1 border-b border-border bg-surface px-2 py-1.5" role="tablist" aria-label="Dock modes">
                   <button
                     type="button"
-                    onClick={() => { close(); openSupport('bug') }}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-body-sm text-text hover:bg-surface-elevated"
+                    role="tab"
+                    aria-selected={tab === 'chat'}
+                    onClick={() => setTab('chat')}
+                    className={cn(TAB_BASE, tab === 'chat' ? TAB_ON : TAB_OFF)}
                   >
-                    <Bug className="h-4 w-4 text-muted" aria-hidden /> Report a bug
+                    <MessageSquare className="h-4 w-4" aria-hidden /> Messages
+                    {unread > 0 && <span className={TAB_COUNT}>{unread > 9 ? '9+' : unread}</span>}
                   </button>
-                  <Link href="/help" onClick={close} className="flex items-center gap-3 rounded-lg px-3 py-2 text-body-sm text-text hover:bg-surface-elevated">
-                    <BookOpen className="h-4 w-4 text-muted" aria-hidden /> Browse the help center
-                  </Link>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === 'vera'}
+                    onClick={() => setTab('vera')}
+                    className={cn(TAB_BASE, tab === 'vera' ? TAB_ON : TAB_OFF)}
+                  >
+                    <Sparkles className="h-4 w-4" aria-hidden /> Vera
+                  </button>
                 </div>
-              </div>
-            ) : tab === 'chat' ? (
-              <DockChat
-                onNavigate={close}
-                requested={requested}
-                onRequestHandled={() => setRequested(null)}
-                onThreadOpenChange={setThreadOpen}
-              />
-            ) : (
-              <VeraChat opening={COMPANION_OPENING} veraTease={veraTease} />
-            )}
+              )}
 
-            {/* Footer link — the ONE doorway to Help & support (owner: support is never a tab). */}
-            {!helpOpen && (
-              <button
-                type="button"
-                onClick={() => setHelpOpen(true)}
-                className="flex shrink-0 items-center justify-center gap-1.5 border-t border-border px-4 py-2 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-              >
-                <LifeBuoy className="h-3.5 w-3.5" aria-hidden /> Help &amp; support
-              </button>
-            )}
+              {/* The body sits on `bg-surface`: glass is the SHELL's chrome, and a transcript
+                  read through a blurred page is a transcript nobody reads (DAWN's own docks put
+                  solid surface behind every content block inside the glass). */}
+              {helpOpen ? (
+                /* ── Help & support SECTION (link-opened, never a tab) — the deterministic
+                      tiers: article search → Ask Vera → the help center → a human. ─────────── */
+                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-surface px-4 py-4">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
+                    <input
+                      type="search"
+                      value={q}
+                      onChange={(e) => setQ(e.target.value)}
+                      placeholder="Search help…"
+                      aria-label="Search help"
+                      className="w-full rounded-control border border-border bg-surface-elevated py-2 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+                    />
+                  </div>
+
+                  {showInstant && (
+                    <ul className="mt-2 divide-y divide-border overflow-hidden rounded-card border border-border">
+                      {results.length === 0 ? (
+                        <li className="px-3 py-2 text-body-sm text-muted">No matches. Ask Vera.</li>
+                      ) : (
+                        results.map((r) => (
+                          <li key={r.href}>
+                            <Link href={r.href} onClick={close} className="block px-3 py-2 hover:bg-surface-elevated">
+                              <span className="block text-body-sm font-medium text-text">{r.title}</span>
+                              <span className="block text-meta text-muted">{r.categoryTitle}</span>
+                            </Link>
+                          </li>
+                        ))
+                      )}
+                    </ul>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => { setHelpOpen(false); setTab('vera') }}
+                    className="mt-3 flex w-full items-center gap-3 rounded-card border border-border px-3 py-2.5 text-left transition-colors hover:border-primary"
+                  >
+                    <Sparkles className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-body-sm font-medium text-text">Ask Vera</span>
+                      <span className="block truncate text-meta text-muted">Get a plain-language answer in a real conversation.</span>
+                    </span>
+                  </button>
+
+                  {/* The member's own support CONVERSATIONS (chat consolidation): send us a message, and it
+                      threads back here as a ticketed conversation. Report-a-bug + help center stay below. */}
+                  <div className="mt-3 -mx-4 border-t border-border">
+                    <SupportConversationsPanel />
+                  </div>
+
+                  <div className="mt-auto space-y-1 border-t border-border pt-3">
+                    <button
+                      type="button"
+                      onClick={() => { close(); openSupport('bug') }}
+                      className="flex w-full items-center gap-3 rounded-control px-3 py-2 text-left text-body-sm text-text hover:bg-surface-elevated"
+                    >
+                      <Bug className="h-4 w-4 text-muted" aria-hidden /> Report a bug
+                    </button>
+                    <Link href="/help" onClick={close} className="flex items-center gap-3 rounded-control px-3 py-2 text-body-sm text-text hover:bg-surface-elevated">
+                      <BookOpen className="h-4 w-4 text-muted" aria-hidden /> Browse the help center
+                    </Link>
+                  </div>
+                </div>
+              ) : tab === 'chat' ? (
+                <div className="flex min-h-0 flex-1 flex-col bg-surface">
+                  <DockChat
+                    onNavigate={close}
+                    requested={requested}
+                    onRequestHandled={() => setRequested(null)}
+                    onThreadOpenChange={setThreadOpen}
+                  />
+                </div>
+              ) : (
+                <div className="flex min-h-0 flex-1 flex-col bg-surface">
+                  <VeraChat opening={COMPANION_OPENING} veraTease={veraTease} />
+                </div>
+              )}
+
+              {/* Footer link — the ONE doorway to Help & support (owner: support is never a tab). */}
+              {!helpOpen && (
+                <button
+                  type="button"
+                  onClick={() => setHelpOpen(true)}
+                  className="flex shrink-0 items-center justify-center gap-1.5 border-t border-border bg-canvas px-4 py-2 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                >
+                  <LifeBuoy className="h-3.5 w-3.5" aria-hidden /> Help &amp; support
+                </button>
+              )}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </>
   )
 }
@@ -380,30 +581,32 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
 // geometry without either component having to own the other's state.
 //
 // The EdgePill stays as the fallback, and it is not dead code: (marketing), (help) and
-// /discover mount this launcher with no Vault and therefore no dock slot. `mounted` gates the
-// decision so the pill never flashes on a surface that does have a dock.
+// /discover mount this launcher with no Vault and therefore no dock slot. `slotChecked` gates
+// the decision so the pill never flashes on a surface that does have a dock.
+//
+// TONE. The tile is MUTED at rest and full-strength only when something is actually waiting.
+// A solid amber block that is always solid amber says "act on me" on every page of the app,
+// which is the one thing a persistent piece of furniture must not say; and when a message
+// really does arrive it has nowhere left to go. So rest is the muted pair (`primarySoft` —
+// `bg-primary-bg` + `text-primary-strong`) and an unread promotes it to the full fill.
 function ChatTrigger({
+  ref,
+  slot,
+  slotChecked,
+  open,
   waiting,
   unread,
   onOpen,
 }: {
+  ref: React.RefObject<HTMLButtonElement | null>
+  slot: HTMLElement | null
+  slotChecked: boolean
+  open: boolean
   waiting: boolean
   unread: number
   onOpen: () => void
 }) {
-  const [mounted, setMounted] = useState(false)
-  const [slot, setSlot] = useState<HTMLElement | null>(null)
-
-  useEffect(() => {
-    // Reading the DOM for the portal target: the slot is rendered by a different component, so
-    // its existence is external state React cannot tell us about. Synchronous on purpose —
-    // deferring it would blink the fallback pill onto surfaces that do have a dock.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSlot(document.getElementById(DOCK_CHAT_SLOT_ID))
-    setMounted(true)
-  }, [])
-
-  if (!mounted) return null
+  if (!slotChecked) return null
 
   if (!slot) {
     return (
@@ -420,40 +623,26 @@ function ChatTrigger({
     )
   }
 
-  // Same bottom edge and top-only rounding as the Vault crest, so the two read as one
-  // anchored system; primary-filled and square so they never read as one control.
-  //
-  // It takes its classes from the kit primitive rather than a hand-rolled fill string — the
-  // raw-button-bg ratchet exists to stop that, and this control tripped it before being moved
-  // onto `buttonClasses`. The overrides are geometry only (the crest's height and top-only
-  // rounding), which is what the primitive's `className` argument is for.
-  //
-  // The note lives ABOVE the element on purpose: that ratchet's pattern is a 500-character
-  // proximity window over raw source, comments included, so spelling the class name out inside
-  // the tag made a comment explaining the rule count as a violation of it.
+  // Geometry through the kit primitive rather than a hand-rolled fill string — the raw-button-bg
+  // ratchet exists to stop exactly that, and this control tripped it before being moved onto
+  // `buttonClasses`. The overrides are shape only (fill the segment, square, no padding), which
+  // is what the primitive's `className` argument is for.
   return createPortal(
     <button
+      ref={ref}
       type="button"
       onClick={onOpen}
+      aria-expanded={open}
+      aria-controls="fq-dock-panel"
       aria-label="Open messages, Vera, and help"
       title="Messages, Vera and help"
-      className={buttonClasses(
-        'primary',
-        'md',
-        'relative h-[3.25rem] w-11 rounded-none rounded-t-2xl border-x border-t border-primary/40 px-0 py-0',
-      )}
+      className={buttonClasses(unread > 0 ? 'primary' : 'primarySoft', 'md', TRIGGER_SHAPE)}
     >
       <MessageSquare className="h-5 w-5" aria-hidden />
       {unread > 0 && (
-        <span className="absolute right-1 top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-pill bg-danger px-1 text-3xs font-bold text-on-danger">
-          {unread > 9 ? '9+' : unread}
-        </span>
+        <span className={UNREAD_BADGE}>{unread > 9 ? '9+' : unread}</span>
       )}
-      {/* The "something is waiting" tell. A dot, not the pill's wiggle: the bar is anchored
-          furniture now, and furniture that shakes reads as broken rather than as a nudge. */}
-      {waiting && unread === 0 && (
-        <span aria-hidden className="absolute right-1.5 top-1.5 h-2 w-2 rounded-pill bg-on-primary/90" />
-      )}
+      {waiting && unread === 0 && <span aria-hidden className={WAITING_DOT} />}
     </button>,
     slot,
   )

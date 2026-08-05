@@ -25,9 +25,16 @@ const UNIT: Record<ActivityView, string> = { days: 'day', weeks: 'week', months:
 export function ActivityChart({
   activity,
   defaultView = 'days',
+  framed = true,
 }: {
   activity: MemberActivity
   defaultView?: ActivityView
+  /** Draw the surrounding card. TRUE on a page, where the chart is its own object. FALSE in
+   *  the right rail, where the panel above it is already a titled group and a card here makes
+   *  the rail a stack of boxes again — the exact thing "group, don't box" retires. The rail's
+   *  panels went borderless without this, so the box simply moved one level down and the
+   *  column still read as three different treatments in one column. */
+  framed?: boolean
 }) {
   const [view, setView] = useState<ActivityView>(defaultView)
   const bars = activity[view]
@@ -37,17 +44,29 @@ export function ActivityChart({
   const unit = UNIT[view]
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
-      {/* View toggle — Days · Weeks · Months. */}
-      <div className="mb-3 inline-flex rounded-lg bg-surface-elevated p-0.5 text-meta font-medium">
+    <div className={framed ? 'rounded-card border border-border bg-surface p-4' : ''}>
+      {/* View toggle — Days · Weeks · Months.
+          PATTERN: DAWN's right-rail segment (design_handoff/dawn/ui_kits/app/right-rail.jsx,
+          the Activity module) is the direct reference — this is the same control in the same
+          place. WHY not UnderlineTabs: this is a small in-panel segment that reshapes ONE
+          chart in place, not page-level navigation between views, and an underline strip
+          inside a rail panel would out-shout the panel's own title.
+          The DAWN treatment is borderless text buttons with NO wrapper track: active =
+          bg-surface-elevated + text-text + heavier weight on radius-control, inactive =
+          transparent + text-subtle. The `bg-surface-elevated p-0.5` track this replaces is
+          precisely what made it read as a pill group; DAWN carries no shadow here either,
+          so the active state's `lift-1` goes with it. */}
+      <div className="mb-3 inline-flex gap-0.5 text-meta">
         {VIEWS.map((v) => (
           <button
             key={v.key}
             type="button"
             onClick={() => setView(v.key)}
             aria-pressed={view === v.key}
-            className={`rounded-md px-2.5 py-1 transition-colors ${
-              view === v.key ? 'bg-surface text-text lift-1' : 'text-subtle hover:text-text'
+            className={`rounded-control px-2.5 py-1 transition-colors ${
+              view === v.key
+                ? 'bg-surface-elevated font-bold text-text'
+                : 'font-semibold text-subtle hover:text-text'
             }`}
           >
             {v.label}

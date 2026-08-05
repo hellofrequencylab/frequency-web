@@ -173,7 +173,7 @@ async function ActivityPanel({ profileId }: { profileId: string }) {
       <div className="mb-2 px-1">
         <h3 className="text-body-sm font-bold tracking-tight text-text">Your activity</h3>
       </div>
-      <ActivityChart activity={activity} />
+      <ActivityChart activity={activity} framed={false} />
     </section>
   )
 }
@@ -188,7 +188,7 @@ async function SignaturePanel({ profileId }: { profileId: string }) {
       <div className="mb-2 px-1">
         <h3 className="text-body-sm font-bold tracking-tight text-text">Your Frequency Signature</h3>
       </div>
-      <FrequencySignature signature={signature} variant="full" layout="stack" />
+      <FrequencySignature signature={signature} variant="full" layout="stack" framed={false} />
     </section>
   )
 }
@@ -251,8 +251,12 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
       <div className="flex-1 space-y-6 pt-1 pb-6">
         {/* Report a bug / get help — pinned to the very TOP of the right rail. The shared
             support sheet (same `open-support` event as the account menu + footer). */}
-        {/* Quiet, not boxed. Invite is the rail's ONE deliberate tinted object; a second
-            bordered box above it made the top of the rail read as two competing cards. */}
+        {/* CORRECTED 2026-08-05. This used to read "Invite is the rail's ONE deliberate tinted
+            object", and that reasoning is now inverted: the tint was on the wrong object. DAWN
+            gives Invite a NEUTRAL card and reserves the amber fill for the standing block, which
+            this product moved into the Vault dock — so neither of these two rows is the tinted
+            one, and both take the same bordered utility-row treatment (right-rail.jsx:38-44 and
+            :154). Report keeps its ghost variant, which now carries that treatment itself. */}
         <ReportButton
           variant="ghost"
           className="w-full justify-start hover:bg-surface-elevated"

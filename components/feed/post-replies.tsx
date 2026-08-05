@@ -127,6 +127,7 @@ function ReplyComposer({
   placeholder,
   autoFocus = false,
   reactSlot,
+  divided = false,
 }: {
   value: string
   onChange: (v: string) => void
@@ -137,9 +138,15 @@ function ReplyComposer({
   /** The post's reaction bar (counts + picker), rendered inline at the left of the
    *  composer row so reacting and commenting share ONE row. Post-level only. */
   reactSlot?: ReactNode
+  /** Rule the row off from the counts line above it. Post-level only: a nested
+   *  reply composer sits inside a thread and needs no second divider. */
+  divided?: boolean
 }) {
   return (
-    <form onSubmit={onSubmit} className="mt-2.5 flex items-end gap-1.5">
+    <form
+      onSubmit={onSubmit}
+      className={`mt-2.5 flex items-end gap-1.5 ${divided ? 'border-t border-border pt-2.5' : ''}`}
+    >
       {/* The post's reaction bar shares the composer row (post-level only). */}
       {reactSlot && <div className="shrink-0 self-center">{reactSlot}</div>}
       <textarea
@@ -156,13 +163,18 @@ function ReplyComposer({
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) onSubmit(e)
         }}
-        className="flex-1 resize-none rounded-control bg-surface-elevated/50 px-3.5 py-2 text-meta leading-relaxed text-text placeholder-subtle ring-1 ring-border/50 focus:outline-none focus:ring-1 focus:ring-border-strong/50 disabled:opacity-50 dark:bg-canvas/40"
+        // `rounded-card`, not `rounded-pill`. DAWN's comment box is a single-line <input>, so a
+        // pill is exactly right there; ours is a textarea that grows to 140px, and a pill radius
+        // on a tall box turns the ends into large ovals. At one line the box is ~36px tall and
+        // rounded-card's 17px is within a pixel of a true pill, so this matches the reference at
+        // rest AND degrades properly once someone writes a paragraph.
+        className="flex-1 resize-none rounded-card border border-border bg-surface px-3.5 py-2 text-meta leading-relaxed text-text placeholder-subtle focus:border-border-strong focus:outline-none disabled:opacity-50"
       />
       <button
         type="submit"
         disabled={!value.trim() || disabled}
         aria-label="Send comment"
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40 sm:h-auto sm:w-auto sm:p-2.5"
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-pill bg-primary-bg text-primary-strong transition-colors hover:bg-primary/20 disabled:opacity-40"
       >
         {disabled ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
       </button>
@@ -318,7 +330,10 @@ export function PostReplies({
           ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <ReactionCounts {...reactionState} compact />
+          {/* NOT `compact`: these tallies are numeric CONTENT (how many people
+              reacted), so they sit at the --text-meta content floor. The 11px
+              `compact` pill stays for the per-comment bar, which is chrome-tight. */}
+          <ReactionCounts {...reactionState} />
           <button
             onClick={() => setOpen((o) => !o)}
             aria-label={open ? 'Hide comments' : 'Show comments'}
@@ -366,6 +381,7 @@ export function PostReplies({
         disabled={isPending}
         placeholder="Add a comment…"
         reactSlot={<ReactionInlinePicker {...reactionState} />}
+        divided
       />
       {replyError && <p className="mt-1 px-1 text-2xs text-danger">{replyError}</p>}
     </div>

@@ -109,7 +109,7 @@ export function JourneyBoard({
   // behind the chevron.
   if (collapsed) {
     return (
-      <div className="mb-6 overflow-hidden rounded-2xl border border-primary-bg bg-primary-bg/30">
+      <div className="mb-6 overflow-hidden rounded-card border border-border bg-surface-elevated">
         <div className="flex items-center gap-2.5 px-3 py-2">
           <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-surface text-primary-strong lift-1">
             <Flame className="h-3 w-3" />
@@ -144,10 +144,13 @@ export function JourneyBoard({
   }
 
   return (
-    <div className="mb-6 overflow-hidden rounded-2xl border border-primary-bg bg-primary-bg/30">
+    // NEUTRAL, not tinted (DAWN index.html StreakBar): surface-elevated + border. The board
+    // used to be a second amber block sitting under the page's amber eyebrow, which warmed
+    // the whole top of the feed. Amber now survives only on the Zap/flame glyph, the
+    // milestone dots, and the rank badge.
+    <div className="mb-6 overflow-hidden rounded-card border border-border bg-surface-elevated">
       {/* Hero band: streak + a warm, un-gamified line. */}
       <div className="relative px-4 pt-4">
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-primary/10 to-transparent" />
         <div className="relative flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-surface text-primary-strong lift-1">
@@ -244,7 +247,7 @@ export function JourneyBoard({
       </div>
 
       {/* Today's move — the one action, always visible. */}
-      <div className="mx-4 mt-3 border-t border-primary-bg pt-3">
+      <div className="mx-4 mt-3 border-t border-border pt-3">
         {hasReminders ? (
           <ul className="space-y-2">
             {/* Partials first — a started-but-unfinished sit reads "Continue Practice" and
@@ -305,7 +308,7 @@ export function JourneyBoard({
       {activeJourney && (
         <Link
           href={activeJourney.href}
-          className="group mx-4 mt-3 flex items-center gap-2.5 border-t border-primary-bg pt-3"
+          className="group mx-4 mt-3 flex items-center gap-2.5 border-t border-border pt-3"
         >
           <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-surface text-primary-strong">
             <Route className="h-3.5 w-3.5" />
@@ -328,7 +331,7 @@ export function JourneyBoard({
       {/* Pillar balance — a calm read of where your practice sits across the four
           Pillars. Coverage, not a score. */}
       {stageIndex >= 3 && pillarBalance && pillarBalance.length > 0 && (
-        <div className="mt-3 border-t border-primary-bg px-4 pt-3">
+        <div className="mt-3 border-t border-border px-4 pt-3">
           <p className="mb-1.5 text-2xs font-medium text-muted">Your pillars</p>
           <div className="flex gap-1.5">
             {pillarBalance.map((p) => (
@@ -351,7 +354,7 @@ export function JourneyBoard({
       {/* Resource center — a few warm doors back into the place. Held back until a
           member is past the very first days so the board stays focused early on. */}
       {stageIndex >= 2 && (
-        <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-primary-bg bg-surface/40 px-3 py-2.5">
+        <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-border bg-surface/40 px-3 py-2.5">
           <Compass className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
           <span className="mr-0.5 text-meta font-medium text-subtle">Keep exploring</span>
           {RESOURCES.map(({ href, label, Icon }) => (

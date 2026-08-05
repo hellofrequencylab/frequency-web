@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 
 type ButtonVariant =
   | 'primary'
+  | 'primarySoft'
   | 'secondary'
   | 'ghost'
   | 'danger'
@@ -18,6 +19,12 @@ type ButtonSize = 'sm' | 'md'
 
 const VARIANT: Record<ButtonVariant, string> = {
   primary: 'bg-primary text-on-primary hover:bg-primary-hover',
+  // The MUTED amber: present, but not shouting until it matters. The token pair the system
+  // already carries for exactly this (`bg-primary-bg` + `text-primary-strong`, ~250 sites), on
+  // the primitive so a control can go quiet at rest without hand-rolling a fill string. Hover
+  // steps up to the full amber, which is the "this is the same button, louder" cue. First
+  // consumer: the dock's chat tab, muted until there is an unread.
+  primarySoft: 'bg-primary-bg text-primary-strong hover:bg-primary-hover hover:text-on-primary',
   secondary: 'border border-border bg-surface text-text hover:border-border-strong hover:bg-surface-elevated',
   ghost: 'text-muted hover:bg-surface-elevated hover:text-text',
   danger: 'bg-danger text-on-danger hover:opacity-90',

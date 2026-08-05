@@ -30,7 +30,9 @@ export async function SystemLine({ body }: { body: string | null }) {
   const parts = body.split(/(@[a-zA-Z0-9_]+)/g)
   return (
     <div className="flex justify-center px-4 py-1 text-center">
-      <p className="text-meta leading-relaxed text-muted">
+      {/* text-body-sm, not text-meta: DAWN sets this line at 0.88rem. --text-meta is
+          the documented content FLOOR, and a join notice is a sentence, not chrome. */}
+      <p className="text-body-sm leading-relaxed text-muted">
         {parts.map((part, i) => {
           if (!part.startsWith('@')) return <span key={i}>{part}</span>
           const handle = part.slice(1)
@@ -39,12 +41,14 @@ export async function SystemLine({ body }: { body: string | null }) {
             <span key={i} className="whitespace-nowrap">
               <Link
                 href={`/people/${handle}`}
-                className="font-semibold text-text hover:underline"
+                className="font-bold text-text hover:underline"
               >
                 {handle}
               </Link>
+              {/* The count rides at the line's own size, primary-STRONG (plain
+                  primary is too light on cream), with 6px of air either side. */}
               {zaps !== undefined && (
-                <span className="ml-1 inline-flex items-center gap-0.5 align-[-1px] text-2xs font-bold text-primary">
+                <span className="mx-1.5 inline-flex items-center gap-0.5 align-[-1px] font-bold text-primary-strong">
                   <Zap className="h-3 w-3 fill-current" aria-hidden />
                   {zaps}
                 </span>

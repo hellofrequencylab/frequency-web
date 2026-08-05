@@ -49,14 +49,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 3783,
+      "baseline": 3743,
       "frozen": {
         "at": "2026-08-05",
-        "value": 3783,
-        "direction": "rebased",
+        "value": 3743,
+        "direction": "lowered",
         "basis": "6a00b952da5c",
-        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
-        "from": 3824
+        "reason": "Real sweep, -40. Retiring the pill-tab tracks and their rounded-lg/md markup across the feed sort row, the capture-box and composer mode rows and the activity chart, plus the streak strips and the Invite card moving from rounded-xl/2xl onto rounded-card, and the post media frame onto rounded-control. Every one is a literal step replaced by a role token, not a re-measure.",
+        "from": 3783
       },
       "history": [
         {
@@ -114,6 +114,13 @@
           "to": 3783,
           "direction": "rebased",
           "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 3783,
+          "to": 3743,
+          "direction": "lowered",
+          "reason": "Real sweep, -40. Retiring the pill-tab tracks and their rounded-lg/md markup across the feed sort row, the capture-box and composer mode rows and the activity chart, plus the streak strips and the Invite card moving from rounded-xl/2xl onto rounded-card, and the post media frame onto rounded-control. Every one is a literal step replaced by a role token, not a re-measure."
         }
       ]
     },
@@ -320,14 +327,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 527,
+      "baseline": 521,
       "frozen": {
         "at": "2026-08-05",
-        "value": 527,
-        "direction": "rebased",
+        "value": 521,
+        "direction": "lowered",
         "basis": "ceca96ead2f3",
-        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
-        "from": 528
+        "reason": "Earned, and checked by hand rather than trusted, because this pattern is a 500-character proximity window that moves by ~35 on reformatting alone. The sites are named: the post send button went from a solid bg-primary h-11 square to DAWN's 34px bg-primary-bg tinted pill, and the streak strips plus the Invite card dropped their bg-primary-bg fills for a neutral surface-elevated. Real removals of amber fills, not the window twitching.",
+        "from": 527
       },
       "history": [
         {
@@ -364,6 +371,13 @@
           "to": 527,
           "direction": "rebased",
           "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 527,
+          "to": 521,
+          "direction": "lowered",
+          "reason": "Earned, and checked by hand rather than trusted, because this pattern is a 500-character proximity window that moves by ~35 on reformatting alone. The sites are named: the post send button went from a solid bg-primary h-11 square to DAWN's 34px bg-primary-bg tinted pill, and the streak strips plus the Invite card dropped their bg-primary-bg fills for a neutral surface-elevated. Real removals of amber fills, not the window twitching."
         }
       ]
     },
@@ -524,13 +538,13 @@
         "**/underline-tabs.tsx",
         "**/*.{test,spec}.tsx"
       ],
-      "baseline": 3,
+      "baseline": 0,
       "frozen": {
         "at": "2026-08-05",
-        "value": 3,
-        "direction": "rebased",
+        "value": 0,
+        "direction": "lowered",
         "basis": "0a2d583d1e76",
-        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
+        "reason": "Swept to ZERO — the first movement since this class was seeded. The three hand-rolled strips (admin page-layout, the messaging console, and the member housing category nav) now compose UnderlineTabs, which DAWN names as the one tab vocabulary. UnderlineTabs gained a menu disclosure for a long tail and an aria-label prop, both additive: the item type is a union and the label defaults to the previously hardcoded string, so all existing call sites are untouched.",
         "from": 3
       },
       "history": [
@@ -540,6 +554,13 @@
           "to": 3,
           "direction": "rebased",
           "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 3,
+          "to": 0,
+          "direction": "lowered",
+          "reason": "Swept to ZERO — the first movement since this class was seeded. The three hand-rolled strips (admin page-layout, the messaging console, and the member housing category nav) now compose UnderlineTabs, which DAWN names as the one tab vocabulary. UnderlineTabs gained a menu disclosure for a long tail and an aria-label prop, both additive: the item type is a union and the label defaults to the previously hardcoded string, so all existing call sites are untouched."
         }
       ]
     },
@@ -562,14 +583,14 @@
         "components/ui/icon.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 124,
+      "baseline": 122,
       "frozen": {
         "at": "2026-08-05",
-        "value": 124,
-        "direction": "rebased",
+        "value": 122,
+        "direction": "lowered",
         "basis": "085cd5ead614",
-        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
-        "from": 127
+        "reason": "Sweep side effect: hand-sized controls in the retired tab tracks and the post send button gave up their arbitrary px sizing for scale utilities and role tokens.",
+        "from": 124
       },
       "history": [
         {
@@ -585,6 +606,13 @@
           "to": 124,
           "direction": "rebased",
           "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 124,
+          "to": 122,
+          "direction": "lowered",
+          "reason": "Sweep side effect: hand-sized controls in the retired tab tracks and the post send button gave up their arbitrary px sizing for scale utilities and role tokens."
         }
       ]
     },

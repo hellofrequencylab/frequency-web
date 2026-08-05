@@ -7,7 +7,7 @@ import { downloadStyledQrPng } from '@/lib/qr/client-download'
 // THE "INVITE A FRIEND" CTA + POPUP for the right rail (under Report a bug). A member's PERSONAL code IS
 // their invite link: scanning / opening it drops the referrer cookie, and when the friend joins and gets
 // started the member earns Zaps (invite_accepted). So this reuses the same connect code the Edit Profile QR
-// card shows, just framed as an invite. The button is a small warm CTA; the popup carries the branded QR, the
+// card shows, just framed as an invite. The button is a neutral rail row with a tinted glyph; the popup carries the branded QR, the
 // link with copy, a native share, and a PNG download. Semantic tokens only; voice canon (no em dashes).
 export function InviteFriendButton({
   svg,
@@ -58,18 +58,20 @@ export function InviteFriendButton({
 
   return (
     <>
-      {/* The CTA — a small warm invite pill, pinned right under Report a bug. */}
+      {/* The CTA, pinned right under Report a bug. The card itself is NEUTRAL
+          (surface + border, like every other rail row) and only the 34px gift glyph
+          carries the amber — the rail's tinted block is Season standing, not this. */}
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="group flex w-full items-center gap-2.5 rounded-xl border border-primary/30 bg-primary-bg/50 px-3 py-2 text-left transition-colors hover:border-primary/50 hover:bg-primary-bg"
+        className="group flex w-full items-center gap-2.5 rounded-card border border-border bg-surface px-3 py-2 text-left transition-colors hover:bg-surface-elevated"
       >
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-on-primary transition-transform group-hover:scale-105">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control bg-primary text-on-primary transition-transform group-hover:scale-105">
           <Gift className="h-4 w-4" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-body-sm font-bold text-text">Invite a friend</span>
-          <span className="block text-2xs font-medium text-primary-strong">Earn Zaps when they join ⚡</span>
+          <span className="block text-meta font-medium text-muted">Earn Zaps when they join ⚡</span>
         </span>
       </button>
 
