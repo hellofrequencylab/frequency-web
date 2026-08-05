@@ -2,11 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { X, Loader2, LogOut, Pencil } from 'lucide-react'
-import { getInitials } from '@/lib/utils'
-import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { IconButton } from '@/components/ui/icon-button'
+import { Avatar } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 
 // ── The conversation console the dock was missing (ADR-896 parity) ────────────────────────
 // Rename, leave and the participant roster lived ONLY on app/(main)/messages/[id]/page.tsx,
@@ -173,26 +172,21 @@ export function DockThreadDetails({
                   aria-busy={renaming}
                   // text-body below sm: iOS Safari zooms the viewport for any input under 16px,
                   // and a zoom-and-restore jump inside a 68dvh sheet is far worse than on a page.
-                  className="mt-1 w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-body text-text outline-none focus:border-border-strong focus:ring-1 focus:ring-border-strong/30 sm:text-body-sm"
+                  className="mt-1 w-full rounded-control border border-border bg-surface px-2.5 py-2 text-body text-text outline-none focus:border-border-strong focus:ring-1 focus:ring-border-strong/30 sm:text-body-sm"
                 />
                 <p className="mt-1 text-3xs text-muted">Leave it blank to go back to the members&rsquo; names.</p>
                 {renameError && <p role="alert" className="mt-1 text-meta text-danger">{renameError}</p>}
+                {/* Through the kit primitive, which already owns the pressed state, the focus
+                    ring, the disabled fade and `aria-busy` — all four of which this pair of
+                    hand-rolled fills was missing. `min-h-10` stays as the touch floor; the rest
+                    is the primitive's. */}
                 <div className="mt-2 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void saveRename()}
-                    disabled={renaming}
-                    className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 text-body-sm font-medium text-on-primary transition-opacity hover:opacity-90 disabled:opacity-60"
-                  >
+                  <Button size="md" loading={renaming} onClick={() => void saveRename()} className="min-h-10 flex-1">
                     {renaming && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />} Save
-                  </button>
-                  <button
-                    type="button"
-                    onClick={cancelRename}
-                    className="inline-flex min-h-10 items-center justify-center rounded-lg border border-border px-3 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated"
-                  >
+                  </Button>
+                  <Button variant="secondary" size="md" onClick={cancelRename} className="min-h-10">
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -201,14 +195,15 @@ export function DockThreadDetails({
                   <p className="text-2xs font-semibold uppercase tracking-wider text-muted">Group name</p>
                   <p className="truncate text-body-sm text-text">{name || 'Not set'}</p>
                 </div>
-                <button
+                <Button
                   ref={renameTriggerRef}
-                  type="button"
+                  variant="secondary"
+                  size="md"
                   onClick={() => { setEditing(true); setRenameError(null) }}
-                  className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+                  className="min-h-10 shrink-0"
                 >
                   <Pencil className="h-3.5 w-3.5" aria-hidden /> Rename
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -228,13 +223,10 @@ export function DockThreadDetails({
                   href={`/people/${p.handle}`}
                   className="flex min-h-11 items-center gap-2.5 px-3 py-2 transition-colors hover:bg-surface-elevated"
                 >
-                  {p.avatar_url ? (
-                    <Image src={avatarSrc(p.avatar_url)} alt="" width={28} height={28} className="h-7 w-7 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(p.avatar_url)} />
-                  ) : (
-                    <span className="flex h-7 w-7 shrink-0 select-none items-center justify-center rounded-pill bg-primary-bg text-3xs font-semibold text-primary-strong">
-                      {getInitials(p.display_name)}
-                    </span>
-                  )}
+                  {/* THE kit avatar (components/ui/avatar.tsx), not a fourth copy of the photo /
+                      initials fork. It owns the focal-point crop and the initials fallback, so
+                      the roster stops re-deriving both. */}
+                  <Avatar src={p.avatar_url} name={p.display_name} size="xs" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-meta font-medium text-text">
                       {p.display_name}
@@ -256,23 +248,19 @@ export function DockThreadDetails({
                 <p className="mt-0.5 text-meta text-muted">You will stop getting its messages. The others stay.</p>
                 {leaveError && <p role="alert" className="mt-1 text-meta text-danger">{leaveError}</p>}
                 <div className="mt-2 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void confirmLeave()}
-                    disabled={leaving}
-                    aria-busy={leaving}
+                  <Button
+                    variant="danger"
+                    size="md"
+                    loading={leaving}
                     autoFocus
-                    className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg bg-danger px-3 text-body-sm font-medium text-on-danger transition-opacity hover:opacity-90 disabled:opacity-60"
+                    onClick={() => void confirmLeave()}
+                    className="min-h-10 flex-1"
                   >
                     {leaving && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />} Yes, leave
-                  </button>
-                  <button
-                    type="button"
-                    onClick={cancelLeave}
-                    className="inline-flex min-h-10 items-center justify-center rounded-lg border border-border px-3 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated"
-                  >
+                  </Button>
+                  <Button variant="secondary" size="md" onClick={cancelLeave} className="min-h-10">
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -282,14 +270,15 @@ export function DockThreadDetails({
                     and untestable, and on iOS it dismisses the keyboard and can freeze a
                     mid-animation bottom sheet. The page has no confirmation at all today, so
                     this is strictly safer than the surface it replaces. */}
-                <button
+                <Button
                   ref={leaveTriggerRef}
-                  type="button"
+                  variant="dangerOutline"
+                  size="md"
                   onClick={() => { setConfirming(true); setLeaveError(null) }}
-                  className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-danger px-3 text-body-sm font-medium text-danger transition-colors hover:bg-danger-bg"
+                  className="min-h-10 w-full"
                 >
                   <LogOut className="h-3.5 w-3.5" aria-hidden /> Leave conversation
-                </button>
+                </Button>
               </>
             )}
           </div>

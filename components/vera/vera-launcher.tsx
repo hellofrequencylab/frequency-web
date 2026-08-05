@@ -694,11 +694,21 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
 // which is the one thing a persistent piece of furniture must not say; and when a message
 // really does arrive it has nowhere left to go. So rest is the muted pair (`primarySoft` —
 // `bg-primary-bg` + `text-primary-strong`) and an unread promotes it to the full fill.
+//
+// ITEM 5 adds two more ways into that same full fill, and neither of them dilutes the rule
+// above, because neither is on for longer than it is true:
+//   • OPEN — the tab is lit while its own panel is showing, which is what an active tab does.
+//   • AT THE RAIL'S END — the nudge. `atRailEnd` is deliberately not "the rail ended on screen":
+//     DockBar only reports it for a rail that was TALLER than the window, so it means "you
+//     scrolled down to me" and it is false on every short page. Purely visual: no announcement,
+//     no aria change, no focus move. The badge and the waiting dot still carry "something is
+//     waiting", so a lit tab and a lit tab with a red count are still two different sentences.
 function ChatTrigger({
   ref,
   slot,
   slotChecked,
   open,
+  atRailEnd,
   waiting,
   unread,
   onOpen,
@@ -707,6 +717,7 @@ function ChatTrigger({
   slot: HTMLElement | null
   slotChecked: boolean
   open: boolean
+  atRailEnd: boolean
   waiting: boolean
   unread: number
   onOpen: () => void
@@ -741,7 +752,11 @@ function ChatTrigger({
       aria-controls="fq-dock-panel"
       aria-label="Open messages, Vera, and help"
       title="Messages, Vera and help"
-      className={buttonClasses(unread > 0 ? 'primary' : 'primarySoft', 'md', TRIGGER_SHAPE)}
+      className={buttonClasses(
+        unread > 0 || open || (RAIL_END_ACTIVATION === 'nudge' && atRailEnd) ? 'primary' : 'primarySoft',
+        'md',
+        TRIGGER_SHAPE,
+      )}
     >
       <MessageSquare className="h-5 w-5" aria-hidden />
       {unread > 0 && (
