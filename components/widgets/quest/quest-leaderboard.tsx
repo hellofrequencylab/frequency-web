@@ -91,7 +91,7 @@ export async function QuestLeaderboard() {
               </div>
 
               <div className="flex shrink-0 items-center gap-1.5">
-                <span className={`rounded-md px-1.5 py-0.5 text-meta font-bold text-white ${memberRankDef.color}`}>
+                <span className={`rounded-control px-1.5 py-0.5 text-meta font-bold text-on-ink ${memberRankDef.solid}`}>
                   {memberRankDef.label}
                 </span>
                 <div className="flex items-center gap-0.5">

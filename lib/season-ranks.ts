@@ -22,10 +22,16 @@ export type RankKey =
   | 'teal'  | 'slate' | 'indigo' | 'plum'  | 'rose'
 
 export const SEASON_RANKS = [
-  { rank: 'ghost',    label: 'Ghost',    minJourneys: 0, order: 1, rankKey: 'stone' as RankKey, color: 'bg-rank-stone', text: 'text-rank-stone' },
-  { rank: 'initiate', label: 'Initiate', minJourneys: 1, order: 2, rankKey: 'clay'  as RankKey, color: 'bg-rank-clay',  text: 'text-rank-clay'  },
-  { rank: 'adept',    label: 'Adept',    minJourneys: 2, order: 3, rankKey: 'gold'  as RankKey, color: 'bg-rank-gold',  text: 'text-rank-gold'  },
-  { rank: 'master',   label: 'Master',   minJourneys: 3, order: 4, rankKey: 'jade'  as RankKey, color: 'bg-rank-jade',  text: 'text-rank-jade'  },
+  // `color` is the rank's CORE — a dot, a bar, any fill with nothing on top of it.
+  // `solid` is the DEEP step, and it is the one to use when the fill has to CARRY TEXT.
+  // Measured 2026-08-05: white on every core runs 2.46:1 (gold) to 3.88:1 (stone), all under
+  // AA; the same hue at `-deep` runs 6.00:1 to 8.83:1. check-contrast models named token pairs
+  // and has no entry for white-on-rank, so it stayed green over a failing chip. Reach for
+  // `solid` the moment a label sits on the fill.
+  { rank: 'ghost',    label: 'Ghost',    minJourneys: 0, order: 1, rankKey: 'stone' as RankKey, color: 'bg-rank-stone', solid: 'bg-rank-stone-deep', text: 'text-rank-stone' },
+  { rank: 'initiate', label: 'Initiate', minJourneys: 1, order: 2, rankKey: 'clay'  as RankKey, color: 'bg-rank-clay', solid: 'bg-rank-clay-deep',  text: 'text-rank-clay'  },
+  { rank: 'adept',    label: 'Adept',    minJourneys: 2, order: 3, rankKey: 'gold'  as RankKey, color: 'bg-rank-gold', solid: 'bg-rank-gold-deep',  text: 'text-rank-gold'  },
+  { rank: 'master',   label: 'Master',   minJourneys: 3, order: 4, rankKey: 'jade'  as RankKey, color: 'bg-rank-jade', solid: 'bg-rank-jade-deep',  text: 'text-rank-jade'  },
 ] as const
 
 export type SeasonRank = typeof SEASON_RANKS[number]['rank']
