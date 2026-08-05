@@ -59,7 +59,14 @@ Four rail rows drawing the generic fallback glyph, the rail's radius/tracking/we
 chrome frame law, the feed's post surface and type roles, the rail's box-stack, the docks'
 dismissal contract. See the commits on `claude/frequency-design-theming-lfz5sv`.
 
-### 🔴 Phase 1 — The bug class: styling that ignores theming outright
+### ⏳ Phase 1 — The bug class: styling that ignores theming outright
+
+> **`raw-palette` is DONE: 48 → 0, re-frozen with provenance (#2042).** `lib/gamification.ts`'s
+> `TIER_CONFIG`/`DIFFICULTY_CONFIG` now draw from the rank spectrum. Retiring it required bridging
+> the spectrum's `deep`/`bright` steps into `@theme` — only `.rank-badge` could reach them before,
+> which is precisely *why* every caller had reached for a Tailwind palette class instead. A token
+> nothing can consume gets worked around, not obeyed.
+> **Still open in this phase:** `white-black-literals` (266).
 
 Not drift. These are sites where switching skin, generation or mode **does nothing**, so the
 product is visibly wrong on any look but the default.
@@ -83,7 +90,14 @@ product is visibly wrong on any look but the default.
 > Recorded rather than quietly deleted, per the working convention: *audits are leads, not facts.*
 > This one was inherited unverified and repeated in two documents before anyone ran the grep.
 
-### 🔴 Phase 2 — Build the 11 missing primitives *(blocks Phase 3)*
+### ⏳ Phase 2 — Build the missing primitives *(blocks Phase 3)*
+
+> **3 of 11 shipped (#2042): `Badge`, `Select`, `Checkbox`.** Badge replaced five hand-rolled
+> pills; `Select` and `Checkbox` did not exist at all, against 272 raw `<select>`. Two badges were
+> deliberately NOT folded in — `VerifiedBadge` and `CharterBadge` are not pills, and making them
+> one would turn a calm trust signal into a status symbol.
+> **Remaining 8:** Glyph · RankBadge · Stat · CounterRow, plus wiring the four that shipped idle
+> (Counter · StreakMeter · Meter · GateNotice, all at 0–1 call sites).
 
 Sweeping 3,124 elements onto primitives that do not exist is not possible. This phase is small in
 line count and unblocks the largest phase in the plan.
