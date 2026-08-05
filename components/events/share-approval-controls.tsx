@@ -36,7 +36,7 @@ export function ShareApprovalControls({ shareId }: { shareId: string }) {
         type="button"
         onClick={() => act('decline')}
         disabled={pending}
-        className="rounded-lg px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
+        className="rounded-control px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
       >
         Decline
       </button>
@@ -44,7 +44,7 @@ export function ShareApprovalControls({ shareId }: { shareId: string }) {
         type="button"
         onClick={() => act('approve')}
         disabled={pending}
-        className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+        className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
       >
         {pending ? 'Saving…' : 'Add to calendar'}
       </button>

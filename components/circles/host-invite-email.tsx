@@ -33,12 +33,12 @@ export function HostInviteEmail({ circleId }: { circleId: string }) {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Invite by email"
-        className="w-full min-w-0 rounded-lg border border-border bg-surface px-2.5 py-2 text-meta text-text placeholder:text-subtle focus:border-border-strong focus:outline-none sm:w-auto sm:py-1.5"
+        className="w-full min-w-0 rounded-control border border-border bg-surface px-2.5 py-2 text-meta text-text placeholder:text-subtle focus:border-border-strong focus:outline-none sm:w-auto sm:py-1.5"
       />
       <button
         onClick={submit}
         disabled={pending || !email}
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-meta font-medium text-muted hover:border-primary hover:text-primary-strong disabled:opacity-50 transition-colors sm:w-auto sm:py-1.5"
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-control border border-border px-3 py-2 text-meta font-medium text-muted hover:border-primary hover:text-primary-strong disabled:opacity-50 transition-colors sm:w-auto sm:py-1.5"
       >
         {sent ? <Check className="w-3.5 h-3.5" /> : <Mail className="w-3.5 h-3.5" />}
         {pending ? 'Sending…' : sent ? 'Sent' : 'Send invite'}

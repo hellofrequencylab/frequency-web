@@ -120,7 +120,7 @@ export function RsvpPaymentFlow({
             type="button"
             onClick={() => selectRate(r)}
             aria-pressed={r.id === selectedId}
-            className={`flex w-full items-start justify-between gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-colors ${
+            className={`flex w-full items-start justify-between gap-3 rounded-card border px-3.5 py-2.5 text-left transition-colors ${
               r.id === selectedId
                 ? 'border-primary bg-primary-bg/40'
                 : 'border-border hover:border-border-strong'
@@ -131,11 +131,11 @@ export function RsvpPaymentFlow({
               {r.tag && (
                 <div className="mt-1">
                   {r.tag === 'member' ? (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-primary-bg px-1.5 py-0.5 text-2xs font-medium text-primary-strong">
+                    <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-1.5 py-0.5 text-2xs font-medium text-primary-strong">
                       <Check className="h-2.5 w-2.5" /> Member
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-success-bg px-1.5 py-0.5 text-2xs font-medium text-success">
+                    <span className="inline-flex items-center gap-1 rounded-pill bg-success-bg px-1.5 py-0.5 text-2xs font-medium text-success">
                       <Lock className="h-2.5 w-2.5" /> Membership
                     </span>
                   )}
@@ -163,7 +163,7 @@ export function RsvpPaymentFlow({
         <div className="space-y-2">
           <Link
             href={signInHref}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             Sign in to RSVP
           </Link>
@@ -186,7 +186,7 @@ export function RsvpPaymentFlow({
                     type="button"
                     onClick={payAndGo}
                     disabled={pending}
-                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
                   >
                     {pending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -205,7 +205,7 @@ export function RsvpPaymentFlow({
                     type="button"
                     onClick={payAndGo}
                     disabled={pending}
-                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
                   >
                     {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                     Confirm RSVP

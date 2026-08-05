@@ -142,7 +142,7 @@ export function SeasonMap({
 
   return (
     <section
-      className="overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary-bg/55 via-surface to-surface lift-1 dark:from-primary-bg/20"
+      className="overflow-hidden rounded-card border border-border bg-gradient-to-br from-primary-bg/55 via-surface to-surface lift-1 dark:from-primary-bg/20"
       aria-labelledby="season-map-heading"
     >
       {/* Frame — the season is the FRAME: its name + the time left sit at the top, with
@@ -163,7 +163,7 @@ export function SeasonMap({
 
         <Link
           href={achievementsHref}
-          className="flex items-center gap-2.5 rounded-2xl px-2 py-1 transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
+          className="flex items-center gap-2.5 rounded-control px-2 py-1 transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
           style={seasonRankStyle(rank)}
         >
           <span

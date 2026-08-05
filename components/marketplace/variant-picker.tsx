@@ -50,7 +50,7 @@ export function VariantPicker({
           id={`variant-${productId}`}
           value={selectedId ?? ''}
           onChange={(e) => setSelectedId(e.target.value || null)}
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary"
+          className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary"
         >
           {variants.map((v) => {
             const stock = effectiveVariantStock(v)

@@ -37,7 +37,7 @@ const PILLAR_LABELS: Record<PillarSlug, string> = {
 type SaveState = 'idle' | 'saving' | 'saved'
 
 const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none transition-colors hover:border-border-strong focus:border-primary placeholder:text-subtle'
+  'w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none transition-colors hover:border-border-strong focus:border-primary placeholder:text-subtle'
 
 export function CircleBuilder({ draft }: { draft: CircleDraft }) {
   const router = useRouter()
@@ -227,7 +227,7 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
                         setType(t)
                         saveIfChanged('type', t, draft.type)
                       }}
-                      className={`flex-1 rounded-lg border px-3 py-2 text-body-sm font-medium transition-colors ${
+                      className={`flex-1 rounded-control border px-3 py-2 text-body-sm font-medium transition-colors ${
                         type === t
                           ? 'border-primary/50 bg-primary-bg text-primary-strong'
                           : 'border-border bg-surface text-muted hover:text-text'
@@ -452,7 +452,7 @@ function CircleActions({
   const [eventsDone, setEventsDone] = useState(false)
   const live = published || justPublished
   const btn =
-    'inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-body-sm font-semibold transition-colors disabled:opacity-60'
+    'inline-flex items-center gap-1.5 rounded-control px-3 py-2 text-body-sm font-semibold transition-colors disabled:opacity-60'
 
   const publish = () => {
     setError(null)
@@ -628,7 +628,7 @@ function ListEditor({
               setDraftRows(next)
               commit(next)
             }}
-            className="shrink-0 rounded-lg border border-border p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+            className="shrink-0 rounded-control border border-border p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
           >
             <X className="h-4 w-4" aria-hidden />
           </button>
@@ -637,7 +637,7 @@ function ListEditor({
       <button
         type="button"
         onClick={() => setDraftRows([...draftRows, ''])}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-2 text-body-sm font-medium text-muted transition-colors hover:border-primary/40 hover:text-text"
+        className="inline-flex items-center gap-1.5 rounded-control border border-dashed border-border px-3 py-2 text-body-sm font-medium text-muted transition-colors hover:border-primary/40 hover:text-text"
       >
         <Plus className="h-4 w-4" aria-hidden /> {addLabel}
       </button>

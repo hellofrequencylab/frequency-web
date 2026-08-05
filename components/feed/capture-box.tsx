@@ -103,7 +103,7 @@ export function CaptureBox({
 
   if (mode === 'contact') {
     return (
-      <div className="rounded-2xl bg-surface p-4 lift-1">
+      <div className="rounded-card bg-surface p-4 lift-1">
         <ContactCaptureForm />
         <TakeProfilePic />
         <div className="mt-3 border-t border-border pt-3">{featureRow}</div>
@@ -187,7 +187,7 @@ function TakeProfilePic() {
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={state === 'saving'}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
       >
         <Camera className="h-3.5 w-3.5" />
         {state === 'saving'

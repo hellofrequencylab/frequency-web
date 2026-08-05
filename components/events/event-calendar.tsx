@@ -142,7 +142,7 @@ export function EventCalendar({
               <button
                 type="button"
                 onClick={() => setMonth({ year: initialYear, month1: initialMonth1 })}
-                className="rounded-lg px-2.5 py-1 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                className="rounded-control px-2.5 py-1 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
               >
                 Today
               </button>
@@ -156,14 +156,14 @@ export function EventCalendar({
               className fill would be settled by stylesheet order rather than by the call site.
               What was wrong was the SIZE -- 28px, under both the 32px density floor and the 44px
               coarse-pointer target -- so both halves take the same `tap-target` the kit uses. */}
-          <div className="inline-flex items-center rounded-lg border border-border p-0.5" role="group" aria-label="Calendar view">
+          <div className="inline-flex items-center rounded-control border border-border p-0.5" role="group" aria-label="Calendar view">
             <button
               type="button"
               onClick={() => setView('grid')}
               aria-pressed={view === 'grid'}
               aria-label="Grid view"
               className={cn(
-                'tap-target inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+                'tap-target inline-flex h-7 w-7 items-center justify-center rounded-control transition-colors',
                 view === 'grid' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated hover:text-text',
               )}
             >
@@ -175,7 +175,7 @@ export function EventCalendar({
               aria-pressed={view === 'list'}
               aria-label="List view"
               className={cn(
-                'tap-target inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+                'tap-target inline-flex h-7 w-7 items-center justify-center rounded-control transition-colors',
                 view === 'list' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated hover:text-text',
               )}
             >
@@ -304,7 +304,7 @@ export function EventCalendar({
           const showViewer = inViewerTz && viewerLabel !== null
           const whenText = showViewer ? viewerLabel : selected.whenLabel
           return (
-          <div className="overflow-hidden rounded-2xl border border-border bg-surface lift-3">
+          <div className="overflow-hidden rounded-card border border-border bg-surface lift-3">
             {selected.coverUrl && (
               // eslint-disable-next-line @next/next/no-img-element -- external public bucket URL, not a local asset
               <img

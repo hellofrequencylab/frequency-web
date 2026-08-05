@@ -100,7 +100,7 @@ export function DisputeButton({
         placeholder="Add any detail that helps us sort it out (optional)"
         rows={2}
         maxLength={2000}
-        className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary"
+        className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary"
       />
       {error && <p className="text-meta text-warning">{error}</p>}
       <div className="flex items-center justify-end gap-2">
@@ -118,7 +118,7 @@ export function DisputeButton({
               else setState({ id: 'pending', status: 'open' })
             })
           }
-          className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {pending ? 'Filing' : 'Submit dispute'}
         </button>

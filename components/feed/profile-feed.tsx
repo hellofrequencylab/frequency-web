@@ -253,7 +253,7 @@ export async function ProfileFeed({
 
   if (!latestDispatch && items.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-12 text-center">
+      <div className="rounded-card border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-12 text-center">
         <MessageSquare className="w-8 h-8 text-subtle/60 mx-auto mb-3" />
         <p className="text-body-sm text-muted">No activity yet.</p>
       </div>
@@ -298,10 +298,10 @@ function DispatchTimelineCard({ dispatch: d }: { dispatch: DispatchItem }) {
   return (
     <Link
       href={`/broadcast/${d.id}`}
-      className="group block rounded-2xl border border-border/70 bg-surface px-4 py-3.5 lift-1 transition-colors hover:border-primary dark:border-border/60 dark:bg-surface-elevated/80"
+      className="group block rounded-card border border-border/70 bg-surface px-4 py-3.5 lift-1 transition-colors hover:border-primary dark:border-border/60 dark:bg-surface-elevated/80"
     >
       <div className="flex items-start gap-3">
-        <div className="shrink-0 w-7 h-7 rounded-lg bg-primary-bg flex items-center justify-center mt-0.5">
+        <div className="shrink-0 w-7 h-7 rounded-control bg-primary-bg flex items-center justify-center mt-0.5">
           <Megaphone className="w-3.5 h-3.5 text-primary-strong" />
         </div>
         <div className="flex-1 min-w-0">
@@ -340,10 +340,10 @@ function EventTimelineCard({ event: e }: { event: EventItem }) {
   return (
     <Link
       href={`/events/${e.slug}`}
-      className="group block rounded-2xl border border-border/70 bg-surface px-4 py-3.5 lift-1 transition-colors hover:border-warning dark:border-border/60 dark:bg-surface-elevated/80"
+      className="group block rounded-card border border-border/70 bg-surface px-4 py-3.5 lift-1 transition-colors hover:border-warning dark:border-border/60 dark:bg-surface-elevated/80"
     >
       <div className="flex items-center gap-3">
-        <div className="shrink-0 w-10 h-10 rounded-lg bg-warning-bg dark:bg-warning-bg flex flex-col items-center justify-center">
+        <div className="shrink-0 w-10 h-10 rounded-control bg-warning-bg dark:bg-warning-bg flex flex-col items-center justify-center">
           <span className="text-3xs font-bold uppercase text-warning leading-none">{month}</span>
           <span className="text-body-sm font-bold text-warning leading-tight">{day}</span>
         </div>

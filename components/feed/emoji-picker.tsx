@@ -62,7 +62,7 @@ export function EmojiPicker({ onSelect, disabled }: { onSelect: (emoji: string) 
         disabled={disabled}
         aria-label="Add emoji"
         aria-expanded={open}
-        className={`inline-flex items-center rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
+        className={`inline-flex items-center rounded-control p-1.5 transition-colors disabled:opacity-40 ${
           open ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
         }`}
         title="Add emoji"
@@ -72,7 +72,7 @@ export function EmojiPicker({ onSelect, disabled }: { onSelect: (emoji: string) 
 
       {open && (
         <div
-          className="absolute bottom-full left-0 z-50 mb-2 max-h-64 w-72 overflow-y-auto rounded-2xl border border-border bg-surface p-2 lift-3"
+          className="absolute bottom-full left-0 z-50 mb-2 max-h-64 w-72 overflow-y-auto rounded-card border border-border bg-surface p-2 lift-3"
           // Don't let clicks bubble to the textarea's blur / outside handlers.
           onMouseDown={(e) => e.preventDefault()}
         >
@@ -90,7 +90,7 @@ export function EmojiPicker({ onSelect, disabled }: { onSelect: (emoji: string) 
                       onSelect(emoji)
                       setOpen(false)
                     }}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg text-body-lg leading-none transition-colors hover:bg-surface-elevated"
+                    className="flex h-7 w-7 items-center justify-center rounded-control text-body-lg leading-none transition-colors hover:bg-surface-elevated"
                   >
                     {emoji}
                   </button>

@@ -100,7 +100,7 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
     }
     return (
       <div
-        className={`rounded-2xl border border-dashed border-border bg-surface/50 px-6 py-10 text-center ${className ?? ''}`}
+        className={`rounded-card border border-dashed border-border bg-surface/50 px-6 py-10 text-center ${className ?? ''}`}
       >
         <Compass className="mx-auto mb-3 h-8 w-8 text-subtle" />
         <p className="text-body-sm font-semibold text-text">No Frequency Signature yet</p>

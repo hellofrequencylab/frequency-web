@@ -32,10 +32,10 @@ export function StarterClaim({ templateId, canCreate = true }: { templateId: str
   }
 
   return (
-    <div className="mb-6 rounded-2xl border border-primary-bg bg-primary-bg/40 p-4 dark:bg-primary-bg/15">
+    <div className="mb-6 rounded-card border border-primary-bg bg-primary-bg/40 p-4 dark:bg-primary-bg/15">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-start gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
             <Sparkles className="h-5 w-5" aria-hidden />
           </span>
           <div className="min-w-0">
@@ -52,7 +52,7 @@ export function StarterClaim({ templateId, canCreate = true }: { templateId: str
             onClick={claim}
             disabled={pending}
             title="Claim this circle, or make it your own."
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
             {pending ? 'Starting…' : 'Remix'}
@@ -62,7 +62,7 @@ export function StarterClaim({ templateId, canCreate = true }: { templateId: str
             isCrew={false}
             label="Remix"
             reason="create-circle"
-            buttonClassName="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            buttonClassName="inline-flex shrink-0 items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           />
         )}
       </div>

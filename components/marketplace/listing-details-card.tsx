@@ -8,7 +8,7 @@ import type { ListingDetailField } from '@/lib/marketplace'
 export function ListingDetailsCard({ details }: { details: ListingDetailField[] }) {
   if (!details || details.length === 0) return null
   return (
-    <section className="rounded-2xl border border-border bg-surface p-4">
+    <section className="rounded-card border border-border bg-surface p-4">
       <h2 className="mb-3 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
         <Info className="h-3.5 w-3.5" aria-hidden /> Item details
       </h2>

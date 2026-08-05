@@ -26,11 +26,11 @@ export async function HostPromptCard({ viewerProfileId }: { viewerProfileId: str
       <NewCircleCompose
         buttonLabel="Start a Circle"
         canCreate={canStartCircle}
-        buttonClass="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        buttonClass="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
       />
       <Link
         href="/events"
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+        className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
       >
         <CalendarPlus className="h-4 w-4 text-subtle" /> Host an Event
       </Link>

@@ -11,7 +11,7 @@ import { createProfile } from '@/app/(main)/connections/actions'
 // /connections/new. Saves a private, owner-scoped contact (member-tier, §5.2).
 
 const input =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-broadcast'
+  'w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-broadcast'
 
 export function ContactCaptureForm() {
   const [name, setName] = useState('')
@@ -85,7 +85,7 @@ export function ContactCaptureForm() {
           type="button"
           onClick={save}
           disabled={!name.trim() || pending}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-control bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           <UserPlus className="h-3.5 w-3.5" aria-hidden /> {pending ? 'Saving…' : 'Capture'}
         </button>

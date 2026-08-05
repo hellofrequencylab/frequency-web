@@ -86,7 +86,7 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
   const win = windowLabel(windowStartsAt, windowEndsAt)
 
   return (
-    <section className="rounded-2xl border border-border bg-surface p-5">
+    <section className="rounded-card border border-border bg-surface p-5">
       <SectionHeader
         title={title}
         action={
@@ -98,13 +98,13 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {inCohort && (
-          <span className="inline-flex items-center gap-1.5 rounded-md bg-signal-bg px-2 py-1 text-meta font-medium text-signal-strong">
+          <span className="inline-flex items-center gap-1.5 rounded-pill bg-signal-bg px-2 py-1 text-meta font-medium text-signal-strong">
             <Users className="h-3.5 w-3.5" />
             Running with your Circle
           </span>
         )}
         {win && (
-          <span className="inline-flex items-center gap-1.5 rounded-md bg-surface-elevated px-2 py-1 text-meta font-medium text-muted">
+          <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface-elevated px-2 py-1 text-meta font-medium text-muted">
             <CalendarRange className="h-3.5 w-3.5" />
             {win}
           </span>
@@ -157,7 +157,7 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
               </div>
             ) : (
               <div
-                className="mt-4 rounded-xl border p-3.5"
+                className="mt-4 rounded-card border p-3.5"
                 style={{
                   ...expressionPillarStyle(),
                   borderColor: 'var(--rank-bright)',
@@ -178,7 +178,7 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
           <div className="mt-4">
             <Link
               href={learnHref}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
             >
               Open this Journey <ArrowRight className="h-4 w-4" />
             </Link>

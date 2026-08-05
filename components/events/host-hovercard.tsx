@@ -29,7 +29,7 @@ export function HostHovercard({
       >
         {host.display_name}
       </Link>
-      <span className="pointer-events-none absolute left-0 top-full z-50 mt-2 block w-64 translate-y-1 rounded-2xl border border-border bg-surface p-3 opacity-0 shadow-lg transition-[opacity,transform] duration-100 ease-out group-hover/host:pointer-events-auto group-hover/host:translate-y-0 group-hover/host:opacity-100 group-focus-within/host:pointer-events-auto group-focus-within/host:translate-y-0 group-focus-within/host:opacity-100">
+      <span className="pointer-events-none absolute left-0 top-full z-50 mt-2 block w-64 translate-y-1 rounded-card border border-border bg-surface p-3 opacity-0 shadow-lg transition-[opacity,transform] duration-100 ease-out group-hover/host:pointer-events-auto group-hover/host:translate-y-0 group-hover/host:opacity-100 group-focus-within/host:pointer-events-auto group-focus-within/host:translate-y-0 group-focus-within/host:opacity-100">
         <Link href={`/people/${host.handle}`} className="flex items-center gap-3">
           {host.avatar_url ? (
             <Image

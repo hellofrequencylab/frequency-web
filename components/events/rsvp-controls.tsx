@@ -210,7 +210,7 @@ export function RsvpControls({
           type="button"
           onClick={requestToJoin}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           <UserPlus className="h-4 w-4" />
           Request to join
@@ -258,7 +258,7 @@ export function RsvpControls({
             onClick={onGoing}
             disabled={pending}
             aria-pressed={isGoing || isWaitlisted}
-            className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 text-meta font-semibold transition-colors disabled:opacity-60 ${
+            className={`flex flex-col items-center justify-center gap-1 rounded-control px-2 py-2.5 text-meta font-semibold transition-colors disabled:opacity-60 ${
               isGoing
                 ? 'bg-success-bg text-success'
                 : isWaitlisted
@@ -276,7 +276,7 @@ export function RsvpControls({
           onClick={onMaybe}
           disabled={pending}
           aria-pressed={isMaybe}
-          className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 text-meta font-semibold transition-colors disabled:opacity-60 ${
+          className={`flex flex-col items-center justify-center gap-1 rounded-control px-2 py-2.5 text-meta font-semibold transition-colors disabled:opacity-60 ${
             isMaybe
               ? 'bg-primary-bg text-primary-strong'
               : 'text-muted hover:bg-surface-elevated hover:text-text'
@@ -291,7 +291,7 @@ export function RsvpControls({
           onClick={onCantGo}
           disabled={pending}
           aria-pressed={isNotGoing}
-          className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 text-meta font-semibold transition-colors disabled:opacity-60 ${
+          className={`flex flex-col items-center justify-center gap-1 rounded-control px-2 py-2.5 text-meta font-semibold transition-colors disabled:opacity-60 ${
             isNotGoing
               ? 'bg-surface-elevated text-text'
               : 'text-muted hover:bg-surface-elevated hover:text-text'
@@ -411,14 +411,14 @@ function RsvpNote({
         rows={2}
         placeholder="Bringing snacks, running a little late, can’t wait…"
         disabled={pending}
-        className="w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
+        className="w-full resize-none rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
       />
       <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={save}
           disabled={pending || !note.trim()}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           <Check className="h-3.5 w-3.5" />
           {pending ? 'Saving…' : 'Add note'}
@@ -484,7 +484,7 @@ function EventQuestionnaire({
                 onChange={(e) => setLocal(q.id, e.target.value)}
                 onBlur={(e) => save(q.id, e.target.value)}
                 rows={3}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
+                className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
               />
             ) : q.type === 'number' ? (
               <input
@@ -493,7 +493,7 @@ function EventQuestionnaire({
                 value={value}
                 onChange={(e) => setLocal(q.id, e.target.value)}
                 onBlur={(e) => save(q.id, e.target.value)}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
+                className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
               />
             ) : q.type === 'boolean' ? (
               <div className="inline-flex items-center gap-1 rounded-card border border-border bg-surface p-1">
@@ -508,7 +508,7 @@ function EventQuestionnaire({
                         save(q.id, opt)
                       }}
                       aria-pressed={selected}
-                      className={`rounded-lg px-3 py-1.5 text-body-sm font-semibold capitalize transition-colors ${
+                      className={`rounded-control px-3 py-1.5 text-body-sm font-semibold capitalize transition-colors ${
                         selected
                           ? 'bg-primary-bg text-primary-strong'
                           : 'text-muted hover:bg-surface-elevated hover:text-text'
@@ -527,7 +527,7 @@ function EventQuestionnaire({
                   setLocal(q.id, e.target.value)
                   save(q.id, e.target.value)
                 }}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none transition-colors focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
+                className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none transition-colors focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
               >
                 <option value="">Choose one</option>
                 {q.options.map((opt) => (
@@ -552,7 +552,7 @@ function EventQuestionnaire({
                 value={value}
                 onChange={(e) => setLocal(q.id, e.target.value)}
                 onBlur={(e) => save(q.id, e.target.value)}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
+                className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
               />
             )}
 
@@ -661,7 +661,7 @@ function PlusOneNames({
             onBlur={() => onSave(names)}
             placeholder={`Guest ${i + 1}`}
             disabled={pending}
-            className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
+            className="min-w-0 flex-1 rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
           />
           <IconButton
             label="Remove guest"

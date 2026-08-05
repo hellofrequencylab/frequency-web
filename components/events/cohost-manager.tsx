@@ -51,7 +51,7 @@ export function CohostManager({
       ) : (
         <ul className="space-y-0.5">
           {cohosts.map((c) => (
-            <li key={c.id} className="flex items-center gap-3 rounded-lg px-3 py-2 -mx-3 hover:bg-surface transition-colors">
+            <li key={c.id} className="flex items-center gap-3 rounded-control px-3 py-2 -mx-3 hover:bg-surface transition-colors">
               {c.avatarUrl ? (
                 <Image src={avatarSrc(c.avatarUrl)} alt={c.displayName} width={28} height={28} className="h-7 w-7 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(c.avatarUrl)} />
               ) : (
@@ -78,7 +78,7 @@ export function CohostManager({
           <p className="mb-2 text-meta font-semibold uppercase tracking-wide text-subtle">Pending invites</p>
           <ul className="space-y-0.5">
             {pendingInvites.map((p) => (
-              <li key={p.id} className="flex items-center gap-3 rounded-lg px-3 py-2 -mx-3 hover:bg-surface transition-colors">
+              <li key={p.id} className="flex items-center gap-3 rounded-control px-3 py-2 -mx-3 hover:bg-surface transition-colors">
                 {p.avatarUrl ? (
                   <Image src={avatarSrc(p.avatarUrl)} alt={p.displayName} width={28} height={28} className="h-7 w-7 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(p.avatarUrl)} />
                 ) : (
@@ -124,7 +124,7 @@ function RemoveCohostButton({
       onClick={() => startTransition(() => removeCohost(eventId, slug, cohostProfileId))}
       disabled={pending}
       aria-label={label}
-      className="shrink-0 rounded-lg p-1.5 text-subtle transition-colors hover:text-danger disabled:opacity-40"
+      className="shrink-0 rounded-control p-1.5 text-subtle transition-colors hover:text-danger disabled:opacity-40"
     >
       <X className="h-4 w-4" />
     </button>
@@ -172,7 +172,7 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
     <div className="mt-3">
       {/* No stroke around the add-cohost input (owner ask): the inner <input> carries no
           border either, so this reads as a quiet inline field, not a boxed control. */}
-      <div className="flex items-center gap-2 rounded-lg px-3 py-1.5">
+      <div className="flex items-center gap-2 rounded-control px-3 py-1.5">
         <UserPlus className="h-4 w-4 shrink-0 text-subtle" />
         <input
           type="text"
@@ -309,7 +309,7 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
               type="button"
               onClick={confirm}
               disabled={pending}
-              className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+              className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               {pending ? 'Transferring…' : 'Confirm transfer'}
             </button>
@@ -317,7 +317,7 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
               type="button"
               onClick={() => setPick(null)}
               disabled={pending}
-              className="rounded-lg px-2 py-1.5 text-meta font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
+              className="rounded-control px-2 py-1.5 text-meta font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
             >
               Back
             </button>
@@ -334,7 +334,7 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
             }}
             placeholder="New host by name or @handle"
             disabled={pending}
-            className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
+            className="w-full rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
           />
           {hits.length > 0 && (
             <div className="mt-1 w-full max-w-sm rounded-card border border-border bg-surface py-1 lift-3">

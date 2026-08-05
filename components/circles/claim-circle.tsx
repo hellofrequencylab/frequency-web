@@ -45,12 +45,12 @@ export function ClaimCircle({
   }
 
   const field =
-    'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none'
+    'w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none'
 
   return (
     <>
       {/* Banner */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-warning/30 bg-warning-bg/40 px-4 py-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-card border border-warning/30 bg-warning-bg/40 px-4 py-3">
         <div className="flex items-start gap-2">
           <Zap className="mt-0.5 h-4 w-4 shrink-0 fill-warning text-warning" aria-hidden />
           <p className="text-body-sm text-text">
@@ -63,7 +63,7 @@ export function ClaimCircle({
           onClick={() => setOpen(true)}
           title="Claim this circle, or make it your own"
           aria-label="Remix this circle. Claim it, or make it your own."
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           <Sparkles className="h-4 w-4" /> Remix
         </button>
@@ -71,7 +71,7 @@ export function ClaimCircle({
 
       {/* Modal wizard */}
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="Make it yours" className="max-w-md">
-          <div className="w-full rounded-2xl border border-border bg-surface p-5 lift-3">
+          <div className="w-full rounded-card border border-border bg-surface p-5 lift-3">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-body font-bold text-text">Make it yours</h2>
               <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="text-subtle hover:text-text">
@@ -80,7 +80,7 @@ export function ClaimCircle({
             </div>
 
             {error && (
-              <p className="mb-3 rounded-lg border border-danger-bg bg-danger-bg/30 px-3 py-2 text-body-sm text-danger">{error}</p>
+              <p className="mb-3 rounded-card border border-danger-bg bg-danger-bg/30 px-3 py-2 text-body-sm text-danger">{error}</p>
             )}
 
             <div className="space-y-4">
@@ -116,14 +116,14 @@ export function ClaimCircle({
             </div>
 
             <div className="mt-5 flex items-center justify-end gap-2">
-              <button type="button" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 text-body-sm font-medium text-muted hover:text-text">
+              <button type="button" onClick={() => setOpen(false)} className="rounded-control px-3 py-2 text-body-sm font-medium text-muted hover:text-text">
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={submit}
                 disabled={pending || !theName.trim()}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
               >
                 {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Make it real
               </button>

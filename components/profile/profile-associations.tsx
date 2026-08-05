@@ -140,7 +140,7 @@ export async function ProfileAssociations({
                 // way to read the rest. The title carries the full name plus what it is, which is
                 // the only place the chip's meaning and the clipped text are both recoverable.
                 title={`${item.label} (${item.chip})`}
-                className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-body-sm text-text transition-colors hover:bg-surface-elevated"
+                className="flex items-center gap-2 rounded-control px-2 py-1.5 text-body-sm text-text transition-colors hover:bg-surface-elevated"
               >
                 <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
                 <span className="shrink-0 text-meta text-subtle">{item.chip}</span>
@@ -217,7 +217,7 @@ export async function ProfileAssociations({
             <Link
               key={cta.href}
               href={cta.href}
-              className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+              className="inline-flex items-center rounded-control border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
             >
               {cta.label}
             </Link>

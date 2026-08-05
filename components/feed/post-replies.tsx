@@ -103,7 +103,7 @@ function CommentRow({
               <button
                 type="button"
                 onClick={() => onReply({ id: comment.id, name: author.display_name })}
-                className="rounded-lg px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-muted"
+                className="rounded-control px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-muted"
               >
                 Reply
               </button>
@@ -337,7 +337,7 @@ export function PostReplies({
           <button
             onClick={() => setOpen((o) => !o)}
             aria-label={open ? 'Hide comments' : 'Show comments'}
-            className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-meta font-medium transition-colors sm:min-h-0 ${
+            className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-control px-2.5 py-1.5 text-meta font-medium transition-colors sm:min-h-0 ${
               open ? 'text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
             }`}
           >

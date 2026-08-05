@@ -108,7 +108,7 @@ export function EventGallery({ images }: { images: string[] }) {
               width={1600}
               height={1200}
               unoptimized
-              className="max-h-[88vh] w-auto rounded-lg object-contain"
+              className="max-h-[88vh] w-auto rounded-card object-contain"
             />
           </div>
 

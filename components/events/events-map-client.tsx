@@ -11,7 +11,7 @@ import type { EventMapPin } from './events-map'
 const EventsMap = dynamic(() => import('./events-map'), {
   ssr: false,
   loading: () => (
-    <div className="h-[420px] w-full animate-pulse rounded-2xl border border-border bg-surface-elevated" />
+    <div className="h-[420px] w-full animate-pulse rounded-card border border-border bg-surface-elevated" />
   ),
 })
 
@@ -32,12 +32,12 @@ export function EventsMapToggle({
 
   return (
     <div>
-      <div className="mb-4 inline-flex rounded-lg border border-border bg-surface p-0.5">
+      <div className="mb-4 inline-flex rounded-control border border-border bg-surface p-0.5">
         <button
           type="button"
           onClick={() => setView('list')}
           aria-pressed={view === 'list'}
-          className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-body-sm font-medium transition-colors ${
+          className={`inline-flex items-center gap-1.5 rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors ${
             view === 'list' ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
           }`}
         >
@@ -48,7 +48,7 @@ export function EventsMapToggle({
           type="button"
           onClick={() => setView('map')}
           aria-pressed={view === 'map'}
-          className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-body-sm font-medium transition-colors ${
+          className={`inline-flex items-center gap-1.5 rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors ${
             view === 'map' ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
           }`}
         >
