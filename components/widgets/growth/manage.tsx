@@ -2,7 +2,7 @@ import Link from 'next/link'
 import {
   ArrowUpRight, QrCode, Share2, GraduationCap, ToggleRight, Contact, PieChart,
   Rocket, Telescope, Bot, Link2,
-  ClipboardList, Send, type LucideIcon,
+  Send, type LucideIcon,
 } from 'lucide-react'
 import { AdminSection } from '@/components/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -29,12 +29,11 @@ interface ManageCounts {
   qr: number
   automations: number
   funnels: number
-  applications: number
 }
 
 const EMPTY: ManageCounts = {
   contacts: 0, segments: 0, campaigns: 0, sequences: 0,
-  qr: 0, automations: 0, funnels: 0, applications: 0,
+  qr: 0, automations: 0, funnels: 0,
 }
 
 async function load(): Promise<ManageCounts> {
@@ -42,16 +41,15 @@ async function load(): Promise<ManageCounts> {
     const admin = createAdminClient()
     // Only the cheap, verified counts read live (the same tables the KPIs above use); every other
     // surface owns its own aggregate, so its card stays "Manage" rather than invent a data source.
-    const [contactsC, segmentsC, campaignsC, sequencesC, qrC, automationsC, funnelsC, applicationsC] = await Promise.all([
+    const [contactsC, segmentsC, campaignsC, sequencesC, qrC, automationsC, funnelsC] = await Promise.all([
       admin.from('contacts').select('id', { count: 'exact', head: true }),
       admin.from('segments').select('id', { count: 'exact', head: true }),
       admin.from('campaigns').select('id', { count: 'exact', head: true }),
       admin.from('nurture_sequences').select('id', { count: 'exact', head: true }),
       admin.from('qr_codes').select('id', { count: 'exact', head: true }),
       admin.from('automation_rules').select('id', { count: 'exact', head: true }),
-      // Funnels-as-object (Growth OS Engine 2) + open applications (Engine 3, GE3-4).
+      // Funnels-as-object (Growth OS Engine 2).
       admin.from('funnels').select('id', { count: 'exact', head: true }),
-      admin.from('applications').select('id', { count: 'exact', head: true }).in('status', ['pending', 'in_review']),
     ])
     return {
       contacts: contactsC.count ?? 0,
@@ -61,7 +59,6 @@ async function load(): Promise<ManageCounts> {
       qr: qrC.count ?? 0,
       automations: automationsC.count ?? 0,
       funnels: funnelsC.count ?? 0,
-      applications: applicationsC.count ?? 0,
     }
   } catch {
     return EMPTY
@@ -72,7 +69,6 @@ export async function GrowthManage() {
   const c = await load()
 
   const acquisition: ManageCard[] = [
-    { label: 'Applications', desc: 'The dual-track review queue: builders apply to host, operators bring an offering, and seekers wait for a Circle near them.', stat: `${c.applications}`, statLabel: 'open', href: '/admin/growth/applications', Icon: ClipboardList },
     { label: 'Link Generator', desc: 'Compose a trackable link with campaign tags, then generate a short link and QR to share.', stat: '', statLabel: 'Open', href: '/admin/growth/links', Icon: Link2 },
     { label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', stat: `${c.qr}`, statLabel: 'codes', href: '/admin/qr', Icon: QrCode },
     { label: 'Referrals', desc: 'The personal-code referral funnel: signups, activations, and top referrers.', stat: '', statLabel: 'Manage', href: '/admin/referrals', Icon: Share2 },
