@@ -175,18 +175,26 @@ export function PostCard({
   const showRoleChip = author.is_system || (role !== 'member' && role !== 'crew')
   const scope = post.scopeContext
 
-  // ONE card chrome for every post: white surface on the warm canvas, hairline
+  // ONE card chrome for every post: the warm post surface on the canvas, hairline
   // border, soft shadow. Announcement / pinned tint only the hairline, never the
-  // whole card, so special posts stay in the same visual family.
+  // whole card, so special posts stay in the same visual family — and they tint it
+  // with the SAME amber, because they are one family of "special post" and amber is
+  // the only chrome accent. Warning is a state colour and a pinned post is not a
+  // caution; using it here made two sibling states read as two different meanings.
   const cardBorder = isAnnouncement
-    ? 'border-warning/40'
+    ? 'border-primary/45'
     : post.is_pinned
     ? 'border-primary/40'
     : 'border-border/70 dark:border-border/60'
 
   return (
+    // `bg-surface-post`, not `bg-surface`: DAWN gives feed posts their own surface a step
+    // warmer than the white composer above them, so a post reads as a card and the composer
+    // reads as a bright input on top of it. The token has existed in globals.css since the
+    // 2026-08-03 round with zero call sites, which is why every post was the same pure white
+    // as the box that writes them.
     <article
-      className={`rounded-2xl border bg-surface lift-1 dark:bg-surface-elevated/80 ${cardBorder}`}
+      className={`rounded-card border bg-surface-post lift-1 ${cardBorder}`}
     >
       <div className="p-4">
         {/* Kicker — the ONE slot for a post's special state (announcement / pinned /
@@ -194,12 +202,12 @@ export function PostCard({
         {(isAnnouncement || post.is_pinned || isNote) && (
           <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
             {isAnnouncement && (
-              <span className="inline-flex items-center gap-1 text-2xs font-semibold uppercase tracking-wider text-warning">
+              <span className="inline-flex items-center gap-1 text-2xs font-semibold uppercase tracking-eyebrow text-primary-strong">
                 <Megaphone className="h-3 w-3" /> Announcement
               </span>
             )}
             {post.is_pinned && (
-              <span className="inline-flex items-center gap-1 text-2xs font-semibold uppercase tracking-wider text-primary-strong">
+              <span className="inline-flex items-center gap-1 text-2xs font-semibold uppercase tracking-eyebrow text-primary-strong">
                 <Pin className="h-3 w-3" /> Pinned
               </span>
             )}

@@ -20,6 +20,9 @@ import {
   Send,
   Contact,
   ContactRound,
+  Images,
+  ShoppingBag,
+  UserRound,
   LayoutDashboard,
   LayoutGrid,
   Building2,
@@ -65,6 +68,11 @@ export const AREA_ICONS: Record<string, ElementType> = {
   // Housing is a home SEARCH surface: MapPinHouse (a house on a map pin) is the closest
   // lucide has to house+search ("find a place near you"); plain House reads as "home page".
   housing: MapPinHouse,
+  // The Frequency Store — FIRST-PARTY retail (lib/verticals/shop.ts contributes this row at
+  // runtime, which is why a static read of nav-areas.ts misses it). It gets the shopping bag,
+  // not Store: `market` already owns Store as the commerce UMBRELLA, and the naming canon keeps
+  // the two surfaces distinct, so drawing them with one glyph would say they are one place.
+  shop: ShoppingBag,
   practices: Sparkles,
   journeys: Route,
   library: Library,
@@ -104,6 +112,21 @@ export const AREA_ICONS: Record<string, ElementType> = {
   'admin-qr': QrCode,
   'admin-spaces': LayoutGrid,
   crm: Contact,
+  // The rail's Resonance CRM row is keyed `admin-crm` (lib/nav-areas.ts), NOT `crm` — so the
+  // entry above never matched it and the row drew the generic Globe fallback. DAWN's rail
+  // reference names `contact` for this row; both keys now resolve to it.
+  'admin-crm': Contact,
+  // Loom Studio. Same glyph the Space console's own Loom module uses (`space.loom` in
+  // lib/admin/modules/space-modules.ts), so the platform-wide studio and the per-Space one
+  // read as the same tool at two scopes.
+  'admin-library': Images,
+  // The operator Market board — the same Store glyph as the member commerce row, because it
+  // is the same concept seen from the operator side; the Admin section header disambiguates.
+  'admin-marketplace': Store,
+  // The member's own Profile row, injected at render time with a dynamic href (app-shell
+  // `withHomeProfile`) so it cannot be a static NAV_AREA. Listed here so a DB menu row that
+  // stores `profile` resolves to the same glyph the code path already passes.
+  profile: UserRound,
   connections: ContactRound,
   'my-spaces': Building2,
   'operated-spaces': Blocks,
@@ -143,6 +166,9 @@ const LUCIDE_BY_NAME: Record<string, ElementType> = {
   Send,
   Contact,
   ContactRound,
+  Images,
+  ShoppingBag,
+  UserRound,
   MapPinHouse,
   LayoutDashboard,
   LayoutGrid,

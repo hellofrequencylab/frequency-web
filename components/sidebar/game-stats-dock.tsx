@@ -141,8 +141,12 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
         </span>
         <span className="text-body-sm font-semibold tabular-nums text-text">{zaps.toLocaleString()}</span>
         <span aria-hidden className="h-4 w-px bg-border" />
+        {/* Gems are TEAL. DAWN's counter tone law is by kind, not by chrome: Zaps and streaks
+            amber, Gems and trophies teal, Airtime and movement the Move blue. Amber here made the
+            two currencies read as one, and disagreed with ScoreTile in standing-tiles.tsx, which
+            already colours the same Gem glyph `text-signal`. */}
         <span className="inline-flex items-center gap-1 text-body-sm tabular-nums text-muted">
-          <Gem className="h-3.5 w-3.5 text-primary-strong" />
+          <Gem className="h-3.5 w-3.5 text-signal" />
           {gems.toLocaleString()}
         </span>
         <span aria-hidden className="h-4 w-px bg-border" />
