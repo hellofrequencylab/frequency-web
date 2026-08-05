@@ -358,6 +358,44 @@
   --color-move-strong:       #0F4E72;
   --color-move-bg:           #DCEFF8;
   --color-text-on-move:      #FFFFFF;
+
+  /* THE OTHER 28. The lock re-asserted 29 of the 57 roles :root defines, which meant a
+     force-lit page on a DARK-MODE DEVICE kept the dark value for everything it forgot.
+     app/onboarding/beta/feature-funnel.tsx is wrapped in this class, so its scarcity
+     counter ("N taken", :464) rendered dark-mode --color-warning #F2B14E on the locked
+     cream #FAF8F4 — 1.77:1, which is not "low contrast", it is invisible. The
+     broadcast-bg chip (:591) went the other way: a near-black pill on a cream page.
+     scripts/check-contrast.mjs tests four render states and NONE of them is the lock,
+     which is why the gate was green on a 1.77:1 pair. A fifth state now covers it.
+     A partial lock is worse than no lock: it lights the page and leaves accents dark. */
+  --color-ink:               #141210;
+  --color-ink-elevated:      #211D17;
+  --color-ink-border:        #393227;
+  --color-on-ink:            #F3EEE3;
+  --color-on-ink-muted:      #B5A893;
+  --color-on-ink-subtle:     #857A66;
+  --color-on-media-light:    var(--color-on-ink);
+  --color-on-media-dark:     var(--color-ink);
+  --color-on-media:          var(--color-on-media-light);
+  --color-signal:            #0F8E78;
+  --color-signal-strong:     #0A5C4D;
+  --color-signal-bg:         #D2EDE6;
+  --color-text-on-signal:    #04231E;
+  --color-broadcast:         #1EB6C5;
+  --color-broadcast-strong:  #0E808D;
+  --color-broadcast-bg:      #D8F2F5;
+  --color-text-on-broadcast: #1A1206;
+  --color-warning:           #B07515;
+  --color-warning-bg:        #F6ECD8;
+  --color-info:              #2F6FB0;
+  --color-info-bg:           #E3EDF7;
+  --color-focus-ring:        #B86A15;
+  --brand-mark:              #6E4A2A;
+  --brand-emboss-light:      rgba(255, 248, 235, 0.85);
+  --brand-emboss-dark:       rgba(42, 24, 8, 0.50);
+  --brand-burn:              rgba(74, 40, 12, 0.45);
+  --brand-shine:             rgba(255, 244, 222, 0.65);
+  --brand-wash:              rgba(194, 88, 18, 0.62);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
