@@ -7,6 +7,8 @@ import {
 } from 'lucide-react'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { StreakMeter } from '@/components/ui/streak-meter'
+import { StandingTiles } from '@/components/gamification/standing-tiles'
 
 // ── Data shape (assembled server-side in right-sidebar.tsx) ───────────────────
 
@@ -119,7 +121,8 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
             aria-label="The Vault"
             className="max-h-[70dvh] overflow-y-auto px-2 pb-2 pt-2"
           >
-            <GameStatsPanel data={data} showSummary />
+            {/* No showSummary: the collapsed head above already carries zaps/gems/streak. */}
+            <GameStatsPanel data={data} />
           </div>
         </div>
       </div>
@@ -172,18 +175,34 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
   const { zaps, gems, streak, rank, todaysMove, last7, rankProgress, arc, vaultGems } = data
   return (
     <div className="space-y-4">
+      {/* The three counts, via the KIT rather than a hand-rolled row. StandingTiles calls itself
+          "the single way a member's standing renders anywhere it appears" (MEMBER-DESIGN-SYSTEM
+          §2), and its `compact` variant was written for exactly this three-up — it went unused
+          when the rail's Quest card was deleted by ADR-932. The dock is where the score lives
+          now, so the dock should use the canonical renderer.
+          `showSummary` is FALSE in the dock: the collapsed head already carries these numbers and
+          the docks law is that nothing is offered twice. It is true in the mobile drawer, which
+          has no head. */}
       {showSummary && (
+        <StandingTiles
+          zaps={zaps}
+          gems={gems}
+          streak={streak}
+          rank={rank ?? 'initiate'}
+          variant="compact"
+          links={{ zaps: '/crew/leaderboard', gems: '/crew/store', streak: '/crew' }}
+        />
+      )}
+
+      {/* Rank leads the panel. It is the one part of the score the collapsed head CANNOT show —
+          the chip was dropped from the head when the chat segment took ~48px, so this is where a
+          member reads their standing. */}
+      {rank && (
         <div className="flex items-center justify-between gap-2 border-b border-border pb-3">
-          <div className="flex items-center gap-3 text-body-sm font-bold text-text tabular-nums">
-            <span className="inline-flex items-center gap-1"><Zap className="w-4 h-4 text-primary fill-current" />{zaps.toLocaleString()}</span>
-            <span className="inline-flex items-center gap-1"><Gem className="w-4 h-4 text-signal" />{gems.toLocaleString()}</span>
-            <span className="inline-flex items-center gap-1"><Flame className="w-4 h-4 text-primary" />{streak}d</span>
-          </div>
-          {rank && (
-            <span className="rank-badge text-3xs leading-tight" style={seasonRankStyle(rank)}>
-              {RANK_LABELS[rank] ?? rank}
-            </span>
-          )}
+          <SectionLabel>Season standing</SectionLabel>
+          <span className="rank-badge text-3xs leading-tight" style={seasonRankStyle(rank)}>
+            {RANK_LABELS[rank] ?? rank}
+          </span>
         </div>
       )}
 
@@ -204,14 +223,17 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
         </Link>
       )}
 
-      {/* Streak — subtle 7-day strip */}
-      <div className="flex items-center gap-2">
+      {/* Streak — the kit's StreakMeter, not seven hand-rolled bars. StreakMeter was built for
+          this exact run (DAWN 2026-08-03 §5) with the emotional contract that matters: a missed
+          day is a HOLLOW dot, never red, because an absence is not a failure state. It shipped
+          with a test and then sat at ZERO importers while this file drew flat bars that cannot
+          express the difference between missed and frozen.
+          `last7` is boolean[], so it maps to done/missed only — a freeze reads as 'done' here
+          because DockData carries no freeze flags. That is a data gap, not a rendering choice:
+          feeding the third state needs the tri-state out of lib/practice-streak.ts. */}
+      <div className="space-y-1.5">
         <SectionLabel>Streak</SectionLabel>
-        <div className="flex flex-1 gap-1">
-          {last7.map((on, i) => (
-            <div key={i} className={`h-1.5 flex-1 rounded-pill ${on ? 'bg-primary' : 'bg-surface-elevated'}`} />
-          ))}
-        </div>
+        <StreakMeter days={last7.map((on) => (on ? 'done' : 'missed'))} count={streak} />
       </div>
 
       {/* Rank progress */}
