@@ -228,6 +228,29 @@
   --text-display-card: calc(1.5rem * var(--type-scale, 1));
   --text-stat:         calc(clamp(3.5rem, 6vw, 4.5rem) * var(--type-scale, 1));
 
+  /* PAIRED LINE-HEIGHTS for the display roles — the same prerequisite the content
+     roles needed, and for the same reason. `text-4xl` emits font-size AND
+     line-height: calc(2.5 / 2.25); a role with no companion emits font-size only.
+     143 of the 182 display-literal sites set no explicit `leading-*`, so swapping
+     them without this would drop the line-height on all 143 and let the body's 1.5
+     take over — turning every big headline loose at the same moment the size moved.
+     Two variables at once is exactly what makes a diff unreviewable.
+
+     THE RULE: each role takes the line-height of the literal AT ITS CEILING, because
+     the ceiling is what that role replaces (display-h3 max = text-4xl, h2 max =
+     text-5xl, h1 and stat max = text-7xl). So at desktop the leading is unchanged and
+     SIZE is the only thing this pass moves. Tailwind gives 5xl and up a flat 1, which
+     is why three of these are 1 rather than a ratio.
+
+     Deliberately NOT DAWN's --leading-display (0.95). That is a real tightening and a
+     separate decision; bundling it here would hide it inside a size change. */
+  --text-display-hero--line-height: 1;
+  --text-display-h1--line-height:   1;
+  --text-display-h2--line-height:   1;
+  --text-display-h3--line-height:   calc(2.5 / 2.25);
+  --text-display-card--line-height: calc(2 / 1.5);
+  --text-stat--line-height:         1;
+
   /* Sans (Nunito) — body, in-app headings, UI. */
   --text-page-title:   calc(1.5rem * var(--type-scale, 1));
   --text-lead:         calc(1.25rem * var(--type-scale, 1));
@@ -1140,6 +1163,15 @@
   --text-display-h3:   var(--text-display-h3);
   --text-display-card: var(--text-display-card);
   --text-stat:         var(--text-stat);
+
+  /* Same @theme requirement as the content roles: declared in :root alone, Tailwind v4
+     leaves the utility emitting font-size ONLY. Verified by compiling, not by reading. */
+  --text-display-hero--line-height: var(--text-display-hero--line-height);
+  --text-display-h1--line-height:   var(--text-display-h1--line-height);
+  --text-display-h2--line-height:   var(--text-display-h2--line-height);
+  --text-display-h3--line-height:   var(--text-display-h3--line-height);
+  --text-display-card--line-height: var(--text-display-card--line-height);
+  --text-stat--line-height:         var(--text-stat--line-height);
   /* The `--text-{role}--line-height` companions MUST be bridged here, not just declared in
      :root. Tailwind v4 only pairs a line-height onto a `text-*` utility when it can see the
      companion inside @theme; declaring it in :root alone leaves the utility emitting
