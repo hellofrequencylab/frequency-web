@@ -11,7 +11,7 @@ type TaskType = typeof TASK_TYPES[number]
 
 export function NewTaskCompose({
   buttonLabel = 'New Task',
-  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
+  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
 }: {
   buttonLabel?: string
   buttonClass?: string
@@ -103,12 +103,12 @@ export function NewTaskCompose({
           </div>
         </div>
         <div className="flex items-center gap-4 pt-2">
-          <label className="flex items-center gap-2 text-xs text-muted cursor-pointer">
+          <label className="flex items-center gap-2 text-meta text-muted cursor-pointer">
             <input type="checkbox" checked={isRepeatable} onChange={e => setIsRepeatable(e.target.checked)}
               disabled={isPending} className="rounded border-border-strong" />
             Repeatable
           </label>
-          <label className="flex items-center gap-2 text-xs text-muted cursor-pointer">
+          <label className="flex items-center gap-2 text-meta text-muted cursor-pointer">
             <input type="checkbox" checked={requiresVerification} onChange={e => setRequiresVerification(e.target.checked)}
               disabled={isPending} className="rounded border-border-strong" />
             Requires verification

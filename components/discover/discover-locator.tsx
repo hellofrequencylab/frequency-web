@@ -111,7 +111,7 @@ export function DiscoverLocator({
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search circles, topics, or cities"
             aria-label="Search circles, topics, or cities"
-            className="w-full rounded-2xl border border-border bg-surface py-2.5 pl-9 pr-3 text-sm text-text placeholder:text-subtle lift-1 focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30"
+            className="w-full rounded-2xl border border-border bg-surface py-2.5 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle lift-1 focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30"
           />
         </div>
 
@@ -125,12 +125,12 @@ export function DiscoverLocator({
                     className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-surface-elevated"
                   >
                     <span className="flex min-w-0 flex-col">
-                      <span className="truncate text-sm font-medium text-text">{c.name}</span>
-                      <span className="truncate text-xs text-muted">
+                      <span className="truncate text-body-sm font-medium text-text">{c.name}</span>
+                      <span className="truncate text-meta text-muted">
                         {[c.interest, c.city].filter(Boolean).join(' · ')}
                       </span>
                     </span>
-                    <span className="flex shrink-0 items-center gap-1 text-xs text-muted">
+                    <span className="flex shrink-0 items-center gap-1 text-meta text-muted">
                       <Users className="h-3.5 w-3.5" />
                       {c.memberCount}
                     </span>
@@ -139,7 +139,7 @@ export function DiscoverLocator({
               ))}
             </ul>
           ) : (
-            <div className="rounded-2xl border border-border bg-surface px-4 py-6 text-center text-sm text-muted lift-1">
+            <div className="rounded-2xl border border-border bg-surface px-4 py-6 text-center text-body-sm text-muted lift-1">
               No circles match {`"${query.trim()}"`} yet.
             </div>
           )
@@ -153,9 +153,9 @@ export function DiscoverLocator({
                 >
                   <span className="flex min-w-0 items-center gap-2">
                     <MapPin className="h-4 w-4 shrink-0 text-primary-strong" />
-                    <span className="truncate text-sm font-medium text-text">{c.city}</span>
+                    <span className="truncate text-body-sm font-medium text-text">{c.city}</span>
                   </span>
-                  <span className="shrink-0 text-xs text-muted">
+                  <span className="shrink-0 text-meta text-muted">
                     {c.circles} {c.circles === 1 ? 'circle' : 'circles'}
                   </span>
                 </Link>
@@ -163,7 +163,7 @@ export function DiscoverLocator({
             ))}
           </ul>
         )}
-        <p className="mt-3 text-xs text-subtle">We only ever show the city, never an address.</p>
+        <p className="mt-3 text-meta text-subtle">We only ever show the city, never an address.</p>
       </div>
     </div>
   )

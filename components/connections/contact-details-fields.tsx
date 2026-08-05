@@ -21,7 +21,7 @@ import type {
 } from '@/lib/connections/types'
 
 const input =
-  'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30'
+  'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30'
 
 type SectionKey = 'phones' | 'emails' | 'addresses' | 'services' | 'certifications' | 'hours' | 'links' | 'other'
 
@@ -48,7 +48,7 @@ function sectionPresent(d: ContactDetails, key: SectionKey): boolean {
 
 function CheckChip() {
   return (
-    <span className="inline-flex shrink-0 items-center self-center rounded-md bg-warning-bg px-1.5 py-0.5 text-xs font-medium text-warning">
+    <span className="inline-flex shrink-0 items-center self-center rounded-md bg-warning-bg px-1.5 py-0.5 text-meta font-medium text-warning">
       Check this
     </span>
   )
@@ -72,7 +72,7 @@ function AddRowBtn({ onClick, children }: { onClick: () => void; children: React
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-1 text-xs font-medium text-primary-strong hover:underline"
+      className="inline-flex items-center gap-1 text-meta font-medium text-primary-strong hover:underline"
     >
       <Plus className="h-3 w-3" /> {children}
     </button>
@@ -82,7 +82,7 @@ function AddRowBtn({ onClick, children }: { onClick: () => void; children: React
 function SectionShell({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="mb-1 block text-xs font-medium text-muted">{label}</p>
+      <p className="mb-1 block text-meta font-medium text-muted">{label}</p>
       <div className="space-y-2">{children}</div>
     </div>
   )
@@ -300,7 +300,7 @@ export function DetailsEditor({
 
       {missing.length > 0 && (
         <div>
-          <p className="mb-1 block text-xs font-medium text-muted">Add a section</p>
+          <p className="mb-1 block text-meta font-medium text-muted">Add a section</p>
           <div className="flex flex-wrap gap-1.5">
             {missing.map((key) => (
               <button
@@ -314,7 +314,7 @@ export function DetailsEditor({
                   else if (key === 'other') set({ other: [{ label: '', value: '' }] })
                   else set({ [key]: [''] } as Partial<ContactDetails>)
                 }}
-                className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
               >
                 <Plus className="h-3 w-3" /> {SECTION_LABELS[key]}
               </button>
@@ -360,7 +360,7 @@ function StringListSection({
 export function DetailsView({ details }: { details: ContactDetails }) {
   if (!hasAnyDetails(details)) return null
   return (
-    <dl className="space-y-3 text-sm">
+    <dl className="space-y-3 text-body-sm">
       {!!details.phones?.length && (
         <ViewSection label="Phones">
           {details.phones.map((p, i) => (
@@ -390,7 +390,7 @@ export function DetailsView({ details }: { details: ContactDetails }) {
         <ViewSection label="Services">
           <div className="flex flex-wrap gap-1.5">
             {details.services.map((s, i) => (
-              <span key={i} className="rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-text">{s}</span>
+              <span key={i} className="rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-medium text-text">{s}</span>
             ))}
           </div>
         </ViewSection>
@@ -399,7 +399,7 @@ export function DetailsView({ details }: { details: ContactDetails }) {
         <ViewSection label="Certifications">
           <div className="flex flex-wrap gap-1.5">
             {details.certifications.map((c, i) => (
-              <span key={i} className="rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-text">{c}</span>
+              <span key={i} className="rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-medium text-text">{c}</span>
             ))}
           </div>
         </ViewSection>
@@ -439,7 +439,7 @@ export function DetailsView({ details }: { details: ContactDetails }) {
 function ViewSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <dt className="mb-1 text-xs font-medium text-subtle">{label}</dt>
+      <dt className="mb-1 text-meta font-medium text-subtle">{label}</dt>
       <dd className="space-y-1">{children}</dd>
     </div>
   )
@@ -448,7 +448,7 @@ function ViewSection({ label, children }: { label: string; children: React.React
 function ViewRow({ label, flagged, children }: { label?: string; flagged?: boolean; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2">
-      {label ? <span className="w-20 shrink-0 truncate text-xs capitalize text-subtle">{label}</span> : null}
+      {label ? <span className="w-20 shrink-0 truncate text-meta capitalize text-subtle">{label}</span> : null}
       <span className="min-w-0 truncate">{children}</span>
       {flagged && <CheckChip />}
     </div>

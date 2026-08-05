@@ -18,8 +18,8 @@ import { detectListingKind } from '@/lib/listing-seeder/detect'
 import type { ListingSeedKind } from '@/lib/listing-seeder/types'
 
 const field =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
-const labelCls = 'flex flex-col gap-1 text-xs font-medium text-muted'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
+const labelCls = 'flex flex-col gap-1 text-meta font-medium text-muted'
 
 const KINDS: { key: ListingSeedKind; label: string; blurb: string; icon: typeof Tag }[] = [
   { key: 'classifieds', label: 'Classifieds', blurb: 'For sale, free, lend, or wanted.', icon: Tag },
@@ -142,7 +142,7 @@ export function StartImportForm() {
 
       {/* Vertical picker */}
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted">Vertical</p>
+        <p className="text-meta font-semibold uppercase tracking-wide text-muted">Vertical</p>
         {detectedLabel && (
           <p className="text-2xs font-medium text-primary-strong">Detected: {detectedLabel}</p>
         )}
@@ -168,7 +168,7 @@ export function StartImportForm() {
                 <Icon className="h-4 w-4" aria-hidden />
               </span>
               <span className="min-w-0">
-                <span className={cn('block text-sm font-semibold', active ? 'text-primary-strong' : 'text-text')}>{k.label}</span>
+                <span className={cn('block text-body-sm font-semibold', active ? 'text-primary-strong' : 'text-text')}>{k.label}</span>
                 <span className="block text-2xs text-muted">{k.blurb}</span>
               </span>
             </button>
@@ -188,7 +188,7 @@ export function StartImportForm() {
       </label>
 
       {/* Hints */}
-      <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted">Hints (optional)</p>
+      <p className="mt-4 text-meta font-semibold uppercase tracking-wide text-muted">Hints (optional)</p>
       <p className="mb-2 text-2xs text-muted">A nudge for the extractor when the paste is thin on where or what.</p>
       <div className="grid gap-4 sm:grid-cols-3">
         <label className={labelCls}>
@@ -211,7 +211,7 @@ export function StartImportForm() {
       </div>
 
       {/* Photos */}
-      <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted">Photos (optional)</p>
+      <p className="mt-4 text-meta font-semibold uppercase tracking-wide text-muted">Photos (optional)</p>
       <p className="mb-2 text-2xs text-muted">The first photo is the primary. You can add or reorder more on the next screen.</p>
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
         {previews.map((p, i) => (

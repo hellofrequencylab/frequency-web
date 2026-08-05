@@ -104,7 +104,7 @@ export default async function HubPage({
     <div>
       <Link
         href="/circles"
-        className="inline-flex items-center gap-1 text-xs text-subtle hover:text-muted mb-4 transition-colors"
+        className="inline-flex items-center gap-1 text-meta text-subtle hover:text-muted mb-4 transition-colors"
       >
         ← Circles
       </Link>
@@ -118,7 +118,7 @@ export default async function HubPage({
             <InlineText
               value={hub.name}
               save={updateHubField.bind(null, hub.id, slug, 'name')}
-              inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-xl sm:text-2xl font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
+              inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-lead sm:text-2xl font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
             />
           ) : (
             hub.name
@@ -138,7 +138,7 @@ export default async function HubPage({
               />
               <Link
                 href={`/hubs/${hub.slug}/manage`}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
               >
                 <LayoutDashboard className="h-4 w-4 text-subtle" />
                 Manage hub
@@ -200,19 +200,19 @@ export default async function HubPage({
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-text">{circle.name}</span>
+                        <span className="text-body-sm font-semibold text-text">{circle.name}</span>
                         <StatusBadge status={circle.status} />
-                        <span className="text-xs px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium">
+                        <span className="text-meta px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium">
                           {circle.type}
                         </span>
                       </div>
                       {circle.host && (
-                        <p className="text-xs text-subtle mt-0.5">
+                        <p className="text-meta text-subtle mt-0.5">
                           Host: {circle.host.display_name}
                         </p>
                       )}
                       <div className="mt-1.5 flex items-center gap-2">
-                        <span className="text-xs text-subtle tabular-nums">
+                        <span className="text-meta text-subtle tabular-nums">
                           {circle.member_count} / {circle.member_cap}
                         </span>
                         <ProgressTrack

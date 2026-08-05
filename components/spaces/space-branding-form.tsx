@@ -216,7 +216,7 @@ export function SpaceBrandingForm({
   return (
     <div className="space-y-8 rounded-2xl border border-border bg-surface p-5 lift-1 sm:p-6">
       {error && (
-        <p className="rounded-lg border border-danger bg-danger-bg px-3 py-2 text-sm font-medium text-danger">
+        <p className="rounded-lg border border-danger bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger">
           {error}
         </p>
       )}
@@ -252,7 +252,7 @@ export function SpaceBrandingForm({
               if (tagline.trim() !== initialTagline.trim()) saveField({ tagline: tagline.trim() || null })
             }}
           />
-          <p className="mt-1 text-xs text-subtle">One plain line that says what you do.</p>
+          <p className="mt-1 text-meta text-subtle">One plain line that says what you do.</p>
         </div>
       </section>
 
@@ -313,7 +313,7 @@ export function SpaceBrandingForm({
                     }}
                     aria-pressed={active}
                     className={cn(
-                      'rounded-lg border px-3 py-2 text-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
+                      'rounded-lg border px-3 py-2 text-body-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
                       active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-border-strong',
                     )}
                   >
@@ -325,7 +325,7 @@ export function SpaceBrandingForm({
                 )
               })}
             </div>
-            <p className="text-xs text-muted">How tall the header banner sits at the top of your page.</p>
+            <p className="text-meta text-muted">How tall the header banner sits at the top of your page.</p>
           </div>
         </div>
       </section>
@@ -334,7 +334,7 @@ export function SpaceBrandingForm({
           button on all-white), CLOSED by default. Folds open to reveal buttons, shade, and the header button.
           Height lives beside the profile image now (item 4). Each control autosaves on pick / blur. */}
       <details className="group rounded-card border border-border bg-surface-elevated">
-        <summary className="flex cursor-pointer list-none items-center gap-2.5 rounded-control px-4 py-3 text-sm font-semibold text-text outline-none transition-colors hover:border-border-strong hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary/50 [&::-webkit-details-marker]:hidden">
+        <summary className="flex cursor-pointer list-none items-center gap-2.5 rounded-control px-4 py-3 text-body-sm font-semibold text-text outline-none transition-colors hover:border-border-strong hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary/50 [&::-webkit-details-marker]:hidden">
           <PanelTop className="h-4 w-4 shrink-0 text-primary" aria-hidden />
           <span className="flex-1">Header style</span>
           <span className="text-2xs font-medium text-muted group-open:hidden">Edit</span>
@@ -357,7 +357,7 @@ export function SpaceBrandingForm({
                   }}
                   aria-pressed={active}
                   className={cn(
-                    'rounded-lg border px-3 py-2 text-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
+                    'rounded-lg border px-3 py-2 text-body-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
                     active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-border-strong',
                   )}
                 >
@@ -393,7 +393,7 @@ export function SpaceBrandingForm({
                     active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
                   )}
                 >
-                  <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
+                  <span className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
                     {c.label}
                     {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
                   </span>
@@ -401,14 +401,14 @@ export function SpaceBrandingForm({
               )
             })}
           </div>
-          <p className="text-xs text-muted">{COVER_SCRIMS.find((c) => c.value === scrim)?.tagline}</p>
+          <p className="text-meta text-muted">{COVER_SCRIMS.find((c) => c.value === scrim)?.tagline}</p>
         </div>
 
         {/* Header button — the one dominant action on your hero. Autosaves on each pick / blur; a custom
             link only saves once its label + URL are valid. */}
         <div className="space-y-3">
           <Label className="block font-semibold">Header button</Label>
-          <p className="text-xs text-muted">
+          <p className="text-meta text-muted">
             The main button on your page. Keep the default, point it at one of your pages, or add your own
             link.
           </p>
@@ -438,7 +438,7 @@ export function SpaceBrandingForm({
                   }}
                   aria-pressed={active}
                   className={cn(
-                    'rounded-lg border px-3 py-2 text-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
+                    'rounded-lg border px-3 py-2 text-body-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
                     active
                       ? 'border-primary bg-primary-bg text-text'
                       : 'border-border bg-surface text-muted hover:border-border-strong',
@@ -454,7 +454,7 @@ export function SpaceBrandingForm({
           </div>
 
           {ctaMode === 'default' && (
-            <p className="text-xs text-subtle">
+            <p className="text-meta text-subtle">
               Shows &ldquo;{defaultCtaLabel}&rdquo; and opens your booking page.
             </p>
           )}
@@ -483,11 +483,11 @@ export function SpaceBrandingForm({
                           : 'border-border bg-surface hover:border-border-strong',
                       )}
                     >
-                      <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
+                      <span className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
                         {f.label}
                         {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
                       </span>
-                      <span className="mt-0.5 block text-xs text-muted">{f.hint}</span>
+                      <span className="mt-0.5 block text-meta text-muted">{f.hint}</span>
                     </button>
                   )
                 })}
@@ -505,7 +505,7 @@ export function SpaceBrandingForm({
                   onChange={(e) => setCtaFunctionLabel(e.target.value)}
                   onBlur={saveCurrentCta}
                 />
-                <p className="mt-1 text-xs text-subtle">Leave blank to use the default text.</p>
+                <p className="mt-1 text-meta text-subtle">Leave blank to use the default text.</p>
               </div>
             </div>
           )}
@@ -541,7 +541,7 @@ export function SpaceBrandingForm({
                   onChange={(e) => setCtaUrl(e.target.value)}
                   onBlur={saveCurrentCta}
                 />
-                <p className="mt-1 text-xs text-subtle">Start with https:// for another site, or / for a page here.</p>
+                <p className="mt-1 text-meta text-subtle">Start with https:// for another site, or / for a page here.</p>
               </div>
             </div>
           )}
@@ -553,14 +553,14 @@ export function SpaceBrandingForm({
           (closed by default, matching Header): the presets stay tucked away until the operator opens it. The
           accent colour is set separately below. Optimistic buttons, each saves the moment it is picked. */}
       <details className="group rounded-card border border-border bg-surface-elevated">
-        <summary className="flex cursor-pointer list-none items-center gap-2.5 rounded-control px-4 py-3 text-sm font-semibold text-text outline-none transition-colors hover:border-border-strong hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary/50 [&::-webkit-details-marker]:hidden">
+        <summary className="flex cursor-pointer list-none items-center gap-2.5 rounded-control px-4 py-3 text-body-sm font-semibold text-text outline-none transition-colors hover:border-border-strong hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary/50 [&::-webkit-details-marker]:hidden">
           <Type className="h-4 w-4 shrink-0 text-primary" aria-hidden />
           <span className="flex-1">Page style</span>
           <span className="text-2xs font-medium text-muted group-open:hidden">Edit</span>
           <ChevronDown className="h-4 w-4 shrink-0 text-subtle transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
         </summary>
         <div className="space-y-2 px-4 pb-4 pt-1">
-          <p className="text-xs text-muted">
+          <p className="text-meta text-muted">
             The fonts and shapes for your whole page. Your colours stay the same. Pick the feel that fits.
           </p>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -586,11 +586,11 @@ export function SpaceBrandingForm({
                     active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
                   )}
                 >
-                  <span className="flex items-center gap-1.5 font-display text-sm font-semibold text-text">
+                  <span className="flex items-center gap-1.5 font-display text-body-sm font-semibold text-text">
                     {t.label}
                     {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
                   </span>
-                  <span className="mt-0.5 block text-xs text-muted">{t.description}</span>
+                  <span className="mt-0.5 block text-meta text-muted">{t.description}</span>
                 </button>
               )
             })}
@@ -605,7 +605,7 @@ export function SpaceBrandingForm({
       </section>
 
       {pending && (
-        <p className="inline-flex items-center gap-1.5 text-xs text-muted" role="status">
+        <p className="inline-flex items-center gap-1.5 text-meta text-muted" role="status">
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Saving…
         </p>
       )}

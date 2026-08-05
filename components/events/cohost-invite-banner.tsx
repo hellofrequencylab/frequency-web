@@ -54,7 +54,7 @@ export function CohostInviteBanner({
 
   if (state === 'accepted') {
     return (
-      <div className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-success bg-success-bg/40 px-4 py-2.5 text-sm font-semibold text-success">
+      <div className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-success bg-success-bg/40 px-4 py-2.5 text-body-sm font-semibold text-success">
         <Check className="h-4 w-4" />
         You are a Co Host now. You can help run this event.
       </div>
@@ -63,7 +63,7 @@ export function CohostInviteBanner({
 
   if (state === 'declined') {
     return (
-      <div className="mb-4 rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm text-muted">
+      <div className="mb-4 rounded-2xl border border-border bg-surface px-4 py-2.5 text-body-sm text-muted">
         You declined the Co Host invite.
       </div>
     )
@@ -71,10 +71,10 @@ export function CohostInviteBanner({
 
   return (
     <div className="mb-4 rounded-2xl border border-primary/40 bg-primary-bg/50 px-4 py-3">
-      <p className="flex items-center gap-1.5 text-sm font-bold text-text">
+      <p className="flex items-center gap-1.5 text-body-sm font-bold text-text">
         <UserPlus className="h-4 w-4 text-primary" /> You are invited to cohost this event
       </p>
-      <p className="mt-1 text-sm text-muted">
+      <p className="mt-1 text-body-sm text-muted">
         The host invited you to cohost <span className="font-semibold text-text">{eventTitle}</span>.
         Accept to help run it, or decline.
       </p>
@@ -84,7 +84,7 @@ export function CohostInviteBanner({
           type="button"
           onClick={accept}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
           Accept
@@ -93,12 +93,12 @@ export function CohostInviteBanner({
           type="button"
           onClick={decline}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-xs font-semibold text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-meta font-semibold text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-50"
         >
           <X className="h-3.5 w-3.5" />
           Decline
         </button>
-        {error && <span className="text-xs text-danger">{error}</span>}
+        {error && <span className="text-meta text-danger">{error}</span>}
       </div>
     </div>
   )

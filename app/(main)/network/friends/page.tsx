@@ -63,7 +63,7 @@ export default async function FriendsPage() {
             {/* Messages lives here on mobile (the header keeps one Friends icon). */}
             <Link
               href="/messages"
-              className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3.5 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3.5 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong"
             >
               <MessageSquare className="h-4 w-4" /> Messages
             </Link>
@@ -112,7 +112,7 @@ async function PeopleMode({
     <div className="space-y-8">
       {reward.rewarded > 0 && (
         <div className="rounded-2xl border border-success bg-success-bg px-5 py-4">
-          <p className="text-sm font-semibold text-success">
+          <p className="text-body-sm font-semibold text-success">
             Your introduction stuck. +{reward.gems} Gems for bringing two people together 🎉
           </p>
         </div>

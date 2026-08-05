@@ -56,7 +56,7 @@ export function RsvpForm({ token }: { token: string }) {
   return (
     <form onSubmit={onSubmit} className="space-y-5">
       <div>
-        <label htmlFor="rsvp-name" className="block text-sm font-bold text-text mb-1.5">
+        <label htmlFor="rsvp-name" className="block text-body-sm font-bold text-text mb-1.5">
           Your name
         </label>
         <input
@@ -66,11 +66,11 @@ export function RsvpForm({ token }: { token: string }) {
           autoComplete="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-base text-text focus:border-primary focus:outline-none"
+          className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-body text-text focus:border-primary focus:outline-none"
         />
       </div>
       <div>
-        <label htmlFor="rsvp-email" className="block text-sm font-bold text-text mb-1.5">
+        <label htmlFor="rsvp-email" className="block text-body-sm font-bold text-text mb-1.5">
           Email
         </label>
         <input
@@ -80,11 +80,11 @@ export function RsvpForm({ token }: { token: string }) {
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-base text-text focus:border-primary focus:outline-none"
+          className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-body text-text focus:border-primary focus:outline-none"
         />
       </div>
       <div>
-        <label htmlFor="rsvp-phone" className="block text-sm font-bold text-text mb-1.5">
+        <label htmlFor="rsvp-phone" className="block text-body-sm font-bold text-text mb-1.5">
           Phone <span className="font-normal text-muted">(optional)</span>
         </label>
         <input
@@ -93,11 +93,11 @@ export function RsvpForm({ token }: { token: string }) {
           autoComplete="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-base text-text focus:border-primary focus:outline-none"
+          className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-body text-text focus:border-primary focus:outline-none"
         />
       </div>
       <fieldset>
-        <legend className="block text-sm font-bold text-text mb-1.5">Can you make it?</legend>
+        <legend className="block text-body-sm font-bold text-text mb-1.5">Can you make it?</legend>
         <div className="flex gap-2">
           {OPTIONS.map((o) => (
             <button
@@ -124,11 +124,11 @@ export function RsvpForm({ token }: { token: string }) {
         {status === 'loading' ? 'One sec…' : 'Send RSVP'}
       </button>
       {error && (
-        <p className="text-sm text-danger" role="alert">
+        <p className="text-body-sm text-danger" role="alert">
           {error}
         </p>
       )}
-      <p className="text-xs text-muted leading-relaxed">
+      <p className="text-meta text-muted leading-relaxed">
         We’ll pass your RSVP to the host. No spam, and we won’t add you to any mailing list unless you
         ask.
       </p>

@@ -85,12 +85,12 @@ export function ModeSettings({
     <div className="space-y-8">
       {/* Current Mode + Focus */}
       <section className="rounded-2xl border border-border bg-surface p-5 lift-1">
-        <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Starter preset</p>
+        <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Starter preset</p>
         <h2 className="mt-1 text-lg font-semibold text-text">
           {view.modeLabel}: {view.focusLabel}
         </h2>
-        <p className="mt-1 text-sm text-muted">{view.tagline}</p>
-        <p className="mt-3 text-sm text-muted">
+        <p className="mt-1 text-body-sm text-muted">{view.tagline}</p>
+        <p className="mt-3 text-body-sm text-muted">
           A preset is just a quick-setup shortcut. It seeds a suggested layout, pipeline, and wording so you
           are not starting from a blank page. Every tool stays available no matter which preset you pick,
           and switching never removes anything.
@@ -98,7 +98,7 @@ export function ModeSettings({
       </section>
 
       {error && (
-        <p className="rounded-lg border border-danger bg-danger-bg px-3 py-2 text-sm font-medium text-danger">
+        <p className="rounded-lg border border-danger bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger">
           {error}
         </p>
       )}
@@ -106,7 +106,7 @@ export function ModeSettings({
       {/* What this preset leads with (read-only preview). Menu visibility lives in the Module Manager. */}
       <section>
         <SectionHeader title="What this preset leads with" />
-        <p className="-mt-2 mb-3 text-sm text-muted">
+        <p className="-mt-2 mb-3 text-body-sm text-muted">
           A preset never locks anything. Every tool stays available; this is the order your console leads
           with and the words it uses. To show or hide a module in your menu, open{' '}
           <Link href={`/spaces/${slug}/manage/modules`} className="font-medium text-primary hover:underline">
@@ -122,9 +122,9 @@ export function ModeSettings({
               className="flex items-center gap-3 rounded-card border border-border bg-surface p-3"
             >
               <span className="min-w-0 flex-1">
-                <span className="text-sm font-medium text-text">{m.label}</span>
+                <span className="text-body-sm font-medium text-text">{m.label}</span>
                 {m.overridden && (
-                  <span className="ml-2 text-xs text-subtle">renamed from {m.defaultLabel}</span>
+                  <span className="ml-2 text-meta text-subtle">renamed from {m.defaultLabel}</span>
                 )}
               </span>
             </div>
@@ -135,7 +135,7 @@ export function ModeSettings({
       {/* Default pipeline */}
       <section>
         <SectionHeader title="Suggested pipeline" />
-        <p className="-mt-2 mb-3 text-sm text-muted">
+        <p className="-mt-2 mb-3 text-body-sm text-muted">
           The starting stages your CRM seeds. Edit them any time on your pipeline board, and switching
           focus keeps a pipeline you have already changed.
         </p>
@@ -144,7 +144,7 @@ export function ModeSettings({
             <span
               key={s.name}
               className={cn(
-                'rounded-pill border px-3 py-1 text-xs font-medium',
+                'rounded-pill border px-3 py-1 text-meta font-medium',
                 s.kind === 'won'
                   ? 'border-success bg-success-bg text-success'
                   : s.kind === 'lost'
@@ -163,12 +163,12 @@ export function ModeSettings({
         <SectionHeader title="The words you use" />
         <dl className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-card border border-border bg-surface p-3">
-            <dt className="text-xs uppercase tracking-wide text-subtle">Your people</dt>
-            <dd className="mt-1 text-sm font-medium text-text">{view.lexicon.people}</dd>
+            <dt className="text-meta uppercase tracking-wide text-subtle">Your people</dt>
+            <dd className="mt-1 text-body-sm font-medium text-text">{view.lexicon.people}</dd>
           </div>
           <div className="rounded-card border border-border bg-surface p-3">
-            <dt className="text-xs uppercase tracking-wide text-subtle">What you offer</dt>
-            <dd className="mt-1 text-sm font-medium text-text">{view.lexicon.offerings}</dd>
+            <dt className="text-meta uppercase tracking-wide text-subtle">What you offer</dt>
+            <dd className="mt-1 text-body-sm font-medium text-text">{view.lexicon.offerings}</dd>
           </div>
         </dl>
       </section>
@@ -177,14 +177,14 @@ export function ModeSettings({
       {view.recommendedAddons.length > 0 && (
         <section>
           <SectionHeader title="Recommended add-ons" />
-          <p className="-mt-2 mb-3 text-sm text-muted">
+          <p className="-mt-2 mb-3 text-body-sm text-muted">
             Suggested for this Mode, never turned on for you. Add them when you are ready from billing.
           </p>
           <div className="flex flex-wrap gap-2">
             {view.recommendedAddons.map((a) => (
               <span
                 key={a}
-                className="rounded-pill border border-border bg-surface-elevated px-3 py-1 text-xs font-medium text-text"
+                className="rounded-pill border border-border bg-surface-elevated px-3 py-1 text-meta font-medium text-text"
               >
                 {ADDON_LABEL[a] ?? a}
               </span>
@@ -199,7 +199,7 @@ export function ModeSettings({
           <SectionHeader title="Where to start" />
           <ul className="space-y-1.5">
             {view.nextBestActions.map((a) => (
-              <li key={a.label} className="flex items-center gap-2 text-sm text-text">
+              <li key={a.label} className="flex items-center gap-2 text-body-sm text-text">
                 <span className="h-1.5 w-1.5 rounded-pill bg-primary" aria-hidden />
                 {a.label}
               </li>
@@ -212,7 +212,7 @@ export function ModeSettings({
       {view.focusChoices.length > 0 && (
         <section>
           <SectionHeader title="Switch focus" />
-          <p className="-mt-2 mb-3 text-sm text-muted">
+          <p className="-mt-2 mb-3 text-body-sm text-muted">
             Change how this space runs. Your data stays; we will resurface the modules this focus leads
             with and suggest its pipeline.
           </p>
@@ -231,11 +231,11 @@ export function ModeSettings({
                     : 'border-border bg-surface hover:border-border-strong',
                 )}
               >
-                <span className="flex items-center gap-2 text-sm font-semibold text-text">
+                <span className="flex items-center gap-2 text-body-sm font-semibold text-text">
                   {c.label}
                   {c.active && <Check className="h-4 w-4 text-primary" aria-hidden />}
                 </span>
-                <span className="mt-1 block text-xs text-muted">{c.tagline}</span>
+                <span className="mt-1 block text-meta text-muted">{c.tagline}</span>
               </button>
             ))}
           </div>

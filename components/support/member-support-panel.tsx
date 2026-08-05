@@ -16,7 +16,7 @@ export async function MemberSupportPanel({ profileId }: { profileId: string }) {
   return (
     <div className="mb-6 rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <p className="flex items-center gap-1.5 text-sm font-bold text-text">
+        <p className="flex items-center gap-1.5 text-body-sm font-bold text-text">
           <LifeBuoy className="h-4 w-4 text-primary-strong" /> Support history
         </p>
         <span className="text-2xs font-medium text-muted">{tickets.length} total · {open} open</span>
@@ -31,7 +31,7 @@ export async function MemberSupportPanel({ profileId }: { profileId: string }) {
               <span className={`shrink-0 rounded-pill px-2 py-0.5 text-2xs font-semibold ${statusChipClass(t.status)}`}>
                 {STATUS_LABELS[t.status]}
               </span>
-              <span className="min-w-0 flex-1 truncate text-xs font-medium text-text">{t.subject}</span>
+              <span className="min-w-0 flex-1 truncate text-meta font-medium text-text">{t.subject}</span>
               <span className="shrink-0 text-2xs text-muted">{TYPE_LABELS[t.type]} · #{t.ref}</span>
               <ChevronRight className="h-3.5 w-3.5 shrink-0 text-subtle" />
             </Link>

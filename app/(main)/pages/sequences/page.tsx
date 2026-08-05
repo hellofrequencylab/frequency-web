@@ -43,9 +43,9 @@ import { RolePromotionPreview } from './role-promotion-preview'
 export const dynamic = 'force-dynamic'
 
 // ── Shared chrome — matches the Pages workspace look (app/(main)/pages/page.tsx). ──
-const VIEW_LINK = 'inline-flex items-center gap-1 text-xs text-muted hover:text-text'
+const VIEW_LINK = 'inline-flex items-center gap-1 text-meta text-muted hover:text-text'
 const EDIT_BTN =
-  'inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover'
+  'inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover'
 
 // PERF-9: each custom funnel below costs a resolveSequence read + a server-side QR
 // render, so cap how many we fan out per page load. Operators have a handful, not
@@ -122,14 +122,14 @@ export default async function SplashFunnelsPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/pages"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
           >
             <ArrowLeft className="h-3.5 w-3.5" /> All pages
           </Link>
           <form action={createFromTemplateAction}>
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" /> Create from template
             </button>
@@ -147,12 +147,12 @@ export default async function SplashFunnelsPage() {
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-text">Your live onboarding funnel</h3>
-              <span className="shrink-0 rounded-pill bg-success-bg px-2 py-0.5 text-xs font-medium text-success">
+              <h3 className="text-body font-bold text-text">Your live onboarding funnel</h3>
+              <span className="shrink-0 rounded-pill bg-success-bg px-2 py-0.5 text-meta font-medium text-success">
                 Always live
               </span>
             </div>
-            <p className="mt-1 text-sm leading-relaxed text-muted">
+            <p className="mt-1 text-body-sm leading-relaxed text-muted">
               The onboarding every new member walks through right now. Editing it here changes
               what they see. New funnels below start from a fresh template with fill-in prompts,
               so building one never touches this flow.
@@ -179,7 +179,7 @@ export default async function SplashFunnelsPage() {
               below read it. Onboarding is live; Feature + Demographic are planned. ── */}
       <section>
         <SectionHeader title="Funnel styles" />
-        <p className="-mt-1 mb-4 max-w-2xl text-sm text-muted">
+        <p className="-mt-1 mb-4 max-w-2xl text-body-sm text-muted">
           Each style is its own kind of front door, with its own layout, editor, and stats.
           More styles slot in over time.
         </p>
@@ -200,8 +200,8 @@ export default async function SplashFunnelsPage() {
                   </span>
                 )}
               </div>
-              <h3 className="mt-2.5 text-sm font-bold capitalize text-text">{s.label}</h3>
-              <p className="mt-1 flex-1 text-xs leading-relaxed text-muted">{s.blurb}</p>
+              <h3 className="mt-2.5 text-body-sm font-bold capitalize text-text">{s.label}</h3>
+              <p className="mt-1 flex-1 text-meta leading-relaxed text-muted">{s.blurb}</p>
             </div>
           ))}
         </div>
@@ -210,7 +210,7 @@ export default async function SplashFunnelsPage() {
       {/* ── Onboarding funnels — the live style. One row each, with full lifecycle controls. ── */}
       <section>
         <SectionHeader title="Onboarding funnels" count={onboardingCards.length} />
-        <p className="-mt-1 mb-4 max-w-2xl text-sm text-muted">
+        <p className="-mt-1 mb-4 max-w-2xl text-body-sm text-muted">
           A funnel for a specific audience. Each one carries its own voice, its own shareable
           link, a cohort tag, and its signup count so you can see what is working.
         </p>
@@ -223,7 +223,7 @@ export default async function SplashFunnelsPage() {
                 <form action={createFromTemplateAction}>
                   <button
                     type="submit"
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
                   >
                     <Plus className="h-4 w-4" /> Create from template
                   </button>
@@ -242,7 +242,7 @@ export default async function SplashFunnelsPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-base font-bold text-text">{seq.audience}</h3>
+                      <h3 className="text-body font-bold text-text">{seq.audience}</h3>
                       <span
                         className={`rounded-md px-1.5 py-0.5 text-xs font-medium ${
                           status === 'published'
@@ -253,30 +253,30 @@ export default async function SplashFunnelsPage() {
                         {status === 'published' ? 'Published' : 'Draft'}
                       </span>
                     </div>
-                    <p className="mt-1 font-mono text-xs text-subtle">{inductionPath}</p>
+                    <p className="mt-1 font-mono text-meta text-subtle">{inductionPath}</p>
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <span
-                      className="inline-flex items-center gap-1.5 rounded-pill bg-success-bg px-2.5 py-1 text-xs font-semibold text-success"
+                      className="inline-flex items-center gap-1.5 rounded-pill bg-success-bg px-2.5 py-1 text-meta font-semibold text-success"
                       title="Members who signed up through this funnel (its marketing tag)"
                     >
                       <UserCheck className="h-3 w-3" />
                       {signupCounts[seq.marketingTag] ?? 0} signed up
                     </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-pill bg-primary-bg px-2.5 py-1 text-xs font-semibold text-primary-strong">
+                    <span className="inline-flex items-center gap-1.5 rounded-pill bg-primary-bg px-2.5 py-1 text-meta font-semibold text-primary-strong">
                       <Tag className="h-3 w-3" />
                       {seq.marketingTag}
                     </span>
                     {tagDef ? (
                       <span
-                        className="inline-flex items-center gap-1 text-xs font-medium text-success"
+                        className="inline-flex items-center gap-1 text-meta font-medium text-success"
                         title="Registered in the trait registry"
                       >
                         <CheckCircle2 className="h-3.5 w-3.5" /> Registered
                       </span>
                     ) : (
                       <span
-                        className="inline-flex items-center gap-1 text-xs font-medium text-warning"
+                        className="inline-flex items-center gap-1 text-meta font-medium text-warning"
                         title="Not in lib/traits/registry.ts, so tagging will be skipped"
                       >
                         <AlertTriangle className="h-3.5 w-3.5" /> Unregistered
@@ -325,7 +325,7 @@ export default async function SplashFunnelsPage() {
         return (
           <section key={s.id}>
             <SectionHeader title={`${s.label} funnels`} count={s.status === 'live' ? styleCards.length : undefined} />
-            <p className="-mt-1 mb-4 max-w-2xl text-sm text-muted">{s.blurb}</p>
+            <p className="-mt-1 mb-4 max-w-2xl text-body-sm text-muted">{s.blurb}</p>
             {s.status === 'live' && styleCards.length > 0 ? (
               <div className="space-y-3">
                 {styleCards.map(({ slug, status, source, seq, inductionPath }) => (
@@ -338,7 +338,7 @@ export default async function SplashFunnelsPage() {
                         <span className={`inline-flex h-6 w-6 items-center justify-center rounded-lg ${s.accent.icon}`}>
                           <s.icon className="h-3.5 w-3.5" aria-hidden />
                         </span>
-                        <h3 className="text-base font-bold text-text">{seq.audience}</h3>
+                        <h3 className="text-body font-bold text-text">{seq.audience}</h3>
                         <span
                           className={`rounded-md px-1.5 py-0.5 text-xs font-medium ${
                             status === 'published' ? 'bg-success-bg text-success' : 'bg-surface-elevated text-muted'
@@ -347,11 +347,11 @@ export default async function SplashFunnelsPage() {
                           {status === 'published' ? 'Published' : 'Draft'}
                         </span>
                       </div>
-                      <p className="mt-1 font-mono text-xs text-subtle">{inductionPath}</p>
+                      <p className="mt-1 font-mono text-meta text-subtle">{inductionPath}</p>
                     </div>
                     <div className="flex shrink-0 flex-wrap items-center gap-2">
                       <span
-                        className="inline-flex items-center gap-1.5 rounded-pill bg-success-bg px-2.5 py-1 text-xs font-semibold text-success"
+                        className="inline-flex items-center gap-1.5 rounded-pill bg-success-bg px-2.5 py-1 text-meta font-semibold text-success"
                         title="Members who signed up through this funnel (its marketing tag)"
                       >
                         <UserCheck className="h-3 w-3" />
@@ -362,7 +362,7 @@ export default async function SplashFunnelsPage() {
                       </a>
                       {source === 'code' ? (
                         <span
-                          className="inline-flex items-center gap-1.5 rounded-pill border border-border px-2.5 py-1 text-xs font-medium text-subtle"
+                          className="inline-flex items-center gap-1.5 rounded-pill border border-border px-2.5 py-1 text-meta font-medium text-subtle"
                           title="This funnel is defined in the repo (a code sequence), so it is managed in code, not here."
                         >
                           <Lock className="h-3 w-3" /> Managed in code
@@ -379,8 +379,8 @@ export default async function SplashFunnelsPage() {
                 <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-xl ${s.accent.icon}`}>
                   <s.icon className="h-5 w-5" aria-hidden />
                 </span>
-                <p className="mt-3 text-sm font-semibold text-text">Ready to build</p>
-                <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-muted">
+                <p className="mt-3 text-body-sm font-semibold text-text">Ready to build</p>
+                <p className="mx-auto mt-1 max-w-md text-meta leading-relaxed text-muted">
                   The {s.label} renderer is live. No {s.noun} exists yet.
                 </p>
               </div>
@@ -389,9 +389,9 @@ export default async function SplashFunnelsPage() {
                 <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-xl ${s.accent.icon}`}>
                   <s.icon className="h-5 w-5" aria-hidden />
                 </span>
-                <p className="mt-3 text-sm font-semibold text-text">Planned</p>
-                <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-muted">{s.blurb}</p>
-                <span className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-subtle">
+                <p className="mt-3 text-body-sm font-semibold text-text">Planned</p>
+                <p className="mx-auto mt-1 max-w-md text-meta leading-relaxed text-muted">{s.blurb}</p>
+                <span className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-subtle">
                   <Lock className="h-3.5 w-3.5" /> Not available yet
                 </span>
               </div>
@@ -403,24 +403,24 @@ export default async function SplashFunnelsPage() {
       {/* ── Secondary: name the audience up front, then start from the same prompts template. ── */}
       <section>
         <SectionHeader title="Name it first" />
-        <p className="-mt-1 mb-4 max-w-2xl text-sm text-muted">
+        <p className="-mt-1 mb-4 max-w-2xl text-body-sm text-muted">
           Same fill-in template as the button above, but name the audience up front so the funnel
           and its marketing tag are labelled from the start.
         </p>
         <div className="max-w-3xl rounded-2xl border border-border bg-surface p-5 lift-1">
           <form action={createSequenceVersion} className="flex flex-wrap items-end gap-2">
             <label className="min-w-0 flex-1">
-              <span className="mb-1 block text-xs font-semibold text-subtle">Audience name</span>
+              <span className="mb-1 block text-meta font-semibold text-subtle">Audience name</span>
               <input
                 name="audience"
                 required
                 placeholder="e.g. Local business owners"
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-broadcast"
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-broadcast"
               />
             </label>
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-body-sm font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <Plus className="h-4 w-4" /> Create funnel
             </button>
@@ -433,11 +433,11 @@ export default async function SplashFunnelsPage() {
       {/* ── How it works — the share-and-segment loop in plain terms. ── */}
       <section>
         <SectionHeader title="How it works" />
-        <ol className="max-w-3xl space-y-2 rounded-2xl border border-border bg-surface p-5 text-sm text-muted lift-1">
+        <ol className="max-w-3xl space-y-2 rounded-2xl border border-border bg-surface p-5 text-body-sm text-muted lift-1">
           <li>
             <span className="font-semibold text-text">1. Make a funnel, then share its link.</span>{' '}
             Each funnel gets a link and a QR (PNG or SVG) into its induction (
-            <code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-xs">
+            <code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-meta">
               /onboarding/beta?seq=&lt;slug&gt;
             </code>
             ) for a video description, a DM, a partner email, or printed signage.
@@ -445,7 +445,7 @@ export default async function SplashFunnelsPage() {
           <li>
             <span className="font-semibold text-text">2. They walk the matching flow.</span> The
             link carries the audience into the induction (
-            <code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-xs">?seq=</code>
+            <code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-meta">?seq=</code>
             ), which speaks in that funnel&rsquo;s voice. A cookie keeps it through sign-in. A
             draft falls back to your live funnel (Funnel 1) until you publish.
           </li>
@@ -459,7 +459,7 @@ export default async function SplashFunnelsPage() {
             .
           </li>
         </ol>
-        <p className="mt-3 max-w-3xl text-xs text-subtle">
+        <p className="mt-3 max-w-3xl text-meta text-subtle">
           Links and QRs encode the canonical site URL (
           <code className="font-mono">{SITE_URL.replace(/^https?:\/\//, '')}</code>), so they&rsquo;re
           safe to print and share before launch. For codes with scan analytics or a swappable
@@ -489,7 +489,7 @@ function RolePromotionTours() {
   return (
     <section>
       <SectionHeader title="Role promotion tours" />
-      <p className="-mt-1 mb-4 max-w-2xl text-sm text-muted">
+      <p className="-mt-1 mb-4 max-w-2xl text-body-sm text-muted">
         When a member&rsquo;s role advances, they get a short tour of the areas it just
         unlocked. One tour per step up the trust ladder. Each fires automatically the
         moment the role is granted, then meets the member as a gentle card on their next
@@ -503,8 +503,8 @@ function RolePromotionTours() {
                 {TRIGGER_CHIP[t.trigger]}
               </span>
             </div>
-            <h3 className="mt-2 text-sm font-bold text-text">{t.name}</h3>
-            <p className="mt-1 flex-1 text-xs leading-relaxed text-muted">{t.description}</p>
+            <h3 className="mt-2 text-body-sm font-bold text-text">{t.name}</h3>
+            <p className="mt-1 flex-1 text-meta leading-relaxed text-muted">{t.description}</p>
             <p className="mt-2 text-2xs font-medium text-muted">
               {t.steps.length} {t.steps.length === 1 ? 'slide' : 'slides'}
             </p>
@@ -512,10 +512,10 @@ function RolePromotionTours() {
           </div>
         ))}
       </div>
-      <p className="mt-3 max-w-3xl text-xs text-subtle">
+      <p className="mt-3 max-w-3xl text-meta text-subtle">
         These tours are shipped with the product, so they aren&rsquo;t edited here. The content
         lives in{' '}
-        <code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-xs">
+        <code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-meta">
           lib/walkthroughs/role-promotion.ts
         </code>
         . For evergreen walkthroughs you author and target yourself, use{' '}

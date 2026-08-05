@@ -32,8 +32,8 @@ import { updateWalkthrough, setWalkthroughActive } from '../actions'
 // per-step fields, in-page preview). Triggering + rendering are Phase B.
 
 const field =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-broadcast'
-const lbl = 'block text-xs font-semibold text-subtle mb-1'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-broadcast'
+const lbl = 'block text-meta font-semibold text-subtle mb-1'
 
 // Local datetime <input> wants 'YYYY-MM-DDTHH:mm'; the DB stores ISO. Convert both ways.
 function toLocalInput(iso: string | null): string {
@@ -153,11 +153,11 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
         <div className="min-w-0">
           <Link
             href="/admin/walkthroughs"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted transition-colors hover:text-text"
+            className="inline-flex items-center gap-1.5 text-meta font-semibold text-muted transition-colors hover:text-text"
           >
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back to Walkthroughs
           </Link>
-          <h1 className="mt-1 text-xl font-bold text-text">{wt.name || 'Untitled walkthrough'}</h1>
+          <h1 className="mt-1 text-lead font-bold text-text">{wt.name || 'Untitled walkthrough'}</h1>
           {!persisted && (
             <p className="text-2xs text-warning">Draft. Save to create it (the table appears once migrated).</p>
           )}
@@ -181,7 +181,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
         <div className="space-y-5">
           {/* Sequence meta */}
           <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
-            <h2 className="text-base font-bold text-text">Sequence</h2>
+            <h2 className="text-body font-bold text-text">Sequence</h2>
             <div>
               <label className={lbl}>Name</label>
               <input className={field} value={wt.name} onChange={(e) => setMeta('name', e.target.value)} />
@@ -254,7 +254,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
             </div>
             <div className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/40 px-3 py-2.5">
               <div>
-                <p className="text-sm font-semibold text-text">Live</p>
+                <p className="text-body-sm font-semibold text-text">Live</p>
                 <p className="text-2xs text-muted">On = reaching members once Phase B fires it.</p>
               </div>
               <button
@@ -280,13 +280,13 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
           {/* Slide list */}
           <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 lift-1">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-text">Slides</h2>
+              <h2 className="text-body font-bold text-text">Slides</h2>
               <Button type="button" variant="secondary" size="sm" onClick={addStep}>
                 <Plus className="h-3.5 w-3.5" aria-hidden /> Add slide
               </Button>
             </div>
             {wt.steps.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-subtle">
+              <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-body-sm text-subtle">
                 No slides yet. Add one to start.
               </p>
             ) : (
@@ -347,7 +347,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
           {/* Per-slide editor */}
           {step && (
             <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
-              <h2 className="text-base font-bold text-text">Slide {selected + 1}</h2>
+              <h2 className="text-body font-bold text-text">Slide {selected + 1}</h2>
               <div>
                 <label className={lbl}>Title</label>
                 <input className={field} value={step.title} onChange={(e) => setStep(selected, { title: e.target.value })} />
@@ -499,14 +499,14 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
 
         {/* ── RIGHT: live preview ── */}
         <div className="lg:sticky lg:top-4 lg:self-start">
-          <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-subtle">
+          <p className="mb-2 flex items-center gap-1.5 text-meta font-semibold text-subtle">
             <Eye className="h-3.5 w-3.5" aria-hidden /> Live preview
             {dirty && <span className="font-normal text-warning">· unsaved</span>}
           </p>
           {step ? (
             <WalkthroughSlide step={step} />
           ) : (
-            <div className="rounded-3xl border border-dashed border-border bg-surface/50 px-6 py-16 text-center text-sm text-subtle">
+            <div className="rounded-3xl border border-dashed border-border bg-surface/50 px-6 py-16 text-center text-body-sm text-subtle">
               Add a slide to preview it.
             </div>
           )}

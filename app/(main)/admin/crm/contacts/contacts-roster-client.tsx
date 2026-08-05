@@ -118,7 +118,7 @@ export function ContactsRosterClient({
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name or email"
               aria-label="Search by name or email"
-              className="w-full rounded-control border border-border bg-surface py-2.5 pl-10 pr-9 text-sm text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none"
+              className="w-full rounded-control border border-border bg-surface py-2.5 pl-10 pr-9 text-body-sm text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none"
             />
             {text && (
               <button
@@ -147,7 +147,7 @@ export function ContactsRosterClient({
                     aria-pressed={active}
                     onClick={() => chooseSort(o.key)}
                     className={cn(
-                      'rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors',
+                      'rounded-lg px-3 py-1.5 text-body-sm font-semibold transition-colors',
                       active
                         ? 'bg-primary text-on-primary'
                         : 'text-muted hover:bg-surface-elevated hover:text-text',
@@ -176,7 +176,7 @@ export function ContactsRosterClient({
                 value={facetSel[f.key] ?? ''}
                 onChange={(e) => setFacet(f.key, e.target.value)}
                 className={cn(
-                  'rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors focus:outline-none',
+                  'rounded-lg border px-2.5 py-1.5 text-meta font-medium transition-colors focus:outline-none',
                   facetSel[f.key]
                     ? 'border-primary bg-primary-bg text-primary-strong'
                     : 'border-border bg-surface text-muted hover:border-primary',
@@ -197,7 +197,7 @@ export function ContactsRosterClient({
                   setFacetSel({})
                   setPage(1)
                 }}
-                className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                className="rounded-lg px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
               >
                 Clear filters
               </button>
@@ -226,7 +226,7 @@ export function ContactsRosterClient({
               <button
                 type="button"
                 onClick={() => setPage((p) => p + 1)}
-                className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                className="rounded-lg border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
               >
                 Load more contacts
               </button>
@@ -269,7 +269,7 @@ function ContactRow({ row }: { row: ContactRosterRow }) {
             style={avatarFocusStyle(row.avatarUrl)}
           />
         ) : (
-          <div className="flex h-9 w-9 items-center justify-center rounded-pill bg-primary-bg text-xs font-semibold text-primary-strong select-none">
+          <div className="flex h-9 w-9 items-center justify-center rounded-pill bg-primary-bg text-meta font-semibold text-primary-strong select-none">
             {getInitials(row.displayName)}
           </div>
         )}
@@ -278,7 +278,7 @@ function ContactRow({ row }: { row: ContactRosterRow }) {
       {/* Identity + chips + meta. */}
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="truncate text-sm font-bold text-text">{row.displayName}</span>
+          <span className="truncate text-body-sm font-bold text-text">{row.displayName}</span>
           <StatusChip tone={STATUS_TONE[row.status]} size="sm">
             {STATUS_LABEL[row.status]}
           </StatusChip>
@@ -303,7 +303,7 @@ function ContactRow({ row }: { row: ContactRosterRow }) {
         </div>
 
         {/* Email + a compact meta line (active dot, Spaces). */}
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-subtle">
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-meta text-subtle">
           {row.email && (
             <a
               href={`mailto:${row.email}`}
@@ -339,7 +339,7 @@ function ContactRow({ row }: { row: ContactRosterRow }) {
       {row.handle && (
         <Link
           href={`/people/${row.handle}`}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           <UserRound className="h-3.5 w-3.5" aria-hidden />
           Profile

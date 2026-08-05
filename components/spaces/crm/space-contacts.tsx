@@ -56,11 +56,11 @@ export async function SpaceContacts({
                 }`}
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-text">
+                  <p className="truncate text-body-sm font-semibold text-text">
                     {c.display_name || c.email || 'Unnamed contact'}
                   </p>
                   {c.display_name && c.email && (
-                    <p className="truncate text-xs text-muted">{c.email}</p>
+                    <p className="truncate text-meta text-muted">{c.email}</p>
                   )}
                 </div>
                 <ChevronRight className="h-4 w-4 shrink-0 text-subtle" aria-hidden />

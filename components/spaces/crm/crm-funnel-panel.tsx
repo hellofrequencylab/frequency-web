@@ -44,8 +44,8 @@ function ContactConsentBar({ reach }: { reach: ContactReach }) {
   return (
     <div className="mb-4 rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="mb-2 flex items-baseline justify-between gap-3">
-        <p className="text-sm font-medium text-text">Who you can reach</p>
-        <span className="text-xs tabular-nums text-subtle">
+        <p className="text-body-sm font-medium text-text">Who you can reach</p>
+        <span className="text-meta tabular-nums text-subtle">
           {reach.subscribed} of {reach.total} mailable
         </span>
       </div>
@@ -66,7 +66,7 @@ function ContactConsentBar({ reach }: { reach: ContactReach }) {
       </div>
       <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
         {segments.map((s) => (
-          <li key={s.key} className="inline-flex items-center gap-1.5 text-xs text-muted">
+          <li key={s.key} className="inline-flex items-center gap-1.5 text-meta text-muted">
             <span className={`h-2 w-2 shrink-0 rounded-pill ${s.dot}`} aria-hidden />
             <span>{s.label}</span>
             <span className="font-medium tabular-nums text-text">{s.count}</span>
@@ -87,9 +87,9 @@ function AtRiskPanel({ atRisk, slug }: { atRisk: AtRiskSummary; slug: string }) 
       <div className="mb-3 flex items-baseline justify-between gap-3">
         <div className="flex items-center gap-2">
           <TrendingDown className="h-4 w-4 shrink-0 text-warning" aria-hidden />
-          <p className="text-sm font-medium text-text">Going cold</p>
+          <p className="text-body-sm font-medium text-text">Going cold</p>
         </div>
-        <span className="text-xs tabular-nums text-subtle">
+        <span className="text-meta tabular-nums text-subtle">
           {atRisk.count} at risk
         </span>
       </div>
@@ -100,9 +100,9 @@ function AtRiskPanel({ atRisk, slug }: { atRisk: AtRiskSummary; slug: string }) 
             className="flex flex-wrap items-center justify-between gap-2 rounded-card bg-surface-elevated px-3 py-2"
           >
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-text">{c.displayName || c.email || 'Contact'}</p>
+              <p className="truncate text-body-sm font-medium text-text">{c.displayName || c.email || 'Contact'}</p>
               {c.factors.length > 0 && (
-                <p className="truncate text-xs text-muted">
+                <p className="truncate text-meta text-muted">
                   {c.factors.map((f) => f.label).join(' · ')}
                 </p>
               )}
@@ -112,7 +112,7 @@ function AtRiskPanel({ atRisk, slug }: { atRisk: AtRiskSummary; slug: string }) 
         ))}
       </ul>
       {atRisk.count > atRisk.top.length && (
-        <p className="mt-2 text-xs text-subtle">
+        <p className="mt-2 text-meta text-subtle">
           Showing the {atRisk.top.length} most at risk of {atRisk.count}.
         </p>
       )}
@@ -208,10 +208,10 @@ export async function CrmFunnelPanel({ spaceId, slug }: { spaceId: string; slug:
                     className={`h-2 w-2 shrink-0 rounded-pill ${stageBarClass(stage.kind)}`}
                     aria-hidden
                   />
-                  <p className="truncate text-sm font-medium text-text">{stage.name}</p>
-                  <span className="shrink-0 text-xs tabular-nums text-subtle">{stage.count}</span>
+                  <p className="truncate text-body-sm font-medium text-text">{stage.name}</p>
+                  <span className="shrink-0 text-meta tabular-nums text-subtle">{stage.count}</span>
                 </div>
-                <span className="shrink-0 text-xs font-medium tabular-nums text-muted">
+                <span className="shrink-0 text-meta font-medium tabular-nums text-muted">
                   {formatMoney(stage.value)}
                 </span>
               </div>

@@ -14,7 +14,7 @@ import type { ProductReviewsData } from '@/lib/commerce/reviews'
 // tokens only, voice canon (no em dashes).
 
 const inputCls =
-  'w-full rounded-card border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-primary'
+  'w-full rounded-card border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary'
 
 /** A read-only row of 5 stars filled to `value` (rounded). */
 export function Stars({ value, className = 'h-4 w-4' }: { value: number; className?: string }) {
@@ -60,7 +60,7 @@ export function ProductReviews({
           </div>
           <Stars value={reviews.average ?? 0} />
         </div>
-        <div className="text-sm text-muted">
+        <div className="text-body-sm text-muted">
           {reviews.count > 0
             ? `${reviews.count} review${reviews.count === 1 ? '' : 's'}`
             : `Be the first to review ${productTitle}.`}
@@ -72,10 +72,10 @@ export function ProductReviews({
         <ReviewForm productId={productId} initial={myReview} />
       ) : !signedIn ? (
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface-elevated/50 p-4">
-          <p className="text-sm text-muted">Sign in to leave a review.</p>
+          <p className="text-body-sm text-muted">Sign in to leave a review.</p>
           <Link
             href="/sign-in"
-            className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             Sign in
           </Link>
@@ -88,7 +88,7 @@ export function ProductReviews({
           {reviews.latest.map((r) => (
             <li key={r.id} className="space-y-1.5 rounded-2xl border border-border bg-surface p-4">
               <div className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
+                <span className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
                   {r.author?.displayName ?? 'Member'}
                   {r.verifiedPurchase && (
                     <span className="inline-flex items-center gap-1 text-success" title="Verified purchase">
@@ -99,13 +99,13 @@ export function ProductReviews({
                 </span>
                 <Stars value={r.rating} />
               </div>
-              {r.body && <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted">{r.body}</p>}
+              {r.body && <p className="whitespace-pre-wrap text-body-sm leading-relaxed text-muted">{r.body}</p>}
               {canModerate && <HideButton id={r.id} />}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted">
+        <p className="rounded-2xl border border-dashed border-border p-8 text-center text-body-sm text-muted">
           No reviews yet.
         </p>
       )}
@@ -139,7 +139,7 @@ function ReviewForm({ productId, initial }: { productId: string; initial: { rati
 
   return (
     <div className="space-y-2 rounded-2xl border border-border bg-surface p-4 lift-1">
-      <p className="text-sm font-semibold text-text">{initial ? 'Update your review' : 'Leave a review'}</p>
+      <p className="text-body-sm font-semibold text-text">{initial ? 'Update your review' : 'Leave a review'}</p>
       <div className="flex items-center gap-1" onMouseLeave={() => setHover(0)}>
         {[1, 2, 3, 4, 5].map((n) => (
           <button
@@ -165,9 +165,9 @@ function ReviewForm({ productId, initial }: { productId: string; initial: { rati
         maxLength={2000}
         className={inputCls}
       />
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
       {note && (
-        <p className="text-xs text-success" role="status">
+        <p className="text-meta text-success" role="status">
           {note}
         </p>
       )}
@@ -176,7 +176,7 @@ function ReviewForm({ productId, initial }: { productId: string; initial: { rati
           type="button"
           onClick={submit}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           {initial ? 'Update review' : 'Post review'}

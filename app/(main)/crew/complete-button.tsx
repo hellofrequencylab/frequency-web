@@ -32,7 +32,7 @@ export function CompleteButton({ taskId, isDone, isRepeatable, requiresVerificat
       <CrewGateButton
         isCrew={false}
         label={label}
-        buttonClassName="shrink-0 flex min-h-11 items-center gap-1 rounded-lg px-3 py-1 text-xs font-semibold bg-surface-elevated text-subtle hover:bg-primary-bg hover:text-primary-strong transition-colors motion-reduce:transition-none"
+        buttonClassName="shrink-0 flex min-h-11 items-center gap-1 rounded-lg px-3 py-1 text-meta font-semibold bg-surface-elevated text-subtle hover:bg-primary-bg hover:text-primary-strong transition-colors motion-reduce:transition-none"
       />
     )
   }

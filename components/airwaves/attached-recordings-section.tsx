@@ -35,7 +35,7 @@ export async function AttachedRecordingsSection({
 
   return (
     <section className="mt-6 border-t border-border pt-5">
-      <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-subtle">
+      <h2 className="mb-4 flex items-center gap-2 text-body-sm font-bold uppercase tracking-wide text-subtle">
         <Radio className="h-4 w-4 text-primary-strong" aria-hidden /> {title}
       </h2>
       <div className="space-y-4">

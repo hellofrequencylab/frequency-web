@@ -22,7 +22,7 @@ export function AssignJourneyToSeason({ questId, journeys }: { questId: string; 
 
   if (journeys.length === 0) {
     return (
-      <p className="text-xs text-muted">No other Journeys to assign yet. Build one in the Journey editor, then it shows up here.</p>
+      <p className="text-meta text-muted">No other Journeys to assign yet. Build one in the Journey editor, then it shows up here.</p>
     )
   }
 
@@ -65,7 +65,7 @@ export function AssignJourneyToSeason({ questId, journeys }: { questId: string; 
           Assign to this season
         </Button>
       </div>
-      {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
+      {error && <p className="mt-1.5 text-meta text-danger">{error}</p>}
       <p className="mt-1.5 text-2xs text-muted">
         Files the Journey under this season’s Quest. A Journey already in another season moves here.
       </p>

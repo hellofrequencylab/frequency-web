@@ -60,7 +60,7 @@ export function AdminPageDock({
       >
         <div className="overflow-hidden">
           <div className="px-1 pt-2">
-            <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">
+            <p className="px-2 pb-1 text-meta font-semibold uppercase tracking-wide text-muted">
               Page settings
             </p>
             <div className="space-y-0.5">
@@ -68,7 +68,7 @@ export function AdminPageDock({
                 <Link
                   key={l.href}
                   href={l.href}
-                  className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+                  className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
                 >
                   <l.Icon className="h-4 w-4 shrink-0 text-muted" />
                   {l.label}
@@ -92,8 +92,8 @@ export function AdminPageDock({
           <SlidersHorizontal className="h-[18px] w-[18px]" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold leading-tight text-text">Page admin</span>
-          <span className="mt-0.5 block text-xs text-subtle">Settings &amp; sort</span>
+          <span className="block truncate text-body-sm font-semibold leading-tight text-text">Page admin</span>
+          <span className="mt-0.5 block text-meta text-subtle">Settings &amp; sort</span>
         </span>
         <ChevronUp
           className={`h-4 w-4 shrink-0 text-subtle transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
@@ -139,8 +139,8 @@ function SectionSorter({ scope }: { scope: DashScope }) {
   return (
     <div className="mt-3 border-t border-border/60 px-0 pt-2.5">
       <div className="flex items-baseline justify-between px-2 pb-1.5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted">Sort sections</p>
-        <span className="text-xs text-subtle">{isPending ? 'Saving…' : 'Drag to reorder'}</span>
+        <p className="text-meta font-semibold uppercase tracking-wide text-muted">Sort sections</p>
+        <span className="text-meta text-subtle">{isPending ? 'Saving…' : 'Drag to reorder'}</span>
       </div>
       <ul className="space-y-1">
         {order.map((id) => (
@@ -159,7 +159,7 @@ function SectionSorter({ scope }: { scope: DashScope }) {
               dragId.current = null
               save(order)
             }}
-            className="flex cursor-grab items-center gap-2 rounded-card border border-border bg-surface px-2.5 py-2 text-sm font-medium text-text active:cursor-grabbing"
+            className="flex cursor-grab items-center gap-2 rounded-card border border-border bg-surface px-2.5 py-2 text-body-sm font-medium text-text active:cursor-grabbing"
           >
             <GripVertical className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
             {labelOf(id)}
@@ -173,7 +173,7 @@ function SectionSorter({ scope }: { scope: DashScope }) {
           setOrder(next)
           save(next)
         }}
-        className="mt-1.5 flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+        className="mt-1.5 flex items-center gap-2 rounded-lg px-2 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
       >
         <RotateCcw className="h-3.5 w-3.5 shrink-0" aria-hidden />
         Reset to default order

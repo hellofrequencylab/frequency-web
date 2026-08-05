@@ -59,12 +59,12 @@ function Card({ l, distance }: { l: GridListing; distance: number | null }) {
       </div>
       <div className="flex flex-1 flex-col p-4">
         <div className="flex items-start gap-1.5">
-          <h3 className="min-w-0 flex-1 text-sm font-bold text-text">{l.title}</h3>
+          <h3 className="min-w-0 flex-1 text-body-sm font-bold text-text">{l.title}</h3>
           {l.seededUnclaimed && <UnclaimedBadge className="mt-0.5" />}
         </div>
-        {l.description && <p className="mt-1 line-clamp-2 text-sm text-muted">{l.description}</p>}
+        {l.description && <p className="mt-1 line-clamp-2 text-body-sm text-muted">{l.description}</p>}
         {/* Location, then the poster's name on the row below (C5). */}
-        <div className="mt-3 space-y-1 text-xs text-subtle">
+        <div className="mt-3 space-y-1 text-meta text-subtle">
           {distance != null ? (
             <p className="inline-flex items-center gap-1 text-primary-strong">
               <Navigation className="h-3 w-3" aria-hidden />
@@ -146,7 +146,7 @@ export function MarketGrid({
       {!hasListings ? (
         emptyState ?? null
       ) : ordered.length === 0 ? (
-        <p className="text-sm text-muted">No matches for &ldquo;{query}&rdquo;.</p>
+        <p className="text-body-sm text-muted">No matches for &ldquo;{query}&rdquo;.</p>
       ) : (
         <div className="mp-grid gap-3">
           {ordered.map(({ l, distance }) => <Card key={l.id} l={l} distance={distance} />)}

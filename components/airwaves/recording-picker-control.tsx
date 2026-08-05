@@ -92,7 +92,7 @@ export function RecordingPickerControl({
       <select
         value={value || ''}
         onChange={(e) => onChange(e.target.value || undefined)}
-        className="w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-xs text-text outline-none focus:border-primary"
+        className="w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-meta text-text outline-none focus:border-primary"
       >
         <option value="">Choose a recording</option>
         {choices.map((c) => (

@@ -44,7 +44,7 @@ export function DateChip({ iso }: { iso: string }) {
   return (
     <div className="flex flex-col items-center justify-center w-9 h-9 rounded-lg bg-primary-bg text-primary-strong shrink-0">
       <span className="text-3xs font-semibold uppercase leading-none">{month}</span>
-      <span className="text-sm font-bold leading-tight">{day}</span>
+      <span className="text-body-sm font-bold leading-tight">{day}</span>
     </div>
   )
 }
@@ -60,20 +60,20 @@ export function UpcomingEventRows({ events }: { events: UpcomingEventRow[] }) {
         >
           <DateChip iso={event.starts_at} />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-text truncate">{event.title}</p>
+            <p className="text-body-sm font-semibold text-text truncate">{event.title}</p>
             <div className="flex items-center gap-2 flex-wrap mt-0.5">
-              <span className="text-xs text-subtle">
+              <span className="text-meta text-subtle">
                 {formatShort(event.starts_at)} · {formatTime(event.starts_at)}
               </span>
               {event.location && (
-                <span className="flex items-center gap-0.5 text-xs text-subtle">
+                <span className="flex items-center gap-0.5 text-meta text-subtle">
                   <MapPin className="w-3 h-3" />
                   {event.location}
                 </span>
               )}
             </div>
           </div>
-          <span className="text-xs text-subtle shrink-0">→</span>
+          <span className="text-meta text-subtle shrink-0">→</span>
         </Link>
       ))}
     </div>

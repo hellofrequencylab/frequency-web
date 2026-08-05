@@ -69,7 +69,7 @@ export function EventFactPanel({
   return (
     <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
       {/* When */}
-      <p className="flex items-start gap-2 text-sm text-text">
+      <p className="flex items-start gap-2 text-body-sm text-text">
         <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
         <span>{whenLine}</span>
       </p>
@@ -77,7 +77,7 @@ export function EventFactPanel({
       {/* Where — for an ONLINE event, the join link (the in-person "where" + the venue map now
           live in their OWN movable block, the `event-location` module, so they're not here). */}
       {isOnline && (
-        <p className="flex items-start gap-2 text-sm text-text">
+        <p className="flex items-start gap-2 text-body-sm text-text">
           <Video className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
           {safeHttpUrl(onlineUrl) ? (
             <a
@@ -96,7 +96,7 @@ export function EventFactPanel({
 
       {/* Capacity — only ever the warm "filling up" line, never a bare low count */}
       {nearFull && typeof spotsLeft === 'number' && spotsLeft > 0 && (
-        <p className="flex items-center gap-2 border-t border-border pt-3 text-xs font-medium text-primary-strong">
+        <p className="flex items-center gap-2 border-t border-border pt-3 text-meta font-medium text-primary-strong">
           <Clock className="h-3.5 w-3.5" />
           Filling up. {spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left
         </p>
@@ -104,7 +104,7 @@ export function EventFactPanel({
 
       {/* Guest list — names for Crew, a count for everyone else */}
       <div className="border-t border-border pt-3">
-        <p className="mb-2 flex items-center gap-2 text-xs font-semibold text-muted">
+        <p className="mb-2 flex items-center gap-2 text-meta font-semibold text-muted">
           <Users className="h-3.5 w-3.5 text-subtle" />
           {going > 0 ? `${going} going` : 'No one going yet'}
         </p>
@@ -112,7 +112,7 @@ export function EventFactPanel({
         {going > 0 && !viewerSignedIn && (
           <Link
             href={signInHref}
-            className="inline-flex items-center gap-1 text-sm font-semibold text-primary-strong hover:underline"
+            className="inline-flex items-center gap-1 text-body-sm font-semibold text-primary-strong hover:underline"
           >
             Sign in to see who&rsquo;s coming →
           </Link>
@@ -171,7 +171,7 @@ export function EventFactPanel({
                         {getInitials(g.displayName)}
                       </div>
                     )}
-                    <span className="truncate text-xs text-text">{g.displayName}</span>
+                    <span className="truncate text-meta text-text">{g.displayName}</span>
                   </Link>
                 </li>
               ))}
@@ -180,7 +180,7 @@ export function EventFactPanel({
               <button
                 type="button"
                 onClick={() => setShowAll(true)}
-                className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary-strong hover:underline"
+                className="mt-1 inline-flex items-center gap-1 text-meta font-medium text-primary-strong hover:underline"
               >
                 <ChevronDown className="h-3.5 w-3.5" />
                 Show all {guests.length}
@@ -190,7 +190,7 @@ export function EventFactPanel({
         )}
 
         {going > 0 && !guestsAreVisible && (
-          <p className="text-xs text-muted">
+          <p className="text-meta text-muted">
             {going} {going === 1 ? 'person is' : 'people are'} going.
           </p>
         )}

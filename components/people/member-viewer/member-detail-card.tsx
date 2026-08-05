@@ -168,8 +168,8 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
       <div className="flex items-start gap-4">
         <Avatar detail={detail} />
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-xl font-bold text-text">{detail.displayName}</h2>
-          <p className="truncate text-sm text-subtle">@{detail.handle}</p>
+          <h2 className="truncate text-lead font-bold text-text">{detail.displayName}</h2>
+          <p className="truncate text-body-sm text-subtle">@{detail.handle}</p>
           {mode === 'full' && detail.roles && detail.roles.length > 0 && (
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {detail.roles.map((r) => (
@@ -207,7 +207,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
           {detail.contact && (detail.contact.email || detail.contact.phone || detail.contact.links?.length) && (
             <section>
               <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Contact</h3>
-              <ul className="space-y-1.5 text-sm">
+              <ul className="space-y-1.5 text-body-sm">
                 {detail.contact.email && (
                   <li>
                     <a
@@ -261,7 +261,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
               <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Pipeline</h3>
               <div className="flex items-center gap-2 rounded-card border border-border bg-surface p-3">
                 <GitBranch className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-                <span className="min-w-0 flex-1 truncate text-sm text-muted">{detail.pipeline.label}</span>
+                <span className="min-w-0 flex-1 truncate text-body-sm text-muted">{detail.pipeline.label}</span>
                 <span className="shrink-0 rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
                   {detail.pipeline.stage}
                 </span>
@@ -280,7 +280,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
                     className="flex items-center gap-2 rounded-card border border-border bg-surface p-2.5"
                   >
                     <Route className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-                    <span className="min-w-0 flex-1 truncate text-sm text-text">{f.name}</span>
+                    <span className="min-w-0 flex-1 truncate text-body-sm text-text">{f.name}</span>
                     {f.stage && (
                       <span className="shrink-0 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
                         {f.stage}
@@ -302,7 +302,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
                     <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline justify-between gap-3">
-                        <span className="min-w-0 flex-1 truncate text-sm text-text">{it.summary}</span>
+                        <span className="min-w-0 flex-1 truncate text-body-sm text-text">{it.summary}</span>
                         <span className="shrink-0 text-2xs text-muted">{it.when}</span>
                       </div>
                       <p className="text-2xs text-muted">{it.kind}</p>
@@ -313,7 +313,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
               {detail.viewAllHref && detail.interactions.length > INTERACTION_CAP && (
                 <Link
                   href={detail.viewAllHref}
-                  className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline"
+                  className="mt-2 inline-flex items-center gap-1 text-meta font-semibold text-primary-strong hover:underline"
                 >
                   View all {detail.interactions.length} interactions
                   <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
@@ -330,7 +330,7 @@ export function MemberDetailCard({ detail, mode = 'full' }: { detail: MemberDeta
                 {detail.latestActivity.map((a, i) => {
                   const row = (
                     <div className="flex items-baseline justify-between gap-3">
-                      <span className={cn('min-w-0 flex-1 truncate text-sm text-text', a.href && 'group-hover:text-primary-strong')}>
+                      <span className={cn('min-w-0 flex-1 truncate text-body-sm text-text', a.href && 'group-hover:text-primary-strong')}>
                         {a.label}
                       </span>
                       <span className="shrink-0 text-2xs text-muted">{a.when}</span>

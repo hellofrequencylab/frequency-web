@@ -89,8 +89,8 @@ function BookingMineRow({
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-text">{booking.serviceName ?? 'Session'}</p>
-          <p className="flex items-center gap-1.5 text-xs text-muted">
+          <p className="text-body-sm font-semibold text-text">{booking.serviceName ?? 'Session'}</p>
+          <p className="flex items-center gap-1.5 text-meta text-muted">
             <CalendarClock className="h-3.5 w-3.5 shrink-0" aria-hidden />
             {whenLabel}
           </p>
@@ -100,7 +100,7 @@ function BookingMineRow({
             <button
               type="button"
               onClick={openReschedule}
-              className="rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-muted transition-colors hover:border-border-strong hover:text-text"
+              className="rounded-lg border border-border px-2.5 py-1 text-meta font-semibold text-muted transition-colors hover:border-border-strong hover:text-text"
             >
               Reschedule
             </button>
@@ -110,7 +110,7 @@ function BookingMineRow({
                 setMode('cancel')
                 setError(null)
               }}
-              className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-muted transition-colors hover:border-danger/40 hover:text-danger"
+              className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-meta font-semibold text-muted transition-colors hover:border-danger/40 hover:text-danger"
             >
               <X className="h-3.5 w-3.5" aria-hidden /> Cancel
             </button>
@@ -119,14 +119,14 @@ function BookingMineRow({
       </div>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger" role="alert">
+        <p className="rounded-lg bg-danger-bg px-3 py-2 text-meta font-medium text-danger" role="alert">
           {error}
         </p>
       )}
 
       {mode === 'cancel' && (
         <div className="space-y-2 rounded-lg border border-border bg-surface-elevated/40 p-3">
-          <label htmlFor={`reason-${booking.id}`} className="text-xs font-medium text-muted">
+          <label htmlFor={`reason-${booking.id}`} className="text-meta font-medium text-muted">
             Reason (optional)
           </label>
           <input
@@ -134,14 +134,14 @@ function BookingMineRow({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             maxLength={500}
-            className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm"
           />
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={doCancel}
               disabled={pending}
-              className="inline-flex items-center gap-1 rounded-lg border border-danger px-2.5 py-1 text-xs font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-lg border border-danger px-2.5 py-1 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
             >
               {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
               Cancel booking
@@ -150,7 +150,7 @@ function BookingMineRow({
               type="button"
               onClick={() => setMode('idle')}
               disabled={pending}
-              className="text-xs font-semibold text-muted transition-colors hover:text-text"
+              className="text-meta font-semibold text-muted transition-colors hover:text-text"
             >
               Keep
             </button>
@@ -161,21 +161,21 @@ function BookingMineRow({
       {mode === 'reschedule' && (
         <div className="space-y-3 rounded-lg border border-border bg-surface-elevated/40 p-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-muted">Pick a new time</p>
+            <p className="text-meta font-semibold text-muted">Pick a new time</p>
             <button
               type="button"
               onClick={() => setMode('idle')}
-              className="text-xs font-semibold text-muted transition-colors hover:text-text"
+              className="text-meta font-semibold text-muted transition-colors hover:text-text"
             >
               Close
             </button>
           </div>
           {loading || slots === null ? (
-            <div className="flex items-center gap-2 text-sm text-muted">
+            <div className="flex items-center gap-2 text-body-sm text-muted">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading times
             </div>
           ) : slots.length === 0 ? (
-            <p className="text-sm text-muted">No open times right now. Try again later.</p>
+            <p className="text-body-sm text-muted">No open times right now. Try again later.</p>
           ) : (
             <BookingPicker
               spaceId={spaceId}

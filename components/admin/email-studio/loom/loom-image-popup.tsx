@@ -181,13 +181,13 @@ export function LoomImagePopup({
       <div className="overflow-hidden rounded-3xl border border-border bg-surface lift-3">
         <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
           <div>
-            <h2 className="text-base font-bold text-text">Choose a photo</h2>
-            <p className="text-xs text-muted">Pick from your Loom library, upload new photos, or crop one to fit.</p>
+            <h2 className="text-body font-bold text-text">Choose a photo</h2>
+            <p className="text-meta text-muted">Pick from your Loom library, upload new photos, or crop one to fit.</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+            className="rounded-lg px-2.5 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
           >
             Close
           </button>
@@ -215,10 +215,10 @@ export function LoomImagePopup({
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search your photos"
-                    className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+                    className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
                   />
                 </div>
-                <label className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text">
+                <label className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text">
                   {uploading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Upload className="h-4 w-4" aria-hidden />}
                   Upload
                   <input
@@ -236,7 +236,7 @@ export function LoomImagePopup({
               </div>
 
               {error && (
-                <p className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger" role="alert">
+                <p className="rounded-lg bg-danger-bg px-3 py-2 text-meta font-medium text-danger" role="alert">
                   {error}
                 </p>
               )}
@@ -249,7 +249,7 @@ export function LoomImagePopup({
                 ) : images.length === 0 ? (
                   <div className="flex min-h-[220px] flex-col items-center justify-center gap-2 rounded-card border border-dashed border-border text-center">
                     <ImagePlus className="h-6 w-6 text-subtle" aria-hidden />
-                    <p className="text-sm text-muted">No photos yet. Upload one to get started.</p>
+                    <p className="text-body-sm text-muted">No photos yet. Upload one to get started.</p>
                   </div>
                 ) : (
                   <ul className="grid max-h-[46vh] grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
@@ -296,7 +296,7 @@ export function LoomImagePopup({
                   <button
                     type="button"
                     onClick={() => setCropSrc(selectedUrl)}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
                   >
                     <Crop className="h-4 w-4" aria-hidden /> Crop
                   </button>
@@ -309,12 +309,12 @@ export function LoomImagePopup({
                       onChange={(e) => setAlt(e.target.value)}
                       rows={2}
                       placeholder="Describe the photo for screen readers and when images are off."
-                      className="w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+                      className="w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
                     />
                   </div>
                 </>
               ) : (
-                <p className="rounded-card border border-dashed border-border px-3 py-8 text-center text-xs text-muted">
+                <p className="rounded-card border border-dashed border-border px-3 py-8 text-center text-meta text-muted">
                   Pick or upload a photo to preview it here.
                 </p>
               )}
@@ -324,7 +324,7 @@ export function LoomImagePopup({
                   type="button"
                   onClick={commit}
                   disabled={!selectedUrl}
-                  className="flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-bold text-on-primary transition-opacity hover:opacity-90 disabled:opacity-40"
+                  className="flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-bold text-on-primary transition-opacity hover:opacity-90 disabled:opacity-40"
                 >
                   Use this photo
                 </button>
@@ -332,7 +332,7 @@ export function LoomImagePopup({
                   <button
                     type="button"
                     onClick={clear}
-                    className="flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-danger transition-colors hover:bg-danger-bg"
+                    className="flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-body-sm font-medium text-danger transition-colors hover:bg-danger-bg"
                   >
                     <Trash2 className="h-4 w-4" aria-hidden /> Remove photo
                   </button>

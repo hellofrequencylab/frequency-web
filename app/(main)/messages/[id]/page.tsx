@@ -123,7 +123,7 @@ export default async function ConversationPage({
     others[0].avatar_url ? (
       <Image src={avatarSrc(others[0].avatar_url)} alt={others[0].display_name} width={36} height={36} className="h-9 w-9 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(others[0].avatar_url)} />
     ) : (
-      <span className="flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-pill bg-primary-bg text-xs font-semibold text-primary-strong">
+      <span className="flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-pill bg-primary-bg text-meta font-semibold text-primary-strong">
         {getInitials(others[0].display_name)}
       </span>
     )
@@ -181,7 +181,7 @@ export default async function ConversationPage({
                 <form action={leaveConversation.bind(null, conversationId)}>
                   <button
                     type="submit"
-                    className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated"
+                    className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated"
                   >
                     <LogOut className="h-3 w-3" /> Leave
                   </button>
@@ -227,7 +227,7 @@ export default async function ConversationPage({
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-text truncate">{p.display_name}</p>
+                      <p className="text-meta font-medium text-text truncate">{p.display_name}</p>
                       {p.id === myProfileId && <p className="text-3xs text-muted">You</p>}
                     </div>
                   </Link>

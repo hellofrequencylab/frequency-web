@@ -104,7 +104,7 @@ export function AdminSearchBar({ role, webRole = 'none', staffRole = null }: Pro
             placeholder="Search the admin workspace…"
             aria-label="Search the admin workspace"
             autoComplete="off"
-            className="admin-search-field min-w-0 flex-1 bg-transparent text-sm text-text outline-none placeholder:text-subtle"
+            className="admin-search-field min-w-0 flex-1 bg-transparent text-body-sm text-text outline-none placeholder:text-subtle"
           />
         </div>
 
@@ -133,7 +133,7 @@ export function AdminSearchBar({ role, webRole = 'none', staffRole = null }: Pro
                 ))}
               </ul>
             ) : (
-              <p className="px-3 py-3 text-sm text-subtle">No admin areas match “{q.trim()}”.</p>
+              <p className="px-3 py-3 text-body-sm text-subtle">No admin areas match “{q.trim()}”.</p>
             )}
 
             <button
@@ -158,7 +158,7 @@ export function AdminSearchBar({ role, webRole = 'none', staffRole = null }: Pro
         type="button"
         onClick={openVera}
         aria-label="Ask Vera"
-        className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-2.5 py-2.5 text-sm font-bold text-primary-strong transition-colors hover:bg-primary/15 sm:px-3.5"
+        className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-2.5 py-2.5 text-body-sm font-bold text-primary-strong transition-colors hover:bg-primary/15 sm:px-3.5"
       >
         <Sparkles className="h-4 w-4 shrink-0" aria-hidden />
         {/* Label collapses to an icon button on phones so the row never clips. */}

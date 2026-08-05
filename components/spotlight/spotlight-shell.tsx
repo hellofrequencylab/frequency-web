@@ -92,15 +92,15 @@ export function SpotlightShell({
               </div>
             )}
 
-            <h1 className="mt-4 text-2xl font-bold text-text" style={{ fontFamily: themeStyles.headingFont }}>
+            <h1 className="mt-4 text-page-title font-bold text-text" style={{ fontFamily: themeStyles.headingFont }}>
               {name}
             </h1>
-            <p className="text-sm text-muted">@{profile.handle}</p>
+            <p className="text-body-sm text-muted">@{profile.handle}</p>
 
             <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
               {profile.community_role && (
                 <span
-                  className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface px-2.5 py-1 text-xs font-semibold text-text lift-1"
+                  className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface px-2.5 py-1 text-meta font-semibold text-text lift-1"
                   style={roleBadgeStyle(profile.community_role as RoleChipKey)}
                 >
                   <span className="h-1.5 w-1.5 rounded-pill" style={{ background: 'var(--rank)' }} aria-hidden />
@@ -108,14 +108,14 @@ export function SpotlightShell({
                 </span>
               )}
               {region && (
-                <span className="inline-flex items-center gap-1 text-xs text-muted">
+                <span className="inline-flex items-center gap-1 text-meta text-muted">
                   <MapPin className="h-3 w-3" aria-hidden /> {region}
                 </span>
               )}
             </div>
 
             {showBio && profile.bio && (
-              <p className="mt-4 max-w-md text-pretty text-sm leading-relaxed text-text">{profile.bio}</p>
+              <p className="mt-4 max-w-md text-pretty text-body-sm leading-relaxed text-text">{profile.bio}</p>
             )}
           </div>
 
@@ -125,14 +125,14 @@ export function SpotlightShell({
           {showJoinCta ? (
             <footer className="mt-12">
               <div className="rounded-2xl border border-border bg-surface p-6 text-center lift-1">
-                <p className="text-sm font-semibold text-text">Want a page like this?</p>
-                <p className="mx-auto mt-1 max-w-sm text-pretty text-sm leading-relaxed text-muted">
+                <p className="text-body-sm font-semibold text-text">Want a page like this?</p>
+                <p className="mx-auto mt-1 max-w-sm text-pretty text-body-sm leading-relaxed text-muted">
                   {name.replace(/^@/, '')} built this on Frequency, a place to gather your people and bring real
                   community back to where you live.
                 </p>
                 <Link
                   href={BETA_CTA_HREF}
-                  className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+                  className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
                 >
                   {BETA_CTA_LABEL}
                   <ArrowRight className="h-4 w-4" aria-hidden />
@@ -141,7 +141,7 @@ export function SpotlightShell({
             </footer>
           ) : (
             <footer className="mt-12 text-center">
-              <Link href="/" className="text-xs text-subtle transition-colors hover:text-muted">
+              <Link href="/" className="text-meta text-subtle transition-colors hover:text-muted">
                 Made on Frequency
               </Link>
             </footer>

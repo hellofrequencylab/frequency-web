@@ -27,12 +27,12 @@ export async function RelationshipTimeline({
 
   return (
     <div>
-      <p className="mb-3 flex items-center gap-1.5 text-sm font-bold text-text">
+      <p className="mb-3 flex items-center gap-1.5 text-body-sm font-bold text-text">
         <History className="h-4 w-4 text-primary" /> {title}
       </p>
 
       {items.length === 0 ? (
-        <p className="text-xs text-muted">
+        <p className="text-meta text-muted">
           Your shared history will show up here as you do things together.
         </p>
       ) : (
@@ -45,7 +45,7 @@ export async function RelationshipTimeline({
                   <Icon className="h-3 w-3 text-subtle" />
                 </span>
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-xs font-medium text-text">{item.title}</span>
+                  <span className="text-meta font-medium text-text">{item.title}</span>
                   {item.at && (
                     <time className="shrink-0 text-2xs text-muted" dateTime={item.at}>
                       {relativeTime(item.at)}

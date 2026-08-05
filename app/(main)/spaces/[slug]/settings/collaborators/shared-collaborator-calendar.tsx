@@ -56,7 +56,7 @@ export async function SharedCollaboratorCalendar({
   return (
     <section className="mt-8">
       <SectionHeader title="Shared calendar" />
-      <p className="mb-3 text-sm text-muted">
+      <p className="mb-3 text-body-sm text-muted">
         Upcoming public events from this space and the businesses that collaborate with it, in one place. A
         collaborator&rsquo;s private events never appear here.
       </p>

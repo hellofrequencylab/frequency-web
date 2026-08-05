@@ -18,7 +18,7 @@ const PREVIEW: { tag: string; text: string }[] = [
   { tag: 'Expression', text: 'A practice to make, share, or connect.' },
 ]
 
-const FIELD = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary'
+const FIELD = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
 
 export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: boolean }) {
   const router = useRouter()
@@ -84,18 +84,18 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
     <section className="rounded-2xl border border-primary/30 bg-primary-bg/20 p-4">
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center gap-2 text-left">
         <Sparkles className="h-5 w-5 shrink-0 text-primary-strong" />
-        <h2 className="flex-1 text-base font-bold text-text">{isEmpty ? 'Build with Vera' : 'Edit with Vera'}</h2>
+        <h2 className="flex-1 text-body font-bold text-text">{isEmpty ? 'Build with Vera' : 'Edit with Vera'}</h2>
         <ChevronDown className={`h-4 w-4 shrink-0 text-subtle transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
       </button>
       {!open && (
-        <p className="mt-1 text-sm text-muted">
+        <p className="mt-1 text-body-sm text-muted">
           {isEmpty ? 'Answer a few specifics and Vera fills a balanced four-Pillar week.' : 'Tell Vera what to change and she updates the Journey.'}
         </p>
       )}
 
       {open && isEmpty && (
         <>
-          <p className="mt-1 text-sm text-muted">A few specifics and Vera fills one practice per Pillar (new or from the library). Edit anything after.</p>
+          <p className="mt-1 text-body-sm text-muted">A few specifics and Vera fills one practice per Pillar (new or from the library). Edit anything after.</p>
           <div className="mt-3 space-y-2.5">
             <label className="block">
               <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Who is it for</span>
@@ -110,16 +110,16 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
               <input value={outcome} disabled={pending} onChange={(e) => setOutcome(e.target.value)} placeholder="e.g. Fall asleep easier, most nights" className={FIELD} />
             </label>
           </div>
-          {error && <p className="mt-1 text-xs text-danger">{error}</p>}
-          {note && <p className="mt-1 text-xs text-muted">{note}</p>}
+          {error && <p className="mt-1 text-meta text-danger">{error}</p>}
+          {note && <p className="mt-1 text-meta text-muted">{note}</p>}
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button type="button" disabled={pending || !topic.trim()} onClick={build} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">
+            <button type="button" disabled={pending || !topic.trim()} onClick={build} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">
               <Wand2 className="h-4 w-4" /> {pending ? 'Building…' : 'Build with Vera'}
             </button>
-            <button type="button" disabled={pending} onClick={framework} className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary-bg/40 px-3 py-2 text-sm font-medium text-primary-strong hover:bg-primary-bg disabled:opacity-60">
+            <button type="button" disabled={pending} onClick={framework} className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary-bg/40 px-3 py-2 text-body-sm font-medium text-primary-strong hover:bg-primary-bg disabled:opacity-60">
               <Compass className="h-4 w-4" /> Start from the recommended framework
             </button>
-            <button type="button" disabled={pending} onClick={shape} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text hover:bg-surface-elevated disabled:opacity-60">
+            <button type="button" disabled={pending} onClick={shape} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-text hover:bg-surface-elevated disabled:opacity-60">
               <LayoutTemplate className="h-4 w-4" /> Start with the shape
             </button>
           </div>
@@ -129,7 +129,7 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
               {PREVIEW.map((p, i) => (
                 <li key={i} className="flex items-start gap-2 rounded-lg border border-border bg-surface px-3 py-2">
                   <span className="shrink-0 rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">{p.tag}</span>
-                  <span className="text-sm text-muted">{p.text}</span>
+                  <span className="text-body-sm text-muted">{p.text}</span>
                 </li>
               ))}
             </ul>
@@ -139,7 +139,7 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
 
       {open && !isEmpty && (
         <>
-          <p className="mt-1 text-sm text-muted">Tell Vera what to change in plain words. She reads the whole Journey and applies it. You can undo by editing any field by hand.</p>
+          <p className="mt-1 text-body-sm text-muted">Tell Vera what to change in plain words. She reads the whole Journey and applies it. You can undo by editing any field by hand.</p>
           <textarea
             value={change}
             disabled={pending}
@@ -148,10 +148,10 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
             placeholder="e.g. Make week 2 about breathing. Or: swap the Spirit practice for gratitude. Or: shorten the intro."
             className={`mt-3 resize-y ${FIELD}`}
           />
-          {error && <p className="mt-1 text-xs text-danger">{error}</p>}
-          {note && <p className="mt-1 text-xs text-muted">{note}</p>}
+          {error && <p className="mt-1 text-meta text-danger">{error}</p>}
+          {note && <p className="mt-1 text-meta text-muted">{note}</p>}
           <div className="mt-3">
-            <button type="button" disabled={pending || !change.trim()} onClick={apply} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">
+            <button type="button" disabled={pending || !change.trim()} onClick={apply} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">
               <Wand2 className="h-4 w-4" /> {pending ? 'Applying…' : 'Apply with Vera'}
             </button>
           </div>

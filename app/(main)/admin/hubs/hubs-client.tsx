@@ -23,8 +23,8 @@ type NexusOption = { id: string; name: string }
 type GuideOption = { id: string; display_name: string }
 
 const STATUSES = ['forming', 'active', 'paused', 'archived'] as const
-const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
-const lbl   = 'block text-xs font-medium text-muted mb-1'
+const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
+const lbl   = 'block text-meta font-medium text-muted mb-1'
 
 // The one status vocabulary (retired the local STATUS_COLOR dict, ADR-233 §4).
 const STATUS_TONE: Record<string, StatusTone> = {
@@ -106,7 +106,7 @@ function HubForm({
           Cancel
         </Button>
       </div>
-      {error && <p role="alert" className="text-xs font-medium text-danger sm:col-span-2">{error}</p>}
+      {error && <p role="alert" className="text-meta font-medium text-danger sm:col-span-2">{error}</p>}
     </form>
   )
 }

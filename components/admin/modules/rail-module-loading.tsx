@@ -10,7 +10,7 @@ export function RailModuleLoading({ label = 'Working…' }: { label?: string }) 
     <div
       role="status"
       aria-live="polite"
-      className="flex items-center gap-2 rounded-2xl border border-border bg-surface-elevated/50 px-4 py-6 text-sm font-medium text-muted"
+      className="flex items-center gap-2 rounded-2xl border border-border bg-surface-elevated/50 px-4 py-6 text-body-sm font-medium text-muted"
     >
       <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary-strong" aria-hidden />
       {label}

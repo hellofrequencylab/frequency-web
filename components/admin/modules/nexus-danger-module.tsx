@@ -67,18 +67,18 @@ export function NexusDangerModule() {
     <div className="@container">
       <div className="rounded-xl border border-danger/30 bg-danger/5 p-4">
           {alreadyArchived || done ? (
-            <p className="text-sm font-medium text-text">This nexus is archived.</p>
+            <p className="text-body-sm font-medium text-text">This nexus is archived.</p>
           ) : !armed ? (
             <button
               type="button"
               onClick={() => setArmed(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-danger/40 bg-surface px-4 py-2 text-xs font-semibold text-danger transition-colors hover:bg-danger/10"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-danger/40 bg-surface px-4 py-2 text-meta font-semibold text-danger transition-colors hover:bg-danger/10"
             >
               <Archive className="h-3.5 w-3.5" /> Archive this nexus
             </button>
           ) : (
             <div className="space-y-3">
-              <p className="text-xs text-muted">
+              <p className="text-meta text-muted">
                 Archiving hides the nexus from listings. Its hubs stay exactly where they are. You can bring it
                 back from the full admin editor later.
               </p>
@@ -87,7 +87,7 @@ export function NexusDangerModule() {
                   type="button"
                   onClick={handleArchive}
                   disabled={pending}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-danger px-4 py-2 text-xs font-semibold text-on-danger transition-colors hover:bg-danger/90 disabled:opacity-40"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-danger px-4 py-2 text-meta font-semibold text-on-danger transition-colors hover:bg-danger/90 disabled:opacity-40"
                 >
                   {pending ? 'Archiving…' : 'Yes, archive it'}
                 </button>
@@ -95,14 +95,14 @@ export function NexusDangerModule() {
                   type="button"
                   onClick={() => setArmed(false)}
                   disabled={pending}
-                  className="rounded-lg px-3 py-2 text-xs font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
+                  className="rounded-lg px-3 py-2 text-meta font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
                 >
                   Cancel
                 </button>
               </div>
             </div>
           )}
-        {error && <p className="mt-3 text-xs font-medium text-danger">{error}</p>}
+        {error && <p className="mt-3 text-meta font-medium text-danger">{error}</p>}
       </div>
     </div>
   )

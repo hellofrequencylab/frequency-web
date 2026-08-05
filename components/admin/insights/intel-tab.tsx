@@ -136,8 +136,8 @@ async function IntelContent() {
               <li key={i} className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
                 <StatusChip tone={STATUS[s.status].tone} size="sm">{STATUS[s.status].label}</StatusChip>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-text">{s.title}</p>
-                  <p className="mt-0.5 text-sm text-muted">{s.detail}</p>
+                  <p className="text-body-sm font-semibold text-text">{s.title}</p>
+                  <p className="mt-0.5 text-body-sm text-muted">{s.detail}</p>
                 </div>
               </li>
             ))}
@@ -161,7 +161,7 @@ async function IntelContent() {
           <form action={runAcquisitionBackfill}>
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
             >
               <Compass className="h-3.5 w-3.5" aria-hidden /> Backfill from referrals + beta
             </button>

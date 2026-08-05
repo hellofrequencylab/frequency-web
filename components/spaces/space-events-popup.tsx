@@ -79,10 +79,10 @@ export function SpaceEventsList({ items }: { items: SpaceEventsViewItem[] }) {
             >
               <span className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-control bg-primary-bg">
                 <span className="text-3xs font-bold leading-none text-primary-strong">{month}</span>
-                <span className="text-base font-bold leading-tight text-primary-strong">{day}</span>
+                <span className="text-body font-bold leading-tight text-primary-strong">{day}</span>
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-bold text-text">{e.title}</span>
+                <span className="block truncate text-body-sm font-bold text-text">{e.title}</span>
                 <span className="block truncate text-2xs text-muted">{e.whenLabel}</span>
                 {e.location && <span className="block truncate text-2xs text-muted">{e.location}</span>}
               </span>
@@ -168,9 +168,9 @@ function EventPopupBody({ item, onClose }: { item: SpaceEventsViewItem; onClose:
         />
       )}
       <div className="p-6">
-        <h3 className="text-xl font-bold leading-tight text-text">{item.title}</h3>
+        <h3 className="text-lead font-bold leading-tight text-text">{item.title}</h3>
 
-        <div className="mt-3 space-y-1.5 text-sm text-muted">
+        <div className="mt-3 space-y-1.5 text-body-sm text-muted">
           <div className="flex items-start gap-2">
             <CalendarDays className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             <span>{item.whenLabel}</span>
@@ -181,7 +181,7 @@ function EventPopupBody({ item, onClose }: { item: SpaceEventsViewItem; onClose:
               <span>
                 {item.location}
                 {item.addressHidden && (
-                  <span className="block text-xs text-subtle">Exact address shared after you RSVP</span>
+                  <span className="block text-meta text-subtle">Exact address shared after you RSVP</span>
                 )}
               </span>
             </div>
@@ -203,7 +203,7 @@ function EventPopupBody({ item, onClose }: { item: SpaceEventsViewItem; onClose:
         </div>
 
         {item.description && (
-          <p className="mt-3 line-clamp-4 whitespace-pre-line text-sm text-muted">
+          <p className="mt-3 line-clamp-4 whitespace-pre-line text-body-sm text-muted">
             {item.description}
           </p>
         )}
@@ -216,7 +216,7 @@ function EventPopupBody({ item, onClose }: { item: SpaceEventsViewItem; onClose:
                 Get tickets
                 <ArrowUpRight className="h-4 w-4" aria-hidden />
               </Link>
-              <p className="text-xs text-muted">Your ticket is your spot. Checkout is on the event page.</p>
+              <p className="text-meta text-muted">Your ticket is your spot. Checkout is on the event page.</p>
             </div>
           ) : join === null ? (
             <div className="h-16 w-full max-w-sm animate-pulse rounded-card bg-surface-elevated" aria-hidden />
@@ -224,12 +224,12 @@ function EventPopupBody({ item, onClose }: { item: SpaceEventsViewItem; onClose:
             <div className="space-y-2">
               <Link
                 href={`/sign-in?next=${eventHref}`}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 Sign in to RSVP
               </Link>
               {item.priceLabel === 'Free' && (
-                <p className="text-xs text-muted">Free to join. Sign in and you&rsquo;re on the list.</p>
+                <p className="text-meta text-muted">Free to join. Sign in and you&rsquo;re on the list.</p>
               )}
             </div>
           ) : (

@@ -229,7 +229,7 @@ function LegacyAbout() {
             ]}
           />
           <Reveal>
-            <p className="mx-auto mt-9 max-w-2xl text-center text-base leading-relaxed text-muted">
+            <p className="mx-auto mt-9 max-w-2xl text-center text-body leading-relaxed text-muted">
               Next, it spreads the only way it ever has: person to person, circle to circle, city by
               city, following the people who start them.
             </p>
@@ -294,7 +294,7 @@ function Value({
         </span>
         <h3 className="text-lg font-bold text-on-ink">{title}</h3>
       </div>
-      <p className="mt-3 text-base leading-relaxed text-on-ink-muted">{body}</p>
+      <p className="mt-3 text-body leading-relaxed text-on-ink-muted">{body}</p>
     </Reveal>
   )
 }
@@ -308,7 +308,7 @@ function Ask({ n, title, body }: { n: string; title: string; body: string }) {
           {n}
         </span>
         <h3 className="mt-3 text-lg font-bold text-text">{title}</h3>
-        <p className="mt-2 text-base leading-relaxed text-muted">{body}</p>
+        <p className="mt-2 text-body leading-relaxed text-muted">{body}</p>
       </Card>
     </Reveal>
   )

@@ -200,14 +200,14 @@ export function BroadcastComposer({
     const targets = locked.reinvite.targets
     return (
       <div className="rounded-2xl border border-border bg-surface p-4">
-        <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-muted">
+        <p className="mb-1 flex items-center gap-1.5 text-meta font-semibold text-muted">
           <Megaphone className="h-3.5 w-3.5 text-primary" aria-hidden />
           {heading}
         </p>
         <p className="text-2xs text-muted">
           {listCount > 0 ? `${listCount} ${listCount === 1 ? 'person' : 'people'} on this list.` : 'No one is on this list yet.'}
         </p>
-        <p className="mt-2 text-xs text-muted">{locked.message}</p>
+        <p className="mt-2 text-meta text-muted">{locked.message}</p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
           {targets.length > 0 ? (
@@ -220,7 +220,7 @@ export function BroadcastComposer({
                 value={reinviteTarget}
                 onChange={(e) => setReinviteTarget(e.target.value)}
                 disabled={pending}
-                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text"
+                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta text-text"
               >
                 {targets.map((t) => {
                   const when = targetDateLabel(t.startsAt)
@@ -236,7 +236,7 @@ export function BroadcastComposer({
                 type="button"
                 onClick={submitReinvite}
                 disabled={pending || !reinviteTarget || listCount === 0}
-                className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+                className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <span className="inline-flex items-center gap-1.5">
                   <CalendarPlus className="h-3.5 w-3.5" aria-hidden />
@@ -279,7 +279,7 @@ export function BroadcastComposer({
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
-      <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-muted">
+      <p className="mb-3 flex items-center gap-1.5 text-meta font-semibold text-muted">
         <Megaphone className="h-3.5 w-3.5 text-primary" aria-hidden />
         {heading}
       </p>
@@ -379,7 +379,7 @@ export function BroadcastComposer({
           type="button"
           onClick={submit}
           disabled={!canSubmit}
-          className="ml-auto shrink-0 rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+          className="ml-auto shrink-0 rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           {pending ? 'Sending…' : 'Send'}
         </button>

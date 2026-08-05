@@ -28,9 +28,9 @@ const WIDTHS = {
 // Shared footer button vocabulary — exported for the rare step that needs a fully
 // custom footer (a sign-in block, a multi-action row) but still wants the kit buttons.
 export const wizardPrimaryClass =
-  'inline-flex items-center justify-center gap-1.5 rounded-control bg-primary px-5 py-3 text-sm font-semibold text-on-primary lift-1 transition-all hover:bg-primary-hover enabled:hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0'
+  'inline-flex items-center justify-center gap-1.5 rounded-control bg-primary px-5 py-3 text-body-sm font-semibold text-on-primary lift-1 transition-all hover:bg-primary-hover enabled:hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0'
 export const wizardSecondaryClass =
-  'inline-flex items-center justify-center rounded-card border border-border-strong bg-surface px-5 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated motion-reduce:transition-none'
+  'inline-flex items-center justify-center rounded-card border border-border-strong bg-surface px-5 py-3 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated motion-reduce:transition-none'
 
 export function WizardShell({
   step,
@@ -131,13 +131,13 @@ export function WizardShell({
           <PageHeading eyebrow={eyebrow} title={title} description={description} divider={false} />
           {children}
 
-          {error && <p className="mt-4 text-sm text-danger">{error}</p>}
+          {error && <p className="mt-4 text-body-sm text-danger">{error}</p>}
 
           <div className="mt-7">{footer ?? standardFooter}</div>
         </div>
 
         {exit && exit.length > 0 && (
-          <p className="mt-8 text-center text-xs text-subtle/70">
+          <p className="mt-8 text-center text-meta text-subtle/70">
             {exit.map((e, i) => (
               <span key={e.href}>
                 {i > 0 && <span className="px-1.5 text-border" aria-hidden>|</span>}

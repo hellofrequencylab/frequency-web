@@ -49,7 +49,7 @@ export function JourneyExportModule() {
   return (
     <div className="@container space-y-3">
       <header className="space-y-1">
-        <h3 className="flex items-center gap-2 text-sm font-bold text-text">
+        <h3 className="flex items-center gap-2 text-body-sm font-bold text-text">
           <Icon className="h-4 w-4 shrink-0 text-subtle" />
           {mod?.label ?? 'Export'}
         </h3>

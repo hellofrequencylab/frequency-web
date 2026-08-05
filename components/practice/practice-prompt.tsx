@@ -64,7 +64,7 @@ export function PracticePrompt({
           <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-surface text-primary-strong lift-1">
             <Flame className="h-3.5 w-3.5" />
           </span>
-          <p className="min-w-0 truncate text-xs font-bold text-text">
+          <p className="min-w-0 truncate text-meta font-bold text-text">
             {streak > 0 ? `${streak} day streak` : 'Start your streak'}
             <span className="ml-1.5 font-normal text-muted">
               {p.maxed ? '· legend' : p.next ? `· ${p.toNext} to ${p.next.day}-day` : ''}
@@ -94,7 +94,7 @@ export function PracticePrompt({
             <Flame className="h-4 w-4" />
           </span>
           <div className="min-w-0">
-            <p className="text-sm font-bold leading-tight text-text">
+            <p className="text-body-sm font-bold leading-tight text-text">
               {streak > 0 ? `${streak} day streak` : 'Start your streak'}
             </p>
             <p className={`text-2xs leading-tight ${atRisk ? 'font-semibold text-warning' : 'text-muted'}`}>
@@ -161,7 +161,7 @@ export function PracticePrompt({
               <li key={`partial-${practice.id}`} className="flex items-center justify-between gap-3">
                 <Link
                   href={`/practices/${practice.slug ?? practice.id}`}
-                  className="min-w-0 truncate text-sm text-text transition-colors hover:text-primary-strong"
+                  className="min-w-0 truncate text-body-sm text-text transition-colors hover:text-primary-strong"
                 >
                   {practice.title}
                 </Link>
@@ -181,7 +181,7 @@ export function PracticePrompt({
               <li key={practice.id} className="flex items-center justify-between gap-3">
                 <Link
                   href={`/practices/${practice.slug ?? practice.id}`}
-                  className="min-w-0 truncate text-sm text-text transition-colors hover:text-primary-strong"
+                  className="min-w-0 truncate text-body-sm text-text transition-colors hover:text-primary-strong"
                 >
                   {practice.title}
                 </Link>
@@ -199,7 +199,7 @@ export function PracticePrompt({
         ) : (
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 shrink-0 text-primary-strong" />
-            <p className="text-sm text-muted">
+            <p className="text-body-sm text-muted">
               {streak > 0
                 ? 'All caught up. Come back tomorrow to keep your streak alive.'
                 : 'Adopt a practice to start a streak.'}

@@ -36,18 +36,18 @@ export function MatchPrefsForm({
 
   return (
     <section className="rounded-2xl border border-border bg-surface px-4 py-4 lift-1">
-      <h3 className="mb-1 text-sm font-bold text-text">Matching</h3>
-      <p className="mb-4 text-xs text-muted">
+      <h3 className="mb-1 text-body-sm font-bold text-text">Matching</h3>
+      <p className="mb-4 text-meta text-muted">
         Optional signals that shape who we suggest. Both are off until you turn them on.
       </p>
 
       {/* Astrology */}
       <div className="flex items-start justify-between gap-3 border-t border-border py-3">
         <div className="min-w-0">
-          <p className="flex items-center gap-1.5 text-sm font-medium text-text">
+          <p className="flex items-center gap-1.5 text-body-sm font-medium text-text">
             <Sparkles className="h-4 w-4 text-primary-strong" /> Astrology signal
           </p>
-          <p className="mt-0.5 text-xs text-muted">
+          <p className="mt-0.5 text-meta text-muted">
             Add a quiet &ldquo;your signs click&rdquo; note to suggestions, for people who also opted in.
           </p>
         </div>
@@ -64,7 +64,7 @@ export function MatchPrefsForm({
 
       {astro && (
         <div className="border-t border-border py-3">
-          <label htmlFor="birthDate" className="text-xs font-medium text-text">
+          <label htmlFor="birthDate" className="text-meta font-medium text-text">
             Your birth date
           </label>
           <div className="mt-1.5 flex items-center gap-3">
@@ -76,10 +76,10 @@ export function MatchPrefsForm({
               min="1900-01-01"
               onChange={(e) => setBirthDate(e.target.value)}
               onBlur={() => persist({ birthDate })}
-              className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text"
+              className="rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text"
             />
             {sign && (
-              <span className="text-sm text-muted">
+              <span className="text-body-sm text-muted">
                 {SIGN_INFO[sign].symbol} {SIGN_INFO[sign].label}
               </span>
             )}
@@ -91,10 +91,10 @@ export function MatchPrefsForm({
       {/* Romance */}
       <div className="flex items-start justify-between gap-3 border-t border-border py-3">
         <div className="min-w-0">
-          <p className="flex items-center gap-1.5 text-sm font-medium text-text">
+          <p className="flex items-center gap-1.5 text-body-sm font-medium text-text">
             <Heart className="h-4 w-4 text-primary-strong" /> Open to romance
           </p>
-          <p className="mt-0.5 text-xs text-muted">
+          <p className="mt-0.5 text-meta text-muted">
             Be matched with others who are also open to it. Only ever shown to people who opted in too.
           </p>
         </div>

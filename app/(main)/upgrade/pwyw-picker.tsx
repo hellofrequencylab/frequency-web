@@ -77,8 +77,8 @@ export function PwywPicker({
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-sm font-semibold text-text">Pay what it is worth to you.</p>
-        <p className="mt-1 text-sm text-muted">
+        <p className="text-body-sm font-semibold text-text">Pay what it is worth to you.</p>
+        <p className="mt-1 text-body-sm text-muted">
           {runningCostCents
             ? `A seat costs us about ${priceLabel(runningCostCents)} a month to run. Anything above that goes into building the first Outpost.`
             : 'Everything Crew does is the same at every amount. Anything above the cost of running a seat goes into building the first Outpost.'}
@@ -111,9 +111,9 @@ export function PwywPicker({
       </div>
 
       <label className="block">
-        <span className="text-xs font-medium text-muted">Another amount</span>
+        <span className="text-meta font-medium text-muted">Another amount</span>
         <div className="mt-1 flex items-center gap-2 rounded-card border border-border px-3 py-2 focus-within:border-primary">
-          <span className="text-sm text-muted">$</span>
+          <span className="text-body-sm text-muted">$</span>
           <input
             inputMode="decimal"
             value={custom}
@@ -123,13 +123,13 @@ export function PwywPicker({
             }}
             placeholder={(suggestedCents / 100).toString()}
             aria-label="Another amount per month, in dollars"
-            className="w-full bg-transparent text-sm text-text outline-none"
+            className="w-full bg-transparent text-body-sm text-text outline-none"
           />
-          <span className="text-xs text-muted">/mo</span>
+          <span className="text-meta text-muted">/mo</span>
         </div>
       </label>
 
-      <label className="flex items-center gap-2 text-sm text-muted">
+      <label className="flex items-center gap-2 text-body-sm text-muted">
         <input
           type="checkbox"
           checked={annual}
@@ -145,16 +145,16 @@ export function PwywPicker({
       <button
         onClick={go}
         disabled={isPending}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-on-primary shadow-lg shadow-primary/20 transition-colors hover:bg-primary-hover disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-body-sm font-bold text-on-primary shadow-lg shadow-primary/20 transition-colors hover:bg-primary-hover disabled:opacity-60"
       >
         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
         {isPending ? 'Redirecting to checkout…' : 'Join the Crew'}
       </button>
 
-      <p className="text-center text-xs text-muted">
+      <p className="text-center text-meta text-muted">
         Change what you give any time, or stop. No penalty either way.
       </p>
-      {error && <p className="text-center text-sm text-danger">{error}</p>}
+      {error && <p className="text-center text-body-sm text-danger">{error}</p>}
     </div>
   )
 }

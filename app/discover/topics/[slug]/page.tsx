@@ -87,7 +87,7 @@ export default async function TopicPage({
 
       <Link
         href="/discover/topics"
-        className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text"
+        className="mb-4 inline-flex items-center gap-1 text-body-sm font-medium text-muted transition-colors hover:text-text"
       >
         <ChevronLeft className="h-4 w-4" />
         Channels

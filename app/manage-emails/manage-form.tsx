@@ -63,7 +63,7 @@ export function ManageEmailsForm({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted leading-relaxed">
+      <p className="text-body-sm text-muted leading-relaxed">
         Pick which emails you want from Frequency. Turn one off to stop that kind of email, or back on to
         start again. Changes save right away.
       </p>
@@ -75,8 +75,8 @@ export function ManageEmailsForm({
           return (
             <div key={category} className="flex items-start gap-3 px-4 py-3.5">
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-text">{meta.label}</p>
-                <p className="mt-0.5 text-xs text-muted">{meta.help}</p>
+                <p className="text-body-sm font-medium text-text">{meta.label}</p>
+                <p className="mt-0.5 text-meta text-muted">{meta.help}</p>
               </div>
               <button
                 type="button"
@@ -95,7 +95,7 @@ export function ManageEmailsForm({
         })}
       </div>
 
-      <div className="text-xs text-muted px-1">
+      <div className="text-meta text-muted px-1">
         {isPending ? (
           'Saving…'
         ) : error ? (

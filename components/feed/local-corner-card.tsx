@@ -48,19 +48,19 @@ function LocationNudge() {
           <MapPin className="h-4.5 w-4.5" />
         </span>
         <div className="min-w-0">
-          <h3 className="text-sm font-bold text-text">See what&rsquo;s happening around you</h3>
-          <p className="mt-1 text-sm text-muted">
+          <h3 className="text-body-sm font-bold text-text">See what&rsquo;s happening around you</h3>
+          <p className="mt-1 text-body-sm text-muted">
             Set your location and your feed fills with circles, events, and people nearby. We use your
             approximate neighborhood to do it, never your exact address, and you control who can find you.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Link
               href="/settings/profile"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               <MapPin className="h-4 w-4" /> Set your location
             </Link>
-            <span className="inline-flex items-center gap-1 text-xs text-subtle">
+            <span className="inline-flex items-center gap-1 text-meta text-subtle">
               <ShieldCheck className="h-3.5 w-3.5" /> Exact location is never shared
             </span>
           </div>
@@ -108,20 +108,20 @@ function FounderPrompt({
           <Sparkles className="h-4.5 w-4.5" />
         </span>
         <div className="min-w-0">
-          <h3 className="text-sm font-bold text-text">{copy.title}</h3>
-          <p className="mt-1 text-sm text-muted">{copy.lead}</p>
+          <h3 className="text-body-sm font-bold text-text">{copy.title}</h3>
+          <p className="mt-1 text-body-sm text-muted">{copy.lead}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <FounderActionTracker action="circle">
               <NewCircleCompose
                 buttonLabel="Start a circle"
                 canCreate={canStartCircle}
-                buttonClass="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                buttonClass="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               />
             </FounderActionTracker>
             <FounderActionTracker action="event">
               <Link
                 href="/events"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
               >
                 <CalendarPlus className="h-4 w-4 text-subtle" /> Host an event
               </Link>
@@ -129,7 +129,7 @@ function FounderPrompt({
             <FounderActionTracker action="invite">
               <Link
                 href="/network"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
               >
                 <Users className="h-4 w-4 text-subtle" /> Invite people
               </Link>

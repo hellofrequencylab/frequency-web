@@ -58,8 +58,8 @@ export async function QuestToday() {
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-2xs font-semibold uppercase tracking-widest text-primary-strong">{nextStep.eyebrow}</p>
-        <p className="text-base font-bold leading-tight text-text">{nextStep.title}</p>
-        <p className="mt-0.5 text-sm leading-relaxed text-muted">{nextStep.detail}</p>
+        <p className="text-body font-bold leading-tight text-text">{nextStep.title}</p>
+        <p className="mt-0.5 text-body-sm leading-relaxed text-muted">{nextStep.detail}</p>
       </div>
       <ArrowRight className="mt-1 hidden h-4 w-4 shrink-0 text-subtle sm:block" />
     </Link>

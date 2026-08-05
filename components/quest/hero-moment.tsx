@@ -127,14 +127,14 @@ function KeepAnchorBand({ anchor }: { anchor: { practiceId: string; title: strin
 
   if (kept) {
     return (
-      <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-success">
+      <p className="mt-3 flex items-center gap-1.5 text-body-sm font-medium text-success">
         <Check className="h-4 w-4" aria-hidden /> {anchor.title} is yours now. It stays on your list.
       </p>
     )
   }
   return (
     <div className="mt-4 rounded-2xl border border-border bg-surface p-3.5">
-      <p className="text-sm text-text">
+      <p className="text-body-sm text-text">
         <span className="font-semibold">{anchor.title}</span> carried you through this Journey.
         Keep it as your own?
       </p>
@@ -152,11 +152,11 @@ function KeepAnchorBand({ anchor }: { anchor: { practiceId: string; title: strin
             setKept(true)
           })
         }
-        className="mt-2.5 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60 motion-reduce:transition-none"
+        className="mt-2.5 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60 motion-reduce:transition-none"
       >
         {pending ? 'Keeping…' : 'Keep it'}
       </button>
-      {error && <p className="mt-2 text-xs font-medium text-danger">{error}</p>}
+      {error && <p className="mt-2 text-meta font-medium text-danger">{error}</p>}
     </div>
   )
 }
@@ -219,11 +219,11 @@ function FinishMoment({
 
           {/* The facts: a Trophy, the +Zaps purse, and the rank now held. */}
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface px-2.5 py-1 text-xs font-semibold text-text shadow-2xs">
+            <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface px-2.5 py-1 text-meta font-semibold text-text shadow-2xs">
               <Trophy className="h-3.5 w-3.5 text-rank-gold" aria-hidden />
               Trophy earned
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface px-2.5 py-1 text-xs font-semibold text-text shadow-2xs">
+            <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface px-2.5 py-1 text-meta font-semibold text-text shadow-2xs">
               <Zap className="h-3.5 w-3.5 text-primary" aria-hidden />
               +{zaps} Zaps
             </span>
@@ -239,7 +239,7 @@ function FinishMoment({
           <div className="mt-4">
             <Link
               href={trophiesHref}
-              className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
+              className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
             >
               See your Trophies
             </Link>
@@ -301,21 +301,21 @@ function SeasonCompleteMoment({
         <p className="text-2xs font-semibold uppercase tracking-widest text-rank-gold">
           Season complete · Master
         </p>
-        <p className="mt-1 text-2xl font-bold leading-tight text-text">
+        <p className="mt-1 text-page-title font-bold leading-tight text-text">
           You finished the season.
         </p>
-        <p className="mt-1.5 text-sm leading-relaxed text-muted">
+        <p className="mt-1.5 text-body-sm leading-relaxed text-muted">
           {journeyTitle} was the third Journey. All three are done, every Expression
           Challenge and all, so you reached Master, the top rank this season.
         </p>
 
         {/* The facts kept: a Trophy and the Master crest. */}
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface px-2.5 py-1 text-xs font-semibold text-text shadow-2xs">
+          <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface px-2.5 py-1 text-meta font-semibold text-text shadow-2xs">
             <Trophy className="h-3.5 w-3.5 text-rank-gold" aria-hidden />
             Trophy earned
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface px-2.5 py-1 text-xs font-semibold text-text shadow-2xs">
+          <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface px-2.5 py-1 text-meta font-semibold text-text shadow-2xs">
             <Zap className="h-3.5 w-3.5 text-primary" aria-hidden />
             +{zaps} Zaps
           </span>
@@ -333,8 +333,8 @@ function SeasonCompleteMoment({
             <Sparkles className="h-3.5 w-3.5" aria-hidden />
             What comes next
           </p>
-          <p className="mt-1 text-sm leading-relaxed text-text">{nextLine}</p>
-          <p className="mt-1 text-sm leading-relaxed text-muted">
+          <p className="mt-1 text-body-sm leading-relaxed text-text">{nextLine}</p>
+          <p className="mt-1 text-body-sm leading-relaxed text-muted">
             Your Trophies are yours to keep. Rank resets for a Fresh Start, so everyone
             climbs the next Quest from the same line.
           </p>
@@ -343,7 +343,7 @@ function SeasonCompleteMoment({
         <div className="mt-5">
           <Link
             href={trophiesHref}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
           >
             See your Trophy Case
             <ArrowRight className="h-4 w-4" aria-hidden />

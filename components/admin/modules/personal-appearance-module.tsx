@@ -165,7 +165,7 @@ export function PersonalAppearanceModule() {
   return (
     <section className="min-w-0 space-y-6">
       {!data.spotlightEnabled && (
-        <p className="text-xs text-muted">
+        <p className="text-meta text-muted">
           Turn your Spotlight on first to save these. They still shape your profile page.
         </p>
       )}
@@ -202,7 +202,7 @@ export function PersonalAppearanceModule() {
         <SectionHeader title="Header" />
         <div className="space-y-4 rounded-2xl border border-border bg-surface-elevated/40 p-4">
           <label className="flex items-center justify-between gap-3">
-            <span className="text-sm text-text">Show the cover band</span>
+            <span className="text-body-sm text-text">Show the cover band</span>
             <input
               type="checkbox"
               checked={theme.header.show}
@@ -273,7 +273,7 @@ export function PersonalAppearanceModule() {
                   type="button"
                   onClick={() => fileRef.current?.click()}
                   disabled={pending || uploading}
-                  className="rounded-lg bg-canvas/90 px-2.5 py-1 text-xs font-medium text-text lift-1 backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60"
+                  className="rounded-lg bg-canvas/90 px-2.5 py-1 text-meta font-medium text-text lift-1 backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60"
                 >
                   {uploading ? 'Uploading' : 'Replace'}
                 </button>
@@ -293,7 +293,7 @@ export function PersonalAppearanceModule() {
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={pending || uploading}
-              className="flex h-24 w-full flex-col items-center justify-center gap-1.5 rounded-control border border-dashed border-border text-sm text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-60"
+              className="flex h-24 w-full flex-col items-center justify-center gap-1.5 rounded-control border border-dashed border-border text-body-sm text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-60"
             >
               {uploading ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Upload className="h-5 w-5" aria-hidden />}
               {uploading ? 'Uploading' : 'Upload a photo'}
@@ -359,13 +359,13 @@ export function PersonalAppearanceModule() {
         <SectionHeader title="Top Friends" count={topFriends.length} />
         <div className="space-y-3 rounded-2xl border border-border bg-surface-elevated/40 p-4">
           {topFriends.length === 0 ? (
-            <p className="text-sm text-muted">Feature the friends you want front and center.</p>
+            <p className="text-body-sm text-muted">Feature the friends you want front and center.</p>
           ) : (
             <ul className="space-y-2">
               {topFriends.map((f, i) => (
                 <li key={f.profileId} className="flex items-center gap-2">
                   <Avatar friend={f} />
-                  <span className="min-w-0 flex-1 truncate text-sm text-text">
+                  <span className="min-w-0 flex-1 truncate text-body-sm text-text">
                     {f.displayName || `@${f.handle}`}
                   </span>
                   <button
@@ -413,7 +413,7 @@ export function PersonalAppearanceModule() {
                       className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-surface-elevated disabled:opacity-50"
                     >
                       <Avatar friend={f} />
-                      <span className="min-w-0 flex-1 truncate text-sm text-text">
+                      <span className="min-w-0 flex-1 truncate text-body-sm text-text">
                         {f.displayName || `@${f.handle}`}
                       </span>
                       <Plus className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
@@ -426,7 +426,7 @@ export function PersonalAppearanceModule() {
         </div>
       </div>
 
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
     </section>
   )
 }
@@ -481,9 +481,9 @@ function RangeRow({
   }
   return (
     <label className="block space-y-1">
-      <span className="flex items-center justify-between text-sm text-text">
+      <span className="flex items-center justify-between text-body-sm text-text">
         {label}
-        <span className="tabular-nums text-xs text-muted">
+        <span className="tabular-nums text-meta text-muted">
           {local}
           {suffix}
         </span>
@@ -519,12 +519,12 @@ function SelectRow({
 }) {
   return (
     <label className="flex items-center justify-between gap-3">
-      <span className="text-sm text-text">{label}</span>
+      <span className="text-body-sm text-text">{label}</span>
       <select
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-lg border border-border bg-canvas px-2 py-1 text-sm text-text outline-none focus:border-primary disabled:opacity-50"
+        className="rounded-lg border border-border bg-canvas px-2 py-1 text-body-sm text-text outline-none focus:border-primary disabled:opacity-50"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>

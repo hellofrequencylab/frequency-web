@@ -24,7 +24,7 @@ const GROUP_DM_CAP = 25
 
 export function NewGroupDMCompose({
   buttonLabel = 'New Group DM',
-  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
+  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
   defaultRecipients = [],
   defaultName = '',
 }: {
@@ -131,7 +131,7 @@ export function NewGroupDMCompose({
           {recipients.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-2">
               {recipients.map(r => (
-                <span key={r.id} className="inline-flex items-center gap-1 rounded-md bg-primary-bg border border-primary-bg px-2 py-1 text-xs">
+                <span key={r.id} className="inline-flex items-center gap-1 rounded-md bg-primary-bg border border-primary-bg px-2 py-1 text-meta">
                   {r.avatar_url ? (
                     <Image src={avatarSrc(r.avatar_url)} alt={r.display_name} width={16} height={16} className="w-4 h-4 rounded-pill object-cover" style={avatarFocusStyle(r.avatar_url)} />
                   ) : (
@@ -191,7 +191,7 @@ function ResultRow({
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-text truncate">{result.display_name}</p>
+        <p className="text-meta font-semibold text-text truncate">{result.display_name}</p>
         <p className="text-2xs text-muted truncate">@{result.handle}</p>
       </div>
 

@@ -167,7 +167,7 @@ function LegacyTheLab() {
         }
         subtitle="Calm isn't something you can download. The body of this community is a room with a sauna, a cold plunge, and somebody counting you down. We haven't built it yet."
         footer={
-          <p className="mx-auto mt-7 max-w-xl text-sm leading-relaxed text-on-ink/60">
+          <p className="mx-auto mt-7 max-w-xl text-body-sm leading-relaxed text-on-ink/60">
             Nothing here is bookable. The first Lab is planned to open in 2028. Until then the
             community meets in rooms we borrow, and this page is the plan, not the place.
           </p>
@@ -225,7 +225,7 @@ function LegacyTheLab() {
           </div>
           <div className="mx-auto mt-10 max-w-2xl">
             <hr className="rule-amber" />
-            <p className="mt-6 text-center text-sm leading-relaxed text-subtle">
+            <p className="mt-6 text-center text-body-sm leading-relaxed text-subtle">
               There are no membership rates on this page because there&apos;s nothing to sell
               yet. When there is, the price will be published here before anybody is asked for
               a card.
@@ -276,7 +276,7 @@ function LegacyTheLab() {
             ]}
           />
           <Reveal>
-            <p className="mx-auto mt-9 max-w-2xl text-center text-base leading-relaxed text-muted">
+            <p className="mx-auto mt-9 max-w-2xl text-center text-body leading-relaxed text-muted">
               The room follows the people, never the other way around. See{' '}
               <a href="/loneliness" className="font-semibold text-primary-strong hover:underline">
                 what a third space is
@@ -328,7 +328,7 @@ function Room({
         <SiteImage src={img} alt={alt} aspect="16/10" sizes="(min-width: 640px) 22rem, 100vw" />
         <span
           aria-hidden
-          className="absolute -bottom-4 left-5 flex h-9 w-9 items-center justify-center rounded-pill bg-primary font-display text-sm text-on-primary"
+          className="absolute -bottom-4 left-5 flex h-9 w-9 items-center justify-center rounded-pill bg-primary font-display text-body-sm text-on-primary"
         >
           {n}
         </span>
@@ -337,8 +337,8 @@ function Room({
         <p className="text-3xs font-bold uppercase tracking-widest text-on-ink-subtle">
           Reference, not our room
         </p>
-        <h3 className="mt-2 font-display uppercase text-2xl text-on-ink">{title}</h3>
-        <p className="mt-2 text-base leading-relaxed text-on-ink-muted">{body}</p>
+        <h3 className="mt-2 font-display uppercase text-page-title text-on-ink">{title}</h3>
+        <p className="mt-2 text-body leading-relaxed text-on-ink-muted">{body}</p>
       </div>
     </Reveal>
   )
@@ -366,7 +366,7 @@ function BuildStep({
           {when}
         </span>
         <h3 className="mt-3 text-lg font-bold text-text">{title}</h3>
-        <p className="mt-2 text-base leading-relaxed text-muted">{body}</p>
+        <p className="mt-2 text-body leading-relaxed text-muted">{body}</p>
       </Card>
     </Reveal>
   )

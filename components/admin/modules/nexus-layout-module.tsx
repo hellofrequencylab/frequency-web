@@ -52,11 +52,11 @@ export function NexusLayoutModule() {
   return (
     <div className="@container space-y-3">
       <header className="space-y-1">
-        <h3 className="flex items-center gap-2 text-sm font-bold text-text">
+        <h3 className="flex items-center gap-2 text-body-sm font-bold text-text">
           <Icon className="h-4 w-4 shrink-0 text-subtle" />
           {mod?.label ?? 'Layout'}
         </h3>
-        {mod?.desc && <p className="text-sm text-muted">{mod.desc}</p>}
+        {mod?.desc && <p className="text-body-sm text-muted">{mod.desc}</p>}
       </header>
 
       <Link
@@ -64,8 +64,8 @@ export function NexusLayoutModule() {
         className="flex items-center gap-3 rounded-control border border-border bg-surface px-4 py-3 transition-colors hover:border-border-strong hover:bg-surface-elevated"
       >
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-text">Manage console</span>
-          <span className="block text-xs text-muted">Basics, people, and the rest of the nexus.</span>
+          <span className="block text-body-sm font-semibold text-text">Manage console</span>
+          <span className="block text-meta text-muted">Basics, people, and the rest of the nexus.</span>
         </span>
         <ChevronRight className="h-4 w-4 shrink-0 text-subtle" />
       </Link>

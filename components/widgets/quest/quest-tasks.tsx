@@ -107,23 +107,23 @@ export async function QuestTasks() {
                       <span className={`text-sm font-medium ${isDone ? 'text-success' : 'text-text'}`}>
                         {task.name}
                       </span>
-                      <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-xs font-medium text-muted">
+                      <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-meta font-medium text-muted">
                         {TASK_TYPE_LABEL[task.task_type] ?? task.task_type}
                       </span>
                       {task.is_repeatable && (
-                        <span className="rounded-md bg-signal-bg px-1.5 py-0.5 text-xs font-medium text-signal-strong">
+                        <span className="rounded-md bg-signal-bg px-1.5 py-0.5 text-meta font-medium text-signal-strong">
                           Repeatable
                         </span>
                       )}
                       {task.requires_verification && (
-                        <span className="rounded-md bg-warning-bg px-1.5 py-0.5 text-xs font-medium text-warning dark:text-primary">
+                        <span className="rounded-md bg-warning-bg px-1.5 py-0.5 text-meta font-medium text-warning dark:text-primary">
                           Needs review
                         </span>
                       )}
                     </div>
 
                     {isDone && lastCompletion?.completed_at && (
-                      <p className="mt-0.5 text-xs text-success">
+                      <p className="mt-0.5 text-meta text-success">
                         Completed{' '}
                         {new Date(lastCompletion.completed_at).toLocaleDateString('en-US', {
                           month: 'short',

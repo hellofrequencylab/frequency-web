@@ -140,10 +140,10 @@ export async function ProfileAssociations({
                 // way to read the rest. The title carries the full name plus what it is, which is
                 // the only place the chip's meaning and the clipped text are both recoverable.
                 title={`${item.label} (${item.chip})`}
-                className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-text transition-colors hover:bg-surface-elevated"
+                className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-body-sm text-text transition-colors hover:bg-surface-elevated"
               >
                 <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
-                <span className="shrink-0 text-xs text-subtle">{item.chip}</span>
+                <span className="shrink-0 text-meta text-subtle">{item.chip}</span>
               </Link>
             </li>
           ))}
@@ -154,7 +154,7 @@ export async function ProfileAssociations({
           going from one association to none. Every Circle here is one the viewer is already in. */}
       {sharedRows.length > 0 && (
         <div className="mt-4 border-t border-border pt-3">
-          <p className="mb-1.5 text-xs font-semibold text-muted">Circles you are both in</p>
+          <p className="mb-1.5 text-meta font-semibold text-muted">Circles you are both in</p>
           <div className="flex flex-wrap gap-2">
             {sharedRows.map((c) => (
               <Link
@@ -164,7 +164,7 @@ export async function ProfileAssociations({
                 // heading ("Circles you are both in") is the only context; the title restates the
                 // destination so the pill stands on its own.
                 title={`Open ${c.label}`}
-                className="inline-flex items-center gap-1.5 rounded-pill bg-surface-elevated/60 px-2.5 py-1 text-xs font-medium text-text transition-colors hover:bg-surface-elevated"
+                className="inline-flex items-center gap-1.5 rounded-pill bg-surface-elevated/60 px-2.5 py-1 text-meta font-medium text-text transition-colors hover:bg-surface-elevated"
               >
                 <CircleDot className="h-3 w-3 shrink-0 text-subtle" aria-hidden />
                 {c.label}
@@ -181,19 +181,19 @@ export async function ProfileAssociations({
           aria-label="Only you can see this"
           className="mt-4 rounded-card border border-border bg-surface-elevated/40 p-4"
         >
-          <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-text">
+          <p className="mb-2 flex items-center gap-1.5 text-meta font-bold text-text">
             <Lock className="h-3.5 w-3.5 text-subtle" aria-hidden /> Only you can see this
           </p>
           <dl className="space-y-2">
             {ownGroups.map((g) => (
               <div key={g.key}>
-                <dt className="text-xs font-semibold text-muted">{g.label}</dt>
+                <dt className="text-meta font-semibold text-muted">{g.label}</dt>
                 <dd className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
                   {g.items.map((item) => (
                     <Link
                       key={item.id}
                       href={item.href}
-                      className="text-sm font-medium text-text transition-colors hover:text-primary-strong"
+                      className="text-body-sm font-medium text-text transition-colors hover:text-primary-strong"
                     >
                       {item.label}
                     </Link>
@@ -217,7 +217,7 @@ export async function ProfileAssociations({
             <Link
               key={cta.href}
               href={cta.href}
-              className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+              className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
             >
               {cta.label}
             </Link>
@@ -226,7 +226,7 @@ export async function ProfileAssociations({
       )}
 
       {isOwner && (
-        <p className="mt-3 text-xs text-subtle">Drafts and private items stay off this list.</p>
+        <p className="mt-3 text-meta text-subtle">Drafts and private items stay off this list.</p>
       )}
     </section>
   )

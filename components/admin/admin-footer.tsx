@@ -49,7 +49,7 @@ function FootLink({
     <li>
       <Link
         href={href}
-        className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-text"
+        className="inline-flex items-center gap-1.5 text-body-sm text-muted transition-colors hover:text-text"
       >
         {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />}
         {children}

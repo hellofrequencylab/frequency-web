@@ -89,7 +89,7 @@ export function GiftGemsDialog({ balance }: { balance: number }) {
     <Dialog open={open} onClose={close} ariaLabel="Gift Gems" className="max-w-md">
       <div className="w-full rounded-2xl border border-border bg-surface lift-3">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-text">
+          <h2 className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
             <Gift className="h-4 w-4 text-primary-strong" aria-hidden />
             Gift Gems
           </h2>
@@ -102,30 +102,30 @@ export function GiftGemsDialog({ balance }: { balance: number }) {
           {result?.ok ? (
             <div className="py-4 text-center">
               <Check className="mx-auto mb-2 h-8 w-8 text-success" aria-hidden />
-              <p className="text-sm text-text">{result.text}</p>
+              <p className="text-body-sm text-text">{result.text}</p>
               <button
                 onClick={reset}
-                className="mt-3 text-xs font-medium text-primary-strong hover:text-primary-strong"
+                className="mt-3 text-meta font-medium text-primary-strong hover:text-primary-strong"
               >
                 Gift more
               </button>
             </div>
           ) : (
             <>
-              <p className="flex items-center gap-1 text-xs text-subtle">
+              <p className="flex items-center gap-1 text-meta text-subtle">
                 <Gem className="h-3.5 w-3.5 text-primary-strong" aria-hidden />
                 You have {balance} Gems to spend.
               </p>
 
               {/* Recipient picker */}
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-muted">To</label>
+                <label className="text-meta font-semibold uppercase tracking-wider text-muted">To</label>
                 {recipient ? (
                   <div className="mt-1 flex items-center gap-2 rounded-lg border border-border px-3 py-2">
-                    <span className="flex-1 text-sm text-text">
+                    <span className="flex-1 text-body-sm text-text">
                       {recipient.displayName || 'Member'}
                     </span>
-                    {recipient.handle && <span className="text-xs text-subtle">@{recipient.handle}</span>}
+                    {recipient.handle && <span className="text-meta text-subtle">@{recipient.handle}</span>}
                     <button
                       onClick={() => setRecipient(null)}
                       aria-label="Clear recipient"
@@ -144,13 +144,13 @@ export function GiftGemsDialog({ balance }: { balance: number }) {
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="Search members"
                         aria-label="Search members"
-                        className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-border-strong/30"
+                        className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-border-strong/30"
                       />
                     </div>
                     {query.trim().length >= 2 && (
                       <div className="mt-1 max-h-40 overflow-y-auto rounded-lg border border-border bg-surface">
                         {searching ? (
-                          <p className="flex items-center gap-2 px-3 py-2 text-xs text-subtle">
+                          <p className="flex items-center gap-2 px-3 py-2 text-meta text-subtle">
                             <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
                             Searching
                           </p>
@@ -165,12 +165,12 @@ export function GiftGemsDialog({ balance }: { balance: number }) {
                               }}
                               className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-canvas"
                             >
-                              <span className="text-sm text-text">{m.displayName || 'Member'}</span>
-                              {m.handle && <span className="text-xs text-subtle">@{m.handle}</span>}
+                              <span className="text-body-sm text-text">{m.displayName || 'Member'}</span>
+                              {m.handle && <span className="text-meta text-subtle">@{m.handle}</span>}
                             </button>
                           ))
                         ) : (
-                          <p className="px-3 py-2 text-xs text-subtle">No members found</p>
+                          <p className="px-3 py-2 text-meta text-subtle">No members found</p>
                         )}
                       </div>
                     )}
@@ -180,7 +180,7 @@ export function GiftGemsDialog({ balance }: { balance: number }) {
 
               {/* Amount */}
               <div>
-                <label htmlFor="gift-amount" className="text-xs font-semibold uppercase tracking-wider text-muted">
+                <label htmlFor="gift-amount" className="text-meta font-semibold uppercase tracking-wider text-muted">
                   Amount
                 </label>
                 <input
@@ -192,10 +192,10 @@ export function GiftGemsDialog({ balance }: { balance: number }) {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="How many Gems"
-                  className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-border-strong/30"
+                  className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-border-strong/30"
                 />
                 {amount.trim() !== '' && !amountValid && (
-                  <p className="mt-1 text-xs text-danger">
+                  <p className="mt-1 text-meta text-danger">
                     {parsedAmount > balance
                       ? `You have ${balance} Gems to spend.`
                       : 'Enter a whole number of Gems greater than zero.'}
@@ -203,7 +203,7 @@ export function GiftGemsDialog({ balance }: { balance: number }) {
                 )}
               </div>
 
-              {result && !result.ok && <p className="text-xs text-danger">{result.text}</p>}
+              {result && !result.ok && <p className="text-meta text-danger">{result.text}</p>}
 
               <Button onClick={handleSend} disabled={!canSend} className="w-full py-2">
                 {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Gift className="h-3.5 w-3.5" aria-hidden />}

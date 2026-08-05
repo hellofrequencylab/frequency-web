@@ -101,7 +101,7 @@ export default async function NexusPage({
     <div>
       <Link
         href="/circles"
-        className="inline-flex items-center gap-1 text-xs text-subtle hover:text-muted mb-4 transition-colors"
+        className="inline-flex items-center gap-1 text-meta text-subtle hover:text-muted mb-4 transition-colors"
       >
         ← Circles
       </Link>
@@ -115,7 +115,7 @@ export default async function NexusPage({
             <InlineText
               value={nexus.name}
               save={updateNexusField.bind(null, nexus.id, slug, 'name')}
-              inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-xl sm:text-2xl font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
+              inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-lead sm:text-2xl font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
             />
           ) : (
             nexus.name
@@ -135,7 +135,7 @@ export default async function NexusPage({
               />
               <Link
                 href={`/nexuses/${nexus.slug}/manage`}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
               >
                 <LayoutDashboard className="h-4 w-4 text-subtle" />
                 Manage nexus
@@ -203,10 +203,10 @@ export default async function NexusPage({
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-text">{hub.name}</span>
+                        <span className="text-body-sm font-semibold text-text">{hub.name}</span>
                         <StatusBadge status={hub.status} />
                       </div>
-                      <div className="flex items-center gap-2 mt-0.5 text-xs text-subtle">
+                      <div className="flex items-center gap-2 mt-0.5 text-meta text-subtle">
                         {hub.guide && <span>Guide: {hub.guide.display_name}</span>}
                         <span>·</span>
                         <span className="tabular-nums">{hub.circles.length} circles · {hubTotal} members</span>

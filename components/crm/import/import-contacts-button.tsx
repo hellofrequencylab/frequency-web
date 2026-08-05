@@ -31,7 +31,7 @@ export function ImportContactsButton({
   const [open, setOpen] = useState(false)
 
   const base =
-    'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-40'
+    'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-body-sm font-semibold transition-colors disabled:opacity-40'
   const tone =
     variant === 'primary'
       ? 'bg-primary text-on-primary hover:bg-primary-hover'

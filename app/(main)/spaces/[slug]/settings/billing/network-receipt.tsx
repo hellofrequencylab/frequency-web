@@ -26,11 +26,11 @@ export function NetworkReceipt({ earnings }: { earnings: SpaceEarnings }) {
       aria-labelledby="network-receipt-heading"
       className="rounded-2xl border border-success/30 bg-success-bg/15 px-5 py-4 lift-1"
     >
-      <p className="text-xs font-semibold uppercase tracking-widest text-success">The network earned you</p>
-      <p id="network-receipt-heading" className="mt-1 text-2xl font-black text-text">
+      <p className="text-meta font-semibold uppercase tracking-widest text-success">The network earned you</p>
+      <p id="network-receipt-heading" className="mt-1 text-page-title font-black text-text">
         {formatCents(earnings.networkGrossCents)}
       </p>
-      <p className="mt-1 text-sm leading-relaxed text-muted">
+      <p className="mt-1 text-body-sm leading-relaxed text-muted">
         From {orders} {orders === 1 ? 'sale' : 'sales'} the collective sent you over {WINDOW_LABEL}. You
         kept {formatCents(netToYouCents)}. Our take on that network-sourced business was{' '}
         {formatCents(earnings.networkFeeCents)}, and we took nothing on the rest of what you brought in

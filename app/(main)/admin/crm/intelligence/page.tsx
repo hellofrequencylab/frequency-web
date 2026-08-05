@@ -64,8 +64,8 @@ function Phase({
         <Icon className="h-5 w-5" aria-hidden />
       </div>
       <div className="min-w-0">
-        <h2 className="text-base font-bold text-text">{title}</h2>
-        <p className="text-sm text-muted">{blurb}</p>
+        <h2 className="text-body font-bold text-text">{title}</h2>
+        <p className="text-body-sm text-muted">{blurb}</p>
       </div>
     </div>
   )

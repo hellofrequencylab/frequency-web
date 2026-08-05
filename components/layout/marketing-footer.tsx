@@ -35,7 +35,7 @@ export function MarketingFooter({ menu }: { menu?: ResolvedMenu }) {
           {/* Brand */}
           <div className="max-w-xs">
             <Image src="/frequency-logo.png" alt="Frequency" width={963} height={170} className="h-6 w-auto opacity-50 mb-3" />
-            <p className="text-sm text-muted leading-relaxed">
+            <p className="text-body-sm text-muted leading-relaxed">
               Frequency is a Community Collective for real-world connection. Find local Circles and Events
               near you, keep a private book of the Contacts you meet, and stay in touch. Not home,
               not work. Your community, together.
@@ -43,7 +43,7 @@ export function MarketingFooter({ menu }: { menu?: ResolvedMenu }) {
           </div>
 
           {/* Nav */}
-          <nav className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
+          <nav className="flex flex-wrap gap-x-8 gap-y-2 text-body-sm">
             {links.map((item) => (
               <Link
                 key={item.href}
@@ -57,10 +57,10 @@ export function MarketingFooter({ menu }: { menu?: ResolvedMenu }) {
         </div>
 
         <div className="mt-10 pt-6 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="text-xs text-muted">
+          <span className="text-meta text-muted">
             &copy; {new Date().getFullYear()} {ORG_LEGAL_NAME}
           </span>
-          <div className="flex items-center gap-8 text-xs text-muted">
+          <div className="flex items-center gap-8 text-meta text-muted">
             <Link href="/privacy" className="hover:text-text transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-text transition-colors">Terms</Link>
             <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-text transition-colors">Contact</a>

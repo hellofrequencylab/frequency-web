@@ -96,7 +96,7 @@ export function IndexTemplate({
       <div>
         {trail && <Breadcrumbs trail={trail} />}
         {back && (
-          <Link href={back.href} className="mb-2 mt-3 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text">
+          <Link href={back.href} className="mb-2 mt-3 inline-flex items-center gap-1 text-body-sm font-medium text-muted transition-colors hover:text-text">
             <ChevronLeft className="h-4 w-4" /> {back.label}
           </Link>
         )}

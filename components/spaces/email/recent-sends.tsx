@@ -73,8 +73,8 @@ export async function RecentSends({ spaceId, limit }: { spaceId: string; limit?:
         {sends.map((s) => (
           <li key={s.id} className="flex items-center justify-between gap-4 px-4 py-3">
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-text">{s.email || 'Unknown address'}</p>
-              <p className="text-xs text-muted">
+              <p className="truncate text-body-sm font-semibold text-text">{s.email || 'Unknown address'}</p>
+              <p className="text-meta text-muted">
                 {dateFmt.format(new Date(s.createdAt))}
                 {s.error ? ` · ${s.error}` : ''}
               </p>

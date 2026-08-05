@@ -27,8 +27,8 @@ export function RisingMembers({ members }: { members: RisingMember[] }) {
         const inner = (
           <>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-text">{m.name}</p>
-              <p className="text-xs text-muted">
+              <p className="truncate text-body-sm font-bold text-text">{m.name}</p>
+              <p className="text-meta text-muted">
                 Propensity {Math.round(m.activationPropensity)} · Health {Math.round(m.resonanceHealth)}
               </p>
             </div>

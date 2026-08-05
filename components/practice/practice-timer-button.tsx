@@ -72,7 +72,7 @@ export function PracticeTimerButton({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
     >
       <Timer className="h-3.5 w-3.5 shrink-0" aria-hidden /> {isResume ? 'Continue Practice' : 'Start Practice'}
     </button>

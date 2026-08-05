@@ -94,8 +94,8 @@ export function SurfaceSummaryCard({
           </span>
         )}
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium text-text">{app.label}</span>
-          <span className="block truncate text-xs text-subtle">{entry.format(data)}</span>
+          <span className="block truncate text-body-sm font-medium text-text">{app.label}</span>
+          <span className="block truncate text-meta text-subtle">{entry.format(data)}</span>
         </span>
         <span className="flex shrink-0 items-center gap-1 text-2xs font-medium text-muted transition-colors group-hover:text-primary-strong">
           View more

@@ -80,7 +80,7 @@ export function UserMenu({
         key={it.id}
         href={it.href}
         onClick={() => setOpen(false)}
-        className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface transition-colors"
+        className="flex items-center gap-2.5 px-3 py-2 text-body-sm text-text hover:bg-surface transition-colors"
       >
         <Icon className="w-4 h-4 text-subtle" />
         {it.label}
@@ -117,7 +117,7 @@ export function UserMenu({
             className="w-7 h-7 rounded-pill object-cover"
           />
         ) : (
-          <div className="w-7 h-7 rounded-pill bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center select-none">
+          <div className="w-7 h-7 rounded-pill bg-primary-bg text-primary-strong text-meta font-semibold flex items-center justify-center select-none">
             {getInitials(profile.display_name)}
           </div>
         )}
@@ -130,10 +130,10 @@ export function UserMenu({
         <div className="absolute right-0 top-full mt-1.5 w-52 rounded-card border border-border bg-surface-elevated lift-3 py-1 z-50">
           {/* Identity */}
           <div className="px-3 py-2.5 border-b border-border">
-            <p className="text-sm font-semibold text-text truncate">
+            <p className="text-body-sm font-semibold text-text truncate">
               {profile.display_name}
             </p>
-            <p className="text-xs text-subtle truncate">@{profile.handle}</p>
+            <p className="text-meta text-subtle truncate">@{profile.handle}</p>
           </div>
 
           {/* Profile (fixed, dynamic href) */}
@@ -141,7 +141,7 @@ export function UserMenu({
             <Link
               href={`/people/${profile.handle}`}
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface transition-colors"
+              className="flex items-center gap-2.5 px-3 py-2 text-body-sm text-text hover:bg-surface transition-colors"
             >
               <User className="w-4 h-4 text-subtle" />
               Profile
@@ -166,7 +166,7 @@ export function UserMenu({
             <form action="/auth/signout" method="POST">
               <button
                 type="submit"
-                className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface w-full text-left transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2 text-body-sm text-text hover:bg-surface w-full text-left transition-colors"
               >
                 <LogOut className="w-4 h-4 text-subtle" />
                 Sign out

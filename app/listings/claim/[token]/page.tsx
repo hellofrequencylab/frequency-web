@@ -93,12 +93,12 @@ export default async function ClaimListingPage({ params }: { params: Promise<{ t
               <img src={preview.image} alt="" className="max-h-56 w-full object-cover" />
             )}
             <div className="p-4">
-              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
+              <p className="flex items-center gap-2 text-meta font-semibold uppercase tracking-wide text-primary">
                 <Tag className="h-3.5 w-3.5 shrink-0" />
                 {preview.kindLabel}
               </p>
-              <p className="mt-1 text-base font-bold text-text">{claim.title || 'Untitled listing'}</p>
-              <div className="mt-2 space-y-1 text-sm text-muted">
+              <p className="mt-1 text-body font-bold text-text">{claim.title || 'Untitled listing'}</p>
+              <div className="mt-2 space-y-1 text-body-sm text-muted">
                 {preview.location && (
                   <p className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 shrink-0 text-subtle" />
@@ -110,13 +110,13 @@ export default async function ClaimListingPage({ params }: { params: Promise<{ t
                 )}
               </div>
               {preview.description && (
-                <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-text">{preview.description}</p>
+                <p className="mt-3 line-clamp-4 text-body-sm leading-relaxed text-text">{preview.description}</p>
               )}
             </div>
           </div>
 
           {/* What claiming does. */}
-          <p className="flex items-start gap-2 text-sm text-muted">
+          <p className="flex items-start gap-2 text-body-sm text-muted">
             <Zap className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             Claiming makes it yours: you can edit the details, hear from people who are interested, and run
             it from your own account. It takes one tap.
@@ -128,11 +128,11 @@ export default async function ClaimListingPage({ params }: { params: Promise<{ t
             <div className="space-y-2">
               <Link
                 href={`/sign-in?next=/listings/claim/${token}`}
-                className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 Sign in to claim it
               </Link>
-              <p className="text-center text-xs text-subtle">
+              <p className="text-center text-meta text-subtle">
                 New here? Signing in creates your account in a minute.
               </p>
             </div>

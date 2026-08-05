@@ -9,8 +9,8 @@ import { updateShopProductAction } from '../actions'
 export const dynamic = 'force-dynamic'
 
 const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary'
-const LABEL = 'mb-1 block text-sm font-medium text-text'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
+const LABEL = 'mb-1 block text-body-sm font-medium text-text'
 
 export default async function EditShopProductPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin('admin', { staff: 'platform' })

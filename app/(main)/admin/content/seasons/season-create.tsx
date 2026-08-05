@@ -88,8 +88,8 @@ export function SeasonCreateForm({ nextNumber, onCreated }: { nextNumber: number
         <Button size="sm" onClick={submit} disabled={pending || !name.trim()}>
           {pending ? 'Creating…' : `Create season ${nextNumber}`}
         </Button>
-        {status === 'created' && <span className="text-xs text-success">Season created.</span>}
-        {status !== 'idle' && status !== 'created' && <span className="text-xs text-danger">{status}</span>}
+        {status === 'created' && <span className="text-meta text-success">Season created.</span>}
+        {status !== 'idle' && status !== 'created' && <span className="text-meta text-danger">{status}</span>}
       </div>
     </div>
   )
@@ -115,7 +115,7 @@ export function SeasonCreateLauncher({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
       >
         <Plus className="h-4 w-4" /> Start season {nextNumber}
       </button>

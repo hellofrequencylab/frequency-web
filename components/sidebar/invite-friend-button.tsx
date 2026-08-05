@@ -68,7 +68,7 @@ export function InviteFriendButton({
           <Gift className="h-4 w-4" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-bold text-text">Invite a friend</span>
+          <span className="block text-body-sm font-bold text-text">Invite a friend</span>
           <span className="block text-2xs font-medium text-primary-strong">Earn Zaps when they join ⚡</span>
         </span>
       </button>
@@ -102,7 +102,7 @@ export function InviteFriendButton({
                 <Gift className="h-5 w-5" aria-hidden />
               </span>
               <h2 className="mt-3 text-lg font-bold text-text">Invite a friend, earn Zaps</h2>
-              <p className="mt-1 text-sm leading-relaxed text-muted">
+              <p className="mt-1 text-body-sm leading-relaxed text-muted">
                 Share your link or code. When a friend joins Frequency and gets started, you earn Zaps ⚡
               </p>
 
@@ -115,7 +115,7 @@ export function InviteFriendButton({
               {/* The link + copy. */}
               <div className="mt-4 flex w-full items-center gap-2">
                 <code
-                  className="min-w-0 flex-1 truncate rounded-lg border border-border bg-surface-elevated/50 px-2.5 py-2 text-left font-mono text-xs text-muted"
+                  className="min-w-0 flex-1 truncate rounded-lg border border-border bg-surface-elevated/50 px-2.5 py-2 text-left font-mono text-meta text-muted"
                   title={link}
                 >
                   {link}
@@ -123,7 +123,7 @@ export function InviteFriendButton({
                 <button
                   type="button"
                   onClick={copy}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated"
                 >
                   {copied ? <Check className="h-3.5 w-3.5 text-success" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
                   {copied ? 'Copied' : 'Copy'}
@@ -135,7 +135,7 @@ export function InviteFriendButton({
                 <button
                   type="button"
                   onClick={share}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
                 >
                   <Share2 className="h-4 w-4" aria-hidden /> Share
                 </button>
@@ -143,7 +143,7 @@ export function InviteFriendButton({
                   type="button"
                   onClick={downloadPng}
                   disabled={pngBusy}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
                 >
                   {pngBusy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Download className="h-4 w-4" aria-hidden />}
                   <span className="sr-only sm:not-sr-only">PNG</span>

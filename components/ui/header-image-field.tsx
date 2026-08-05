@@ -104,7 +104,7 @@ export function HeaderImageField({
             type="button"
             onClick={() => setPickerOpen(true)}
             disabled={disabled}
-            className="rounded-control bg-canvas/90 px-2.5 py-1 text-xs font-medium text-text lift-1 backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60 motion-reduce:transition-none"
+            className="rounded-control bg-canvas/90 px-2.5 py-1 text-meta font-medium text-text lift-1 backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60 motion-reduce:transition-none"
           >
             Replace
           </button>

@@ -82,7 +82,7 @@ export function PracticeSearchBox() {
         onChange={(e) => setValue(e.target.value)}
         placeholder="Search title, summary, or description"
         aria-label="Search practices"
-        className="h-9 w-full rounded-lg border border-border bg-surface pl-8 pr-3 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-primary/40"
+        className="h-9 w-full rounded-lg border border-border bg-surface pl-8 pr-3 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-primary/40"
       />
     </form>
   )
@@ -97,12 +97,12 @@ export function PracticeSortControl() {
 
   return (
     <div className="flex items-center gap-1.5">
-      <label className="text-xs font-medium text-muted" htmlFor="practice-sort">Sort</label>
+      <label className="text-meta font-medium text-muted" htmlFor="practice-sort">Sort</label>
       <select
         id="practice-sort"
         value={sort}
         onChange={(e) => patch({ sort: e.target.value === 'score' ? null : e.target.value })}
-        className="h-9 rounded-lg border border-border bg-surface px-2 text-sm text-text focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-primary/40"
+        className="h-9 rounded-lg border border-border bg-surface px-2 text-body-sm text-text focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-primary/40"
       >
         {SORTS.map((s) => (
           <option key={s.value} value={s.value}>{s.label}</option>
@@ -183,7 +183,7 @@ export function PracticeClearFilters() {
     <button
       type="button"
       onClick={() => patch(Object.fromEntries(FILTER_KEYS.map((k) => [k, null])))}
-      className="inline-flex items-center gap-1 text-xs font-medium text-muted transition-colors hover:text-text"
+      className="inline-flex items-center gap-1 text-meta font-medium text-muted transition-colors hover:text-text"
     >
       <X className="h-3 w-3" aria-hidden /> Clear filters
     </button>
@@ -288,7 +288,7 @@ export function PracticeSavedViews() {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-primary"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:border-primary"
       >
         <Bookmark className="h-3.5 w-3.5" aria-hidden />
         <span>Saved views</span>
@@ -304,14 +304,14 @@ export function PracticeSavedViews() {
           <button
             type="button"
             onClick={save}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-semibold text-primary-strong transition-colors hover:bg-surface-elevated"
+            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-meta font-semibold text-primary-strong transition-colors hover:bg-surface-elevated"
           >
             <Bookmark className="h-3.5 w-3.5" aria-hidden /> Save the current view
           </button>
           {views.length > 0 && <div className="my-1 h-px bg-border" aria-hidden />}
           <div className="max-h-60 overflow-y-auto">
             {views.length === 0 ? (
-              <p className="px-2.5 py-2 text-xs text-subtle">No saved views yet.</p>
+              <p className="px-2.5 py-2 text-meta text-subtle">No saved views yet.</p>
             ) : (
               views.map((view) => (
                 <div
@@ -321,7 +321,7 @@ export function PracticeSavedViews() {
                   <button
                     type="button"
                     onClick={() => apply(view)}
-                    className="min-w-0 flex-1 truncate py-1.5 text-left text-xs text-text"
+                    className="min-w-0 flex-1 truncate py-1.5 text-left text-meta text-text"
                   >
                     {view.name}
                   </button>

@@ -156,12 +156,12 @@ export function TicketButton({
         <button
           onClick={go}
           disabled={isPending || previewMode}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ticket className="h-4 w-4" />}
           Get ticket · {priceLabel}
         </button>
-        {error && <p className="text-sm text-danger">{error}</p>}
+        {error && <p className="text-body-sm text-danger">{error}</p>}
       </div>
     )
   }
@@ -191,7 +191,7 @@ export function TicketButton({
               <div className="min-w-0">
                 {/* Title stays ONE line (truncate); tags sit on their own row below so a long
                     tier name never wraps around a chip (owner spec). */}
-                <p className="truncate text-sm font-semibold text-text">{t.name}</p>
+                <p className="truncate text-body-sm font-semibold text-text">{t.name}</p>
                 {(t.memberOnly || t.spaceMembersOnly) && (
                   <div className="mt-1 flex flex-wrap items-center gap-1.5">
                     {t.memberOnly && (
@@ -215,12 +215,12 @@ export function TicketButton({
                       ))}
                   </div>
                 )}
-                {t.description && <p className="mt-0.5 text-xs text-muted">{t.description}</p>}
+                {t.description && <p className="mt-0.5 text-meta text-muted">{t.description}</p>}
                 {t.spotsLeft != null && !t.soldOut && (
-                  <p className="mt-0.5 text-xs text-subtle">{t.spotsLeft} left</p>
+                  <p className="mt-0.5 text-meta text-subtle">{t.spotsLeft} left</p>
                 )}
               </div>
-              <span className="shrink-0 text-sm font-semibold text-text">
+              <span className="shrink-0 text-body-sm font-semibold text-text">
                 {t.soldOut ? (
                   <span className="text-subtle">Sold out</span>
                 ) : t.spaceMembersOnly && !unlocked(t) && t.membershipPriceLabel ? (
@@ -243,7 +243,7 @@ export function TicketButton({
           with a join pointer, instead of a surprise refusal at checkout. The link carries return_to
           so joining loops straight back to this event. Server gate stays authoritative. */}
       {selected && selected.spaceMembersOnly && !unlocked(selected) && membershipSpace && (
-        <p className="rounded-lg bg-surface-elevated px-3 py-2 text-xs text-muted">
+        <p className="rounded-lg bg-surface-elevated px-3 py-2 text-meta text-muted">
           This ticket is included with a {membershipSpace.name} membership.{' '}
           <a
             href={`/spaces/${membershipSpace.slug}${eventSlug ? `?return_to=${encodeURIComponent(`/events/${eventSlug}`)}` : ''}`}
@@ -270,12 +270,12 @@ export function TicketButton({
       <button
         onClick={go}
         disabled={ctaDisabled}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
       >
         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ticket className="h-4 w-4" />}
         {selected?.pricingMode === 'free' ? 'Claim ticket' : 'Get ticket'}
       </button>
-      {error && <p className="text-sm text-danger">{error}</p>}
+      {error && <p className="text-body-sm text-danger">{error}</p>}
     </div>
   )
 }
@@ -308,7 +308,7 @@ export function RefundTicketButton({
     })
   }
 
-  if (done) return <span className="text-xs font-medium text-muted">Refunded</span>
+  if (done) return <span className="text-meta font-medium text-muted">Refunded</span>
 
   return (
     <span className="inline-flex items-center gap-2">
@@ -316,12 +316,12 @@ export function RefundTicketButton({
         type="button"
         onClick={refund}
         disabled={isPending}
-        className="inline-flex items-center gap-1 text-xs font-medium text-subtle underline underline-offset-2 hover:text-danger transition-colors disabled:opacity-50"
+        className="inline-flex items-center gap-1 text-meta font-medium text-subtle underline underline-offset-2 hover:text-danger transition-colors disabled:opacity-50"
       >
         {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
         Refund
       </button>
-      {error && <span className="text-xs text-danger">{error}</span>}
+      {error && <span className="text-meta text-danger">{error}</span>}
     </span>
   )
 }

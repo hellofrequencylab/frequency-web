@@ -54,9 +54,9 @@ export function SpaceEventsManager({ events }: { events: ManagedEvent[] }) {
   }
 
   const btn =
-    'inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-text transition-colors hover:border-primary-bg hover:bg-primary-bg/40 disabled:opacity-50'
+    'inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-text transition-colors hover:border-primary-bg hover:bg-primary-bg/40 disabled:opacity-50'
   const dangerBtn =
-    'inline-flex items-center gap-1 rounded-lg border border-danger/40 px-2.5 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50'
+    'inline-flex items-center gap-1 rounded-lg border border-danger/40 px-2.5 py-1.5 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50'
 
   return (
     <>

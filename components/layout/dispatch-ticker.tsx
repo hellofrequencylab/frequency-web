@@ -40,7 +40,7 @@ export function DispatchTicker({ items }: { items: TickerItem[] }) {
     >
       <Link
         href="/broadcast"
-        className="flex shrink-0 items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-primary-strong transition-colors hover:text-primary"
+        className="flex shrink-0 items-center gap-1.5 text-meta font-bold uppercase tracking-wide text-primary-strong transition-colors hover:text-primary"
       >
         <Megaphone className="h-3.5 w-3.5" />
         Dispatches
@@ -52,7 +52,7 @@ export function DispatchTicker({ items }: { items: TickerItem[] }) {
       <Link
         href={`/broadcast/${current.id}`}
         aria-live="polite"
-        className="group flex min-w-0 flex-1 items-center gap-2 text-sm transition-colors"
+        className="group flex min-w-0 flex-1 items-center gap-2 text-body-sm transition-colors"
       >
         {current.linked
           ? <Zap className="h-3.5 w-3.5 shrink-0 text-primary" />
@@ -60,7 +60,7 @@ export function DispatchTicker({ items }: { items: TickerItem[] }) {
         <span className="truncate font-medium text-text group-hover:text-primary-strong">
           {current.title}
         </span>
-        <span className="hidden shrink-0 text-xs text-subtle sm:inline">
+        <span className="hidden shrink-0 text-meta text-subtle sm:inline">
           {current.authorName ? `${current.authorName} · ` : ''}{current.timeLabel}
         </span>
       </Link>

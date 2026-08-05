@@ -53,13 +53,13 @@ function ConnectionRow({ connection, rank }: { connection: StrongConnection; ran
   return (
     <li className="rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2 text-sm">
-          <span className="text-xs font-bold tabular-nums text-subtle">{rank}</span>
+        <div className="flex min-w-0 flex-1 items-center gap-2 text-body-sm">
+          <span className="text-meta font-bold tabular-nums text-subtle">{rank}</span>
           <PartyLink party={connection.a} />
           <span className="shrink-0 text-subtle">resonates with</span>
           <PartyLink party={connection.b} />
         </div>
-        <span className="shrink-0 text-sm font-bold tabular-nums text-text">{pct}%</span>
+        <span className="shrink-0 text-body-sm font-bold tabular-nums text-text">{pct}%</span>
       </div>
       {/* The strength meter: an accessible bar, semantic tokens only (no graph-viz, no hardcoded hex). */}
       <div
@@ -69,7 +69,7 @@ function ConnectionRow({ connection, rank }: { connection: StrongConnection; ran
       >
         <div className={`h-full rounded-pill ${scoreTone(connection.score)}`} style={{ width: `${Math.max(4, pct)}%` }} />
       </div>
-      <p className="mt-2 text-xs text-muted">Because {why}.</p>
+      <p className="mt-2 text-meta text-muted">Because {why}.</p>
     </li>
   )
 }

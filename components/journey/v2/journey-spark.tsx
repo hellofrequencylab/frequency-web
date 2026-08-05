@@ -27,7 +27,7 @@ const EMPTY_MEETING: SparkMeeting = { format: null, schedule: null, timezone: nu
 // that commit. "Build it myself" hands off to the manual draft editor.
 
 const FIELD =
-  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
+  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-body-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
 const WEEK_CHOICES = [2, 4, 6, 8] as const
 
@@ -192,8 +192,8 @@ export function JourneySpark({
       <WizardProgress current={current} total={total} label={label} />
 
       <div className="mt-7">
-        <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-primary-strong">New Journey</p>
-        <h1 className="flex items-center gap-1.5 text-2xl font-bold text-text">
+        <p className="mb-1.5 text-meta font-semibold uppercase tracking-widest text-primary-strong">New Journey</p>
+        <h1 className="flex items-center gap-1.5 text-page-title font-bold text-text">
           {heading.title}
           {!picking && !onReview && !usingOverview && step === 1 && (
             <InfoTip
@@ -202,7 +202,7 @@ export function JourneySpark({
             />
           )}
         </h1>
-        <p className="mt-1 text-sm leading-relaxed text-muted">{heading.description}</p>
+        <p className="mt-1 text-body-sm leading-relaxed text-muted">{heading.description}</p>
 
         <div className="mt-5">
           {/* Combined structure picker (ADR-252, J4): the recommended framework, the ready-made
@@ -218,11 +218,11 @@ export function JourneySpark({
               >
                 {pending ? <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-primary-strong" /> : <Compass className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />}
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
+                  <span className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
                     Recommended framework
                     <span className="rounded-pill bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong">Best start</span>
                   </span>
-                  <span className="block text-xs leading-snug text-muted">The proven shape: a welcome, weekly practices across the Pillars, an Expression Challenge each week, and a capstone.</span>
+                  <span className="block text-meta leading-snug text-muted">The proven shape: a welcome, weekly practices across the Pillars, an Expression Challenge each week, and a capstone.</span>
                 </span>
               </button>
 
@@ -235,10 +235,10 @@ export function JourneySpark({
                   disabled={pending}
                   className="flex w-full items-start gap-3 rounded-control border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated disabled:opacity-60"
                 >
-                  <span className="text-2xl leading-none" aria-hidden>{t.emoji}</span>
+                  <span className="text-page-title leading-none" aria-hidden>{t.emoji}</span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold text-text">{t.name}</span>
-                    <span className="block text-xs leading-snug text-muted">{t.description}</span>
+                    <span className="block text-body-sm font-semibold text-text">{t.name}</span>
+                    <span className="block text-meta leading-snug text-muted">{t.description}</span>
                     <span className="mt-1 block text-2xs font-medium uppercase tracking-wide text-muted">
                       {t.phases} {t.phases === 1 ? 'phase' : 'phases'} · {t.lessons} {t.lessons === 1 ? 'lesson' : 'lessons'}
                     </span>
@@ -256,8 +256,8 @@ export function JourneySpark({
               >
                 <PenLine className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-text">Start from scratch</span>
-                  <span className="block text-xs leading-snug text-muted">A blank Journey. Add phases, modules, and lessons section by section, at your own pace.</span>
+                  <span className="block text-body-sm font-semibold text-text">Start from scratch</span>
+                  <span className="block text-meta leading-snug text-muted">A blank Journey. Add phases, modules, and lessons section by section, at your own pace.</span>
                 </span>
               </button>
             </div>
@@ -283,7 +283,7 @@ export function JourneySpark({
                 >
                   {extracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Upload files
                 </button>
-                <span className="inline-flex items-center gap-1 text-xs text-subtle">
+                <span className="inline-flex items-center gap-1 text-meta text-subtle">
                   Add them all at once
                   <InfoTip
                     side="top"
@@ -338,11 +338,11 @@ export function JourneySpark({
               >
                 <Upload className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1 text-sm font-semibold text-text">
+                  <span className="flex items-center gap-1 text-body-sm font-semibold text-text">
                     Upload your course
                     <span className="rounded-pill bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong">Vera AI</span>
                   </span>
-                  <span className="block text-xs leading-snug text-muted">Already have a course written? Upload your outline and any supporting documents, all at once, and let Vera sort it out.</span>
+                  <span className="block text-meta leading-snug text-muted">Already have a course written? Upload your outline and any supporting documents, all at once, and let Vera sort it out.</span>
                 </span>
               </button>
 
@@ -356,8 +356,8 @@ export function JourneySpark({
               >
                 <LayoutTemplate className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-text">Start from a proven structure</span>
-                  <span className="block text-xs leading-snug text-muted">The recommended framework, a ready-made template, or a blank build you shape section by section.</span>
+                  <span className="block text-body-sm font-semibold text-text">Start from a proven structure</span>
+                  <span className="block text-meta leading-snug text-muted">The recommended framework, a ready-made template, or a blank build you shape section by section.</span>
                 </span>
               </button>
             </>
@@ -387,8 +387,8 @@ export function JourneySpark({
                   {([['light', 'Light', 'A few minutes'], ['medium', 'Medium', 'Ten to twenty minutes']] as const).map(([key, lbl, hint]) => (
                     <button key={key} type="button" onClick={() => setPace(key)} aria-pressed={pace === key}
                       className={`rounded-control border px-3 py-2.5 text-left transition-colors ${pace === key ? 'border-primary/50 bg-primary-bg' : 'border-border bg-surface hover:bg-surface-elevated'}`}>
-                      <span className="block text-sm font-semibold text-text">{lbl}</span>
-                      <span className="block text-xs text-muted">{hint}</span>
+                      <span className="block text-body-sm font-semibold text-text">{lbl}</span>
+                      <span className="block text-meta text-muted">{hint}</span>
                     </button>
                   ))}
                 </div>
@@ -400,7 +400,7 @@ export function JourneySpark({
           {onReview && (
             <div className="space-y-3">
               {pending && !title ? (
-                <p className="flex items-center gap-2 rounded-card border border-border bg-canvas px-4 py-3 text-sm text-muted">
+                <p className="flex items-center gap-2 rounded-card border border-border bg-canvas px-4 py-3 text-body-sm text-muted">
                   <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary-strong" aria-hidden /> Vera is drafting your Journey…
                 </p>
               ) : (
@@ -423,8 +423,8 @@ export function JourneySpark({
                       <ol className="space-y-1.5">
                         {arc.map((w, i) => (
                           <li key={i} className="rounded-lg border border-border bg-surface px-3 py-2">
-                            <span className="block text-sm font-medium text-text">Week {i + 1}: {w.title}</span>
-                            {w.focus && <span className="block text-xs leading-snug text-muted">{w.focus}</span>}
+                            <span className="block text-body-sm font-medium text-text">Week {i + 1}: {w.title}</span>
+                            {w.focus && <span className="block text-meta leading-snug text-muted">{w.focus}</span>}
                           </li>
                         ))}
                       </ol>
@@ -495,7 +495,7 @@ export function JourneySpark({
           )}
         </div>
 
-        {error && <p className="mt-4 text-sm text-warning">{error}</p>}
+        {error && <p className="mt-4 text-body-sm text-warning">{error}</p>}
 
         <div className="mt-7 flex gap-3">
           {picking ? (
@@ -524,7 +524,7 @@ export function JourneySpark({
         </div>
       </div>
 
-      <p className="mt-8 text-center text-xs text-subtle">
+      <p className="mt-8 text-center text-meta text-subtle">
         {!onReview && !usingOverview && !picking && (
           <button type="button" onClick={() => { setUsingOverview(true); setStep(1) }} className="underline-offset-4 transition-colors hover:text-muted hover:underline">
             Have an overview already? Paste or upload it

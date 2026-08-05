@@ -13,7 +13,7 @@ import {
 // links stay in the server component; only these mutations need client interactivity.
 
 const BTN =
-  'inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50'
+  'inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50'
 
 export function FunnelRowActions({
   slug,
@@ -66,7 +66,7 @@ export function FunnelRowActions({
             type="button"
             disabled={isPending}
             onClick={() => startTransition(() => deleteSequenceVersionAction(slug))}
-            className="inline-flex items-center gap-1 rounded-lg bg-danger px-2.5 py-1.5 text-xs font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-lg bg-danger px-2.5 py-1.5 text-meta font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50"
           >
             <Trash2 className="h-3.5 w-3.5" /> Confirm
           </button>
@@ -74,7 +74,7 @@ export function FunnelRowActions({
             type="button"
             disabled={isPending}
             onClick={() => setConfirming(false)}
-            className="text-xs font-semibold text-muted transition-colors hover:text-text"
+            className="text-meta font-semibold text-muted transition-colors hover:text-text"
           >
             Cancel
           </button>

@@ -46,12 +46,12 @@ export function EventDangerZone() {
 
   return (
     <div className="space-y-4 rounded-2xl border border-danger/30 bg-danger-bg/20 p-4">
-      {error && <p className="text-xs font-medium text-danger">{error}</p>}
+      {error && <p className="text-meta font-medium text-danger">{error}</p>}
       <div>
-        <p className="text-sm font-semibold text-danger">
+        <p className="text-body-sm font-semibold text-danger">
           {data.is_cancelled ? 'This event is cancelled' : 'Cancel this event'}
         </p>
-        <p className="mt-0.5 text-xs text-muted">
+        <p className="mt-0.5 text-meta text-muted">
           {data.is_cancelled
             ? 'It is off the calendar. Reinstate it to bring it back.'
             : 'Takes it off the calendar without losing it. RSVPs and check-ins stay intact.'}
@@ -71,7 +71,7 @@ export function EventDangerZone() {
                 }
               })
             }
-            className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
+            className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
           >
             Reinstate event
           </button>
@@ -80,13 +80,13 @@ export function EventDangerZone() {
             type="button"
             disabled={pending}
             onClick={() => setConfirmingCancel(true)}
-            className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-danger/40 bg-surface px-3 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-40"
+            className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-danger/40 bg-surface px-3 py-1.5 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-40"
           >
             Cancel event
           </button>
         ) : (
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-danger">Cancel this event?</span>
+            <span className="text-meta font-medium text-danger">Cancel this event?</span>
             <button
               type="button"
               disabled={pending}
@@ -102,14 +102,14 @@ export function EventDangerZone() {
                   }
                 })
               }
-              className="inline-flex items-center gap-1.5 rounded-lg bg-danger px-3 py-1.5 text-xs font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-danger px-3 py-1.5 text-meta font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50"
             >
               Yes, cancel it
             </button>
             <button
               type="button"
               onClick={() => setConfirmingCancel(false)}
-              className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:text-text"
+              className="rounded-lg px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:text-text"
             >
               Keep it
             </button>

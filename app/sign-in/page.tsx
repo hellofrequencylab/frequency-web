@@ -31,7 +31,7 @@ export default async function SignInPage({
     >
       <div className="mx-auto mt-2 w-full max-w-sm rounded-2xl border border-on-ink/10 bg-surface/95 p-6 text-left shadow-pop backdrop-blur">
         {error && (
-          <div className="mb-4 rounded-lg bg-danger-bg px-4 py-3 text-sm text-danger ring-1 ring-danger">
+          <div className="mb-4 rounded-lg bg-danger-bg px-4 py-3 text-body-sm text-danger ring-1 ring-danger">
             {decodeURIComponent(error)}
           </div>
         )}
@@ -40,7 +40,7 @@ export default async function SignInPage({
         <form action={signInWithMagicLink} className="space-y-3">
           {nextValue && <input type="hidden" name="next" value={nextValue} />}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-text">
+            <label htmlFor="email" className="block text-body-sm font-medium text-text">
               Email address
             </label>
             <input
@@ -50,12 +50,12 @@ export default async function SignInPage({
               autoComplete="email"
               required
               placeholder="you@example.com"
-              className="mt-1 block w-full rounded-lg border border-border-strong bg-surface px-3 py-2.5 text-sm text-text placeholder-subtle lift-1 focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30"
+              className="mt-1 block w-full rounded-lg border border-border-strong bg-surface px-3 py-2.5 text-body-sm text-text placeholder-subtle lift-1 focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30"
             />
           </div>
           <button
             type="submit"
-            className="w-full rounded-control bg-primary px-4 py-3 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+            className="w-full rounded-control bg-primary px-4 py-3 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
           >
             Send magic link
           </button>
@@ -65,7 +65,7 @@ export default async function SignInPage({
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-border" />
           </div>
-          <div className="relative flex justify-center text-xs uppercase">
+          <div className="relative flex justify-center text-meta uppercase">
             <span className="bg-surface px-2 text-subtle">or</span>
           </div>
         </div>
@@ -75,7 +75,7 @@ export default async function SignInPage({
           {nextValue && <input type="hidden" name="next" value={nextValue} />}
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-3 rounded-control border border-border-strong bg-surface px-4 py-3 text-sm font-medium text-text lift-1 transition-colors hover:bg-surface-elevated"
+            className="flex w-full items-center justify-center gap-3 rounded-control border border-border-strong bg-surface px-4 py-3 text-body-sm font-medium text-text lift-1 transition-colors hover:bg-surface-elevated"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -87,7 +87,7 @@ export default async function SignInPage({
           </button>
         </form>
 
-        <p className="mt-5 text-center text-xs text-subtle">
+        <p className="mt-5 text-center text-meta text-subtle">
           New here?{' '}
           <Link href="/beta" className="font-semibold text-primary-strong hover:underline">
             Request access

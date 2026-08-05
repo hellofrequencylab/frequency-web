@@ -98,7 +98,7 @@ export async function EventBelonging({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="text-xs font-medium text-subtle">Part of</span>
+      <span className="text-meta font-medium text-subtle">Part of</span>
       {links.map((link) => (
         <BelongingChip key={link.kind} link={link} />
       ))}
@@ -111,7 +111,7 @@ function BelongingChip({ link }: { link: BelongingLink }) {
   return (
     <Link
       href={link.href}
-      className="inline-flex max-w-full items-center gap-1.5 rounded-pill border border-border bg-surface-elevated px-2.5 py-1 text-xs transition-colors hover:border-border-strong hover:bg-surface"
+      className="inline-flex max-w-full items-center gap-1.5 rounded-pill border border-border bg-surface-elevated px-2.5 py-1 text-meta transition-colors hover:border-border-strong hover:bg-surface"
     >
       <Icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
       <span className="text-muted">{link.label}</span>

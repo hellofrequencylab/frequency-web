@@ -56,14 +56,14 @@ export function ServiceBookingPicker({
   if (contactOnly) {
     return (
       <div className="space-y-2">
-        <p className="text-sm text-muted">This service is by enquiry. Send the Space a message to arrange a time.</p>
+        <p className="text-body-sm text-muted">This service is by enquiry. Send the Space a message to arrange a time.</p>
         {enquiryButton}
-        {error && <p className="rounded-lg bg-warning-bg/20 px-3 py-2 text-sm text-text">{error}</p>}
+        {error && <p className="rounded-lg bg-warning-bg/20 px-3 py-2 text-body-sm text-text">{error}</p>}
       </div>
     )
   }
   if (slots.length === 0) {
-    return <p className="text-sm text-subtle">No open times right now. Check back soon.</p>
+    return <p className="text-body-sm text-subtle">No open times right now. Check back soon.</p>
   }
 
   const book = (startsAt: string) => {
@@ -96,7 +96,7 @@ export function ServiceBookingPicker({
     <div className="space-y-3">
       {enquiry && (
         <div className="space-y-2 rounded-lg bg-warning-bg/20 px-3 py-2">
-          <p className="text-sm text-text">This service is by enquiry. Send the Space a message to arrange it.</p>
+          <p className="text-body-sm text-text">This service is by enquiry. Send the Space a message to arrange it.</p>
           {enquiryButton}
         </div>
       )}
@@ -110,12 +110,12 @@ export function ServiceBookingPicker({
             className={`${buttonClasses('secondary', 'sm')} justify-between`}
           >
             <span>{fmt(s.startsAt)}</span>
-            <span className="text-xs text-subtle">{s.slotMinutes}m</span>
+            <span className="text-meta text-subtle">{s.slotMinutes}m</span>
           </button>
         ))}
       </div>
-      <p className="text-xs text-subtle">Times shown in {timezone}. Booking holds your slot; payment runs on Stripe.</p>
-      {error && <p className="rounded-lg bg-warning-bg/20 px-3 py-2 text-sm text-text">{error}</p>}
+      <p className="text-meta text-subtle">Times shown in {timezone}. Booking holds your slot; payment runs on Stripe.</p>
+      {error && <p className="rounded-lg bg-warning-bg/20 px-3 py-2 text-body-sm text-text">{error}</p>}
     </div>
   )
 }

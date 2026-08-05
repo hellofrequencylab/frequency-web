@@ -25,11 +25,11 @@ export const EventAttendees = async () => {
 
   return (
     <div className="@container rounded-2xl border border-border bg-surface p-4">
-      <h3 className="mb-1.5 flex items-center gap-2 text-sm font-bold text-text">
+      <h3 className="mb-1.5 flex items-center gap-2 text-body-sm font-bold text-text">
         <Hourglass className="h-4 w-4 shrink-0 text-primary-strong" />
         Waitlist
       </h3>
-      <p className="text-sm text-muted">
+      <p className="text-body-sm text-muted">
         {waitlist === 1 ? 'One person is' : `${waitlist} people are`} on the waitlist. Add your name and
         we&apos;ll hold a spot the moment one opens up.
       </p>

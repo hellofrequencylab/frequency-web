@@ -48,7 +48,7 @@ export function CircleMembersList({
   const [expanded, setExpanded] = useState(false)
 
   if (members.length === 0) {
-    return <p className="text-sm text-subtle">No members yet.</p>
+    return <p className="text-body-sm text-subtle">No members yet.</p>
   }
 
   const hasMore = members.length > INITIAL_VISIBLE
@@ -80,23 +80,23 @@ export function CircleMembersList({
                     style={avatarFocusStyle(profile.avatar_url)}
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-pill bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                  <div className="w-8 h-8 rounded-pill bg-primary-bg text-primary-strong text-meta font-semibold flex items-center justify-center shrink-0 select-none">
                     {getInitials(profile.display_name)}
                   </div>
                 )}
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-sm font-medium text-text truncate">
+                    <span className="text-body-sm font-medium text-text truncate">
                       {profile.display_name}
                     </span>
                     {memberIsHost && (
-                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-success-bg text-success font-medium">
+                      <span className="text-meta px-1.5 py-0.5 rounded-md bg-success-bg text-success font-medium">
                         Host
                       </span>
                     )}
                     {volunteer_role && !memberIsHost && (
-                      <RoleBadge role={volunteer_role} className="text-xs leading-tight" />
+                      <RoleBadge role={volunteer_role} className="text-meta leading-tight" />
                     )}
                     <ProfileFlair
                       rank={profile.current_season_rank}
@@ -105,7 +105,7 @@ export function CircleMembersList({
                       compact
                     />
                   </div>
-                  <p className="text-xs text-subtle mt-0.5">@{profile.handle}</p>
+                  <p className="text-meta text-subtle mt-0.5">@{profile.handle}</p>
                 </div>
               </Link>
 
@@ -131,7 +131,7 @@ export function CircleMembersList({
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="mt-2 text-xs font-medium text-primary-strong hover:underline"
+          className="mt-2 text-meta font-medium text-primary-strong hover:underline"
         >
           {expanded ? 'Show less' : `Show all (${members.length})`}
         </button>

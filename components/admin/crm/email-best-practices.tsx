@@ -102,10 +102,10 @@ export function EmailBestPractices({ overview }: { overview: MarketingEmailOverv
           return (
             <div key={c.label} className={`rounded-2xl border bg-surface p-3.5 ${s.ring}`}>
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-semibold text-text">{c.label}</p>
+                <p className="text-meta font-semibold text-text">{c.label}</p>
                 <Icon className={`h-4 w-4 shrink-0 ${s.tone}`} aria-hidden />
               </div>
-              <p className="mt-1.5 text-xl font-extrabold leading-none tabular-nums text-text">{c.value}</p>
+              <p className="mt-1.5 text-lead font-extrabold leading-none tabular-nums text-text">{c.value}</p>
               <p className={`mt-1 text-2xs font-medium ${s.tone}`}>
                 {s.chip} · target {c.target.toLowerCase()}
               </p>
@@ -117,7 +117,7 @@ export function EmailBestPractices({ overview }: { overview: MarketingEmailOverv
 
       {/* Open-rate playbook */}
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-subtle">Open-rate playbook</p>
+        <p className="mb-2 text-meta font-semibold uppercase tracking-wide text-subtle">Open-rate playbook</p>
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {PLAYBOOK.map((p) => {
             const Icon = p.icon
@@ -127,8 +127,8 @@ export function EmailBestPractices({ overview }: { overview: MarketingEmailOverv
                   <Icon className="h-4 w-4" aria-hidden />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-text">{p.title}</p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-muted">{p.body}</p>
+                  <p className="text-body-sm font-semibold text-text">{p.title}</p>
+                  <p className="mt-0.5 text-meta leading-relaxed text-muted">{p.body}</p>
                 </div>
               </div>
             )

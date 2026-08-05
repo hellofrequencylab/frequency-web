@@ -83,7 +83,7 @@ export function PageQrManager({
               setError(null)
             }}
             placeholder="e.g. Front desk flyer"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-xs text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-meta text-text"
           />
         </label>
 

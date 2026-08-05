@@ -65,7 +65,7 @@ export default async function PublicPartnerPage({
 
       <Link
         href="/discover/partners"
-        className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text"
+        className="mb-4 inline-flex items-center gap-1 text-body-sm font-medium text-muted transition-colors hover:text-text"
       >
         <ChevronLeft className="h-4 w-4" />
         Partners
@@ -83,13 +83,13 @@ export default async function PublicPartnerPage({
         }
         badges={
           partner.category ? (
-            <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-xs font-medium capitalize text-muted">
+            <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-meta font-medium capitalize text-muted">
               {partner.category}
             </span>
           ) : undefined
         }
         subtitle={
-          <div className="flex flex-wrap items-center gap-4 text-sm">
+          <div className="flex flex-wrap items-center gap-4 text-body-sm">
             {(partner.address || partner.city) && (
               <span className="inline-flex items-center gap-1 text-muted">
                 <MapPin className="h-3.5 w-3.5 shrink-0" />
@@ -118,7 +118,7 @@ export default async function PublicPartnerPage({
 
         {partner.offers.length > 0 && (
           <section className="mb-10">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-subtle">Member offers</h2>
+            <h2 className="mb-3 text-body-sm font-semibold uppercase tracking-wide text-subtle">Member offers</h2>
             <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {partner.offers.map((o) => (
                 <li key={o.id} className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
@@ -126,8 +126,8 @@ export default async function PublicPartnerPage({
                     <Ticket className="h-4 w-4" aria-hidden />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-text">{o.title}</p>
-                    {o.description && <p className="mt-0.5 text-xs text-muted">{o.description}</p>}
+                    <p className="text-body-sm font-semibold text-text">{o.title}</p>
+                    {o.description && <p className="mt-0.5 text-meta text-muted">{o.description}</p>}
                   </div>
                 </li>
               ))}

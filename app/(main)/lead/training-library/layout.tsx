@@ -24,7 +24,7 @@ export default async function TrainingLibraryLayout({ children }: { children: Re
         <div className="sticky top-24 space-y-6">
           <Link
             href={TRAINING_BASE}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-text transition-colors hover:text-primary-strong"
+            className="inline-flex items-center gap-2 text-body-sm font-semibold text-text transition-colors hover:text-primary-strong"
           >
             <GraduationCap className="h-4 w-4 text-subtle" /> Leader Training
           </Link>

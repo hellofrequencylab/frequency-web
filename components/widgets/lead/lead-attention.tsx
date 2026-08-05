@@ -192,7 +192,7 @@ export async function LeadAttention(): Promise<React.ReactElement | null> {
                 <span className="block text-2xs font-semibold uppercase tracking-widest text-primary-strong">
                   {n.eyebrow}
                 </span>
-                <span className="mt-0.5 block text-sm leading-relaxed text-text">{n.text}</span>
+                <span className="mt-0.5 block text-body-sm leading-relaxed text-text">{n.text}</span>
               </span>
               <ArrowRight className="mt-1 hidden h-4 w-4 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 sm:block" aria-hidden />
             </Link>

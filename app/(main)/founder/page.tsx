@@ -56,10 +56,10 @@ export default async function FounderPage() {
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
-            <p className="text-sm font-semibold text-text">
+            <p className="text-body-sm font-semibold text-text">
               {fw.complete ? 'First Week complete' : `${fw.doneCount} of ${fw.total} done`}
             </p>
-            <span className="text-xs font-bold tabular-nums text-broadcast-strong">{fw.pct}%</span>
+            <span className="text-meta font-bold tabular-nums text-broadcast-strong">{fw.pct}%</span>
           </div>
           <ProgressTrack
             value={fw.doneCount}
@@ -81,7 +81,7 @@ export default async function FounderPage() {
               <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-pill bg-broadcast text-on-broadcast">
                 <Check className="h-4 w-4" strokeWidth={3} aria-hidden />
               </span>
-              <span className="flex-1 text-sm font-medium text-subtle line-through decoration-broadcast/40">{t.label}</span>
+              <span className="flex-1 text-body-sm font-medium text-subtle line-through decoration-broadcast/40">{t.label}</span>
             </li>
           ) : (
             <li key={t.key}>
@@ -93,8 +93,8 @@ export default async function FounderPage() {
                   <span className="h-2 w-2 rounded-pill bg-current" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-text">{t.label}</span>
-                  <span className="block text-xs text-muted">{t.nudge}</span>
+                  <span className="block text-body-sm font-semibold text-text">{t.label}</span>
+                  <span className="block text-meta text-muted">{t.nudge}</span>
                 </span>
                 <ArrowRight className="h-4 w-4 shrink-0 text-subtle transition-colors group-hover:text-broadcast-strong" aria-hidden />
               </Link>

@@ -27,14 +27,14 @@ export function ProposeToLibraryButton({
 
   if (effective === 'published') {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg/40 px-3 py-1.5 text-sm font-semibold text-success">
+      <span className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg/40 px-3 py-1.5 text-body-sm font-semibold text-success">
         <Check className="h-3.5 w-3.5" /> In the Library
       </span>
     )
   }
   if (effective === 'pending') {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-lg bg-warning-bg/50 px-3 py-1.5 text-sm font-semibold text-warning">
+      <span className="inline-flex items-center gap-1.5 rounded-lg bg-warning-bg/50 px-3 py-1.5 text-body-sm font-semibold text-warning">
         <Clock className="h-3.5 w-3.5" /> In review
       </span>
     )
@@ -58,12 +58,12 @@ export function ProposeToLibraryButton({
         onClick={propose}
         disabled={isPending}
         title="Submit this to the Community Library for review"
-        className="inline-flex items-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-sm font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70 disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-body-sm font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70 disabled:opacity-60"
       >
         {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BookUp className="h-3.5 w-3.5" />}
         Propose to Library
       </button>
-      {error && <span className="text-xs text-danger">{error}</span>}
+      {error && <span className="text-meta text-danger">{error}</span>}
     </div>
   )
 }

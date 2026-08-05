@@ -105,13 +105,13 @@ export default async function AdminRolesPage() {
                     <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-elevated text-muted">
                       <RoleIcon className="h-4 w-4" aria-hidden />
                     </span>
-                    <span className="rank-badge text-xs font-bold leading-tight" style={roleBadgeStyle(r)}>
+                    <span className="rank-badge text-meta font-bold leading-tight" style={roleBadgeStyle(r)}>
                       {ROLE_LABEL[r]}
                     </span>
                   </div>
-                  <span className="text-sm font-semibold tabular-nums text-muted">{counts[r]}</span>
+                  <span className="text-body-sm font-semibold tabular-nums text-muted">{counts[r]}</span>
                 </div>
-                <p className="mt-2 text-xs leading-relaxed text-muted">{ROLE_META[r].blurb}</p>
+                <p className="mt-2 text-meta leading-relaxed text-muted">{ROLE_META[r].blurb}</p>
               </div>
             )
           })}

@@ -182,7 +182,7 @@ export default async function BroadcastPage({
             {ctaLabel && ctaHref && (
               <a
                 href={ctaHref}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
               >
                 {ctaLabel}
               </a>
@@ -201,9 +201,9 @@ export default async function BroadcastPage({
             {latest.linked_task ? <Zap className="h-5 w-5" /> : <Megaphone className="h-5 w-5" />}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-subtle">Latest broadcast</p>
-            <p className="text-base font-bold leading-tight text-text">{latest.title}</p>
-            {latest.excerpt && <p className="mt-0.5 line-clamp-1 text-sm leading-relaxed text-muted">{latest.excerpt}</p>}
+            <p className="text-meta font-medium text-subtle">Latest broadcast</p>
+            <p className="text-body font-bold leading-tight text-text">{latest.title}</p>
+            {latest.excerpt && <p className="mt-0.5 line-clamp-1 text-body-sm leading-relaxed text-muted">{latest.excerpt}</p>}
           </div>
           <ArrowRight className="hidden h-4 w-4 shrink-0 text-primary-strong sm:block" />
         </Link>
@@ -216,9 +216,9 @@ export default async function BroadcastPage({
             <CalendarDays className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-subtle">Coming up</p>
-            <p className="text-base font-bold leading-tight text-text">{nextEvent.title}</p>
-            <p className="mt-0.5 text-sm text-muted">{eventDate(nextEvent.starts_at)}{nextEvent.location ? ` · ${nextEvent.location}` : ''}</p>
+            <p className="text-meta font-medium text-subtle">Coming up</p>
+            <p className="text-body font-bold leading-tight text-text">{nextEvent.title}</p>
+            <p className="mt-0.5 text-body-sm text-muted">{eventDate(nextEvent.starts_at)}{nextEvent.location ? ` · ${nextEvent.location}` : ''}</p>
           </div>
           <ArrowRight className="hidden h-4 w-4 shrink-0 text-primary-strong sm:block" />
         </Link>
@@ -228,7 +228,7 @@ export default async function BroadcastPage({
       {/* One calm summary instead of a wall of stat tiles — the hero above and
           the quick-links sidebar already carry navigation, so these are just
           context. */}
-      <p className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+      <p className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-muted">
         <span><strong className="font-semibold text-text tabular-nums">{dispatches.length}</strong> recent broadcasts</span>
         {broadcastsThisWeek > 0 && <span className="text-subtle">({broadcastsThisWeek} this week)</span>}
         <span aria-hidden className="text-subtle">·</span>
@@ -275,11 +275,11 @@ export default async function BroadcastPage({
                   <Link key={e.id} href={`/events/${e.slug}`} className="flex items-center gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-surface-elevated">
                     <span className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
                       <span className="text-3xs font-bold uppercase leading-none">{new Date(e.starts_at).toLocaleDateString('en-US', { month: 'short' })}</span>
-                      <span className="text-sm font-bold leading-none">{new Date(e.starts_at).getDate()}</span>
+                      <span className="text-body-sm font-bold leading-none">{new Date(e.starts_at).getDate()}</span>
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-text">{e.title}</p>
-                      <p className="mt-0.5 truncate text-xs text-subtle">{eventDate(e.starts_at)}{e.location ? ` · ${e.location}` : ''}</p>
+                      <p className="truncate text-body-sm font-semibold text-text">{e.title}</p>
+                      <p className="mt-0.5 truncate text-meta text-subtle">{eventDate(e.starts_at)}{e.location ? ` · ${e.location}` : ''}</p>
                     </div>
                   </Link>
                 ))}
@@ -296,8 +296,8 @@ export default async function BroadcastPage({
                       <CircleDot className="h-4 w-4" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-text">{c.name}</p>
-                      <p className="mt-0.5 truncate text-xs text-subtle">
+                      <p className="truncate text-body-sm font-semibold text-text">{c.name}</p>
+                      <p className="mt-0.5 truncate text-meta text-subtle">
                         {c.member_count} {c.member_count === 1 ? 'member' : 'members'}{c.city ? ` · ${c.city}` : ''}
                       </p>
                     </div>
@@ -323,8 +323,8 @@ function QuickLink({ href, Icon, label, sub, color }: {
       <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-control ${color}`}>
         <Icon className="h-4 w-4" />
       </div>
-      <div className="text-sm font-semibold leading-none text-text">{label}</div>
-      <div className="mt-0.5 text-xs text-muted">{sub}</div>
+      <div className="text-body-sm font-semibold leading-none text-text">{label}</div>
+      <div className="mt-0.5 text-meta text-muted">{sub}</div>
     </Link>
   )
 }

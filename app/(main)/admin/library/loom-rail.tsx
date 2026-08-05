@@ -55,7 +55,7 @@ function Row({
       >
         <span className="shrink-0 text-subtle">{icon}</span>
         <span className="min-w-0 flex-1 truncate">{label}</span>
-        {count !== undefined && <span className="hidden shrink-0 text-xs text-subtle sm:inline">{count}</span>}
+        {count !== undefined && <span className="hidden shrink-0 text-meta text-subtle sm:inline">{count}</span>}
       </Link>
       {children}
     </div>
@@ -210,7 +210,7 @@ export function LoomRail({
           </button>
         </div>
         {collections.length === 0 ? (
-          <p className="px-2.5 py-1 text-xs text-subtle">No collections yet.</p>
+          <p className="px-2.5 py-1 text-meta text-subtle">No collections yet.</p>
         ) : (
           collections.map((c) => (
             <Row
@@ -244,7 +244,7 @@ export function LoomRail({
         )}
 
         {error && (
-          <p role="alert" className="mt-2 px-2.5 text-xs font-medium text-danger">
+          <p role="alert" className="mt-2 px-2.5 text-meta font-medium text-danger">
             {error}
           </p>
         )}

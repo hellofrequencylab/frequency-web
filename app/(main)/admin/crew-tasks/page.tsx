@@ -113,7 +113,7 @@ export default async function AdminCrewTasksPage() {
 
       {/* Quick-reference note for operators */}
       <AdminSection>
-        <p className="text-sm text-muted">
+        <p className="text-body-sm text-muted">
           Tasks that require verification must be manually approved here before Zaps are awarded.
           Repeatable tasks can be completed multiple times per season.
         </p>

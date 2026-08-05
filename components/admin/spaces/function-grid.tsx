@@ -89,11 +89,11 @@ export function FunctionGrid({ spaceId, rows }: { spaceId: string; rows: Functio
     <section className="rounded-2xl border border-border bg-surface lift-1">
       <div className="flex items-start justify-between gap-3 border-b border-border p-4">
         <div>
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-text">
+          <h2 className="flex items-center gap-2 text-body-sm font-semibold text-text">
             <SlidersHorizontal className="h-4 w-4 text-primary-strong" />
             Features and access
           </h2>
-          <p className="mt-0.5 text-xs text-muted">
+          <p className="mt-0.5 text-meta text-muted">
             Turn the tools this space uses on or off, and set the lowest role that can use each one.
             Changes save instantly. An operator switch beats the plan, so turning a paid feature on here
             grants it regardless of plan.
@@ -101,17 +101,17 @@ export function FunctionGrid({ spaceId, rows }: { spaceId: string; rows: Functio
         </div>
       </div>
 
-      {error && <p className="px-4 pt-3 text-sm text-danger">{error}</p>}
+      {error && <p className="px-4 pt-3 text-body-sm text-danger">{error}</p>}
 
       <div className="overflow-x-auto p-2">
-        <table className="w-full border-collapse text-sm">
+        <table className="w-full border-collapse text-body-sm">
           <thead>
             <tr>
-              <th className="sticky left-0 z-10 bg-surface px-3 py-2 text-left text-xs font-semibold text-subtle">
+              <th className="sticky left-0 z-10 bg-surface px-3 py-2 text-left text-meta font-semibold text-subtle">
                 Function
               </th>
-              <th className="px-2 py-2 text-center text-xs font-semibold text-muted">On</th>
-              <th className="px-2 py-2 text-left text-xs font-semibold text-muted">Lowest role</th>
+              <th className="px-2 py-2 text-center text-meta font-semibold text-muted">On</th>
+              <th className="px-2 py-2 text-left text-meta font-semibold text-muted">Lowest role</th>
             </tr>
           </thead>
           <tbody>
@@ -126,7 +126,7 @@ export function FunctionGrid({ spaceId, rows }: { spaceId: string; rows: Functio
                       {r.planGated && (
                         <span
                           title="Plan feature. The operator switch here grants it regardless of plan."
-                          className="inline-flex items-center rounded-pill bg-surface-elevated px-1.5 py-0.5 text-xs font-semibold text-muted"
+                          className="inline-flex items-center rounded-pill bg-surface-elevated px-1.5 py-0.5 text-meta font-semibold text-muted"
                         >
                           Plan
                         </span>
@@ -134,13 +134,13 @@ export function FunctionGrid({ spaceId, rows }: { spaceId: string; rows: Functio
                       {isCustom && (
                         <span
                           title={`Default: ${ROLE_LABEL[r.defaultMinRole]}`}
-                          className="inline-flex items-center gap-0.5 rounded-pill bg-primary-bg px-1.5 py-0.5 text-xs font-semibold text-primary-strong"
+                          className="inline-flex items-center gap-0.5 rounded-pill bg-primary-bg px-1.5 py-0.5 text-meta font-semibold text-primary-strong"
                         >
                           <RotateCcw className="h-2.5 w-2.5" /> custom
                         </span>
                       )}
                     </span>
-                    <span className="mt-0.5 block max-w-prose text-xs font-normal text-muted">
+                    <span className="mt-0.5 block max-w-prose text-meta font-normal text-muted">
                       {r.description}
                     </span>
                   </th>
@@ -160,7 +160,7 @@ export function FunctionGrid({ spaceId, rows }: { spaceId: string; rows: Functio
                       value={cur.minRole}
                       disabled={savingKey === r.key || !cur.enabled}
                       onChange={(e) => chooseRole(r.key, e.target.value as SpaceRole)}
-                      className="rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text outline-none focus:border-primary disabled:opacity-50"
+                      className="rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text outline-none focus:border-primary disabled:opacity-50"
                     >
                       {SPACE_ROLES.map((role) => (
                         <option key={role} value={role}>

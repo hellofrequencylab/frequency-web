@@ -262,9 +262,9 @@ function SimpleCardGrid({ props }: { props: Record<string, unknown> }): ReactNod
       {(title || subtitle) && (
         <div className="space-y-1">
           {/* font-section: the Space page theme's heading face (ADR-578); a computed no-op for `bold`. */}
-          {title && <InlineRichText as="h3" value={title} className="font-section text-2xl font-bold text-text" />}
+          {title && <InlineRichText as="h3" value={title} className="font-section text-page-title font-bold text-text" />}
           {subtitle && (
-            <InlineRichText value={subtitle} className="whitespace-pre-wrap text-base leading-relaxed text-muted" />
+            <InlineRichText value={subtitle} className="whitespace-pre-wrap text-body leading-relaxed text-muted" />
           )}
         </div>
       )}
@@ -287,9 +287,9 @@ function SimpleCardGrid({ props }: { props: Record<string, unknown> }): ReactNod
               <>
                 {media}
                 <div className="flex flex-1 flex-col gap-1 p-5">
-                  {c.title && <InlineRichText as="h4" value={c.title} className="text-base font-bold text-text" />}
+                  {c.title && <InlineRichText as="h4" value={c.title} className="text-body font-bold text-text" />}
                   {c.text && (
-                    <InlineRichText value={c.text} className="whitespace-pre-wrap text-sm leading-relaxed text-muted" />
+                    <InlineRichText value={c.text} className="whitespace-pre-wrap text-body-sm leading-relaxed text-muted" />
                   )}
                 </div>
               </>

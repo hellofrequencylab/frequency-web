@@ -32,17 +32,17 @@ export function MarketplaceGuide() {
               <s.icon className="h-5 w-5" aria-hidden />
             </span>
             <div className="min-w-0">
-              <Link href={s.href} className="text-sm font-semibold text-text hover:text-primary-strong hover:underline">
+              <Link href={s.href} className="text-body-sm font-semibold text-text hover:text-primary-strong hover:underline">
                 {s.name}
               </Link>
-              <p className="text-sm leading-snug text-muted">{s.blurb}</p>
+              <p className="text-body-sm leading-snug text-muted">{s.blurb}</p>
             </div>
           </li>
         ))}
       </ul>
 
       <div className="mt-5 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted">
+        <p className="text-body-sm text-muted">
           Want to sell here? List products, services, and ticketed events in the Market when you go Business.
         </p>
         <Link href="/spaces/new" className={buttonClasses('primary', 'md', 'shrink-0')}>

@@ -56,8 +56,8 @@ export function RoleManager({ members }: { members: RoleMember[] }) {
       <div className="border-b border-border p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold text-text">Members · advancement</h2>
-            <p className="text-xs text-muted">
+            <h2 className="text-body-sm font-semibold text-text">Members · advancement</h2>
+            <p className="text-meta text-muted">
               Sorted by contribution (season zaps). Promote anyone ready to advance.
             </p>
           </div>
@@ -68,40 +68,40 @@ export function RoleManager({ members }: { members: RoleMember[] }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search members by name or @handle…"
-            className="w-full bg-transparent text-sm text-text placeholder:text-subtle outline-none"
+            className="w-full bg-transparent text-body-sm text-text placeholder:text-subtle outline-none"
           />
         </div>
-        {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+        {error && <p className="mt-2 text-body-sm text-danger">{error}</p>}
       </div>
 
       <ul className="divide-y divide-border">
         {filtered.length === 0 && (
-          <li className="p-6 text-center text-sm text-muted">No members match “{query}”.</li>
+          <li className="p-6 text-center text-body-sm text-muted">No members match “{query}”.</li>
         )}
         {filtered.map((m, i) => {
           const up = nextRole(m.role)
           const saving = savingId === m.id
           return (
             <li key={m.id} className="flex items-center gap-3 p-3">
-              <span className="w-6 shrink-0 text-center text-xs font-semibold tabular-nums text-subtle">
+              <span className="w-6 shrink-0 text-center text-meta font-semibold tabular-nums text-subtle">
                 {i + 1}
               </span>
               {m.avatarUrl ? (
                 <Image src={avatarSrc(m.avatarUrl)} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(m.avatarUrl)} />
               ) : (
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-xs font-semibold text-muted">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-meta font-semibold text-muted">
                   {getInitials(m.displayName)}
                 </span>
               )}
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="truncate text-sm font-medium text-text">{m.displayName}</span>
-                  <span className="rank-badge text-xs font-bold leading-tight" style={roleBadgeStyle(m.role)}>
+                  <span className="truncate text-body-sm font-medium text-text">{m.displayName}</span>
+                  <span className="rank-badge text-meta font-bold leading-tight" style={roleBadgeStyle(m.role)}>
                     {ROLE_LABEL[m.role]}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-subtle">
+                <div className="flex items-center gap-2 text-meta text-subtle">
                   {m.handle && <span className="truncate">@{m.handle}</span>}
                   <span className="inline-flex items-center gap-0.5 text-muted">
                     <Zap className="h-3 w-3 fill-current text-primary" />
@@ -127,7 +127,7 @@ export function RoleManager({ members }: { members: RoleMember[] }) {
                   value={m.role}
                   disabled={saving}
                   onChange={(e) => update(m.id, e.target.value as CommunityRole)}
-                  className="rounded-lg border border-border bg-surface px-2 py-1.5 text-xs font-medium text-text outline-none disabled:opacity-50"
+                  className="rounded-lg border border-border bg-surface px-2 py-1.5 text-meta font-medium text-text outline-none disabled:opacity-50"
                   aria-label={`Role for ${m.displayName}`}
                 >
                   {ROLE_HIERARCHY.map((r) => (

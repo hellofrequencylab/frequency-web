@@ -26,7 +26,7 @@ export async function JourneysMine() {
               <PlanCard key={p.id} plan={p} mine />
             ))}
           </div>
-          <Link href="/journeys/mine" className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary-strong hover:underline">
+          <Link href="/journeys/mine" className="mt-3 inline-flex items-center gap-1 text-body-sm font-medium text-primary-strong hover:underline">
             Manage all your journeys{mine.length > 4 ? ` (${mine.length})` : ''} →
           </Link>
         </>

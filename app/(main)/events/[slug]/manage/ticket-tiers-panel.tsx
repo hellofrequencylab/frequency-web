@@ -32,8 +32,8 @@ import {
 const centsToDollars = (c: number | null | undefined) => (c != null ? (c / 100).toFixed(2) : '')
 
 const input =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
-const lbl = 'block text-xs font-medium text-muted mb-1'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
+const lbl = 'block text-meta font-medium text-muted mb-1'
 
 function modeSummary(t: TicketTierRow): string {
   const summary = describePrice(ticketRowToPrice(t))
@@ -76,7 +76,7 @@ export function TicketTiersPanel({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-muted">
+        <p className="text-body-sm text-muted">
           Add named tiers with fixed, free, pay-what-you-can, sliding-scale, or donation pricing.
           {tiers.length === 0 ? ' You have not added any tiers yet.' : ''}
         </p>
@@ -87,14 +87,14 @@ export function TicketTiersPanel({
               setAdding(true)
               setEditingId(null)
             }}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated"
           >
             <Plus className="h-3.5 w-3.5" /> Add tier
           </button>
         )}
       </div>
 
-      {error && <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger">{error}</p>}
+      {error && <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>}
 
       {tiers.length > 0 && (
         <div className="space-y-2">
@@ -118,7 +118,7 @@ export function TicketTiersPanel({
                 }`}
               >
                 <div className="min-w-0">
-                  <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-text">
+                  <p className="flex flex-wrap items-center gap-2 text-body-sm font-semibold text-text">
                     {t.name}
                     {t.member_only && (
                       <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
@@ -140,7 +140,7 @@ export function TicketTiersPanel({
                       </span>
                     )}
                   </p>
-                  <p className="mt-0.5 text-xs text-muted">
+                  <p className="mt-0.5 text-meta text-muted">
                     {modeSummary(t)}
                     {' · '}
                     {t.quantity == null ? 'Unlimited' : `${t.sold}/${t.quantity} sold`}
@@ -154,7 +154,7 @@ export function TicketTiersPanel({
                       setAdding(false)
                     }}
                     disabled={isPending}
-                    className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
                   >
                     <Pencil className="h-3 w-3" /> Edit
                   </button>
@@ -162,7 +162,7 @@ export function TicketTiersPanel({
                     type="button"
                     onClick={() => run(() => hostSetTicketTierActive(t.id, eventId, slug, !t.active))}
                     disabled={isPending}
-                    className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
+                    className="rounded-lg border border-border px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
                   >
                     {t.active ? 'Retire' : 'Reactivate'}
                   </button>
@@ -274,7 +274,7 @@ function TierForm({
         modes={['fixed', 'choose', 'free']}
         allowPackages={false}
       />
-      {priceError && <p className="text-sm text-danger">{priceError}</p>}
+      {priceError && <p className="text-body-sm text-danger">{priceError}</p>}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
@@ -305,7 +305,7 @@ function TierForm({
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-text">
+      <label className="flex items-center gap-2 text-body-sm text-text">
         <input
           name="member_only"
           type="checkbox"
@@ -340,13 +340,13 @@ function TierForm({
               ))}
             </select>
             {audience !== '' && spaceAccess.membershipTiers.length === 0 && (
-              <p className="mt-1 text-xs text-muted">
+              <p className="mt-1 text-meta text-muted">
                 Tip: publish membership tiers on your space page so people have something to join.
               </p>
             )}
           </div>
         ) : (
-          <p className="rounded-lg bg-surface px-3 py-2 text-xs text-muted">
+          <p className="rounded-lg bg-surface px-3 py-2 text-meta text-muted">
             Members-only tickets, linked to your space membership, come with the Collective plan.
           </p>
         ))}
@@ -355,7 +355,7 @@ function TierForm({
         <button
           type="submit"
           disabled={disabled}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
         >
           {initial ? 'Save tier' : 'Add tier'}
         </button>
@@ -363,7 +363,7 @@ function TierForm({
           type="button"
           onClick={onCancel}
           disabled={disabled}
-          className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-muted transition-colors hover:bg-surface disabled:opacity-50"
         >
           <X className="h-3.5 w-3.5" /> Cancel
         </button>

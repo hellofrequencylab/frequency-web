@@ -124,14 +124,14 @@ export function AudiencePicker({
   return (
     <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 lift-1">
       <div>
-        <p className="text-sm font-semibold text-text">Audience</p>
-        <p className="mt-0.5 text-xs text-muted">
+        <p className="text-body-sm font-semibold text-text">Audience</p>
+        <p className="mt-0.5 text-meta text-muted">
           Pick who gets this. We send to your own contacts, never anyone else&rsquo;s.
         </p>
       </div>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-muted">Send to</span>
+        <span className="text-meta font-medium text-muted">Send to</span>
         <select
           value={selectValue}
           disabled={disabled}
@@ -160,7 +160,7 @@ export function AudiencePicker({
         </select>
       </label>
 
-      <p className="inline-flex items-center gap-1.5 text-sm text-muted" role="status" aria-live="polite">
+      <p className="inline-flex items-center gap-1.5 text-body-sm text-muted" role="status" aria-live="polite">
         <Users className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
         {pending || count == null ? (
           <span>Counting&hellip;</span>
@@ -177,7 +177,7 @@ export function AudiencePicker({
         <div className="space-y-2 border-t border-border pt-3">
           <div className="flex flex-wrap items-end gap-2">
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-muted">Save this as a segment</span>
+              <span className="text-meta font-medium text-muted">Save this as a segment</span>
               <Input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
@@ -202,14 +202,14 @@ export function AudiencePicker({
               type="button"
               onClick={() => handleDeleteSegment(selectedSegment.id)}
               disabled={savePending}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-muted hover:text-danger disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 text-meta font-medium text-muted hover:text-danger disabled:opacity-50"
             >
               <Trash2 className="h-3.5 w-3.5" aria-hidden /> Delete &ldquo;{selectedSegment.name}&rdquo;
             </button>
           )}
 
           {manageError && (
-            <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
+            <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
               {manageError}
             </p>
           )}

@@ -13,7 +13,7 @@ export const CirclePracticeBlock = async () => {
       {circlePractice ? (
         <>
           <p className="font-medium text-text">{circlePractice.title}</p>
-          {circlePractice.description && <p className="mt-0.5 text-sm text-muted">{circlePractice.description}</p>}
+          {circlePractice.description && <p className="mt-0.5 text-body-sm text-muted">{circlePractice.description}</p>}
           {isMember && (
             <div className="mt-3">
               <LogPracticeButton practiceId={circlePractice.id} circleId={circle.id} />
@@ -21,7 +21,7 @@ export const CirclePracticeBlock = async () => {
           )}
         </>
       ) : (
-        <p className="text-sm text-muted">No practice set yet.</p>
+        <p className="text-body-sm text-muted">No practice set yet.</p>
       )}
     </ModuleCard>
   )

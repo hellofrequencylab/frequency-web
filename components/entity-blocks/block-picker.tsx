@@ -58,8 +58,8 @@ export function BlockPicker({
       className="flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-primary-bg focus:bg-primary-bg focus:outline-none"
     >
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold text-text">{b.label}</span>
-        <span className="mt-0.5 block text-xs text-muted">{b.description}</span>
+        <span className="block text-body-sm font-semibold text-text">{b.label}</span>
+        <span className="mt-0.5 block text-meta text-muted">{b.description}</span>
       </span>
     </button>
   )
@@ -84,7 +84,7 @@ export function BlockPicker({
           onKeyDown={(e) => e.key === 'Escape' && onClose()}
           placeholder="Search blocks"
           aria-label="Search blocks"
-          className="min-w-0 flex-1 bg-transparent py-1.5 text-sm text-text placeholder:text-subtle focus:outline-none"
+          className="min-w-0 flex-1 bg-transparent py-1.5 text-body-sm text-text placeholder:text-subtle focus:outline-none"
         />
         <button
           type="button"
@@ -97,7 +97,7 @@ export function BlockPicker({
       </div>
       <div className="max-h-64 space-y-1 overflow-y-auto">
         {empty ? (
-          <p className="px-2.5 py-3 text-xs text-muted">Every block is already on your page.</p>
+          <p className="px-2.5 py-3 text-meta text-muted">Every block is already on your page.</p>
         ) : (
           <>
             {group('Suggested', suggested)}

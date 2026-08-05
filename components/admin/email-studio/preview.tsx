@@ -82,7 +82,7 @@ export function EmailPreview({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Preview</p>
+        <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Preview</p>
         <div className="flex overflow-hidden rounded-lg border border-border" role="group" aria-label="Preview width">
           {(['desktop', 'mobile'] as const).map((w) => {
             const on = width === w

@@ -172,7 +172,7 @@ export function ComposerShell({
               rows={10}
               className="mt-1 resize-y"
             />
-            <p className="mt-1 text-xs text-subtle">
+            <p className="mt-1 text-meta text-subtle">
               Blank lines become paragraphs. We add an unsubscribe link to every email.
             </p>
           </div>
@@ -185,7 +185,7 @@ export function ComposerShell({
               id="campaign-topic"
               value={topic}
               onChange={(e) => setTopic(e.target.value as NotificationTopic)}
-              className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               {EMAIL_TOPIC_OPTIONS.map((o) => (
                 <option key={o.key} value={o.key}>
@@ -193,7 +193,7 @@ export function ComposerShell({
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-subtle">
+            <p className="mt-1 text-meta text-subtle">
               {EMAIL_TOPIC_OPTIONS.find((o) => o.key === topic)?.help}
             </p>
           </div>
@@ -211,13 +211,13 @@ export function ComposerShell({
         />
 
         {!canSend && (
-          <p className="rounded-lg border border-dashed border-border px-3 py-3 text-sm text-muted">
+          <p className="rounded-lg border border-dashed border-border px-3 py-3 text-body-sm text-muted">
             Turn email on above to send or schedule.
           </p>
         )}
 
         <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 lift-1">
-          <p className="text-sm font-semibold text-text">Send</p>
+          <p className="text-body-sm font-semibold text-text">Send</p>
 
           <div className="flex flex-wrap items-end gap-3">
             <Button
@@ -236,10 +236,10 @@ export function ComposerShell({
               )}
             </Button>
 
-            <span className="text-xs text-subtle">or</span>
+            <span className="text-meta text-subtle">or</span>
 
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-muted">Schedule for</span>
+              <span className="text-meta font-medium text-muted">Schedule for</span>
               {/* Kit Input carries type="datetime-local" (it forwards all input attrs), so the picker
                   reuses the one focus/border token set instead of re-declaring it. */}
               <Input
@@ -261,13 +261,13 @@ export function ComposerShell({
           </div>
 
           {error && (
-            <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
+            <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
               {error}
             </p>
           )}
           {notice && !error && (
             <p
-              className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-2 text-sm font-medium text-success"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-2 text-body-sm font-medium text-success"
               role="status"
             >
               <Check className="h-4 w-4" aria-hidden /> {notice}

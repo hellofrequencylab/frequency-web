@@ -145,9 +145,9 @@ export function ListingQna({
 
   return (
     <section className="mt-6">
-      <h2 className="mb-3 text-sm font-bold text-text">
+      <h2 className="mb-3 text-body-sm font-bold text-text">
         Questions
-        {comments.length > 0 && <span className="ml-2 text-xs font-normal text-subtle">{comments.length}</span>}
+        {comments.length > 0 && <span className="ml-2 text-meta font-normal text-subtle">{comments.length}</span>}
       </h2>
 
       {canPost ? (
@@ -161,7 +161,7 @@ export function ListingQna({
             placeholder={isOwner ? 'Answer a question or add more detail.' : 'Ask about condition, pickup, availability.'}
             rows={2}
             disabled={pending}
-            className="w-full resize-none bg-transparent text-sm leading-relaxed text-text/90 outline-none placeholder:text-subtle disabled:opacity-60"
+            className="w-full resize-none bg-transparent text-body-sm leading-relaxed text-text/90 outline-none placeholder:text-subtle disabled:opacity-60"
           />
 
           {imagePreview && (
@@ -185,7 +185,7 @@ export function ListingQna({
             </div>
           )}
 
-          {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
+          {error && <p className="mt-1.5 text-meta text-danger">{error}</p>}
 
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => void pickImage(e)} />
 
@@ -205,18 +205,18 @@ export function ListingQna({
               type="button"
               onClick={submit}
               disabled={!canSubmit}
-              className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+              className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
             >
               {pending ? 'Posting...' : 'Post'}
             </button>
           </div>
         </div>
       ) : (
-        <p className="mb-4 text-sm text-subtle">Sign in to ask a question.</p>
+        <p className="mb-4 text-body-sm text-subtle">Sign in to ask a question.</p>
       )}
 
       {comments.length === 0 ? (
-        <p className="text-sm text-subtle">No questions yet. Be the first to ask.</p>
+        <p className="text-body-sm text-subtle">No questions yet. Be the first to ask.</p>
       ) : (
         <ul className="space-y-3">
           {comments.map((c) => {
@@ -243,18 +243,18 @@ export function ListingQna({
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                       {a ? (
-                        <Link href={`/people/${a.handle}`} className="text-sm font-semibold text-text hover:underline">
+                        <Link href={`/people/${a.handle}`} className="text-body-sm font-semibold text-text hover:underline">
                           {a.displayName}
                         </Link>
                       ) : (
-                        <span className="text-sm font-semibold text-text">A member</span>
+                        <span className="text-body-sm font-semibold text-text">A member</span>
                       )}
                       <span className="text-2xs text-muted">{timeAgo(c.createdAt)}</span>
                     </div>
                     {canDelete && <DeleteCommentButton commentId={c.id} revalidatePath={revalidatePath} />}
                   </div>
                   {c.body && (
-                    <p className="mt-0.5 whitespace-pre-wrap text-sm leading-relaxed text-text/90">{c.body}</p>
+                    <p className="mt-0.5 whitespace-pre-wrap text-body-sm leading-relaxed text-text/90">{c.body}</p>
                   )}
                   {c.imageUrl && (
                     <Image

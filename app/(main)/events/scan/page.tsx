@@ -25,7 +25,7 @@ export default async function ScanPosterPage() {
       description="Snap a poster you spot around town. Vera reads it and builds an event draft you can tidy and post."
       back={{ href: '/events', label: 'Events' }}
       actions={
-        <Link href="/events/drafts" className="text-sm font-medium text-primary-strong hover:underline">
+        <Link href="/events/drafts" className="text-body-sm font-medium text-primary-strong hover:underline">
           My drafts
         </Link>
       }

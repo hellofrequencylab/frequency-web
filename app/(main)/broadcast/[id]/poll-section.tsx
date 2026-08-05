@@ -61,7 +61,7 @@ export function PollSection({
 
   return (
     <div className="mt-8 rounded-xl border border-broadcast bg-broadcast-bg/50 p-5">
-      <p className="text-xs font-black uppercase tracking-[0.12em] text-broadcast-strong mb-4">
+      <p className="text-meta font-black uppercase tracking-[0.12em] text-broadcast-strong mb-4">
         Poll · {totalVotes} {totalVotes === 1 ? 'vote' : 'votes'}
       </p>
 
@@ -96,10 +96,10 @@ export function PollSection({
               <span className="relative flex items-center justify-between gap-2">
                 <span className={`text-sm font-medium ${isMyVote ? 'text-broadcast-strong' : 'text-text'}`}>
                   {opt.label}
-                  {isMyVote && <span className="ml-1 text-xs">✓</span>}
+                  {isMyVote && <span className="ml-1 text-meta">✓</span>}
                 </span>
                 {hasVoted && (
-                  <span className="text-xs font-semibold text-muted shrink-0">{pct}%</span>
+                  <span className="text-meta font-semibold text-muted shrink-0">{pct}%</span>
                 )}
               </span>
             </button>
@@ -108,7 +108,7 @@ export function PollSection({
       </div>
 
       {!isLoggedIn && (
-        <p className="mt-3 text-xs text-subtle text-center">Sign in to vote</p>
+        <p className="mt-3 text-meta text-subtle text-center">Sign in to vote</p>
       )}
     </div>
   )

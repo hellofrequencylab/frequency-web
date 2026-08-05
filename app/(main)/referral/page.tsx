@@ -81,10 +81,10 @@ export default async function ReferralHubPage() {
 
         {/* Progress toward the Founding-Member perk (3+ activated invites). */}
         <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
-          <h2 className="flex items-center gap-2 text-sm font-bold text-text">
+          <h2 className="flex items-center gap-2 text-body-sm font-bold text-text">
             <Gift className="h-4 w-4 text-primary-strong" aria-hidden /> Founding-Member perks
           </h2>
-          <p className="mt-1 text-sm text-muted">{foundingCopy}</p>
+          <p className="mt-1 text-body-sm text-muted">{foundingCopy}</p>
           <ProgressTrack
             value={progress.activatedReferrals}
             max={FOUNDING_PERK_MIN_REFERRALS}
@@ -94,7 +94,7 @@ export default async function ReferralHubPage() {
             label={`${progress.activatedReferrals} of ${FOUNDING_PERK_MIN_REFERRALS} referrals toward the Founding-Member perks`}
           />
           {progress.pendingReferrals > 0 && (
-            <p className="mt-2 text-xs text-subtle">
+            <p className="mt-2 text-meta text-subtle">
               {progress.pendingReferrals} invited{' '}
               {progress.pendingReferrals === 1 ? 'person has' : 'people have'} not taken a first
               action yet. Only activated invites count.
@@ -132,7 +132,7 @@ function LeaderRow({ row, isMe }: { row: ContestLeaderboardRow; isMe: boolean })
         isMe ? 'bg-primary-bg ring-1 ring-primary/30' : 'bg-surface-elevated/50'
       }`}
     >
-      <span className="w-8 shrink-0 text-center text-sm font-bold tabular-nums text-muted">
+      <span className="w-8 shrink-0 text-center text-body-sm font-bold tabular-nums text-muted">
         {medal ?? `#${row.rank}`}
       </span>
       {row.avatarUrl ? (
@@ -145,21 +145,21 @@ function LeaderRow({ row, isMe }: { row: ContestLeaderboardRow; isMe: boolean })
           style={avatarFocusStyle(row.avatarUrl)}
         />
       ) : (
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-xs font-semibold text-primary-strong">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-meta font-semibold text-primary-strong">
           {initials(row.displayName)}
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-text">
+        <p className="truncate text-body-sm font-semibold text-text">
           {row.displayName}
-          {isMe && <span className="ml-1.5 text-xs font-medium text-primary-strong">You</span>}
+          {isMe && <span className="ml-1.5 text-meta font-medium text-primary-strong">You</span>}
         </p>
-        <p className="truncate text-xs text-subtle">
+        <p className="truncate text-meta text-subtle">
           {row.activatedReferrals} invited · {row.circleStarts} Circle
           {row.circleStarts === 1 ? '' : 's'}
         </p>
       </div>
-      <span className="shrink-0 text-sm font-bold tabular-nums text-text">{row.score}</span>
+      <span className="shrink-0 text-body-sm font-bold tabular-nums text-text">{row.score}</span>
     </li>
   )
 }

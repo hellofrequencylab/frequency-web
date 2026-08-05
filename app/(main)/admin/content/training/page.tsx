@@ -56,19 +56,19 @@ export default async function AdminContentTrainingPage() {
         <Banner tone="info" title="How to edit the curriculum">
           <p className="mt-1">
             <span className="font-semibold text-text">Tag help articles.</span> Add{' '}
-            <code className="rounded bg-surface px-1 py-0.5 text-xs text-text">role: host</code>{' '}
+            <code className="rounded bg-surface px-1 py-0.5 text-meta text-text">role: host</code>{' '}
             (or crew / guide / mentor) to a help article&apos;s front-matter and it joins
             that tier&apos;s source set below. This keeps the words where they already live.
           </p>
           <p className="mt-2">
             <span className="font-semibold text-text">Curate the path.</span> The ordered
             steps and reward each promotion shows come from the registry in{' '}
-            <code className="rounded bg-surface px-1 py-0.5 text-xs text-text">
+            <code className="rounded bg-surface px-1 py-0.5 text-meta text-text">
               lib/onboarding/training-curriculum.ts
             </code>
             . Edit it to add a tier or reorder steps.
           </p>
-          <p className="mt-2 text-xs text-subtle">
+          <p className="mt-2 text-meta text-subtle">
             In-place editing of the curriculum from this screen is scoped for a follow-up;
             today this is the authoritative preview of what each promotion delivers.
           </p>
@@ -80,9 +80,9 @@ export default async function AdminContentTrainingPage() {
           <div className="mb-3">
             <div className="flex items-center gap-2">
               <RoleBadge role={role} />
-              <h2 className="text-base font-bold text-text">Promoted to {ROLE_LABEL[role]}</h2>
+              <h2 className="text-body font-bold text-text">Promoted to {ROLE_LABEL[role]}</h2>
             </div>
-            {def?.blurb && <p className="mt-1 text-sm text-muted">{def.blurb}</p>}
+            {def?.blurb && <p className="mt-1 text-body-sm text-muted">{def.blurb}</p>}
           </div>
           {!def ? (
             <EmptyState
@@ -93,7 +93,7 @@ export default async function AdminContentTrainingPage() {
             />
           ) : (
             <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
+              <div className="flex flex-wrap items-center gap-2 text-meta text-muted">
                 <span className="rounded-md bg-surface-elevated px-2 py-0.5 font-medium text-text">
                   {def.title}
                 </span>
@@ -106,21 +106,21 @@ export default async function AdminContentTrainingPage() {
               </div>
 
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-subtle">
+                <p className="mb-2 text-meta font-semibold uppercase tracking-wider text-subtle">
                   Curriculum steps
                 </p>
                 <ol className="divide-y divide-border/50 overflow-hidden rounded-2xl border border-border bg-surface">
                   {def.steps.map((s, i) => (
                     <li key={s.href} className="flex items-center gap-3 px-4 py-3">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-xs font-semibold tabular-nums text-muted">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-meta font-semibold tabular-nums text-muted">
                         {i + 1}
                       </span>
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">
+                      <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-text">
                         {s.label}
                       </span>
                       <Link
                         href={s.href}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                        className="inline-flex items-center gap-1 text-meta font-semibold text-primary hover:underline"
                       >
                         {s.href.replace('/help/', '')}
                         <ArrowRight className="h-3 w-3" />
@@ -131,7 +131,7 @@ export default async function AdminContentTrainingPage() {
               </div>
 
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-subtle">
+                <p className="mb-2 text-meta font-semibold uppercase tracking-wider text-subtle">
                   Role-tagged help articles ({taggedSteps.length})
                 </p>
                 {taggedSteps.length === 0 ? (
@@ -147,7 +147,7 @@ export default async function AdminContentTrainingPage() {
                       <Link
                         key={s.href}
                         href={s.href}
-                        className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface px-3 py-1 text-xs font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                        className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface px-3 py-1 text-meta font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
                       >
                         <Tag className="h-3 w-3 text-subtle" />
                         {s.label}

@@ -163,7 +163,7 @@ export async function EventsSurface({
                     action={
                       <Link
                         href={basePath}
-                        className="text-sm font-semibold text-primary-strong hover:underline"
+                        className="text-body-sm font-semibold text-primary-strong hover:underline"
                       >
                         Clear filters
                       </Link>

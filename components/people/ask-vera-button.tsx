@@ -9,7 +9,7 @@ export function AskVeraButton() {
     <button
       type="button"
       onClick={() => window.dispatchEvent(new Event('open-vera'))}
-      className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+      className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
     >
       <Sparkles className="h-4 w-4" aria-hidden />
       Ask Vera

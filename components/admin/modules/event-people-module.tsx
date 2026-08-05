@@ -78,7 +78,7 @@ export function EventPeopleModule() {
             { label: 'Waitlist', value: analytics.waitlist },
           ].map((s) => (
             <div key={s.label} className="rounded-lg border border-border bg-surface px-2.5 py-1.5">
-              <div className="text-sm font-bold leading-tight text-text">{s.value}</div>
+              <div className="text-body-sm font-bold leading-tight text-text">{s.value}</div>
               <div className="text-2xs font-medium uppercase tracking-wide text-muted">{s.label}</div>
             </div>
           ))}
@@ -88,7 +88,7 @@ export function EventPeopleModule() {
         <div className="mt-3 space-y-1.5">
           {cap && cap > 0 ? (
             <>
-              <div className="flex items-center justify-between text-xs text-muted">
+              <div className="flex items-center justify-between text-meta text-muted">
                 <span>Capacity</span>
                 <span className="font-medium text-text">
                   {analytics.going} / {cap}
@@ -98,7 +98,7 @@ export function EventPeopleModule() {
               <ProgressTrack value={fillPct ?? 0} label="Seats filled" size="lg" animate />
             </>
           ) : (
-            <p className="text-xs text-subtle">
+            <p className="text-meta text-subtle">
               No capacity limit set{analytics.checkedIn > 0 ? ` · ${analytics.checkedIn} checked in` : ''}.
             </p>
           )}
@@ -107,14 +107,14 @@ export function EventPeopleModule() {
         {/* Approval queue — approve a guest without leaving the page. */}
         {stillPending.length > 0 && (
           <div className="mt-5 space-y-2">
-            <p className="text-xs font-semibold text-text">Waiting for your approval ({stillPending.length})</p>
+            <p className="text-meta font-semibold text-text">Waiting for your approval ({stillPending.length})</p>
             <ul className="space-y-2">
               {stillPending.map((p) => (
                 <li
                   key={p.profileId}
                   className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface p-2.5"
                 >
-                  <span className="min-w-0 truncate text-sm text-text">
+                  <span className="min-w-0 truncate text-body-sm text-text">
                     {p.displayName}
                     {p.handle && <span className="text-subtle"> @{p.handle}</span>}
                   </span>
@@ -122,7 +122,7 @@ export function EventPeopleModule() {
                     type="button"
                     onClick={() => handleApprove(p.profileId)}
                     disabled={pending}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                   >
                     <Check className="h-3.5 w-3.5" /> Approve
                   </button>
@@ -132,7 +132,7 @@ export function EventPeopleModule() {
           </div>
         )}
 
-        {error && <p className="mt-3 text-xs font-medium text-danger">{error}</p>}
+        {error && <p className="mt-3 text-meta font-medium text-danger">{error}</p>}
       </section>
     </div>
   )

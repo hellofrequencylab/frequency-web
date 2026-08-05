@@ -165,7 +165,7 @@ export async function CrmBody({
       {activeView === 'import' && (
         <section className="space-y-3">
           <SectionHeader title="Import contacts" />
-          <p className="max-w-2xl text-sm text-muted">
+          <p className="max-w-2xl text-body-sm text-muted">
             Bring people into this space&rsquo;s contact list from a file or a pasted list. We match your
             columns, dedupe against what the space already has, and show a preview before anything is saved.
             Everyone lands as a lead, never auto-subscribed, and stays sealed to this space.

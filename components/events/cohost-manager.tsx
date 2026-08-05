@@ -39,15 +39,15 @@ export function CohostManager({
 
   return (
     <section>
-      <h2 className="text-sm font-bold text-text mb-3">
+      <h2 className="text-body-sm font-bold text-text mb-3">
         Co Hosts
         {cohosts.length > 0 && (
-          <span className="ml-2 text-xs font-normal text-subtle">{cohosts.length}</span>
+          <span className="ml-2 text-meta font-normal text-subtle">{cohosts.length}</span>
         )}
       </h2>
 
       {cohosts.length === 0 ? (
-        <p className="text-sm text-subtle">No Co Hosts yet.</p>
+        <p className="text-body-sm text-subtle">No Co Hosts yet.</p>
       ) : (
         <ul className="space-y-0.5">
           {cohosts.map((c) => (
@@ -60,8 +60,8 @@ export function CohostManager({
                 </div>
               )}
               <Link href={`/people/${c.handle}`} className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-text">{c.displayName}</p>
-                <p className="truncate text-xs text-subtle">@{c.handle}</p>
+                <p className="truncate text-body-sm font-medium text-text">{c.displayName}</p>
+                <p className="truncate text-meta text-subtle">@{c.handle}</p>
               </Link>
               {canManage && (
                 <RemoveCohostButton eventId={eventId} slug={slug} cohostProfileId={c.profileId} label="Remove Co Host" />
@@ -75,7 +75,7 @@ export function CohostManager({
           cancels the invite (same delete path as removing a cohost). */}
       {canManage && pendingInvites.length > 0 && (
         <div className="mt-4">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-subtle">Pending invites</p>
+          <p className="mb-2 text-meta font-semibold uppercase tracking-wide text-subtle">Pending invites</p>
           <ul className="space-y-0.5">
             {pendingInvites.map((p) => (
               <li key={p.id} className="flex items-center gap-3 rounded-lg px-3 py-2 -mx-3 hover:bg-surface transition-colors">
@@ -87,8 +87,8 @@ export function CohostManager({
                   </div>
                 )}
                 <Link href={`/people/${p.handle}`} className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-text">{p.displayName}</p>
-                  <p className="truncate text-xs text-subtle">@{p.handle}</p>
+                  <p className="truncate text-body-sm font-medium text-text">{p.displayName}</p>
+                  <p className="truncate text-meta text-subtle">@{p.handle}</p>
                 </Link>
                 <span className="shrink-0 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
                   Invited
@@ -184,11 +184,11 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
           }}
           placeholder="Invite a Co Host by name or @handle"
           disabled={pending}
-          className="min-w-0 flex-1 bg-transparent text-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
+          className="min-w-0 flex-1 bg-transparent text-body-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
         />
       </div>
 
-      {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
+      {error && <p className="mt-1.5 text-meta text-danger">{error}</p>}
 
       {/* Results render in NORMAL FLOW (not an absolute overlay). The cohosts module lands
           in a page-module slot whose `@container` wrapper sets container-type (Tailwind v4),
@@ -213,7 +213,7 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-semibold text-text">{p.display_name}</p>
+                <p className="truncate text-meta font-semibold text-text">{p.display_name}</p>
                 <p className="truncate text-2xs text-muted">@{p.handle}</p>
               </div>
             </button>
@@ -273,7 +273,7 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
+        className="mt-2 inline-flex items-center gap-1.5 text-meta font-medium text-subtle transition-colors hover:text-text"
       >
         <Crown className="h-3.5 w-3.5" /> Transfer host role
       </button>
@@ -283,7 +283,7 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
   return (
     <div className="mt-3 rounded-card border border-border bg-surface p-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold text-text">Transfer host role</p>
+        <p className="text-meta font-semibold text-text">Transfer host role</p>
         <button
           type="button"
           onClick={() => {
@@ -300,7 +300,7 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
 
       {pick ? (
         <div className="mt-2">
-          <p className="text-xs text-muted">
+          <p className="text-meta text-muted">
             Make <span className="font-semibold text-text">@{pick.handle}</span> the host? You will
             stay on as a Co Host.
           </p>
@@ -309,7 +309,7 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
               type="button"
               onClick={confirm}
               disabled={pending}
-              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+              className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               {pending ? 'Transferring…' : 'Confirm transfer'}
             </button>
@@ -317,7 +317,7 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
               type="button"
               onClick={() => setPick(null)}
               disabled={pending}
-              className="rounded-lg px-2 py-1.5 text-xs font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
+              className="rounded-lg px-2 py-1.5 text-meta font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
             >
               Back
             </button>
@@ -334,7 +334,7 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
             }}
             placeholder="New host by name or @handle"
             disabled={pending}
-            className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
           />
           {hits.length > 0 && (
             <div className="mt-1 w-full max-w-sm rounded-card border border-border bg-surface py-1 lift-3">
@@ -353,7 +353,7 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-semibold text-text">{p.display_name}</p>
+                    <p className="truncate text-meta font-semibold text-text">{p.display_name}</p>
                     <p className="truncate text-2xs text-muted">@{p.handle}</p>
                   </div>
                 </button>
@@ -363,7 +363,7 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
         </div>
       )}
 
-      {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
+      {error && <p className="mt-1.5 text-meta text-danger">{error}</p>}
     </div>
   )
 }

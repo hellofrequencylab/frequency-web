@@ -14,7 +14,7 @@ import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 // creation time. Safe to inline this link and drop the props in a later cleanup.
 export function NewCircleCompose({
   buttonLabel = 'New Circle',
-  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
+  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
   canCreate = true,
 }: {
   hubs?: { id: string; name: string }[]

@@ -41,7 +41,7 @@ export function EditorShell({
             {eyebrow && (
               <p className="text-2xs font-semibold uppercase tracking-wide text-muted">{eyebrow}</p>
             )}
-            {title && <h2 className="truncate text-base font-bold text-text">{title}</h2>}
+            {title && <h2 className="truncate text-body font-bold text-text">{title}</h2>}
           </div>
           {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
         </header>

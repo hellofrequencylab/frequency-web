@@ -106,7 +106,7 @@ export function ReactionCounts({ base, toggle, failed, compact = false }: Reacti
   if (active.length === 0) return null
   const pill = compact
     ? 'flex items-center gap-1 rounded-pill px-1.5 py-0.5 text-2xs font-medium transition-colors'
-    : 'flex items-center gap-1 rounded-pill px-1.5 py-0.5 text-xs font-medium transition-colors'
+    : 'flex items-center gap-1 rounded-pill px-1.5 py-0.5 text-meta font-medium transition-colors'
   return (
     <div className="flex flex-wrap items-center gap-0.5">
       {active.map((r) => {

@@ -78,7 +78,7 @@ export interface GuideAccess {
 }
 
 const FIELD =
-  'rounded-card border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
+  'rounded-card border border-border bg-surface px-3 py-2.5 text-body-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
 const STEP_TYPE_LABELS: Record<string, string> = {
   practice: 'Practice',
@@ -236,18 +236,18 @@ export function JourneyGuide({
       <WizardProgress current={meta.step} total={5} label={meta.label} />
 
       <div className="mt-7">
-        <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-primary-strong">
+        <p className="mb-1.5 text-meta font-semibold uppercase tracking-widest text-primary-strong">
           New Journey · {plan.title}
         </p>
-        <h1 className="text-2xl font-bold text-text">{meta.title}</h1>
-        <p className="mt-1 text-sm leading-relaxed text-muted">{meta.description}</p>
+        <h1 className="text-page-title font-bold text-text">{meta.title}</h1>
+        <p className="mt-1 text-body-sm leading-relaxed text-muted">{meta.description}</p>
 
         <div className="mt-6">
           {/* ── Phase 3 · SHAPE ─────────────────────────────────────────────── */}
           {phase === 'shape' &&
             (phases.length === 0 ? (
               <div className="space-y-2.5">
-                <p className="text-sm text-muted">Start from a proven structure, or lay the phases yourself.</p>
+                <p className="text-body-sm text-muted">Start from a proven structure, or lay the phases yourself.</p>
                 <button
                   type="button"
                   onClick={() => applyTemplate('master-framework')}
@@ -260,11 +260,11 @@ export function JourneyGuide({
                     <Compass className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                   )}
                   <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
+                    <span className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
                       Recommended framework
                       <span className="rounded-pill bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong">Best start</span>
                     </span>
-                    <span className="block text-xs leading-snug text-muted">
+                    <span className="block text-meta leading-snug text-muted">
                       A welcome, weekly practices across the Pillars, an Expression Challenge each week, and a capstone.
                     </span>
                   </span>
@@ -277,10 +277,10 @@ export function JourneyGuide({
                     disabled={pending}
                     className="flex w-full items-start gap-3 rounded-control border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated disabled:opacity-60"
                   >
-                    <span className="text-2xl leading-none" aria-hidden>{t.emoji}</span>
+                    <span className="text-page-title leading-none" aria-hidden>{t.emoji}</span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold text-text">{t.name}</span>
-                      <span className="block text-xs leading-snug text-muted">{t.description}</span>
+                      <span className="block text-body-sm font-semibold text-text">{t.name}</span>
+                      <span className="block text-meta leading-snug text-muted">{t.description}</span>
                       <span className="mt-1 block text-2xs font-medium uppercase tracking-wide text-muted">
                         {t.phases} {t.phases === 1 ? 'phase' : 'phases'} · {t.lessons} {t.lessons === 1 ? 'lesson' : 'lessons'}
                       </span>
@@ -295,8 +295,8 @@ export function JourneyGuide({
                 >
                   <PenLine className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold text-text">Lay it out yourself</span>
-                    <span className="block text-xs leading-snug text-muted">Start with one empty phase and build from there.</span>
+                    <span className="block text-body-sm font-semibold text-text">Lay it out yourself</span>
+                    <span className="block text-meta leading-snug text-muted">Start with one empty phase and build from there.</span>
                   </span>
                 </button>
               </div>
@@ -307,7 +307,7 @@ export function JourneyGuide({
                     <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3">
                       <Layers className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold text-text">{p.title || `Phase ${i + 1}`}</span>
+                        <span className="block truncate text-body-sm font-semibold text-text">{p.title || `Phase ${i + 1}`}</span>
                         <span className="block text-2xs text-muted">
                           {p.steps.length} {p.steps.length === 1 ? 'step' : 'steps'}
                         </span>
@@ -316,11 +316,11 @@ export function JourneyGuide({
                     </summary>
                     <div className="border-t border-border px-4 py-2.5">
                       {p.steps.length === 0 ? (
-                        <p className="py-1 text-xs text-subtle">Empty so far. Fill it in the editor, or let Vera compose it there.</p>
+                        <p className="py-1 text-meta text-subtle">Empty so far. Fill it in the editor, or let Vera compose it there.</p>
                       ) : (
                         <ol className="space-y-1.5">
                           {p.steps.map((s) => (
-                            <li key={s.id} className="flex items-center gap-2 text-sm text-text">
+                            <li key={s.id} className="flex items-center gap-2 text-body-sm text-text">
                               <span className="rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
                                 {STEP_TYPE_LABELS[s.type] ?? 'Step'}
                               </span>
@@ -336,7 +336,7 @@ export function JourneyGuide({
                   type="button"
                   onClick={addPhase}
                   disabled={pending}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/40 hover:text-text disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-2 text-body-sm font-medium text-muted transition-colors hover:border-primary/40 hover:text-text disabled:opacity-60"
                 >
                   <Plus className="h-4 w-4" /> Add a phase
                 </button>
@@ -353,7 +353,7 @@ export function JourneyGuide({
                 <p className="mb-1.5 inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
                   <CalendarRange className="h-3.5 w-3.5" /> Run window
                 </p>
-                <p className="mb-2 text-xs text-muted">Run it between dates, or leave both empty to keep it open anytime.</p>
+                <p className="mb-2 text-meta text-muted">Run it between dates, or leave both empty to keep it open anytime.</p>
                 <div className="flex flex-wrap items-end gap-3">
                   <label className="flex flex-col gap-1">
                     <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Opens</span>
@@ -378,16 +378,16 @@ export function JourneyGuide({
                   </label>
                 </div>
                 {windowInvalid ? (
-                  <p className="mt-1.5 text-xs text-danger">The close date needs to be on or after the open date.</p>
+                  <p className="mt-1.5 text-meta text-danger">The close date needs to be on or after the open date.</p>
                 ) : (
-                  <p className="mt-1.5 text-xs text-muted">{windowPreview(windowStart || null, windowEnd || null)}</p>
+                  <p className="mt-1.5 text-meta text-muted">{windowPreview(windowStart || null, windowEnd || null)}</p>
                 )}
               </div>
 
               {access.dripAllowed ? (
                 <div>
                   <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Phase drip</p>
-                  <p className="mb-2 text-xs text-muted">How fast the phases unlock once someone starts.</p>
+                  <p className="mb-2 text-meta text-muted">How fast the phases unlock once someone starts.</p>
                   <div className="flex flex-wrap items-center gap-2">
                     {DRIP_CHOICES.map(([days, label]) => (
                       <button
@@ -404,7 +404,7 @@ export function JourneyGuide({
                         {label}
                       </button>
                     ))}
-                    <label className="inline-flex items-center gap-1.5 text-xs text-muted">
+                    <label className="inline-flex items-center gap-1.5 text-meta text-muted">
                       or every
                       <input
                         type="number"
@@ -417,10 +417,10 @@ export function JourneyGuide({
                       days
                     </label>
                   </div>
-                  <p className="mt-2 text-xs text-muted">{dripPreview(drip, phases.length)}</p>
+                  <p className="mt-2 text-meta text-muted">{dripPreview(drip, phases.length)}</p>
                 </div>
               ) : (
-                <p className="rounded-card border border-border bg-canvas px-3 py-2.5 text-xs text-muted">
+                <p className="rounded-card border border-border bg-canvas px-3 py-2.5 text-meta text-muted">
                   Phase drip comes with paid plans. For now every phase opens right away.{' '}
                   <Link href="/upgrade" className="font-medium text-primary-strong underline-offset-4 hover:underline">
                     See plans
@@ -433,7 +433,7 @@ export function JourneyGuide({
                   Once published, you can open cohort Runs from the Journey page so a group moves through it together.
                 </p>
               ) : (
-                <p className="rounded-card border border-border bg-canvas px-3 py-2.5 text-xs text-muted">
+                <p className="rounded-card border border-border bg-canvas px-3 py-2.5 text-meta text-muted">
                   Cohort Runs, where a group starts together on a date, come with paid plans.{' '}
                   <Link href="/upgrade" className="font-medium text-primary-strong underline-offset-4 hover:underline">
                     See plans
@@ -455,13 +455,13 @@ export function JourneyGuide({
                       <Circle className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
                     )}
                     <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
+                      <span className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
                         {c.label}
                         {!c.ok && !c.required && (
                           <span className="rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">Optional</span>
                         )}
                       </span>
-                      <span className="block text-xs leading-snug text-muted">{c.detail}</span>
+                      <span className="block text-meta leading-snug text-muted">{c.detail}</span>
                     </span>
                   </li>
                 ))}
@@ -470,10 +470,10 @@ export function JourneyGuide({
               <div>
                 <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Who can see it</p>
                 {live ? (
-                  <p className="text-sm text-muted">{whoCanSee(plan.visibility)}</p>
+                  <p className="text-body-sm text-muted">{whoCanSee(plan.visibility)}</p>
                 ) : (
                   <div className="space-y-2">
-                    <p className="text-xs text-muted">{whoCanSee('private')} Publishing changes that:</p>
+                    <p className="text-meta text-muted">{whoCanSee('private')} Publishing changes that:</p>
                     {(
                       [
                         ['public', 'List it in the library', whoCanSee('public')],
@@ -490,8 +490,8 @@ export function JourneyGuide({
                         }`}
                       >
                         <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-semibold text-text">{label}</span>
-                          <span className="block text-xs leading-snug text-muted">{hint}</span>
+                          <span className="block text-body-sm font-semibold text-text">{label}</span>
+                          <span className="block text-meta leading-snug text-muted">{hint}</span>
                         </span>
                         {target === value && <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />}
                       </button>
@@ -507,14 +507,14 @@ export function JourneyGuide({
               </div>
 
               {!ready && (
-                <p className="text-xs text-warning">Finish the required items above, then publish.</p>
+                <p className="text-meta text-warning">Finish the required items above, then publish.</p>
               )}
             </div>
           )}
         </div>
 
         {error && (
-          <p className="mt-4 text-sm text-danger">
+          <p className="mt-4 text-body-sm text-danger">
             {error}{' '}
             <Link href="/upgrade" className="font-medium text-primary-strong underline-offset-4 hover:underline">
               See plans
@@ -563,7 +563,7 @@ export function JourneyGuide({
         </div>
 
         {/* The guided-to-editor toggle: always one tap away, per phase. */}
-        <p className="mt-8 text-center text-xs text-subtle">
+        <p className="mt-8 text-center text-meta text-subtle">
           <Link href={editorHref} className="underline-offset-4 transition-colors hover:text-muted hover:underline">
             Do it in the editor instead
           </Link>

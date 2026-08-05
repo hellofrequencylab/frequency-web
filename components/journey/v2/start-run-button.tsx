@@ -25,7 +25,7 @@ export function StartRunButton({ circleId, journeys }: { circleId: string; journ
   const [msg, setMsg] = useState<{ ok: boolean; text: string; slug?: string } | null>(null)
 
   if (journeys.length === 0) {
-    return <p className="text-xs leading-relaxed text-muted">No published journeys yet. Create one, publish it, then run it with your circle.</p>
+    return <p className="text-meta leading-relaxed text-muted">No published journeys yet. Create one, publish it, then run it with your circle.</p>
   }
   const selected = journeys.find((j) => j.id === planId)
 
@@ -48,13 +48,13 @@ export function StartRunButton({ circleId, journeys }: { circleId: string; journ
 
   return (
     <div>
-      <p className="mb-2 text-xs leading-relaxed text-muted">
+      <p className="mb-2 text-meta leading-relaxed text-muted">
         Run a journey with your circle. Everyone moves through it together, one phase a week.
       </p>
       <select
         value={planId}
         onChange={(e) => setPlanId(e.target.value)}
-        className="mb-2 w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-sm text-text"
+        className="mb-2 w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-body-sm text-text"
       >
         {journeys.map((j) => (
           <option key={j.id} value={j.id}>
@@ -69,14 +69,14 @@ export function StartRunButton({ circleId, journeys }: { circleId: string; journ
           type="datetime-local"
           value={kickoff}
           onChange={(e) => setKickoff(e.target.value)}
-          className="w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-sm text-text"
+          className="w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-body-sm text-text"
         />
       </label>
       <button
         type="button"
         onClick={go}
         disabled={pending}
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
       >
         <Rocket className="h-4 w-4" /> {pending ? 'Starting…' : 'Start the run'}
       </button>

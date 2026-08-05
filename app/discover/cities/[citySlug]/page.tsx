@@ -178,7 +178,7 @@ export default async function DiscoverCityPage({
             <div className="mt-8">
               <Link
                 href="/discover/events"
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong hover:underline"
+                className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline"
               >
                 Browse all events <ArrowRight className="h-4 w-4" />
               </Link>
@@ -208,7 +208,7 @@ export default async function DiscoverCityPage({
 
       {/* ── Cross-links: the other ways to browse ───────────────── */}
       <Section tone="canvas">
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm">
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-body-sm">
           <Link href="/discover/cities" className="inline-flex items-center gap-1.5 font-semibold text-primary-strong hover:underline">
             <Users className="h-4 w-4" /> All cities
           </Link>

@@ -12,8 +12,8 @@ function PerfStat({ value, label, hint }: { value: React.ReactNode; label: strin
   return (
     <div className="rounded-card border border-border bg-surface px-3 py-2 lift-1">
       <div className="flex items-baseline gap-1.5">
-        <span className="text-base font-extrabold tabular-nums text-text">{value}</span>
-        <span className="text-xs font-medium text-muted">{label}</span>
+        <span className="text-body font-extrabold tabular-nums text-text">{value}</span>
+        <span className="text-meta font-medium text-muted">{label}</span>
       </div>
       {hint && <p className="mt-0.5 text-2xs text-muted">{hint}</p>}
     </div>
@@ -24,7 +24,7 @@ export function EmailPerformance({ overview }: { overview: MarketingEmailOvervie
   const nothingYet = overview.sent === 0 && overview.delivered === 0
   if (nothingYet) {
     return (
-      <p className="rounded-2xl border border-dashed border-border bg-surface px-4 py-6 text-center text-sm text-muted">
+      <p className="rounded-2xl border border-dashed border-border bg-surface px-4 py-6 text-center text-body-sm text-muted">
         No email has gone out yet. Open, click, bounce, and complaint stats land here the moment your first send delivers.
       </p>
     )

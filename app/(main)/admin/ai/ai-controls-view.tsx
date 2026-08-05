@@ -122,13 +122,13 @@ export function AiControlsView({
         description="Who flipped the AI master switch, and when. The audit trail for the kill switch."
       >
         {events.length === 0 ? (
-          <p className="flex items-center gap-1.5 text-sm text-subtle">
+          <p className="flex items-center gap-1.5 text-body-sm text-subtle">
             <History className="h-4 w-4" aria-hidden /> No changes recorded yet.
           </p>
         ) : (
           <ul className="space-y-2">
             {events.map((e) => (
-              <li key={e.id} className="flex items-center gap-3 text-sm">
+              <li key={e.id} className="flex items-center gap-3 text-body-sm">
                 <StatusChip tone={e.value ? 'success' : 'danger'} size="sm">
                   {e.value ? 'On' : 'Off'}
                 </StatusChip>
@@ -136,7 +136,7 @@ export function AiControlsView({
                   {e.who}
                   {e.source !== 'admin' && <span className="text-subtle"> · {e.source}</span>}
                 </span>
-                <span className="shrink-0 text-xs tabular-nums text-subtle">{fmtWhen(e.createdAt)}</span>
+                <span className="shrink-0 text-meta tabular-nums text-subtle">{fmtWhen(e.createdAt)}</span>
               </li>
             ))}
           </ul>

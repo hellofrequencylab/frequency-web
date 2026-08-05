@@ -38,7 +38,7 @@ export function HubSearch({ items }: { items: HubSearchItem[] }) {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search this space's tools and settings"
           aria-label="Search this space's tools and settings"
-          className="w-full bg-transparent text-base text-text outline-none placeholder:text-subtle sm:text-sm"
+          className="w-full bg-transparent text-body text-text outline-none placeholder:text-subtle sm:text-sm"
         />
       </div>
       {q && (
@@ -49,7 +49,7 @@ export function HubSearch({ items }: { items: HubSearchItem[] }) {
                 <li key={`${it.section}:${it.label}:${it.href}`}>
                   <Link
                     href={it.href}
-                    className="group flex items-center gap-2 px-3 py-2.5 text-sm outline-none transition-colors hover:bg-surface-elevated focus-visible:bg-surface-elevated"
+                    className="group flex items-center gap-2 px-3 py-2.5 text-body-sm outline-none transition-colors hover:bg-surface-elevated focus-visible:bg-surface-elevated"
                   >
                     <span className="flex-1 truncate font-medium text-text">{it.label}</span>
                     <span className="shrink-0 text-2xs uppercase tracking-wide text-muted">{it.section}</span>
@@ -59,7 +59,7 @@ export function HubSearch({ items }: { items: HubSearchItem[] }) {
               ))}
             </ul>
           ) : (
-            <p className="px-3 py-3 text-sm text-muted">No tool matches &ldquo;{query}&rdquo;.</p>
+            <p className="px-3 py-3 text-body-sm text-muted">No tool matches &ldquo;{query}&rdquo;.</p>
           )}
         </div>
       )}

@@ -27,7 +27,7 @@ export async function ReadTab() {
     >
       <TileGrid>
         <Tile span={3}>
-          <p className="text-sm font-medium leading-relaxed text-text">{read.summary}</p>
+          <p className="text-body-sm font-medium leading-relaxed text-text">{read.summary}</p>
         </Tile>
 
         {read.insights.length === 0 ? (
@@ -45,7 +45,7 @@ export async function ReadTab() {
               {read.insights.map((i) => (
                 <li key={i.id} className="flex items-start gap-3">
                   <SeverityChip severity={SEVERITY_CHIP[i.severity]} />
-                  <div className="min-w-0 text-sm leading-snug">
+                  <div className="min-w-0 text-body-sm leading-snug">
                     <span className="font-semibold text-text">{i.title}.</span>{' '}
                     <span className="text-muted">{i.finding}</span>{' '}
                     <span className="text-text">→ {i.recommendation}</span>

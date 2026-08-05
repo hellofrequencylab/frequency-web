@@ -27,7 +27,7 @@ import type { SpaceCommunityPost, SpaceUpdateComment, SpaceUpdateReactions } fro
 // the operator) may interact, enforced server-side. Semantic DAWN tokens only, voice canon (no em dashes).
 
 const inputCls =
-  'w-full rounded-card border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-primary'
+  'w-full rounded-card border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary'
 
 /** Push a chosen file through the Space's follower-gated community-image action and hand the shared
  *  Composer back the public URL (or null on failure, which the Composer surfaces). */
@@ -170,7 +170,7 @@ function MemberComposer({ slug, spaceId }: { slug: string; spaceId: string }) {
 function JoinPrompt({ spaceId, brandName, signedIn }: { spaceId: string; brandName: string; signedIn: boolean }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface-elevated/50 p-4">
-      <p className="text-sm text-muted">
+      <p className="text-body-sm text-muted">
         {signedIn
           ? `Follow ${brandName} to react, comment, and post.`
           : 'Sign in and follow this space to react, comment, and post.'}
@@ -180,7 +180,7 @@ function JoinPrompt({ spaceId, brandName, signedIn }: { spaceId: string; brandNa
       ) : (
         <Link
           href="/sign-in"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           Sign in
         </Link>
@@ -193,10 +193,10 @@ function EmptyState({ canPost, brandName }: { canPost: boolean; brandName: strin
   return (
     <div className="rounded-2xl border border-dashed border-border p-10 text-center">
       <MessageCircle className="mx-auto h-8 w-8 text-subtle" aria-hidden />
-      <p className="mt-3 text-sm font-semibold text-text">
+      <p className="mt-3 text-body-sm font-semibold text-text">
         {canPost ? 'Post your first update' : `${brandName} has not posted yet`}
       </p>
-      <p className="mt-1 text-xs text-muted">
+      <p className="mt-1 text-meta text-muted">
         {canPost
           ? 'Share news, offers, or a behind-the-scenes look. Followers can react, comment, and post too.'
           : 'Follow this space to see updates the moment they land.'}
@@ -295,7 +295,7 @@ function PostCard({
               <Pin className="h-3 w-3" aria-hidden /> Pinned
             </span>
           )}
-          <span className="text-xs font-semibold uppercase tracking-wide text-subtle">{authorLabel}</span>
+          <span className="text-meta font-semibold uppercase tracking-wide text-subtle">{authorLabel}</span>
         </span>
         <span className="flex items-center gap-2">
           {canModerate && anchorId && (
@@ -321,7 +321,7 @@ function PostCard({
         </span>
       </header>
       {update.title && <h3 className="text-lg font-bold text-text">{update.title}</h3>}
-      {update.body && <PostBody body={update.body} className="text-sm leading-relaxed text-muted" />}
+      {update.body && <PostBody body={update.body} className="text-body-sm leading-relaxed text-muted" />}
       {update.imageUrl && (
         <Image src={update.imageUrl} alt="" width={800} height={450} unoptimized className="w-full rounded-xl object-cover" />
       )}
@@ -345,7 +345,7 @@ function PostCard({
               } ${canInteract && anchorId ? 'hover:border-border-strong' : ''}`}
             >
               <span aria-hidden>{r.key}</span>
-              {count > 0 && <span className="text-xs font-semibold tabular-nums">{count}</span>}
+              {count > 0 && <span className="text-meta font-semibold tabular-nums">{count}</span>}
             </button>
           )
         })}
@@ -355,7 +355,7 @@ function PostCard({
       {comments.length > 0 && (
         <ul className="space-y-2 border-t border-border pt-3">
           {comments.map((c) => (
-            <li key={c.id} className="text-sm">
+            <li key={c.id} className="text-body-sm">
               <span className="font-semibold text-text">{c.author?.name ?? 'Member'}</span>{' '}
               <PostBody body={c.body} className="inline text-muted" />
             </li>
@@ -385,7 +385,7 @@ function PostCard({
           </button>
         </div>
       )}
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
     </article>
   )
 }

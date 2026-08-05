@@ -72,8 +72,8 @@ export function GateNotice({
     >
       <k.Icon className={`mt-0.5 h-4 w-4 shrink-0 ${k.tone}`} aria-hidden />
       <div className="min-w-0">
-        <p className="text-sm font-semibold text-text">{title ?? k.title}</p>
-        <p className="mt-0.5 text-sm text-muted">{children ?? k.body}</p>
+        <p className="text-body-sm font-semibold text-text">{title ?? k.title}</p>
+        <p className="mt-0.5 text-body-sm text-muted">{children ?? k.body}</p>
       </div>
     </div>
   )

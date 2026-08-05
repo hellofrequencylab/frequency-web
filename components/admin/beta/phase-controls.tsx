@@ -76,7 +76,7 @@ const APPROVAL_LABEL: Record<ApprovalStatus, string> = {
 }
 
 const selectClass =
-  'rounded-lg border border-border bg-surface px-2.5 py-1 text-xs font-semibold text-text outline-none transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50'
+  'rounded-lg border border-border bg-surface px-2.5 py-1 text-meta font-semibold text-text outline-none transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50'
 
 // ── Phase status ─────────────────────────────────────────────────────────────
 
@@ -251,7 +251,7 @@ export function PhaseOutbound({
       )}
 
       {items.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-border px-4 py-4 text-sm text-muted">
+        <p className="rounded-2xl border border-dashed border-border px-4 py-4 text-body-sm text-muted">
           No campaigns or admission waves are filed under this phase yet.
         </p>
       ) : (
@@ -268,8 +268,8 @@ export function PhaseOutbound({
               >
                 <meta.Icon className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-text">{item.label}</p>
-                  <p className="text-xs text-muted">
+                  <p className="truncate text-body-sm font-semibold text-text">{item.label}</p>
+                  <p className="text-meta text-muted">
                     {meta.noun}
                     {item.count != null && ` · ${item.count.toLocaleString()} recipients`}
                     {item.segment && ` · ${item.segment}`}
@@ -305,7 +305,7 @@ export function PhaseOutbound({
         <div className="flex flex-wrap items-center gap-3">
           {confirmArm ? (
             <>
-              <span className="text-sm font-semibold text-text">
+              <span className="text-body-sm font-semibold text-text">
                 Arm {readyCount} ready {readyCount === 1 ? 'item' : 'items'} in this phase?
               </span>
               <Button size="sm" disabled={arming} onClick={arm}>
@@ -330,7 +330,7 @@ export function PhaseOutbound({
                 <ShieldCheck className="h-4 w-4" aria-hidden />
                 Arm this phase
               </Button>
-              <span className="text-xs text-muted">
+              <span className="text-meta text-muted">
                 {readyCount === 0
                   ? 'Mark items ready first. Nothing sends until you arm it.'
                   : `${readyCount} ready. Nothing sends until you arm it.`}
@@ -339,7 +339,7 @@ export function PhaseOutbound({
           )}
         </div>
       ) : (
-        <p className="flex items-center gap-2 text-xs text-muted">
+        <p className="flex items-center gap-2 text-meta text-muted">
           <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden />
           Arming is limited to an admin or executive admin.
         </p>

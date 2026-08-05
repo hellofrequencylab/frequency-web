@@ -39,8 +39,8 @@ export function ListingLocationMap({
       <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
         <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-muted" aria-hidden="true" />
         <div>
-          <p className="text-sm font-semibold text-text">{areaLabel ?? 'Shared with members'}</p>
-          <p className="mt-1 text-sm text-subtle">
+          <p className="text-body-sm font-semibold text-text">{areaLabel ?? 'Shared with members'}</p>
+          <p className="mt-1 text-body-sm text-subtle">
             The pickup spot is shared when you connect with the seller.
           </p>
         </div>
@@ -50,13 +50,13 @@ export function ListingLocationMap({
 
   const caption = precise ? (
     exactAddress ? (
-      <p className="mt-2 flex items-start gap-2 text-sm text-text">
+      <p className="mt-2 flex items-start gap-2 text-body-sm text-text">
         <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden="true" />
         <span>{exactAddress}</span>
       </p>
     ) : null
   ) : (
-    <p className="mt-2 text-sm text-subtle">
+    <p className="mt-2 text-body-sm text-subtle">
       {areaLabel ? `${areaLabel}. ` : ''}Approximate area. The exact pickup spot is shared when you connect.
     </p>
   )

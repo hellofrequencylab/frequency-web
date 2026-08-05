@@ -58,10 +58,10 @@ export function Worklist({
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                      <span className="text-sm font-bold text-text">{row.name}</span>
-                      <span className="text-xs text-subtle">{row.context}</span>
+                      <span className="text-body-sm font-bold text-text">{row.name}</span>
+                      <span className="text-meta text-subtle">{row.context}</span>
                     </div>
-                    <p className="mt-0.5 line-clamp-2 text-sm text-muted">{row.whyNow}</p>
+                    <p className="mt-0.5 line-clamp-2 text-body-sm text-muted">{row.whyNow}</p>
                     <span
                       className={`mt-1.5 inline-flex items-center rounded-pill px-2 py-0.5 text-2xs font-medium ${badge.cls}`}
                     >
@@ -80,7 +80,7 @@ export function Worklist({
         <div className="border-t border-border px-4 py-2.5">
           <Link
             href={laterHref ?? actionHref}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-strong hover:underline"
+            className="inline-flex items-center gap-1.5 text-meta font-medium text-primary-strong hover:underline"
           >
             {laterCount} more on the Later shelf
             <ArrowRight className="h-3.5 w-3.5" />

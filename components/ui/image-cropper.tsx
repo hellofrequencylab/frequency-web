@@ -306,14 +306,14 @@ export function ImageCropper({
     <div className="space-y-4">
       {error ? (
         <div className="flex min-h-[160px] flex-col items-center justify-center gap-3 rounded-card border border-border bg-surface-elevated p-6 text-center">
-          <p className="text-sm text-muted">That image could not be loaded for cropping.</p>
+          <p className="text-body-sm text-muted">That image could not be loaded for cropping.</p>
           <Button type="button" variant="secondary" size="sm" onClick={onCancel}>
             Close
           </Button>
         </div>
       ) : !display || !rect ? (
         <div className="flex min-h-[160px] items-center justify-center rounded-card border border-border bg-surface-elevated p-6">
-          <p className="text-sm text-muted">Loading image...</p>
+          <p className="text-body-sm text-muted">Loading image...</p>
         </div>
       ) : (
         <>
@@ -383,7 +383,7 @@ export function ImageCropper({
             </div>
           </div>
 
-          <p className="text-center text-xs text-muted">
+          <p className="text-center text-meta text-muted">
             Drag the box to move it, or drag a corner to resize.
             {aspect ? ' The crop stays locked to a fixed shape.' : ''}
           </p>

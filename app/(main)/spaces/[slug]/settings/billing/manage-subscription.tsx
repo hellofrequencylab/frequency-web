@@ -27,8 +27,8 @@ export function ManageSubscriptionButton({ slug }: { slug: string }) {
     <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-base font-bold text-text">Manage subscription</h2>
-          <p className="mt-1 text-sm text-muted">
+          <h2 className="text-body font-bold text-text">Manage subscription</h2>
+          <p className="mt-1 text-body-sm text-muted">
             Update your payment method, change or cancel your plan, and adjust seats in the secure Stripe
             portal.
           </p>
@@ -37,7 +37,7 @@ export function ManageSubscriptionButton({ slug }: { slug: string }) {
           type="button"
           onClick={manage}
           disabled={pending}
-          className="flex items-center justify-center gap-2 rounded-control border border-border px-4 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+          className="flex items-center justify-center gap-2 rounded-control border border-border px-4 py-3 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <CreditCard className="h-4 w-4" aria-hidden />}
           {pending ? 'Opening' : 'Manage subscription'}

@@ -63,7 +63,7 @@ export default async function ArrangeMenuPage({
     >
       <Link
         href="/admin/menu"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-text"
+        className="mb-4 inline-flex items-center gap-1.5 text-body-sm text-muted transition-colors hover:text-text"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden /> Menu manager
       </Link>

@@ -40,7 +40,7 @@ export function StartEditingLink({ label }: { label: string }) {
     <button
       type="button"
       onClick={() => setEditing(true)}
-      className="inline-block text-xs text-subtle transition-colors hover:text-primary-strong"
+      className="inline-block text-meta text-subtle transition-colors hover:text-primary-strong"
     >
       {label}
     </button>

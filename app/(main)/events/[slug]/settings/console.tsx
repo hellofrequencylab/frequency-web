@@ -21,7 +21,7 @@ export function EventManageConsole({ eventId, slug }: { eventId: string; slug: s
     <>
       <section>
         <SectionHeader title="Basics" />
-        <p className="-mt-2 mb-3 text-sm text-muted">
+        <p className="-mt-2 mb-3 text-body-sm text-muted">
           Title, description, cover, location, time, and permalink.
         </p>
         <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
@@ -31,7 +31,7 @@ export function EventManageConsole({ eventId, slug }: { eventId: string; slug: s
 
       <section>
         <SectionHeader title="Danger zone" />
-        <p className="-mt-2 mb-3 text-sm text-muted">Delete this event. This cannot be undone.</p>
+        <p className="-mt-2 mb-3 text-body-sm text-muted">Delete this event. This cannot be undone.</p>
         <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
           <DangerDelete
             entity="event"

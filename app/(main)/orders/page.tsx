@@ -34,14 +34,14 @@ function OrderCard({ order, dispute }: { order: CommerceOrder; dispute: Commerce
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-xs text-subtle">{when}</span>
+        <span className="text-meta text-subtle">{when}</span>
         <span className={`rounded-pill px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide ${STATUS_TONE[order.status] ?? 'bg-surface-elevated text-muted'}`}>
           {order.status}
         </span>
       </div>
       <ul className="mt-3 space-y-1">
         {order.items.map((it) => (
-          <li key={it.id} className="flex items-center justify-between gap-3 text-sm text-text">
+          <li key={it.id} className="flex items-center justify-between gap-3 text-body-sm text-text">
             <span>
               {it.title}
               {it.qty > 1 && <span className="text-subtle"> × {it.qty}</span>}
@@ -51,8 +51,8 @@ function OrderCard({ order, dispute }: { order: CommerceOrder; dispute: Commerce
         ))}
       </ul>
       <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-        <span className="text-sm font-semibold text-text">Total</span>
-        <span className="text-sm font-semibold text-text">{usd(order.amountCents, order.currency)}</span>
+        <span className="text-body-sm font-semibold text-text">Total</span>
+        <span className="text-body-sm font-semibold text-text">{usd(order.amountCents, order.currency)}</span>
       </div>
       {(disputable || dispute) && (
         <div className="mt-3 border-t border-border pt-3">

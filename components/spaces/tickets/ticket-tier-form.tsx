@@ -152,7 +152,7 @@ export function TicketTierForm({
     >
       <div className="space-y-4">
         {rows.length === 0 && (
-          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-sm text-muted">
+          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
             No tiers yet. Add one to open tickets.
           </p>
         )}
@@ -162,7 +162,7 @@ export function TicketTierForm({
             className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1"
           >
             <div className="flex items-start justify-between gap-3">
-              <span className="text-xs font-semibold text-subtle">Tier {i + 1}</span>
+              <span className="text-meta font-semibold text-subtle">Tier {i + 1}</span>
               <div className="flex items-center gap-1">
                 <IconButton
                   variant="bordered"
@@ -207,7 +207,7 @@ export function TicketTierForm({
 
             <div className="flex flex-wrap gap-3">
               <label className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-muted">Ticket type</span>
+                <span className="text-meta font-medium text-muted">Ticket type</span>
                 <select
                   value={r.kind}
                   onChange={(e) => update(i, { kind: e.target.value as TicketKind })}
@@ -221,7 +221,7 @@ export function TicketTierForm({
                 </select>
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-muted">Capacity</span>
+                <span className="text-meta font-medium text-muted">Capacity</span>
                 <input
                   inputMode="numeric"
                   value={r.capacity}
@@ -231,7 +231,7 @@ export function TicketTierForm({
                 />
               </label>
               <label className="flex flex-col justify-end gap-1">
-                <span className="text-xs font-medium text-muted">Active</span>
+                <span className="text-meta font-medium text-muted">Active</span>
                 <span className="flex h-[38px] items-center gap-2">
                   <input
                     type="checkbox"
@@ -239,7 +239,7 @@ export function TicketTierForm({
                     onChange={(e) => update(i, { isActive: e.target.checked })}
                     className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
                   />
-                  <span className="text-sm text-muted">Show to members</span>
+                  <span className="text-body-sm text-muted">Show to members</span>
                 </span>
               </label>
             </div>
@@ -264,19 +264,19 @@ export function TicketTierForm({
         <button
           type="button"
           onClick={addRow}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong transition-colors hover:text-primary"
+          className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong transition-colors hover:text-primary"
         >
           <Plus className="h-4 w-4" aria-hidden /> Add a tier
         </button>
       </div>
 
-      <p className="text-xs text-subtle">
+      <p className="text-meta text-subtle">
         Tickets are free or RSVP only for now. We do not take a payment, so paid ticketing is coming
         later. An RSVP reserves a spot up to the tier capacity.
       </p>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
+        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
@@ -294,7 +294,7 @@ export function TicketTierForm({
           )}
         </Button>
         {saved && !pending && (
-          <span className="inline-flex items-center gap-1 text-sm font-medium text-success" role="status">
+          <span className="inline-flex items-center gap-1 text-body-sm font-medium text-success" role="status">
             <Check className="h-4 w-4" aria-hidden /> Saved
           </span>
         )}

@@ -81,18 +81,18 @@ export function MemberAdmin({
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Search by name, handle, or email..."
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-surface text-sm focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30"
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-surface text-body-sm focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30"
           />
         </div>
         <select
           value={roleFilter}
           onChange={e => setRoleFilter(e.target.value)}
-          className="rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+          className="rounded-lg border border-border bg-surface px-3 py-2 text-body-sm"
         >
           <option value="all">All roles</option>
           {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
         </select>
-        <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer">
+        <label className="flex items-center gap-1.5 text-meta text-muted cursor-pointer">
           <input
             type="checkbox"
             checked={showInactive}
@@ -106,7 +106,7 @@ export function MemberAdmin({
       {/* Member list */}
       <div className="rounded-2xl border border-border bg-surface lift-1 overflow-hidden divide-y divide-border">
         {filtered.length === 0 ? (
-          <p className="text-sm text-subtle text-center py-8">No members found.</p>
+          <p className="text-body-sm text-subtle text-center py-8">No members found.</p>
         ) : (
           filtered.map(m => (
             <MemberRow
@@ -120,7 +120,7 @@ export function MemberAdmin({
         )}
       </div>
 
-      <p className="text-xs text-subtle mt-3">Showing {filtered.length} of {members.length} members</p>
+      <p className="text-meta text-subtle mt-3">Showing {filtered.length} of {members.length} members</p>
     </div>
   )
 }
@@ -226,18 +226,18 @@ function MemberRow({
         {m.avatar_url ? (
           <Image src={avatarSrc(m.avatar_url)} alt={m.display_name} width={36} height={36} className="w-9 h-9 rounded-pill object-cover shrink-0" style={avatarFocusStyle(m.avatar_url)} />
         ) : (
-          <div className="w-9 h-9 rounded-pill bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-pill bg-surface-elevated text-muted text-meta font-semibold flex items-center justify-center shrink-0">
             {initials}
           </div>
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-text truncate">{m.display_name}</span>
-            <RoleBadge role={m.is_system ? 'moderator' : m.community_role} className="text-xs leading-tight" />
-            {m.is_system && <span className="text-xs px-1.5 py-0.5 rounded-md font-medium bg-primary-bg text-primary-strong">System</span>}
-            {!m.is_active && <span className="text-xs px-1.5 py-0.5 rounded-md font-medium bg-danger-bg text-danger">Inactive</span>}
+            <span className="text-body-sm font-semibold text-text truncate">{m.display_name}</span>
+            <RoleBadge role={m.is_system ? 'moderator' : m.community_role} className="text-meta leading-tight" />
+            {m.is_system && <span className="text-meta px-1.5 py-0.5 rounded-md font-medium bg-primary-bg text-primary-strong">System</span>}
+            {!m.is_active && <span className="text-meta px-1.5 py-0.5 rounded-md font-medium bg-danger-bg text-danger">Inactive</span>}
           </div>
-          <p className="text-xs text-subtle truncate">
+          <p className="text-meta text-subtle truncate">
             @{m.handle}
             {email && <> &middot; {email}</>}
           </p>
@@ -255,15 +255,15 @@ function MemberRow({
       {isExpanded && (
         <div className="px-4 pb-4 pt-1 bg-surface/50 dark:bg-surface-elevated/20">
           {status && (
-            <div className="flex items-center gap-2 mb-3 text-xs font-medium text-success bg-success-bg/30 px-3 py-2 rounded-lg">
+            <div className="flex items-center gap-2 mb-3 text-meta font-medium text-success bg-success-bg/30 px-3 py-2 rounded-lg">
               <Check className="w-3.5 h-3.5" /> {status}
             </div>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
-              <p className="text-sm font-bold text-text mb-1">Details</p>
-              <div className="text-xs text-muted space-y-1">
+              <p className="text-body-sm font-bold text-text mb-1">Details</p>
+              <div className="text-meta text-muted space-y-1">
                 {m.created_at && <p>Joined {new Date(m.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>}
                 {m.regionName && <p>Region: {m.regionName}</p>}
                 {m.current_season_rank && <p>Rank: {m.current_season_rank} ({m.current_season_zaps ?? 0} zaps)</p>}
@@ -273,12 +273,12 @@ function MemberRow({
               </div>
             </div>
             <div>
-              <p className="text-sm font-bold text-text mb-1">Role</p>
+              <p className="text-body-sm font-bold text-text mb-1">Role</p>
               <select
                 value={m.community_role}
                 onChange={e => handleRoleChange(e.target.value)}
                 disabled={isPending}
-                className="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-xs disabled:opacity-50"
+                className="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-meta disabled:opacity-50"
               >
                 {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
@@ -289,20 +289,20 @@ function MemberRow({
           {editMode ? (
             <form action={handleProfileSave} className="space-y-3 mb-4 rounded-card border border-border p-3 bg-surface">
               <div>
-                <label className="text-sm font-bold text-text">Display name</label>
-                <input name="display_name" defaultValue={m.display_name} className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs" />
+                <label className="text-body-sm font-bold text-text">Display name</label>
+                <input name="display_name" defaultValue={m.display_name} className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta" />
               </div>
               <div>
-                <label className="text-sm font-bold text-text">Handle</label>
-                <input name="handle" defaultValue={m.handle} className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs" />
+                <label className="text-body-sm font-bold text-text">Handle</label>
+                <input name="handle" defaultValue={m.handle} className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta" />
               </div>
               <div>
-                <label className="text-sm font-bold text-text">Bio</label>
-                <textarea name="bio" defaultValue={m.bio ?? ''} rows={2} className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs resize-none" />
+                <label className="text-body-sm font-bold text-text">Bio</label>
+                <textarea name="bio" defaultValue={m.bio ?? ''} rows={2} className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta resize-none" />
               </div>
               <div>
-                <label className="text-sm font-bold text-text">Avatar URL</label>
-                <input name="avatar_url" type="url" defaultValue={m.avatar_url ?? ''} placeholder="https://…" className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs" />
+                <label className="text-body-sm font-bold text-text">Avatar URL</label>
+                <input name="avatar_url" type="url" defaultValue={m.avatar_url ?? ''} placeholder="https://…" className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta" />
               </div>
               <div className="flex items-center gap-2">
                 <Button type="submit" size="sm" disabled={isPending}>
@@ -397,7 +397,7 @@ function MemberRow({
               </Button>
             ) : (
               <div className="flex items-center gap-1.5">
-                <span className="text-xs text-danger font-medium">Are you sure?</span>
+                <span className="text-meta text-danger font-medium">Are you sure?</span>
                 <Button
                   variant="danger"
                   size="sm"

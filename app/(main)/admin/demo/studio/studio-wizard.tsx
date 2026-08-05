@@ -71,7 +71,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
     })
   }
 
-  const field = 'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-border-strong focus:outline-none'
+  const field = 'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text focus:border-border-strong focus:outline-none'
   const activePreset = PRESETS.find((p) => p.circles === circles && p.members === membersPerCircle && p.conn === connectednessPct)
 
   return (
@@ -80,11 +80,11 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
 
       {/* 1. Where */}
       <section className="rounded-2xl border border-border bg-surface p-5">
-        <div className="mb-2 flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /><h3 className="text-sm font-bold text-text">1 · Where</h3></div>
+        <div className="mb-2 flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /><h3 className="text-body-sm font-bold text-text">1 · Where</h3></div>
         <LocationAutocomplete value={areaName} placeholder="Search a city or town…"
           onPick={(p) => { setAreaName(p.label.split(',')[0]); setLat(+p.lat.toFixed(5)); setLng(+p.lng.toFixed(5)) }} />
         <div className="mt-2 flex flex-wrap items-end gap-4">
-          <p className="text-xs text-subtle">
+          <p className="text-meta text-subtle">
             Centered on <b className="text-text">{areaName}</b> ({lat.toFixed(4)}, {lng.toFixed(4)})
           </p>
           <div className="w-40">
@@ -96,8 +96,8 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
       {/* 2. How big */}
       <section className="rounded-2xl border border-border bg-surface p-5">
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-text">2 · How big</h3>
-          <span className="text-xs text-subtle">≈ <b className="text-text">{estPeople}</b> people · <b className="text-text">{circles}</b> circles · <b className="text-text">{estConnections}</b> connections</span>
+          <h3 className="text-body-sm font-bold text-text">2 · How big</h3>
+          <span className="text-meta text-subtle">≈ <b className="text-text">{estPeople}</b> people · <b className="text-text">{circles}</b> circles · <b className="text-text">{estConnections}</b> connections</span>
         </div>
         <div className="mb-4 flex flex-wrap gap-2">
           {PRESETS.map((p) => (
@@ -116,7 +116,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
 
       {/* 3. What */}
       <section className="rounded-2xl border border-border bg-surface p-5">
-        <h3 className="mb-2 text-sm font-bold text-text">3 · What it covers</h3>
+        <h3 className="mb-2 text-body-sm font-bold text-text">3 · What it covers</h3>
         <div className="mb-3 flex flex-wrap gap-1.5">
           {channels.map((c) => (
             <button key={c.slug} type="button" onClick={() => toggleCh(c.slug)}
@@ -125,17 +125,17 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
             </button>
           ))}
         </div>
-        <label className="flex flex-col gap-1 text-xs text-muted">Local flavor words (comma-separated, used as place/vibe variables)
+        <label className="flex flex-col gap-1 text-meta text-muted">Local flavor words (comma-separated, used as place/vibe variables)
           <input value={flavor} onChange={(e) => setFlavor(e.target.value)} placeholder="e.g. Barton Springs, tacos, greenbelt, East Side" className={field} /></label>
       </section>
 
       {/* 4. Voice */}
       <section className="rounded-2xl border border-border bg-surface p-5">
-        <h3 className="mb-1 text-sm font-bold text-text">4 · Voice</h3>
+        <h3 className="mb-1 text-body-sm font-bold text-text">4 · Voice</h3>
         <label className="flex cursor-pointer items-start gap-3">
           <input type="checkbox" checked={aiPolish} onChange={(e) => setAiPolish(e.target.checked)}
             className="mt-0.5 h-4 w-4 shrink-0 accent-primary" />
-          <span className="text-sm text-muted">
+          <span className="text-body-sm text-muted">
             <span className="font-semibold text-text">Demographic-aware (AI)</span>. One quick model call reads the
             place and channels to draw names, local activities, and journey titles that fit the area; templates expand
             it into every row. Off uses the built-in pools. Falls back automatically if AI is unavailable.
@@ -146,39 +146,39 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
       {/* 5. Preview */}
       <section className="rounded-2xl border border-border bg-surface p-5">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-text">5 · Preview</h3>
+          <h3 className="text-body-sm font-bold text-text">5 · Preview</h3>
           <button type="button" disabled={pending || sel.size === 0} onClick={() => run(async () => setPreview(await previewArea(spec())))}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-text hover:border-primary disabled:opacity-50">
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-semibold text-text hover:border-primary disabled:opacity-50">
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />} Preview
           </button>
         </div>
         {preview && (
-          <div className="mt-3 space-y-3 text-sm">
+          <div className="mt-3 space-y-3 text-body-sm">
             <p className="text-muted">A <b className="text-text">{preview.hub.name}</b> hub led by Guide <b className="text-text">{preview.hub.guide}</b>, over <b className="text-text">{preview.totals.circles}</b> circles with their hosts. <b className="text-text">{preview.totals.people}</b> people, <b className="text-text">{preview.totals.posts}</b> circle posts + <b className="text-text">{preview.totals.replies}</b> replies, <b className="text-text">{preview.totals.walls}</b> wall/feed posts, <b className="text-text">{preview.totals.friendships}</b> friendships, <b className="text-text">{preview.totals.events}</b> events, <b className="text-text">{preview.totals.dispatches}</b> dispatches, <b className="text-text">{preview.totals.journeys}</b> journeys, <b className="text-text">{preview.totals.connections}</b> cross-circle links, plus RSVPs, reactions, practice logs &amp; achievements.</p>
             <div className="flex flex-wrap gap-1.5">
-              {preview.circles.map((c, i) => <span key={i} className="rounded-pill bg-surface-elevated px-2 py-0.5 text-xs text-subtle">{c.name} · {c.members}</span>)}
+              {preview.circles.map((c, i) => <span key={i} className="rounded-pill bg-surface-elevated px-2 py-0.5 text-meta text-subtle">{c.name} · {c.members}</span>)}
             </div>
             <div className="rounded-card border border-border bg-canvas p-3">
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">Sample people</p>
+              <p className="mb-1 text-meta font-semibold uppercase tracking-wide text-subtle">Sample people</p>
               {preview.samplePeople.map((p, i) => <p key={i} className="text-text">{p.name} <span className="text-subtle">@{p.handle} · {p.rank}</span> · <span className="text-muted">{p.bio}</span></p>)}
             </div>
             {preview.sampleThread && (
               <div className="rounded-card border border-border bg-canvas p-3">
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">Sample thread</p>
+                <p className="mb-1 text-meta font-semibold uppercase tracking-wide text-subtle">Sample thread</p>
                 <p className="text-text"><b>{preview.sampleThread.author}</b>: {preview.sampleThread.body}</p>
                 {preview.sampleThread.replies.map((r, i) => <p key={i} className="ml-3 text-muted">↳ <b className="text-text">{r.author}</b>: {r.body}</p>)}
               </div>
             )}
             {preview.sampleDispatch && (
               <div className="rounded-card border border-border bg-canvas p-3">
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">Sample dispatch</p>
+                <p className="mb-1 text-meta font-semibold uppercase tracking-wide text-subtle">Sample dispatch</p>
                 <p className="text-text"><b>{preview.sampleDispatch.title}</b></p>
                 <p className="text-muted">{preview.sampleDispatch.body}</p>
               </div>
             )}
             {preview.sampleWall && (
               <div className="rounded-card border border-border bg-canvas p-3">
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">Sample wall post</p>
+                <p className="mb-1 text-meta font-semibold uppercase tracking-wide text-subtle">Sample wall post</p>
                 <p className="text-muted">{preview.sampleWall.body}</p>
               </div>
             )}
@@ -190,14 +190,14 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
       <section className="rounded-2xl border border-primary-bg bg-primary-bg/20 p-5">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-bold text-text">6 · Seed it</h3>
-            <p className="text-sm text-muted">Writes the area as demo content (⚡), reversible below.</p>
+            <h3 className="text-body-sm font-bold text-text">6 · Seed it</h3>
+            <p className="text-body-sm text-muted">Writes the area as demo content (⚡), reversible below.</p>
           </div>
           <Button type="button" disabled={pending || sel.size === 0} onClick={() => run(async () => { setResult(await seedArea(spec())); router.refresh() })}>
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Seed this area
           </Button>
         </div>
-        {result && <p className="mt-3 rounded-lg border border-success-bg bg-success-bg/40 px-3 py-2 text-sm text-success">Seeded {result.guides} guide + {result.hubs} hub · {result.circles} circles · {result.members} members · {result.posts} circle posts · {result.walls} wall/feed posts · {result.friendships} friendships · {result.dispatches} dispatches · {result.events} events · {result.rsvps} RSVPs · {result.reactions} reactions · {result.practiceLogs} practice logs · {result.journeys} journeys · {result.connections} cross-circle links. The ⚡ demo notice now reflects the new totals.</p>}
+        {result && <p className="mt-3 rounded-lg border border-success-bg bg-success-bg/40 px-3 py-2 text-body-sm text-success">Seeded {result.guides} guide + {result.hubs} hub · {result.circles} circles · {result.members} members · {result.posts} circle posts · {result.walls} wall/feed posts · {result.friendships} friendships · {result.dispatches} dispatches · {result.events} events · {result.rsvps} RSVPs · {result.reactions} reactions · {result.practiceLogs} practice logs · {result.journeys} journeys · {result.connections} cross-circle links. The ⚡ demo notice now reflects the new totals.</p>}
       </section>
     </div>
   )

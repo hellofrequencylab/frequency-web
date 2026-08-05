@@ -25,7 +25,7 @@ function statusMeta(status: string) {
 /** One inline fact in the bar: a small icon + text. Facts are separated by a subtle bullet. */
 function Fact({ icon: Icon, children }: { icon: typeof Users; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-muted">
+    <span className="inline-flex items-center gap-1.5 text-meta text-muted">
       <Icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
       {children}
     </span>
@@ -51,7 +51,7 @@ export function EmailContextBar({ context }: { context: EmailEditorContext }) {
       aria-label="Email context"
     >
       {/* The container this email belongs to: the sequence name, or the campaign subject for a broadcast. */}
-      <span className="inline-flex items-center gap-1.5 text-sm font-bold text-text">
+      <span className="inline-flex items-center gap-1.5 text-body-sm font-bold text-text">
         <LeadIcon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
         {campaignName}
       </span>
@@ -60,7 +60,7 @@ export function EmailContextBar({ context }: { context: EmailEditorContext }) {
       {step && (
         <>
           <Divider />
-          <span className="text-xs font-semibold text-text">
+          <span className="text-meta font-semibold text-text">
             Email {step.position} of {step.total}
           </span>
           {step.timing && (

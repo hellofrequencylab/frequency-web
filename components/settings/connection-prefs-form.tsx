@@ -98,8 +98,8 @@ export function ConnectionPrefsForm({ initial }: { initial: ConnectionPrefsIniti
             <Ghost className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-text">Ghost mode</p>
-            <p className="text-xs text-muted mt-0.5">Vanish from proximity &amp; maps.</p>
+            <p className="text-body-sm font-semibold text-text">Ghost mode</p>
+            <p className="text-meta text-muted mt-0.5">Vanish from proximity &amp; maps.</p>
           </div>
           <Toggle checked={ghostMode} />
         </button>
@@ -115,7 +115,7 @@ export function ConnectionPrefsForm({ initial }: { initial: ConnectionPrefsIniti
       {!initial.hasHome && (
         <div className="flex items-start gap-3 rounded-card border border-border bg-surface-elevated px-4 py-3">
           <MapPin className="w-4 h-4 text-muted shrink-0 mt-0.5" />
-          <p className="text-xs text-muted">
+          <p className="text-meta text-muted">
             Proximity features need a home location.{' '}
             <Link
               href="/settings/profile"
@@ -148,8 +148,8 @@ export function ConnectionPrefsForm({ initial }: { initial: ConnectionPrefsIniti
             aria-pressed={directoryVisible}
           >
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-text">Show me in the Community directory</p>
-              <p className="text-xs text-muted mt-0.5">
+              <p className="text-body-sm font-medium text-text">Show me in the Community directory</p>
+              <p className="text-meta text-muted mt-0.5">
                 Let members browse and find you in the directory.
               </p>
             </div>
@@ -212,7 +212,7 @@ export function ConnectionPrefsForm({ initial }: { initial: ConnectionPrefsIniti
         >
           <div className="rounded-2xl border border-border bg-surface lift-1 px-4 py-4">
             <div className="flex items-baseline justify-between mb-3">
-              <p className="text-sm font-medium text-text">
+              <p className="text-body-sm font-medium text-text">
                 Be findable within ~{formatMiles(radiusDraft)} mi
               </p>
               <span className="text-2xs text-muted">
@@ -248,12 +248,12 @@ export function ConnectionPrefsForm({ initial }: { initial: ConnectionPrefsIniti
       {/* ── Reassurance + save status ─────────────────────────────────────── */}
       <div className="flex items-start gap-2.5 rounded-card border border-border bg-surface-elevated px-4 py-3">
         <ShieldAlert className="w-4 h-4 text-muted shrink-0 mt-0.5" />
-        <p className="text-xs text-muted">
+        <p className="text-meta text-muted">
           Frequency never shares your exact location. Others only see a fuzzed area or your city.
         </p>
       </div>
 
-      <div className="flex items-center gap-2 text-xs px-1 min-h-5">
+      <div className="flex items-center gap-2 text-meta px-1 min-h-5">
         {isPending || state === 'saving' ? (
           <span className="text-muted">Saving…</span>
         ) : state === 'saved' ? (
@@ -302,8 +302,8 @@ function Fieldset({
   return (
     <section>
       <div className="mb-2 px-1">
-        <p className="text-sm font-semibold text-text">{legend}</p>
-        {hint && <p className="text-xs text-muted mt-0.5">{hint}</p>}
+        <p className="text-body-sm font-semibold text-text">{legend}</p>
+        {hint && <p className="text-meta text-muted mt-0.5">{hint}</p>}
       </div>
       {children}
     </section>
@@ -334,7 +334,7 @@ function OptionRow({
         <p className={`text-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
           {label}
         </p>
-        <p className="text-xs text-muted mt-0.5">{hint}</p>
+        <p className="text-meta text-muted mt-0.5">{hint}</p>
       </div>
       {active && <Check className="w-4 h-4 text-primary-strong shrink-0" />}
     </button>

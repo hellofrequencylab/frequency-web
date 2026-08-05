@@ -185,14 +185,14 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
       {/* Duplicate event — clone this event into a fresh, prefilled draft so a one-off can be
           repeated quickly. The create page re-checks the same edit capability on the source. */}
       <div className="mt-6 rounded-card border border-border bg-surface-elevated/40 p-4">
-        <p className="text-sm font-semibold text-text">Duplicate this event</p>
-        <p className="mt-0.5 text-xs text-muted">
+        <p className="text-body-sm font-semibold text-text">Duplicate this event</p>
+        <p className="mt-0.5 text-meta text-muted">
           Start a new event prefilled from this one. The date defaults to today so you can set the next one.
         </p>
         <div className="mt-3">
           <Link
             href={`/events/new?duplicate=${ev.id}`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
           >
             <Copy className="h-3.5 w-3.5" /> Duplicate event
           </Link>
@@ -201,8 +201,8 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
 
       {!ev.is_cancelled && (
         <div className="mt-6 rounded-xl border border-danger/30 bg-danger-bg/30 p-4">
-          <p className="text-sm font-semibold text-text">Cancel this event</p>
-          <p className="mt-0.5 text-xs text-muted">
+          <p className="text-body-sm font-semibold text-text">Cancel this event</p>
+          <p className="mt-0.5 text-meta text-muted">
             Marks the event cancelled for everyone. Attendees keep their RSVP record but the event
             shows as cancelled.
           </p>

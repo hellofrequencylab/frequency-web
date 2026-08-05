@@ -31,7 +31,7 @@ export default async function VeraOnboardingPage() {
         actions={
           <Link
             href="/circles"
-            className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-sm font-medium text-subtle transition-colors hover:text-text"
+            className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-body-sm font-medium text-subtle transition-colors hover:text-text"
           >
             Skip to circles <ArrowRight className="h-3.5 w-3.5" />
           </Link>

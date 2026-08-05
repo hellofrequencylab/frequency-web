@@ -72,8 +72,8 @@ function toInput(row: ThemeRow): ThemeInput {
 
 type Block = keyof ThemeTokens // 'light' | 'dark' | 'feel'
 
-const labelCls = 'block text-xs font-semibold text-muted'
-const fieldHint = 'mt-1 text-xs text-subtle'
+const labelCls = 'block text-meta font-semibold text-muted'
+const fieldHint = 'mt-1 text-meta text-subtle'
 
 export function ThemeEditor({ initial, mode }: { initial: ThemeRow | null; mode: 'new' | 'edit' }) {
   const router = useRouter()
@@ -150,15 +150,15 @@ export function ThemeEditor({ initial, mode }: { initial: ThemeRow | null; mode:
         <div className="min-w-0">
           <Link
             href="/admin/appearance"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted transition-colors hover:text-text"
+            className="inline-flex items-center gap-1.5 text-meta font-semibold text-muted transition-colors hover:text-text"
           >
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back to Theme Studio
           </Link>
-          <h1 className="mt-1 inline-flex items-center gap-2 text-xl font-bold text-text">
+          <h1 className="mt-1 inline-flex items-center gap-2 text-lead font-bold text-text">
             <Palette className="h-5 w-5 text-primary-strong" aria-hidden />
             {mode === 'new' ? 'New theme' : draft.name || 'Edit theme'}
           </h1>
-          <p className="mt-0.5 text-sm text-muted">
+          <p className="mt-0.5 text-body-sm text-muted">
             A theme is a set of token overrides. Leave a field blank to inherit the base look.
           </p>
         </div>
@@ -176,7 +176,7 @@ export function ThemeEditor({ initial, mode }: { initial: ThemeRow | null; mode:
       {error && (
         <div
           role="alert"
-          className="mb-5 rounded-xl border border-danger/40 bg-danger-bg px-4 py-3 text-sm font-medium text-danger"
+          className="mb-5 rounded-xl border border-danger/40 bg-danger-bg px-4 py-3 text-body-sm font-medium text-danger"
         >
           {error}
         </div>
@@ -223,7 +223,7 @@ export function ThemeEditor({ initial, mode }: { initial: ThemeRow | null; mode:
                   <code>midnight</code> already exist in code.
                 </p>
                 {slugCollision && (
-                  <p className="mt-1 text-xs font-medium text-warning">
+                  <p className="mt-1 text-meta font-medium text-warning">
                     This slug overlays a built-in skin of the same name.
                   </p>
                 )}
@@ -300,7 +300,7 @@ export function ThemeEditor({ initial, mode }: { initial: ThemeRow | null; mode:
             >
               <div>
                 <SectionHeader title={group.title} />
-                <p className="-mt-2 text-xs text-subtle">{group.hint}</p>
+                <p className="-mt-2 text-meta text-subtle">{group.hint}</p>
               </div>
               <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
                 {group.tokens.map((spec) => (
@@ -361,8 +361,8 @@ function TokenField({
   const dark = draft.tokens.dark[spec.name] ?? ''
   return (
     <div>
-      <div className="text-xs font-semibold text-muted">{spec.label}</div>
-      {spec.hint && <p className="text-xs text-subtle">{spec.hint}</p>}
+      <div className="text-meta font-semibold text-muted">{spec.label}</div>
+      {spec.hint && <p className="text-meta text-subtle">{spec.hint}</p>}
       <div className="mt-1 grid grid-cols-2 gap-2">
         <ColorPair
           idBase={`light-${spec.name}`}

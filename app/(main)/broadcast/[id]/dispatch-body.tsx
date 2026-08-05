@@ -8,16 +8,16 @@ export function DispatchBody({ body }: { body: string }) {
       <ReactMarkdown
         components={{
           h1: ({ children }) => (
-            <h1 className="text-2xl font-black text-text mt-8 mb-3 leading-tight">{children}</h1>
+            <h1 className="text-page-title font-black text-text mt-8 mb-3 leading-tight">{children}</h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-xl font-black text-text mt-7 mb-2 leading-tight">{children}</h2>
+            <h2 className="text-lead font-black text-text mt-7 mb-2 leading-tight">{children}</h2>
           ),
           h3: ({ children }) => (
-            <h3 className="text-base font-bold text-text dark:text-subtle/60 mt-5 mb-2">{children}</h3>
+            <h3 className="text-body font-bold text-text dark:text-subtle/60 mt-5 mb-2">{children}</h3>
           ),
           p: ({ children }) => (
-            <p className="text-base text-text leading-relaxed mb-4">{children}</p>
+            <p className="text-body text-text leading-relaxed mb-4">{children}</p>
           ),
           strong: ({ children }) => (
             <strong className="font-bold text-text">{children}</strong>
@@ -32,7 +32,7 @@ export function DispatchBody({ body }: { body: string }) {
             <ol className="space-y-1.5 mb-4 ml-4 list-decimal">{children}</ol>
           ),
           li: ({ children }) => (
-            <li className="text-base text-text leading-relaxed flex gap-2">
+            <li className="text-body text-text leading-relaxed flex gap-2">
               <span className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-pill bg-primary" aria-hidden />
               <span>{children}</span>
             </li>
@@ -53,7 +53,7 @@ export function DispatchBody({ body }: { body: string }) {
             </blockquote>
           ),
           code: ({ children }) => (
-            <code className="font-mono text-sm bg-surface-elevated text-text dark:text-subtle/60 px-1.5 py-0.5 rounded">
+            <code className="font-mono text-body-sm bg-surface-elevated text-text dark:text-subtle/60 px-1.5 py-0.5 rounded">
               {children}
             </code>
           ),

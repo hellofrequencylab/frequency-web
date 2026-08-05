@@ -78,7 +78,7 @@ export function TasksWorkspace({ tasks, viewerId }: { tasks: CrmTask[]; viewerId
       />
 
       {error && (
-        <p role="alert" className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger">
+        <p role="alert" className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm text-danger">
           {error}
         </p>
       )}
@@ -115,7 +115,7 @@ export function TasksWorkspace({ tasks, viewerId }: { tasks: CrmTask[]; viewerId
                 <p className={`text-sm font-medium ${t.status === 'done' ? 'text-muted line-through' : 'text-text'}`}>
                   {t.title}
                 </p>
-                {t.notes && <p className="mt-0.5 truncate text-xs text-muted">{t.notes}</p>}
+                {t.notes && <p className="mt-0.5 truncate text-meta text-muted">{t.notes}</p>}
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-2xs text-muted">
                   {dueLabel(t, now) && (
                     <span className={overdue(t, now) ? 'text-danger' : ''}>{dueLabel(t, now)}</span>

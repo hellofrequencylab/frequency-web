@@ -75,7 +75,7 @@ function hasRole(role: string | null | undefined): role is CommunityRole {
 // It never invents posts, events, or counts.
 function LiveDataNote({ text }: { text: string }) {
   return (
-    <p className="rounded-card border border-border bg-surface px-5 py-8 text-center text-base text-subtle">
+    <p className="rounded-card border border-border bg-surface px-5 py-8 text-center text-body text-subtle">
       {text}
     </p>
   )
@@ -102,14 +102,14 @@ export function LiveStatsBlock({ eyebrow, heading, live, pad, vis = '' }: { eyeb
   return (
     <section className={`bg-surface px-6 ${pad ?? 'py-24 sm:py-28'} ${vis}`}>
       <div className="max-w-3xl mx-auto text-center">
-        {eyebrow && <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">{eyebrow}</p>}
+        {eyebrow && <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">{eyebrow}</p>}
         {heading && <h2 className="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)] mb-12">{heading}</h2>}
         {stats ? (
           <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
             {stats.map((s) => (
               <div key={s.label}>
                 <p className="font-display text-6xl sm:text-7xl text-text">{s.value.toLocaleString()}</p>
-                <p className="text-xs text-subtle mt-3 uppercase tracking-widest font-bold">{s.label}</p>
+                <p className="text-meta text-subtle mt-3 uppercase tracking-widest font-bold">{s.label}</p>
               </div>
             ))}
           </div>
@@ -142,16 +142,16 @@ export function LiveEventsBlock({ live, pad, vis = '' }: { live?: LiveData; pad?
             <div key={event.id} className="flex items-center gap-4 rounded-2xl border border-border bg-surface px-5 py-4">
               <div className="shrink-0 w-12 h-12 rounded-xl bg-primary-bg flex flex-col items-center justify-center">
                 <span className="text-3xs font-bold text-primary-strong leading-none">{month}</span>
-                <span className="text-base font-bold text-primary-strong leading-tight">{day}</span>
+                <span className="text-body font-bold text-primary-strong leading-tight">{day}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-base font-semibold text-text truncate">{event.title}</p>
-                <p className="text-sm text-subtle mt-0.5">
+                <p className="text-body font-semibold text-text truncate">{event.title}</p>
+                <p className="text-body-sm text-subtle mt-0.5">
                   {dateStr}
                   {event.city && <> &middot; {event.city}</>}
                 </p>
               </div>
-              <Link href="/beta" className="flex items-center gap-1 text-sm font-semibold text-primary-strong hover:underline shrink-0">
+              <Link href="/beta" className="flex items-center gap-1 text-body-sm font-semibold text-primary-strong hover:underline shrink-0">
                 Join <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
@@ -198,22 +198,22 @@ export function LivePostsBlock({ heading, live, pad, vis = '' }: { heading?: str
                     {a?.avatar_url ? (
                       <Image src={avatarSrc(a.avatar_url)} alt={a.display_name} width={40} height={40} className="w-10 h-10 rounded-pill object-cover shrink-0" style={avatarFocusStyle(a.avatar_url)} />
                     ) : (
-                      <div className="w-10 h-10 rounded-pill bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                      <div className="w-10 h-10 rounded-pill bg-surface-elevated text-muted text-meta font-semibold flex items-center justify-center shrink-0 select-none">
                         {initials}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-base font-semibold text-text truncate">{a?.display_name ?? 'Community member'}</span>
+                        <span className="text-body font-semibold text-text truncate">{a?.display_name ?? 'Community member'}</span>
                         {showRole && <RoleBadge role={a!.community_role as CommunityRole} className="text-3xs leading-tight" />}
                       </div>
-                      <p className="text-xs text-subtle mt-0.5">
+                      <p className="text-meta text-subtle mt-0.5">
                         {a?.handle && <>@{a.handle} · </>}
                         {relativeTime(post.created_at)}
                       </p>
                     </div>
                   </div>
-                  <p className="text-base text-text leading-relaxed line-clamp-3">{post.body}</p>
+                  <p className="text-body text-text leading-relaxed line-clamp-3">{post.body}</p>
                 </div>
               </article>
             )

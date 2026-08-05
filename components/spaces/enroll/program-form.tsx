@@ -170,12 +170,12 @@ export function ProgramForm({
             maxLength={500}
             className="mt-1"
           />
-          <p className="mt-1 text-xs text-subtle">Plain text for now. A full calendar comes later.</p>
+          <p className="mt-1 text-meta text-subtle">Plain text for now. A full calendar comes later.</p>
         </div>
 
         <div className="flex flex-wrap gap-4">
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-muted">Start date (optional)</span>
+            <span className="text-meta font-medium text-muted">Start date (optional)</span>
             <input
               type="date"
               value={draft.startsOn}
@@ -184,7 +184,7 @@ export function ProgramForm({
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-muted">End date (optional)</span>
+            <span className="text-meta font-medium text-muted">End date (optional)</span>
             <input
               type="date"
               value={draft.endsOn}
@@ -193,7 +193,7 @@ export function ProgramForm({
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-muted">Capacity (optional)</span>
+            <span className="text-meta font-medium text-muted">Capacity (optional)</span>
             <input
               inputMode="numeric"
               value={draft.capacity}
@@ -211,17 +211,17 @@ export function ProgramForm({
             onChange={(e) => update({ isPublished: e.target.checked })}
             className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
           />
-          <span className="text-sm text-muted">Open for enrollment (members can enroll)</span>
+          <span className="text-body-sm text-muted">Open for enrollment (members can enroll)</span>
         </label>
       </div>
 
-      <p className="text-xs text-subtle">
+      <p className="text-meta text-subtle">
         Enrolling reserves a seat. We do not take a payment when someone enrolls yet, so paid
         enrollment is coming later.
       </p>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
+        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
@@ -240,7 +240,7 @@ export function ProgramForm({
         </Button>
         {saved && !pending && (
           <span
-            className="inline-flex items-center gap-1 text-sm font-medium text-success"
+            className="inline-flex items-center gap-1 text-body-sm font-medium text-success"
             role="status"
           >
             <Check className="h-4 w-4" aria-hidden /> Saved

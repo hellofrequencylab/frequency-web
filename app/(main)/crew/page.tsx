@@ -54,7 +54,7 @@ export default async function CrewPage() {
           <span className="inline-flex flex-wrap items-center gap-2">
             My Quest
             {ctx.isCrewLead && (
-              <span className="rounded-md bg-warning-bg px-2 py-0.5 text-xs font-semibold text-warning">
+              <span className="rounded-md bg-warning-bg px-2 py-0.5 text-meta font-semibold text-warning">
                 Crew Lead
               </span>
             )}

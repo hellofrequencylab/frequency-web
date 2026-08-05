@@ -40,7 +40,7 @@ export function JourneyAuthorActions({
       }
     })
 
-  const btn = 'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors'
+  const btn = 'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-body-sm font-medium transition-colors'
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Link href={`/journeys/${slug}/edit`} className={`${btn} border border-border text-text hover:bg-surface-elevated`}>
@@ -63,7 +63,7 @@ export function JourneyAuthorActions({
           </button>
           <label
             title="Assign yourself every practice so you can run it from Mindless."
-            className="inline-flex items-center gap-1.5 text-sm text-muted"
+            className="inline-flex items-center gap-1.5 text-body-sm text-muted"
           >
             <input
               type="checkbox"

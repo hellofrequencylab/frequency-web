@@ -20,7 +20,7 @@ export async function CrmTrust() {
         />
       ) : (
         <div className="space-y-3">
-          <p className="text-sm text-text">{report.verdict}</p>
+          <p className="text-body-sm text-text">{report.verdict}</p>
           <div className="grid grid-cols-3 gap-3">
             {report.calibration.map((c) => (
               <StatCard

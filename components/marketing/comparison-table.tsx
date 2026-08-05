@@ -86,7 +86,7 @@ export function ComparisonCellText({ cell }: { cell: ComparisonCell }) {
     <span className="block">
       {cell.lead && <span className="block font-normal text-muted">{cell.lead}</span>}
       <span className={cell.lead ? 'mt-1 block' : 'block'}>{body}</span>
-      {cell.sub && <span className="mt-1 block text-xs font-normal text-subtle">{cell.sub}</span>}
+      {cell.sub && <span className="mt-1 block text-meta font-normal text-subtle">{cell.sub}</span>}
     </span>
   )
 }
@@ -140,7 +140,7 @@ export function ComparisonTable({
           <caption className="sr-only">{caption}</caption>
           <thead>
             <tr className="border-b border-border bg-surface-elevated">
-              <th scope="col" className="w-64 px-5 py-4 align-bottom text-sm font-bold text-text">
+              <th scope="col" className="w-64 px-5 py-4 align-bottom text-body-sm font-bold text-text">
                 {rowHeader}
               </th>
               {columns.map((column) => (
@@ -149,14 +149,14 @@ export function ComparisonTable({
                   scope="col"
                   className={`px-5 py-4 align-bottom ${alignOf(column)} ${tintOf(column, 'head')}`}
                 >
-                  <span className="block font-display uppercase text-text text-xl">{column.label}</span>
+                  <span className="block font-display uppercase text-text text-lead">{column.label}</span>
                   {column.note && <span className="mt-1 block normal-case">{column.note}</span>}
                 </th>
               ))}
             </tr>
           </thead>
           {groups.map((group) => (
-            <tbody key={group.key} className="text-sm">
+            <tbody key={group.key} className="text-body-sm">
               <tr className="border-b border-border bg-surface-elevated/60">
                 <th
                   scope="colgroup"
@@ -171,7 +171,7 @@ export function ComparisonTable({
                   <th scope="row" className="px-5 py-3 align-top font-semibold text-text">
                     {row.label}
                     {row.detail && (
-                      <span className="mt-0.5 block text-xs font-normal leading-relaxed text-subtle">
+                      <span className="mt-0.5 block text-meta font-normal leading-relaxed text-subtle">
                         {row.detail}
                       </span>
                     )}
@@ -192,9 +192,9 @@ export function ComparisonTable({
             <tfoot>
               <tr className="border-t-2 border-border bg-surface-elevated">
                 <th scope="row" className="px-5 py-5 align-top">
-                  <span className="block font-display uppercase text-text text-xl">{footer.label}</span>
+                  <span className="block font-display uppercase text-text text-lead">{footer.label}</span>
                   {footer.detail && (
-                    <span className="mt-0.5 block text-xs font-normal text-subtle">{footer.detail}</span>
+                    <span className="mt-0.5 block text-meta font-normal text-subtle">{footer.detail}</span>
                   )}
                 </th>
                 {footer.cells.map((cell, i) => (
@@ -233,10 +233,10 @@ function MobileByColumn({
           className="group rounded-2xl border border-border bg-surface [&_summary]:list-none"
         >
           <summary className="flex cursor-pointer select-none items-center justify-between gap-3 px-5 py-4">
-            <span className="font-display uppercase text-text text-xl">{column.label}</span>
+            <span className="font-display uppercase text-text text-lead">{column.label}</span>
             <span className="flex items-center gap-2">
               {column.summary && (
-                <span className="text-sm font-bold text-primary-strong">{column.summary}</span>
+                <span className="text-body-sm font-bold text-primary-strong">{column.summary}</span>
               )}
               <ChevronDown
                 className="h-4 w-4 shrink-0 text-subtle transition-transform group-open:rotate-180"
@@ -253,8 +253,8 @@ function MobileByColumn({
                 <dl className="space-y-2">
                   {group.rows.map((row) => (
                     <div key={row.key} className="flex items-start justify-between gap-4">
-                      <dt className="text-sm text-muted">{row.label}</dt>
-                      <dd className="shrink-0 text-right text-sm">
+                      <dt className="text-body-sm text-muted">{row.label}</dt>
+                      <dd className="shrink-0 text-right text-body-sm">
                         <ComparisonCellText cell={row.cells[i]!} />
                       </dd>
                     </div>
@@ -293,9 +293,9 @@ function MobileByRow({
               <li key={row.key} className="flex items-start justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">
                   <p className="font-semibold text-text">{row.label}</p>
-                  {row.detail && <p className="mt-0.5 text-xs text-muted">{row.detail}</p>}
+                  {row.detail && <p className="mt-0.5 text-meta text-muted">{row.detail}</p>}
                 </div>
-                <div className="flex shrink-0 flex-col items-end gap-1 text-right text-sm">
+                <div className="flex shrink-0 flex-col items-end gap-1 text-right text-body-sm">
                   {row.cells.map((cell, i) => (
                     <ComparisonCellText key={columns[i]!.id} cell={cell} />
                   ))}
@@ -307,8 +307,8 @@ function MobileByRow({
       ))}
       {footer && (
         <div className="rounded-2xl border-2 border-primary bg-primary-bg/20 p-5 text-center">
-          <p className="font-display uppercase text-text text-xl">{footer.label}</p>
-          {footer.detail && <p className="mt-1 text-sm text-subtle">{footer.detail}</p>}
+          <p className="font-display uppercase text-text text-lead">{footer.label}</p>
+          {footer.detail && <p className="mt-1 text-body-sm text-subtle">{footer.detail}</p>}
           <dl className="mt-4 space-y-3">
             {footer.cells.map((cell, i) => (
               <div key={columns[i]!.id}>

@@ -82,7 +82,7 @@ export default async function JoinPage({ params }: Props) {
           <div className="rounded-2xl border border-border bg-surface lift-1 overflow-hidden">
             {/* Circle card */}
             <div className="p-8">
-              <div className="flex items-center gap-4 text-xs text-muted">
+              <div className="flex items-center gap-4 text-meta text-muted">
                 <span>{circle.member_count ?? 0} member{circle.member_count !== 1 ? 's' : ''}</span>
                 {spotsLeft !== null && spotsLeft > 0 && (
                   <span>{spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left</span>
@@ -94,12 +94,12 @@ export default async function JoinPage({ params }: Props) {
             <div className="px-8 pb-8">
               {alreadyMember ? (
                 <div className="text-center space-y-3">
-                  <p className="text-sm text-muted">
+                  <p className="text-body-sm text-muted">
                     You&apos;re already a member of this circle.
                   </p>
                   <Link
                     href="/circles"
-                    className="block w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-on-primary text-center hover:bg-primary-hover transition-colors"
+                    className="block w-full rounded-xl bg-primary px-4 py-3 text-body-sm font-semibold text-on-primary text-center hover:bg-primary-hover transition-colors"
                   >
                     Go to Circles →
                   </Link>
@@ -110,11 +110,11 @@ export default async function JoinPage({ params }: Props) {
                 <div className="space-y-3">
                   <Link
                     href={`/sign-in?next=/join/${token}`}
-                    className="block w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-on-primary text-center hover:bg-primary-hover transition-colors"
+                    className="block w-full rounded-xl bg-primary px-4 py-3 text-body-sm font-semibold text-on-primary text-center hover:bg-primary-hover transition-colors"
                   >
                     Sign in to join
                   </Link>
-                  <p className="text-xs text-center text-subtle">
+                  <p className="text-meta text-center text-subtle">
                     Don&apos;t have an account?{' '}
                     <Link href={`/sign-in?next=/join/${token}`} className="text-primary-strong hover:underline">
                       Get started
@@ -125,7 +125,7 @@ export default async function JoinPage({ params }: Props) {
             </div>
           </div>
 
-          <p className="text-xs text-center text-subtle mt-6">
+          <p className="text-meta text-center text-subtle mt-6">
             You were invited to join Frequency. By joining, you agree to our community guidelines.
           </p>
         </div>

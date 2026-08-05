@@ -33,7 +33,7 @@ export default function ConfirmPage() {
               />
             </svg>
           </div>
-          <p className="text-xs text-subtle">
+          <p className="text-meta text-subtle">
             Didn&apos;t get it? Check your spam folder or{' '}
             <a href="/sign-in" className="text-primary-strong hover:text-primary-strong underline">
               try again

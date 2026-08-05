@@ -10,8 +10,8 @@ import { saveHomeSeo } from './actions'
 // what they're shipping. Blank fields fall back to the coded copy.
 
 const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-broadcast'
-const LABEL = 'mb-1 block text-xs font-semibold text-subtle'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-broadcast'
+const LABEL = 'mb-1 block text-meta font-semibold text-subtle'
 
 export function HomeSeoForm({
   initial,
@@ -79,10 +79,10 @@ export function HomeSeoForm({
           />
         </div>
         <div className="flex items-center justify-end gap-3 pt-1">
-          {error && <span className="text-xs font-medium text-danger">{error}</span>}
-          {dirty && !error && <span className="text-xs font-medium text-warning">Unsaved changes</span>}
+          {error && <span className="text-meta font-medium text-danger">{error}</span>}
+          {dirty && !error && <span className="text-meta font-medium text-warning">Unsaved changes</span>}
           {saved && !dirty && (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-success">
+            <span className="inline-flex items-center gap-1 text-meta font-semibold text-success">
               <Check className="h-3.5 w-3.5" /> Saved
             </span>
           )}
@@ -90,7 +90,7 @@ export function HomeSeoForm({
             type="button"
             onClick={save}
             disabled={pending}
-            className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            className="rounded-lg bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
           >
             {pending ? 'Saving…' : 'Save'}
           </button>
@@ -99,10 +99,10 @@ export function HomeSeoForm({
 
       {/* How it reads in a search result */}
       <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-subtle">Search preview</p>
-        <p className="truncate text-base font-semibold text-broadcast">{effectiveTitle}</p>
-        <p className="mt-0.5 text-xs text-success">{SITE_URL.replace(/^https?:\/\//, '')}</p>
-        <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-muted">{effectiveDescription}</p>
+        <p className="mb-3 text-meta font-semibold uppercase tracking-wide text-subtle">Search preview</p>
+        <p className="truncate text-body font-semibold text-broadcast">{effectiveTitle}</p>
+        <p className="mt-0.5 text-meta text-success">{SITE_URL.replace(/^https?:\/\//, '')}</p>
+        <p className="mt-1 line-clamp-2 text-body-sm leading-relaxed text-muted">{effectiveDescription}</p>
       </div>
     </div>
   )

@@ -81,12 +81,12 @@ export default async function SettingsPage({
             <User className="w-4 h-4 text-muted" />
           </span>
           <span className="flex-1 min-w-0">
-            <span className="block text-sm font-medium text-text">Edit profile</span>
-            <span className="mt-0.5 block text-xs text-muted">
+            <span className="block text-body-sm font-medium text-text">Edit profile</span>
+            <span className="mt-0.5 block text-meta text-muted">
               Display name, handle, bio, photo, and your Spotlight page
             </span>
           </span>
-          <span className="text-subtle text-sm">→</span>
+          <span className="text-subtle text-body-sm">→</span>
         </Link>
       </section>
 
@@ -154,7 +154,7 @@ function SectionChip({
   return (
     <Link
       href={href}
-      className="press inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted lift-1 transition-colors hover:border-primary/40 hover:text-primary-strong"
+      className="press inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface px-3 py-1.5 text-meta font-medium text-muted lift-1 transition-colors hover:border-primary/40 hover:text-primary-strong"
     >
       <Icon className="h-3.5 w-3.5" aria-hidden />
       {label}
@@ -177,7 +177,7 @@ function SettingsSection({
   return (
     <section id={id} className="mt-12 scroll-mt-24 border-t border-border pt-8">
       <SectionHeader title={title} />
-      {intro && <p className="-mt-1 mb-4 max-w-xl text-sm text-muted">{intro}</p>}
+      {intro && <p className="-mt-1 mb-4 max-w-xl text-body-sm text-muted">{intro}</p>}
       {children}
     </section>
   )

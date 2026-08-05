@@ -90,7 +90,7 @@ async function FunnelsPanel() {
       {gaps.length > 0 && (
         <div className="mt-5 flex items-start gap-3 rounded-2xl border border-warning/30 bg-warning-bg px-4 py-3">
           <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
-          <p className="text-sm leading-relaxed text-warning">
+          <p className="text-body-sm leading-relaxed text-warning">
             <strong>
               {gaps.length} step{gaps.length > 1 ? 's' : ''} cannot be measured yet.
             </strong>{' '}
@@ -150,12 +150,12 @@ function FunnelStepRow({ step }: { step: JourneyFunnelStep }) {
           style={{ width: `${Math.min(100, Math.max(0, width))}%` }}
           aria-hidden
         />
-        <p className="relative truncate px-3 py-2 text-sm text-text">{step.label}</p>
+        <p className="relative truncate px-3 py-2 text-body-sm text-text">{step.label}</p>
       </div>
-      <p className="w-16 shrink-0 text-right text-sm font-bold tabular-nums text-text">
+      <p className="w-16 shrink-0 text-right text-body-sm font-bold tabular-nums text-text">
         {measured ? step.subjects.toLocaleString() : '–'}
       </p>
-      <p className="w-24 shrink-0 text-right text-xs tabular-nums text-muted">
+      <p className="w-24 shrink-0 text-right text-meta tabular-nums text-muted">
         {measured
           ? step.conversionPct !== null
             ? `${step.conversionPct}% of prior`
@@ -191,7 +191,7 @@ async function VitalsPanel() {
       header: 'Route',
       render: (r) => (
         <div className="min-w-0">
-          <p className="truncate font-mono text-xs text-text">{r.path}</p>
+          <p className="truncate font-mono text-meta text-text">{r.path}</p>
           <p className="text-2xs text-subtle">{BUDGET_CLASS_LABEL[r.budgetClass]}</p>
         </div>
       ),

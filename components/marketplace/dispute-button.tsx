@@ -37,7 +37,7 @@ export function DisputeButton({
   if (state) {
     const live = state.status === 'open' || state.status === 'reviewing'
     return (
-      <div className="flex flex-wrap items-center gap-2 text-xs text-subtle">
+      <div className="flex flex-wrap items-center gap-2 text-meta text-subtle">
         <ShieldAlert className="h-3.5 w-3.5" aria-hidden />
         <span>{STATUS_COPY[state.status]}</span>
         {live && (
@@ -67,7 +67,7 @@ export function DisputeButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 text-xs text-subtle transition-colors hover:text-text"
+        className="inline-flex items-center gap-1.5 text-meta text-subtle transition-colors hover:text-text"
       >
         <ShieldAlert className="h-3.5 w-3.5" aria-hidden />
         Open a dispute
@@ -77,7 +77,7 @@ export function DisputeButton({
 
   return (
     <div className="w-full space-y-2 rounded-card border border-border bg-surface-elevated/40 p-3">
-      <p className="text-xs font-semibold text-text">What went wrong?</p>
+      <p className="text-meta font-semibold text-text">What went wrong?</p>
       <div className="flex flex-wrap gap-1.5">
         {REASONS.map((r) => (
           <button
@@ -100,11 +100,11 @@ export function DisputeButton({
         placeholder="Add any detail that helps us sort it out (optional)"
         rows={2}
         maxLength={2000}
-        className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-primary"
+        className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary"
       />
-      {error && <p className="text-xs text-warning">{error}</p>}
+      {error && <p className="text-meta text-warning">{error}</p>}
       <div className="flex items-center justify-end gap-2">
-        <button type="button" onClick={() => setOpen(false)} className="text-xs text-subtle hover:text-text">
+        <button type="button" onClick={() => setOpen(false)} className="text-meta text-subtle hover:text-text">
           Cancel
         </button>
         <button
@@ -118,7 +118,7 @@ export function DisputeButton({
               else setState({ id: 'pending', status: 'open' })
             })
           }
-          className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {pending ? 'Filing' : 'Submit dispute'}
         </button>

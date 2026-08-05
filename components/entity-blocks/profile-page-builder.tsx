@@ -636,8 +636,8 @@ export function EntityPageBuilder({
   const header = (
     <header className="flex items-center justify-between gap-2">
       <div>
-        <h3 className="text-sm font-bold text-text">Your page</h3>
-        <p className="text-xs text-muted">
+        <h3 className="text-body-sm font-bold text-text">Your page</h3>
+        <p className="text-meta text-muted">
           {maxColumns > 1
             ? 'Arrange the blocks on your page into rows and columns. Changes save on their own.'
             : 'Turn blocks on or off and set their order. Changes save on their own.'}
@@ -665,7 +665,7 @@ export function EntityPageBuilder({
       {header}
 
       {store.error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger" role="alert">
+        <p className="rounded-lg bg-danger-bg px-3 py-2 text-meta font-medium text-danger" role="alert">
           {store.error}
         </p>
       )}
@@ -692,7 +692,7 @@ export function EntityPageBuilder({
           <button
             type="button"
             onClick={onBlank}
-            className="text-xs font-medium text-primary-strong hover:underline"
+            className="text-meta font-medium text-primary-strong hover:underline"
           >
             Start from blank
           </button>
@@ -704,7 +704,7 @@ export function EntityPageBuilder({
       {maxColumns === 1 && (
         <div className="space-y-3">
           {memberBlocks.length === 0 ? (
-            <p className="rounded-card border border-dashed border-border px-3 py-6 text-center text-xs text-muted">
+            <p className="rounded-card border border-dashed border-border px-3 py-6 text-center text-meta text-muted">
               No blocks on your page yet. Add one below.
             </p>
           ) : (
@@ -780,7 +780,7 @@ export function EntityPageBuilder({
       <button
         type="button"
         onClick={() => onAddRow()}
-        className="mb-2 flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-border py-2.5 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
+        className="mb-2 flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-border py-2.5 text-body-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
       >
         <Plus className="h-4 w-4" aria-hidden /> Add row
       </button>
@@ -1212,7 +1212,7 @@ function BlockPill({
         onClick={onEdit}
         aria-label={`Edit ${label(id)}`}
         aria-expanded={editing}
-        className="min-w-0 flex-1 truncate text-left text-xs font-semibold text-text transition-colors hover:text-primary-strong"
+        className="min-w-0 flex-1 truncate text-left text-meta font-semibold text-text transition-colors hover:text-primary-strong"
       >
         {label(id)}
         {hidden && <span className="ml-1 text-2xs font-normal text-muted">(hidden)</span>}
@@ -1249,7 +1249,7 @@ function BlockPill({
           <Menu>
             {confirmDelete ? (
               <div className="px-2.5 py-2">
-                <p className="mb-1.5 text-xs text-text">Remove {label(id)} for good?</p>
+                <p className="mb-1.5 text-meta text-text">Remove {label(id)} for good?</p>
                 <div className="flex gap-1.5">
                   <button type="button" onClick={onConfirmDelete} className="rounded-md bg-danger px-2 py-1 text-2xs font-semibold text-on-danger">
                     Remove
@@ -1323,7 +1323,7 @@ function BlocksTray({
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-2 px-1 py-0.5 text-left"
       >
-        <span className="flex items-center gap-1.5 text-xs font-semibold text-text">
+        <span className="flex items-center gap-1.5 text-meta font-semibold text-text">
           {open ? <ChevronDown className="h-3.5 w-3.5" aria-hidden /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden />}
           Blocks (not shown)
           <span className="rounded-pill bg-surface px-1.5 py-0.5 text-3xs font-semibold text-muted">{bench.length}</span>

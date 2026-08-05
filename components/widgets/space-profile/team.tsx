@@ -32,7 +32,7 @@ export function TeamBlock({
         {/* font-section / font-eyebrow: the page theme's per-role hooks (ADR-578); a computed no-op
             for the default `bold` look. */}
         <p className="font-eyebrow text-2xs font-bold uppercase tracking-[0.2em] text-primary-strong">{header?.eyebrow ?? 'The people'}</p>
-        <h2 className="font-section mt-1.5 text-xl font-bold tracking-tight text-text sm:text-2xl">{header?.heading ?? 'Team'}</h2>
+        <h2 className="font-section mt-1.5 text-lead font-bold tracking-tight text-text sm:text-2xl">{header?.heading ?? 'Team'}</h2>
         {/* auto-fill/minmax, NOT a profile-width container query: the old `@sm/profile:grid-cols-2` keyed
             off the WHOLE profile width, so in a narrow Main/Side column it still split into 2-3 columns and
             crushed each card to a sliver (the name vanished). auto-fill gives every card a real minimum
@@ -54,7 +54,7 @@ export function TeamBlock({
                 />
               ) : (
                 <span
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-sm font-bold text-primary-strong"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-body-sm font-bold text-primary-strong"
                   aria-hidden
                 >
                   {getInitials(member.name)}
@@ -65,10 +65,10 @@ export function TeamBlock({
                   never a sliver, so the name shows in full and only WRAPS at word boundaries when long
                   (break-words) — it never truncates to nothing and never stacks character-by-character. */}
               <span className="min-w-0 flex-1">
-                <span className="block break-words text-sm font-semibold leading-tight text-text">
+                <span className="block break-words text-body-sm font-semibold leading-tight text-text">
                   {member.name}
                 </span>
-                {member.handle && <span className="block truncate text-xs text-muted">@{member.handle}</span>}
+                {member.handle && <span className="block truncate text-meta text-muted">@{member.handle}</span>}
               </span>
             </li>
           ))}

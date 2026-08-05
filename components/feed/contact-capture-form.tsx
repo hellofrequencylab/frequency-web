@@ -11,7 +11,7 @@ import { createProfile } from '@/app/(main)/connections/actions'
 // /connections/new. Saves a private, owner-scoped contact (member-tier, §5.2).
 
 const input =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-broadcast'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-broadcast'
 
 export function ContactCaptureForm() {
   const [name, setName] = useState('')
@@ -49,8 +49,8 @@ export function ContactCaptureForm() {
         <span className="flex h-10 w-10 items-center justify-center rounded-pill bg-broadcast-bg text-broadcast-strong">
           <Check className="h-5 w-5" strokeWidth={3} aria-hidden />
         </span>
-        <p className="text-sm font-semibold text-text">{savedName} is in your contacts</p>
-        <div className="mt-1 flex items-center gap-3 text-xs font-semibold">
+        <p className="text-body-sm font-semibold text-text">{savedName} is in your contacts</p>
+        <div className="mt-1 flex items-center gap-3 text-meta font-semibold">
           <button type="button" onClick={() => setSavedName(null)} className="text-broadcast-strong hover:underline">
             Capture another
           </button>
@@ -73,11 +73,11 @@ export function ContactCaptureForm() {
         value={note}
         onChange={(e) => setNote(e.target.value)}
       />
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
       <div className="flex items-center justify-between gap-2">
         <Link
           href="/connections/new"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
+          className="inline-flex items-center gap-1.5 text-meta font-medium text-subtle transition-colors hover:text-text"
         >
           <ScanLine className="h-3.5 w-3.5" aria-hidden /> Scan a card instead
         </Link>
@@ -85,7 +85,7 @@ export function ContactCaptureForm() {
           type="button"
           onClick={save}
           disabled={!name.trim() || pending}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           <UserPlus className="h-3.5 w-3.5" aria-hidden /> {pending ? 'Saving…' : 'Capture'}
         </button>

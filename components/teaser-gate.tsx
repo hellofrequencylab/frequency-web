@@ -122,7 +122,7 @@ export function TeaserGate({
           this gate is mounted on. */}
       {!gated && ready && (
         <div className="pointer-events-none fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom)+0.75rem)] md:bottom-6 left-1/2 z-40 -translate-x-1/2">
-          <div className="flex items-center gap-2 rounded-pill border border-primary/30 bg-surface/95 px-4 py-2 text-sm font-semibold text-primary-strong lift-3 backdrop-blur">
+          <div className="flex items-center gap-2 rounded-pill border border-primary/30 bg-surface/95 px-4 py-2 text-body-sm font-semibold text-primary-strong lift-3 backdrop-blur">
             <Sparkles className="h-4 w-4" />
             <span>Preview · {remaining}s</span>
           </div>
@@ -138,17 +138,17 @@ export function TeaserGate({
               <Lock className="h-6 w-6 text-primary-strong" />
             </div>
             <h2 className="text-lg font-bold text-text">{title}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-muted">{body}</p>
+            <p className="mt-2 text-body-sm leading-relaxed text-muted">{body}</p>
             <Link
               href="/upgrade"
-              className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+              className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-3 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
             >
               Upgrade membership
             </Link>
             <button
               type="button"
               onClick={() => setDismissed(true)}
-              className="mt-2 w-full rounded-xl px-5 py-2.5 text-sm font-medium text-muted transition-colors hover:text-text"
+              className="mt-2 w-full rounded-xl px-5 py-2.5 text-body-sm font-medium text-muted transition-colors hover:text-text"
             >
               Keep looking
             </button>
@@ -161,7 +161,7 @@ export function TeaserGate({
         <button
           type="button"
           onClick={() => setDismissed(false)}
-          className="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom)+0.75rem)] md:bottom-6 left-1/2 z-40 -translate-x-1/2 inline-flex items-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-sm font-bold text-on-primary lift-3 transition-colors hover:bg-primary-hover"
+          className="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom)+0.75rem)] md:bottom-6 left-1/2 z-40 -translate-x-1/2 inline-flex items-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-body-sm font-bold text-on-primary lift-3 transition-colors hover:bg-primary-hover"
         >
           <Lock className="h-4 w-4" />
           Upgrade to join in

@@ -125,12 +125,12 @@ export function ViewAsControl({
                 key={r}
                 role="menuitem"
                 onClick={() => choose(r)}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-text hover:bg-surface transition-colors"
+                className="flex w-full items-center gap-2 px-3 py-2 text-body-sm text-text hover:bg-surface transition-colors"
               >
                 <span className="rank-badge text-3xs leading-tight" style={roleBadgeStyle(r)}>
                   {ROLE_LABEL[r]}
                 </span>
-                {isSelf && <span className="text-xs text-subtle">(you)</span>}
+                {isSelf && <span className="text-meta text-subtle">(you)</span>}
                 {active && <Check className="w-3.5 h-3.5 ml-auto text-primary-strong" />}
               </button>
             )
@@ -139,12 +139,12 @@ export function ViewAsControl({
           <button
             role="menuitem"
             onClick={() => choose('visitor')}
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-text hover:bg-surface transition-colors"
+            className="flex w-full items-center gap-2 px-3 py-2 text-body-sm text-text hover:bg-surface transition-colors"
           >
             <span className="rounded-pill bg-surface px-2 py-0.5 text-3xs font-semibold leading-tight text-muted">
               Visitor
             </span>
-            <span className="text-xs text-subtle">logged out</span>
+            <span className="text-meta text-subtle">logged out</span>
             {asVisitor && <Check className="w-3.5 h-3.5 ml-auto text-primary-strong" />}
           </button>
 
@@ -153,7 +153,7 @@ export function ViewAsControl({
               <button
                 role="menuitem"
                 onClick={() => choose(realRole)}
-                className="flex w-full items-center gap-2.5 px-3 py-2 text-sm font-medium text-signal-strong hover:bg-surface transition-colors"
+                className="flex w-full items-center gap-2.5 px-3 py-2 text-body-sm font-medium text-signal-strong hover:bg-surface transition-colors"
               >
                 <X className="w-4 h-4" />
                 Exit view-as (back to {ROLE_LABEL[realRole]})

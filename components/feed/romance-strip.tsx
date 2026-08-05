@@ -24,17 +24,17 @@ export async function RomanceStrip({ viewerProfileId }: { viewerProfileId: strin
   return (
     <section className="rounded-2xl border border-border bg-surface/60 p-4">
       <div className="mb-1 flex items-center justify-between">
-        <h3 className="flex items-center gap-1.5 text-sm font-bold text-text">
+        <h3 className="flex items-center gap-1.5 text-body-sm font-bold text-text">
           <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
             <Heart className="h-3.5 w-3.5" />
           </span>
           Open to connection
         </h3>
-        <Link href="/settings/connections" className="text-xs font-medium text-primary-strong hover:underline">
+        <Link href="/settings/connections" className="text-meta font-medium text-primary-strong hover:underline">
           Manage
         </Link>
       </div>
-      <p className="mb-3 text-xs text-muted">
+      <p className="mb-3 text-meta text-muted">
         People who are also open to more than friendship and share your circles. Only ever shown to others who opted in too.
       </p>
 
@@ -43,7 +43,7 @@ export async function RomanceStrip({ viewerProfileId }: { viewerProfileId: strin
       {!lane.viewerVerified && (
         <div className="mb-3 flex items-start gap-2.5 rounded-card border border-border bg-surface-elevated px-3.5 py-2.5">
           <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
-          <p className="min-w-0 text-xs text-muted">
+          <p className="min-w-0 text-meta text-muted">
             You can browse here, but you&rsquo;ll only appear to others once you&rsquo;re verified.{' '}
             <Link href="/events" className="font-semibold text-primary-strong hover:underline">
               Show up to an event

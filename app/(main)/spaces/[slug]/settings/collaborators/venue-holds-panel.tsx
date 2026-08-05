@@ -108,13 +108,13 @@ export function VenueHoldsPanel({
       {/* Incoming requests on THIS space's venue. */}
       {incoming.length > 0 && (
         <div className="rounded-2xl border border-primary bg-surface p-5 lift-1">
-          <h3 className="text-sm font-bold text-text">Requests for your venue</h3>
+          <h3 className="text-body-sm font-bold text-text">Requests for your venue</h3>
           <ul className="mt-3 space-y-3">
             {incoming.map((h) => (
               <li key={h.id} className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-text">{h.title}</p>
-                  <p className="text-xs text-muted">
+                  <p className="truncate text-body-sm font-semibold text-text">{h.title}</p>
+                  <p className="text-meta text-muted">
                     {h.partner.name} · {when(h.startsAt)} to {when(h.endsAt)}
                   </p>
                 </div>
@@ -123,7 +123,7 @@ export function VenueHoldsPanel({
                     type="button"
                     disabled={pending}
                     onClick={() => run(() => acceptVenueHold(h.id))}
-                    className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-on-primary hover:bg-primary-hover disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-meta font-bold text-on-primary hover:bg-primary-hover disabled:opacity-50"
                   >
                     <Check className="h-3.5 w-3.5" aria-hidden /> Approve
                   </button>
@@ -131,7 +131,7 @@ export function VenueHoldsPanel({
                     type="button"
                     disabled={pending}
                     onClick={() => run(() => declineVenueHold(h.id))}
-                    className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted hover:bg-surface-elevated disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted hover:bg-surface-elevated disabled:opacity-50"
                   >
                     <X className="h-3.5 w-3.5" aria-hidden /> Decline
                   </button>
@@ -145,18 +145,18 @@ export function VenueHoldsPanel({
       {/* Request to use a collaborator's venue. */}
       {collaborators.length > 0 && (
         <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
-          <h3 className="text-sm font-bold text-text">Request a venue</h3>
-          <p className="mt-1 text-xs text-muted">
+          <h3 className="text-body-sm font-bold text-text">Request a venue</h3>
+          <p className="mt-1 text-meta text-muted">
             Ask a space you collaborate with to hold their venue for you. They approve the time. This is a
             coordination hold, not a customer booking.
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <label className="text-xs font-semibold text-text">
+            <label className="text-meta font-semibold text-text">
               Venue
               <select
                 value={venueId}
                 onChange={(e) => setVenueId(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text"
+                className="mt-1 w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text"
               >
                 {collaborators.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -165,38 +165,38 @@ export function VenueHoldsPanel({
                 ))}
               </select>
             </label>
-            <label className="text-xs font-semibold text-text">
+            <label className="text-meta font-semibold text-text">
               What for
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Sound bath, popup, class..."
-                className="mt-1 w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text"
+                className="mt-1 w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text"
               />
             </label>
-            <label className="text-xs font-semibold text-text">
+            <label className="text-meta font-semibold text-text">
               Start
               <input
                 type="datetime-local"
                 value={startsAt}
                 min={nowLocal}
                 onChange={(e) => setStartsAt(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text"
+                className="mt-1 w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text"
               />
             </label>
-            <label className="text-xs font-semibold text-text">
+            <label className="text-meta font-semibold text-text">
               End
               <input
                 type="datetime-local"
                 value={endsAt}
                 min={startsAt || nowLocal}
                 onChange={(e) => setEndsAt(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text"
+                className="mt-1 w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text"
               />
             </label>
           </div>
           {windowInvalid && (
-            <p className="mt-2 text-xs font-medium text-danger">
+            <p className="mt-2 text-meta font-medium text-danger">
               {endBeforeStart ? 'End time needs to be after the start.' : 'Pick a start time in the future.'}
             </p>
           )}
@@ -213,7 +213,7 @@ export function VenueHoldsPanel({
                 },
               )
             }
-            className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-50"
+            className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-50"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <CalendarPlus className="h-4 w-4" aria-hidden />}
             Send request
@@ -224,13 +224,13 @@ export function VenueHoldsPanel({
       {/* The current holds (pending + accepted), either side, with cancel. */}
       {active.length > 0 && (
         <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
-          <h3 className="text-sm font-bold text-text">Venue holds</h3>
+          <h3 className="text-body-sm font-bold text-text">Venue holds</h3>
           <ul className="mt-3 space-y-3">
             {active.map((h) => (
               <li key={h.id} className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-text">{h.title}</p>
-                  <p className="text-xs text-muted">
+                  <p className="truncate text-body-sm font-semibold text-text">{h.title}</p>
+                  <p className="text-meta text-muted">
                     {h.role === 'venue' ? `${h.partner.name} at your venue` : `Your hold at ${h.partner.name}`} ·{' '}
                     {when(h.startsAt)} to {when(h.endsAt)}
                   </p>
@@ -246,7 +246,7 @@ export function VenueHoldsPanel({
                       if (!window.confirm('Cancel this venue hold? The other space is notified it is off.')) return
                       run(() => cancelVenueHold(h.id))
                     }}
-                    className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted hover:bg-surface-elevated disabled:opacity-50"
+                    className="rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted hover:bg-surface-elevated disabled:opacity-50"
                   >
                     Cancel
                   </button>
@@ -260,13 +260,13 @@ export function VenueHoldsPanel({
       {/* Declined holds, so a turned-down request stays visible (re-send from the form above). */}
       {declined.length > 0 && (
         <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
-          <h3 className="text-sm font-bold text-text">Declined</h3>
+          <h3 className="text-body-sm font-bold text-text">Declined</h3>
           <ul className="mt-3 space-y-3">
             {declined.map((h) => (
               <li key={h.id} className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-text">{h.title}</p>
-                  <p className="text-xs text-muted">
+                  <p className="truncate text-body-sm font-semibold text-text">{h.title}</p>
+                  <p className="text-meta text-muted">
                     {h.role === 'venue' ? `${h.partner.name} at your venue` : `Your hold at ${h.partner.name}`} ·{' '}
                     {when(h.startsAt)} to {when(h.endsAt)}
                   </p>

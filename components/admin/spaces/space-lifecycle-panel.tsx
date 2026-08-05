@@ -147,7 +147,7 @@ export function SpaceLifecyclePanel({
   return (
     <div className="space-y-4">
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
+        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
@@ -156,8 +156,8 @@ export function SpaceLifecyclePanel({
       <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h3 className="text-sm font-semibold text-text">Lifecycle</h3>
-            <p className="mt-0.5 text-xs text-muted">
+            <h3 className="text-body-sm font-semibold text-text">Lifecycle</h3>
+            <p className="mt-0.5 text-meta text-muted">
               Where this space sits in the network. Suspend or archive takes it out of view; reactivate brings it back.
             </p>
           </div>
@@ -185,12 +185,12 @@ export function SpaceLifecyclePanel({
       <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h3 className="text-sm font-semibold text-text">Ownership</h3>
-            <p className="mt-0.5 text-xs text-muted">
+            <h3 className="text-body-sm font-semibold text-text">Ownership</h3>
+            <p className="mt-0.5 text-meta text-muted">
               The person who owns this space. Transfer hands the owner role to another member.
             </p>
           </div>
-          <span className="text-sm font-medium text-text">{ownerName ?? 'No owner on file'}</span>
+          <span className="text-body-sm font-medium text-text">{ownerName ?? 'No owner on file'}</span>
         </div>
         <div className="mt-4">
           <Button
@@ -206,7 +206,7 @@ export function SpaceLifecyclePanel({
             <ArrowLeftRight className="h-3.5 w-3.5" aria-hidden /> Transfer ownership
           </Button>
           {candidates.length === 0 && (
-            <p className="mt-2 text-xs text-subtle">
+            <p className="mt-2 text-meta text-subtle">
               Add a member to this space first. Ownership can only move to one of its members.
             </p>
           )}
@@ -227,10 +227,10 @@ export function SpaceLifecyclePanel({
                 <AlertTriangle className="h-5 w-5" aria-hidden />
               </span>
               <div className="min-w-0">
-                <h2 className="text-base font-bold text-text">
+                <h2 className="text-body font-bold text-text">
                   {lifecycleConfirm.label} {spaceName}?
                 </h2>
-                <p className="mt-1 text-sm text-muted">{lifecycleConfirm.blurb}</p>
+                <p className="mt-1 text-body-sm text-muted">{lifecycleConfirm.blurb}</p>
               </div>
             </div>
             <div className="mt-5 flex justify-end gap-2">
@@ -276,8 +276,8 @@ export function SpaceLifecyclePanel({
               <ArrowLeftRight className="h-5 w-5" aria-hidden />
             </span>
             <div className="min-w-0">
-              <h2 className="text-base font-bold text-text">Transfer {spaceName}</h2>
-              <p className="mt-1 text-sm text-muted">
+              <h2 className="text-body font-bold text-text">Transfer {spaceName}</h2>
+              <p className="mt-1 text-body-sm text-muted">
                 Pick the new owner. They get the owner role and full admin standing on this space. The current owner
                 keeps their membership but no longer owns it.
               </p>
@@ -285,7 +285,7 @@ export function SpaceLifecyclePanel({
           </div>
 
           <div className="mt-4">
-            <label htmlFor="new-owner" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+            <label htmlFor="new-owner" className="mb-1 block text-meta font-semibold uppercase tracking-wide text-muted">
               New owner
             </label>
             <select
@@ -293,7 +293,7 @@ export function SpaceLifecyclePanel({
               value={selectedOwner}
               onChange={(e) => setSelectedOwner(e.target.value)}
               disabled={pending}
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary"
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary"
             >
               <option value="">Choose a member…</option>
               {candidates.map((c) => (
@@ -306,7 +306,7 @@ export function SpaceLifecyclePanel({
           </div>
 
           {selected && (
-            <p className="mt-3 rounded-lg bg-warning-bg px-3 py-2 text-xs font-medium text-warning">
+            <p className="mt-3 rounded-lg bg-warning-bg px-3 py-2 text-meta font-medium text-warning">
               Ownership of {spaceName} will move to {selected.name}. This is recorded in the audit log.
             </p>
           )}

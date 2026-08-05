@@ -59,8 +59,8 @@ const PRICING_MODE_LABEL: Record<PricingMode, string> = {
 
 const centsToDollars = (c: number | null | undefined) => (c != null ? (c / 100).toFixed(2) : '')
 
-const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
-const lbl   = 'block text-xs font-medium text-muted mb-1'
+const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
+const lbl   = 'block text-meta font-medium text-muted mb-1'
 
 // ISO → the `YYYY-MM-DDTHH:mm` a <input type="datetime-local"> expects, in local time.
 function toLocalInput(iso: string | null): string {
@@ -132,7 +132,7 @@ export function EventEditClient({
     <div className="space-y-6">
       {/* Edit form */}
       <form onSubmit={handleSubmit} className="rounded-2xl border border-border bg-surface p-5 space-y-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Event details</p>
+        <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Event details</p>
 
         <div>
           <label className={lbl}>Title *</label>
@@ -198,7 +198,7 @@ export function EventEditClient({
             Ticket price <span className="font-normal text-subtle">(USD, leave blank for a free event)</span>
           </label>
           <div className="flex items-center gap-1.5">
-            <span className="text-sm text-subtle">$</span>
+            <span className="text-body-sm text-subtle">$</span>
             <input
               name="price"
               type="number"
@@ -210,25 +210,25 @@ export function EventEditClient({
               className={input}
             />
           </div>
-          <p className="mt-1 text-xs text-subtle">
+          <p className="mt-1 text-meta text-subtle">
             Paid events require the host to have payouts set up. Frequency takes a small platform fee.
           </p>
         </div>
 
         {error && (
-          <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger">{error}</p>
+          <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>
         )}
 
         <div className="flex items-center gap-3 pt-1">
           {saved && (
-            <span className="flex items-center gap-1 text-xs font-medium text-primary-strong">
+            <span className="flex items-center gap-1 text-meta font-medium text-primary-strong">
               <Check className="h-3.5 w-3.5" /> Saved
             </span>
           )}
           <button
             type="submit"
             disabled={isPending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
           >
             {isPending ? 'Saving…' : 'Save changes'}
           </button>
@@ -237,13 +237,13 @@ export function EventEditClient({
 
       {/* Cancel / reinstate zone */}
       <div className="rounded-2xl border border-border bg-surface p-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-subtle mb-3">Status</p>
+        <p className="text-meta font-semibold uppercase tracking-wide text-subtle mb-3">Status</p>
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-text">
+            <p className="text-body-sm font-medium text-text">
               {event.is_cancelled ? 'This event is cancelled.' : 'This event is active.'}
             </p>
-            <p className="text-xs text-subtle mt-0.5">
+            <p className="text-meta text-subtle mt-0.5">
               {event.is_cancelled
                 ? 'Reinstate to make it visible and bookable again.'
                 : 'Cancelling notifies members and marks the event as cancelled.'}
@@ -290,8 +290,8 @@ export function EventEditClient({
 // exist (backward compat); adding a tier takes over pricing for the event.
 
 const tInput =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
-const tLbl = 'block text-xs font-medium text-muted mb-1'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
+const tLbl = 'block text-meta font-medium text-muted mb-1'
 
 function modeSummary(t: TierEditRow): string {
   switch (t.pricing_mode) {
@@ -342,8 +342,8 @@ function TierManager({
     <div className="rounded-2xl border border-border bg-surface p-5 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Ticket tiers</p>
-          <p className="mt-1 text-xs text-subtle">
+          <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Ticket tiers</p>
+          <p className="mt-1 text-meta text-subtle">
             Named tiers with fixed, free, pay-what-you-can, sliding-scale or donation pricing.
             {tiers.length === 0 && flatPriceCents
               ? ' Currently using the single flat price above.'
@@ -357,14 +357,14 @@ function TierManager({
               setAdding(true)
               setEditingId(null)
             }}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted hover:bg-surface-elevated transition-colors"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted hover:bg-surface-elevated transition-colors"
           >
             <Plus className="h-3.5 w-3.5" /> Add tier
           </button>
         )}
       </div>
 
-      {error && <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger">{error}</p>}
+      {error && <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>}
 
       {/* Existing tiers */}
       {tiers.length > 0 && (
@@ -389,7 +389,7 @@ function TierManager({
                 }`}
               >
                 <div className="min-w-0">
-                  <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-text">
+                  <p className="flex flex-wrap items-center gap-2 text-body-sm font-semibold text-text">
                     {t.name}
                     {t.member_only && (
                       <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
@@ -411,7 +411,7 @@ function TierManager({
                       </span>
                     )}
                   </p>
-                  <p className="mt-0.5 text-xs text-muted">
+                  <p className="mt-0.5 text-meta text-muted">
                     {modeSummary(t)}
                     {' · '}
                     {t.quantity == null ? 'Unlimited' : `${t.sold}/${t.quantity} sold`}
@@ -425,7 +425,7 @@ function TierManager({
                       setAdding(false)
                     }}
                     disabled={isPending}
-                    className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-meta font-medium text-muted hover:bg-surface-elevated transition-colors disabled:opacity-50"
                   >
                     <Pencil className="h-3 w-3" /> Edit
                   </button>
@@ -433,7 +433,7 @@ function TierManager({
                     type="button"
                     onClick={() => run(() => setTicketTierActive(t.id, eventId, slug, !t.active))}
                     disabled={isPending}
-                    className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors disabled:opacity-50"
+                    className="rounded-lg border border-border px-2.5 py-1.5 text-meta font-medium text-muted hover:bg-surface-elevated transition-colors disabled:opacity-50"
                   >
                     {t.active ? 'Retire' : 'Reactivate'}
                   </button>
@@ -553,7 +553,7 @@ function TierForm({
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-text">
+      <label className="flex items-center gap-2 text-body-sm text-text">
         <input name="member_only" type="checkbox" defaultChecked={initial?.member_only ?? false} disabled={disabled} className="h-4 w-4 rounded border-border" />
         Members only (Crew+)
       </label>
@@ -583,7 +583,7 @@ function TierForm({
             </select>
           </div>
         ) : (
-          <p className="rounded-lg bg-surface px-3 py-2 text-xs text-muted">
+          <p className="rounded-lg bg-surface px-3 py-2 text-meta text-muted">
             Members-only tickets, linked to the space membership, come with the Collective plan.
           </p>
         ))}
@@ -592,7 +592,7 @@ function TierForm({
         <button
           type="submit"
           disabled={disabled}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
         >
           {initial ? 'Save tier' : 'Add tier'}
         </button>
@@ -600,7 +600,7 @@ function TierForm({
           type="button"
           onClick={onCancel}
           disabled={disabled}
-          className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted hover:bg-surface transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-muted hover:bg-surface transition-colors disabled:opacity-50"
         >
           <X className="h-3.5 w-3.5" /> Cancel
         </button>

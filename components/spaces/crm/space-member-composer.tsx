@@ -65,7 +65,7 @@ export interface SpaceMemberComposerProps {
 }
 
 const inputClass =
-  'w-full rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none'
+  'w-full rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none'
 
 /** Normalize an email for the chip key + de-dupe (trim + lowercase). */
 function normalize(email: string): string {
@@ -252,20 +252,20 @@ export function SpaceMemberComposer({
     <section className="space-y-4 rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="flex items-center gap-2">
         <Mail className="h-4 w-4 text-primary" aria-hidden />
-        <h3 className="text-sm font-bold text-text">Send a message</h3>
+        <h3 className="text-body-sm font-bold text-text">Send a message</h3>
       </div>
 
       {/* AUDIENCE — chips + search over THIS space's contacts. */}
       <div className="space-y-2">
-        <span className="text-xs font-medium text-subtle">To</span>
+        <span className="text-meta font-medium text-subtle">To</span>
         <div className="flex flex-wrap gap-1.5">
           {chips.length === 0 && (
-            <span className="text-xs text-muted">No recipients yet. Add someone below.</span>
+            <span className="text-meta text-muted">No recipients yet. Add someone below.</span>
           )}
           {chips.map((chip) => (
             <span
               key={chip.key}
-              className="inline-flex items-center gap-1 rounded-pill border border-border bg-canvas px-2.5 py-1 text-xs font-medium text-text"
+              className="inline-flex items-center gap-1 rounded-pill border border-border bg-canvas px-2.5 py-1 text-meta font-medium text-text"
             >
               {chip.label}
               <button
@@ -294,11 +294,11 @@ export function SpaceMemberComposer({
           {(searching || results.length > 0) && query.trim().length >= 2 && (
             <ul className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-border bg-surface lift-1">
               {searching && results.length === 0 ? (
-                <li className="flex items-center gap-2 px-3 py-2 text-xs text-muted">
+                <li className="flex items-center gap-2 px-3 py-2 text-meta text-muted">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Searching
                 </li>
               ) : results.length === 0 ? (
-                <li className="px-3 py-2 text-xs text-muted">No matches in this space.</li>
+                <li className="px-3 py-2 text-meta text-muted">No matches in this space.</li>
               ) : (
                 results.map((r) => {
                   const key = normalize(r.email)
@@ -313,7 +313,7 @@ export function SpaceMemberComposer({
                           setQuery('')
                           setResults([])
                         }}
-                        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-surface-elevated disabled:opacity-50"
+                        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-meta transition-colors hover:bg-surface-elevated disabled:opacity-50"
                       >
                         <span className="min-w-0">
                           <span className="block truncate font-semibold text-text">{r.displayName}</span>
@@ -354,7 +354,7 @@ export function SpaceMemberComposer({
         <Button size="sm" disabled={pending || !campaign || chips.length === 0} onClick={send}>
           <Send className="h-3.5 w-3.5" /> Send now
         </Button>
-        <span className="text-xs text-muted">
+        <span className="text-meta text-muted">
           {chips.length === 0
             ? 'Add at least one recipient.'
             : `${chips.length.toLocaleString()} recipient${chips.length === 1 ? '' : 's'} before this space's consent and suppression gate.`}

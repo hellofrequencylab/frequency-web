@@ -107,7 +107,7 @@ export default async function EventPage({
         title={event.title}
         badges={
           hasEnded ? (
-            <span className="inline-block text-xs px-2 py-1 rounded-md font-medium bg-surface-elevated text-muted">
+            <span className="inline-block text-meta px-2 py-1 rounded-md font-medium bg-surface-elevated text-muted">
               This event has ended
             </span>
           ) : undefined
@@ -116,7 +116,7 @@ export default async function EventPage({
           when: (
             <div className="flex items-center gap-2">
               <CalendarDays className="w-4 h-4 text-primary-strong shrink-0" />
-              <span className="text-base font-semibold text-text">{formatEventDateTime(event.starts_at)}</span>
+              <span className="text-body font-semibold text-text">{formatEventDateTime(event.starts_at)}</span>
             </div>
           ),
           // City only. The exact venue never reaches an anonymous reader (ADR-186), so the
@@ -162,7 +162,7 @@ export default async function EventPage({
             {/* Location-protected notice */}
             <div className="flex items-start gap-3 rounded-2xl border border-border bg-marketing-canvas p-4">
               <Lock className="w-4 h-4 text-muted shrink-0 mt-0.5" />
-              <p className="text-sm text-muted leading-relaxed">
+              <p className="text-body-sm text-muted leading-relaxed">
                 The exact venue is shared with members who RSVP. Sign up free to see the full
                 details and let the host know you&apos;re coming.
               </p>

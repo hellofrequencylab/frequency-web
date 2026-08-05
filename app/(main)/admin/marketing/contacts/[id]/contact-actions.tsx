@@ -86,7 +86,7 @@ export function EditContactFields({
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
-      <p className="text-sm font-semibold text-text">Edit contact fields</p>
+      <p className="text-body-sm font-semibold text-text">Edit contact fields</p>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <div>
           <Label htmlFor="contact-name">Name</Label>
@@ -164,7 +164,7 @@ export function AddNote({ contactId }: { contactId: string }) {
         onChange={(e) => setBody(e.target.value)}
         rows={2}
         placeholder="Add a staff note about this person…"
-        className="w-full resize-y rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30"
+        className="w-full resize-y rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30"
       />
       <div className="mt-2 flex items-center gap-2">
         <Button type="button" onClick={submit} disabled={pending || !body.trim()}>

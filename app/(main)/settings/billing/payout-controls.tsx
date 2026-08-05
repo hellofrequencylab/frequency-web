@@ -24,13 +24,13 @@ export function StartPayoutButton({ label = 'Set up payouts' }: { label?: string
       <button
         onClick={go}
         disabled={isPending}
-        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
       >
         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
         {label}
         {!isPending && <ArrowRight className="h-4 w-4" />}
       </button>
-      {error && <p className="text-sm text-danger">{error}</p>}
+      {error && <p className="text-body-sm text-danger">{error}</p>}
     </div>
   )
 }
@@ -54,12 +54,12 @@ export function ManagePayoutButton() {
       <button
         onClick={go}
         disabled={isPending}
-        className="inline-flex items-center gap-1.5 rounded-control border border-border px-4 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-control border border-border px-4 py-2.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
       >
         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings className="h-4 w-4" />}
         Manage payouts
       </button>
-      {error && <p className="text-sm text-danger">{error}</p>}
+      {error && <p className="text-body-sm text-danger">{error}</p>}
     </div>
   )
 }

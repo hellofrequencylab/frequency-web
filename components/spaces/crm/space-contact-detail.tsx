@@ -120,7 +120,7 @@ export async function SpaceContactDetail({
     <section className="space-y-6">
       <Link
         href={backHref}
-        className="inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text"
+        className="inline-flex items-center gap-1 text-body-sm font-medium text-muted transition-colors hover:text-text"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden /> Back to contacts
       </Link>
@@ -133,7 +133,7 @@ export async function SpaceContactDetail({
           </span>
           <div className="min-w-0">
             <h2 className="truncate text-lg font-bold text-text">{name}</h2>
-            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-subtle">
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-meta text-subtle">
               {identity.createdAt && <span>Added {whenFmt.format(new Date(identity.createdAt))}</span>}
               {/* At-a-glance recency from the existing timeline: when you last reached this person. */}
               {lastTouchAgo ? (
@@ -159,12 +159,12 @@ export async function SpaceContactDetail({
             registry type: a date reads as a date, a phone dials, a url / email is a link. */}
         {identity.customFields.length > 0 && (
           <div className="mt-4 border-t border-border pt-4">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-subtle">Custom fields</p>
+            <p className="mb-2 text-meta font-semibold uppercase tracking-wide text-subtle">Custom fields</p>
             <dl className="grid gap-x-6 gap-y-3 @md:grid-cols-2">
               {identity.customFields.map((f) => (
                 <div key={f.key} className="min-w-0">
-                  <dt className="text-xs font-medium text-muted">{f.label}</dt>
-                  <dd className="truncate text-sm text-text">
+                  <dt className="text-meta font-medium text-muted">{f.label}</dt>
+                  <dd className="truncate text-body-sm text-text">
                     <CustomFieldValue value={f.value} valueType={f.valueType} />
                   </dd>
                 </div>
@@ -205,10 +205,10 @@ export async function SpaceContactDetail({
             {deals.map((deal) => (
               <li key={deal.id} className="flex items-center justify-between gap-4 px-4 py-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-text">{deal.title}</p>
-                  <p className="mt-0.5 text-xs capitalize text-muted">{deal.status}</p>
+                  <p className="truncate text-body-sm font-semibold text-text">{deal.title}</p>
+                  <p className="mt-0.5 text-meta capitalize text-muted">{deal.status}</p>
                 </div>
-                <p className="shrink-0 text-sm font-bold tabular-nums text-text">
+                <p className="shrink-0 text-body-sm font-bold tabular-nums text-text">
                   {formatMoney(deal.value, deal.currency)}
                 </p>
               </li>
@@ -252,7 +252,7 @@ export async function SpaceContactDetail({
           notes={notes}
           readOnly={readOnly}
         />
-        <p className="mt-2 text-xs text-subtle">Notes you add also show on the timeline above.</p>
+        <p className="mt-2 text-meta text-subtle">Notes you add also show on the timeline above.</p>
       </div>
     </section>
   )
@@ -296,8 +296,8 @@ function Field({
     <div className="flex items-start gap-2.5">
       <Icon className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
       <div className="min-w-0">
-        <dt className="text-xs font-medium text-muted">{label}</dt>
-        <dd className="truncate text-sm text-text">{value || <span className="text-subtle">Not set</span>}</dd>
+        <dt className="text-meta font-medium text-muted">{label}</dt>
+        <dd className="truncate text-body-sm text-text">{value || <span className="text-subtle">Not set</span>}</dd>
       </div>
     </div>
   )
@@ -320,12 +320,12 @@ function InsightBand({ insight }: { insight: SpaceContactInsight }) {
   return (
     <section>
       <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
-        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-subtle">
+        <p className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wider text-subtle">
           <Sparkles className="h-3.5 w-3.5" aria-hidden /> Where this person is
         </p>
-        <p className="mt-1.5 text-sm text-text">{contextLine}</p>
+        <p className="mt-1.5 text-body-sm text-text">{contextLine}</p>
         {hasScores && (
-          <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-subtle">
+          <p className="mt-2 flex flex-wrap items-center gap-2 text-meta text-subtle">
             <span className={`rounded-pill px-2 py-0.5 text-2xs font-medium ${confidenceClass}`}>{confidenceLabel}</span>
             <span>
               <span className="font-medium">Top signals:</span> {readout.signals.join(' · ')}
@@ -388,14 +388,14 @@ function AboutPanel({ insight }: { insight: SpaceContactInsight }) {
       <SectionHeader title="About" />
       <div className="space-y-3 rounded-2xl border border-border bg-surface p-4 lift-1">
         {neighborhood && (
-          <p className="flex items-center gap-2 text-sm text-text">
+          <p className="flex items-center gap-2 text-body-sm text-text">
             <MapPin className="h-4 w-4 shrink-0 text-subtle" aria-hidden /> {neighborhood}
           </p>
         )}
         {interests.length > 0 && <FactRow icon={Sparkles} label="Interests" items={interests} />}
         {goals.length > 0 && <FactRow icon={Target} label="Goals" items={goals} />}
       </div>
-      <p className="mt-2 text-xs text-subtle">What this member has told us, kept by Vera. They can see and clear it.</p>
+      <p className="mt-2 text-meta text-subtle">What this member has told us, kept by Vera. They can see and clear it.</p>
     </section>
   )
 }
@@ -403,7 +403,7 @@ function AboutPanel({ insight }: { insight: SpaceContactInsight }) {
 function FactRow({ icon: Icon, label, items }: { icon: typeof Mail; label: string; items: string[] }) {
   return (
     <div>
-      <p className="flex items-center gap-1.5 text-xs font-medium text-muted">
+      <p className="flex items-center gap-1.5 text-meta font-medium text-muted">
         <Icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden /> {label}
       </p>
       <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -427,16 +427,16 @@ function TimelineRow({ entry }: { entry: TimelineEntry }) {
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-3">
-          <p className="truncate text-sm font-semibold text-text">{entry.title}</p>
+          <p className="truncate text-body-sm font-semibold text-text">{entry.title}</p>
           {/* Relative recency up front, with the exact date on hover, so the stream reads at a glance. */}
           {ago && (
-            <p className="shrink-0 text-xs font-medium text-subtle" title={when}>
+            <p className="shrink-0 text-meta font-medium text-subtle" title={when}>
               {ago}
             </p>
           )}
         </div>
-        {when && <p className="mt-0.5 text-xs text-subtle">{when}</p>}
-        {entry.detail && <p className="mt-1 whitespace-pre-wrap text-sm text-muted">{entry.detail}</p>}
+        {when && <p className="mt-0.5 text-meta text-subtle">{when}</p>}
+        {entry.detail && <p className="mt-1 whitespace-pre-wrap text-body-sm text-muted">{entry.detail}</p>}
       </div>
     </li>
   )

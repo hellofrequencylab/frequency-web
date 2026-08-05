@@ -78,7 +78,7 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
   const shown = lane === 'all' ? deals : deals.filter((d) => d.source === lane)
   const byStage = (id: string) => shown.filter((d) => d.stage_id === id)
   const stageValue = (id: string) => byStage(id).reduce((s, d) => s + (d.value || 0), 0)
-  const field = 'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-border-strong focus:outline-none'
+  const field = 'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text focus:border-border-strong focus:outline-none'
 
   return (
     <div className="space-y-4">
@@ -101,7 +101,7 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <p className="text-sm text-muted">
+          <p className="text-body-sm text-muted">
             {shown.length} card{shown.length === 1 ? '' : 's'} across {stages.length} stages
           </p>
           <Button type="button" size="sm" onClick={() => setAdding((v) => !v)}>
@@ -159,10 +159,10 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
               <div className="mb-2 flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2">
                   <span className={`h-2 w-2 shrink-0 rounded-pill ${stage.kind === 'won' ? 'bg-success' : stage.kind === 'lost' ? 'bg-danger' : 'bg-primary'}`} />
-                  <p className="truncate text-sm font-semibold text-text">{stage.name}</p>
-                  <span className="shrink-0 text-xs tabular-nums text-subtle">{items.length}</span>
+                  <p className="truncate text-body-sm font-semibold text-text">{stage.name}</p>
+                  <span className="shrink-0 text-meta tabular-nums text-subtle">{items.length}</span>
                 </div>
-                <span className="shrink-0 text-xs font-medium tabular-nums text-muted">{formatMoney(stageValue(stage.id))}</span>
+                <span className="shrink-0 text-meta font-medium tabular-nums text-muted">{formatMoney(stageValue(stage.id))}</span>
               </div>
               <div className="space-y-2">
                 {items.map((deal) => (
@@ -172,7 +172,7 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
                   })} />
                 ))}
                 {items.length === 0 && (
-                  <p className="rounded-card border border-dashed border-border px-3 py-6 text-center text-xs text-subtle">Nothing here yet</p>
+                  <p className="rounded-card border border-dashed border-border px-3 py-6 text-center text-meta text-subtle">Nothing here yet</p>
                 )}
               </div>
             </div>
@@ -229,7 +229,7 @@ function DealCard({
     <div className="rounded-card border border-border bg-surface p-3 lift-1">
       <div className="flex items-start justify-between gap-1">
         <Link href={`/admin/crm/pipeline/${deal.id}`} className="block min-w-0 flex-1">
-          <p className="line-clamp-2 text-sm font-semibold text-text hover:underline">{deal.title}</p>
+          <p className="line-clamp-2 text-body-sm font-semibold text-text hover:underline">{deal.title}</p>
         </Link>
         <Link
           href={`/admin/crm/pipeline/${deal.id}/edit`}
@@ -244,13 +244,13 @@ function DealCard({
           {lane.label}
         </span>
       )}
-      {who && <p className="mt-0.5 truncate text-xs text-muted">{who}</p>}
+      {who && <p className="mt-0.5 truncate text-meta text-muted">{who}</p>}
       <div className="mt-2 flex items-center justify-between gap-2">
-        <span className="text-sm font-bold tabular-nums text-text">{formatMoney(deal.value, deal.currency)}</span>
+        <span className="text-body-sm font-bold tabular-nums text-text">{formatMoney(deal.value, deal.currency)}</span>
         {deal.owner && <Avatar person={deal.owner} />}
       </div>
       {deal.expected_close_date && (
-        <p className="mt-1 flex items-center gap-1 text-xs text-subtle">
+        <p className="mt-1 flex items-center gap-1 text-meta text-subtle">
           <CalendarClock className="h-3 w-3" />
           {new Date(deal.expected_close_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
         </p>

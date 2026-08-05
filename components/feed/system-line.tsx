@@ -30,7 +30,7 @@ export async function SystemLine({ body }: { body: string | null }) {
   const parts = body.split(/(@[a-zA-Z0-9_]+)/g)
   return (
     <div className="flex justify-center px-4 py-1 text-center">
-      <p className="text-xs leading-relaxed text-muted">
+      <p className="text-meta leading-relaxed text-muted">
         {parts.map((part, i) => {
           if (!part.startsWith('@')) return <span key={i}>{part}</span>
           const handle = part.slice(1)

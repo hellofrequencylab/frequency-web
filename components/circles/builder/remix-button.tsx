@@ -22,7 +22,7 @@ export function RemixButton({ templateId, canCreate = true }: { templateId: stri
         isCrew={false}
         label="Remix"
         reason="create-circle"
-        buttonClassName="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        buttonClassName="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
       />
     )
   }
@@ -46,7 +46,7 @@ export function RemixButton({ templateId, canCreate = true }: { templateId: stri
         onClick={remix}
         disabled={pending}
         title="Claim this circle, or make it your own."
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Wand2 className="h-4 w-4" aria-hidden />}{' '}
         {pending ? 'Starting…' : 'Remix'}

@@ -29,11 +29,11 @@ export async function BetaCountdownBanner() {
       className="mb-4 flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary-bg/40 px-4 py-3"
     >
       <CalendarClock className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
-      <p className="min-w-0 flex-1 text-sm leading-relaxed text-text">
+      <p className="min-w-0 flex-1 text-body-sm leading-relaxed text-text">
         <span className="font-semibold">Summer of Frequency</span> runs through {dateLabel}.{' '}
         <span className="text-muted">Free the whole way, your Opening Beta price stays locked.</span>
       </p>
-      <span className="shrink-0 rounded-pill bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary-strong tabular-nums">
+      <span className="shrink-0 rounded-pill bg-primary/10 px-2.5 py-1 text-meta font-semibold text-primary-strong tabular-nums">
         {countLabel}
       </span>
     </div>

@@ -26,10 +26,10 @@ function LinkRow({
   return (
     <Link
       href={href}
-      className="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-sm text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+      className="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-body-sm text-muted transition-colors hover:bg-surface-elevated hover:text-text"
     >
       <span className="truncate font-medium text-text">{label}</span>
-      <span className="shrink-0 text-xs tabular-nums text-subtle">
+      <span className="shrink-0 text-meta tabular-nums text-subtle">
         {count} {count === 1 ? noun : `${noun}s`}
       </span>
     </Link>
@@ -45,7 +45,7 @@ export async function UsedInSection({ practiceId }: { practiceId: string }) {
 
   return (
     <section className="mt-6 border-t border-border pt-5">
-      <h2 className="mb-4 text-sm font-bold tracking-tight text-text">Used in</h2>
+      <h2 className="mb-4 text-body-sm font-bold tracking-tight text-text">Used in</h2>
       <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
         {journeys.length > 0 && (
           <div>

@@ -23,8 +23,8 @@ export interface HostedCircleTasks {
   tasks: CircleTask[]
 }
 
-const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
-const label = 'block text-xs font-medium text-muted mb-1'
+const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
+const label = 'block text-meta font-medium text-muted mb-1'
 
 function NewCircleTaskForm({
   circleId,
@@ -93,7 +93,7 @@ function NewCircleTaskForm({
         />
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-text">
+      <label className="flex items-center gap-2 text-body-sm text-text">
         <input
           type="checkbox"
           checked={verify}
@@ -108,7 +108,7 @@ function NewCircleTaskForm({
         <button
           type="submit"
           disabled={!name.trim() || isPending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
         >
           <Check className="w-3.5 h-3.5" />
           {isPending ? 'Creating…' : 'Create task'}
@@ -117,11 +117,11 @@ function NewCircleTaskForm({
           type="button"
           onClick={onDone}
           disabled={isPending}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-meta font-medium text-muted hover:bg-surface-elevated transition-colors"
         >
           <X className="w-3.5 h-3.5" /> Cancel
         </button>
-        {error && <span className="text-xs text-danger">{error}</span>}
+        {error && <span className="text-meta text-danger">{error}</span>}
       </div>
     </form>
   )
@@ -152,23 +152,23 @@ function CircleTaskRow({ task }: { task: CircleTask }) {
     <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface lift-1 px-4 py-3 group">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-text">{task.name}</span>
-          <span className="text-xs px-1.5 py-0.5 rounded-md bg-primary-bg text-primary-strong font-medium capitalize">
+          <span className="text-body-sm font-medium text-text">{task.name}</span>
+          <span className="text-meta px-1.5 py-0.5 rounded-md bg-primary-bg text-primary-strong font-medium capitalize">
             {task.taskType}
           </span>
           {task.requiresVerification && (
-            <span className="text-xs px-1.5 py-0.5 rounded-md bg-warning-bg text-warning font-medium">
+            <span className="text-meta px-1.5 py-0.5 rounded-md bg-warning-bg text-warning font-medium">
               Needs verification
             </span>
           )}
         </div>
-        <p className="mt-0.5 flex items-center gap-1.5 text-xs text-subtle">
+        <p className="mt-0.5 flex items-center gap-1.5 text-meta text-subtle">
           {task.assignee ? (
             <>
               {task.assignee.avatarUrl ? (
                 <Image src={avatarSrc(task.assignee.avatarUrl)} alt={task.assignee.displayName} width={16} height={16} className="w-4 h-4 rounded-pill object-cover shrink-0" style={avatarFocusStyle(task.assignee.avatarUrl)} />
               ) : (
-                <span className="w-4 h-4 rounded-pill bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                <span className="w-4 h-4 rounded-pill bg-primary-bg text-primary-strong text-meta font-semibold flex items-center justify-center shrink-0 select-none">
                   {getInitials(task.assignee.displayName)}
                 </span>
               )}
@@ -182,7 +182,7 @@ function CircleTaskRow({ task }: { task: CircleTask }) {
         </p>
       </div>
 
-      <span className="text-sm font-bold text-primary-strong shrink-0">+{task.zapsValue} Zaps</span>
+      <span className="text-body-sm font-bold text-primary-strong shrink-0">+{task.zapsValue} Zaps</span>
 
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         {task.assignedTo && (
@@ -220,14 +220,14 @@ export function CircleTasksPanel({ circles }: { circles: HostedCircleTasks[] }) 
       {circles.map((circle) => (
         <section key={circle.id}>
           <div className="mb-2 flex items-center justify-between gap-3">
-            <h3 className="text-sm font-semibold text-text">
+            <h3 className="text-body-sm font-semibold text-text">
               {circle.name}
-              <span className="ml-2 text-xs font-normal text-subtle">{circle.tasks.length} task{circle.tasks.length === 1 ? '' : 's'}</span>
+              <span className="ml-2 text-meta font-normal text-subtle">{circle.tasks.length} task{circle.tasks.length === 1 ? '' : 's'}</span>
             </h3>
             {composingFor !== circle.id && (
               <button
                 onClick={() => setComposingFor(circle.id)}
-                className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-xs font-semibold text-on-primary hover:bg-primary-hover transition-colors"
+                className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" /> New circle task
               </button>
@@ -239,7 +239,7 @@ export function CircleTasksPanel({ circles }: { circles: HostedCircleTasks[] }) 
               <NewCircleTaskForm circleId={circle.id} onDone={() => setComposingFor(null)} />
             )}
             {circle.tasks.length === 0 && composingFor !== circle.id && (
-              <p className="text-sm text-subtle rounded-2xl border border-dashed border-border px-4 py-4 text-center">
+              <p className="text-body-sm text-subtle rounded-2xl border border-dashed border-border px-4 py-4 text-center">
                 No tasks yet. Create one and a Crew member of this circle can claim it.
               </p>
             )}

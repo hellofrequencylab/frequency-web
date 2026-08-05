@@ -299,10 +299,10 @@ export function Creator({ userId }: { userId: string }) {
     return (
       <div className="rounded-2xl border border-border bg-surface p-10 text-center">
         <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary-strong" />
-        <p className="mt-4 text-sm font-medium text-text">
+        <p className="mt-4 text-body-sm font-medium text-text">
           {stage === 'scanning' ? 'Reading the poster' : 'Building your draft'}
         </p>
-        <p className="mt-1 text-xs text-subtle">
+        <p className="mt-1 text-meta text-subtle">
           {stage === 'scanning'
             ? 'Vera is pulling out the who, when, and where. A few seconds.'
             : 'Squaring the image and cutting the cover. Almost there.'}
@@ -320,17 +320,17 @@ export function Creator({ userId }: { userId: string }) {
 
         {unreadable && (
           <div className="rounded-2xl border border-primary/40 bg-primary-bg p-4">
-            <p className="flex items-start gap-2 text-sm font-semibold text-primary-strong">
+            <p className="flex items-start gap-2 text-body-sm font-semibold text-primary-strong">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               This shot is hard to read
             </p>
-            <p className="mt-1 text-sm text-primary-strong">
+            <p className="mt-1 text-body-sm text-primary-strong">
               {extraction.quality.note ?? 'Some of the poster did not come through clearly. A straight-on shot of the whole poster works best.'}
             </p>
             <button
               type="button"
               onClick={retake}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               <RefreshCw className="h-4 w-4" /> Retake
             </button>
@@ -343,13 +343,13 @@ export function Creator({ userId }: { userId: string }) {
             <img src={previewSrc} alt="Poster preview" className="max-h-[28rem] w-full object-contain" />
             {deskewedUrl && (
               <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2">
-                <p className="text-xs text-subtle">
+                <p className="text-meta text-subtle">
                   {showOriginal ? 'Your original photo.' : 'Squared up and brightened for the listing.'}
                 </p>
                 <button
                   type="button"
                   onClick={() => setShowOriginal((v) => !v)}
-                  className="shrink-0 text-xs font-semibold text-primary-strong hover:underline"
+                  className="shrink-0 text-meta font-semibold text-primary-strong hover:underline"
                 >
                   {showOriginal ? 'Show squared' : 'Show original'}
                 </button>
@@ -360,7 +360,7 @@ export function Creator({ userId }: { userId: string }) {
 
         {/* Legible but glossy / slightly tilted: a gentle, non-blocking heads-up. */}
         {minorIssue && (
-          <p className="flex items-start gap-1.5 px-1 text-xs text-subtle">
+          <p className="flex items-start gap-1.5 px-1 text-meta text-subtle">
             <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary-strong" />
             {extraction.quality.note ?? 'Readable as is. A glare-free, straight-on reshoot would sharpen it, but this works.'}
           </p>
@@ -368,8 +368,8 @@ export function Creator({ userId }: { userId: string }) {
 
         {/* What Vera read — a quick sanity check before the editor. */}
         <div className="rounded-2xl border border-border bg-surface-elevated/40 p-4">
-          <p className="text-sm font-bold text-text">{extraction.title || 'Untitled event'}</p>
-          <div className="mt-1.5 space-y-1 text-xs text-muted">
+          <p className="text-body-sm font-bold text-text">{extraction.title || 'Untitled event'}</p>
+          <div className="mt-1.5 space-y-1 text-meta text-muted">
             {extraction.startsAt && (
               <p className="flex items-center gap-1.5">
                 <CalendarDays className="h-3.5 w-3.5 shrink-0 text-subtle" />
@@ -399,7 +399,7 @@ export function Creator({ userId }: { userId: string }) {
             <button
               type="button"
               onClick={retake}
-              className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-4 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
             >
               <RefreshCw className="h-4 w-4" /> Retake
             </button>
@@ -409,7 +409,7 @@ export function Creator({ userId }: { userId: string }) {
           <button
             type="button"
             onClick={buildDraft}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             {unreadable ? 'Use it anyway' : 'Continue to the draft'} <ArrowRight className="h-4 w-4" />
           </button>
@@ -426,29 +426,29 @@ export function Creator({ userId }: { userId: string }) {
       {/* The capture tip, up front — a good shot saves a retake. */}
       <div className="flex items-start gap-2.5 rounded-2xl border border-border bg-surface-elevated/40 p-3">
         <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" />
-        <p className="text-sm text-muted">
+        <p className="text-body-sm text-muted">
           Get the whole poster in frame, squared up, no glare.
         </p>
       </div>
 
       <div className="rounded-2xl border border-dashed border-border-strong bg-surface p-6 text-center">
         <ScanLine className="mx-auto h-8 w-8 text-primary-strong" />
-        <p className="mt-3 text-sm font-medium text-text">Snap the poster</p>
-        <p className="mt-1 text-xs text-subtle">
+        <p className="mt-3 text-body-sm font-medium text-text">Snap the poster</p>
+        <p className="mt-1 text-meta text-subtle">
           One straight-on shot usually does it. Add a close-up if the fine print matters.
         </p>
         <div className="mt-4 flex flex-wrap justify-center gap-2">
           <button
             type="button"
             onClick={() => cameraRef.current?.click()}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             <Camera className="h-4 w-4" /> Take a photo
           </button>
           <button
             type="button"
             onClick={() => galleryRef.current?.click()}
-            className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+            className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-4 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
           >
             <Upload className="h-4 w-4" /> Upload an image
           </button>
@@ -480,7 +480,7 @@ export function Creator({ userId }: { userId: string }) {
           type="button"
           onClick={runScan}
           disabled={files.length === 0}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
         >
           <Sparkles className="h-4 w-4" />
           {files.length <= 1 ? 'Read the poster' : `Read ${files.length} shots`}

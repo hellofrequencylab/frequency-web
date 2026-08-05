@@ -1183,9 +1183,9 @@ export default async function EventDetailPage({
       <div className="space-y-4 rounded-2xl border border-border bg-surface p-4">
         <div className="flex items-center gap-2">
           <Ticket className="h-4 w-4 text-primary" />
-          <span className="text-sm font-bold text-text">RSVP</span>
+          <span className="text-body-sm font-bold text-text">RSVP</span>
           {isPaidEvent && !hasTiers && (
-            <span className="text-sm font-medium text-muted">· {priceLabel} ticket</span>
+            <span className="text-body-sm font-medium text-muted">· {priceLabel} ticket</span>
           )}
         </div>
 
@@ -1194,7 +1194,7 @@ export default async function EventDetailPage({
             it's the action a remote guest needs at RSVP time (the venue line + map stay in the
             event-location block). */}
         {isOnline && (
-          <p className="flex items-start gap-2 text-sm text-text">
+          <p className="flex items-start gap-2 text-body-sm text-text">
             <Video className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
             {safeHttpUrl(onlineUrl) ? (
               <a
@@ -1269,7 +1269,7 @@ export default async function EventDetailPage({
                 }`}
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-text">{t.name}</p>
+                  <p className="truncate text-body-sm font-semibold text-text">{t.name}</p>
                   {t.spaceMembersOnly && (
                     <div className="mt-1">
                       {memberUnlocks(t) ? (
@@ -1284,7 +1284,7 @@ export default async function EventDetailPage({
                     </div>
                   )}
                 </div>
-                <span className="shrink-0 text-sm font-semibold text-text">
+                <span className="shrink-0 text-body-sm font-semibold text-text">
                   {t.spaceMembersOnly
                     ? memberUnlocks(t)
                       ? 'Included'
@@ -1305,15 +1305,15 @@ export default async function EventDetailPage({
         {ticketsMode && (
           <div>
               {ownsTicket ? (
-                <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-success">
+                <p className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-success">
                   <Check className="h-4 w-4" /> Ticket confirmed
                 </p>
               ) : hasEnded ? (
-                <p className="text-sm text-muted">Ticket sales have closed.</p>
+                <p className="text-body-sm text-muted">Ticket sales have closed.</p>
               ) : allTiersSoldOut ? (
-                <p className="text-sm text-muted">Sold out.</p>
+                <p className="text-body-sm text-muted">Sold out.</p>
               ) : !myProfileId ? (
-                <p className="text-sm text-muted">Sign in to get your ticket.</p>
+                <p className="text-body-sm text-muted">Sign in to get your ticket.</p>
               ) : isHost && !hostSpaceOwnerId ? (
                 /* PERSONAL event only: the host IS the payee, so "no ticket needed" / "connect
                    YOUR payouts" both address the right person. A SPACE-hosted event's organizer
@@ -1321,7 +1321,7 @@ export default async function EventDetailPage({
                    organizer may buy a ticket (ADR-819), and the payout prompt would have pointed
                    them at the wrong Stripe account. */
                 hostPayoutReady ? (
-                  <p className="text-sm text-muted">You&rsquo;re hosting. No ticket needed.</p>
+                  <p className="text-body-sm text-muted">You&rsquo;re hosting. No ticket needed.</p>
                 ) : (
                   /* The buy path is gated on the HOST's Stripe Connect account being
                      charges + payouts ready (getConnectStatus.ready). When it isn't, the
@@ -1329,12 +1329,12 @@ export default async function EventDetailPage({
                      everyone with no way forward. Tell the host the real prerequisite and
                      link them straight to payout setup. */
                   <div className="space-y-2">
-                    <p className="text-sm text-muted">
+                    <p className="text-body-sm text-muted">
                       Connect payouts to start selling tickets for this event.
                     </p>
                     <Link
                       href="/settings/billing"
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
                     >
                       <Ticket className="h-4 w-4" />
                       Set up payouts
@@ -1344,7 +1344,7 @@ export default async function EventDetailPage({
               ) : myProfileId && myProfileId === hostSpaceOwnerId ? (
                 /* The hosting space's OWNER is the payee — the server's self-purchase guard would
                    refuse their checkout, so say so instead of showing a button that errors. */
-                <p className="text-sm text-muted">Your space is hosting. No ticket needed.</p>
+                <p className="text-body-sm text-muted">Your space is hosting. No ticket needed.</p>
               ) : hostPayoutReady ? (
                 <TicketButton
                   eventId={event.id}
@@ -1377,7 +1377,7 @@ export default async function EventDetailPage({
                     eventSlug={event.slug}
                     previewMode
                   />
-                  <p className="text-xs text-muted">
+                  <p className="text-meta text-muted">
                     Only you and your team see this. Buyers see it live once{' '}
                     {spaceHost ? `${spaceHost.name}'s owner connects` : 'you connect'} payouts in
                     Settings → Billing.
@@ -1386,7 +1386,7 @@ export default async function EventDetailPage({
               ) : (
                 /* Host hasn't finished payout setup, so there is no one to pay yet.
                    Honest to the buyer, no dead "not available" phrasing. */
-                <p className="text-sm text-muted">The host hasn&rsquo;t opened ticket sales yet.</p>
+                <p className="text-body-sm text-muted">The host hasn&rsquo;t opened ticket sales yet.</p>
               )}
           </div>
         )}
@@ -1412,7 +1412,7 @@ export default async function EventDetailPage({
           /* Event time, going: Check in is the primary action; Cancel RSVP is quiet. */
           <div className="flex flex-wrap items-center gap-4">
             {alreadyCheckedIn ? (
-              <div className="inline-flex items-center gap-2 rounded-lg bg-success-bg text-success px-4 py-2 text-sm font-semibold">
+              <div className="inline-flex items-center gap-2 rounded-lg bg-success-bg text-success px-4 py-2 text-body-sm font-semibold">
                 <Check className="w-4 h-4" />
                 Checked In
               </div>
@@ -1423,7 +1423,7 @@ export default async function EventDetailPage({
               <form action={toggleRSVP.bind(null, event.id)}>
                 <button
                   type="submit"
-                  className="text-xs text-subtle hover:text-danger underline underline-offset-2 transition-colors"
+                  className="text-meta text-subtle hover:text-danger underline underline-offset-2 transition-colors"
                 >
                   Cancel RSVP
                 </button>
@@ -1434,7 +1434,7 @@ export default async function EventDetailPage({
           <form action={toggleRSVP.bind(null, event.id)}>
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-muted transition-colors hover:border-danger hover:text-danger"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-muted transition-colors hover:border-danger hover:text-danger"
             >
               <Clock className="w-4 h-4" />
               On waitlist · tap to leave
@@ -1447,11 +1447,11 @@ export default async function EventDetailPage({
           <div className="space-y-2">
             <Link
               href={`/sign-in?next=/events/${event.slug}`}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               Sign in to RSVP
             </Link>
-            <p className="text-xs text-muted">Free to join. Sign in and you&rsquo;re on the list.</p>
+            <p className="text-meta text-muted">Free to join. Sign in and you&rsquo;re on the list.</p>
           </div>
         ) : null}
 
@@ -1469,7 +1469,7 @@ export default async function EventDetailPage({
 
         {/* Tickets sold — quiet, factual (tickets mode only). */}
         {ticketsMode && (
-          <p className="text-xs text-subtle">
+          <p className="text-meta text-subtle">
             {ticketsSold > 0 ? `${ticketsSold} sold` : 'No tickets sold yet'}
           </p>
         )}
@@ -1627,19 +1627,19 @@ export default async function EventDetailPage({
         <>
           {event.is_cancelled && (
             <div className="mb-4 rounded-2xl bg-danger-bg border border-danger px-3 py-2">
-              <p className="text-sm font-medium text-danger">This event has been cancelled.</p>
+              <p className="text-body-sm font-medium text-danger">This event has been cancelled.</p>
             </div>
           )}
 
           {claimed === '1' && isHost && (
-            <div className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-success bg-success-bg/40 px-4 py-2.5 text-sm font-semibold text-success">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-success bg-success-bg/40 px-4 py-2.5 text-body-sm font-semibold text-success">
               <Check className="h-4 w-4" />
               It is yours. You are the host now, so you can edit anything on this page.
             </div>
           )}
 
           {ticketedCents !== null && (
-            <div className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-success bg-success-bg/40 px-4 py-2.5 text-sm font-semibold text-success">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-success bg-success-bg/40 px-4 py-2.5 text-body-sm font-semibold text-success">
               <Ticket className="h-4 w-4" />
               You&rsquo;re in. ${(ticketedCents / 100).toFixed(2)} ticket confirmed. See you there.
             </div>
@@ -1687,7 +1687,7 @@ export default async function EventDetailPage({
               <span className="text-3xl font-bold leading-none sm:text-4xl">
                 {new Date(event.starts_at).toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })}
               </span>
-              <span className="text-xs font-semibold uppercase tracking-wide text-muted">
+              <span className="text-meta font-semibold uppercase tracking-wide text-muted">
                 {new Date(event.starts_at).toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' })}
               </span>
             </div>
@@ -1702,7 +1702,7 @@ export default async function EventDetailPage({
           <InlineText
             value={event.title}
             save={updateEventField.bind(null, event.id, slug, 'title')}
-            inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-2xl sm:text-3xl lg:text-4xl font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
+            inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-page-title sm:text-3xl lg:text-4xl font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
           />
         ) : (
           event.title
@@ -1734,7 +1734,7 @@ export default async function EventDetailPage({
               />
               <Link
                 href={`/events/${event.slug}/manage`}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
               >
                 <LayoutDashboard className="h-4 w-4 text-subtle" />
                 Manage event
@@ -1755,7 +1755,7 @@ export default async function EventDetailPage({
         when: (
           <div className="flex items-center gap-2">
             <CalendarDays className="w-4 h-4 text-primary-strong shrink-0" />
-            <span className="text-base font-semibold text-text">{whenLine}</span>
+            <span className="text-body font-semibold text-text">{whenLine}</span>
           </div>
         ),
 
@@ -1784,7 +1784,7 @@ export default async function EventDetailPage({
 
         cadence: (event.recurrence_type !== 'none' || event.parent_event_id) && (
           <div className="flex items-center gap-2">
-            <span aria-hidden className="text-base leading-none">🔁</span>
+            <span aria-hidden className="text-body leading-none">🔁</span>
             <span>
               {event.recurrence_type !== 'none'
                 ? RECURRENCE_LABEL[event.recurrence_type]
@@ -1917,7 +1917,7 @@ export default async function EventDetailPage({
               <p className="flex items-center gap-1.5 text-lg font-bold text-text">
                 <Zap className="h-5 w-5 shrink-0 text-primary" aria-hidden /> Is this your event?
               </p>
-              <p className="mt-1 text-sm text-muted">
+              <p className="mt-1 text-body-sm text-muted">
                 Frequency built this page so people nearby could find it. Claim it to manage RSVPs, edit the
                 details, and run it from your own account. It takes one tap.
               </p>
@@ -1928,7 +1928,7 @@ export default async function EventDetailPage({
               ) : (
                 <Link
                   href={`/onboarding/beta?seq=event-experience-hosts-copy&next=${encodeURIComponent(`/events/${event.slug}?claim=${extra.claim_token}`)}`}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-control bg-primary px-8 py-4 text-base font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-control bg-primary px-8 py-4 text-body font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
                 >
                   <Zap className="h-5 w-5" aria-hidden /> Claim This Event
                 </Link>

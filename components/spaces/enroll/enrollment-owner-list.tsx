@@ -33,8 +33,8 @@ export async function EnrollmentOwnerList({ spaceId }: { spaceId: string }) {
       {enrollees.map((e) => (
         <li key={e.id} className="flex items-center justify-between gap-4 px-4 py-3">
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-text">{e.memberName}</p>
-            <p className="text-xs text-muted">Enrolled {sinceFmt.format(new Date(e.enrolledAt))}</p>
+            <p className="truncate text-body-sm font-semibold text-text">{e.memberName}</p>
+            <p className="text-meta text-muted">Enrolled {sinceFmt.format(new Date(e.enrolledAt))}</p>
           </div>
           <EnrollmentCancelButton enrollmentId={e.id} />
         </li>

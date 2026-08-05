@@ -50,7 +50,7 @@ export function ShowSubscribe({ feedUrl }: { feedUrl: string }) {
         </button>
       </div>
 
-      <p className="flex items-start gap-1.5 text-xs text-muted">
+      <p className="flex items-start gap-1.5 text-meta text-muted">
         <Rss className="mt-0.5 h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
         <span>
           Paste the RSS link into any podcast app to follow along. To list this Show in the big directories,

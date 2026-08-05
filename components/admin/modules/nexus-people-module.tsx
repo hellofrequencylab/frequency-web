@@ -62,7 +62,7 @@ export function NexusPeopleModule() {
 
         {/* Mentor. */}
         {data.mentorName && (
-          <p className="mt-3 text-xs text-muted">
+          <p className="mt-3 text-meta text-muted">
             Mentor: <span className="font-medium text-text">{data.mentorName}</span>
             {data.mentorHandle && <span className="text-subtle"> @{data.mentorHandle}</span>}
           </p>
@@ -77,7 +77,7 @@ export function NexusPeopleModule() {
                 className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface p-2.5"
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold text-text">{h.name}</span>
+                  <span className="block truncate text-body-sm font-semibold text-text">{h.name}</span>
                   {h.guideName && <span className="block text-2xs text-muted">Guide: {h.guideName}</span>}
                 </span>
                 <span className="shrink-0 text-2xs tabular-nums text-muted">

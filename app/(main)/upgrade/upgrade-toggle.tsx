@@ -23,7 +23,7 @@ export function UpgradeToggle({ isCrew }: { isCrew: boolean }) {
     return (
       <div className="space-y-3">
         <div className="rounded-xl bg-success-bg/30 border border-success/50 px-4 py-3 text-center">
-          <p className="text-sm font-semibold text-success flex items-center justify-center gap-2">
+          <p className="text-body-sm font-semibold text-success flex items-center justify-center gap-2">
             <Zap className="w-4 h-4" />
             You&apos;re part of the Crew
           </p>
@@ -31,7 +31,7 @@ export function UpgradeToggle({ isCrew }: { isCrew: boolean }) {
         <button
           onClick={handleToggle}
           disabled={isPending}
-          className="flex items-center justify-center gap-2 w-full rounded-control border border-border px-4 py-3 text-sm font-medium text-muted hover:text-text hover:bg-surface-elevated transition-colors disabled:opacity-50"
+          className="flex items-center justify-center gap-2 w-full rounded-control border border-border px-4 py-3 text-body-sm font-medium text-muted hover:text-text hover:bg-surface-elevated transition-colors disabled:opacity-50"
         >
           {isPending ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -48,7 +48,7 @@ export function UpgradeToggle({ isCrew }: { isCrew: boolean }) {
     <button
       onClick={handleToggle}
       disabled={isPending}
-      className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-on-primary hover:bg-primary-hover transition-colors shadow-lg shadow-primary/20 disabled:opacity-50"
+      className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary px-4 py-3.5 text-body-sm font-bold text-on-primary hover:bg-primary-hover transition-colors shadow-lg shadow-primary/20 disabled:opacity-50"
     >
       {isPending ? (
         <Loader2 className="w-4 h-4 animate-spin" />

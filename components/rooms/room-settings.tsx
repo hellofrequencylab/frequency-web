@@ -60,7 +60,7 @@ export function RoomSettings({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated"
+        className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated"
       >
         <Settings className="h-3 w-3" /> Settings
       </button>
@@ -74,9 +74,9 @@ export function RoomSettings({
             <StudioFooter
               left={
                 error ? (
-                  <span className="text-xs text-danger">{error}</span>
+                  <span className="text-meta text-danger">{error}</span>
                 ) : (
-                  <span className="text-xs text-subtle">Changes apply for everyone.</span>
+                  <span className="text-meta text-subtle">Changes apply for everyone.</span>
                 )
               }
             >
@@ -84,7 +84,7 @@ export function RoomSettings({
                 type="button"
                 onClick={() => setOpen(false)}
                 disabled={pending}
-                className="rounded-control border border-border px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+                className="rounded-control border border-border px-4 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -92,7 +92,7 @@ export function RoomSettings({
                 type="button"
                 onClick={save}
                 disabled={pending || !n.trim()}
-                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+                className="rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
               >
                 {pending ? 'Saving…' : 'Save changes'}
               </button>
@@ -145,7 +145,7 @@ export function RoomSettings({
               <button
                 type="button"
                 onClick={() => setConfirmDelete(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-2 text-sm font-medium text-danger transition-colors hover:bg-danger-bg/40"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-2 text-body-sm font-medium text-danger transition-colors hover:bg-danger-bg/40"
               >
                 <Trash2 className="h-4 w-4" /> Delete this board
               </button>

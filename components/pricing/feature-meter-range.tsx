@@ -93,11 +93,11 @@ export function FeatureMeterRange({ ladder, currentTier, upgradeHref, live = fal
 
   return (
     <section className="mt-4 rounded-2xl border border-border bg-surface p-4 lift-1">
-      <p className="text-xs font-semibold uppercase tracking-widest text-subtle">{ladder.dimension} allowance</p>
+      <p className="text-meta font-semibold uppercase tracking-widest text-subtle">{ladder.dimension} allowance</p>
 
       {/* The OPTIONAL usage readout: "X of N used" on the viewer's current tier. Informational only. */}
       {readout && (
-        <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
+        <p className="mt-1 flex items-center gap-1.5 text-body-sm text-muted">
           <Gauge className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
           <span>{readout}</span>
         </p>
@@ -106,7 +106,7 @@ export function FeatureMeterRange({ ladder, currentTier, upgradeHref, live = fal
       {/* The gauge as upsell (ADR-837): the one shared nudge sentence + a See plans link, only once usage
           crosses the threshold. No modal, no countdown, no urgency; it links, it never blocks. */}
       {nearLimit && (
-        <p className="mt-1 text-sm text-muted">
+        <p className="mt-1 text-body-sm text-muted">
           {ALLOWANCE_NUDGE}{' '}
           <Link href={upgradeHref} className="font-semibold text-primary-strong underline">
             See plans
@@ -140,10 +140,10 @@ export function FeatureMeterRange({ ladder, currentTier, upgradeHref, live = fal
               ].join(' ')}
             >
               <span className="flex w-full items-center justify-between gap-1">
-                <span className="text-sm font-semibold text-text">{s.label}</span>
+                <span className="text-body-sm font-semibold text-text">{s.label}</span>
                 {viewerHere && <Check className="h-3.5 w-3.5 text-primary-strong" aria-hidden />}
               </span>
-              <span className="mt-0.5 text-sm font-bold text-text">{s.price}</span>
+              <span className="mt-0.5 text-body-sm font-bold text-text">{s.price}</span>
               {viewerHere && <span className="mt-0.5 text-2xs font-medium text-primary-strong">Your plan</span>}
             </button>
           )
@@ -151,7 +151,7 @@ export function FeatureMeterRange({ ladder, currentTier, upgradeHref, live = fal
       </div>
 
       {/* The selected tier's allowance line. Every tier reads as "how much", never as locked. */}
-      <p className="mt-3 flex items-start gap-2 text-sm text-muted">
+      <p className="mt-3 flex items-start gap-2 text-body-sm text-muted">
         <Gauge className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
         <span>
           <span className="font-semibold text-text">{step.label}:</span> {step.allowanceText}
@@ -162,13 +162,13 @@ export function FeatureMeterRange({ ladder, currentTier, upgradeHref, live = fal
           below, there is nothing more to buy there, so it reads as an informational line. */}
       <div className="mt-3 flex flex-wrap items-center gap-3">
         {isCurrent ? (
-          <p className="text-sm font-medium text-muted">You are on the {step.label} plan.</p>
+          <p className="text-body-sm font-medium text-muted">You are on the {step.label} plan.</p>
         ) : isBelowCurrent ? (
-          <p className="text-sm font-medium text-muted">Included on your current plan.</p>
+          <p className="text-body-sm font-medium text-muted">Included on your current plan.</p>
         ) : (
           <Link
             href={upgradeHref}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             Upgrade for more
           </Link>

@@ -123,16 +123,16 @@ export function ConnectionSettingsAdmin({ settings }: { settings: ConnectionSett
                 </option>
               ))}
             </select>
-            <span className="block text-xs text-subtle">
+            <span className="block text-meta text-subtle">
               {LOCATION_BAND_OPTIONS.find((o) => o.value === form.defaultLocationBand)?.hint}
             </span>
           </label>
 
-          <div className="flex items-center gap-2 text-sm font-bold text-text">
+          <div className="flex items-center gap-2 text-body-sm font-bold text-text">
             <MapPin className="h-4 w-4 shrink-0 text-primary-strong" />
             Discovery radius bounds
           </div>
-          <p className="-mt-2 text-xs text-subtle">
+          <p className="-mt-2 text-meta text-subtle">
             The floor and ceiling (in miles) of the radius slider a member may set.
           </p>
           <div className="grid grid-cols-2 gap-3">
@@ -190,7 +190,7 @@ export function ConnectionSettingsAdmin({ settings }: { settings: ConnectionSett
               disabled={pending}
               onChange={(e) => set('rewardIntroduction', Math.max(0, Number(e.target.value) || 0))}
             />
-            <span className="block text-xs text-subtle">For an introduction that becomes a real connection.</span>
+            <span className="block text-meta text-subtle">For an introduction that becomes a real connection.</span>
           </label>
           <label className="block space-y-1.5">
             <span className={labelClasses}>Welcome (gems)</span>
@@ -203,23 +203,23 @@ export function ConnectionSettingsAdmin({ settings }: { settings: ConnectionSett
               disabled={pending}
               onChange={(e) => set('rewardWelcome', Math.max(0, Number(e.target.value) || 0))}
             />
-            <span className="block text-xs text-subtle">For welcoming a newcomer to the community.</span>
+            <span className="block text-meta text-subtle">For welcoming a newcomer to the community.</span>
           </label>
         </div>
       </AdminModuleCard>
 
       {/* ── Save row ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-end gap-3">
-        {error && <span className="text-xs font-medium text-danger">{error}</span>}
+        {error && <span className="text-meta font-medium text-danger">{error}</span>}
         {saved && (
-          <span className="flex items-center gap-1 text-xs font-medium text-primary-strong">
+          <span className="flex items-center gap-1 text-meta font-medium text-primary-strong">
             <Check className="h-3.5 w-3.5" /> Saved
           </span>
         )}
         <button
           type="submit"
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
         >
           {pending ? 'Saving…' : 'Save changes'}
         </button>
@@ -245,8 +245,8 @@ function Toggle({
   return (
     <div className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
       <div className="min-w-0">
-        <p className="text-sm font-semibold text-text">{label}</p>
-        <p className="text-xs text-subtle">{hint}</p>
+        <p className="text-body-sm font-semibold text-text">{label}</p>
+        <p className="text-meta text-subtle">{hint}</p>
       </div>
       <button
         type="button"

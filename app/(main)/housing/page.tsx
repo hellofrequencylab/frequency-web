@@ -40,8 +40,8 @@ type HousingSearchParams = {
 }
 
 const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary'
-const FILTER_LABEL = 'mb-1 block text-xs font-medium text-muted'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
+const FILTER_LABEL = 'mb-1 block text-meta font-medium text-muted'
 
 // Canonical quick-browse sub-menu: All + one tab per property type, then Roommates (its own route).
 // Both these tabs and the advanced filter form drive `?type=`, so the two stay in sync via the URL.
@@ -177,7 +177,7 @@ export default async function HousingPage({
               className="space-y-4 rounded-2xl border border-border bg-surface p-4 lift-1"
               aria-label="Filter housing"
             >
-              <div className="flex items-center gap-2 text-sm font-medium text-text">
+              <div className="flex items-center gap-2 text-body-sm font-medium text-text">
                 <SlidersHorizontal className="h-4 w-4 text-muted" aria-hidden /> Filters
               </div>
 
@@ -233,7 +233,7 @@ export default async function HousingPage({
                   {AMENITIES.map((a) => (
                     <label
                       key={a.slug}
-                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-pill border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary-bg has-[:checked]:text-primary-strong"
+                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-pill border border-border bg-surface px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary-bg has-[:checked]:text-primary-strong"
                     >
                       <input
                         type="checkbox"

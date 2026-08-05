@@ -255,7 +255,7 @@ export async function ProfileFeed({
     return (
       <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-12 text-center">
         <MessageSquare className="w-8 h-8 text-subtle/60 mx-auto mb-3" />
-        <p className="text-sm text-muted">No activity yet.</p>
+        <p className="text-body-sm text-muted">No activity yet.</p>
       </div>
     )
   }
@@ -271,7 +271,7 @@ export async function ProfileFeed({
           return (
             <div key={item.data.id}>
               {item.context === 'mention' && (
-                <p className="mb-1.5 flex flex-wrap items-center gap-1.5 px-1 text-xs text-subtle">
+                <p className="mb-1.5 flex flex-wrap items-center gap-1.5 px-1 text-meta text-subtle">
                   <AtSign className="h-3 w-3" />
                   Mentioned <span className="font-medium text-muted">@{profileHandle}</span>
                 </p>
@@ -315,11 +315,11 @@ function DispatchTimelineCard({ dispatch: d }: { dispatch: DispatchItem }) {
               </span>
             )}
           </div>
-          <p className="text-sm font-bold text-text group-hover:text-primary-strong dark:group-hover:text-primary-strong transition-colors line-clamp-1">
+          <p className="text-body-sm font-bold text-text group-hover:text-primary-strong dark:group-hover:text-primary-strong transition-colors line-clamp-1">
             {d.title}
           </p>
           {d.excerpt && (
-            <p className="text-xs text-muted line-clamp-1 mt-0.5">{d.excerpt}</p>
+            <p className="text-meta text-muted line-clamp-1 mt-0.5">{d.excerpt}</p>
           )}
           <div className="flex items-center justify-between mt-1.5">
             <span className="text-2xs text-muted">
@@ -345,20 +345,20 @@ function EventTimelineCard({ event: e }: { event: EventItem }) {
       <div className="flex items-center gap-3">
         <div className="shrink-0 w-10 h-10 rounded-lg bg-warning-bg dark:bg-warning-bg flex flex-col items-center justify-center">
           <span className="text-3xs font-bold uppercase text-warning leading-none">{month}</span>
-          <span className="text-sm font-bold text-warning leading-tight">{day}</span>
+          <span className="text-body-sm font-bold text-warning leading-tight">{day}</span>
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <CalendarDays className="w-3 h-3 text-primary" />
             <span className="text-3xs font-black uppercase tracking-widest text-primary">Event</span>
           </div>
-          <p className="text-sm font-bold text-text group-hover:text-warning dark:group-hover:text-primary transition-colors line-clamp-1">
+          <p className="text-body-sm font-bold text-text group-hover:text-warning dark:group-hover:text-primary transition-colors line-clamp-1">
             {e.title}
           </p>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-muted">{dateStr}</span>
+            <span className="text-meta text-muted">{dateStr}</span>
             {e.location && (
-              <span className="text-xs text-subtle flex items-center gap-1">
+              <span className="text-meta text-subtle flex items-center gap-1">
                 <MapPin className="w-2.5 h-2.5" />
                 <span className="line-clamp-1">{e.location}</span>
               </span>

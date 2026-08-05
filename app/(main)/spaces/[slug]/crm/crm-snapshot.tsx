@@ -73,10 +73,10 @@ export async function SpaceCrmSnapshot({ slug }: { slug: string }) {
         <ul className="divide-y divide-border rounded-card bg-surface-elevated/40">
           {contacts.map((c) => (
             <li key={c.id} className="px-3 py-2">
-              <p className="truncate text-sm font-medium text-text">
+              <p className="truncate text-body-sm font-medium text-text">
                 {c.display_name || c.email || 'Unnamed contact'}
               </p>
-              {c.display_name && c.email && <p className="truncate text-xs text-muted">{c.email}</p>}
+              {c.display_name && c.email && <p className="truncate text-meta text-muted">{c.email}</p>}
             </li>
           ))}
         </ul>
@@ -85,7 +85,7 @@ export async function SpaceCrmSnapshot({ slug }: { slug: string }) {
       {/* The prominent way out to the real thing. */}
       <Link
         href={boardHref}
-        className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary-hover"
+        className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary hover:text-primary-hover"
       >
         Open the full CRM workspace
         <ArrowRight className="h-4 w-4" aria-hidden />
@@ -117,14 +117,14 @@ function CrmUpsell({
           <Gauge className="h-4 w-4" aria-hidden />
         </span>
         <div className="min-w-0 space-y-1">
-          <p className="text-sm font-semibold text-text">Grow your Space CRM</p>
-          <p className="text-xs text-muted">
+          <p className="text-body-sm font-semibold text-text">Grow your Space CRM</p>
+          <p className="text-meta text-muted">
             Turn the people you meet into a pipeline you can work: stages, deals, and contacts you bring
             over from My Contacts. Every space gets it. Move up a plan for a higher allowance as you grow.
           </p>
           <Link
             href={`/spaces/${slug}/settings/billing`}
-            className="inline-flex items-center gap-1.5 pt-1 text-sm font-semibold text-primary hover:text-primary-hover"
+            className="inline-flex items-center gap-1.5 pt-1 text-body-sm font-semibold text-primary hover:text-primary-hover"
           >
             See plans
             <ArrowRight className="h-4 w-4" aria-hidden />

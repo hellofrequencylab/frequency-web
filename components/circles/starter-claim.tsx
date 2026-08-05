@@ -39,8 +39,8 @@ export function StarterClaim({ templateId, canCreate = true }: { templateId: str
             <Sparkles className="h-5 w-5" aria-hidden />
           </span>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-text">This is a Starter Circle</p>
-            <p className="text-sm text-muted">
+            <p className="text-body-sm font-semibold text-text">This is a Starter Circle</p>
+            <p className="text-body-sm text-muted">
               A blueprint we set up so there is one ready near you. Claim it to make it your own. You
               get a private draft to shape before anyone sees it.
             </p>
@@ -52,7 +52,7 @@ export function StarterClaim({ templateId, canCreate = true }: { templateId: str
             onClick={claim}
             disabled={pending}
             title="Claim this circle, or make it your own."
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
             {pending ? 'Starting…' : 'Remix'}
@@ -62,11 +62,11 @@ export function StarterClaim({ templateId, canCreate = true }: { templateId: str
             isCrew={false}
             label="Remix"
             reason="create-circle"
-            buttonClassName="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            buttonClassName="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           />
         )}
       </div>
-      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+      {error && <p className="mt-2 text-meta text-danger">{error}</p>}
     </div>
   )
 }

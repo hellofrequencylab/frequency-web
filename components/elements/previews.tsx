@@ -93,7 +93,7 @@ function HeaderPreview() {
         {presets.map((p) => (
           <div key={p.key} className="space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold text-text">{p.name}</p>
+              <p className="text-body-sm font-semibold text-text">{p.name}</p>
               <span className="text-2xs uppercase tracking-wide text-muted">{p.type}</span>
             </div>
             <PageHero
@@ -105,7 +105,7 @@ function HeaderPreview() {
               title={p.title}
               subtitle={p.subtitle}
               leading={p.leading}
-              search={p.search ? <div className="rounded-pill bg-canvas/90 px-3 py-1.5 text-xs text-muted">Search…</div> : undefined}
+              search={p.search ? <div className="rounded-pill bg-canvas/90 px-3 py-1.5 text-meta text-muted">Search…</div> : undefined}
             />
             <div className="flex flex-wrap gap-1">
               {p.features.map((f) => (
@@ -126,7 +126,7 @@ function LoomPreview() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
       >
         <ImageIcon className="h-4 w-4" /> Open the Loom picker
       </button>

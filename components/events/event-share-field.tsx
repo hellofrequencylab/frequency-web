@@ -122,10 +122,10 @@ export function EventShareField({ eventId, slug }: { eventId: string; slug: stri
               )}
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1.5">
-                  <span className="truncate text-sm font-medium text-text">{s.space.name}</span>
+                  <span className="truncate text-body-sm font-medium text-text">{s.space.name}</span>
                   <SpaceTypeBadge label={s.space.typeLabel} />
                 </p>
-                <p className="flex items-center gap-1 text-xs text-subtle">
+                <p className="flex items-center gap-1 text-meta text-subtle">
                   {s.status === 'accepted' ? (
                     <>
                       <Check className="h-3 w-3 text-success" /> Collaborator
@@ -147,7 +147,7 @@ export function EventShareField({ eventId, slug }: { eventId: string; slug: stri
                     type="button"
                     onClick={() => run(declineEventShare(s.id))}
                     disabled={pending}
-                    className="rounded-lg px-2 py-1 text-xs font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
+                    className="rounded-lg px-2 py-1 text-meta font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
                   >
                     Decline
                   </button>
@@ -155,7 +155,7 @@ export function EventShareField({ eventId, slug }: { eventId: string; slug: stri
                     type="button"
                     onClick={() => run(approveEventShare(s.id))}
                     disabled={pending}
-                    className="rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                    className="rounded-lg bg-primary px-2.5 py-1 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                   >
                     Approve
                   </button>
@@ -175,7 +175,7 @@ export function EventShareField({ eventId, slug }: { eventId: string; slug: stri
                   }}
                   disabled={pending}
                   aria-label={s.status === 'accepted' ? 'Remove collaborator' : 'Cancel request'}
-                  className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-subtle transition-colors hover:text-danger disabled:opacity-40"
+                  className="shrink-0 rounded-lg px-2 py-1 text-meta font-medium text-subtle transition-colors hover:text-danger disabled:opacity-40"
                 >
                   {s.status === 'accepted' ? 'Remove' : 'Cancel request'}
                 </button>
@@ -185,13 +185,13 @@ export function EventShareField({ eventId, slug }: { eventId: string; slug: stri
         </ul>
       )}
 
-      <p className="text-xs text-subtle">
+      <p className="text-meta text-subtle">
         A Collaborator is a Business or Non Profit Space that co-hosts this event on its calendar. A
         steward there approves the request. To add a person, invite them as a cohost above.
       </p>
       <SpaceSearch pending={pending} onPick={share} />
 
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
     </div>
   )
 }
@@ -265,7 +265,7 @@ function SpaceSearch({ pending, onPick }: { pending: boolean; onPick: (spaceId: 
           }}
           placeholder="Search Spaces by name"
           disabled={pending}
-          className="min-w-0 flex-1 bg-transparent text-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
+          className="min-w-0 flex-1 bg-transparent text-body-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
         />
       </div>
 
@@ -291,7 +291,7 @@ function SpaceSearch({ pending, onPick }: { pending: boolean; onPick: (spaceId: 
                   {getInitials(h.name)}
                 </div>
               )}
-              <span className="min-w-0 flex-1 truncate text-xs font-semibold text-text">{h.name}</span>
+              <span className="min-w-0 flex-1 truncate text-meta font-semibold text-text">{h.name}</span>
               {h.type_label && <SpaceTypeBadge label={h.type_label} />}
             </button>
           ))}

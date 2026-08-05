@@ -76,11 +76,11 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-text">{item.name}</p>
-          <p className="text-xs text-muted mt-0.5 leading-relaxed">{item.description}</p>
+          <p className="text-body-sm font-semibold text-text">{item.name}</p>
+          <p className="text-meta text-muted mt-0.5 leading-relaxed">{item.description}</p>
 
           <div className="flex items-center justify-between mt-3">
-            <span className="text-sm font-bold text-signal-strong flex items-center gap-1">
+            <span className="text-body-sm font-bold text-signal-strong flex items-center gap-1">
               <Gem className="w-3.5 h-3.5" />
               {item.gem_cost.toLocaleString()}
             </span>
@@ -90,11 +90,11 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
                 {result.text}
               </span>
             ) : item.owned ? (
-              <span className="text-xs font-semibold text-signal-strong flex items-center gap-1">
+              <span className="text-meta font-semibold text-signal-strong flex items-center gap-1">
                 <Check className="w-3.5 h-3.5" /> Owned
               </span>
             ) : outOfStock ? (
-              <span className="text-xs font-medium text-subtle flex items-center gap-1">
+              <span className="text-meta font-medium text-subtle flex items-center gap-1">
                 <Lock className="w-3 h-3" /> Sold out
               </span>
             ) : (

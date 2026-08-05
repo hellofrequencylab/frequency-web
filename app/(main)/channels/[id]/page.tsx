@@ -136,7 +136,7 @@ async function ForumPreview({
   if (posts.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-3">
-        <p className="text-xs text-muted leading-relaxed">
+        <p className="text-meta text-muted leading-relaxed">
           {!myProfileId
             ? 'The forum is where people tuned in talk shop. Sign in to read and post.'
             : isTunedIn
@@ -155,16 +155,16 @@ async function ForumPreview({
           href={feedHref}
           className="block rounded-2xl border border-border bg-surface px-3 py-2.5 hover:border-primary-bg dark:hover:border-primary transition-colors"
         >
-          <div className="flex items-center gap-2 text-xs text-muted">
+          <div className="flex items-center gap-2 text-meta text-muted">
             <span className="font-medium text-text">{p.author?.display_name ?? 'Someone'}</span>
             <span>{relativeTime(p.created_at)}</span>
           </div>
-          {p.body && <p className="mt-1 text-sm text-text line-clamp-2">{p.body}</p>}
+          {p.body && <p className="mt-1 text-body-sm text-text line-clamp-2">{p.body}</p>}
         </Link>
       ))}
       <Link
         href={feedHref}
-        className="inline-flex items-center gap-1 text-xs font-medium text-primary-strong hover:underline"
+        className="inline-flex items-center gap-1 text-meta font-medium text-primary-strong hover:underline"
       >
         Open the full feed →
       </Link>
@@ -376,12 +376,12 @@ export default async function ChannelPage({
     />
   )
   const directoryNote = isProgramChannel ? (
-    <p className="mt-4 text-xs text-muted leading-relaxed">
+    <p className="mt-4 text-meta text-muted leading-relaxed">
       A Chapter is a local Circle of up to 50 people running the {channel.name} model.
       Start one where you live. You get a private draft to shape before anyone sees it.
     </p>
   ) : (
-    <p className="mt-4 text-xs text-muted leading-relaxed">
+    <p className="mt-4 text-meta text-muted leading-relaxed">
       Circles are local crews of up to 50 people who meet regularly, in-person or
       online. Each one declares a Channel as its practice. Start one from the header
       above and you are its first Host.
@@ -503,7 +503,7 @@ export default async function ChannelPage({
                 />
                 <Link
                   href={`${base}/manage`}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
                 >
                   <LayoutDashboard className="h-4 w-4 text-subtle" />
                   Manage
@@ -513,7 +513,7 @@ export default async function ChannelPage({
 
             {/* Fact row — the events-header idiom: icon rows, social proof up front
                 (pattern 2), the key fact a step stronger. */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-body-sm text-muted">
               <span className="flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-primary-strong shrink-0" />
                 <span className="font-semibold text-text">
@@ -527,7 +527,7 @@ export default async function ChannelPage({
                 </span>
               </span>
               {pillarName && (
-                <span className="inline-flex items-center rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
+                <span className="inline-flex items-center rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-medium text-muted">
                   {pillarName} Pillar
                 </span>
               )}
@@ -562,7 +562,7 @@ export default async function ChannelPage({
           {tab === 'home' && (
             <>
               <ModuleCard title={`Welcome to ${channel.name}`}>
-                <p className="text-sm text-muted leading-relaxed">
+                <p className="text-body-sm text-muted leading-relaxed">
                   Tune in to follow the forum from your feed. Find a {groupNoun} near you
                   under {groupNounPlural}. The About tab covers how this Channel works.
                 </p>
@@ -590,8 +590,8 @@ export default async function ChannelPage({
           {tab === 'feed' && (
             <section>
               <div className="mb-4">
-                <h2 className="text-sm font-bold text-text">Forum</h2>
-                <p className="text-xs text-muted leading-relaxed mt-0.5">
+                <h2 className="text-body-sm font-bold text-text">Forum</h2>
+                <p className="text-meta text-muted leading-relaxed mt-0.5">
                   Open to anyone tuned in. Talk shop, share, swap notes.
                 </p>
               </div>
@@ -604,7 +604,7 @@ export default async function ChannelPage({
               ) : (
                 myProfileId && (
                   <div className="mb-4 rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-3">
-                    <p className="text-xs text-muted leading-relaxed">
+                    <p className="text-meta text-muted leading-relaxed">
                       Tune in to post and follow this forum from your feed.
                     </p>
                   </div>
@@ -651,8 +651,8 @@ export default async function ChannelPage({
           {tab === 'about' && (
             <>
               <ModuleCard title={`About ${channel.name}`}>
-                <p className="text-sm text-muted leading-relaxed">{description}</p>
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                <p className="text-body-sm text-muted leading-relaxed">{description}</p>
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-meta">
                   <span className="rounded-pill bg-surface-elevated px-2 py-0.5 font-medium text-muted">
                     {categoryLabel}
                   </span>
@@ -665,7 +665,7 @@ export default async function ChannelPage({
               </ModuleCard>
 
               <ModuleCard title="How this Channel works">
-                <div className="space-y-3 text-sm text-muted leading-relaxed">
+                <div className="space-y-3 text-body-sm text-muted leading-relaxed">
                   <p>
                     Tuning in follows this Channel: forum posts reach your feed and you
                     can post here. Tune out any time from the header.

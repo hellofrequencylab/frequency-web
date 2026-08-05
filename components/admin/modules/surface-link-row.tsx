@@ -24,7 +24,7 @@ export function SurfaceLinkRow({ app, href }: { app: App; href: string }) {
           <Icon className="h-3.5 w-3.5" aria-hidden />
         </span>
       )}
-      <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">{app.label}</span>
+      <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-text">{app.label}</span>
       <ArrowRight
         className="h-3.5 w-3.5 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong motion-reduce:transition-none"
         aria-hidden

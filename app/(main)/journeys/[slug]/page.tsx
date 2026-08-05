@@ -38,7 +38,7 @@ export const dynamic = 'force-dynamic'
 // Kept token-for-token in sync with HERO_ACTION_CLASS. Only the HEADER instance is wrapped — the light
 // repeat-CTA card keeps its normal styling.
 const HERO_CTA_WRAP =
-  '[&_a]:!inline-flex [&_a]:!items-center [&_a]:!justify-center [&_a]:!gap-1.5 [&_a]:!rounded-lg [&_a]:!border [&_a]:!border-on-ink/40 [&_a]:!bg-on-ink/10 [&_a]:!px-3 [&_a]:!py-1.5 [&_a]:!text-sm [&_a]:!font-semibold [&_a]:!text-on-ink [&_a]:!backdrop-blur-sm [&_a]:hover:!bg-on-ink/20 [&_a]:hover:!text-on-ink [&_button]:!inline-flex [&_button]:!items-center [&_button]:!justify-center [&_button]:!gap-1.5 [&_button]:!rounded-lg [&_button]:!border [&_button]:!border-on-ink/40 [&_button]:!bg-on-ink/10 [&_button]:!px-3 [&_button]:!py-1.5 [&_button]:!text-sm [&_button]:!font-semibold [&_button]:!text-on-ink [&_button]:!backdrop-blur-sm [&_button]:hover:!bg-on-ink/20 [&_button]:hover:!text-on-ink'
+  '[&_a]:!inline-flex [&_a]:!items-center [&_a]:!justify-center [&_a]:!gap-1.5 [&_a]:!rounded-lg [&_a]:!border [&_a]:!border-on-ink/40 [&_a]:!bg-on-ink/10 [&_a]:!px-3 [&_a]:!py-1.5 [&_a]:!text-body-sm [&_a]:!font-semibold [&_a]:!text-on-ink [&_a]:!backdrop-blur-sm [&_a]:hover:!bg-on-ink/20 [&_a]:hover:!text-on-ink [&_button]:!inline-flex [&_button]:!items-center [&_button]:!justify-center [&_button]:!gap-1.5 [&_button]:!rounded-lg [&_button]:!border [&_button]:!border-on-ink/40 [&_button]:!bg-on-ink/10 [&_button]:!px-3 [&_button]:!py-1.5 [&_button]:!text-body-sm [&_button]:!font-semibold [&_button]:!text-on-ink [&_button]:!backdrop-blur-sm [&_button]:hover:!bg-on-ink/20 [&_button]:hover:!text-on-ink'
 
 // The one Journey page (docs/JOURNEYS.md §10). It flips between three faces:
 //   • AUTHOR    → redirects to the v2 editor at /journeys/[slug]/edit (identity + delivery +
@@ -220,27 +220,27 @@ export default async function JourneyPlanPage({
                     caps={Array.from(journeyCaps)}
                     label="Manage"
                     icon={<SlidersHorizontal className="h-4 w-4" />}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
                   />
                 )}
               </div>
             )}
             <span className="inline-flex flex-wrap items-center gap-1.5">
               {plan.official && (
-                <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-xs font-semibold text-primary-strong">
+                <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-semibold text-primary-strong">
                   <Sparkles className="h-3 w-3" /> Official
                 </span>
               )}
-              <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
+              <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-medium text-muted">
                 <vis.Icon className="h-3 w-3" /> {vis.label}
               </span>
               {topPillar && (
-                <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
+                <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-medium text-primary-strong">
                   {topPillar.name}
                 </span>
               )}
             </span>
-            <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-meta">
               {author && (
                 <Link
                   href={`/people/${author.handle}`}
@@ -305,7 +305,7 @@ export default async function JourneyPlanPage({
           {/* The repeat CTA closes the page (no bottom dump of rewards/rules). */}
           {!isAuthor && (
             <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
-              <p className="mb-3 text-sm font-semibold text-text">
+              <p className="mb-3 text-body-sm font-semibold text-text">
                 Start it solo, or run it with your Circle.
               </p>
               <EnrollCta {...enrollProps} layout="inline" />
@@ -320,10 +320,10 @@ export default async function JourneyPlanPage({
     <>
       {isAuthor && preview && (
         <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-2.5">
-          <span className="text-sm text-muted">Preview. How others see your Journey.</span>
+          <span className="text-body-sm text-muted">Preview. How others see your Journey.</span>
           <Link
             href={`/journeys/${plan.slug}`}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             <Pencil className="h-3.5 w-3.5" /> Back to editing
           </Link>

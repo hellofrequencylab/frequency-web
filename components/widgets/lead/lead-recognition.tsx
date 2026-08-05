@@ -156,7 +156,7 @@ export async function LeadRecognition(): Promise<React.ReactElement | null> {
                 <span className="block text-2xs font-semibold uppercase tracking-widest text-primary-strong">
                   {h.eyebrow}
                 </span>
-                <span className="mt-0.5 block text-sm leading-relaxed text-text">
+                <span className="mt-0.5 block text-body-sm leading-relaxed text-text">
                   <span className="font-semibold">{h.name}</span> is {h.reason}. {h.hint}
                 </span>
               </span>

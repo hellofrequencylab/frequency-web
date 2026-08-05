@@ -67,13 +67,13 @@ export function ChannelDangerZone() {
 
   return (
     <div className="space-y-4 rounded-2xl border border-danger/30 bg-danger-bg/20 p-4">
-      {error && <p className="text-xs font-medium text-danger">{error}</p>}
+      {error && <p className="text-meta font-medium text-danger">{error}</p>}
 
       <div>
-        <p className="text-sm font-semibold text-danger">
+        <p className="text-body-sm font-semibold text-danger">
           {data.is_active ? 'Archive this Channel' : 'This Channel is archived'}
         </p>
-        <p className="mt-0.5 text-xs text-muted">
+        <p className="mt-0.5 text-meta text-muted">
           {data.is_active
             ? 'Hides the Channel page and takes it out of the directory. Circles keep everything they have. You can bring it back any time.'
             : 'It is hidden and out of the directory. Circles kept everything. Set it live to bring it back.'}
@@ -84,7 +84,7 @@ export function ChannelDangerZone() {
             type="button"
             disabled={pending}
             onClick={() => setActive(true)}
-            className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
+            className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
           >
             Set it live
           </button>
@@ -93,25 +93,25 @@ export function ChannelDangerZone() {
             type="button"
             disabled={pending}
             onClick={() => setConfirmingArchive(true)}
-            className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-danger/40 bg-surface px-3 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-40"
+            className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-danger/40 bg-surface px-3 py-1.5 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-40"
           >
             Archive Channel
           </button>
         ) : (
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-danger">Archive this Channel?</span>
+            <span className="text-meta font-medium text-danger">Archive this Channel?</span>
             <button
               type="button"
               disabled={pending}
               onClick={() => setActive(false)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-danger px-3 py-1.5 text-xs font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-danger px-3 py-1.5 text-meta font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50"
             >
               Yes, archive it
             </button>
             <button
               type="button"
               onClick={() => setConfirmingArchive(false)}
-              className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:text-text"
+              className="rounded-lg px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:text-text"
             >
               Keep it live
             </button>

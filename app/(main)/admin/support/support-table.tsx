@@ -16,7 +16,7 @@ const columns: ColumnDef<AdminTicketRow>[] = [
     render: (t) => (
       <span className="block min-w-0">
         <span className="block truncate font-medium text-text">{t.subject}</span>
-        <span className="block truncate text-xs text-subtle">
+        <span className="block truncate text-meta text-subtle">
           {TYPE_LABELS[t.type]} · #{t.ref} · {t.reporter?.name ?? 'Unknown'}
           {t.assignee && <> · → {t.assignee.name}</>}
         </span>

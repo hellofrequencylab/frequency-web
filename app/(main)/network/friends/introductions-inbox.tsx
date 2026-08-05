@@ -42,7 +42,7 @@ function Pair({ a, b }: { a: IntroPerson; b: IntroPerson }) {
         <Avatar person={a} />
         <Avatar person={b} />
       </div>
-      <p className="min-w-0 truncate text-sm font-semibold text-text">
+      <p className="min-w-0 truncate text-body-sm font-semibold text-text">
         {a.displayName} <span className="font-normal text-subtle">&amp;</span> {b.displayName}
       </p>
     </div>
@@ -78,7 +78,7 @@ function MadeRow({ intro, rewardGems }: { intro: IntroductionMade; rewardGems: n
         <Pair a={intro.a} b={intro.b} />
         <StatusChip intro={intro} rewardGems={rewardGems} />
       </div>
-      {intro.note && <p className="mt-2 text-sm text-muted">“{intro.note}”</p>}
+      {intro.note && <p className="mt-2 text-body-sm text-muted">“{intro.note}”</p>}
     </li>
   )
 }
@@ -89,7 +89,7 @@ function ForYouRow({ intro }: { intro: IntroductionForYou }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <Avatar person={intro.other} size={40} />
-          <p className="min-w-0 text-sm text-text">
+          <p className="min-w-0 text-body-sm text-text">
             <span className="font-semibold">{intro.introducer.displayName}</span> thinks you and{' '}
             <span className="font-semibold">{intro.other.displayName}</span> should meet.
           </p>
@@ -97,14 +97,14 @@ function ForYouRow({ intro }: { intro: IntroductionForYou }) {
         {intro.other.handle && (
           <Link
             href={`/people/${intro.other.handle}`}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             Meet {intro.other.displayName.split(/\s+/)[0]}
             <ArrowRight className="h-4 w-4" />
           </Link>
         )}
       </div>
-      {intro.note && <p className="mt-2 text-sm text-muted">“{intro.note}”</p>}
+      {intro.note && <p className="mt-2 text-body-sm text-muted">“{intro.note}”</p>}
     </li>
   )
 }

@@ -10,8 +10,8 @@ import { saveStorefrontSettingsAction } from './shop-actions'
 // staff preview. No em or en dashes.
 
 const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary'
-const LABEL = 'mb-1 block text-sm font-medium text-text'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
+const LABEL = 'mb-1 block text-body-sm font-medium text-text'
 
 export function StorefrontTab({
   slug,
@@ -42,7 +42,7 @@ export function StorefrontTab({
             className={FIELD}
             placeholder="Shop"
           />
-          <p className="mt-1 text-xs text-subtle">This is the label members see for your storefront tab.</p>
+          <p className="mt-1 text-meta text-subtle">This is the label members see for your storefront tab.</p>
         </div>
         <div>
           <span className={LABEL}>Shop banner</span>
@@ -54,11 +54,11 @@ export function StorefrontTab({
           />
         </div>
         <div>
-          <label className="flex items-center gap-2 text-sm text-text">
+          <label className="flex items-center gap-2 text-body-sm text-text">
             <input type="checkbox" name="published" defaultChecked={cfg.published} disabled={readOnly} className="h-4 w-4" />
             Show the Shop tab on my public page
           </label>
-          <p className="mt-1 text-xs text-subtle">
+          <p className="mt-1 text-meta text-subtle">
             When this is on, your Shop tab shows on your page with every Live item. Turn it off to hide the
             whole tab.
           </p>
@@ -73,8 +73,8 @@ export function StorefrontTab({
       </form>
 
       <div className="rounded-2xl border border-border bg-surface p-5">
-        <h2 className="text-base font-bold text-text">Getting paid</h2>
-        <p className="mb-4 mt-1 text-sm text-muted">
+        <h2 className="text-body font-bold text-text">Getting paid</h2>
+        <p className="mb-4 mt-1 text-body-sm text-muted">
           Payouts run on Stripe Connect, straight to your account. Set up a payout account so you can take
           orders when payments turn on.
         </p>

@@ -68,7 +68,7 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-xs font-semibold text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg/50 transition-colors"
+        className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-meta font-semibold text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg/50 transition-colors"
       >
         <UserPlus className="w-3.5 h-3.5" />
         Invite member
@@ -119,7 +119,7 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-text truncate">{r.display_name}</p>
+                    <p className="text-meta font-semibold text-text truncate">{r.display_name}</p>
                     <p className="text-2xs text-muted truncate">@{r.handle}</p>
                   </div>
                   {wasInvited && <Check className="w-4 h-4 text-success shrink-0" />}
@@ -130,7 +130,7 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
         )}
 
         {query && results.length === 0 && (
-          <p className="text-xs text-subtle text-center py-4">No matches.</p>
+          <p className="text-meta text-subtle text-center py-4">No matches.</p>
         )}
 
         {invited.size > 0 && (

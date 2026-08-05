@@ -25,7 +25,7 @@ export default async function LibraryReviewPage() {
     >
       <PageModules route="/library/review" />
 
-      <p className="mt-6 text-xs text-subtle">
+      <p className="mt-6 text-meta text-subtle">
         <Link href="/library" className="inline-flex items-center gap-1 text-primary-strong hover:underline">
           <ChevronLeft className="h-3 w-3" /> Back to the Library
         </Link>

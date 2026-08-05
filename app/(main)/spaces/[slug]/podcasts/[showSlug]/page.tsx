@@ -137,7 +137,7 @@ export default async function ShowPage({
               ) : (
                 <div
                   aria-hidden
-                  className="grid h-40 w-40 place-items-center rounded-2xl border border-dashed border-border bg-surface-elevated text-2xl font-bold text-subtle sm:h-48 sm:w-48"
+                  className="grid h-40 w-40 place-items-center rounded-2xl border border-dashed border-border bg-surface-elevated text-page-title font-bold text-subtle sm:h-48 sm:w-48"
                 >
                   {show.title.slice(0, 1).toUpperCase()}
                 </div>
@@ -145,12 +145,12 @@ export default async function ShowPage({
             </div>
 
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold uppercase tracking-widest text-subtle">Show</p>
+              <p className="text-meta font-semibold uppercase tracking-widest text-subtle">Show</p>
               {/* header-ok: the h1 lives inside DetailTemplate's `band` slot, which by contract owns the single page h1 (the band replaces the default title lockup). The template owns the chrome. */}
-              <h1 className="mt-1 text-balance text-2xl font-bold leading-tight text-text sm:text-3xl">{show.title}</h1>
-              {show.author && <p className="mt-1 text-sm text-muted">{show.author}</p>}
+              <h1 className="mt-1 text-balance text-page-title font-bold leading-tight text-text sm:text-3xl">{show.title}</h1>
+              {show.author && <p className="mt-1 text-body-sm text-muted">{show.author}</p>}
               {show.description && (
-                <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted">{show.description}</p>
+                <p className="mt-3 whitespace-pre-line text-body-sm leading-relaxed text-muted">{show.description}</p>
               )}
               <div className="mt-4">
                 <ShowSubscribe feedUrl={feedUrl} />
@@ -160,9 +160,9 @@ export default async function ShowPage({
         }
       >
         <section className="mt-8">
-          <h2 className="mb-3 flex items-baseline gap-2 text-sm font-bold tracking-tight text-text">
+          <h2 className="mb-3 flex items-baseline gap-2 text-body-sm font-bold tracking-tight text-text">
             Episodes
-            <span className="text-xs font-medium tabular-nums text-subtle">{items.length}</span>
+            <span className="text-meta font-medium tabular-nums text-subtle">{items.length}</span>
           </h2>
           {items.length > 0 ? (
             <ShowEpisodes episodes={items} />

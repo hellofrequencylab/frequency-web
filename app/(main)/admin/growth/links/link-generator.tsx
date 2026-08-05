@@ -145,7 +145,7 @@ export function LinkGenerator() {
         <div className="space-y-1.5">
           <Label htmlFor="lg-slug">Custom short link (optional)</Label>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted">/q/</span>
+            <span className="text-body-sm text-muted">/q/</span>
             <Input
               id="lg-slug"
               value={slug}
@@ -176,7 +176,7 @@ export function LinkGenerator() {
           </div>
         )}
 
-        {error && <p className="text-sm text-danger">{error}</p>}
+        {error && <p className="text-body-sm text-danger">{error}</p>}
 
         <div className="flex items-center gap-3">
           <Button onClick={submit} disabled={pending || !title.trim() || !target.trim()}>
@@ -189,7 +189,7 @@ export function LinkGenerator() {
       {/* ── Preview / result ────────────────────────────────────────────────── */}
       <aside className="space-y-4">
         <div className="rounded-2xl border border-border bg-surface p-4">
-          <p className="flex items-center gap-1.5 text-xs font-medium text-muted">
+          <p className="flex items-center gap-1.5 text-meta font-medium text-muted">
             <QrCode className="h-3.5 w-3.5" /> Preview
           </p>
           {/* KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface. */}
@@ -207,7 +207,7 @@ export function LinkGenerator() {
             <div className="mt-4 space-y-2">
               <p className="text-2xs uppercase tracking-wide text-muted">Short link</p>
               <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-elevated/60 p-2.5">
-                <code className="min-w-0 flex-1 truncate text-xs text-text">{result.shortUrl}</code>
+                <code className="min-w-0 flex-1 truncate text-meta text-text">{result.shortUrl}</code>
                 <button
                   type="button"
                   onClick={() => copy(result.shortUrl, 'short')}

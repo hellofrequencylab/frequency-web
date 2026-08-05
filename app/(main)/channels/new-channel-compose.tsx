@@ -20,7 +20,7 @@ type PillarOption = { id: string; name: string }
 
 export function NewChannelCompose({
   pillars = [],
-  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
+  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
 }: {
   pillars?: PillarOption[]
   /** The trigger button's classes. Defaults to the standard primary; a hero caller
@@ -88,7 +88,7 @@ export function NewChannelCompose({
         error={error}
       >
         <div className="px-6 py-5 space-y-5">
-          <p className="text-sm text-muted leading-relaxed">
+          <p className="text-body-sm text-muted leading-relaxed">
             Channels are global topics anyone can tune into, sorted under a
             Pillar. Pick a name, the Pillar it belongs to, a category, and a
             short description of what people will find inside.

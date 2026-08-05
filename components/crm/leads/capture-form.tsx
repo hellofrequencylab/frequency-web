@@ -73,14 +73,14 @@ export function CaptureForm({
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-pill bg-success-bg text-success">
           <Check className="h-6 w-6" strokeWidth={2.5} aria-hidden />
         </div>
-        <h3 className="text-2xl font-bold text-text">{result.heading ?? "You're all set."}</h3>
-        {result.message && <p className="mt-2 text-sm leading-relaxed text-muted">{result.message}</p>}
+        <h3 className="text-page-title font-bold text-text">{result.heading ?? "You're all set."}</h3>
+        {result.message && <p className="mt-2 text-body-sm leading-relaxed text-muted">{result.message}</p>}
         {result.link && (
           <a
             href={result.link.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-base font-bold text-on-primary transition-colors hover:bg-primary-hover"
+            className="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-body font-bold text-on-primary transition-colors hover:bg-primary-hover"
           >
             {result.link.label}
             <ExternalLink className="h-4 w-4" aria-hidden />
@@ -88,9 +88,9 @@ export function CaptureForm({
         )}
         {result.card && (
           <div className="mt-5 rounded-card border border-border bg-canvas p-5 text-left">
-            <p className="text-base font-bold text-text">{result.card.name}</p>
+            <p className="text-body font-bold text-text">{result.card.name}</p>
             {result.card.lines.map((line, i) => (
-              <p key={i} className="mt-1 text-sm text-muted">
+              <p key={i} className="mt-1 text-body-sm text-muted">
                 {line}
               </p>
             ))}
@@ -99,7 +99,7 @@ export function CaptureForm({
                 href={result.card.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong hover:underline"
+                className="mt-3 inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline"
               >
                 {result.card.hrefLabel ?? 'Open their page'}
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden />
@@ -115,7 +115,7 @@ export function CaptureForm({
     <form onSubmit={onSubmit} className="text-left">
       <div className="space-y-4">
         <div>
-          <label htmlFor="cap-name" className="mb-1.5 block text-sm font-semibold text-text">
+          <label htmlFor="cap-name" className="mb-1.5 block text-body-sm font-semibold text-text">
             Name
           </label>
           <input
@@ -124,12 +124,12 @@ export function CaptureForm({
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoComplete="name"
-            className="w-full rounded-control border border-border bg-surface px-4 py-3 text-base text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
+            className="w-full rounded-control border border-border bg-surface px-4 py-3 text-body text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
             placeholder={namePlaceholder}
           />
         </div>
         <div>
-          <label htmlFor="cap-email" className="mb-1.5 block text-sm font-semibold text-text">
+          <label htmlFor="cap-email" className="mb-1.5 block text-body-sm font-semibold text-text">
             Email
           </label>
           <input
@@ -141,13 +141,13 @@ export function CaptureForm({
             autoComplete="email"
             aria-describedby={error ? 'cap-error' : undefined}
             aria-invalid={error ? true : undefined}
-            className="w-full rounded-control border border-border bg-surface px-4 py-3 text-base text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
+            className="w-full rounded-control border border-border bg-surface px-4 py-3 text-body text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
             placeholder="you@email.com"
           />
         </div>
         {showPhone && (
           <div>
-            <label htmlFor="cap-phone" className="mb-1.5 block text-sm font-semibold text-text">
+            <label htmlFor="cap-phone" className="mb-1.5 block text-body-sm font-semibold text-text">
               Phone <span className="font-normal text-subtle">(optional)</span>
             </label>
             <input
@@ -156,7 +156,7 @@ export function CaptureForm({
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               autoComplete="tel"
-              className="w-full rounded-control border border-border bg-surface px-4 py-3 text-base text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
+              className="w-full rounded-control border border-border bg-surface px-4 py-3 text-body text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong"
               placeholder="(555) 555-0134"
             />
           </div>
@@ -177,7 +177,7 @@ export function CaptureForm({
       </div>
 
       {error && (
-        <p id="cap-error" className="mt-4 text-sm text-danger" role="alert">
+        <p id="cap-error" className="mt-4 text-body-sm text-danger" role="alert">
           {error}
         </p>
       )}
@@ -185,13 +185,13 @@ export function CaptureForm({
       <button
         type="submit"
         disabled={status === 'loading'}
-        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-8 py-3.5 text-base font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-8 py-3.5 text-body font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
       >
         {status === 'loading' ? 'One sec…' : submitLabel}
         {status !== 'loading' && <ArrowRight className="h-4 w-4" aria-hidden />}
       </button>
 
-      {consentNote && <div className="mt-4 text-xs leading-relaxed text-subtle">{consentNote}</div>}
+      {consentNote && <div className="mt-4 text-meta leading-relaxed text-subtle">{consentNote}</div>}
     </form>
   )
 }

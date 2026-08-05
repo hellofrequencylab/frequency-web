@@ -37,7 +37,7 @@ export function Field({
         {action}
       </div>
       {children}
-      {hint && <p className="mt-1 text-xs text-subtle">{hint}</p>}
+      {hint && <p className="mt-1 text-meta text-subtle">{hint}</p>}
     </div>
   )
 }
@@ -131,8 +131,8 @@ export function VisibilityField({
     <Field id="visibility" label="Visibility">
       <div className="flex items-start justify-between gap-3 rounded-lg border border-border bg-surface p-3">
         <div className="min-w-0">
-          <span className="block text-sm font-semibold text-text">{isNetwork ? 'Network' : 'Private'}</span>
-          <span className="mt-0.5 block text-xs text-muted">
+          <span className="block text-body-sm font-semibold text-text">{isNetwork ? 'Network' : 'Private'}</span>
+          <span className="mt-0.5 block text-meta text-muted">
             {isNetwork
               ? 'Listed in the Spaces directory for anyone to find.'
               : 'Hidden from the directory. Only you and your members can open it.'}
@@ -245,7 +245,7 @@ export function AccentPicker({
                 }
               }}
               className={cn(
-                'w-28 rounded-lg border bg-surface px-3 py-1.5 text-sm text-text outline-none focus:border-primary placeholder:text-subtle disabled:opacity-60',
+                'w-28 rounded-lg border bg-surface px-3 py-1.5 text-body-sm text-text outline-none focus:border-primary placeholder:text-subtle disabled:opacity-60',
                 draftValid ? 'border-border' : 'border-danger',
               )}
             />
@@ -255,7 +255,7 @@ export function AccentPicker({
               disabled={disabled}
               aria-pressed={value === ''}
               className={cn(
-                'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60',
+                'rounded-lg border px-3 py-1.5 text-meta font-semibold transition-colors disabled:opacity-60',
                 value === ''
                   ? 'border-primary bg-primary-bg text-primary-strong'
                   : 'border-border text-muted hover:border-border-strong',
@@ -265,7 +265,7 @@ export function AccentPicker({
             </button>
           </div>
           {!draftValid && (
-            <p className="text-xs font-medium text-danger">Enter a hex color like #E2912F.</p>
+            <p className="text-meta font-medium text-danger">Enter a hex color like #E2912F.</p>
           )}
         </div>
 
@@ -303,7 +303,7 @@ export function AccentPicker({
 /** A small inline error banner for a failed save. */
 export function FormError({ message }: { message: string }) {
   return (
-    <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
+    <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
       {message}
     </p>
   )

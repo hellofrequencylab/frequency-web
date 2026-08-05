@@ -45,8 +45,8 @@ export function ProfileActivationWelcome({
               ? 'Almost there. One step left'
               : `${greeting} · ${status.doneCount} of ${status.total} done`}
           </p>
-          <h2 className="text-base font-bold leading-tight text-text">{current.headline}</h2>
-          <p className="mt-0.5 text-sm leading-snug text-muted">{welcomeNote(status.doneCount, status.total)}</p>
+          <h2 className="text-body font-bold leading-tight text-text">{current.headline}</h2>
+          <p className="mt-0.5 text-body-sm leading-snug text-muted">{welcomeNote(status.doneCount, status.total)}</p>
         </div>
       </div>
 
@@ -71,7 +71,7 @@ export function ProfileActivationWelcome({
       <div className="mt-3">
         <Link
           href={current.href}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-broadcast-bg px-4 py-2 text-sm font-medium text-broadcast-strong transition-colors hover:bg-broadcast-bg/50"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-broadcast-bg px-4 py-2 text-body-sm font-medium text-broadcast-strong transition-colors hover:bg-broadcast-bg/50"
         >
           {current.cta} <ArrowRight className="h-3.5 w-3.5" />
         </Link>

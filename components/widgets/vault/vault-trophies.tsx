@@ -20,7 +20,7 @@ export async function VaultTrophies() {
   return (
     <section>
       <SectionHeader title="Your Trophies" />
-      <p className="-mt-2 mb-3 text-xs text-subtle">
+      <p className="-mt-2 mb-3 text-meta text-subtle">
         Every Journey you finish stays here for good. The season rank resets every 13 weeks for a fresh start; your Trophies and Gems do not.
       </p>
       {trophyCase.totalTrophies === 0 ? (
@@ -31,7 +31,7 @@ export async function VaultTrophies() {
           action={
             <Link
               href="/crew"
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
             >
               Go to your Quest
               <ArrowRight className="h-4 w-4 shrink-0" />

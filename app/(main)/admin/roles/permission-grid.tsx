@@ -71,28 +71,28 @@ export function PermissionGrid({
     <section className="mt-8 rounded-2xl border border-border bg-surface lift-1">
       <div className="flex items-start justify-between gap-3 border-b border-border p-4">
         <div>
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-text">
+          <h2 className="flex items-center gap-2 text-body-sm font-semibold text-text">
             <SlidersHorizontal className="h-4 w-4 text-primary-strong" />
             Area permissions
           </h2>
-          <p className="mt-0.5 text-xs text-muted">
+          <p className="mt-0.5 text-meta text-muted">
             Set the lowest role that can use each area. Everyone below sees it muted in their menu.
             Changes save instantly and apply on each member’s next page load.
           </p>
         </div>
       </div>
 
-      {error && <p className="px-4 pt-3 text-sm text-danger">{error}</p>}
+      {error && <p className="px-4 pt-3 text-body-sm text-danger">{error}</p>}
 
       <div className="overflow-x-auto p-2">
-        <table className="w-full border-collapse text-sm">
+        <table className="w-full border-collapse text-body-sm">
           <thead>
             <tr>
-              <th className="sticky left-0 z-10 bg-surface px-3 py-2 text-left text-xs font-semibold text-subtle">
+              <th className="sticky left-0 z-10 bg-surface px-3 py-2 text-left text-meta font-semibold text-subtle">
                 Area
               </th>
               {ACCESS_LEVELS.map((lvl) => (
-                <th key={lvl} className="px-2 py-2 text-center text-xs font-semibold text-muted">
+                <th key={lvl} className="px-2 py-2 text-center text-meta font-semibold text-muted">
                   {LEVEL_LABEL[lvl]}
                 </th>
               ))}
@@ -137,7 +137,7 @@ function GroupRows({
       <tr>
         <td
           colSpan={ACCESS_LEVELS.length + 1}
-          className="bg-surface-elevated px-3 py-1.5 text-sm font-bold text-text"
+          className="bg-surface-elevated px-3 py-1.5 text-body-sm font-bold text-text"
         >
           {section}
         </td>
@@ -156,7 +156,7 @@ function GroupRows({
                 {!isDefault && (
                   <span
                     title={`Default: ${LEVEL_LABEL[defaults[area.key]]}`}
-                    className="inline-flex items-center gap-0.5 rounded-pill bg-primary-bg px-1.5 py-0.5 text-xs font-semibold text-primary-strong"
+                    className="inline-flex items-center gap-0.5 rounded-pill bg-primary-bg px-1.5 py-0.5 text-meta font-semibold text-primary-strong"
                   >
                     <RotateCcw className="h-2.5 w-2.5" /> custom
                   </span>

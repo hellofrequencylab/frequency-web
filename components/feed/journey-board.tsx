@@ -114,7 +114,7 @@ export function JourneyBoard({
           <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-surface text-primary-strong lift-1">
             <Flame className="h-3 w-3" />
           </span>
-          <p className="shrink-0 text-sm font-bold leading-tight text-text">
+          <p className="shrink-0 text-body-sm font-bold leading-tight text-text">
             {streak > 0 ? `${streak} day streak` : 'Your journey'}
           </p>
           {freezeTokens > 0 && (
@@ -126,7 +126,7 @@ export function JourneyBoard({
             </span>
           )}
           {atRisk && !willFreezeProtect && (
-            <span className="hidden truncate text-xs text-muted sm:inline">Log one practice today to keep it.</span>
+            <span className="hidden truncate text-meta text-muted sm:inline">Log one practice today to keep it.</span>
           )}
           <ProgressTrack value={p.pct} label="Journey progress" track="surface" animate className="min-w-8 flex-1" />
           <button
@@ -154,7 +154,7 @@ export function JourneyBoard({
               <Flame className="h-4 w-4" />
             </span>
             <div className="min-w-0">
-              <p className="flex flex-wrap items-center gap-1.5 text-sm font-bold leading-tight text-text">
+              <p className="flex flex-wrap items-center gap-1.5 text-body-sm font-bold leading-tight text-text">
                 <span>{streak > 0 ? `${streak} day streak` : 'Your journey'}</span>
                 {!p.maxed && p.next && (
                   <span className="font-medium text-muted">
@@ -170,7 +170,7 @@ export function JourneyBoard({
                   </span>
                 )}
               </p>
-              <p className="mt-0.5 text-sm leading-snug text-muted">
+              <p className="mt-0.5 text-body-sm leading-snug text-muted">
                 {atRisk
                   ? willFreezeProtect
                     ? 'Today’s not logged yet. A freeze has you covered, but logging keeps it clean.'
@@ -253,7 +253,7 @@ export function JourneyBoard({
               <li key={`partial-${practice.id}`} className="flex items-center justify-between gap-3">
                 <Link
                   href={`/practices/${practice.slug ?? practice.id}`}
-                  className="min-w-0 truncate text-sm text-text transition-colors hover:text-primary-strong"
+                  className="min-w-0 truncate text-body-sm text-text transition-colors hover:text-primary-strong"
                 >
                   {practice.title}
                 </Link>
@@ -274,7 +274,7 @@ export function JourneyBoard({
               <li key={practice.id} className="flex items-center justify-between gap-3">
                 <Link
                   href={`/practices/${practice.slug ?? practice.id}`}
-                  className="min-w-0 truncate text-sm text-text transition-colors hover:text-primary-strong"
+                  className="min-w-0 truncate text-body-sm text-text transition-colors hover:text-primary-strong"
                 >
                   {practice.title}
                 </Link>
@@ -292,7 +292,7 @@ export function JourneyBoard({
         ) : (
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 shrink-0 text-primary-strong" />
-            <p className="text-sm text-muted">
+            <p className="text-body-sm text-muted">
               {loggedToday || streak > 0
                 ? 'All caught up. Come back tomorrow to keep your streak alive.'
                 : 'Adopt a practice to start your streak.'}
@@ -311,7 +311,7 @@ export function JourneyBoard({
             <Route className="h-3.5 w-3.5" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-text">
+            <p className="truncate text-body-sm font-medium text-text">
               {activeJourney.nextStepTitle
                 ? `Next: ${activeJourney.nextStepTitle}`
                 : `Keep going in ${activeJourney.title}`}
@@ -353,12 +353,12 @@ export function JourneyBoard({
       {stageIndex >= 2 && (
         <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-primary-bg bg-surface/40 px-3 py-2.5">
           <Compass className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
-          <span className="mr-0.5 text-xs font-medium text-subtle">Keep exploring</span>
+          <span className="mr-0.5 text-meta font-medium text-subtle">Keep exploring</span>
           {RESOURCES.map(({ href, label, Icon }) => (
             <Link
               key={href}
               href={href}
-              className="inline-flex items-center gap-1 rounded-pill border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text transition-colors hover:border-primary hover:text-primary-strong"
+              className="inline-flex items-center gap-1 rounded-pill border border-border bg-surface px-2.5 py-1 text-meta font-medium text-text transition-colors hover:border-primary hover:text-primary-strong"
             >
               <Icon className="h-3 w-3" /> {label}
             </Link>

@@ -193,7 +193,7 @@ export function SpacePublishFab({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="pointer-events-auto inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface/95 px-3.5 py-2 text-xs font-semibold text-text shadow-pop backdrop-blur transition-colors hover:bg-surface-elevated"
+          className="pointer-events-auto inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface/95 px-3.5 py-2 text-meta font-semibold text-text shadow-pop backdrop-blur transition-colors hover:bg-surface-elevated"
         >
           <ChevronUp className="h-3.5 w-3.5" aria-hidden />{' '}
           {hasUnpublishedChanges ? 'Unpublished changes' : 'Editing tools'}
@@ -212,7 +212,7 @@ export function SpacePublishFab({
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5">
         {/* Autosave cue — reflects the store's saving flag; aria-live so an AT hears it settle. */}
         <span
-          className="flex items-center gap-1.5 text-xs font-medium text-subtle"
+          className="flex items-center gap-1.5 text-meta font-medium text-subtle"
           role="status"
           aria-live="polite"
         >
@@ -238,7 +238,7 @@ export function SpacePublishFab({
           onClick={() => store.undo()}
           disabled={!canUndo}
           aria-label="Undo the last change"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
         >
           <Undo2 className="h-3.5 w-3.5" aria-hidden /> Undo
         </button>
@@ -250,7 +250,7 @@ export function SpacePublishFab({
           aria-checked={published}
           disabled={visibleBusy}
           onClick={() => void onToggleVisible()}
-          className="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
         >
           <span
             aria-hidden
@@ -268,7 +268,7 @@ export function SpacePublishFab({
         </button>
 
         {error && (
-          <span className="text-xs font-medium text-danger" role="alert">
+          <span className="text-meta font-medium text-danger" role="alert">
             {error}
           </span>
         )}
@@ -287,7 +287,7 @@ export function SpacePublishFab({
               onClick={() => void onDiscard()}
               disabled={discardBusy}
               title="Go back to the page visitors see"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-danger disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-body-sm font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-danger disabled:opacity-60"
             >
               {discardBusy ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -301,7 +301,7 @@ export function SpacePublishFab({
             type="button"
             onClick={onSaveDraft}
             title="Come back later"
-            className="inline-flex items-center rounded-lg border border-border px-4 py-2 text-sm font-bold text-text transition-colors hover:bg-surface-elevated"
+            className="inline-flex items-center rounded-lg border border-border px-4 py-2 text-body-sm font-bold text-text transition-colors hover:bg-surface-elevated"
           >
             Save draft
           </button>
@@ -310,7 +310,7 @@ export function SpacePublishFab({
             onClick={() => void onPublish()}
             disabled={publishBusy}
             title="Go live now"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-sm font-bold text-on-primary lift-1 transition-colors hover:bg-primary-strong disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-body-sm font-bold text-on-primary lift-1 transition-colors hover:bg-primary-strong disabled:opacity-60"
           >
             {publishBusy ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />

@@ -48,29 +48,29 @@ export default async function AgentPage() {
             <div key={a.id} className="rounded-2xl border border-border bg-surface lift-1 p-4">
               {isDraft ? (
                 <>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-primary-strong">
+                  <p className="text-meta font-semibold uppercase tracking-wide text-primary-strong">
                     {String(a.payload.channel ?? 'Content')} · {String(a.payload.painPoint ?? '')}
                   </p>
-                  <p className="mt-1 text-sm font-bold text-text">{String(a.payload.hook ?? '')}</p>
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-muted">{String(a.payload.body ?? '')}</p>
+                  <p className="mt-1 text-body-sm font-bold text-text">{String(a.payload.hook ?? '')}</p>
+                  <p className="mt-1 whitespace-pre-wrap text-body-sm text-muted">{String(a.payload.body ?? '')}</p>
                 </>
               ) : (
                 <>
-                  <p className="text-sm font-medium text-text">
+                  <p className="text-body-sm font-medium text-text">
                     {a.kind === 'email_contact' ? 'Email' : a.kind}: {String(a.payload.subject ?? '')}
                   </p>
-                  <p className="text-xs text-subtle mt-0.5">to {String(a.payload.email ?? '')}</p>
+                  <p className="text-meta text-subtle mt-0.5">to {String(a.payload.email ?? '')}</p>
                 </>
               )}
-              {a.rationale && <p className="text-xs text-muted mt-1.5">Why: {a.rationale}</p>}
+              {a.rationale && <p className="text-meta text-muted mt-1.5">Why: {a.rationale}</p>}
               <div className="flex items-center gap-2 mt-3">
                 <form action={approveAction.bind(null, a.id)}>
-                  <button type="submit" className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg text-success text-xs font-semibold px-3 py-1.5 hover:opacity-80 transition-opacity">
+                  <button type="submit" className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg text-success text-meta font-semibold px-3 py-1.5 hover:opacity-80 transition-opacity">
                     <Check className="w-3.5 h-3.5" /> {isDraft ? 'Approve (ready to post)' : 'Approve & send'}
                   </button>
                 </form>
                 <form action={dismissAction.bind(null, a.id)}>
-                  <button type="submit" className="inline-flex items-center gap-1.5 rounded-lg bg-surface-elevated text-muted text-xs font-medium px-3 py-1.5 hover:text-danger transition-colors">
+                  <button type="submit" className="inline-flex items-center gap-1.5 rounded-lg bg-surface-elevated text-muted text-meta font-medium px-3 py-1.5 hover:text-danger transition-colors">
                     <X className="w-3.5 h-3.5" /> Dismiss
                   </button>
                 </form>
@@ -88,7 +88,7 @@ export default async function AgentPage() {
         ) : (
           <div className="rounded-2xl border border-border bg-surface lift-1 divide-y divide-border/60 max-w-2xl">
             {executed.slice(0, 20).map((a) => (
-              <div key={a.id} className="px-4 py-2.5 text-sm text-muted">
+              <div key={a.id} className="px-4 py-2.5 text-body-sm text-muted">
                 {String(a.payload.subject ?? a.kind)} → {String(a.payload.email ?? '')}
               </div>
             ))}

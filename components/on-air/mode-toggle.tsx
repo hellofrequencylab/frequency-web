@@ -103,7 +103,7 @@ export function MindlessMasthead({
           <X className="h-4 w-4" />
         </button>
       </div>
-      <p className="pb-4 text-center text-xs text-subtle lg:pb-5">{MINDLESS_TAGLINE}</p>
+      <p className="pb-4 text-center text-meta text-subtle lg:pb-5">{MINDLESS_TAGLINE}</p>
       <div className="pb-5 lg:pb-6">
         <ModeToggle mode={mode} onModeChange={onModeChange} />
       </div>

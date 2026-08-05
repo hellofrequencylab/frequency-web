@@ -77,7 +77,7 @@ export function AdminTicketControls({
     })
   }
 
-  const sel = 'w-full rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text focus:border-border-strong focus:outline-none'
+  const sel = 'w-full rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text focus:border-border-strong focus:outline-none'
   const lbl = 'mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted'
 
   return (
@@ -88,7 +88,7 @@ export function AdminTicketControls({
           onClick={triage}
           disabled={triaging || pending}
           title="Let AI classify this ticket's priority"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
         >
           {triaging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
           AI triage
@@ -119,7 +119,7 @@ export function AdminTicketControls({
       </div>
 
       <div className="rounded-card border border-border bg-surface p-3">
-        <div className="mb-2 flex items-center gap-1 rounded-lg bg-surface-elevated p-0.5 text-xs">
+        <div className="mb-2 flex items-center gap-1 rounded-lg bg-surface-elevated p-0.5 text-meta">
           <button type="button" onClick={() => setInternal(false)} aria-pressed={!internal} className={`flex-1 rounded-md px-2 py-1 font-semibold transition-colors ${!internal ? 'bg-surface text-primary-strong lift-1' : 'text-muted'}`}>
             Reply to member
           </button>
@@ -133,16 +133,16 @@ export function AdminTicketControls({
           onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) reply() }}
           rows={3}
           placeholder={internal ? 'A note only staff can see…' : 'Reply to the member…'}
-          className="w-full resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+          className="w-full resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
         />
         {aiDrafted && <p className="mt-1 text-2xs text-muted">✨ AI draft. Review and edit before sending.</p>}
-        {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+        {error && <p className="mt-1 text-meta text-danger">{error}</p>}
         <div className="mt-2 flex items-center justify-between gap-2">
-          <button type="button" onClick={draft} disabled={drafting || pending} title="Draft a reply with AI (you review before sending)" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50">
+          <button type="button" onClick={draft} disabled={drafting || pending} title="Draft a reply with AI (you review before sending)" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50">
             {drafting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             AI draft
           </button>
-          <button type="button" onClick={reply} disabled={pending || !body.trim()} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50">
+          <button type="button" onClick={reply} disabled={pending || !body.trim()} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50">
             {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
             {internal ? 'Add note' : 'Send reply'}
           </button>

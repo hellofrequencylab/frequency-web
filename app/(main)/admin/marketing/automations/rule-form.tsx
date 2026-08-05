@@ -41,7 +41,7 @@ export interface EditableRule {
 }
 
 const inputClass =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
 export function RuleForm({
   triggers,
@@ -108,7 +108,7 @@ export function RuleForm({
 
   return (
     <div className="rounded-2xl border border-border bg-surface lift-1 p-4 max-w-2xl space-y-3">
-      <h2 className="text-sm font-semibold text-text">{editing ? 'Edit automation' : 'New automation'}</h2>
+      <h2 className="text-body-sm font-semibold text-text">{editing ? 'Edit automation' : 'New automation'}</h2>
 
       <input
         value={name}
@@ -117,7 +117,7 @@ export function RuleForm({
         className={inputClass}
       />
 
-      <label className="block text-xs text-subtle">
+      <label className="block text-meta text-subtle">
         When this event happens:
         <select
           value={triggerEvent}
@@ -132,9 +132,9 @@ export function RuleForm({
 
       {/* Condition layer: every predicate must hold for the action to fire. */}
       <fieldset className="rounded-lg border border-border p-3 space-y-2">
-        <legend className="px-1 text-xs text-subtle">Only when (optional)</legend>
+        <legend className="px-1 text-meta text-subtle">Only when (optional)</legend>
         {conditions.length === 0 && (
-          <p className="text-xs text-subtle">No conditions. The action fires on every matching event.</p>
+          <p className="text-meta text-subtle">No conditions. The action fires on every matching event.</p>
         )}
         {conditions.map((c, i) => {
           const needsValue = opNeedsValue(c.op)
@@ -177,13 +177,13 @@ export function RuleForm({
         <button
           type="button"
           onClick={addCondition}
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-strong"
+          className="inline-flex items-center gap-1.5 text-meta font-medium text-primary hover:text-primary-strong"
         >
           <Plus className="h-3.5 w-3.5" /> Add condition
         </button>
       </fieldset>
 
-      <label className="block text-xs text-subtle">
+      <label className="block text-meta text-subtle">
         Then reach the member by:
         <select
           value={actionType}
@@ -213,21 +213,21 @@ export function RuleForm({
         <button
           onClick={submit}
           disabled={pending || !name.trim()}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary hover:bg-primary-hover text-on-primary text-sm font-semibold px-4 py-2 lift-1 transition-colors disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg bg-primary hover:bg-primary-hover text-on-primary text-body-sm font-semibold px-4 py-2 lift-1 transition-colors disabled:opacity-60"
         >
           <Plus className="w-4 h-4" />
           {pending ? 'Saving…' : editing ? 'Save changes' : 'Create automation'}
         </button>
         {editing && onDone && (
-          <button onClick={onDone} className="text-sm text-subtle hover:text-text">Cancel</button>
+          <button onClick={onDone} className="text-body-sm text-subtle hover:text-text">Cancel</button>
         )}
         {result?.ok && (
-          <span className="inline-flex items-center gap-1.5 text-sm text-success font-medium">
+          <span className="inline-flex items-center gap-1.5 text-body-sm text-success font-medium">
             <Check className="w-4 h-4" /> {editing ? 'Saved' : 'Created'}
           </span>
         )}
         {result && !result.ok && (
-          <span className="inline-flex items-center gap-1.5 text-sm text-danger">
+          <span className="inline-flex items-center gap-1.5 text-body-sm text-danger">
             <AlertCircle className="w-4 h-4" /> {result.error}
           </span>
         )}

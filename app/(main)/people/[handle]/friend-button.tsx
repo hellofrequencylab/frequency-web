@@ -36,8 +36,8 @@ export function FriendButton({
   // Same geometry either way; only the colour source changes. `.hero-chip` lives in globals.css
   // and is the class half of HERO_ACTION_CLASS_ADAPTIVE.
   const neutralClass = onMedia
-    ? 'hero-chip flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium disabled:opacity-50 transition-colors'
-    : 'flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm font-medium text-muted hover:bg-surface-elevated disabled:opacity-50 transition-colors'
+    ? 'hero-chip flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-body-sm font-medium disabled:opacity-50 transition-colors'
+    : 'flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-body-sm font-medium text-muted hover:bg-surface-elevated disabled:opacity-50 transition-colors'
 
   // Run a friend action and surface its ActionResult error instead of swallowing it.
   function run(action: () => Promise<ActionResult>) {
@@ -56,7 +56,7 @@ export function FriendButton({
         type="button"
         disabled={isPending}
         onClick={() => run(() => sendFriendRequest(targetProfileId))}
-        className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-on-primary hover:bg-primary-hover disabled:opacity-50 transition-colors"
+        className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-medium text-on-primary hover:bg-primary-hover disabled:opacity-50 transition-colors"
       >
         <UserPlus className="w-3.5 h-3.5" />
         Add Friend
@@ -85,7 +85,7 @@ export function FriendButton({
           type="button"
           disabled={isPending}
           onClick={() => run(() => acceptFriendRequest(targetProfileId))}
-          className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-on-primary hover:bg-primary-hover disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-medium text-on-primary hover:bg-primary-hover disabled:opacity-50 transition-colors"
         >
           <Check className="w-3.5 h-3.5" />
           Accept
@@ -111,7 +111,7 @@ export function FriendButton({
           if (!confirm('Unfriend this person?')) return
           run(() => unfriend(targetProfileId))
         }}
-        className={`group ${onMedia ? neutralClass : 'flex items-center gap-1.5 rounded-lg border border-success bg-success-bg/30 px-3 py-1.5 text-sm font-medium text-success disabled:opacity-50 transition-colors'} hover:border-danger hover:bg-danger-bg hover:text-danger dark:hover:bg-danger-bg dark:hover:text-danger`}
+        className={`group ${onMedia ? neutralClass : 'flex items-center gap-1.5 rounded-lg border border-success bg-success-bg/30 px-3 py-1.5 text-body-sm font-medium text-success disabled:opacity-50 transition-colors'} hover:border-danger hover:bg-danger-bg hover:text-danger dark:hover:bg-danger-bg dark:hover:text-danger`}
         title="Click to unfriend"
       >
         <UserCheck className="w-3.5 h-3.5 group-hover:hidden" />
@@ -131,7 +131,7 @@ export function FriendButton({
           320px phone (~245px), so an errored button became the widest thing on its flex line and
           got clipped by the hero's overflow — the refusal was painted off the page. 13rem = 221px
           fits the narrowest supported width; the `sm:` pair restores 16rem from 640px up. */}
-      {error && <p className={onMedia ? 'max-w-[13rem] text-xs text-on-media sm:max-w-[16rem]' : 'text-xs text-danger'}>{error}</p>}
+      {error && <p className={onMedia ? 'max-w-[13rem] text-meta text-on-media sm:max-w-[16rem]' : 'text-meta text-danger'}>{error}</p>}
     </div>
   )
 }

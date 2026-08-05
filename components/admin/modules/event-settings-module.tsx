@@ -327,13 +327,13 @@ export function EventSettingsModule() {
                   <img src={posterUrl} alt={data.title} className="h-24 w-24 object-cover" />
                 </div>
                 <div className="space-y-2">
-                  <p className="text-xs text-subtle">This event was captured from a scanned poster.</p>
+                  <p className="text-meta text-subtle">This event was captured from a scanned poster.</p>
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={handleUsePosterAsCover}
                       disabled={pending}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-50"
                     >
                       <ImagePlus className="h-3.5 w-3.5" /> Use it as the header photo
                     </button>
@@ -359,7 +359,7 @@ export function EventSettingsModule() {
           initialFocus={readEventCoverFocus(data.theme)}
           initialHeight={readEventHeroHeight(data.theme)}
         />
-        {imgErr && <p className="text-xs font-medium text-danger">{imgErr}</p>}
+        {imgErr && <p className="text-meta font-medium text-danger">{imgErr}</p>}
       </div>
 
       {/* The autosaving field form: text commits on blur, selects instantly. */}
@@ -401,7 +401,7 @@ export function EventSettingsModule() {
         {/* TICKET PRICE — blank keeps the event a free RSVP. */}
         <label className="block space-y-1.5">
           <span className={fieldLabel}>Ticket price</span>
-          <span className="flex items-center rounded-lg border border-border bg-surface px-3 text-sm text-subtle">
+          <span className="flex items-center rounded-lg border border-border bg-surface px-3 text-body-sm text-subtle">
             <span className="shrink-0 uppercase">{data.currency ?? 'usd'}</span>
             <input
               name="price"
@@ -471,7 +471,7 @@ export function EventSettingsModule() {
               }}
               className="mt-0.5 h-4 w-4 rounded border-border"
             />
-            <span className="text-sm text-text">
+            <span className="text-body-sm text-text">
               {MARKET_LISTING_LABEL}
               <span className="block text-2xs font-normal text-muted">{MARKET_LISTING_HELP}</span>
             </span>
@@ -627,7 +627,7 @@ export function EventSettingsModule() {
                   }}
                   className="mt-0.5 h-4 w-4 rounded border-border"
                 />
-                <span className="text-sm text-text">
+                <span className="text-body-sm text-text">
                   Hide the address until someone registers
                   <span className="block text-2xs font-normal text-muted">
                     People browsing see the city only. The venue, street, map pin, and directions
@@ -671,7 +671,7 @@ export function EventSettingsModule() {
       <div className="space-y-1.5">
         <span className={fieldLabel}>Permalink</span>
         <div className="flex items-center gap-2">
-          <span className="flex flex-1 items-center rounded-lg border border-border bg-surface px-3 text-sm text-subtle">
+          <span className="flex flex-1 items-center rounded-lg border border-border bg-surface px-3 text-body-sm text-subtle">
             <span className="shrink-0">/events/</span>
             <input
               value={permalink}
@@ -684,12 +684,12 @@ export function EventSettingsModule() {
             type="button"
             onClick={handlePermalink}
             disabled={permaPending || !permalink.trim() || permalink.trim() === data.slug}
-            className="inline-flex shrink-0 items-center rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
+            className="inline-flex shrink-0 items-center rounded-lg border border-border bg-surface px-3 py-2 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
           >
             {permaPending ? 'Saving…' : 'Update'}
           </button>
         </div>
-        {permaErr && <span className="text-xs font-medium text-danger">{permaErr}</span>}
+        {permaErr && <span className="text-meta font-medium text-danger">{permaErr}</span>}
       </div>
 
       {/* COHOSTS — invite someone to help host, straight from the editor. Its own action. */}

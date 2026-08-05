@@ -11,7 +11,7 @@ export const CircleInvite = async () => {
   if (!canManage) return null
   return (
     <ModuleCard title="Invite a friend">
-      <p className="mb-3 text-xs leading-relaxed text-muted">
+      <p className="mb-3 text-meta leading-relaxed text-muted">
         Bring someone into {circle.name}. (Edit the circle itself from{' '}
         <span className="font-medium text-text">Settings</span> at the top.)
       </p>

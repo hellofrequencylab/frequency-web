@@ -35,7 +35,7 @@ export function BrandAnchor({ name, logoUrl }: { name: string; logoUrl: string |
   }
   return (
     <span
-      className="flex h-20 w-20 shrink-0 items-center justify-center rounded-card border-4 border-surface bg-surface-elevated text-2xl font-bold text-subtle lift-1 lg:h-28 lg:w-28 lg:text-3xl"
+      className="flex h-20 w-20 shrink-0 items-center justify-center rounded-card border-4 border-surface bg-surface-elevated text-page-title font-bold text-subtle lift-1 lg:h-28 lg:w-28 lg:text-3xl"
       aria-hidden
     >
       {getInitials(name)}

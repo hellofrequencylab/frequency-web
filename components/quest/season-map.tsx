@@ -154,7 +154,7 @@ export function SeasonMap({
           </p>
           {/* Title + (when the season hasn't started) a quiet inline countdown, same row. */}
           <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
-            <h2 id="season-map-heading" className="text-xl font-bold leading-tight text-text">
+            <h2 id="season-map-heading" className="text-lead font-bold leading-tight text-text">
               Your season map
             </h2>
             {notStarted && startMs != null && <SeasonCountdown startMs={startMs} label={startLabel} />}
@@ -175,7 +175,7 @@ export function SeasonMap({
           </span>
           <span className="min-w-0 text-right">
             <span className="block text-2xs font-medium text-muted">Rank</span>
-            <span className="block text-sm font-bold text-text">{RANK_LABELS[rank] ?? rank}</span>
+            <span className="block text-body-sm font-bold text-text">{RANK_LABELS[rank] ?? rank}</span>
           </span>
         </Link>
       </div>
@@ -227,7 +227,7 @@ export function SeasonMap({
         </div>
         {masterReached && (
           <p
-            className="mt-2 text-xs font-semibold"
+            className="mt-2 text-meta font-semibold"
             style={{ ...seasonRankStyle('master'), color: 'var(--rank-deep)' }}
           >
             All three Journeys finished. Master, the season top. Your Trophies keep. The next

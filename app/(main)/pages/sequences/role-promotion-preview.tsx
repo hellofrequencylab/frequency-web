@@ -17,7 +17,7 @@ export function RolePromotionPreview({ walkthrough }: { walkthrough: Walkthrough
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-3 inline-flex items-center gap-1.5 self-start rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+        className="mt-3 inline-flex items-center gap-1.5 self-start rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
       >
         <Eye className="h-3.5 w-3.5" aria-hidden /> Preview
       </button>

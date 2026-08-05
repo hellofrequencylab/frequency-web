@@ -69,7 +69,7 @@ function EventHubNav({ slug, section }: { slug: string; section: EventHubSection
             scroll={false}
             aria-current={on ? 'page' : undefined}
             className={
-              'rounded-pill px-3 py-1.5 text-sm font-medium transition-colors ' +
+              'rounded-pill px-3 py-1.5 text-body-sm font-medium transition-colors ' +
               (on
                 ? 'bg-primary text-on-primary'
                 : 'border border-border text-muted hover:bg-surface-elevated hover:text-text')
@@ -130,7 +130,7 @@ export default async function ManageEventPage({
     >
       <div className="space-y-5">
         <EventHubNav slug={event.slug} section={section} />
-        {blurb && section !== 'home' && <p className="max-w-2xl text-sm text-muted">{blurb}</p>}
+        {blurb && section !== 'home' && <p className="max-w-2xl text-body-sm text-muted">{blurb}</p>}
       </div>
 
       {section === 'home' && (

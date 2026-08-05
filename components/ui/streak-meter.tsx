@@ -51,7 +51,7 @@ export function StreakMeter({
           branch READ as a sentence rather than scanned as a legend, and subtle-at-tiny is the
           sub-AA pairing the adoption ratchet tracks. */}
       {empty ? (
-        <span className="text-xs font-medium text-muted">{summary}</span>
+        <span className="text-meta font-medium text-muted">{summary}</span>
       ) : (
         <span role="img" aria-label={summary} className="inline-flex items-center gap-1">
           {days.map((day, i) => (
@@ -68,7 +68,7 @@ export function StreakMeter({
       )}
       {count != null && (
         <span className="inline-flex items-baseline gap-1.5">
-          <span className="font-mono text-sm font-semibold tabular-nums leading-none text-text">{count}</span>
+          <span className="font-mono text-body-sm font-semibold tabular-nums leading-none text-text">{count}</span>
           <span className="text-2xs font-medium text-muted">{label}</span>
         </span>
       )}

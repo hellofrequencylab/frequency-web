@@ -57,7 +57,7 @@ export default async function SeasonComposerPage({ params }: { params: Promise<{
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/admin/content/seasons/${season.id}/preview`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
           >
             <Eye className="h-3.5 w-3.5" aria-hidden /> Preview as a member
           </Link>
@@ -150,7 +150,7 @@ async function SeasonJourneys({ id }: { id: string }) {
 
       <AssignJourneyToSeason questId={detail.questId} journeys={assignable} />
 
-      <p className="text-xs text-muted">
+      <p className="text-meta text-muted">
         Manage the full library in{' '}
         <Link
           href="/admin/content/journeys"
@@ -188,12 +188,12 @@ function JourneyRow({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <h3 className="truncate text-base font-bold text-text">{journey.title}</h3>
+            <h3 className="truncate text-body font-bold text-text">{journey.title}</h3>
             <StatusChip tone="neutral" size="sm">
               {journey.practiceCount} {journey.practiceCount === 1 ? 'Practice' : 'Practices'}
             </StatusChip>
           </div>
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-muted">
             <span className="inline-flex items-center gap-1">
               <CalendarRange className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
               <span className="tabular-nums">{windowLabel}</span>
@@ -217,7 +217,7 @@ function JourneyRow({
         </div>
         <Link
           href={`/journeys/${journey.slug}/edit`}
-          className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+          className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg border border-border px-3 py-1.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
         >
           Author <ExternalLink className="h-3.5 w-3.5" aria-hidden />
         </Link>

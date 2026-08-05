@@ -51,9 +51,9 @@ export function ReviewBoardShowcase() {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8">
       <div className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Dev showcase</p>
-        <h1 className="text-xl font-bold text-text">Business Seeder review board</h1>
-        <p className="mt-1 text-sm text-muted">
+        <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Dev showcase</p>
+        <h1 className="text-lead font-bold text-text">Business Seeder review board</h1>
+        <p className="mt-1 text-body-sm text-muted">
           A fixture import covering every state. Actions call the gated server actions and no-op without a
           session; the visuals are the same the operator sees.
         </p>

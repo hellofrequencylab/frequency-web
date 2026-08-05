@@ -24,11 +24,11 @@ export function PracticeCard({ p }: { p: PracticeCardData }) {
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
             <Sparkles className="h-4 w-4" aria-hidden />
           </span>
-          <span className="min-w-0 flex-1 truncate text-base font-semibold text-text">{p.title}</span>
+          <span className="min-w-0 flex-1 truncate text-body font-semibold text-text">{p.title}</span>
         </span>
-        {p.subcategory && <span className="text-xs text-subtle">{p.subcategory.name}</span>}
+        {p.subcategory && <span className="text-meta text-subtle">{p.subcategory.name}</span>}
         {(p.summary || p.description) && (
-          <p className="line-clamp-3 text-sm text-muted">{p.summary ?? p.description}</p>
+          <p className="line-clamp-3 text-body-sm text-muted">{p.summary ?? p.description}</p>
         )}
       </Link>
     </li>
@@ -45,7 +45,7 @@ export function PillarChips({
   active: string
 }) {
   const base =
-    'rounded-pill border px-3 py-1.5 text-sm font-medium transition-colors'
+    'rounded-pill border px-3 py-1.5 text-body-sm font-medium transition-colors'
   const on = 'border-primary bg-primary-bg text-primary-strong'
   const off = 'border-border bg-surface text-muted hover:border-border-strong hover:text-text'
   return (

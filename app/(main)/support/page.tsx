@@ -65,8 +65,8 @@ function TicketRow({ ticket }: { ticket: SupportTicket }) {
           </span>
           <span className="text-2xs font-medium text-muted">{TYPE_LABELS[ticket.type]} · #{ticket.ref}</span>
         </div>
-        <p className="mt-1 truncate text-sm font-semibold text-text">{ticket.subject}</p>
-        <p className="text-xs text-subtle">Updated {relativeTime(ticket.lastActivityAt)}</p>
+        <p className="mt-1 truncate text-body-sm font-semibold text-text">{ticket.subject}</p>
+        <p className="text-meta text-subtle">Updated {relativeTime(ticket.lastActivityAt)}</p>
       </div>
       <ChevronRight className="h-4 w-4 shrink-0 text-subtle" />
     </Link>

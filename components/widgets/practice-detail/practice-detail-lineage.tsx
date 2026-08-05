@@ -38,7 +38,7 @@ export async function PracticeDetailLineage() {
       <SectionHeader title="Remix lineage" count={lineage.remixCount} />
 
       {showCredit && originalHref && (
-        <p className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted">
+        <p className="mb-4 inline-flex items-center gap-1.5 text-body-sm text-muted">
           <Wand2 className="h-3.5 w-3.5 shrink-0 text-primary-strong" aria-hidden />
           Remixed from{' '}
           <Link href={originalHref} className="font-semibold text-text hover:underline">
@@ -48,7 +48,7 @@ export async function PracticeDetailLineage() {
       )}
 
       {lineage.remixCount > 0 && (
-        <p className="mb-4 text-sm text-muted">
+        <p className="mb-4 text-body-sm text-muted">
           <span className="font-semibold text-text">
             Remixed {lineage.remixCount} {lineage.remixCount === 1 ? 'time' : 'times'}
           </span>{' '}
@@ -64,7 +64,7 @@ export async function PracticeDetailLineage() {
               <Link
                 key={node.id}
                 href={`/practices/${node.id}`}
-                className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-body-sm text-muted transition-colors hover:bg-surface-elevated hover:text-text"
               >
                 <GitBranch className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
                 <span className="truncate font-medium text-text">{node.title || 'Untitled practice'}</span>

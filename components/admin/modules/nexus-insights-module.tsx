@@ -64,7 +64,7 @@ export function NexusInsightsModule() {
         {/* Capacity fill. */}
         {fillPct !== null && (
           <div className="mt-3 space-y-1.5">
-            <div className="flex items-center justify-between text-xs text-muted">
+            <div className="flex items-center justify-between text-meta text-muted">
               <span>How full</span>
               <span className="font-medium text-text">
                 {data.totalMembers} / {data.memberCap}

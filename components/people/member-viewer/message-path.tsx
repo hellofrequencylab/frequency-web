@@ -107,11 +107,11 @@ function EntryRow({ entry }: { entry: PathEntry }) {
       />
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <ChannelIcon channel={entry.channel} className="h-3.5 w-3.5 shrink-0 text-subtle" />
-        <span className="text-xs font-semibold text-text">{entry.sender}</span>
+        <span className="text-meta font-semibold text-text">{entry.sender}</span>
         <span className="text-2xs text-muted">{relativeTime(entry.at) || ''}</span>
         {entry.ref && <EventRefBadge refInfo={entry.ref} />}
       </div>
-      <p className="mt-0.5 text-xs text-muted">{entry.snippet || entry.title}</p>
+      <p className="mt-0.5 text-meta text-muted">{entry.snippet || entry.title}</p>
     </li>
   )
 }
@@ -138,12 +138,12 @@ function ThreadRow({ thread }: { thread: PathThread }) {
         <ChannelIcon channel={thread.channel} className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="truncate text-sm font-medium text-text">{thread.subject}</span>
+            <span className="truncate text-body-sm font-medium text-text">{thread.subject}</span>
             {thread.ref && <EventRefBadge refInfo={thread.ref} />}
           </span>
           <span className="mt-0.5 block text-2xs text-muted">{meta}</span>
           {solo && thread.entries[0]?.snippet && (
-            <span className="mt-0.5 block text-xs text-muted">{thread.entries[0].snippet}</span>
+            <span className="mt-0.5 block text-meta text-muted">{thread.entries[0].snippet}</span>
           )}
         </span>
         {!solo && (
@@ -202,8 +202,8 @@ export function MessagePathFold({
         className="flex w-full items-center gap-2 rounded-2xl px-3 py-2.5 text-left transition-colors hover:bg-surface-elevated/60"
       >
         <RouteIcon className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-        <span className="text-sm font-bold tracking-tight text-text">The Path</span>
-        {total > 0 && <span className="text-xs font-medium tabular-nums text-subtle">{total}</span>}
+        <span className="text-body-sm font-bold tracking-tight text-text">The Path</span>
+        {total > 0 && <span className="text-meta font-medium tabular-nums text-subtle">{total}</span>}
         <span className="min-w-0 flex-1 truncate text-right text-2xs text-muted">{summary}</span>
         <ChevronRight
           className={cn('h-4 w-4 shrink-0 text-subtle transition-transform', open && 'rotate-90')}
@@ -221,7 +221,7 @@ export function MessagePathFold({
               ))}
             </ul>
           ) : (
-            <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-xs text-subtle">
+            <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-meta text-subtle">
               No messages in this lane yet. Send one and it shows up here.
             </p>
           )}

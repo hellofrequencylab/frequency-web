@@ -19,10 +19,10 @@ function ReportRow({ r }: { r: MarketplaceReport }) {
         <span className="inline-flex items-center gap-1.5 rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-primary-strong">
           {KIND_LABEL[r.targetKind] ?? r.targetKind}
         </span>
-        <span className="text-xs text-subtle">{when} · {r.status}</span>
+        <span className="text-meta text-subtle">{when} · {r.status}</span>
       </div>
-      <p className="mt-2 text-sm font-medium text-text">{r.reason}</p>
-      {r.detail && <p className="mt-1 text-sm text-muted">{r.detail}</p>}
+      <p className="mt-2 text-body-sm font-medium text-text">{r.reason}</p>
+      {r.detail && <p className="mt-1 text-body-sm text-muted">{r.detail}</p>}
       <p className="mt-1 text-2xs text-muted">target {r.targetKind}:{r.targetId.slice(0, 8)}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {r.status !== 'reviewing' && (

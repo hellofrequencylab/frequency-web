@@ -49,8 +49,8 @@ function NumberField({
 }) {
   return (
     <label className="block">
-      <span className="block text-sm font-semibold text-text">{label}</span>
-      <span className="mt-0.5 block text-xs text-muted">{hint}</span>
+      <span className="block text-body-sm font-semibold text-text">{label}</span>
+      <span className="mt-0.5 block text-meta text-muted">{hint}</span>
       <input
         type="number"
         value={value}
@@ -59,7 +59,7 @@ function NumberField({
         step={1}
         disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="mt-2 w-24 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm tabular-nums text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-50"
+        className="mt-2 w-24 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm tabular-nums text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-50"
       />
     </label>
   )
@@ -129,12 +129,12 @@ export function SeriesDisplaySection({ config }: { config: SeriesDisplayConfig }
             type="button"
             onClick={save}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary disabled:opacity-50"
           >
             {pending ? 'Saving' : 'Save'}
           </button>
           {stored && (
-            <p role="status" className="text-sm text-muted">
+            <p role="status" className="text-body-sm text-muted">
               Saved. Listings show {stored.cardsPerSeries} {stored.cardsPerSeries === 1 ? 'card' : 'cards'} per
               repeating event, the event page offers {stored.railDates}{' '}
               {stored.railDates === 1 ? 'date' : 'dates'}, and search engines index{' '}
@@ -143,7 +143,7 @@ export function SeriesDisplaySection({ config }: { config: SeriesDisplayConfig }
           )}
         </div>
 
-        <p className="text-xs text-subtle">
+        <p className="text-meta text-subtle">
           Listings pick the new numbers up on their next render. Saving here refreshes them for you.
         </p>
       </div>

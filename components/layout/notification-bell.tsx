@@ -117,12 +117,12 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
       {open && (
         <div className="absolute right-0 top-full mt-2 w-80 rounded-card border border-border bg-surface-elevated lift-3 z-50 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <p className="text-sm font-semibold text-text">Notifications</p>
+            <p className="text-body-sm font-semibold text-text">Notifications</p>
             {unread > 0 && (
               <button
                 onClick={handleMarkAllRead}
                 disabled={isPending}
-                className="text-xs text-primary-strong hover:text-primary-hover transition-colors disabled:opacity-50"
+                className="text-meta text-primary-strong hover:text-primary-hover transition-colors disabled:opacity-50"
               >
                 Mark all read
               </button>
@@ -137,7 +137,7 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
             )}
 
             {loaded && notifications.length === 0 && (
-              <p className="py-8 text-center text-sm text-subtle">No notifications yet</p>
+              <p className="py-8 text-center text-body-sm text-subtle">No notifications yet</p>
             )}
 
             {notifications.map(n => (
@@ -149,11 +149,11 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
                   !n.read_at ? 'bg-primary-bg/50' : ''
                 }`}
               >
-                <div className="w-7 h-7 rounded-pill bg-surface flex items-center justify-center text-sm shrink-0">
+                <div className="w-7 h-7 rounded-pill bg-surface flex items-center justify-center text-body-sm shrink-0">
                   {TYPE_ICON[n.type] ?? '🔔'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-text leading-snug">
+                  <p className="text-meta text-text leading-snug">
                     {n.actor && (
                       <span className="font-semibold">{n.actor.display_name} </span>
                     )}

@@ -31,8 +31,8 @@ export function RewardConfig({ zaps, gems }: { zaps: RewardRow[]; gems: RewardRo
   return (
     <section className="mb-8 overflow-hidden rounded-2xl border border-border bg-surface lift-1">
       <div className="border-b border-border px-4 py-3">
-        <h2 className="text-sm font-bold text-text">Reward economy</h2>
-        <p className="mt-0.5 text-xs text-muted">
+        <h2 className="text-body-sm font-bold text-text">Reward economy</h2>
+        <p className="mt-0.5 text-meta text-muted">
           Tune what each action is worth, add new ones, or remove them. Changes go live immediately, no redeploy.
         </p>
       </div>
@@ -54,7 +54,7 @@ export function RewardConfig({ zaps, gems }: { zaps: RewardRow[]; gems: RewardRo
   )
 }
 
-const numInput = 'rounded-md border border-border bg-canvas px-2 py-1 text-xs text-text text-right'
+const numInput = 'rounded-md border border-border bg-canvas px-2 py-1 text-meta text-text text-right'
 
 function RewardTable({
   kind,
@@ -130,18 +130,18 @@ function RewardTable({
     <div className="p-4">
       <div className="mb-3 flex items-center gap-1.5">
         {unitIcon}
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-text">{label}</h3>
+        <h3 className="text-meta font-semibold uppercase tracking-wider text-text">{label}</h3>
       </div>
 
       <div className="space-y-2">
         {rows.map((row, i) => (
           <div key={row.action_type} className="flex items-center gap-2">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-medium text-text">{prettify(row.action_type)}</p>
-              {row.description && <p className="truncate text-xs text-subtle">{row.description}</p>}
+              <p className="truncate text-meta font-medium text-text">{prettify(row.action_type)}</p>
+              {row.description && <p className="truncate text-meta text-subtle">{row.description}</p>}
             </div>
             <label className="flex items-center gap-1" title="Amount">
-              <span className="text-xs text-subtle">amt</span>
+              <span className="text-meta text-subtle">amt</span>
               <input
                 type="number"
                 min={0}
@@ -151,7 +151,7 @@ function RewardTable({
               />
             </label>
             <label className="flex items-center gap-1" title="Daily cap (blank = none)">
-              <span className="text-xs text-subtle">cap</span>
+              <span className="text-meta text-subtle">cap</span>
               <input
                 type="number"
                 min={0}
@@ -168,7 +168,7 @@ function RewardTable({
                 onChange={(e) => update(i, { is_active: e.target.checked })}
                 className="accent-primary"
               />
-              <span className="text-xs text-subtle">on</span>
+              <span className="text-meta text-subtle">on</span>
             </label>
             {confirmKey === row.action_type ? (
               <span className="flex items-center gap-1">
@@ -203,7 +203,7 @@ function RewardTable({
             )}
           </div>
         ))}
-        {rows.length === 0 && <p className="py-2 text-xs text-subtle">No {label.toLowerCase()} actions configured.</p>}
+        {rows.length === 0 && <p className="py-2 text-meta text-subtle">No {label.toLowerCase()} actions configured.</p>}
       </div>
 
       {/* Add a new action. */}
@@ -214,17 +214,17 @@ function RewardTable({
             value={draft.action_type}
             onChange={(e) => { setDraft((d) => ({ ...d, action_type: e.target.value })); setStatus('idle') }}
             placeholder="action_name (e.g. circle_visit)"
-            className="w-full rounded-md border border-border bg-canvas px-2 py-1 text-xs text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2 py-1 text-meta text-text"
           />
           <input
             value={draft.description ?? ''}
             onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
             placeholder="What earns it (optional)"
-            className="w-full rounded-md border border-border bg-canvas px-2 py-1 text-xs text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2 py-1 text-meta text-text"
           />
           <div className="flex items-center gap-2">
             <label className="flex items-center gap-1" title="Amount">
-              <span className="text-xs text-subtle">amt</span>
+              <span className="text-meta text-subtle">amt</span>
               <input
                 type="number"
                 min={0}
@@ -234,7 +234,7 @@ function RewardTable({
               />
             </label>
             <label className="flex items-center gap-1" title="Daily cap (blank = none)">
-              <span className="text-xs text-subtle">cap</span>
+              <span className="text-meta text-subtle">cap</span>
               <input
                 type="number"
                 min={0}
@@ -251,21 +251,21 @@ function RewardTable({
                 onChange={(e) => setDraft((d) => ({ ...d, is_active: e.target.checked }))}
                 className="accent-primary"
               />
-              <span className="text-xs text-subtle">on</span>
+              <span className="text-meta text-subtle">on</span>
             </label>
             <div className="ml-auto flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={add}
                 disabled={pending || !draft.action_type.trim()}
-                className="rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+                className="rounded-lg bg-primary px-2.5 py-1 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
               >
                 {pending ? 'Adding…' : 'Add'}
               </button>
               <button
                 type="button"
                 onClick={() => { setAdding(false); setStatus('idle') }}
-                className="rounded-lg px-2 py-1 text-xs text-subtle hover:text-text"
+                className="rounded-lg px-2 py-1 text-meta text-subtle hover:text-text"
               >
                 Cancel
               </button>
@@ -276,7 +276,7 @@ function RewardTable({
         <button
           type="button"
           onClick={() => { setAdding(true); setStatus('idle') }}
-          className="mt-3 inline-flex items-center gap-1 rounded-lg border border-dashed border-border px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-primary hover:text-text"
+          className="mt-3 inline-flex items-center gap-1 rounded-lg border border-dashed border-border px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:border-primary hover:text-text"
         >
           <Plus className="h-3.5 w-3.5" /> Add {label.slice(0, -1).toLowerCase()} action
         </button>
@@ -291,8 +291,8 @@ function RewardTable({
         >
           {pending ? 'Saving…' : `Save ${label.toLowerCase()}`}
         </Button>
-        {status === 'saved' && <span className="text-xs text-success">Saved.</span>}
-        {status !== 'idle' && status !== 'saved' && <span className="text-xs text-danger">{status}</span>}
+        {status === 'saved' && <span className="text-meta text-success">Saved.</span>}
+        {status !== 'idle' && status !== 'saved' && <span className="text-meta text-danger">{status}</span>}
       </div>
     </div>
   )

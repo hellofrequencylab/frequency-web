@@ -104,7 +104,7 @@ export function FindNearMeButton({ className }: { className?: string }) {
       type="button"
       onClick={find}
       disabled={loading}
-      className={className ?? 'inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:border-primary-bg hover:text-primary-strong disabled:opacity-60'}
+      className={className ?? 'inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:border-primary-bg hover:text-primary-strong disabled:opacity-60'}
     >
       <LocateFixed className="h-4 w-4" />
       {loading ? 'Locating…' : 'Find circles near me'}
@@ -118,7 +118,7 @@ export function MapBanner() {
   const [mapKey, setMapKey] = useState(0)
   if (!ctx || (ctx.circles.length === 0 && ctx.starters.length === 0) || !ctx.open) return null
 
-  const pill = 'inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:border-primary-bg hover:text-text'
+  const pill = 'inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:border-primary-bg hover:text-text'
 
   return (
     <div className="mb-8">
@@ -127,7 +127,7 @@ export function MapBanner() {
         <button
           type="button"
           onClick={() => ctx.setOpen(false)}
-          className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-lg bg-surface/95 px-3 py-1.5 text-sm font-semibold text-text lift-1 transition-colors hover:bg-surface"
+          className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-lg bg-surface/95 px-3 py-1.5 text-body-sm font-semibold text-text lift-1 transition-colors hover:bg-surface"
         >
           <X className="h-4 w-4" /> Close
         </button>
@@ -136,13 +136,13 @@ export function MapBanner() {
       {/* Optional controls underneath */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {ctx.circles.length > 0 && (
-          <span className="inline-flex items-center gap-1.5 text-xs text-subtle">
+          <span className="inline-flex items-center gap-1.5 text-meta text-subtle">
             <span className="h-2.5 w-2.5 rounded-pill bg-primary" />
             {ctx.circles.length} in-person {ctx.circles.length === 1 ? 'circle' : 'circles'}
           </span>
         )}
         {ctx.starters.length > 0 && (
-          <span className="inline-flex items-center gap-1.5 text-xs text-subtle">
+          <span className="inline-flex items-center gap-1.5 text-meta text-subtle">
             <span className="h-2.5 w-2.5 rounded-pill" style={{ backgroundColor: '#7C5CD6' }} />
             {ctx.starters.length} {ctx.starters.length === 1 ? 'Starter to claim' : 'Starters to claim'}
           </span>

@@ -43,8 +43,8 @@ function StatPill({ icon: Icon, value, label, cardStyle }: { icon: typeof Flame;
   return (
     <div className="flex items-center gap-2 rounded-card border border-border bg-surface px-3 py-2" style={cardStyle}>
       <Icon className="h-4 w-4 text-primary-strong" aria-hidden />
-      <span className="text-sm font-semibold text-text tabular-nums">{value}</span>
-      <span className="text-xs text-muted">{label}</span>
+      <span className="text-body-sm font-semibold text-text tabular-nums">{value}</span>
+      <span className="text-meta text-muted">{label}</span>
     </div>
   )
 }
@@ -81,7 +81,7 @@ function TopFriendsView({ title, friends, cardStyle, headingFont }: {
   if (friends.length === 0) return null
   return (
     <section>
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-subtle" style={{ fontFamily: headingFont }}>
+      <h2 className="mb-3 text-meta font-semibold uppercase tracking-wide text-subtle" style={{ fontFamily: headingFont }}>
         {title || 'Top Friends'}
       </h2>
       <div className="grid grid-cols-4 gap-3">
@@ -104,11 +104,11 @@ function TopFriendsView({ title, friends, cardStyle, headingFont }: {
                   style={avatarFocusStyle(f.avatarUrl)}
                 />
               ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-pill bg-primary-bg text-sm font-bold text-primary-strong">
+                <div className="flex h-14 w-14 items-center justify-center rounded-pill bg-primary-bg text-body-sm font-bold text-primary-strong">
                   {getInitials(name)}
                 </div>
               )}
-              <span className="w-full truncate text-xs font-medium text-text">{name}</span>
+              <span className="w-full truncate text-meta font-medium text-text">{name}</span>
             </Link>
           )
         })}
@@ -129,12 +129,12 @@ export function BlockView({
   switch (block.type) {
     case 'heading':
       return block.level === 3 ? (
-        <h3 className="mt-4 text-base font-bold text-text" style={{ fontFamily: headingFont, ...tintStyle(block.tint) }}>{block.text}</h3>
+        <h3 className="mt-4 text-body font-bold text-text" style={{ fontFamily: headingFont, ...tintStyle(block.tint) }}>{block.text}</h3>
       ) : (
         <h2 className="mt-6 text-lg font-bold text-text" style={{ fontFamily: headingFont, ...tintStyle(block.tint) }}>{block.text}</h2>
       )
     case 'text':
-      return <p className="whitespace-pre-wrap text-pretty text-sm leading-relaxed text-text" style={tintStyle(block.tint)}>{block.text}</p>
+      return <p className="whitespace-pre-wrap text-pretty text-body-sm leading-relaxed text-text" style={tintStyle(block.tint)}>{block.text}</p>
     case 'links':
       return (
         <div className="space-y-2">
@@ -144,7 +144,7 @@ export function BlockView({
               href={item.url}
               target="_blank"
               rel="noopener noreferrer nofollow"
-              className="block rounded-2xl border border-border-strong bg-surface px-4 py-3 text-center text-sm font-semibold text-text lift-1 transition-colors hover:bg-surface-elevated"
+              className="block rounded-2xl border border-border-strong bg-surface px-4 py-3 text-center text-body-sm font-semibold text-text lift-1 transition-colors hover:bg-surface-elevated"
               style={{ ...cardStyle, ...tintStyle(block.tint) }}
             >
               {item.label}
@@ -175,8 +175,8 @@ export function BlockView({
     case 'quote':
       return (
         <blockquote className="border-l-4 border-primary-strong bg-surface/60 py-2 pl-4 pr-3" style={{ ...cardStyle, ...(block.tint?.bg ? { backgroundColor: block.tint.bg } : {}) }}>
-          <p className="text-pretty text-sm italic leading-relaxed text-text" style={{ color: block.tint?.text }}>{block.text}</p>
-          {block.cite && <footer className="mt-1.5 text-xs font-medium text-muted">— {block.cite}</footer>}
+          <p className="text-pretty text-body-sm italic leading-relaxed text-text" style={{ color: block.tint?.text }}>{block.text}</p>
+          {block.cite && <footer className="mt-1.5 text-meta font-medium text-muted">— {block.cite}</footer>}
         </blockquote>
       )
     case 'embed':

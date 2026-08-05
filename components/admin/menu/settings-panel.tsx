@@ -78,24 +78,24 @@ export function SettingsPanel({ initial }: { initial: MenuSettings }) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <Timer className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-          <p className="text-sm text-muted">
+          <p className="text-body-sm text-muted">
             Tune how mega-menu panels open, linger, and fade. These timings apply to every
             surface.
           </p>
         </div>
-        <span className="shrink-0 text-xs text-subtle" aria-live="polite">
+        <span className="shrink-0 text-meta text-subtle" aria-live="polite">
           {isPending ? 'Saving…' : status}
         </span>
       </div>
 
-      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+      {error && <p className="mt-3 text-body-sm text-danger">{error}</p>}
 
       <div className="mt-4 grid gap-4 sm:grid-cols-3">
         {FIELDS.map((f) => (
           <div key={f.key} className="min-w-0">
             <label
               htmlFor={`setting-${f.key}`}
-              className="mb-1 flex items-center justify-between gap-2 text-xs font-semibold text-subtle"
+              className="mb-1 flex items-center justify-between gap-2 text-meta font-semibold text-subtle"
             >
               <span>{f.label}</span>
               <span className="tabular-nums text-muted">{values[f.key]} ms</span>
@@ -121,13 +121,13 @@ export function SettingsPanel({ initial }: { initial: MenuSettings }) {
                 value={values[f.key]}
                 disabled={isPending}
                 onChange={(e) => set(f.key, Number(e.target.value), f)}
-                className="w-24 rounded-lg border border-border bg-canvas/40 px-2 py-1 text-sm tabular-nums text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                className="w-24 rounded-lg border border-border bg-canvas/40 px-2 py-1 text-body-sm tabular-nums text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
               />
-              <span className="text-xs text-subtle">
+              <span className="text-meta text-subtle">
                 {f.min} to {f.max}
               </span>
             </div>
-            <p className="mt-1 text-xs text-subtle">{f.help}</p>
+            <p className="mt-1 text-meta text-subtle">{f.help}</p>
           </div>
         ))}
       </div>
@@ -137,11 +137,11 @@ export function SettingsPanel({ initial }: { initial: MenuSettings }) {
           type="button"
           onClick={save}
           disabled={isPending || !dirty}
-          className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+          className="rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           {isPending ? 'Saving…' : 'Save speed settings'}
         </button>
-        {dirty && !isPending && <span className="text-xs text-subtle">Unsaved changes</span>}
+        {dirty && !isPending && <span className="text-meta text-subtle">Unsaved changes</span>}
       </div>
     </div>
   )

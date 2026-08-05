@@ -51,8 +51,8 @@ export function SeasonCloneButton({
       )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-text">Clone last season</p>
-          <p className="mt-0.5 text-xs text-muted">
+          <p className="text-body-sm font-semibold text-text">Clone last season</p>
+          <p className="mt-0.5 text-meta text-muted">
             Copies {sourceName}, with its Quest, Journeys, practices, and Expression
             Challenges, into season {nextNumber} as a Draft. Windows are cleared, so you
             rename and re-schedule before it goes live. Nothing publishes on its own.

@@ -92,7 +92,7 @@ export async function LeadCoLeaders(): Promise<React.ReactElement | null> {
             )
           return (
             <div key={circle.id}>
-              <div className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-text">
+              <div className="mb-3 flex items-center gap-1.5 text-body-sm font-semibold text-text">
                 <Users className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
                 {circle.name}
               </div>
@@ -114,7 +114,7 @@ export async function LeadCoLeaders(): Promise<React.ReactElement | null> {
           )
         })}
       </div>
-      <p className="mt-3 text-sm text-muted">
+      <p className="mt-3 text-body-sm text-muted">
         Roles and handoff live on each circle. Open one and use the Settings control to add a
         co-leader or pass the lead along.
       </p>

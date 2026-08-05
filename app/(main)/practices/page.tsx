@@ -128,7 +128,7 @@ export default async function PracticesPage({
             {ctaLabel && ctaHref && (
               <a
                 href={ctaHref}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
               >
                 {ctaLabel}
               </a>
@@ -150,11 +150,11 @@ export default async function PracticesPage({
               name="q"
               defaultValue={qParam}
               placeholder="Search practices…"
-              className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+              className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
             />
           </form>
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="mr-1 text-xs font-medium uppercase tracking-wide text-subtle">Sort</span>
+            <span className="mr-1 text-meta font-medium uppercase tracking-wide text-subtle">Sort</span>
             {SORTS.map((s) => (
               <Chip key={s.key} label={s.label} href={href({ sort: s.key === 'trending' ? undefined : s.key })} active={sort === s.key} />
             ))}

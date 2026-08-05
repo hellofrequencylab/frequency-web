@@ -33,7 +33,7 @@ export function PlanCard({ plan, mine }: { plan: JourneyPlan; mine: boolean }) {
       title={plan.title}
       badge={
         mine ? (
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-medium text-muted">
             {plan.visibility === 'public' ? <Globe className="h-3 w-3" /> : plan.visibility === 'unlisted' ? <Link2 className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
             {plan.visibility === 'public' ? 'Public' : plan.visibility === 'unlisted' ? 'Unlisted' : 'Private'}
           </span>

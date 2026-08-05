@@ -62,7 +62,7 @@ export function LibraryUploader() {
           disabled={pending}
         />
       </label>
-      {err && <p className="text-xs text-danger">{err}</p>}
+      {err && <p className="text-meta text-danger">{err}</p>}
     </div>
   )
 }

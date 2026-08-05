@@ -28,7 +28,7 @@ export interface MarketingCodeAdmin {
 export function MarketingCodesAdmin({ codes }: { codes: MarketingCodeAdmin[] }) {
   if (codes.length === 0) {
     return (
-      <p className="py-4 text-sm text-muted">
+      <p className="py-4 text-body-sm text-muted">
         No marketing codes yet. Crew members create these on their own codes page to promote a
         circle or event.
       </p>
@@ -88,18 +88,18 @@ function MarketingCard({ code }: { code: MarketingCodeAdmin }) {
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="truncate text-sm font-bold text-text">{code.title}</h3>
+            <h3 className="truncate text-body-sm font-bold text-text">{code.title}</h3>
             {!code.active && (
               <span className="rounded-pill bg-surface-elevated px-1.5 py-0.5 text-3xs font-medium text-muted">
                 Paused
               </span>
             )}
           </div>
-          <p className="truncate text-xs text-muted">→ {code.targetLabel}</p>
-          <p className="flex items-center gap-1 truncate text-xs text-muted">
+          <p className="truncate text-meta text-muted">→ {code.targetLabel}</p>
+          <p className="flex items-center gap-1 truncate text-meta text-muted">
             <UserCircle className="h-3 w-3 shrink-0" /> {code.displayName || `@${code.handle}`}
           </p>
-          <p className="mt-0.5 text-xs text-muted">
+          <p className="mt-0.5 text-meta text-muted">
             {code.scans} scan{code.scans === 1 ? '' : 's'}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -123,7 +123,7 @@ function MarketingCard({ code }: { code: MarketingCodeAdmin }) {
             <button
               onClick={remove}
               disabled={pending}
-              className="ml-auto inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted transition-colors hover:text-danger disabled:opacity-60"
+              className="ml-auto inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted transition-colors hover:text-danger disabled:opacity-60"
             >
               <Trash2 className="h-3 w-3" /> Delete
             </button>
@@ -134,11 +134,11 @@ function MarketingCard({ code }: { code: MarketingCodeAdmin }) {
       {editing && (
         <div className="mt-3 space-y-3 border-t border-border pt-3">
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-subtle">Code name</span>
+            <span className="mb-1 block text-meta font-medium text-subtle">Code name</span>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
             />
           </label>
           <StyleEditor value={style} onChange={setStyle} previewUrl={code.url} />
@@ -146,7 +146,7 @@ function MarketingCard({ code }: { code: MarketingCodeAdmin }) {
             <Button onClick={save} size="sm" disabled={pending}>
               <Palette className="h-3.5 w-3.5" /> {pending ? 'Saving…' : 'Save changes'}
             </Button>
-            {saved && <span className="text-xs text-success">Saved.</span>}
+            {saved && <span className="text-meta text-success">Saved.</span>}
           </div>
         </div>
       )}
@@ -155,4 +155,4 @@ function MarketingCard({ code }: { code: MarketingCodeAdmin }) {
 }
 
 const DL =
-  'inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted transition-colors hover:bg-surface-elevated hover:text-text'
+  'inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted transition-colors hover:bg-surface-elevated hover:text-text'

@@ -64,16 +64,16 @@ export function ShowEpisodes({ episodes }: { episodes: ShowEpisodeItem[] }) {
               </button>
 
               <div className="min-w-0 flex-1">
-                <h3 className="text-base font-bold leading-tight text-text">{ep.title}</h3>
+                <h3 className="text-body font-bold leading-tight text-text">{ep.title}</h3>
                 {(ep.dateLabel || ep.durationLabel) && (
-                  <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-subtle">
+                  <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-meta text-subtle">
                     {ep.dateLabel && <span>{ep.dateLabel}</span>}
                     {ep.dateLabel && ep.durationLabel && <span aria-hidden>·</span>}
                     {ep.durationLabel && <span className="tabular-nums">{ep.durationLabel}</span>}
                   </p>
                 )}
                 {ep.description && (
-                  <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted">{ep.description}</p>
+                  <p className="mt-2 line-clamp-3 text-body-sm leading-relaxed text-muted">{ep.description}</p>
                 )}
               </div>
             </div>

@@ -72,7 +72,7 @@ import { FoundingBusinessBadge } from '@/lib/community-roles'
 // CONTROLS, so the Space's page theme shapes them (ADR-578 — playful pills them); the [data-space-theme]
 // baseline pin resolves it to exactly today's 0.5rem for `bold` under every skin + generation.
 const SM_BUTTON_GEOMETRY =
-  'inline-flex items-center justify-center gap-1.5 rounded-control px-3 py-1.5 text-sm font-semibold transition-colors'
+  'inline-flex items-center justify-center gap-1.5 rounded-control px-3 py-1.5 text-body-sm font-semibold transition-colors'
 const onInkSecondaryClasses = cn(
   SM_BUTTON_GEOMETRY,
   'border border-on-ink/40 bg-on-ink/10 text-on-ink backdrop-blur-sm hover:bg-on-ink/20',
@@ -384,7 +384,7 @@ export default async function SpaceProfileChromeLayout({
   // a Space with no tagline, so wrappers can `empty:hidden` to collapse the reserved space.
   const taglineNode = (onInk = false) =>
     heroTagline ? (
-      <p className={cn('max-w-2xl text-base font-medium', onInk ? 'text-on-ink' : 'text-muted')}>
+      <p className={cn('max-w-2xl text-body font-medium', onInk ? 'text-on-ink' : 'text-muted')}>
         {heroTagline}
       </p>
     ) : (
@@ -392,7 +392,7 @@ export default async function SpaceProfileChromeLayout({
         <Link
           href={`${base}/settings/basics`}
           className={cn(
-            'inline-block max-w-2xl text-sm font-medium underline decoration-dashed underline-offset-4 transition-colors',
+            'inline-block max-w-2xl text-body-sm font-medium underline decoration-dashed underline-offset-4 transition-colors',
             onInk ? 'text-on-ink-muted hover:text-on-ink' : 'text-muted hover:text-text',
           )}
         >
@@ -431,7 +431,7 @@ export default async function SpaceProfileChromeLayout({
           // `font-section`: the cover title joins the page theme's heading face (ADR-578 — the owner's
           // "from header to end"). With no theme (or `bold`) it resolves to the body stack this h1
           // already inherits, so the default look is untouched.
-          'font-section min-w-0 break-words text-2xl font-bold leading-tight sm:text-3xl',
+          'font-section min-w-0 break-words text-page-title font-bold leading-tight sm:text-3xl',
           onInk ? 'text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]' : 'text-text',
         )}
       >

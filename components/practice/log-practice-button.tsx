@@ -91,7 +91,7 @@ export function LogPracticeButton({
   // resume always wins over the logged-state collapse below.
   if (done && !isResume) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg text-success px-3 py-1.5 text-sm font-semibold">
+      <span className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg text-success px-3 py-1.5 text-body-sm font-semibold">
         <Check className="w-4 h-4" /> Logged today
       </span>
     )
@@ -129,7 +129,7 @@ export function LogPracticeButton({
       <button
         type="button"
         onClick={openTimer}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-on-primary px-3 py-1.5 text-sm font-semibold transition-colors"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-on-primary px-3 py-1.5 text-body-sm font-semibold transition-colors"
       >
         {isLogOnly ? <Check className="w-4 h-4" strokeWidth={2.5} /> : <Timer className="w-4 h-4" />}{' '}
         {isLogOnly ? logLabel : timedLabel}
@@ -168,7 +168,7 @@ export function LogPracticeButton({
           }
         })
       }
-      className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-on-primary px-3 py-1.5 text-sm font-semibold disabled:opacity-60 transition-colors"
+      className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-on-primary px-3 py-1.5 text-body-sm font-semibold disabled:opacity-60 transition-colors"
     >
       <Check className="w-4 h-4" strokeWidth={2.5} />
       {pending ? 'Logging…' : logLabel}

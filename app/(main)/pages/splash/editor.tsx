@@ -34,8 +34,8 @@ type Oaths = BetaSequence['oaths']
 type BeatKey = keyof VeraCopy
 
 const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-broadcast'
-const LABEL = 'mb-1 block text-xs font-semibold text-subtle'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-broadcast'
+const LABEL = 'mb-1 block text-meta font-semibold text-subtle'
 
 // Niche-funnel config (ADR-funnels). A niche funnel swaps the generic "who are you" step
 // for 4 Slide-2 feature cards and the auto-playing reel for 3 Slide-3 core features + art,
@@ -343,10 +343,10 @@ export function SplashCopyEditor({
             </label>
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2">
-                <span className="shrink-0 text-xs text-subtle">?seq=</span>
+                <span className="shrink-0 text-meta text-subtle">?seq=</span>
                 <input
                   id="splash-permalink"
-                  className="min-w-0 flex-1 bg-transparent text-sm text-text outline-none"
+                  className="min-w-0 flex-1 bg-transparent text-body-sm text-text outline-none"
                   value={permalink}
                   placeholder="event-experience-hosts"
                   onChange={(e) => { setPermalink(e.target.value); setRenameError(null) }}
@@ -367,7 +367,7 @@ export function SplashCopyEditor({
                     router.refresh()
                   })
                 }}
-                className="shrink-0 rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+                className="shrink-0 rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
               >
                 {renaming ? 'Updating…' : 'Update permalink'}
               </button>
@@ -387,10 +387,10 @@ export function SplashCopyEditor({
             }`}
           >
             <div>
-              <h2 className="text-sm font-bold text-text">
+              <h2 className="text-body-sm font-bold text-text">
                 {b.beatIndex + 1}. {b.title}
               </h2>
-              <p className="text-xs text-muted">{b.sub}</p>
+              <p className="text-meta text-muted">{b.sub}</p>
             </div>
             {b.fields.map((f) => (
               <div key={f.key}>
@@ -445,8 +445,8 @@ export function SplashCopyEditor({
             {/* 1. Slide 2 feature cards */}
             <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
               <div>
-                <h2 className="text-sm font-bold text-text">Slide 2 features</h2>
-                <p className="text-xs text-muted">
+                <h2 className="text-body-sm font-bold text-text">Slide 2 features</h2>
+                <p className="text-meta text-muted">
                   {"Four cards shown in place of the persona fork. Leave these blank to keep the default 'who are you' step (used by the General funnel)."}
                 </p>
               </div>
@@ -492,8 +492,8 @@ export function SplashCopyEditor({
             {/* 2. Slide 3 core features + art */}
             <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
               <div>
-                <h2 className="text-sm font-bold text-text">Slide 3 core features</h2>
-                <p className="text-xs text-muted">
+                <h2 className="text-body-sm font-bold text-text">Slide 3 core features</h2>
+                <p className="text-meta text-muted">
                   {'Three core features shown in place of the auto-playing tour. Leave blank to keep the default tour.'}
                 </p>
               </div>
@@ -554,8 +554,8 @@ export function SplashCopyEditor({
             {/* 3. Completion destination */}
             <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
               <div>
-                <h2 className="text-sm font-bold text-text">Where it goes when they finish</h2>
-                <p className="text-xs text-muted">
+                <h2 className="text-body-sm font-bold text-text">Where it goes when they finish</h2>
+                <p className="text-meta text-muted">
                   {'Keep the General funnel on the Beta waitlist; send niche funnels straight into the app.'}
                 </p>
               </div>
@@ -608,10 +608,10 @@ export function SplashCopyEditor({
         {/* The sticky save bar floats over the scrolling form — lift-3's named case
             (the sticky action card), and it must not travel on hover the way lift-2 does. */}
         <div className="sticky bottom-4 flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-border bg-surface p-3 lift-3">
-          {error && <span className="text-xs font-medium text-danger">{error}</span>}
-          {dirty && !error && <span className="text-xs font-medium text-warning">Unsaved changes</span>}
+          {error && <span className="text-meta font-medium text-danger">{error}</span>}
+          {dirty && !error && <span className="text-meta font-medium text-warning">Unsaved changes</span>}
           {saved && !dirty && (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-success">
+            <span className="inline-flex items-center gap-1 text-meta font-semibold text-success">
               <Check className="h-3.5 w-3.5" /> {isDefault ? 'Saved and live' : 'Saved'}
             </span>
           )}
@@ -622,7 +622,7 @@ export function SplashCopyEditor({
               onClick={reset}
               disabled={pending || !hasOverride}
               title={hasOverride ? 'Remove your saved edits and return to the built-in script' : 'No saved edits to remove'}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:cursor-not-allowed disabled:opacity-40"
             >
               <RotateCcw className="h-3.5 w-3.5" /> Reset to script
             </button>
@@ -631,7 +631,7 @@ export function SplashCopyEditor({
             type="button"
             onClick={save}
             disabled={pending}
-            className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            className="rounded-lg bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
           >
             {pending ? 'Working…' : 'Save & publish'}
           </button>
@@ -643,7 +643,7 @@ export function SplashCopyEditor({
           under it and hiding the previewed CTA buttons. */}
       <div className="lg:sticky lg:top-20 lg:self-start">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-subtle">
+          <p className="flex items-center gap-1.5 text-meta font-semibold text-subtle">
             <Eye className="h-3.5 w-3.5" /> Live preview
             {dirty && <span className="font-normal text-warning">· unpublished edits</span>}
           </p>

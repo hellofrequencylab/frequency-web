@@ -70,8 +70,8 @@ export function RecordingBlockEmbed({
     return (
       <div className={`${wrap} rounded-2xl border border-border bg-surface p-6 text-center`}>
         <Lock className="mx-auto mb-2 h-5 w-5 text-subtle" aria-hidden />
-        <p className="text-sm font-semibold text-text">{state.title}</p>
-        <p className="mt-1 text-xs text-muted">Join this space to listen.</p>
+        <p className="text-body-sm font-semibold text-text">{state.title}</p>
+        <p className="mt-1 text-meta text-muted">Join this space to listen.</p>
       </div>
     )
   }
@@ -81,7 +81,7 @@ export function RecordingBlockEmbed({
     return (
       <div className={`${wrap} rounded-2xl border border-dashed border-border bg-surface p-6 text-center`}>
         <Radio className="mx-auto mb-2 h-5 w-5 text-subtle" aria-hidden />
-        <p className="text-xs text-muted">Pick a recording to play it here.</p>
+        <p className="text-meta text-muted">Pick a recording to play it here.</p>
       </div>
     )
   }

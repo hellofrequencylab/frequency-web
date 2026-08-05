@@ -78,7 +78,7 @@ export function VeraConcierge() {
       <button
         type="button"
         onClick={() => { setStarted(true); turn('') }}
-        className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+        className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
       >
         <Sparkles className="h-4 w-4" />
         Talk to Vera
@@ -93,8 +93,8 @@ export function VeraConcierge() {
           <div
             className={
               m.from === 'you'
-                ? 'max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-3.5 py-2 text-sm text-on-primary'
-                : 'max-w-[85%] rounded-2xl rounded-bl-sm border border-border bg-surface px-3.5 py-2 text-sm text-text'
+                ? 'max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-3.5 py-2 text-body-sm text-on-primary'
+                : 'max-w-[85%] rounded-2xl rounded-bl-sm border border-border bg-surface px-3.5 py-2 text-body-sm text-text'
             }
           >
             {m.text}
@@ -102,16 +102,16 @@ export function VeraConcierge() {
         </div>
       ))}
 
-      {pending && <p className="text-xs text-subtle">Vera is thinking…</p>}
+      {pending && <p className="text-meta text-subtle">Vera is thinking…</p>}
 
       {proposals.map((p, i) => (
         <div key={i} className="rounded-card border border-border bg-surface-elevated p-3">
-          <p className="text-xs text-muted">{proposalLabel(p)}</p>
+          <p className="text-meta text-muted">{proposalLabel(p)}</p>
           <div className="mt-2 flex gap-2">
-            <button type="button" onClick={() => allow(p)} className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-1.5 text-xs font-semibold text-success hover:opacity-80">
+            <button type="button" onClick={() => allow(p)} className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-1.5 text-meta font-semibold text-success hover:opacity-80">
               <Check className="h-3.5 w-3.5" /> {p.tool === 'join_circle' ? 'Join' : p.tool === 'draft_intro' ? 'Post' : 'Allow'}
             </button>
-            <button type="button" onClick={() => setProposals((ps) => ps.filter((x) => x !== p))} className="inline-flex items-center gap-1.5 rounded-lg bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:text-danger">
+            <button type="button" onClick={() => setProposals((ps) => ps.filter((x) => x !== p))} className="inline-flex items-center gap-1.5 rounded-lg bg-surface px-3 py-1.5 text-meta font-medium text-muted hover:text-danger">
               <X className="h-3.5 w-3.5" /> Skip
             </button>
           </div>
@@ -123,7 +123,7 @@ export function VeraConcierge() {
           {suggestions.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {suggestions.map((s) => (
-                <button key={s} type="button" onClick={() => turn(s)} disabled={pending} className="rounded-pill border border-border bg-surface px-3 py-1 text-xs text-text hover:bg-surface-elevated disabled:opacity-50">
+                <button key={s} type="button" onClick={() => turn(s)} disabled={pending} className="rounded-pill border border-border bg-surface px-3 py-1 text-meta text-text hover:bg-surface-elevated disabled:opacity-50">
                   {s}
                 </button>
               ))}
@@ -136,7 +136,7 @@ export function VeraConcierge() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') send() }}
               placeholder="Say something to Vera…"
-              className="w-full rounded-control border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+              className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
             />
             <button type="button" aria-label="Send" onClick={send} disabled={pending || !input.trim()} className="rounded-xl bg-primary p-2 text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50">
               <Send className="h-4 w-4" aria-hidden />
@@ -151,8 +151,8 @@ export function VeraConcierge() {
         href="/circles"
         className={
           done
-            ? 'mt-2 inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover'
-            : 'mt-1 inline-flex items-center gap-1 text-xs font-medium text-subtle transition-colors hover:text-text'
+            ? 'mt-2 inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover'
+            : 'mt-1 inline-flex items-center gap-1 text-meta font-medium text-subtle transition-colors hover:text-text'
         }
       >
         Find your circle <ArrowRight className="h-3.5 w-3.5" />

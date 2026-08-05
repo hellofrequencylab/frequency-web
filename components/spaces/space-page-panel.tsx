@@ -103,7 +103,7 @@ export function SpacePagePanel({
   return (
     <div className="space-y-8">
       {error && (
-        <p className="rounded-lg border border-danger bg-danger-bg px-3 py-2 text-sm font-medium text-danger">
+        <p className="rounded-lg border border-danger bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger">
           {error}
         </p>
       )}
@@ -120,7 +120,7 @@ export function SpacePagePanel({
               add a new one. Home is your required main page (never deletable, always first). */}
           <section>
             <SectionHeader title="Pages" />
-            <p className="-mt-2 mb-3 text-sm text-muted">
+            <p className="-mt-2 mb-3 text-body-sm text-muted">
               {canManagePages
                 ? 'The pages in your profile nav. Pick one to edit its blocks below, or add, rename, reorder, and delete pages. Home is your main page and always comes first.'
                 : 'Your profile is one continuous page. Add more pages with your own website to build a full multi-page site.'}
@@ -168,7 +168,7 @@ export function SpacePagePanel({
           {!readOnly && (
             <section>
               <SectionHeader title="External website" />
-              <p className="-mt-2 mb-3 text-sm text-muted">
+              <p className="-mt-2 mb-3 text-body-sm text-muted">
                 Publish your Home page as a standalone website with its own link. It will show the same
                 content as your profile, so you edit once and it stays in sync.
               </p>
@@ -180,7 +180,7 @@ export function SpacePagePanel({
               </div>
               {comingSoon && (
                 <p
-                  className="mt-3 rounded-card border border-border bg-surface-elevated/60 px-3 py-2 text-sm font-medium text-text"
+                  className="mt-3 rounded-card border border-border bg-surface-elevated/60 px-3 py-2 text-body-sm font-medium text-text"
                   role="status"
                 >
                   Coming soon. Standalone websites are on the way. For now your profile is your public page.
@@ -250,7 +250,7 @@ function PageRow({
             onChange={(e) => setDraft(e.target.value)}
             onBlur={saveRename}
             aria-label={`Rename ${page.label}`}
-            className="min-w-0 flex-1 rounded-lg border border-border bg-canvas px-2 py-1 text-sm font-medium text-text"
+            className="min-w-0 flex-1 rounded-lg border border-border bg-canvas px-2 py-1 text-body-sm font-medium text-text"
           />
           <IconButton variant="bordered" label="Save name" disabled={pending} onClick={saveRename}>
             <Check className="h-4 w-4" aria-hidden />
@@ -264,7 +264,7 @@ function PageRow({
           className="flex min-w-0 flex-1 items-center gap-2 text-left"
           title={active ? 'You are editing this page' : `Edit ${page.label}`}
         >
-          <span className="block truncate text-sm font-semibold text-text">{page.label}</span>
+          <span className="block truncate text-body-sm font-semibold text-text">{page.label}</span>
           {page.system && (
             <span className="shrink-0 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
               Main
@@ -345,7 +345,7 @@ function AddPageRow({
 
   if (atCap) {
     return (
-      <p className="mt-3 rounded-card border border-border bg-surface p-3 text-xs text-muted">
+      <p className="mt-3 rounded-card border border-border bg-surface p-3 text-meta text-muted">
         You have reached the limit of {maxPages} pages. Delete a page to add another.
       </p>
     )
@@ -365,7 +365,7 @@ function AddPageRow({
         placeholder="New page name"
         onChange={(e) => setLabel(e.target.value)}
         aria-label="New page name"
-        className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text placeholder:text-subtle"
+        className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle"
       />
       <Button type="submit" variant="secondary" size="sm" disabled={pending || label.trim().length === 0}>
         {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Plus className="h-3.5 w-3.5" aria-hidden />}
@@ -382,11 +382,11 @@ function AddPageRow({
 function AddPagesUpsell({ slug }: { slug: string }) {
   return (
     <div className="mt-3 rounded-card border border-border bg-surface p-4">
-      <p className="flex items-center gap-2 text-sm font-semibold text-text">
+      <p className="flex items-center gap-2 text-body-sm font-semibold text-text">
         <Globe className="h-4 w-4 text-primary" aria-hidden />
         Add more pages with your own website
       </p>
-      <p className="mt-1 text-sm text-muted">
+      <p className="mt-1 text-body-sm text-muted">
         Your profile is one continuous page. The full website comes with the Business plan: add more
         pages and build a multi-page site.
       </p>

@@ -22,8 +22,8 @@ export function ScanInviteToggle({ enabled }: { enabled: boolean }) {
     <div className="flex items-center gap-3 rounded-card border border-border bg-surface p-3">
       <Mail className="h-4 w-4 shrink-0 text-primary-strong" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-text">Scan-intro emails</p>
-        <p className="text-xs text-muted">
+        <p className="text-body-sm font-medium text-text">Scan-intro emails</p>
+        <p className="text-meta text-muted">
           One-time personal intro to people a steward scans into their CRM.{' '}
           {enabled ? 'On.' : 'Off. Nothing sends.'} Needs <code>RESEND_API_KEY</code> set.
         </p>

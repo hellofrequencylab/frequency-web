@@ -70,8 +70,8 @@ function MemberRow({ row, boardHref }: { row: MemberListRow; boardHref: string }
     <>
       <span className={`h-2.5 w-2.5 shrink-0 rounded-pill ${TONE_DOT[row.resonanceTier]}`} aria-hidden />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold text-text">{row.name}</p>
-        <p className="text-xs text-muted">
+        <p className="truncate text-body-sm font-bold text-text">{row.name}</p>
+        <p className="text-meta text-muted">
           Health {Math.round(row.resonanceHealth)} · {tierLabel(row.resonanceTier)}
           {row.lifecycleStage ? ` · ${LIFECYCLE_LABELS[row.lifecycleStage] ?? row.lifecycleStage}` : ''}
         </p>

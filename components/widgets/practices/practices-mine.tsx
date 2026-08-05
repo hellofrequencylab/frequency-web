@@ -30,7 +30,7 @@ function PracticeMeta({ p }: { p: Practice }) {
   const lengthCadence = [preview, p.cadence].filter(Boolean).join(' · ')
   if (!p.category && !lengthCadence && !p.reward_note) return null
   return (
-    <div className="mt-1.5 flex flex-nowrap items-center gap-x-2 overflow-hidden text-xs">
+    <div className="mt-1.5 flex flex-nowrap items-center gap-x-2 overflow-hidden text-meta">
       {p.category && (
         <span className="shrink-0 rounded-pill bg-surface-elevated px-2 py-0.5 font-medium capitalize text-subtle">
           {p.category.replace(/-/g, ' ')}
@@ -99,7 +99,7 @@ function MineRow({
       <div className="flex h-full flex-col rounded-2xl border border-border bg-surface p-4 lift-2 transition-colors hover:border-primary-bg motion-reduce:transition-none">
         <div className="flex items-start justify-between gap-2">
           <Link href={href} className="min-w-0 flex-1">
-            <h3 className="truncate text-sm font-bold leading-tight text-text transition-colors hover:text-primary-strong">
+            <h3 className="truncate text-body-sm font-bold leading-tight text-text transition-colors hover:text-primary-strong">
               {p.title}
             </h3>
           </Link>

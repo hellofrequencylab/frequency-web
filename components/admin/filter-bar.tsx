@@ -61,7 +61,7 @@ export function FilterBar({
               defaultValue={params.get(search) ?? ''}
               placeholder={searchPlaceholder}
               onChange={(e) => setParam(search, e.target.value || null)}
-              className="w-full rounded-lg border border-border bg-surface py-1.5 pl-8 pr-3 text-sm text-text placeholder:text-subtle focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-lg border border-border bg-surface py-1.5 pl-8 pr-3 text-body-sm text-text placeholder:text-subtle focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
         )}
@@ -71,7 +71,7 @@ export function FilterBar({
             value={params.get(f.key) ?? ''}
             onChange={(e) => setParam(f.key, e.target.value || null)}
             aria-label={f.label}
-            className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm font-medium text-text focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm font-medium text-text focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
             <option value="">{f.label}</option>
             {f.options.map((o) => (
@@ -91,7 +91,7 @@ export function FilterBar({
                 key={f.key}
                 type="button"
                 onClick={() => setParam(f.key, null)}
-                className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2.5 py-0.5 text-xs font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70"
+                className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2.5 py-0.5 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70"
               >
                 {f.label}: {opt?.label ?? value}
                 <X className="h-3 w-3" aria-hidden />

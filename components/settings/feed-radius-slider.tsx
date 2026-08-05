@@ -46,14 +46,14 @@ export function FeedRadiusSlider({ initialRadiusM }: { initialRadiusM: number })
         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
           <Radar className="h-4 w-4" />
         </span>
-        <h3 className="text-sm font-bold text-text">Feed reach</h3>
+        <h3 className="text-body-sm font-bold text-text">Feed reach</h3>
       </div>
-      <p className="mb-3 text-xs text-muted">
+      <p className="mb-3 text-meta text-muted">
         How far your &ldquo;Nearby&rdquo; feed casts by default. When your area is quiet we widen it on
         its own so you always see something. This is just your starting point.
       </p>
       <div className="mb-2 flex items-baseline justify-between">
-        <p className="text-sm font-medium text-text">Show me activity within ~{milesLabel(draft)}</p>
+        <p className="text-body-sm font-medium text-text">Show me activity within ~{milesLabel(draft)}</p>
         <span className="text-2xs text-muted">{milesLabel(MIN_M)}&ndash;{milesLabel(MAX_M)}</span>
       </div>
       <input

@@ -21,7 +21,7 @@ export function NewJourneyButton({
 }) {
   const cls =
     className ??
-    'inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover'
+    'inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover'
   const href = canCreate ? '/journeys/new' : '/sign-in?next=/journeys/new'
   return (
     <Link href={href} className={cls}>

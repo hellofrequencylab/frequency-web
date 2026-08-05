@@ -36,7 +36,7 @@ export function MembershipEventAccess({
 
   if (rows.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-sm text-muted">
+      <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
         No upcoming events yet. Events your space hosts show here so you can include them with a
         membership.
       </p>
@@ -46,7 +46,7 @@ export function MembershipEventAccess({
   if (!allowed) {
     // One plain sentence, one link (the house upsell pattern). Never a modal, never urgency.
     return (
-      <p className="rounded-lg bg-surface px-3 py-2 text-sm text-muted">
+      <p className="rounded-lg bg-surface px-3 py-2 text-body-sm text-muted">
         Including events with your membership comes with the Collective plan.{' '}
         <Link href={`/spaces/${slug}/settings/billing`} className="font-medium text-primary hover:underline">
           See plans
@@ -73,21 +73,21 @@ export function MembershipEventAccess({
 
   return (
     <div className="space-y-2">
-      {error && <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger">{error}</p>}
+      {error && <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>}
       <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
         {rows.map((r) => (
           <li key={r.eventId} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
             <div className="min-w-0">
               <Link
                 href={`/events/${r.slug}`}
-                className="truncate text-sm font-semibold text-text underline-offset-2 hover:underline"
+                className="truncate text-body-sm font-semibold text-text underline-offset-2 hover:underline"
               >
                 {r.title}
               </Link>
-              <p className="text-xs text-muted">{whenFmt.format(new Date(r.startsAt))}</p>
+              <p className="text-meta text-muted">{whenFmt.format(new Date(r.startsAt))}</p>
             </div>
             <label className="flex items-center gap-2">
-              <span className="text-xs font-medium text-muted">Included for</span>
+              <span className="text-meta font-medium text-muted">Included for</span>
               <select
                 value={r.audience}
                 onChange={(e) => save(r.eventId, e.target.value)}
@@ -109,7 +109,7 @@ export function MembershipEventAccess({
           </li>
         ))}
       </ul>
-      <p className="text-xs text-subtle">
+      <p className="text-meta text-subtle">
         Included means the event gets a free Members ticket only that audience can claim. It shows
         on the join cards automatically, next to any paid tickets the event sells.
       </p>

@@ -47,7 +47,7 @@ export default async function HelpCategoryPage({ params }: Params) {
             <Link href={helpHref(cat.slug, a.slug)} className="block px-5 py-4 hover:bg-surface">
               <span className="block font-medium text-text">{a.title}</span>
               {a.description && (
-                <span className="mt-0.5 block text-sm text-muted">{a.description}</span>
+                <span className="mt-0.5 block text-body-sm text-muted">{a.description}</span>
               )}
             </Link>
           </li>

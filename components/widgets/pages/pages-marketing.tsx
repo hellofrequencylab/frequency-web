@@ -26,7 +26,7 @@ export async function PagesMarketing() {
     <section>
       <SectionHeader title="Marketing pages" />
       <div className={`max-w-3xl ${TABLE_WRAP}`}>
-        <table className="w-full text-sm">
+        <table className="w-full text-body-sm">
           <thead>
             <tr className={HEAD_ROW}>
               <th className={TH}>Page</th>

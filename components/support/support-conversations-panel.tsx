@@ -47,7 +47,7 @@ export function SupportConversationsPanel() {
       {threads === null ? (
         <div className="flex items-center justify-center py-6"><Loader2 className="h-4 w-4 animate-spin text-muted" /></div>
       ) : threads.length === 0 ? (
-        <p className="mt-2 text-xs text-muted">Nothing yet. Send us a message above and we&rsquo;ll reply here.</p>
+        <p className="mt-2 text-meta text-muted">Nothing yet. Send us a message above and we&rsquo;ll reply here.</p>
       ) : (
         <ul className="mt-2 divide-y divide-border overflow-hidden rounded-lg border border-border">
           {threads.map((t) => (
@@ -58,7 +58,7 @@ export function SupportConversationsPanel() {
                 className="block w-full px-3 py-2 text-left hover:bg-surface-elevated"
               >
                 <span className="flex items-center justify-between gap-2">
-                  <span className="min-w-0 truncate text-sm font-medium text-text">{t.subject}</span>
+                  <span className="min-w-0 truncate text-body-sm font-medium text-text">{t.subject}</span>
                   <span className="shrink-0 text-3xs font-semibold uppercase tracking-wide text-muted">{STATUS_COPY[t.status] ?? t.status}</span>
                 </span>
               </button>
@@ -90,20 +90,20 @@ function NewRequest({ onSent }: { onSent: (ref: string) => void }) {
   return (
     <div>
       <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Send us a message</p>
-      <p className="mt-1 text-xs text-muted">Tell us what you need. We&rsquo;ll reply right here and by email.</p>
+      <p className="mt-1 text-meta text-muted">Tell us what you need. We&rsquo;ll reply right here and by email.</p>
       <textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         rows={3}
         placeholder="How can we help?"
-        className="mt-2 w-full resize-none rounded-lg border border-border bg-surface-elevated px-3 py-2 text-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-[var(--color-border-strong)]"
+        className="mt-2 w-full resize-none rounded-lg border border-border bg-surface-elevated px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-[var(--color-border-strong)]"
       />
-      {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+      {error && <p className="mt-1 text-meta text-danger">{error}</p>}
       <button
         type="button"
         onClick={send}
         disabled={pending || !message.trim()}
-        className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Send message
       </button>
@@ -142,7 +142,7 @@ function SupportThread({ refId, onBack }: { refId: string; onBack: () => void })
         <button type="button" onClick={onBack} aria-label="Back" className="rounded-lg p-1.5 text-muted hover:bg-surface-elevated hover:text-text">
           <ArrowLeft className="h-4 w-4" aria-hidden />
         </button>
-        <span className="min-w-0 truncate text-sm font-semibold text-text">{detail?.subject ?? 'Support request'}</span>
+        <span className="min-w-0 truncate text-body-sm font-semibold text-text">{detail?.subject ?? 'Support request'}</span>
       </div>
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 py-3">
         {detail === null ? (
@@ -165,7 +165,7 @@ function SupportThread({ refId, onBack }: { refId: string; onBack: () => void })
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
           rows={1}
           placeholder="Reply…"
-          className="min-h-9 flex-1 resize-none rounded-lg border border-border bg-surface-elevated px-3 py-2 text-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-[var(--color-border-strong)]"
+          className="min-h-9 flex-1 resize-none rounded-lg border border-border bg-surface-elevated px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-[var(--color-border-strong)]"
         />
         <button
           type="button"

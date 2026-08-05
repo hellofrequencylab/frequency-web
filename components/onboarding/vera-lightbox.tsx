@@ -187,13 +187,13 @@ export function VeraLightbox({
           /* ── Beat 1: the personalized deck ───────────────────────────────── */
           <div key={slide} className="relative flex flex-1 flex-col overflow-y-auto px-7 pb-7 pt-8 text-center motion-safe:animate-[slideUp_0.3s_ease-out]">
             <WelcomeArt art={current.art} className="mx-auto mb-5 h-28 sm:h-32" />
-            <span className="mx-auto inline-flex items-center gap-1.5 rounded-pill bg-primary-bg px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary-strong">
+            <span className="mx-auto inline-flex items-center gap-1.5 rounded-pill bg-primary-bg px-3 py-1 text-meta font-semibold uppercase tracking-wide text-primary-strong">
               <Sparkles className="h-3.5 w-3.5" /> {current.eyebrow}
             </span>
-            <h2 id="vera-lightbox-title" className="mt-4 text-balance text-2xl font-bold leading-tight text-text sm:text-3xl">
+            <h2 id="vera-lightbox-title" className="mt-4 text-balance text-page-title font-bold leading-tight text-text sm:text-3xl">
               {current.title}
             </h2>
-            <p className="mx-auto mt-3 max-w-md text-pretty text-sm leading-relaxed text-muted sm:text-base">{current.body}</p>
+            <p className="mx-auto mt-3 max-w-md text-pretty text-body-sm leading-relaxed text-muted sm:text-base">{current.body}</p>
 
             {/* progress dots */}
             <div className="mt-7 flex items-center justify-center gap-2">
@@ -210,7 +210,7 @@ export function VeraLightbox({
                 <button
                   type="button"
                   onClick={() => setSlide((s) => s - 1)}
-                  className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-medium text-muted transition-colors hover:text-text"
+                  className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-body-sm font-medium text-muted transition-colors hover:text-text"
                 >
                   <ArrowLeft className="h-4 w-4" /> Back
                 </button>
@@ -218,13 +218,13 @@ export function VeraLightbox({
               <button
                 type="button"
                 onClick={() => (lastSlide ? setPhase('chat') : setSlide((s) => s + 1))}
-                className="inline-flex items-center gap-2 rounded-control bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-2 rounded-control bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
               >
                 {lastSlide ? 'Meet Vera' : 'Next'} <ArrowRight className="h-4 w-4" />
               </button>
             </div>
 
-            <button type="button" onClick={close} className="mx-auto mt-4 text-xs font-medium text-subtle transition-colors hover:text-muted">
+            <button type="button" onClick={close} className="mx-auto mt-4 text-meta font-medium text-subtle transition-colors hover:text-muted">
               Skip for now
             </button>
           </div>
@@ -236,9 +236,9 @@ export function VeraLightbox({
                 <Sparkles className="h-4 w-4" />
               </span>
               <div className="min-w-0">
-                <p id="vera-lightbox-title" className="text-sm font-bold text-text">Vera</p>
+                <p id="vera-lightbox-title" className="text-body-sm font-bold text-text">Vera</p>
                 {/* AI disclosure (EU AI Act Art. 50): members must know they're talking to AI. */}
-                <p className="text-xs text-subtle">Vera is AI. She meets you where you are, then points you toward your people.</p>
+                <p className="text-meta text-subtle">Vera is AI. She meets you where you are, then points you toward your people.</p>
               </div>
             </div>
 
@@ -248,8 +248,8 @@ export function VeraLightbox({
                   <div
                     className={
                       m.from === 'you'
-                        ? 'max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-3.5 py-2 text-sm text-on-primary'
-                        : 'max-w-[85%] rounded-2xl rounded-bl-sm border border-border bg-surface-elevated px-3.5 py-2 text-sm text-text'
+                        ? 'max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-3.5 py-2 text-body-sm text-on-primary'
+                        : 'max-w-[85%] rounded-2xl rounded-bl-sm border border-border bg-surface-elevated px-3.5 py-2 text-body-sm text-text'
                     }
                   >
                     {m.text}
@@ -257,16 +257,16 @@ export function VeraLightbox({
                 </div>
               ))}
 
-              {pending && <p className="text-xs text-subtle">Vera is thinking…</p>}
+              {pending && <p className="text-meta text-subtle">Vera is thinking…</p>}
 
               {proposals.map((p, i) => (
                 <div key={i} className="rounded-card border border-border bg-surface-elevated p-3">
-                  <p className="text-xs text-muted">{proposalLabel(p)}</p>
+                  <p className="text-meta text-muted">{proposalLabel(p)}</p>
                   <div className="mt-2 flex gap-2">
-                    <button type="button" onClick={() => allow(p)} className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-1.5 text-xs font-semibold text-success hover:opacity-80">
+                    <button type="button" onClick={() => allow(p)} className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-1.5 text-meta font-semibold text-success hover:opacity-80">
                       <Check className="h-3.5 w-3.5" /> {p.tool === 'join_circle' ? 'Join' : p.tool === 'draft_intro' ? 'Post' : 'Allow'}
                     </button>
-                    <button type="button" onClick={() => setProposals((ps) => ps.filter((x) => x !== p))} className="inline-flex items-center gap-1.5 rounded-lg bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:text-danger">
+                    <button type="button" onClick={() => setProposals((ps) => ps.filter((x) => x !== p))} className="inline-flex items-center gap-1.5 rounded-lg bg-surface px-3 py-1.5 text-meta font-medium text-muted hover:text-danger">
                       <X className="h-3.5 w-3.5" /> Skip
                     </button>
                   </div>
@@ -279,7 +279,7 @@ export function VeraLightbox({
               {!done && suggestions.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {suggestions.map((s) => (
-                    <button key={s} type="button" onClick={() => turn(s)} disabled={pending} className="rounded-pill border border-border bg-surface px-3 py-1 text-xs text-text transition-colors hover:bg-surface-elevated disabled:opacity-50">
+                    <button key={s} type="button" onClick={() => turn(s)} disabled={pending} className="rounded-pill border border-border bg-surface px-3 py-1 text-meta text-text transition-colors hover:bg-surface-elevated disabled:opacity-50">
                       {s}
                     </button>
                   ))}
@@ -293,7 +293,7 @@ export function VeraLightbox({
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') send() }}
                     placeholder="Say something to Vera…"
-                    className="w-full rounded-control border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+                    className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
                   />
                   <button type="button" onClick={send} disabled={pending || !input.trim()} aria-label="Send message" className="rounded-xl bg-primary p-2 text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50">
                     <Send className="h-4 w-4" aria-hidden />
@@ -305,8 +305,8 @@ export function VeraLightbox({
                 href="/circles"
                 className={
                   done
-                    ? 'inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover'
-                    : 'inline-flex items-center gap-1 text-xs font-medium text-subtle transition-colors hover:text-text'
+                    ? 'inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover'
+                    : 'inline-flex items-center gap-1 text-meta font-medium text-subtle transition-colors hover:text-text'
                 }
               >
                 <Compass className="h-3.5 w-3.5" /> Find your circle <ArrowRight className="h-3.5 w-3.5" />

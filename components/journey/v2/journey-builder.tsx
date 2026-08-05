@@ -102,7 +102,7 @@ function JourneyActions({
     })
   }
 
-  const btn = 'inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition-colors disabled:opacity-60'
+  const btn = 'inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-body-sm font-semibold transition-colors disabled:opacity-60'
   return (
     <div className={`flex flex-col gap-1 ${align === 'left' ? 'items-start' : ''}`}>
       <div className="flex flex-wrap items-center gap-2">
@@ -125,7 +125,7 @@ function JourneyActions({
             </button>
             <label
               title="Assign yourself every practice so you can run it from Mindless."
-              className="inline-flex items-center gap-1.5 text-sm text-muted"
+              className="inline-flex items-center gap-1.5 text-body-sm text-muted"
             >
               <input
                 type="checkbox"
@@ -176,7 +176,7 @@ function JourneyDetails({ status, visibility, details }: { status: string; visib
             <r.icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
             <dt className="sr-only">{r.label}</dt>
             <dd className="min-w-0">
-              <span className="block truncate text-sm font-bold tabular-nums text-text">{r.value}</span>
+              <span className="block truncate text-body-sm font-bold tabular-nums text-text">{r.value}</span>
               <span className="block text-2xs text-muted">{r.label}</span>
             </dd>
           </div>
@@ -371,21 +371,21 @@ export function JourneyBuilder({
           autoFocus={draft}
           ariaLabel="Journey title"
           onSave={draft ? createFromTitle : (t) => meta({ title: t })}
-          inputClassName="text-xl font-bold text-text sm:text-2xl"
+          inputClassName="text-lead font-bold text-text sm:text-2xl"
         />
       </span>
     </span>
   )
 
   const description = draft ? (
-    <span className="block px-1 text-sm text-subtle">Name your Journey first, then add a one-line subtitle.</span>
+    <span className="block px-1 text-body-sm text-subtle">Name your Journey first, then add a one-line subtitle.</span>
   ) : (
     <EditableText
       value={initialSummary ?? ''}
       placeholder="A line or two on what this is and who it's for"
       ariaLabel="Journey subtitle"
       onSave={(s) => meta({ summary: s })}
-      inputClassName="text-sm text-muted"
+      inputClassName="text-body-sm text-muted"
       multiline
       rows={3}
     />
@@ -397,7 +397,7 @@ export function JourneyBuilder({
         {/* Cover header — up top, the standard upload band with an Upload overlay. */}
         <div className="mb-5">
           {draft ? (
-            <div className="flex h-32 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border text-sm text-subtle">
+            <div className="flex h-32 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border text-body-sm text-subtle">
               <Lock className="h-4 w-4" aria-hidden /> Add a cover photo once you name it
             </div>
           ) : (
@@ -419,7 +419,7 @@ export function JourneyBuilder({
             set on the left, and the Journey Details quick-stats card on the right. */}
         <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 flex-1">
-            <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-primary-strong">{eyebrow}</div>
+            <div className="mb-1.5 text-meta font-semibold uppercase tracking-wide text-primary-strong">{eyebrow}</div>
             <div className="text-text">{title}</div>
             {/* No max-width: title + subtitle share the column width, so their right edges line up. */}
             <div className="mt-1.5">{description}</div>
@@ -430,7 +430,7 @@ export function JourneyBuilder({
               </div>
             )}
             {draft && (
-              <Link href="/journeys" className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-text">
+              <Link href="/journeys" className="mt-3 inline-flex items-center gap-1.5 text-body-sm font-medium text-muted transition-colors hover:text-text">
                 <ArrowLeft className="h-4 w-4" /> Back to Journeys
               </Link>
             )}
@@ -457,13 +457,13 @@ export function JourneyBuilder({
                 {/* Introductory write-up — the story/overview, moved out of Settings to sit above
                     the curriculum (the reader's first thing). */}
                 <div className="mb-6">
-                  <p className="mb-1.5 text-sm font-bold text-text">Introduction</p>
+                  <p className="mb-1.5 text-body-sm font-bold text-text">Introduction</p>
                   <EditableText
                     value={initialIntro ?? ''}
                     placeholder="The why, the how, what they'll get from it. A few lines is plenty."
                     ariaLabel="Journey introduction"
                     onSave={(t) => meta({ intro: t })}
-                    inputClassName="text-sm leading-relaxed text-text"
+                    inputClassName="text-body-sm leading-relaxed text-text"
                     multiline
                     rows={4}
                   />
@@ -474,7 +474,7 @@ export function JourneyBuilder({
           </div>
 
           <aside className="lg:w-[22rem] lg:shrink-0">
-            <div className="mb-3 inline-flex items-center gap-1.5 text-sm font-bold text-text">
+            <div className="mb-3 inline-flex items-center gap-1.5 text-body-sm font-bold text-text">
               <SlidersHorizontal className="h-4 w-4 text-subtle" aria-hidden /> Settings
             </div>
             {draft ? <DraftGhostSidebar /> : settings}
@@ -500,10 +500,10 @@ export function JourneyBuilder({
 function DraftGhostVera() {
   return (
     <div className="rounded-2xl border border-dashed border-primary/30 bg-primary-bg/10 p-4 opacity-70" aria-hidden>
-      <p className="flex items-center gap-2 text-base font-bold text-text">
+      <p className="flex items-center gap-2 text-body font-bold text-text">
         <Sparkles className="h-5 w-5 text-primary-strong" /> Build your Journey with Vera
       </p>
-      <p className="mt-1 text-sm text-muted">
+      <p className="mt-1 text-body-sm text-muted">
         Name your Journey, then describe it and Vera fills a balanced four-Pillar week (Mind, Body, Spirit, Expression).
       </p>
     </div>
@@ -514,15 +514,15 @@ function DraftGhostMain() {
   return (
     <div className="space-y-4 opacity-70" aria-hidden>
       <header>
-        <h2 className="text-base font-bold text-text">Curriculum</h2>
-        <p className="text-sm text-muted">Three phases are ready to fill the moment you name your Journey.</p>
+        <h2 className="text-body font-bold text-text">Curriculum</h2>
+        <p className="text-body-sm text-muted">Three phases are ready to fill the moment you name your Journey.</p>
       </header>
       {[1, 2, 3].map((n) => (
         <div key={n} className="rounded-2xl border border-border bg-surface p-4">
-          <p className="flex items-center gap-2 text-sm font-semibold text-text">
+          <p className="flex items-center gap-2 text-body-sm font-semibold text-text">
             <Layers className="h-4 w-4 text-subtle" /> Phase {n}
           </p>
-          <p className="mt-1 text-xs text-subtle">Ready to edit once your Journey has a name.</p>
+          <p className="mt-1 text-meta text-subtle">Ready to edit once your Journey has a name.</p>
         </div>
       ))}
     </div>
@@ -532,8 +532,8 @@ function DraftGhostMain() {
 function DraftGhostSidebar() {
   return (
     <div className="rounded-2xl border border-dashed border-border bg-surface p-4 opacity-70" aria-hidden>
-      <p className="text-sm font-semibold text-text">Settings</p>
-      <p className="mt-1 text-xs text-muted">
+      <p className="text-body-sm font-semibold text-text">Settings</p>
+      <p className="mt-1 text-meta text-muted">
         Cover, story, visibility, rewards, delivery, and the advanced options unlock once your Journey has a name.
       </p>
     </div>

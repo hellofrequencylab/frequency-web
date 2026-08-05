@@ -48,13 +48,13 @@ export function SmsToggle({ enabled, provisioned }: { enabled: boolean; provisio
       </div>
 
       {!isPending && !saved && on && !provisioned && (
-        <p className="mt-2 text-xs text-warning">
+        <p className="mt-2 text-meta text-warning">
           Switch is on, but SMS stays dormant until the A2P 10DLC registration is set in this
           environment. Nothing sends until both are live.
         </p>
       )}
 
-      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+      {error && <p className="mt-2 text-body-sm text-danger">{error}</p>}
     </div>
   )
 }

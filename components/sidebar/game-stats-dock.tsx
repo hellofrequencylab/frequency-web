@@ -126,14 +126,14 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-primary">
           <Zap className="h-3.5 w-3.5 fill-current text-on-primary" />
         </span>
-        <span className="text-sm font-semibold tabular-nums text-text">{zaps.toLocaleString()}</span>
+        <span className="text-body-sm font-semibold tabular-nums text-text">{zaps.toLocaleString()}</span>
         <span aria-hidden className="h-4 w-px bg-border" />
-        <span className="inline-flex items-center gap-1 text-sm tabular-nums text-muted">
+        <span className="inline-flex items-center gap-1 text-body-sm tabular-nums text-muted">
           <Gem className="h-3.5 w-3.5 text-primary-strong" />
           {gems.toLocaleString()}
         </span>
         <span aria-hidden className="h-4 w-px bg-border" />
-        <span className="inline-flex items-center gap-1 text-sm tabular-nums text-muted">
+        <span className="inline-flex items-center gap-1 text-body-sm tabular-nums text-muted">
           <Flame className="h-3.5 w-3.5 text-primary-strong" />
           {streak}
         </span>
@@ -165,7 +165,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
     <div className="space-y-4">
       {showSummary && (
         <div className="flex items-center justify-between gap-2 border-b border-border pb-3">
-          <div className="flex items-center gap-3 text-sm font-bold text-text tabular-nums">
+          <div className="flex items-center gap-3 text-body-sm font-bold text-text tabular-nums">
             <span className="inline-flex items-center gap-1"><Zap className="w-4 h-4 text-primary fill-current" />{zaps.toLocaleString()}</span>
             <span className="inline-flex items-center gap-1"><Gem className="w-4 h-4 text-signal" />{gems.toLocaleString()}</span>
             <span className="inline-flex items-center gap-1"><Flame className="w-4 h-4 text-primary" />{streak}d</span>
@@ -180,14 +180,14 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
 
       {/* Today's move — North-Star action, no box */}
       {todaysMove.kind === 'done' ? (
-        <p className="flex items-center gap-2 text-sm font-medium text-success">
+        <p className="flex items-center gap-2 text-body-sm font-medium text-success">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           Practiced today, streak safe
         </p>
       ) : (
         <Link
           href="/practices"
-          className="group/move flex items-center gap-2 text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors"
+          className="group/move flex items-center gap-2 text-body-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors"
         >
           <Flame className="w-4 h-4 shrink-0" />
           <span className="flex-1">{todaysMove.kind === 'adopt' ? 'Adopt a practice to start' : 'Log today’s practice'}</span>
@@ -233,7 +233,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
           <div className="rounded-card bg-surface-elevated px-3 py-2.5">
             <div className="flex items-center gap-1.5">
               <Target className="w-3.5 h-3.5 text-signal-strong shrink-0" />
-              <span className="truncate text-xs font-semibold text-text">{arc.chain}</span>
+              <span className="truncate text-meta font-semibold text-text">{arc.chain}</span>
             </div>
             <p className="mt-0.5 mb-1.5 truncate text-2xs text-muted">{arc.step}</p>
             <ProgressTrack value={arc.pct} minVisible={2} label={`${arc.chain} progress`} tone="signal" track="surface" className="w-full" />
@@ -248,9 +248,9 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
       >
         <div className="flex items-center gap-1.5">
           <Lock className="w-3.5 h-3.5 text-primary-strong shrink-0" />
-          <span className="text-xs font-bold uppercase tracking-wider text-primary-strong">The Vault</span>
+          <span className="text-meta font-bold uppercase tracking-wider text-primary-strong">The Vault</span>
         </div>
-        <p className="mt-1 flex items-center gap-1 text-sm font-semibold text-text">
+        <p className="mt-1 flex items-center gap-1 text-body-sm font-semibold text-text">
           <Gem className="w-3.5 h-3.5 text-signal" />
           {vaultGems.toLocaleString()} gems to spend
         </p>
@@ -260,7 +260,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
       {/* Full dashboard */}
       <Link
         href="/crew"
-        className="flex items-center justify-center gap-1.5 rounded-control py-2 text-xs font-semibold text-primary-strong hover:bg-surface-elevated transition-colors"
+        className="flex items-center justify-center gap-1.5 rounded-control py-2 text-meta font-semibold text-primary-strong hover:bg-surface-elevated transition-colors"
       >
         <Sparkles className="w-3.5 h-3.5" />
         Open full dashboard

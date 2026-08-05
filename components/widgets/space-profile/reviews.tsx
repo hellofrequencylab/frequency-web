@@ -34,7 +34,7 @@ export function ReviewsBlock({
                 <p className="font-eyebrow text-2xs font-bold uppercase tracking-[0.2em] text-primary-strong">{header.eyebrow}</p>
               )}
               {header?.heading && (
-                <h2 className="font-section mt-1.5 text-xl font-bold tracking-tight text-text sm:text-2xl">{header.heading}</h2>
+                <h2 className="font-section mt-1.5 text-lead font-bold tracking-tight text-text sm:text-2xl">{header.heading}</h2>
               )}
             </div>
           )}
@@ -49,7 +49,7 @@ export function ReviewsBlock({
               ))}
             </span>
           </div>
-          {count && <p className="mt-2 text-sm text-muted">{count}</p>}
+          {count && <p className="mt-2 text-body-sm text-muted">{count}</p>}
         </div>
       </ModuleSection>
     )

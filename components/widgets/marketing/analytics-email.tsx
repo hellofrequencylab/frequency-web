@@ -17,7 +17,7 @@ export async function MarketingAnalyticsEmail() {
           <StatCard key={t} label={t[0].toUpperCase() + t.slice(1)} value={(email.byType[t] ?? 0).toLocaleString()} />
         ))}
       </div>
-      <p className="mt-2 text-xs text-subtle">
+      <p className="mt-2 text-meta text-subtle">
         Last {email.windowDays} days. Deliverability: {Math.round(email.deliveryRate * 100)}% (delivered vs bounced).
         Open/click/bounce data populates once the Resend webhook is configured.
       </p>

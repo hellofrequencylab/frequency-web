@@ -79,11 +79,11 @@ function ToolCard({
         <Icon className="h-4 w-4" aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-1 text-sm font-semibold text-text">
+        <span className="flex items-center gap-1 text-body-sm font-semibold text-text">
           {title}
           <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-subtle opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
         </span>
-        <span className="mt-0.5 block text-xs leading-relaxed text-muted">{desc}</span>
+        <span className="mt-0.5 block text-meta leading-relaxed text-muted">{desc}</span>
       </span>
     </Link>
   )

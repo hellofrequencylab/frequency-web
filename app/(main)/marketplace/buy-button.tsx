@@ -41,7 +41,7 @@ export function BuyButton({
         <ShoppingBag className="h-4 w-4" aria-hidden />
         {pending ? 'Starting…' : label}
       </button>
-      {error && <p className="mt-2 text-sm text-warning">{error}</p>}
+      {error && <p className="mt-2 text-body-sm text-warning">{error}</p>}
     </div>
   )
 }

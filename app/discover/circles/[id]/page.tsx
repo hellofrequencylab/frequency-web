@@ -76,7 +76,7 @@ export default async function CirclePage({
 
       <Link
         href="/discover/circles"
-        className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text"
+        className="mb-4 inline-flex items-center gap-1 text-body-sm font-medium text-muted transition-colors hover:text-text"
       >
         <ChevronLeft className="h-4 w-4" />
         Circles
@@ -85,7 +85,7 @@ export default async function CirclePage({
       <DetailTemplate
         title={circle.name}
         subtitle={
-          <div className="flex flex-wrap items-center gap-4 text-sm text-muted">
+          <div className="flex flex-wrap items-center gap-4 text-body-sm text-muted">
             <span className="inline-flex items-center gap-1.5">
               <Users className="w-4 h-4" />
               {circle.member_count} {circle.member_count === 1 ? 'member' : 'members'}
@@ -108,7 +108,7 @@ export default async function CirclePage({
         }
         badges={
           circle.status === 'forming' ? (
-            <span className="text-xs px-2 py-1 rounded-md font-medium bg-warning-bg text-warning capitalize">
+            <span className="text-meta px-2 py-1 rounded-md font-medium bg-warning-bg text-warning capitalize">
               forming
             </span>
           ) : undefined

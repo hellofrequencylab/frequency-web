@@ -231,6 +231,23 @@
   /* Sans (Nunito) — body, in-app headings, UI. */
   --text-page-title:   calc(1.5rem * var(--type-scale, 1));
   --text-lead:         calc(1.25rem * var(--type-scale, 1));
+  /* PAIRED LINE-HEIGHTS — the thing that makes the literal->role sweep safe.
+     Tailwind's text-* utilities emit font-size AND line-height (`--text-sm--line-height`
+     etc). Ours emitted font-size only, so swapping `text-sm` for `text-body-sm` would have
+     DROPPED the line-height on ~3,600 sites and let whatever cascades take over -- a reflow
+     of most of the product, dressed up as a token cleanup.
+     These are Tailwind's own ratios, written as the identical calc expressions from
+     node_modules/tailwindcss/theme.css, so the swap is provably zero-pixel-change rather
+     than approximately-the-same. Unitless, so they ride the font size and need no
+     --type-scale factor of their own.
+     Moving these to DAWN's --leading-* roles is a real design change and is deliberately
+     NOT bundled here: it would move every baseline at the same moment as 7,282 mechanical
+     edits, and destroy the one property that makes this sweep reviewable. */
+  --text-page-title--line-height: calc(2 / 1.5);
+  --text-lead--line-height:       calc(1.75 / 1.25);
+  --text-body--line-height:       calc(1.5 / 1);
+  --text-body-sm--line-height:    calc(1.25 / 0.875);
+  --text-meta--line-height:       calc(1 / 0.75);
   --text-card-title:   calc(1.0625rem * var(--type-scale, 1));
   --text-body:         calc(1rem * var(--type-scale, 1));
   --text-body-sm:      calc(0.875rem * var(--type-scale, 1));
@@ -1117,6 +1134,17 @@
   --text-display-h3:   var(--text-display-h3);
   --text-display-card: var(--text-display-card);
   --text-stat:         var(--text-stat);
+  /* The `--text-{role}--line-height` companions MUST be bridged here, not just declared in
+     :root. Tailwind v4 only pairs a line-height onto a `text-*` utility when it can see the
+     companion inside @theme; declaring it in :root alone leaves the utility emitting
+     font-size ONLY, which is exactly the silent line-height drop this sweep exists to avoid.
+     Caught by compiling and comparing against the literal before touching a single call site. */
+  --text-page-title--line-height: var(--text-page-title--line-height);
+  --text-lead--line-height:       var(--text-lead--line-height);
+  --text-body--line-height:       var(--text-body--line-height);
+  --text-body-sm--line-height:    var(--text-body-sm--line-height);
+  --text-meta--line-height:       var(--text-meta--line-height);
+
   --text-page-title:   var(--text-page-title);
   --text-lead:         var(--text-lead);
   --text-card-title:   var(--text-card-title);

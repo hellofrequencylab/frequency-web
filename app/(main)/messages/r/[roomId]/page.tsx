@@ -227,7 +227,7 @@ export default async function RoomPage({
                   <form action={leaveRoom.bind(null, roomId)}>
                     <button
                       type="submit"
-                      className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated"
+                      className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated"
                     >
                       <LogOut className="h-3 w-3" /> Leave
                     </button>
@@ -236,7 +236,7 @@ export default async function RoomPage({
                   <form action={joinRoom.bind(null, roomId)}>
                     <button
                       type="submit"
-                      className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                      className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
                     >
                       <LogIn className="h-3 w-3" /> Join
                     </button>
@@ -284,7 +284,7 @@ export default async function RoomPage({
               <form action={joinRoom.bind(null, roomId)} className="mt-4 flex justify-center">
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary hover:bg-primary-hover transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-meta font-semibold text-on-primary hover:bg-primary-hover transition-colors"
                 >
                   <LogIn className="w-3.5 h-3.5" /> Join room
                 </button>
@@ -321,7 +321,7 @@ export default async function RoomPage({
                         <PresenceDot online={onlineIds.has(p.id)} />
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-text truncate">{p.display_name}</p>
+                        <p className="text-meta font-medium text-text truncate">{p.display_name}</p>
                         {m.is_admin && <p className="text-3xs text-primary-strong">Admin</p>}
                       </div>
                     </Link>

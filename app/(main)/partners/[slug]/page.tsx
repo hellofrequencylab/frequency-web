@@ -48,7 +48,7 @@ export default async function PartnerPage({
         title={partner.name}
         badges={
           partner.category ? (
-            <span className="text-xs px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium capitalize">
+            <span className="text-meta px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium capitalize">
               {partner.category}
             </span>
           ) : undefined
@@ -80,7 +80,7 @@ export default async function PartnerPage({
         }
       >
         {partner.description && (
-          <p className="mt-1 text-sm text-text leading-relaxed max-w-2xl">
+          <p className="mt-1 text-body-sm text-text leading-relaxed max-w-2xl">
             {partner.description}
           </p>
         )}
@@ -96,7 +96,7 @@ export default async function PartnerPage({
               action={
                 <Link
                   href="/partners"
-                  className="inline-flex items-center gap-1.5 rounded-control border border-border px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+                  className="inline-flex items-center gap-1.5 rounded-control border border-border px-4 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
                 >
                   Browse partners
                 </Link>
@@ -121,7 +121,7 @@ export default async function PartnerPage({
             </div>
           )}
 
-          <p className="mt-4 flex flex-wrap items-center gap-1 text-xs text-subtle">
+          <p className="mt-4 flex flex-wrap items-center gap-1 text-meta text-subtle">
             <ScanLine className="h-3.5 w-3.5 shrink-0" aria-hidden />
             Tap this partner&apos;s plaque or{' '}
             <Link

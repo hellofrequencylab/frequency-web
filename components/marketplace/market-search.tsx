@@ -43,7 +43,7 @@ export function MarketSearchBar({ placeholder = 'Search' }: { placeholder?: stri
         onChange={(e) => setQuery(e.target.value.trim().toLowerCase())}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="w-full rounded-pill border border-on-ink/40 bg-on-ink/95 py-3 pl-11 pr-4 text-sm text-ink lift-2 outline-none placeholder:text-ink/50 focus:border-primary focus:ring-2 focus:ring-primary/40"
+        className="w-full rounded-pill border border-on-ink/40 bg-on-ink/95 py-3 pl-11 pr-4 text-body-sm text-ink lift-2 outline-none placeholder:text-ink/50 focus:border-primary focus:ring-2 focus:ring-primary/40"
       />
     </div>
   )
@@ -66,7 +66,7 @@ export function InstantGrid({
   const nodes = Children.toArray(children).filter(isValidElement)
   const shown = nodes.filter((_, i) => marketMatch(items[i]?.text ?? '', query))
   if (shown.length === 0 && query) {
-    return <>{empty ?? <p className="text-sm text-muted">No matches for &ldquo;{query}&rdquo;.</p>}</>
+    return <>{empty ?? <p className="text-body-sm text-muted">No matches for &ldquo;{query}&rdquo;.</p>}</>
   }
   return <div className={className}>{shown}</div>
 }
@@ -95,7 +95,7 @@ export function InstantSection({
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-bold text-text">{title}</h2>
         {seeAllHref && (
-          <a href={seeAllHref} className="text-sm font-medium text-primary-strong hover:underline">
+          <a href={seeAllHref} className="text-body-sm font-medium text-primary-strong hover:underline">
             See all
           </a>
         )}

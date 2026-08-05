@@ -11,10 +11,10 @@ export function EditableIdentity({
   bio: string
 }) {
   if (bio) {
-    return <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">{bio}</p>
+    return <p className="whitespace-pre-wrap text-body-sm leading-relaxed text-text">{bio}</p>
   }
   if (isOwner) {
-    return <p className="text-sm italic text-subtle">Add a short bio so people know who you are.</p>
+    return <p className="text-body-sm italic text-subtle">Add a short bio so people know who you are.</p>
   }
   return null
 }

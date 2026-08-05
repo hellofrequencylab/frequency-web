@@ -52,15 +52,15 @@ export async function BookingOwnerList({ spaceId }: { spaceId: string }) {
       {bookings.map((b) => (
         <li key={b.id} className="flex items-center justify-between gap-4 px-4 py-3">
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-text">{b.memberName}</p>
-            <p className="text-xs text-muted">
+            <p className="truncate text-body-sm font-semibold text-text">{b.memberName}</p>
+            <p className="text-meta text-muted">
               {whenFmt.format(new Date(b.startsAt))} ({tzLabel})
             </p>
-            {b.note && <p className="mt-1 line-clamp-2 text-xs text-subtle">{b.note}</p>}
+            {b.note && <p className="mt-1 line-clamp-2 text-meta text-subtle">{b.note}</p>}
             {b.answers.length > 0 && (
               <dl className="mt-1.5 space-y-0.5">
                 {b.answers.map((a) => (
-                  <div key={a.id} className="text-xs">
+                  <div key={a.id} className="text-meta">
                     <dt className="inline font-semibold text-muted">{a.label}: </dt>
                     <dd className="inline text-subtle">{a.value}</dd>
                   </div>

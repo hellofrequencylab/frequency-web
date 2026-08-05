@@ -13,7 +13,7 @@ function MomentumStat({ label, value, Icon }: { label: string; value: string; Ic
     <div className="rounded-2xl bg-surface-elevated/60 px-3 py-2.5 text-center">
       <Icon className="mx-auto mb-1 h-3.5 w-3.5 text-subtle" />
       <div className="text-lg font-bold leading-none tabular-nums text-text">{value}</div>
-      <div className="mt-1 text-xs text-subtle">{label}</div>
+      <div className="mt-1 text-meta text-subtle">{label}</div>
     </div>
   )
 }
@@ -31,7 +31,7 @@ export async function CircleMomentum({ circleId }: { circleId: string }) {
 
   return (
     <ModuleCard title="Momentum">
-      <p className="mb-2 px-1 text-xs text-muted">{caption}</p>
+      <p className="mb-2 px-1 text-meta text-muted">{caption}</p>
       <div className="grid grid-cols-2 gap-2">
         <MomentumStat label="Members" value={m.members.toLocaleString()} Icon={Users} />
         <MomentumStat label="New this week" value={m.newMembers7d.toLocaleString()} Icon={UserPlus} />

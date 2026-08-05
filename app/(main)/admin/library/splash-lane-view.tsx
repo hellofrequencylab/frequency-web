@@ -169,7 +169,7 @@ export async function SplashLaneView({
         <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-3">
           <div className="flex items-baseline gap-2">
             <h2 className="font-display text-lg uppercase text-text">{activeLabel}</h2>
-            <span className="text-sm text-subtle">
+            <span className="text-body-sm text-subtle">
               {visibleCount} item{visibleCount === 1 ? '' : 's'}
             </span>
           </div>
@@ -186,12 +186,12 @@ export async function SplashLaneView({
                 name="q"
                 defaultValue={q}
                 placeholder="Search splashes…"
-                className="w-full rounded-2xl border border-border bg-surface py-2 pl-9 pr-3 text-sm"
+                className="w-full rounded-2xl border border-border bg-surface py-2 pl-9 pr-3 text-body-sm"
               />
             </span>
             <button
               type="submit"
-              className="rounded-2xl border border-border-strong px-4 py-2 text-sm font-semibold text-text hover:bg-surface-elevated"
+              className="rounded-2xl border border-border-strong px-4 py-2 text-body-sm font-semibold text-text hover:bg-surface-elevated"
             >
               Apply
             </button>

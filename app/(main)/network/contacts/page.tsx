@@ -128,14 +128,14 @@ export default async function ConnectionsPage({
             {googleImportEnabled && (
               <Link
                 href="/api/integrations/google/start"
-                className="inline-flex items-center gap-1.5 rounded-control border border-border-strong bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated sm:px-3.5 sm:py-2"
+                className="inline-flex items-center gap-1.5 rounded-control border border-border-strong bg-surface px-3 py-1.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated sm:px-3.5 sm:py-2"
               >
                 <Download className="h-4 w-4" /> Import from Google
               </Link>
             )}
             <Link
               href="/connections/new"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover sm:px-3.5 sm:py-2"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover sm:px-3.5 sm:py-2"
             >
               <Plus className="h-4 w-4" /> New profile
             </Link>
@@ -161,7 +161,7 @@ export default async function ConnectionsPage({
                   name="q"
                   defaultValue={q}
                   placeholder="Search…"
-                  className="w-44 rounded-lg border border-border-strong bg-surface py-1.5 pl-8 pr-2 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none"
+                  className="w-44 rounded-lg border border-border-strong bg-surface py-1.5 pl-8 pr-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none"
                 />
               </form>
             </div>
@@ -185,7 +185,7 @@ export default async function ConnectionsPage({
             all.length === 0 ? (
               <Link
                 href="/connections/new"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
               >
                 <Plus className="h-4 w-4" /> New profile
               </Link>
@@ -207,7 +207,7 @@ export default async function ConnectionsPage({
                     // the plain <img> used for the card front/back/logo on the detail page.
                     <Image src={avatarSrc(c.avatarUrl)} alt="" width={44} height={44} unoptimized className="h-11 w-11 rounded-pill object-cover" style={avatarFocusStyle(c.avatarUrl)} />
                   ) : (
-                    <span className="flex h-11 w-11 items-center justify-center rounded-pill bg-surface-elevated text-sm font-semibold text-muted">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-pill bg-surface-elevated text-body-sm font-semibold text-muted">
                       {getInitials(c.displayName ?? '?')}
                     </span>
                   )

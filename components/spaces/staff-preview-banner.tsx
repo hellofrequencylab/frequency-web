@@ -13,7 +13,7 @@ export function StaffPreviewBanner({ spaceName }: { spaceName: string }) {
       className="mb-6 flex items-start gap-3 rounded-2xl border border-warning/30 bg-warning-bg px-4 py-3"
     >
       <Eye className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden />
-      <div className="min-w-0 text-sm">
+      <div className="min-w-0 text-body-sm">
         <p className="font-semibold text-text">Staff preview</p>
         <p className="mt-0.5 text-muted">
           You are viewing {spaceName}&rsquo;s owner settings as platform staff. Changes are disabled

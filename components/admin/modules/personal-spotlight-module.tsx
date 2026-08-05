@@ -89,7 +89,7 @@ export function PersonalSpotlightModule() {
     <section className="min-w-0 space-y-3">
       <div className="space-y-3 rounded-2xl border border-border bg-surface-elevated/40 p-4">
         <div className="flex items-center justify-between gap-3">
-          <span className="min-w-0 text-sm text-text">Show your Spotlight page</span>
+          <span className="min-w-0 text-body-sm text-text">Show your Spotlight page</span>
           <Toggle
             checked={enabled}
             onChange={toggleEnable}
@@ -102,7 +102,7 @@ export function PersonalSpotlightModule() {
         {enabled && (
           <>
             <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
-              <span className="min-w-0 text-sm text-text">
+              <span className="min-w-0 text-body-sm text-text">
                 Published <span className="text-subtle">{published ? '' : '(draft only)'}</span>
               </span>
               <Toggle
@@ -117,7 +117,7 @@ export function PersonalSpotlightModule() {
             {handle && (
               <Link
                 href={`/people/${handle}`}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
               >
                 <Sparkles className="h-3.5 w-3.5" aria-hidden /> Build your page
               </Link>
@@ -126,7 +126,7 @@ export function PersonalSpotlightModule() {
         )}
       </div>
 
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
     </section>
   )
 }

@@ -77,7 +77,7 @@ export function DealDetail({
     close !== (deal.expected_close_date ?? '') ||
     source !== (laneMeta(deal.source)?.id ?? PIPELINE_LANES[0]!.id)
 
-  const field = 'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-border-strong focus:outline-none'
+  const field = 'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text focus:border-border-strong focus:outline-none'
   const statusTone: StatusTone = deal.status === 'won' ? 'success' : deal.status === 'lost' ? 'danger' : 'info'
 
   return (
@@ -88,7 +88,7 @@ export function DealDetail({
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full min-w-0 bg-transparent text-xl font-bold text-text focus:outline-none sm:text-2xl"
+            className="w-full min-w-0 bg-transparent text-lead font-bold text-text focus:outline-none sm:text-2xl"
             aria-label="Card title"
           />
         }
@@ -100,7 +100,7 @@ export function DealDetail({
         actions={
           <>
             <div className="flex items-center gap-2">
-              <label className="text-xs text-muted">Stage</label>
+              <label className="text-meta text-muted">Stage</label>
               <select
                 value={deal.stage_id ?? ''}
                 disabled={pending}
@@ -119,7 +119,7 @@ export function DealDetail({
                 type="button"
                 disabled={pending}
                 onClick={() => run(() => moveDeal(deal.id, wonStage.id))}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-success px-3 py-1.5 text-sm font-semibold text-success transition-colors hover:bg-success-bg/40 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-success px-3 py-1.5 text-body-sm font-semibold text-success transition-colors hover:bg-success-bg/40 disabled:opacity-50"
               >
                 <Check className="h-4 w-4" /> Won
               </button>
@@ -129,7 +129,7 @@ export function DealDetail({
                 type="button"
                 disabled={pending}
                 onClick={() => run(() => moveDeal(deal.id, lostStage.id))}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:text-text disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:text-text disabled:opacity-50"
               >
                 Lost
               </button>
@@ -161,24 +161,24 @@ export function DealDetail({
       {/* Editable fields */}
       <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 text-xs text-muted">
+          <label className="flex flex-col gap-1 text-meta text-muted">
             Contact
             <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Who" className={field} />
             {deal.member && (
-              <Link href={`/people/${deal.member.handle}`} className="text-xs text-primary-strong hover:underline">
+              <Link href={`/people/${deal.member.handle}`} className="text-meta text-primary-strong hover:underline">
                 Linked member · @{deal.member.handle}
               </Link>
             )}
           </label>
-          <label className="flex flex-col gap-1 text-xs text-muted">
+          <label className="flex flex-col gap-1 text-meta text-muted">
             Value ($)
             <input type="number" min={0} value={value} onChange={(e) => setValue(e.target.value)} className={field} />
           </label>
-          <label className="flex flex-col gap-1 text-xs text-muted">
+          <label className="flex flex-col gap-1 text-meta text-muted">
             Expected close
             <input type="date" value={close} onChange={(e) => setClose(e.target.value)} className={field} />
           </label>
-          <label className="flex flex-col gap-1 text-xs text-muted">
+          <label className="flex flex-col gap-1 text-meta text-muted">
             Lane
             <select value={source} onChange={(e) => setSource(e.target.value as PipelineLane)} className={field}>
               {PIPELINE_LANES.map((l) => (
@@ -191,8 +191,8 @@ export function DealDetail({
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-border pt-4">
-          <div className="flex items-center gap-3 text-xs text-muted">
-            <span className="text-base font-bold tabular-nums text-text">{formatMoney(Number(value) || 0, deal.currency)}</span>
+          <div className="flex items-center gap-3 text-meta text-muted">
+            <span className="text-body font-bold tabular-nums text-text">{formatMoney(Number(value) || 0, deal.currency)}</span>
             {deal.owner && (
               <span className="inline-flex items-center gap-1.5">
                 {deal.owner.avatar_url ? (
@@ -211,7 +211,7 @@ export function DealDetail({
 
       {/* Activities & tasks */}
       <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
-        <p className="text-sm font-bold text-text">Activity &amp; tasks</p>
+        <p className="text-body-sm font-bold text-text">Activity &amp; tasks</p>
 
         {/* Add */}
         <div className="mt-3 space-y-2 rounded-card border border-border bg-surface-elevated/40 p-3">
@@ -256,7 +256,7 @@ export function DealDetail({
 
         {/* Timeline */}
         <ul className="mt-4 space-y-2">
-          {activities.length === 0 && <li className="py-4 text-center text-sm text-subtle">No activity yet.</li>}
+          {activities.length === 0 && <li className="py-4 text-center text-body-sm text-subtle">No activity yet.</li>}
           {activities.map((a) => {
             const { Icon, label } = ACTIVITY_META[a.kind]
             const isTask = a.kind === 'task'
@@ -282,14 +282,14 @@ export function DealDetail({
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-subtle">{label}</span>
+                    <span className="text-meta font-semibold uppercase tracking-wide text-subtle">{label}</span>
                     {a.due_at && !done && (
                       <StatusChip tone="warning" size="sm">due {new Date(a.due_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</StatusChip>
                     )}
                     {done && <StatusChip tone="success" size="sm">done</StatusChip>}
                   </div>
                   {a.body && <p className={`mt-0.5 whitespace-pre-wrap text-sm ${done ? 'text-subtle line-through' : 'text-text'}`}>{a.body}</p>}
-                  <p className="mt-0.5 text-xs text-subtle">
+                  <p className="mt-0.5 text-meta text-subtle">
                     {a.author?.display_name ? `${a.author.display_name} · ` : ''}
                     {relativeTime(a.created_at)}
                   </p>
@@ -315,7 +315,7 @@ export function DealDetail({
           type="button"
           disabled={pending}
           onClick={() => setConfirmingDelete(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-danger px-3 py-1.5 text-sm font-semibold text-danger transition-colors hover:bg-danger-bg/30 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-danger px-3 py-1.5 text-body-sm font-semibold text-danger transition-colors hover:bg-danger-bg/30 disabled:opacity-50"
         >
           <Trash2 className="h-4 w-4" /> Delete card
         </button>

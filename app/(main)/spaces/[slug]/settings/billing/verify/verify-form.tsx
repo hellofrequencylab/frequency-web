@@ -77,7 +77,7 @@ export function VerifyForm({ slug, readOnly }: { slug: string; readOnly: boolean
         type="button"
         onClick={submit}
         disabled={readOnly || pending}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60 sm:w-auto"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60 sm:w-auto"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <ShieldCheck className="h-4 w-4" aria-hidden />}
         {pending ? 'Sending' : 'Request verification'}

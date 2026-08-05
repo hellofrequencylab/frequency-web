@@ -58,13 +58,13 @@ export async function ResonanceSection({ profileId }: { profileId: string | null
                     <Sparkles className="h-3 w-3" aria-hidden /> {matchStrengthLabel(m.score)}
                   </span>
                 </div>
-                <p className="mt-1 text-sm text-muted">{matchWhyLine(m.reasons)}</p>
+                <p className="mt-1 text-body-sm text-muted">{matchWhyLine(m.reasons)}</p>
               </div>
             </li>
           ))}
         </ul>
       )}
-      <p className="mt-3 text-xs text-subtle">
+      <p className="mt-3 text-meta text-subtle">
         Matches are reciprocal and consent first. Nothing is sent until both people say yes.
       </p>
     </section>

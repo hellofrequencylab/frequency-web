@@ -73,7 +73,7 @@ export async function QuestLeaderboard() {
                   style={avatarFocusStyle(member.avatarUrl)}
                 />
               ) : (
-                <div className="flex h-7 w-7 shrink-0 select-none items-center justify-center rounded-pill bg-primary-bg text-xs font-semibold text-primary-strong">
+                <div className="flex h-7 w-7 shrink-0 select-none items-center justify-center rounded-pill bg-primary-bg text-meta font-semibold text-primary-strong">
                   {getInitials(member.displayName)}
                 </div>
               )}
@@ -86,7 +86,7 @@ export async function QuestLeaderboard() {
                   }`}
                 >
                   {member.displayName}
-                  {isSelf && <span className="ml-1 text-xs font-normal text-primary-strong">(you)</span>}
+                  {isSelf && <span className="ml-1 text-meta font-normal text-primary-strong">(you)</span>}
                 </Link>
               </div>
 
@@ -96,7 +96,7 @@ export async function QuestLeaderboard() {
                 </span>
                 <div className="flex items-center gap-0.5">
                   <Zap className="h-3 w-3 text-primary" />
-                  <span className="text-xs font-semibold text-text">{member.seasonZaps.toLocaleString()}</span>
+                  <span className="text-meta font-semibold text-text">{member.seasonZaps.toLocaleString()}</span>
                 </div>
               </div>
             </div>

@@ -120,7 +120,7 @@ async function ChannelPulse({
         ))}
       </div>
       {isChannelPulseQuiet(stats) && (
-        <p className="mt-2 px-1 text-xs leading-relaxed text-subtle">
+        <p className="mt-2 px-1 text-meta leading-relaxed text-subtle">
           No forum posts or room messages yet. Both show up in these numbers.
         </p>
       )}
@@ -176,7 +176,7 @@ function ChannelUpcoming({
         {/* Matches the widget's own heading exactly (the house SectionHeader, drill-down and
             all), so the empty and populated states of this module read as the same module. */}
         <SectionHeader title="Upcoming" href="/events" />
-        <p className="px-1 text-sm leading-relaxed text-muted">
+        <p className="px-1 text-body-sm leading-relaxed text-muted">
           {scopeIds.length === 0
             ? `Nothing scheduled. Once a Circle practices ${channelName}, its Events show up here.`
             : `Nothing scheduled. Events from the ${groupNounPlural} practicing ${channelName} show up here.`}
@@ -238,7 +238,7 @@ function ChannelGroupsModule({
           {groupCount > shown.length && (
             <Link
               href={groupsHref}
-              className="mt-2 inline-block px-1 text-xs font-medium text-primary-strong hover:underline"
+              className="mt-2 inline-block px-1 text-meta font-medium text-primary-strong hover:underline"
             >
               See all {groupCount} {groupNounPlural} →
             </Link>

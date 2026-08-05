@@ -110,7 +110,7 @@ async function MembersTab() {
 
   return (
     <>
-      <p className="mb-4 text-sm text-muted">{allMembers.filter((m) => !m.is_system).length} total members</p>
+      <p className="mb-4 text-body-sm text-muted">{allMembers.filter((m) => !m.is_system).length} total members</p>
       <MemberAdmin members={allMembers} emailMap={emailMap} />
     </>
   )
@@ -121,7 +121,7 @@ async function SubscribersTab() {
   const subs = await listSubscribers()
   return (
     <>
-      <p className="mb-4 text-sm text-muted">
+      <p className="mb-4 text-body-sm text-muted">
         {subs.length} confirmed email {subs.length === 1 ? 'subscriber' : 'subscribers'}.
         Manage campaigns in <StudioLink href="/admin/marketing/contacts">Marketing</StudioLink>.
       </p>

@@ -100,7 +100,7 @@ export function AssetAvPanel({
           type="button"
           disabled={pending}
           onClick={() => fileRef.current?.click()}
-          className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-body-sm text-text hover:bg-surface-elevated disabled:opacity-60"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           {pending ? 'Replacing…' : 'Replace file'}
@@ -108,29 +108,29 @@ export function AssetAvPanel({
         <p className="mt-1 text-2xs text-muted">
           Swaps the file and keeps every reference. The old file is saved as a version.
         </p>
-        {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+        {error && <p className="mt-1 text-meta text-danger">{error}</p>}
       </div>
 
       {/* Where is this used (A/V only) */}
       {isAv && (
         <div className="border-t border-border pt-3">
-          <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-subtle">
+          <p className="mb-2 flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wide text-subtle">
             <Radio className="h-3.5 w-3.5" aria-hidden /> Where this is used
           </p>
           {loadingUsage ? (
-            <p className="text-xs text-subtle">Checking…</p>
+            <p className="text-meta text-subtle">Checking…</p>
           ) : !usage || usage.recordings.length === 0 ? (
-            <p className="text-xs text-subtle">Not used in any recording yet.</p>
+            <p className="text-meta text-subtle">Not used in any recording yet.</p>
           ) : (
             <>
-              <p className="mb-2 text-xs text-muted">
+              <p className="mb-2 text-meta text-muted">
                 Used in {usage.totalPlaces} place{usage.totalPlaces === 1 ? '' : 's'} across{' '}
                 {usage.recordings.length} recording{usage.recordings.length === 1 ? '' : 's'}.
               </p>
               <ul className="space-y-1.5">
                 {usage.recordings.map((r) => (
                   <li key={r.recordingId} className="rounded-lg border border-border bg-surface px-2.5 py-1.5">
-                    <span className="text-sm font-semibold text-text">{r.title}</span>
+                    <span className="text-body-sm font-semibold text-text">{r.title}</span>
                     <span className="ml-1.5 text-2xs text-muted">{r.mediaKind}</span>
                     {(r.hosts.length > 0 || r.isEpisode) && (
                       <p className="mt-0.5 text-2xs text-muted">

@@ -50,7 +50,7 @@ function LinkChip({ href, Icon, label }: { href: string; Icon: LucideIcon; label
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-primary/40 hover:text-primary-strong"
+      className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:border-primary/40 hover:text-primary-strong"
     >
       <Icon className="h-3.5 w-3.5" aria-hidden />
       {label}
@@ -85,15 +85,15 @@ function ContactCard({ contact }: { contact: SharedWithSpaceView }) {
             style={avatarFocusStyle(contact.avatarUrl)}
           />
         ) : (
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-sm font-semibold text-primary-strong">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-body-sm font-semibold text-primary-strong">
             {initial(contact.displayName)}
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-text">{name}</p>
-          {roleLine && <p className="truncate text-xs text-muted">{roleLine}</p>}
+          <p className="truncate text-body-sm font-semibold text-text">{name}</p>
+          {roleLine && <p className="truncate text-meta text-muted">{roleLine}</p>}
           {contact.city && (
-            <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-subtle">
+            <p className="mt-0.5 flex items-center gap-1 truncate text-meta text-subtle">
               <MapPin className="h-3 w-3 shrink-0" aria-hidden />
               {contact.city}
             </p>
@@ -106,7 +106,7 @@ function ContactCard({ contact }: { contact: SharedWithSpaceView }) {
           {contact.email && (
             <a
               href={`mailto:${contact.email}`}
-              className="flex items-center gap-2 text-xs text-muted hover:text-primary-strong"
+              className="flex items-center gap-2 text-meta text-muted hover:text-primary-strong"
             >
               <Mail className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
               <span className="truncate">{contact.email}</span>
@@ -115,7 +115,7 @@ function ContactCard({ contact }: { contact: SharedWithSpaceView }) {
           {contact.phone && (
             <a
               href={`tel:${contact.phone}`}
-              className="flex items-center gap-2 text-xs text-muted hover:text-primary-strong"
+              className="flex items-center gap-2 text-meta text-muted hover:text-primary-strong"
             >
               <Phone className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
               <span className="truncate">{contact.phone}</span>

@@ -44,7 +44,7 @@ export function ClaimButton({ nodeId, secret }: { nodeId: string; secret?: strin
           Claimed! +{result.zapsAwarded ?? 0} Zaps
         </div>
         {result.offerTitle && (
-          <p className="text-sm text-muted">
+          <p className="text-body-sm text-muted">
             🎟 Offer unlocked: <span className="font-medium text-text">{result.offerTitle}</span>
           </p>
         )}
@@ -79,7 +79,7 @@ export function ClaimButton({ nodeId, secret }: { nodeId: string; secret?: strin
           }
         })
       }
-      className="inline-flex items-center gap-2 rounded-control bg-primary hover:bg-primary-hover text-on-primary text-sm font-semibold px-5 py-3 lift-1 transition-colors disabled:opacity-60"
+      className="inline-flex items-center gap-2 rounded-control bg-primary hover:bg-primary-hover text-on-primary text-body-sm font-semibold px-5 py-3 lift-1 transition-colors disabled:opacity-60"
     >
       <Zap className="w-4 h-4" strokeWidth={2.5} />
       {pending ? 'Claiming…' : 'Claim'}

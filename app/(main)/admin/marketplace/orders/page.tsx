@@ -22,15 +22,15 @@ function OrderRow({ o }: { o: CommerceOrder }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-3">
       <div className="min-w-0">
-        <p className="truncate text-sm text-text">
+        <p className="truncate text-body-sm text-text">
           {o.items.map((it) => `${it.title}${it.qty > 1 ? ` ×${it.qty}` : ''}`).join(', ') || 'Order'}
         </p>
-        <p className="text-xs text-subtle">
+        <p className="text-meta text-subtle">
           {OWNER_LABEL[o.ownerKind] ?? o.ownerKind} · {when} · <span className="uppercase tracking-wide">{o.status}</span>
         </p>
       </div>
       <div className="flex items-center gap-3">
-        <span className="text-right text-sm">
+        <span className="text-right text-body-sm">
           <span className="font-semibold text-text">{usd(o.amountCents, o.currency)}</span>
           {o.platformFeeCents > 0 && <span className="block text-2xs text-muted">fee {usd(o.platformFeeCents, o.currency)}</span>}
         </span>

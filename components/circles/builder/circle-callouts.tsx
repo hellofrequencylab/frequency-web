@@ -27,11 +27,11 @@ export function CircleCallouts({
           key={`${c.title}-${i}`}
           className="rounded-xl border border-primary/30 bg-primary-bg/20 px-3.5 py-3"
         >
-          <p className="flex items-start gap-2 text-sm font-semibold text-text">
+          <p className="flex items-start gap-2 text-body-sm font-semibold text-text">
             <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
             {c.title}
           </p>
-          <p className="mt-1 pl-6 text-sm leading-relaxed text-muted">{c.body}</p>
+          <p className="mt-1 pl-6 text-body-sm leading-relaxed text-muted">{c.body}</p>
         </div>
       ))}
     </div>

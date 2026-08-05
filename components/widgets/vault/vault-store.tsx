@@ -58,7 +58,7 @@ export async function VaultStore() {
             return (
               <section key={cat.key}>
                 <SectionHeader title={cat.label} />
-                <p className="-mt-2 mb-3 text-xs text-subtle">{cat.desc}</p>
+                <p className="-mt-2 mb-3 text-meta text-subtle">{cat.desc}</p>
                 <StoreGrid items={catItems} balance={d.balance} />
               </section>
             )

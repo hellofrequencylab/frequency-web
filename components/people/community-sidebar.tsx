@@ -23,7 +23,7 @@ export function OnlineMembersCard({ members }: { members: OnlineMember[] }) {
     <SidebarCard title="Online now" count={members.length}>
       <div className="p-4">
       {members.length === 0 ? (
-        <p className="text-xs leading-relaxed text-subtle">
+        <p className="text-meta leading-relaxed text-subtle">
           No one’s online right now. Check back soon, or be the one who says hi first.
         </p>
       ) : (
@@ -56,8 +56,8 @@ export function OnlineMembersCard({ members }: { members: OnlineMember[] }) {
                   />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-text">{m.displayName}</span>
-                  <span className="block truncate text-xs text-subtle">@{m.handle}</span>
+                  <span className="block truncate text-body-sm font-medium text-text">{m.displayName}</span>
+                  <span className="block truncate text-meta text-subtle">@{m.handle}</span>
                 </span>
               </Link>
             </li>
@@ -87,8 +87,8 @@ export function CommunityStatsCard({
             <Users className="h-4 w-4" />
           </span>
           <span className="min-w-0">
-            <dt className="text-xs text-subtle">Total members</dt>
-            <dd className="text-base font-bold tabular-nums text-text">{totalMembers}</dd>
+            <dt className="text-meta text-subtle">Total members</dt>
+            <dd className="text-body font-bold tabular-nums text-text">{totalMembers}</dd>
           </span>
         </div>
         <div className="flex items-center gap-3">
@@ -96,11 +96,11 @@ export function CommunityStatsCard({
             <MapPin className="h-4 w-4" />
           </span>
           <span className="min-w-0">
-            <dt className="text-xs text-subtle">Most popular place</dt>
-            <dd className="truncate text-base font-bold text-text">
+            <dt className="text-meta text-subtle">Most popular place</dt>
+            <dd className="truncate text-body font-bold text-text">
               {topPlace ?? '–'}
               {topPlace && topPlaceCount ? (
-                <span className="ml-1.5 text-xs font-medium text-subtle">{topPlaceCount} members</span>
+                <span className="ml-1.5 text-meta font-medium text-subtle">{topPlaceCount} members</span>
               ) : null}
             </dd>
           </span>

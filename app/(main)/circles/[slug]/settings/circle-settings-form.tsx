@@ -22,8 +22,8 @@ export interface CircleSettingsInitial {
 }
 
 const input =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
-const lbl = 'block text-xs font-medium text-muted mb-1'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
+const lbl = 'block text-meta font-medium text-muted mb-1'
 
 // Host self-service circle settings — the full-page editor a host opens from their circle.
 // Writes only host-owned fields via updateCircleSettings (hub / host / status stay admin-only).
@@ -137,7 +137,7 @@ export function CircleSettingsForm({
       </div>
 
       <div className="rounded-lg border border-border bg-surface-elevated/40 p-3 sm:col-span-2">
-        <label className="flex items-start gap-2.5 text-sm text-text">
+        <label className="flex items-start gap-2.5 text-body-sm text-text">
           <input type="checkbox" checked={unlisted} onChange={(e) => setUnlisted(e.target.checked)} disabled={pending} className="mt-0.5 h-4 w-4 rounded border-border-strong text-primary focus:ring-2 focus:ring-primary/40" />
           <span>
             <span className="font-medium">Unlisted</span>
@@ -150,7 +150,7 @@ export function CircleSettingsForm({
       </div>
 
       <div className="sm:col-span-2">
-        <label className="flex items-center gap-2 text-sm text-text">
+        <label className="flex items-center gap-2 text-body-sm text-text">
           <input type="checkbox" checked={resonancePublic} onChange={(e) => setResonancePublic(e.target.checked)} disabled={pending} className="h-4 w-4 rounded border-border-strong text-primary focus:ring-2 focus:ring-primary/40" />
           Show this circle&apos;s resonance publicly
         </label>
@@ -160,11 +160,11 @@ export function CircleSettingsForm({
         <button
           type="submit"
           disabled={pending || !name.trim()}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           <Check className="h-4 w-4" /> {pending ? 'Saving…' : 'Save changes'}
         </button>
-        <Link href={`/circles/${slug}`} className="text-sm text-muted transition-colors hover:text-text">
+        <Link href={`/circles/${slug}`} className="text-body-sm text-muted transition-colors hover:text-text">
           Cancel
         </Link>
       </div>
@@ -175,7 +175,7 @@ export function CircleSettingsForm({
           type="button"
           onClick={() => setConfirmArchive(true)}
           disabled={archiving || pending}
-          className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-2 text-sm font-medium text-danger transition-colors hover:bg-danger-bg/40 disabled:opacity-60"
+          className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-2 text-body-sm font-medium text-danger transition-colors hover:bg-danger-bg/40 disabled:opacity-60"
         >
           <Archive className="h-4 w-4" /> Archive this circle
         </button>

@@ -116,7 +116,7 @@ export function AutomationsTable({
       header: 'Trigger',
       render: (r) => (
         <span className="text-muted">
-          on <code className="rounded bg-surface-elevated px-1 py-0.5 text-xs text-text">{r.triggerEvent}</code>
+          on <code className="rounded bg-surface-elevated px-1 py-0.5 text-meta text-text">{r.triggerEvent}</code>
           {r.conditions.length > 0 && (
             <>
               {' '}· {r.conditions.length} condition{r.conditions.length === 1 ? '' : 's'}

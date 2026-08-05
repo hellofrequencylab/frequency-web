@@ -40,9 +40,9 @@ function competitorPrice(row: CatalogRow): React.ReactNode {
     return row.competitor === 'No real equivalent' ? 'Not for sale' : 'Fees'
   }
   return (
-    <span className="whitespace-nowrap font-display font-normal text-text text-xl leading-none">
+    <span className="whitespace-nowrap font-display font-normal text-text text-lead leading-none">
       {money(row.competitorMonthly)}
-      <span className="text-sm font-normal text-subtle">/mo</span>
+      <span className="text-body-sm font-normal text-subtle">/mo</span>
     </span>
   )
 }
@@ -73,9 +73,9 @@ function toFooter(total: number, tools: number): ComparisonRow {
       {
         kind: 'value',
         text: (
-          <span className="whitespace-nowrap font-display font-normal text-text text-2xl leading-none">
+          <span className="whitespace-nowrap font-display font-normal text-text text-page-title leading-none">
             {money(total)}
-            <span className="text-sm font-normal text-subtle">/mo and up</span>
+            <span className="text-body-sm font-normal text-subtle">/mo and up</span>
           </span>
         ),
         sub: 'Before per-seat charges and transaction fees',
@@ -85,7 +85,7 @@ function toFooter(total: number, tools: number): ComparisonRow {
         text: (
           <span className="whitespace-nowrap font-display font-normal text-primary-strong text-3xl leading-none">
             {money(FREQUENCY_BUSINESS_MONTHLY)}
-            <span className="text-sm font-normal text-muted">/mo</span>
+            <span className="text-body-sm font-normal text-muted">/mo</span>
           </span>
         ),
         sub: (
@@ -122,7 +122,7 @@ export function PricingComparison() {
           <span className="font-bold text-primary-strong">{money(saveYear)} a year</span>, and {tools} fewer
           logins. All of it runs together on Frequency, from {money(FREQUENCY_BUSINESS_MONTHLY)} a month.
         </p>
-        <p className="mt-4 text-xs leading-relaxed text-subtle">{COMPARISON_DISCLAIMER}</p>
+        <p className="mt-4 text-meta leading-relaxed text-subtle">{COMPARISON_DISCLAIMER}</p>
       </div>
     </div>
   )

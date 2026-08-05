@@ -47,7 +47,7 @@ export default async function OutreachPage() {
     >
       <OutreachForm scope={scope} />
 
-      <p className="mt-3 text-xs text-subtle">
+      <p className="mt-3 text-meta text-subtle">
         Outreach is a direct note to your members’ inbox + notifications. For a public,
         community-wide post, use <strong className="text-text">Dispatch</strong>.
       </p>

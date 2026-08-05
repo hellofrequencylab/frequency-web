@@ -63,16 +63,16 @@ export function ContentReportDialog({ targetType, targetId, open, onClose }: Rep
       <div className="bg-surface rounded-2xl lift-3 border border-border p-6 w-full">
         {submitted ? (
           <>
-            <h3 className="text-sm font-semibold text-text mb-2">
+            <h3 className="text-body-sm font-semibold text-text mb-2">
               Report submitted
             </h3>
-            <p className="text-xs text-muted mb-5 leading-relaxed">
+            <p className="text-meta text-muted mb-5 leading-relaxed">
               Report submitted. Our team will review it.
             </p>
             <div className="flex justify-end">
               <button
                 onClick={handleClose}
-                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-primary-hover transition-colors"
+                className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover transition-colors"
               >
                 Done
               </button>
@@ -80,10 +80,10 @@ export function ContentReportDialog({ targetType, targetId, open, onClose }: Rep
           </>
         ) : (
           <>
-            <h3 className="text-sm font-semibold text-text mb-2">
+            <h3 className="text-body-sm font-semibold text-text mb-2">
               Report {targetType}
             </h3>
-            <p className="text-xs text-muted mb-4 leading-relaxed">
+            <p className="text-meta text-muted mb-4 leading-relaxed">
               Why are you reporting this? Select the reason that best applies.
             </p>
 
@@ -106,7 +106,7 @@ export function ContentReportDialog({ targetType, targetId, open, onClose }: Rep
                     onChange={() => setReason(r.value)}
                     className="accent-primary"
                   />
-                  <span className="text-sm text-text">{r.label}</span>
+                  <span className="text-body-sm text-text">{r.label}</span>
                 </label>
               ))}
             </div>
@@ -117,26 +117,26 @@ export function ContentReportDialog({ targetType, targetId, open, onClose }: Rep
               onChange={(e) => setDetails(e.target.value)}
               placeholder="Additional details (optional)"
               rows={3}
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text dark:text-subtle/60 placeholder:text-subtle dark:placeholder:text-muted focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 resize-none mb-4"
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text dark:text-subtle/60 placeholder:text-subtle dark:placeholder:text-muted focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 resize-none mb-4"
             />
 
             {/* Error message */}
             {error && (
-              <p className="text-xs text-danger mb-3">{error}</p>
+              <p className="text-meta text-danger mb-3">{error}</p>
             )}
 
             {/* Buttons */}
             <div className="flex gap-2 justify-end">
               <button
                 onClick={handleClose}
-                className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text hover:bg-surface-elevated transition-colors"
+                className="rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-text hover:bg-surface-elevated transition-colors"
               >
                 Cancel
               </button>
               <button
                 disabled={!reason || isPending}
                 onClick={handleSubmit}
-                className="rounded-lg bg-danger px-3 py-1.5 text-xs font-semibold text-on-danger hover:opacity-90 disabled:opacity-50 transition-colors"
+                className="rounded-lg bg-danger px-3 py-1.5 text-meta font-semibold text-on-danger hover:opacity-90 disabled:opacity-50 transition-colors"
               >
                 {isPending ? 'Submitting...' : 'Submit Report'}
               </button>

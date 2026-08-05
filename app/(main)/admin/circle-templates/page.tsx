@@ -38,7 +38,7 @@ export default async function CircleTemplatesPage() {
       render: (t) => (
         <div className="min-w-0">
           <span className="font-medium text-text">{t.name}</span>
-          <p className="truncate text-xs text-muted">{t.card}</p>
+          <p className="truncate text-meta text-muted">{t.card}</p>
         </div>
       ),
     },
@@ -82,7 +82,7 @@ export default async function CircleTemplatesPage() {
       render: (t) => (
         <Link
           href={`/admin/circle-templates/${t.slug}`}
-          className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+          className="inline-flex items-center gap-1 text-body-sm font-semibold text-primary hover:underline"
         >
           <Pencil className="h-3.5 w-3.5" aria-hidden /> Edit
         </Link>

@@ -54,15 +54,15 @@ export async function OrdersTab({ spaceId }: { spaceId: string }) {
         {orders.map((o) => (
           <li key={o.id} className="flex items-center justify-between gap-3 p-4">
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-text">
+              <p className="truncate text-body-sm font-medium text-text">
                 {o.items[0]?.title ?? 'Order'}
                 {o.items.length > 1 ? ` +${o.items.length - 1}` : ''}
               </p>
-              <p className="text-xs text-muted">
+              <p className="text-meta text-muted">
                 {when(o.paidAt ?? o.createdAt)} · {STATUS_LABEL[o.status] ?? o.status}
               </p>
             </div>
-            <p className="shrink-0 text-sm font-semibold text-text">{usd(o.amountCents)}</p>
+            <p className="shrink-0 text-body-sm font-semibold text-text">{usd(o.amountCents)}</p>
           </li>
         ))}
       </ul>

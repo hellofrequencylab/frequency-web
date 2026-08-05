@@ -64,7 +64,7 @@ export function HubPeopleModule() {
 
         {/* Guide. */}
         {data.guideName && (
-          <p className="mt-3 text-xs text-muted">
+          <p className="mt-3 text-meta text-muted">
             Guide: <span className="font-medium text-text">{data.guideName}</span>
             {data.guideHandle && <span className="text-subtle"> @{data.guideHandle}</span>}
           </p>
@@ -78,7 +78,7 @@ export function HubPeopleModule() {
               return (
                 <li key={c.id} className="rounded-card border border-border bg-surface p-3">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="min-w-0 truncate text-sm font-semibold text-text">{c.name}</span>
+                    <span className="min-w-0 truncate text-body-sm font-semibold text-text">{c.name}</span>
                     <span className="shrink-0 text-2xs tabular-nums text-muted">
                       {c.memberCount} / {c.memberCap}
                     </span>

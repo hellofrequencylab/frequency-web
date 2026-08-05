@@ -41,7 +41,7 @@ function WalkthroughCard({ w }: { w: Walkthrough }) {
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 lift-1 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <Link href={`/admin/walkthroughs/${w.id}`} className="truncate text-base font-bold text-text hover:text-primary-strong">
+          <Link href={`/admin/walkthroughs/${w.id}`} className="truncate text-body font-bold text-text hover:text-primary-strong">
             {w.name || 'Untitled walkthrough'}
           </Link>
           <span
@@ -52,8 +52,8 @@ function WalkthroughCard({ w }: { w: Walkthrough }) {
             {w.active ? 'On' : 'Off'}
           </span>
         </div>
-        {w.description && <p className="mt-1 line-clamp-1 text-sm text-muted">{w.description}</p>}
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-subtle">
+        {w.description && <p className="mt-1 line-clamp-1 text-body-sm text-muted">{w.description}</p>}
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-subtle">
           <span className="inline-flex items-center rounded-pill bg-broadcast-bg px-2 py-0.5 font-medium text-broadcast-strong">
             {TRIGGER_CHIP[w.trigger]}
           </span>

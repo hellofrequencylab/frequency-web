@@ -34,7 +34,7 @@ export function StudioLaunchButton({
       <button
         type="button"
         onClick={() => set(true)}
-        className={className ?? 'inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover'}
+        className={className ?? 'inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover'}
       >
         {Icon && <Icon className="h-4 w-4" />} {label}
       </button>

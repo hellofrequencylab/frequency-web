@@ -44,11 +44,11 @@ export default function DiscoverLayout({ children }: { children: React.ReactNode
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <Image src="/frequency-logo.png" alt="Frequency" width={963} height={170} className="h-5 w-auto opacity-40" />
-            <span className="text-xs text-muted">
+            <span className="text-meta text-muted">
               &copy; {new Date().getFullYear()} Frequency Labs Holdings
             </span>
           </div>
-          <div className="flex items-center gap-8 text-xs text-muted">
+          <div className="flex items-center gap-8 text-meta text-muted">
             <Link href="/discover" className="hover:text-text transition-colors">Discover</Link>
             <Link href="/privacy" className="hover:text-text transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-text transition-colors">Terms</Link>

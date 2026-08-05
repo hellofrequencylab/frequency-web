@@ -47,7 +47,7 @@ export default async function DispatchesPage() {
           action={
             <Link
               href="/on-air"
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
+              className="rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
             >
               Tune out
             </Link>
@@ -63,11 +63,11 @@ export default async function DispatchesPage() {
               <p className="flex items-center gap-1.5 text-2xs font-bold uppercase tracking-widest text-muted">
                 <Radio className="h-3 w-3 text-primary" /> {dayLabel(d.day)}
               </p>
-              <p className="mt-1.5 text-sm font-medium leading-relaxed text-text">{d.copy}</p>
+              <p className="mt-1.5 text-body-sm font-medium leading-relaxed text-text">{d.copy}</p>
               {d.actionHref && (
                 <Link
                   href={d.actionHref}
-                  className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline"
+                  className="mt-2 inline-flex items-center gap-1 text-meta font-semibold text-primary-strong hover:underline"
                 >
                   {d.actionLabel} <ChevronRight className="h-3 w-3" />
                 </Link>

@@ -243,8 +243,8 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                 </span>
               )}
               <div className="min-w-0 flex-1">
-                <p id="vera-launcher-title" className="text-sm font-bold text-text">{headerTitle}</p>
-                <p className="truncate text-xs text-subtle">{headerSub}</p>
+                <p id="vera-launcher-title" className="text-body-sm font-bold text-text">{headerTitle}</p>
+                <p className="truncate text-meta text-subtle">{headerSub}</p>
               </div>
               <button type="button" onClick={close} aria-label="Close" className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-elevated hover:text-text">
                 <X className="h-4 w-4" aria-hidden />
@@ -290,20 +290,20 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                     onChange={(e) => setQ(e.target.value)}
                     placeholder="Search help…"
                     aria-label="Search help"
-                    className="w-full rounded-lg border border-border bg-surface-elevated py-2 pl-9 pr-3 text-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-[var(--color-border-strong)]"
+                    className="w-full rounded-lg border border-border bg-surface-elevated py-2 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-[var(--color-border-strong)]"
                   />
                 </div>
 
                 {showInstant && (
                   <ul className="mt-2 divide-y divide-border overflow-hidden rounded-lg border border-border">
                     {results.length === 0 ? (
-                      <li className="px-3 py-2 text-sm text-muted">No matches. Ask Vera.</li>
+                      <li className="px-3 py-2 text-body-sm text-muted">No matches. Ask Vera.</li>
                     ) : (
                       results.map((r) => (
                         <li key={r.href}>
                           <Link href={r.href} onClick={close} className="block px-3 py-2 hover:bg-surface-elevated">
-                            <span className="block text-sm font-medium text-text">{r.title}</span>
-                            <span className="block text-xs text-muted">{r.categoryTitle}</span>
+                            <span className="block text-body-sm font-medium text-text">{r.title}</span>
+                            <span className="block text-meta text-muted">{r.categoryTitle}</span>
                           </Link>
                         </li>
                       ))
@@ -318,8 +318,8 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                 >
                   <Sparkles className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-medium text-text">Ask Vera</span>
-                    <span className="block truncate text-xs text-muted">Get a plain-language answer in a real conversation.</span>
+                    <span className="block text-body-sm font-medium text-text">Ask Vera</span>
+                    <span className="block truncate text-meta text-muted">Get a plain-language answer in a real conversation.</span>
                   </span>
                 </button>
 
@@ -333,11 +333,11 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
                   <button
                     type="button"
                     onClick={() => { close(); openSupport('bug') }}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated"
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-body-sm text-text hover:bg-surface-elevated"
                   >
                     <Bug className="h-4 w-4 text-muted" aria-hidden /> Report a bug
                   </button>
-                  <Link href="/help" onClick={close} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-text hover:bg-surface-elevated">
+                  <Link href="/help" onClick={close} className="flex items-center gap-3 rounded-lg px-3 py-2 text-body-sm text-text hover:bg-surface-elevated">
                     <BookOpen className="h-4 w-4 text-muted" aria-hidden /> Browse the help center
                   </Link>
                 </div>
@@ -358,7 +358,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
               <button
                 type="button"
                 onClick={() => setHelpOpen(true)}
-                className="flex shrink-0 items-center justify-center gap-1.5 border-t border-border px-4 py-2 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                className="flex shrink-0 items-center justify-center gap-1.5 border-t border-border px-4 py-2 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
               >
                 <LifeBuoy className="h-3.5 w-3.5" aria-hidden /> Help &amp; support
               </button>

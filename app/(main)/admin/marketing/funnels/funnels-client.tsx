@@ -26,11 +26,11 @@ export function FunnelsManager({ campaigns }: { campaigns: Campaign[] }) {
     <div className="space-y-6">
       <section className="rounded-2xl border border-border bg-surface lift-1">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <h2 className="text-sm font-bold text-text">New campaign</h2>
+          <h2 className="text-body-sm font-bold text-text">New campaign</h2>
           {!creating && (
             <button
               onClick={() => setCreating(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               <Plus className="h-3.5 w-3.5" /> New campaign
             </button>
@@ -79,12 +79,12 @@ function CampaignRow({ campaign }: { campaign: Campaign }) {
       <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 lift-1">
         <Link href={`/admin/marketing/funnels/${campaign.id}`} className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="truncate text-sm font-bold text-text">{campaign.name}</h3>
+            <h3 className="truncate text-body-sm font-bold text-text">{campaign.name}</h3>
             <StatusChip tone={STATUS_TONE[campaign.status] ?? 'neutral'} size="sm">
               <span className="capitalize">{campaign.status}</span>
             </StatusChip>
           </div>
-          <p className="mt-0.5 text-xs text-muted">
+          <p className="mt-0.5 text-meta text-muted">
             <span className="font-semibold text-text">{campaign.entryCount}</span> entry point{campaign.entryCount === 1 ? '' : 's'} ·{' '}
             <span className="font-semibold text-text">{campaign.scans}</span> scan{campaign.scans === 1 ? '' : 's'}
           </p>
@@ -93,14 +93,14 @@ function CampaignRow({ campaign }: { campaign: Campaign }) {
           <button
             onClick={() => setConfirming(true)}
             disabled={pending}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted transition-colors hover:text-danger disabled:opacity-60"
+            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted transition-colors hover:text-danger disabled:opacity-60"
           >
             <Archive className="h-3 w-3" /> Archive
           </button>
         )}
         <Link
           href={`/admin/marketing/funnels/${campaign.id}`}
-          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-semibold text-muted transition-colors hover:text-text"
+          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta font-semibold text-muted transition-colors hover:text-text"
         >
           Open <ChevronRight className="h-3 w-3" />
         </Link>
@@ -114,7 +114,7 @@ function CampaignRow({ campaign }: { campaign: Campaign }) {
           onConfirm={archive}
         />
       </div>
-      {error && <p role="alert" className="px-1 text-xs text-danger">{error}</p>}
+      {error && <p role="alert" className="px-1 text-meta text-danger">{error}</p>}
     </div>
   )
 }
@@ -138,16 +138,16 @@ function CampaignForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
     })
   }
 
-  const field = 'w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text'
+  const field = 'w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text'
   return (
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-subtle">Campaign name</span>
+          <span className="mb-1 block text-meta font-medium text-subtle">Campaign name</span>
           <input value={name} onChange={(e) => { setName(e.target.value); setError(null) }} placeholder="e.g. Spring street team" className={field} />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-subtle">Default goal (optional)</span>
+          <span className="mb-1 block text-meta font-medium text-subtle">Default goal (optional)</span>
           <select value={goal} onChange={(e) => setGoal(e.target.value)} className={field}>
             <option value="">None</option>
             {listEntryTemplates().map((t) => (
@@ -156,16 +156,16 @@ function CampaignForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
           </select>
         </label>
       </div>
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
       <div className="flex items-center gap-2">
         <button
           onClick={submit}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {pending ? 'Creating…' : 'Create campaign'}
         </button>
-        <button onClick={onCancel} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-muted hover:text-text">
+        <button onClick={onCancel} className="rounded-lg px-3 py-1.5 text-meta font-semibold text-muted hover:text-text">
           Cancel
         </button>
       </div>

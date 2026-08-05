@@ -54,10 +54,10 @@ export default async function PublicPartnersPage() {
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
                         <Store className="h-4 w-4" aria-hidden />
                       </span>
-                      <span className="min-w-0 flex-1 truncate text-base font-semibold text-text">{p.name}</span>
+                      <span className="min-w-0 flex-1 truncate text-body font-semibold text-text">{p.name}</span>
                     </span>
                     {(p.category || p.city) && (
-                      <span className="flex flex-wrap items-center gap-2 text-xs text-subtle">
+                      <span className="flex flex-wrap items-center gap-2 text-meta text-subtle">
                         {p.category && <span className="capitalize">{p.category}</span>}
                         {p.city && (
                           <span className="inline-flex items-center gap-1">
@@ -67,7 +67,7 @@ export default async function PublicPartnersPage() {
                         )}
                       </span>
                     )}
-                    {p.description && <p className="line-clamp-2 text-sm text-muted">{p.description}</p>}
+                    {p.description && <p className="line-clamp-2 text-body-sm text-muted">{p.description}</p>}
                   </Link>
                 </li>
               ))}

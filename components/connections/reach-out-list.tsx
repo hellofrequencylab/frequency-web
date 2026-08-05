@@ -39,7 +39,7 @@ export function ReachOutList({ reminders }: { reminders: ReminderWithContact[] }
     <section className="mb-6 rounded-2xl border border-border/70 bg-surface/60 p-5">
       <div className="mb-3 flex items-center gap-1.5">
         <CalendarClock className="h-4 w-4 text-primary-strong" />
-        <h2 className="text-sm font-semibold tracking-tight text-text">Reach out</h2>
+        <h2 className="text-body-sm font-semibold tracking-tight text-text">Reach out</h2>
         <span className="rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-bold tabular-nums text-muted">
           {items.length}
         </span>
@@ -79,13 +79,13 @@ function ReachOutRow({ reminder, onDone }: { reminder: ReminderWithContact; onDo
           // Private `network-contacts` signed URL — skip the optimizer (see page.tsx note).
           <Image src={avatarSrc(reminder.contactAvatarUrl)} alt="" width={36} height={36} unoptimized className="h-9 w-9 rounded-pill object-cover" style={avatarFocusStyle(reminder.contactAvatarUrl)} />
         ) : (
-          <span className="flex h-9 w-9 items-center justify-center rounded-pill bg-surface-elevated text-xs font-semibold text-muted">
+          <span className="flex h-9 w-9 items-center justify-center rounded-pill bg-surface-elevated text-meta font-semibold text-muted">
             {getInitials(name)}
           </span>
         )}
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-text">{name}</p>
-          <p className="truncate text-xs">
+          <p className="truncate text-body-sm font-semibold text-text">{name}</p>
+          <p className="truncate text-meta">
             <span className={isOverdue(reminder.dueAt) ? 'font-medium text-danger' : 'text-muted'}>
               {dueLabel(reminder.dueAt)}
             </span>
@@ -97,7 +97,7 @@ function ReachOutRow({ reminder, onDone }: { reminder: ReminderWithContact; onDo
         type="button"
         onClick={done}
         disabled={pending}
-        className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+        className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
       >
         {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} Done
       </button>

@@ -54,8 +54,8 @@ export async function JournalEntries() {
         <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-pill bg-broadcast-bg text-broadcast-strong">
           <Camera className="h-6 w-6" aria-hidden />
         </span>
-        <p className="text-sm font-semibold text-text">Nothing captured yet</p>
-        <p className="mx-auto mt-1 max-w-xs text-sm text-muted">
+        <p className="text-body-sm font-semibold text-text">Nothing captured yet</p>
+        <p className="mx-auto mt-1 max-w-xs text-body-sm text-muted">
           Tap <strong className="text-text">Capture</strong> to log your first moment: a photo, a note, a hello.
         </p>
       </div>
@@ -75,7 +75,7 @@ export async function JournalEntries() {
     <div className="space-y-6">
       {days.map((day) => (
         <section key={day.label}>
-          <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-subtle">{day.label}</h2>
+          <h2 className="mb-2 px-1 text-meta font-bold uppercase tracking-wide text-subtle">{day.label}</h2>
           <ul className="space-y-2">
             {day.items.map((e) => {
               const hasPhoto = (e.media_urls?.length ?? 0) > 0
@@ -89,7 +89,7 @@ export async function JournalEntries() {
                     <p className="text-2xs font-medium uppercase tracking-wide text-muted">
                       {relativeTime(e.created_at)}
                     </p>
-                    {e.body && <p className="mt-0.5 whitespace-pre-wrap text-sm text-text">{e.body}</p>}
+                    {e.body && <p className="mt-0.5 whitespace-pre-wrap text-body-sm text-text">{e.body}</p>}
                     {hasPhoto && (
                       <div className="mt-2 overflow-hidden rounded-card border border-border">
                         <Image
@@ -108,7 +108,7 @@ export async function JournalEntries() {
           </ul>
         </section>
       ))}
-      <p className="px-1 text-center text-xs text-subtle">
+      <p className="px-1 text-center text-meta text-subtle">
         Your journal lives in the <Link href="/feed" className="text-primary-strong hover:underline">community’s feed</Link> too. Your record is part of the story.
       </p>
     </div>

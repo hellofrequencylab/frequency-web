@@ -15,8 +15,8 @@ export function ListingDetailsCard({ details }: { details: ListingDetailField[] 
       <dl className="divide-y divide-border/70">
         {details.map((d, i) => (
           <div key={`${d.label}-${i}`} className="flex items-baseline justify-between gap-3 py-1.5">
-            <dt className="shrink-0 text-xs text-muted">{d.label}</dt>
-            <dd className="min-w-0 text-right text-sm font-medium text-text">{d.value}</dd>
+            <dt className="shrink-0 text-meta text-muted">{d.label}</dt>
+            <dd className="min-w-0 text-right text-body-sm font-medium text-text">{d.value}</dd>
           </div>
         ))}
       </dl>

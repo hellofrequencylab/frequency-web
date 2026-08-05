@@ -81,7 +81,7 @@ export function SpacePlaybookPicker({
   if (done) {
     return (
       <section>
-        <div className="rounded-2xl border border-border bg-surface p-4 text-sm text-muted lift-1">
+        <div className="rounded-2xl border border-border bg-surface p-4 text-body-sm text-muted lift-1">
           {done === 'ran' ? 'Done. The move is on their timeline above.' : 'Set aside for now. Vera will learn from that.'}
         </div>
       </section>
@@ -92,14 +92,14 @@ export function SpacePlaybookPicker({
     <section>
       <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-subtle">
+          <p className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wider text-subtle">
             <Sparkles className="h-3.5 w-3.5" aria-hidden /> Next best move
           </p>
           <span className={`ml-auto rounded-pill px-2 py-0.5 text-2xs font-medium ${badge.cls}`}>{badge.label}</span>
         </div>
 
-        <p className="mt-2 text-sm font-medium text-text">{card.playbookName}</p>
-        <p className="mt-0.5 text-sm text-muted">{card.rationale}</p>
+        <p className="mt-2 text-body-sm font-medium text-text">{card.playbookName}</p>
+        <p className="mt-0.5 text-body-sm text-muted">{card.rationale}</p>
 
         {tweaking && card.isOutbound && (
           <div className="mt-3 space-y-2">
@@ -108,26 +108,26 @@ export function SpacePlaybookPicker({
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="Subject"
-              className="w-full rounded-control border border-border bg-canvas px-3 py-2 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="w-full rounded-control border border-border bg-canvas px-3 py-2 text-body-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             />
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
               placeholder="Write the note in your own words. You approve before it sends."
               rows={4}
-              className="w-full rounded-control border border-border bg-canvas px-3 py-2 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="w-full rounded-control border border-border bg-canvas px-3 py-2 text-body-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             />
           </div>
         )}
 
-        {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+        {error && <p className="mt-2 text-body-sm text-danger">{error}</p>}
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <button
             type="button"
             disabled={pending}
             onClick={doIt}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-medium text-on-primary transition-colors hover:bg-primary-strong disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-body-sm font-medium text-on-primary transition-colors hover:bg-primary-strong disabled:opacity-50"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             Do it
@@ -137,7 +137,7 @@ export function SpacePlaybookPicker({
               type="button"
               disabled={pending}
               onClick={() => setTweaking((t) => !t)}
-              className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
             >
               <Pencil className="h-4 w-4" />
               Tweak
@@ -147,7 +147,7 @@ export function SpacePlaybookPicker({
             type="button"
             disabled={pending}
             onClick={notNow}
-            className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
           >
             <X className="h-4 w-4" />
             Not now

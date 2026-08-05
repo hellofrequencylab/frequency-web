@@ -66,7 +66,7 @@ export default async function AcceptInvitePage({
       description={result.error}
       width="narrow"
     >
-      <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-muted">
+      <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface px-4 py-3 text-body-sm text-muted">
         <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-subtle" aria-hidden />
         <p>
           Ask whoever invited you to send a fresh invite link. Each link can be used once and expires

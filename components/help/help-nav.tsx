@@ -19,7 +19,7 @@ export function HelpNav({ categories }: { categories: HelpNavCategory[] }) {
         <div key={cat.slug}>
           <Link
             href={`/help/${cat.slug}`}
-            className="block text-xs font-semibold uppercase tracking-wide text-subtle hover:text-text"
+            className="block text-meta font-semibold uppercase tracking-wide text-subtle hover:text-text"
           >
             {cat.title}
           </Link>
@@ -31,7 +31,7 @@ export function HelpNav({ categories }: { categories: HelpNavCategory[] }) {
                   <Link
                     href={a.href}
                     className={
-                      'block rounded-md px-2 py-1 text-sm ' +
+                      'block rounded-md px-2 py-1 text-body-sm ' +
                       (active
                         ? 'bg-primary-bg text-primary-strong font-medium'
                         : 'text-muted hover:bg-surface hover:text-text')

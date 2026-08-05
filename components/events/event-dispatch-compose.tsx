@@ -71,7 +71,7 @@ export function EventDispatchCompose({
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-3">
-      <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted">
+      <p className="mb-2 flex items-center gap-1.5 text-meta font-semibold text-muted">
         <Megaphone className="h-3.5 w-3.5 text-primary" />
         Post an update
       </p>
@@ -82,7 +82,7 @@ export function EventDispatchCompose({
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Title (optional)"
         disabled={pending}
-        className="mb-2 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
+        className="mb-2 w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
       />
 
       <textarea
@@ -94,7 +94,7 @@ export function EventDispatchCompose({
         placeholder="What should guests know? Parking, a time change, what to bring."
         rows={3}
         disabled={pending}
-        className="w-full resize-none rounded-lg bg-transparent px-1 text-sm leading-relaxed text-text/90 outline-none placeholder:text-subtle disabled:opacity-60"
+        className="w-full resize-none rounded-lg bg-transparent px-1 text-body-sm leading-relaxed text-text/90 outline-none placeholder:text-subtle disabled:opacity-60"
       />
 
       {/* Channel toggles. Page post is always on (the base action). */}
@@ -171,7 +171,7 @@ export function EventDispatchCompose({
           type="button"
           onClick={submit}
           disabled={!canSubmit}
-          className="ml-auto shrink-0 rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+          className="ml-auto shrink-0 rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           {pending ? 'Posting…' : 'Post update'}
         </button>

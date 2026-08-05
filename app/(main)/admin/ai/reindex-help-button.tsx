@@ -39,7 +39,7 @@ export function ReindexHelpButton({ embeddedChunks, onReindexed }: { embeddedChu
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="min-w-0 text-sm">
+        <p className="min-w-0 text-body-sm">
           {empty ? (
             <span className="text-danger">Empty. &ldquo;Ask Vera&rdquo; can&rsquo;t answer until this is built.</span>
           ) : (
@@ -52,11 +52,11 @@ export function ReindexHelpButton({ embeddedChunks, onReindexed }: { embeddedChu
         </Button>
       </div>
       {msg && (
-        <p className="mt-3 flex items-center gap-1.5 rounded-lg border border-success-bg bg-success-bg/40 px-3 py-2 text-sm text-success">
+        <p className="mt-3 flex items-center gap-1.5 rounded-lg border border-success-bg bg-success-bg/40 px-3 py-2 text-body-sm text-success">
           <CheckCircle2 className="h-4 w-4 shrink-0" /> {msg}
         </p>
       )}
-      {error && <p className="mt-3 rounded-lg border border-danger-bg bg-danger-bg/30 px-3 py-2 text-sm text-danger">{error}</p>}
+      {error && <p className="mt-3 rounded-lg border border-danger-bg bg-danger-bg/30 px-3 py-2 text-body-sm text-danger">{error}</p>}
     </div>
   )
 }

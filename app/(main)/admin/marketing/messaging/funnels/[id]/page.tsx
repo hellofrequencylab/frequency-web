@@ -44,7 +44,7 @@ export default async function MessagingFunnelFlowPage({
       actions={
         <Link
           href={`/admin/growth/funnels/${funnel.id}`}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:text-text"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:text-text"
         >
           Advanced builder
         </Link>

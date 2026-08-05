@@ -48,7 +48,7 @@ export default async function DraftEditorPage({ params }: { params: Promise<{ id
           {draft.slug && (
             <Link
               href={`/events/${draft.slug}`}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               View the event <ArrowRight className="h-4 w-4" />
             </Link>

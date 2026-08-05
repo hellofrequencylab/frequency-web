@@ -100,8 +100,8 @@ export function DynamicLinks({
         <div className="rounded-2xl border border-border bg-surface lift-1">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <div>
-              <h2 className="text-sm font-bold text-text">New dynamic link</h2>
-              <p className="text-xs text-muted mt-0.5">
+              <h2 className="text-body-sm font-bold text-text">New dynamic link</h2>
+              <p className="text-meta text-muted mt-0.5">
                 A short <code className="text-text">/q/…</code> code you can retarget anytime. Point it at any
                 URL or an existing check-in code.
               </p>
@@ -129,7 +129,7 @@ export function DynamicLinks({
 
       <div className="space-y-3">
         {initialLinks.length === 0 && (
-          <p className="text-sm text-muted py-6 text-center">
+          <p className="text-body-sm text-muted py-6 text-center">
             No dynamic links yet. Create one above. Its destination stays editable after you print it.
           </p>
         )}
@@ -219,10 +219,10 @@ function Folder({
         ) : (
           <FolderIcon className="h-4 w-4 shrink-0 text-subtle" />
         )}
-        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-text" title={label}>
+        <span className="min-w-0 flex-1 truncate text-body-sm font-semibold text-text" title={label}>
           {label}
         </span>
-        <span className="shrink-0 text-xs text-muted">
+        <span className="shrink-0 text-meta text-muted">
           {count} code{count === 1 ? '' : 's'}
         </span>
       </button>
@@ -298,7 +298,7 @@ function LinkCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h3 className="text-sm font-bold text-text truncate">{link.title}</h3>
+              <h3 className="text-body-sm font-bold text-text truncate">{link.title}</h3>
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 <Badge tone="primary">/q/{link.slug}</Badge>
                 <Badge>{DEST_BADGE[link.destination_type]}</Badge>
@@ -311,15 +311,15 @@ function LinkCard({
             </div>
             <button
               onClick={() => setEditing((v) => !v)}
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors shrink-0"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors shrink-0"
             >
               <Pencil className="w-3 h-3" /> {editing ? 'Close' : 'Edit'}
             </button>
           </div>
 
-          <p className="mt-2 text-xs text-muted truncate">→ {destination}</p>
+          <p className="mt-2 text-meta text-muted truncate">→ {destination}</p>
 
-          <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+          <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-meta text-muted">
             <span className="font-semibold text-text">{link.scans}</span>
             <span>scan{link.scans === 1 ? '' : 's'}</span>
             <span>· {link.unique} unique member{link.unique === 1 ? '' : 's'}</span>
@@ -328,19 +328,19 @@ function LinkCard({
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <a
               href={`${apiBase}&format=png&download=${encodeURIComponent(downloadName)}`}
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
             >
               <Download className="w-3 h-3" /> PNG
             </a>
             <a
               href={`${apiBase}&format=svg&download=${encodeURIComponent(downloadName)}`}
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
             >
               <Download className="w-3 h-3" /> SVG
             </a>
             <button
               onClick={copyLink}
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
             >
               {copied ? <Check className="w-3 h-3 text-success" /> : <Copy className="w-3 h-3" />}
               {copied ? 'Copied' : 'Link'}
@@ -350,7 +350,7 @@ function LinkCard({
               href={`/print/qr?code=${encodeURIComponent(link.id)}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
             >
               <Printer className="w-3 h-3" /> Print
             </a>
@@ -358,7 +358,7 @@ function LinkCard({
               href={link.url}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted hover:text-text hover:bg-surface-elevated transition-colors"
             >
               <ExternalLink className="w-3 h-3" /> Open
             </a>
@@ -366,14 +366,14 @@ function LinkCard({
               <button
                 onClick={toggleActive}
                 disabled={pending}
-                className="text-xs font-semibold text-muted hover:text-text transition-colors disabled:opacity-60"
+                className="text-meta font-semibold text-muted hover:text-text transition-colors disabled:opacity-60"
               >
                 {link.active ? 'Retire' : 'Re-activate'}
               </button>
               <button
                 onClick={remove}
                 disabled={pending}
-                className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted transition-colors hover:text-danger disabled:opacity-60"
+                className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted transition-colors hover:text-danger disabled:opacity-60"
               >
                 <Trash2 className="h-3 w-3" /> Delete
               </button>
@@ -481,11 +481,11 @@ export function LinkForm({
             value={form.title}
             onChange={(e) => set('title', e.target.value)}
             placeholder="e.g. Spring flyer → signup"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="Custom link (optional)">
-          <div className="flex items-center rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm">
+          <div className="flex items-center rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm">
             <span className="text-subtle">/q/</span>
             <input
               value={form.slug ?? ''}
@@ -499,7 +499,7 @@ export function LinkForm({
           <select
             value={form.destination_type}
             onChange={(e) => set('destination_type', e.target.value as LinkInput['destination_type'])}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           >
             <option value="url">Redirect to a URL</option>
             <option value="node">Run a check-in code (earns)</option>
@@ -520,7 +520,7 @@ export function LinkForm({
                 setUrlMode('preset')
                 set('target_url', v)
               }}
-              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
             >
               <option value="">Choose a destination…</option>
               {groupedDestinations().map((g) => (
@@ -541,7 +541,7 @@ export function LinkForm({
             <select
               value={form.node_id ?? ''}
               onChange={(e) => set('node_id', e.target.value || null)}
-              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
             >
               <option value="">Choose a code…</option>
               {nodes.map((n) => (
@@ -557,7 +557,7 @@ export function LinkForm({
             <select
               value={form.circle_id ?? ''}
               onChange={(e) => set('circle_id', e.target.value || null)}
-              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
             >
               <option value="">Choose a circle…</option>
               {circles.map((c) => (
@@ -573,7 +573,7 @@ export function LinkForm({
             <select
               value={form.event_id ?? ''}
               onChange={(e) => set('event_id', e.target.value || null)}
-              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
             >
               <option value="">Choose an event…</option>
               {events.map((ev) => (
@@ -589,14 +589,14 @@ export function LinkForm({
             type="datetime-local"
             value={toLocalInput(form.valid_until)}
             onChange={(e) => set('valid_until', fromLocalInput(e.target.value))}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="Partner (optional)">
           <select
             value={form.partner_id ?? ''}
             onChange={(e) => set('partner_id', e.target.value || null)}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           >
             <option value="">No partner</option>
             {partners.map((p) => (
@@ -611,7 +611,7 @@ export function LinkForm({
             value={form.source_tag ?? ''}
             onChange={(e) => set('source_tag', e.target.value || null)}
             placeholder="e.g. downtown-poster-a"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
       </div>
@@ -622,22 +622,22 @@ export function LinkForm({
             value={form.target_url ?? ''}
             onChange={(e) => set('target_url', e.target.value)}
             placeholder="https://… or /path"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
       )}
 
       {form.destination_type === 'url' && (
         <div className="rounded-lg border border-border bg-canvas/50 p-3">
-          <p className="text-xs font-medium text-subtle">Time-aware (optional)</p>
-          <p className="mt-0.5 text-xs text-muted">Switch the same printed code to a new destination at a set time.</p>
+          <p className="text-meta font-medium text-subtle">Time-aware (optional)</p>
+          <p className="mt-0.5 text-meta text-muted">Switch the same printed code to a new destination at a set time.</p>
           <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Switch at">
               <input
                 type="datetime-local"
                 value={toLocalInput(form.switch_at)}
                 onChange={(e) => set('switch_at', fromLocalInput(e.target.value))}
-                className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+                className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
               />
             </Field>
             <Field label="…then point to">
@@ -645,7 +645,7 @@ export function LinkForm({
                 value={form.alt_target_url ?? ''}
                 onChange={(e) => set('alt_target_url', e.target.value)}
                 placeholder="https://… or /path"
-                className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+                className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
               />
             </Field>
           </div>
@@ -653,7 +653,7 @@ export function LinkForm({
       )}
 
       {destValue && (
-        <p className="flex items-start gap-1.5 text-xs text-muted">
+        <p className="flex items-start gap-1.5 text-meta text-muted">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary-strong" aria-hidden /> {destValue}
         </p>
       )}
@@ -666,7 +666,7 @@ export function LinkForm({
         />
       )}
 
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
 
       <div className="flex items-center gap-2">
         <Button size="sm" onClick={submit} disabled={pending} className="disabled:opacity-60">

@@ -67,10 +67,10 @@ function AchievementToastCard({ achievement, onDismiss }: ToastProps) {
                 <X className="w-3.5 h-3.5" aria-hidden />
               </button>
             </div>
-            <p className="text-sm font-bold text-text mt-0.5">
+            <p className="text-body-sm font-bold text-text mt-0.5">
               {achievement.name}
             </p>
-            <p className="text-xs text-muted mt-0.5 leading-relaxed">
+            <p className="text-meta text-muted mt-0.5 leading-relaxed">
               {achievement.description}
             </p>
             <div className="flex items-center gap-2 mt-2">

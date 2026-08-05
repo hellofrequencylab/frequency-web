@@ -92,7 +92,7 @@ export function ComposeToolbar({
             value={subject}
             placeholder="Subject line"
             onChange={(e) => onSubject(e.target.value)}
-            className="w-full rounded-lg border border-border bg-surface-elevated/50 px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+            className="w-full rounded-lg border border-border bg-surface-elevated/50 px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
           />
         </label>
         <label className="block">
@@ -104,7 +104,7 @@ export function ComposeToolbar({
             value={preheader}
             placeholder="The preview line shown beside the subject in the inbox"
             onChange={(e) => onPreheader(e.target.value)}
-            className="w-full rounded-lg border border-border bg-surface-elevated/50 px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+            className="w-full rounded-lg border border-border bg-surface-elevated/50 px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
           />
         </label>
         <label className="block">
@@ -116,7 +116,7 @@ export function ComposeToolbar({
             value={fromName}
             placeholder="Frequency"
             onChange={(e) => onFromName(e.target.value)}
-            className="w-full rounded-lg border border-border bg-surface-elevated/50 px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+            className="w-full rounded-lg border border-border bg-surface-elevated/50 px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
           />
           <span className="mt-1 block text-2xs text-muted">
             The name recipients see this email is from. Leave it blank to send as Frequency. The sending address stays the same.
@@ -125,7 +125,7 @@ export function ComposeToolbar({
         {onReplyMode && (
           <div className="block sm:col-span-2">
             <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Replies</span>
-            <div className="inline-flex items-center gap-1 rounded-lg bg-surface-elevated p-0.5 text-xs">
+            <div className="inline-flex items-center gap-1 rounded-lg bg-surface-elevated p-0.5 text-meta">
               <button
                 type="button"
                 onClick={() => onReplyMode('broadcast')}

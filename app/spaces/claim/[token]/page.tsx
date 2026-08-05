@@ -163,7 +163,7 @@ function ClaimBarContent({ token, signedIn }: { token: string; signedIn: boolean
           day that flag flips). Memberships, tickets and donations are record-only in v1 and
           would read as a revenue promise beside the rest. Every noun here is canon
           (docs/NAMING.md) and there are no em dashes (docs/CONTENT-VOICE.md). */}
-      <p className="text-sm text-text">
+      <p className="text-body-sm text-text">
         <span className="font-semibold">Is this your business?</span> This page is already built and
         already found. Claim it to edit anything on it, list your events and let people book a time,
         and answer the people who show up. It takes one tap.
@@ -175,11 +175,11 @@ function ClaimBarContent({ token, signedIn }: { token: string; signedIn: boolean
           <div className="space-y-1.5">
             <Link
               href={`/sign-in?next=/spaces/claim/${token}`}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-control bg-primary px-8 py-4 text-base font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-control bg-primary px-8 py-4 text-body font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
             >
               <Zap className="h-5 w-5" aria-hidden /> Claim this business
             </Link>
-            <p className="text-center text-xs text-subtle">Signing in creates your account in a minute.</p>
+            <p className="text-center text-meta text-subtle">Signing in creates your account in a minute.</p>
           </div>
         )}
       </div>
@@ -265,7 +265,7 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
             same column as the page below it. */}
         <div className="border-b border-primary/20 bg-primary-bg/40">
           <div className={CLAIM_ROW}>
-            <div className={cn(CLAIM_COLUMN, "flex items-start gap-2 py-2.5 text-sm text-primary-strong")}>
+            <div className={cn(CLAIM_COLUMN, "flex items-start gap-2 py-2.5 text-body-sm text-primary-strong")}>
             <Zap className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             {/* "so people nearby could find you" was not true for every Space that renders here. An
                 unlisted seed is `visibility = 'private'` and never appears in the directory, and this
@@ -335,14 +335,14 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
                   )}
                   <h1
                     className={cn(
-                      'font-section min-w-0 break-words text-2xl font-bold leading-tight sm:text-3xl',
+                      'font-section min-w-0 break-words text-page-title font-bold leading-tight sm:text-3xl',
                       heroOnInk ? 'text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]' : 'text-text',
                     )}
                   >
                     {hero.heading}
                   </h1>
                   {hero.tagline && (
-                    <p className={cn('mt-1 max-w-2xl text-base font-medium', heroOnInk ? 'text-on-ink' : 'text-muted')}>
+                    <p className={cn('mt-1 max-w-2xl text-body font-medium', heroOnInk ? 'text-on-ink' : 'text-muted')}>
                       {hero.tagline}
                     </p>
                   )}

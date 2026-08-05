@@ -147,7 +147,7 @@ export async function PracticesLibrary() {
           </div>
         )}
         {hasFilters && (
-          <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-subtle">
+          <div className="flex flex-wrap items-center gap-2 pt-1 text-meta text-subtle">
             <span>Filtered:</span>
             {qParam && (
               <Link href={href({ q: undefined, page: undefined })} className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 hover:text-text">
@@ -217,12 +217,12 @@ export async function PracticesLibrary() {
                     badge={
                       <span className="flex items-center gap-1">
                         {p.is_template && (
-                          <span className="inline-flex items-center gap-1 rounded-pill bg-warning-bg px-2 py-0.5 text-xs font-semibold text-warning">
+                          <span className="inline-flex items-center gap-1 rounded-pill bg-warning-bg px-2 py-0.5 text-meta font-semibold text-warning">
                             <Wand2 className="h-3 w-3" /> Template
                           </span>
                         )}
                         {!p.is_public && (
-                          <span className="inline-flex items-center gap-1 rounded-pill bg-danger/10 px-2 py-0.5 text-xs font-semibold text-danger">
+                          <span className="inline-flex items-center gap-1 rounded-pill bg-danger/10 px-2 py-0.5 text-meta font-semibold text-danger">
                             <EyeOff className="h-3 w-3" /> Hidden
                           </span>
                         )}
@@ -265,7 +265,7 @@ export async function PracticesLibrary() {
           </ul>
 
           {result.pageCount > 1 && (
-            <nav className="mt-6 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-sm">
+            <nav className="mt-6 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-body-sm">
               <span className="text-subtle">
                 {(from + 1).toLocaleString()}–{(from + result.rows.length).toLocaleString()} of {result.total.toLocaleString()}
               </span>

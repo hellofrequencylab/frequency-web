@@ -66,9 +66,9 @@ export function AboutThisJourneyHero({
           {body ? (
             <HelpMarkdown>{body}</HelpMarkdown>
           ) : plan.summary?.trim() ? (
-            <p className="text-sm leading-relaxed text-text">{plan.summary}</p>
+            <p className="text-body-sm leading-relaxed text-text">{plan.summary}</p>
           ) : (
-            <p className="text-sm leading-relaxed text-muted">
+            <p className="text-body-sm leading-relaxed text-muted">
               Follow this Journey one Phase at a time, at your own pace. Each step is below.
             </p>
           )}
@@ -141,12 +141,12 @@ export function AboutThisJourneyHero({
           {(attrs.category || attrs.tags.length > 0) && (
             <div className="flex flex-wrap items-center gap-1.5">
               {attrs.category && (
-                <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2.5 py-1 text-xs font-medium text-muted">
+                <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2.5 py-1 text-meta font-medium text-muted">
                   <Tag className="h-3 w-3 shrink-0 text-subtle" aria-hidden /> {attrs.category}
                 </span>
               )}
               {attrs.tags.map((t) => (
-                <span key={t} className="rounded-pill bg-surface-elevated px-2 py-0.5 text-xs text-subtle">
+                <span key={t} className="rounded-pill bg-surface-elevated px-2 py-0.5 text-meta text-subtle">
                   #{t}
                 </span>
               ))}
@@ -200,7 +200,7 @@ function TouchpointDetails({
   return (
     <div className="rounded-2xl border border-border bg-surface p-5">
       <div className="mb-3">
-        <p className="flex items-center gap-2 text-sm font-semibold text-text">
+        <p className="flex items-center gap-2 text-body-sm font-semibold text-text">
           {label}
           {fmt && (
             <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
@@ -208,12 +208,12 @@ function TouchpointDetails({
             </span>
           )}
         </p>
-        <p className="mt-0.5 text-xs text-muted">{hint}</p>
+        <p className="mt-0.5 text-meta text-muted">{hint}</p>
       </div>
       {rows.length > 0 && (
         <dl className="space-y-2.5">
           {rows.map((r) => (
-            <div key={r.label} className="flex items-start gap-2.5 text-sm">
+            <div key={r.label} className="flex items-start gap-2.5 text-body-sm">
               <r.icon className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
               <dt className="w-16 shrink-0 text-muted">{r.label}</dt>
               <dd className="min-w-0 text-text">{r.node}</dd>
@@ -254,7 +254,7 @@ function TouchpointDetails({
           </p>
         ))}
 
-      {tp.notes && <p className="mt-3 border-t border-border pt-3 text-sm leading-relaxed text-muted">{tp.notes}</p>}
+      {tp.notes && <p className="mt-3 border-t border-border pt-3 text-body-sm leading-relaxed text-muted">{tp.notes}</p>}
     </div>
   )
 }
@@ -312,13 +312,13 @@ export function AuthorBlock({ author }: { author: PlanAuthor | null }) {
             style={avatarFocusStyle(author.avatarUrl)}
           />
         ) : (
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-sm font-bold text-muted">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-body-sm font-bold text-muted">
             {author.displayName.slice(0, 1).toUpperCase()}
           </span>
         )}
         <span className="min-w-0">
-          <span className="block truncate text-sm font-semibold text-text">{author.displayName}</span>
-          <span className="block text-xs text-muted">Built this Journey. See their profile.</span>
+          <span className="block truncate text-body-sm font-semibold text-text">{author.displayName}</span>
+          <span className="block text-meta text-muted">Built this Journey. See their profile.</span>
         </span>
       </Link>
     </section>

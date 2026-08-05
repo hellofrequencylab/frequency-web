@@ -46,7 +46,7 @@ export function PracticesFilterDisclosure({
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
-          className="inline-flex items-center gap-2 rounded-lg px-1.5 py-1 text-sm font-bold tracking-tight text-text transition-colors hover:text-primary-strong"
+          className="inline-flex items-center gap-2 rounded-lg px-1.5 py-1 text-body-sm font-bold tracking-tight text-text transition-colors hover:text-primary-strong"
         >
           <SlidersHorizontal className="h-4 w-4 shrink-0 text-muted" aria-hidden />
           Filters

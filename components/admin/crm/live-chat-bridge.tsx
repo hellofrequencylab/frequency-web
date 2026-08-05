@@ -77,7 +77,7 @@ export function LiveChatBridge({ chatRef, token }: { chatRef: string; token: str
           }}
           rows={1}
           placeholder="Reply live…"
-          className="max-h-24 flex-1 resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-text focus:border-border-strong focus:outline-none"
+          className="max-h-24 flex-1 resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none"
         />
         <button
           type="button"

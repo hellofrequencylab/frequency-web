@@ -141,7 +141,7 @@ describe('the mobile pass touched nothing that is not breakpoint-scoped', () => 
     // 16rem = 272px is wider than the whole hero content box on a 320px phone, so an errored
     // control became the widest item on its flex line and was clipped. Both call sites narrow on
     // phones and restore 16rem from 640px up.
-    expect(friend).toContain('max-w-[13rem] text-xs text-on-media sm:max-w-[16rem]')
+    expect(friend).toContain('max-w-[13rem] text-meta text-on-media sm:max-w-[16rem]')
     expect(page).toContain('max-w-[13rem] text-2xs text-on-media sm:max-w-[16rem]')
   })
 

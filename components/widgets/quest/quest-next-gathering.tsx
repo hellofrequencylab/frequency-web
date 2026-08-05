@@ -34,7 +34,7 @@ export async function QuestNextGathering() {
               {g.rsvped ? 'You’re going' : 'Your next gathering'}
             </span>
           </div>
-          <p className="mt-0.5 line-clamp-1 text-base font-bold text-text transition-colors group-hover:text-success">
+          <p className="mt-0.5 line-clamp-1 text-body font-bold text-text transition-colors group-hover:text-success">
             {g.title}
           </p>
           <div className="mt-0.5 flex items-center gap-2 text-2xs text-muted">

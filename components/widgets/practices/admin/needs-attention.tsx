@@ -46,7 +46,7 @@ export async function PracticeNeedsAttention() {
               <div className="min-w-0 flex-1">
                 <Link
                   href={`/practices/${it.id}/edit`}
-                  className="inline-flex items-center gap-1 text-sm font-medium text-text hover:underline"
+                  className="inline-flex items-center gap-1 text-body-sm font-medium text-text hover:underline"
                 >
                   <span className="min-w-0 truncate">{it.title || 'Untitled practice'}</span>
                   <ExternalLink className="h-3 w-3 shrink-0 text-subtle" aria-hidden />
@@ -74,7 +74,7 @@ export async function PracticeNeedsAttention() {
           <div className="border-t border-border bg-surface-elevated/40 px-4 py-2">
             <Link
               href="/admin/content/practices?status=approved&public=true&noPillar=true"
-              className="text-xs font-medium text-muted transition-colors hover:text-text"
+              className="text-meta font-medium text-muted transition-colors hover:text-text"
             >
               {more} more in the library. Filter by a gap to work through them.
             </Link>

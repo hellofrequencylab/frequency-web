@@ -42,8 +42,8 @@ function QuickLink({
       <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-control ${color}`}>
         <Icon className="h-4 w-4" />
       </div>
-      <div className="text-sm font-semibold leading-none text-text">{label}</div>
-      <div className="mt-0.5 text-xs text-muted">{sub}</div>
+      <div className="text-body-sm font-semibold leading-none text-text">{label}</div>
+      <div className="mt-0.5 text-meta text-muted">{sub}</div>
     </Link>
   )
 }

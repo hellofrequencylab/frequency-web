@@ -52,7 +52,7 @@ export function BusinessQuickStartForm() {
           onChange={(e) => setWhatYouDo(e.target.value)}
           placeholder="I teach beginner-friendly yoga and breathwork for busy people."
           rows={2}
-          className="w-full rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-primary"
+          className="w-full rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary"
         />
       </Field>
 
@@ -77,7 +77,7 @@ export function BusinessQuickStartForm() {
           {pending ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
           {pending ? 'Building your page...' : 'Create my page'}
         </Button>
-        <p className="text-xs text-subtle">Your page starts private, just for you, until you publish it.</p>
+        <p className="text-meta text-subtle">Your page starts private, just for you, until you publish it.</p>
       </div>
     </form>
   )

@@ -68,14 +68,14 @@ export function CircleVeraPanel({
         className="flex w-full items-center gap-2 text-left"
       >
         <Sparkles className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
-        <h2 className="flex-1 text-base font-bold text-text">Build with Vera</h2>
+        <h2 className="flex-1 text-body font-bold text-text">Build with Vera</h2>
         <ChevronDown
           className={`h-4 w-4 shrink-0 text-subtle transition-transform ${open ? 'rotate-180' : ''}`}
           aria-hidden
         />
       </button>
       {!open && (
-        <p className="mt-1 text-sm text-muted">
+        <p className="mt-1 text-body-sm text-muted">
           Have Vera fill a section, or tell her what to change in plain words.
         </p>
       )}
@@ -90,7 +90,7 @@ export function CircleVeraPanel({
                 type="button"
                 disabled={pending}
                 onClick={() => compose(s.key)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
               >
                 <Wand2 className="h-3.5 w-3.5 text-primary-strong" aria-hidden />
                 {busySection === s.key ? 'Filling…' : s.label}
@@ -105,20 +105,20 @@ export function CircleVeraPanel({
             onChange={(e) => setChange(e.target.value)}
             rows={2}
             placeholder="e.g. Make the Meetup biweekly. Or: more beginner-friendly. Or: shorten the about."
-            className="mt-2 w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary"
+            className="mt-2 w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary"
           />
           <div className="mt-2">
             <button
               type="button"
               disabled={pending || !change.trim()}
               onClick={apply}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60"
             >
               <Wand2 className="h-4 w-4" aria-hidden /> {pending && !busySection ? 'Applying…' : 'Apply with Vera'}
             </button>
           </div>
 
-          {note && <p className="mt-2 text-xs text-muted">{note}</p>}
+          {note && <p className="mt-2 text-meta text-muted">{note}</p>}
         </>
       )}
     </section>

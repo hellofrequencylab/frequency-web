@@ -403,7 +403,7 @@ export default async function PricingPage() {
               <PlanCard offering={nonprofit} tone="ink" />
             </div>
             {independent && <IndependentStrip offering={independent} />}
-            <p className="mx-auto mt-10 max-w-2xl text-center text-base leading-relaxed text-on-ink-muted">
+            <p className="mx-auto mt-10 max-w-2xl text-center text-body leading-relaxed text-on-ink-muted">
               {annualDiscountNote(input.values)} Never a wall in front of the transaction.{' '}
               {PLAN_STORY.meters} You keep 100% of your own bookings on every rung: the take-rate
               applies only to a sale the network introduced, and it drops as your plan rises. Once
@@ -503,8 +503,8 @@ export default async function PricingPage() {
             },
           ].map((p) => (
             <Card key={p.title} tone="feature">
-              <h3 className="font-display uppercase text-text text-xl">{p.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{p.body}</p>
+              <h3 className="font-display uppercase text-text text-lead">{p.title}</h3>
+              <p className="mt-2 text-body-sm leading-relaxed text-muted">{p.body}</p>
             </Card>
           ))}
         </div>
@@ -580,7 +580,7 @@ function PlanCard({
         </span>
       )}
       <h3
-        className={`font-display uppercase ${featured ? 'text-3xl' : 'text-2xl'} ${
+        className={`font-display uppercase ${featured ? 'text-3xl' : 'text-page-title'} ${
           ink ? 'text-on-ink' : 'text-text'
         }`}
       >
@@ -610,7 +610,7 @@ function PlanCard({
 }
 
 /** The rate line, which is the PAGE'S LEAD PROMISE and used to read as the quietest thing on the card
- *  (`text-sm text-subtle`, last, undifferentiated). It now sits on its own ruled strip, with the half
+ *  (`text-body-sm text-subtle`, last, undifferentiated). It now sits on its own ruled strip, with the half
  *  that never changes carrying the weight and the network half staying quiet beside it.
  *
  *  The split is the same one the metadata and the FAQ already do (`takeRate.split(', ')`) — the string
@@ -728,7 +728,7 @@ function PlanCta({
   return (
     <Link
       href={offering.cta.href}
-      className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-on-ink/20 bg-on-ink/10 px-8 py-3.5 text-base font-bold text-on-ink transition-colors hover:bg-on-ink/15"
+      className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-on-ink/20 bg-on-ink/10 px-8 py-3.5 text-body font-bold text-on-ink transition-colors hover:bg-on-ink/15"
     >
       {offering.cta.label}
     </Link>
@@ -746,21 +746,21 @@ function IndependentStrip({ offering }: { offering: Offering }) {
     >
       <div>
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h3 className="font-display uppercase text-2xl text-on-ink">{offering.label}</h3>
+          <h3 className="font-display uppercase text-page-title text-on-ink">{offering.label}</h3>
           {/* The strip sits inside the interval scope too, so its figure flips with the toggle. */}
-          <span className="font-display text-xl text-primary">
+          <span className="font-display text-lead text-primary">
             <span data-interval-show="month">{offering.monthly}</span>
             <span data-interval-show="year">{offering.yearly ?? offering.monthly}</span>
           </span>
         </div>
-        <p className="mt-1 text-sm font-semibold text-on-ink-muted">{offering.tagline}</p>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-on-ink-muted">{offering.forWho}</p>
-        <p className="mt-2 text-sm text-on-ink-subtle">{offering.takeRate}</p>
+        <p className="mt-1 text-body-sm font-semibold text-on-ink-muted">{offering.tagline}</p>
+        <p className="mt-2 max-w-2xl text-body-sm leading-relaxed text-on-ink-muted">{offering.forWho}</p>
+        <p className="mt-2 text-body-sm text-on-ink-subtle">{offering.takeRate}</p>
       </div>
       <div className="shrink-0">
         <Link
           href={offering.cta.href}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-on-ink/20 bg-on-ink/10 px-8 py-3.5 text-base font-bold text-on-ink transition-colors hover:bg-on-ink/15"
+          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-on-ink/20 bg-on-ink/10 px-8 py-3.5 text-body font-bold text-on-ink transition-colors hover:bg-on-ink/15"
         >
           {offering.cta.label}
         </Link>
@@ -773,11 +773,11 @@ function ExtraCard({ extra }: { extra: PlanExtra }) {
   return (
     <Card tone="feature">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="font-display uppercase text-text text-2xl">{extra.label}</h3>
-        <span className="font-display text-primary-strong text-xl">{extra.price}</span>
+        <h3 className="font-display uppercase text-text text-page-title">{extra.label}</h3>
+        <span className="font-display text-primary-strong text-lead">{extra.price}</span>
       </div>
-      <p className="mt-2 text-sm leading-relaxed text-muted">{extra.detail}</p>
-      <p className="mt-2 text-sm font-semibold text-text">{extra.availability}</p>
+      <p className="mt-2 text-body-sm leading-relaxed text-muted">{extra.detail}</p>
+      <p className="mt-2 text-body-sm font-semibold text-text">{extra.availability}</p>
     </Card>
   )
 }
@@ -816,7 +816,7 @@ function ComparisonBlock({
           {offering?.listAnchor && (
             <span className="text-2xs font-semibold text-muted line-through">{offering.listAnchor}</span>
           )}
-          <span className="text-sm font-bold text-primary-strong">{offering?.monthly}</span>
+          <span className="text-body-sm font-bold text-primary-strong">{offering?.monthly}</span>
         </span>
       ),
     }

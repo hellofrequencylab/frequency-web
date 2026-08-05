@@ -191,7 +191,7 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
       {/* LEFT — the settings-only section rail. */}
       <aside className="min-w-0 space-y-3" aria-label="Sections and settings">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-text">Sections</h3>
+          <h3 className="text-body-sm font-bold text-text">Sections</h3>
           <span className="flex items-center gap-1 text-2xs text-muted" role="status" aria-live="polite">
             {store.saving ? (
               <>
@@ -204,7 +204,7 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
         </div>
 
         {store.rows.length === 0 ? (
-          <p className="rounded-card border border-dashed border-border px-3 py-6 text-center text-xs text-muted">
+          <p className="rounded-card border border-dashed border-border px-3 py-6 text-center text-meta text-muted">
             This page has no sections yet. Add one below.
           </p>
         ) : (
@@ -257,7 +257,7 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
                     placeholder="Section title (optional)"
                     aria-label={`Title for section ${ri + 1}`}
                     onChange={(e) => onSectionTitle(row.id, e.target.value)}
-                    className="w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 text-xs font-semibold text-text placeholder:font-normal placeholder:text-subtle hover:border-border focus:border-primary focus:outline-none"
+                    className="w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 text-meta font-semibold text-text placeholder:font-normal placeholder:text-subtle hover:border-border focus:border-primary focus:outline-none"
                   />
                 </div>
 
@@ -310,7 +310,7 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
         <button
           type="button"
           onClick={onAddSection}
-          className="flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-border py-2.5 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
+          className="flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-border py-2.5 text-body-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
         >
           <Plus className="h-4 w-4" aria-hidden /> Add section
         </button>
@@ -319,13 +319,13 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
       {/* RIGHT — the live, clickable space canvas. */}
       <div className="min-w-0 overflow-x-auto rounded-2xl border border-border bg-surface p-4 sm:p-6" aria-label="Page canvas">
         {store.rows.length === 0 ? (
-          <p className="py-10 text-center text-sm text-subtle">Add a section to start building your page.</p>
+          <p className="py-10 text-center text-body-sm text-subtle">Add a section to start building your page.</p>
         ) : (
           <div className="space-y-8">
             {store.rows.map((row) => (
               <section key={row.id} className="space-y-4">
                 {row.title && (
-                  <h2 className="font-display text-xl font-bold uppercase tracking-tight text-text sm:text-2xl">
+                  <h2 className="font-display text-lead font-bold uppercase tracking-tight text-text sm:text-2xl">
                     {row.title}
                   </h2>
                 )}
@@ -406,7 +406,7 @@ function BlockTile({
           onClick={onSelect}
           aria-current={active}
           aria-expanded={active}
-          className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-xs font-semibold text-text"
+          className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-meta font-semibold text-text"
         >
           <Settings2 className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
           <span className="min-w-0 flex-1 truncate">{label(id)}</span>

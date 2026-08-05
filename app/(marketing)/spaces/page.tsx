@@ -113,9 +113,9 @@ function GuideLink({ href, title, body }: { href: string; title: string; body: s
       href={href}
       className="group block rounded-2xl border border-border bg-surface p-6 lift-1 transition-colors hover:border-border-strong"
     >
-      <h3 className="font-display uppercase text-text text-xl leading-none">{title}</h3>
-      <p className="mt-2.5 text-base text-muted leading-relaxed">{body}</p>
-      <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-primary-strong">
+      <h3 className="font-display uppercase text-text text-lead leading-none">{title}</h3>
+      <p className="mt-2.5 text-body text-muted leading-relaxed">{body}</p>
+      <span className="mt-4 inline-flex items-center gap-1.5 text-body-sm font-bold uppercase tracking-wide text-primary-strong">
         Read the guide <ArrowRight className="w-4 h-4" aria-hidden />
       </span>
     </Link>
@@ -180,10 +180,10 @@ function LegacySpaces() {
               <div className="w-11 h-11 rounded-2xl bg-primary-bg flex items-center justify-center mb-4">
                 <f.icon className="w-5 h-5 text-primary-strong" aria-hidden />
               </div>
-              <h3 className="font-display uppercase text-text text-2xl leading-none">
+              <h3 className="font-display uppercase text-text text-page-title leading-none">
                 {f.title}
               </h3>
-              <p className="mt-3 text-base text-muted leading-relaxed">{f.body}</p>
+              <p className="mt-3 text-body text-muted leading-relaxed">{f.body}</p>
             </Card>
           ))}
         </div>

@@ -226,7 +226,7 @@ export function PostCard({
                 className="h-9 w-9 rounded-pill object-cover"
               />
             ) : (
-              <div className="flex h-9 w-9 select-none items-center justify-center rounded-pill bg-primary-bg text-xs font-semibold text-primary-strong">
+              <div className="flex h-9 w-9 select-none items-center justify-center rounded-pill bg-primary-bg text-meta font-semibold text-primary-strong">
                 {getInitials(author.display_name)}
               </div>
             )}
@@ -236,7 +236,7 @@ export function PostCard({
             <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 leading-snug">
               <Link
                 href={`/people/${author.handle}`}
-                className="text-sm font-semibold text-text hover:underline"
+                className="text-body-sm font-semibold text-text hover:underline"
               >
                 {author.display_name}
               </Link>
@@ -247,7 +247,7 @@ export function PostCard({
                   <ChevronRight className="h-3 w-3 shrink-0 text-subtle" aria-hidden />
                   <Link
                     href={scope.href}
-                    className="flex min-w-0 items-center gap-1 text-sm text-muted transition-colors hover:text-text"
+                    className="flex min-w-0 items-center gap-1 text-body-sm text-muted transition-colors hover:text-text"
                   >
                     <ScopeThumb scope={scope} />
                     <span className="truncate font-medium">
@@ -257,7 +257,7 @@ export function PostCard({
                 </>
               )}
             </div>
-            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-subtle">
+            <p className="mt-0.5 flex items-center gap-1.5 text-meta text-subtle">
               <span className="truncate">{relativeTime(post.created_at)}</span>
               {/* Zaps this post has earned, by the author's identity (not down in
                   the action row) — a small calm chip, shown only once it's earned. */}
@@ -281,7 +281,7 @@ export function PostCard({
 
         {/* Body */}
         {post.body && (
-          <PostBody body={post.body} className="mb-2.5 text-sm leading-relaxed text-text" />
+          <PostBody body={post.body} className="mb-2.5 text-body-sm leading-relaxed text-text" />
         )}
 
         {/* Post image — inset media, no second frame around it. */}

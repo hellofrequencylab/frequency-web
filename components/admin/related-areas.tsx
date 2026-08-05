@@ -27,7 +27,7 @@ export function RelatedAreas({
   return (
     <section className="border-t border-border/70 pt-7 sm:pt-8">
       <h2 className="text-lg font-bold text-text">Related areas</h2>
-      <p className="mt-1 text-sm text-muted">Jump to a neighboring workspace.</p>
+      <p className="mt-1 text-body-sm text-muted">Jump to a neighboring workspace.</p>
       <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {groups.map((g) => (
           <Link
@@ -39,11 +39,11 @@ export function RelatedAreas({
               <g.Icon className="h-4 w-4" aria-hidden />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="flex items-center gap-1 text-sm font-semibold text-text">
+              <span className="flex items-center gap-1 text-body-sm font-semibold text-text">
                 {g.label}
                 <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-subtle opacity-0 transition-opacity group-hover:opacity-100" />
               </span>
-              <span className="mt-0.5 block text-xs leading-snug text-muted">{g.blurb}</span>
+              <span className="mt-0.5 block text-meta leading-snug text-muted">{g.blurb}</span>
             </span>
           </Link>
         ))}

@@ -115,7 +115,7 @@ export function ConversationTriage({
   }
 
   const sel =
-    'rounded-lg border border-border bg-canvas px-2 py-1 text-xs text-text focus:border-border-strong focus:outline-none'
+    'rounded-lg border border-border bg-canvas px-2 py-1 text-meta text-text focus:border-border-strong focus:outline-none'
   const stagingTrade = tradeTo !== undefined && (tradeTo || null) !== assignedTo
 
   // ── Collapsed: a slim one-line summary + a Manage toggle. The default, so the reader stays clean.
@@ -197,7 +197,7 @@ export function ConversationTriage({
             type="button"
             onClick={() => patch({ assignedTo: tradeTo ?? null, handoffNote: handoff })}
             disabled={pending}
-            className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50"
           >
             {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
             {tradeTo ? 'Trade' : 'Unassign'}
@@ -221,7 +221,7 @@ export function ConversationTriage({
         </div>
       )}
       {error && (
-        <p role="alert" className="text-xs text-danger">
+        <p role="alert" className="text-meta text-danger">
           {error}
         </p>
       )}

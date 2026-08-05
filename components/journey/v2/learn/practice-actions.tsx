@@ -101,7 +101,7 @@ export function PracticeActions({
   }
 
   const base =
-    'inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg px-4 text-sm font-semibold transition-colors disabled:opacity-60'
+    'inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg px-4 text-body-sm font-semibold transition-colors disabled:opacity-60'
   const restLogged = logged && !done
 
   return (
@@ -148,7 +148,7 @@ export function PracticeActions({
 
       {/* Timer practices: set the expectation that running the sit is what counts it (#5). */}
       {usesTimer && !done && (
-        <p className="flex items-center gap-1.5 text-xs text-subtle">
+        <p className="flex items-center gap-1.5 text-meta text-subtle">
           <Timer className="h-3.5 w-3.5 shrink-0" aria-hidden /> Run the full timer to count this practice.
         </p>
       )}
@@ -156,7 +156,7 @@ export function PracticeActions({
       {/* Confirmation: a warm, specific line. Zaps when the log just paid out; a calm note when it
           was already logged today (idempotent, never an error). Pillar named when natural. */}
       {done && (
-        <p className="text-xs font-medium text-success">
+        <p className="text-meta font-medium text-success">
           {done.logged
             ? done.zaps > 0
               ? `Logged. +${done.zaps} Zaps${pillar ? ` for ${pillar}` : ''}.`
@@ -165,7 +165,7 @@ export function PracticeActions({
         </p>
       )}
 
-      {error && <p className="text-xs font-medium text-danger">{error}</p>}
+      {error && <p className="text-meta font-medium text-danger">{error}</p>}
     </div>
   )
 }

@@ -89,7 +89,7 @@ export function EntryPointShare({
     </button>
   )
 
-  const btn = 'inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated'
+  const btn = 'inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated'
 
   // Collapsed (default): a one-line share menu — the link + copy, and a prompt to
   // reveal the QR & admin options.
@@ -97,7 +97,7 @@ export function EntryPointShare({
     return (
       <div className="flex flex-wrap items-center gap-2 rounded-card border border-border bg-surface-elevated/40 px-3 py-2">
         <Link2 className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
-        <code className="min-w-0 flex-1 truncate font-mono text-xs text-muted" title={shareUrl}>
+        <code className="min-w-0 flex-1 truncate font-mono text-meta text-muted" title={shareUrl}>
           {shareUrl}
         </code>
         <button type="button" onClick={copy} className={btn} title={`Copy ${shareUrl}`}>
@@ -162,7 +162,7 @@ export function EntryPointShare({
 
         {/* Shareable link */}
         <div className="flex items-center gap-2">
-          <code className="min-w-0 flex-1 truncate rounded-lg border border-border bg-surface px-2.5 py-1.5 font-mono text-xs text-muted">
+          <code className="min-w-0 flex-1 truncate rounded-lg border border-border bg-surface px-2.5 py-1.5 font-mono text-meta text-muted">
             {shareUrl}
           </code>
           <button type="button" onClick={copy} className={btn} title={`Copy ${shareUrl}`}>

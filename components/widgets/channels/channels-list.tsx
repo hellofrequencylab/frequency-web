@@ -164,7 +164,7 @@ export async function ChannelsList() {
             <section>
               <div className="mb-3">
                 <h2 className="text-lg font-bold tracking-tight text-text">Unsorted</h2>
-                <p className="mt-0.5 text-sm text-muted leading-relaxed">
+                <p className="mt-0.5 text-body-sm text-muted leading-relaxed">
                   Channels not yet sorted into a Pillar.
                 </p>
               </div>
@@ -195,8 +195,8 @@ export async function ChannelsList() {
                   href={`#channel-${domain.slug}`}
                   className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-surface-elevated transition-colors"
                 >
-                  <span className="flex-1 truncate text-sm font-medium text-text">{domain.name}</span>
-                  <span className="text-xs tabular-nums text-subtle">{topics.length}</span>
+                  <span className="flex-1 truncate text-body-sm font-medium text-text">{domain.name}</span>
+                  <span className="text-meta tabular-nums text-subtle">{topics.length}</span>
                 </a>
               ))}
             </div>
@@ -227,7 +227,7 @@ function DomainSection({
       <div className="mb-4">
         <h2 className="text-lg font-bold tracking-tight text-text">{domain.name}</h2>
         {domain.description && (
-          <p className="mt-0.5 text-sm text-muted leading-relaxed">{domain.description}</p>
+          <p className="mt-0.5 text-body-sm text-muted leading-relaxed">{domain.description}</p>
         )}
       </div>
 

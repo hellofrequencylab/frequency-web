@@ -47,7 +47,7 @@ export async function OutcomesTab() {
       render: (c) => (
         <span className="text-text">
           {c.name}
-          {c.difficulty && <span className="ml-2 text-xs text-subtle">{c.difficulty}</span>}
+          {c.difficulty && <span className="ml-2 text-meta text-subtle">{c.difficulty}</span>}
         </span>
       ),
     },

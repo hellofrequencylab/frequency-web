@@ -61,10 +61,10 @@ export function ResonanceMatchingToggle({
     <section className="mt-5 rounded-2xl border border-border bg-surface p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h2 className="flex items-center gap-2 text-sm font-bold text-text">
+          <h2 className="flex items-center gap-2 text-body-sm font-bold text-text">
             <Sparkles className="h-4 w-4 text-primary-strong" /> Resonance matching
           </h2>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 text-body-sm text-muted">
             Let Frequency quietly find the few people you would most click with, from the Circles,
             Journeys, and practices you already share. Off by default. We only ever suggest. No one is
             introduced until you both say yes, and a human still sends the hello.
@@ -88,10 +88,10 @@ export function ResonanceMatchingToggle({
       {optedIn && (
         <div className="mt-4 flex items-start justify-between gap-4 border-t border-border/60 pt-4">
           <div className="min-w-0">
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-text">
+            <h3 className="flex items-center gap-2 text-body-sm font-semibold text-text">
               <EyeOff className="h-3.5 w-3.5 text-subtle" /> Mute being suggested
             </h3>
-            <p className="mt-1 text-sm text-muted">
+            <p className="mt-1 text-body-sm text-muted">
               Keep getting your own matches, but stop being suggested to other people.
             </p>
           </div>

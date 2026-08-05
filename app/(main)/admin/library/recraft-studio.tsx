@@ -41,7 +41,7 @@ export function RecraftEditRow({
 
   return (
     <div className="space-y-2">
-      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-subtle">
+      <p className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wide text-subtle">
         <Wand className="h-3.5 w-3.5" /> Image studio {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
       </p>
       <div className="flex flex-wrap gap-2">
@@ -63,7 +63,7 @@ export function RecraftEditRow({
           <Wand2 className="h-4 w-4" /> Variation
         </button>
       </div>
-      {err && <p className="text-sm text-danger">{err}</p>}
+      {err && <p className="text-body-sm text-danger">{err}</p>}
     </div>
   )
 }
@@ -101,12 +101,12 @@ export function AssetVersions({ assetId }: { assetId: string }) {
 
   return (
     <div className="space-y-2">
-      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-subtle">
+      <p className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wide text-subtle">
         <History className="h-3.5 w-3.5" /> Versions {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
       </p>
       <ul className="divide-y divide-border overflow-hidden rounded-card border border-border">
         {versions.map((v) => (
-          <li key={v.id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
+          <li key={v.id} className="flex items-center justify-between gap-2 px-3 py-2 text-body-sm">
             <span className="min-w-0 truncate text-text">
               v{v.version}
               {v.note ? ` · ${v.note}` : ''}
@@ -117,7 +117,7 @@ export function AssetVersions({ assetId }: { assetId: string }) {
                 type="button"
                 disabled={busy}
                 onClick={() => restore(v.id)}
-                className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs text-text hover:bg-surface-elevated disabled:opacity-70"
+                className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta text-text hover:bg-surface-elevated disabled:opacity-70"
               >
                 <RotateCcw className="h-3.5 w-3.5" /> Restore
               </button>

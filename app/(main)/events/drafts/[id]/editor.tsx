@@ -271,7 +271,7 @@ export function DraftEditor({
     return (
       <div className="space-y-4">
         {published.claimSentTo && (
-          <p className="rounded-lg border border-success/40 bg-success-bg px-3 py-2 text-sm text-success">
+          <p className="rounded-lg border border-success/40 bg-success-bg px-3 py-2 text-body-sm text-success">
             Published, and we emailed the organizer a claim link at{' '}
             <span className="font-semibold">{published.claimSentTo}</span>. You can also share it yourself below.
           </p>
@@ -279,7 +279,7 @@ export function DraftEditor({
         {published.claimToken ? (
           <OutreachCard claimToken={published.claimToken} slug={published.slug} sentTo={published.claimSentTo} />
         ) : (
-          <p className="rounded-lg border border-success/40 bg-success-bg px-3 py-2 text-sm text-success">
+          <p className="rounded-lg border border-success/40 bg-success-bg px-3 py-2 text-body-sm text-success">
             Published. It is live on local events.
           </p>
         )}
@@ -290,7 +290,7 @@ export function DraftEditor({
   return (
     <div className="space-y-6">
       {msg && (
-        <p className="rounded-lg border border-danger/40 bg-danger-bg px-3 py-2 text-sm text-danger">{msg}</p>
+        <p className="rounded-lg border border-danger/40 bg-danger-bg px-3 py-2 text-body-sm text-danger">{msg}</p>
       )}
 
       {/* ── Cover preview ── */}
@@ -302,7 +302,7 @@ export function DraftEditor({
             alt="Event cover"
             className="h-28 w-28 shrink-0 rounded-2xl border border-border object-cover"
           />
-          <p className="text-xs text-muted">
+          <p className="text-meta text-muted">
             The cover, cut from your poster. It fronts the event on local events.
           </p>
         </div>
@@ -372,7 +372,7 @@ export function DraftEditor({
           <div className="space-y-1">
             <Label>Price</Label>
             <div className="flex items-center gap-3">
-              <label className="flex shrink-0 items-center gap-1.5 text-sm text-text">
+              <label className="flex shrink-0 items-center gap-1.5 text-body-sm text-text">
                 <input
                   type="checkbox"
                   checked={isFree}
@@ -648,14 +648,14 @@ export function DraftEditor({
       {/* Add a missing section back. */}
       {missingSections.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-subtle">Add a section:</span>
+          <span className="text-meta font-medium text-subtle">Add a section:</span>
           {missingSections.map((k) => (
             <button
               key={k}
               type="button"
               onClick={() => addSection(k)}
               disabled={pending}
-              className="inline-flex items-center gap-1 rounded-pill border border-border px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-border-strong hover:text-text"
+              className="inline-flex items-center gap-1 rounded-pill border border-border px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:border-border-strong hover:text-text"
             >
               <Plus className="h-3 w-3" /> {SECTION_LABEL[k]}
             </button>
@@ -666,7 +666,7 @@ export function DraftEditor({
       {/* ── Save ── */}
       <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
         {saved && (
-          <span className="flex items-center gap-1 text-xs font-medium text-primary-strong">
+          <span className="flex items-center gap-1 text-meta font-medium text-primary-strong">
             <Check className="h-3.5 w-3.5" /> Saved
           </span>
         )}
@@ -674,7 +674,7 @@ export function DraftEditor({
           type="button"
           onClick={handleSave}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
           {pending ? 'Saving' : 'Save draft'}
@@ -683,8 +683,8 @@ export function DraftEditor({
 
       {/* ── Publish: the ownership question ── */}
       <div className="rounded-2xl border border-border bg-surface p-4">
-        <p className="text-sm font-bold text-text">Ready to publish?</p>
-        <p className="mt-1 text-xs text-muted">One honest question first. It decides who hosts the event.</p>
+        <p className="text-body-sm font-bold text-text">Ready to publish?</p>
+        <p className="mt-1 text-meta text-muted">One honest question first. It decides who hosts the event.</p>
         <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
           <OwnershipOption
             selected={ownership === 'mine'}
@@ -707,7 +707,7 @@ export function DraftEditor({
             onClick={handlePublish}
             disabled={pending || !ownership || !!dateProblem}
             title={dateProblem ? 'Set a valid future start date to publish' : undefined}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             Publish
@@ -722,12 +722,12 @@ function Section({ title, onAdd, children }: { title: string; onAdd?: () => void
   return (
     <section>
       <div className="mb-2 flex items-end justify-between gap-3">
-        <h2 className="text-sm font-bold tracking-tight text-text">{title}</h2>
+        <h2 className="text-body-sm font-bold tracking-tight text-text">{title}</h2>
         {onAdd && (
           <button
             type="button"
             onClick={onAdd}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline"
+            className="inline-flex items-center gap-1 text-meta font-semibold text-primary-strong hover:underline"
           >
             <Plus className="h-3 w-3" /> Add row
           </button>
@@ -790,8 +790,8 @@ function OwnershipOption({
           : 'border-border bg-surface hover:border-border-strong'
       }`}
     >
-      <span className="block text-sm font-semibold text-text">{title}</span>
-      <span className="mt-0.5 block text-xs text-muted">{blurb}</span>
+      <span className="block text-body-sm font-semibold text-text">{title}</span>
+      <span className="mt-0.5 block text-meta text-muted">{blurb}</span>
     </button>
   )
 }

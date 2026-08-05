@@ -97,7 +97,7 @@ export function EventShareButton({
         title="QR and share"
         className={
           className ??
-          'inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated'
+          'inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated'
         }
       >
         <QrCode className="h-4 w-4 text-subtle" aria-hidden />

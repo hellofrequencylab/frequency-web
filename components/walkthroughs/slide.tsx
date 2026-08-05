@@ -96,8 +96,8 @@ export function WalkthroughSlide({ step }: { step: WalkthroughStep }) {
         {media}
         <div className="flex flex-col items-center px-7 pb-7 pt-6 text-center">
           {eyebrow}
-          <h2 className="mt-3 text-2xl font-bold leading-tight text-text">{step.title || 'Slide title'}</h2>
-          {step.body && <p className="mt-2 max-w-sm text-pretty text-sm leading-relaxed text-muted">{step.body}</p>}
+          <h2 className="mt-3 text-page-title font-bold leading-tight text-text">{step.title || 'Slide title'}</h2>
+          {step.body && <p className="mt-2 max-w-sm text-pretty text-body-sm leading-relaxed text-muted">{step.body}</p>}
           {zaps}
           {cta}
         </div>
@@ -112,8 +112,8 @@ export function WalkthroughSlide({ step }: { step: WalkthroughStep }) {
           <div className="hidden sm:block">{media}</div>
           <div className="flex flex-col items-start px-6 py-7 text-left">
             {eyebrow}
-            <h2 className="mt-3 text-xl font-bold leading-tight text-text">{step.title || 'Slide title'}</h2>
-            {step.body && <p className="mt-2 text-sm leading-relaxed text-muted">{step.body}</p>}
+            <h2 className="mt-3 text-lead font-bold leading-tight text-text">{step.title || 'Slide title'}</h2>
+            {step.body && <p className="mt-2 text-body-sm leading-relaxed text-muted">{step.body}</p>}
             {zaps}
             {cta}
           </div>
@@ -128,8 +128,8 @@ export function WalkthroughSlide({ step }: { step: WalkthroughStep }) {
       <div className="flex flex-col items-center px-7 pb-7 pt-9 text-center">
         {iconChip ?? eyebrow}
         {iconChip && <div className="mt-4">{eyebrow}</div>}
-        <h2 className="mt-4 text-2xl font-bold leading-tight text-text">{step.title || 'Slide title'}</h2>
-        {step.body && <p className="mt-2 max-w-sm text-pretty text-sm leading-relaxed text-muted">{step.body}</p>}
+        <h2 className="mt-4 text-page-title font-bold leading-tight text-text">{step.title || 'Slide title'}</h2>
+        {step.body && <p className="mt-2 max-w-sm text-pretty text-body-sm leading-relaxed text-muted">{step.body}</p>}
         {zaps}
         {cta}
       </div>

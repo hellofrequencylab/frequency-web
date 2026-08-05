@@ -60,7 +60,7 @@ export function EventLoomPicker({
         type="button"
         onClick={() => setOpen(true)}
         disabled={disabled}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-50"
       >
         <ImageIcon className="h-3.5 w-3.5" aria-hidden /> Select from Loom
       </button>
@@ -68,7 +68,7 @@ export function EventLoomPicker({
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="Select an image from the Loom" className="max-w-lg">
         <div className="rounded-2xl border border-border bg-canvas p-4 lift-1">
           <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-text">Your Loom</h2>
+            <h2 className="text-body-sm font-semibold text-text">Your Loom</h2>
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -86,14 +86,14 @@ export function EventLoomPicker({
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search the Loom"
-              className="w-full bg-transparent py-2 text-sm outline-none"
+              className="w-full bg-transparent py-2 text-body-sm outline-none"
             />
           </div>
 
           {loading ? (
-            <p className="px-1 py-8 text-center text-xs text-subtle">Loading…</p>
+            <p className="px-1 py-8 text-center text-meta text-subtle">Loading…</p>
           ) : items.length === 0 ? (
-            <p className="px-1 py-8 text-center text-xs text-subtle">
+            <p className="px-1 py-8 text-center text-meta text-subtle">
               No images in your Loom yet. Photos you upload to an event land here for reuse.
             </p>
           ) : (
@@ -119,7 +119,7 @@ export function EventLoomPicker({
             </div>
           )}
 
-          {err && <p className="mt-2 text-xs font-medium text-danger">{err}</p>}
+          {err && <p className="mt-2 text-meta font-medium text-danger">{err}</p>}
         </div>
       </Dialog>
     </>

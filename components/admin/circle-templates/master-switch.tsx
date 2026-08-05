@@ -50,8 +50,8 @@ export function MasterSwitch({ enabled }: { enabled: boolean }) {
             <Power className="h-4.5 w-4.5" aria-hidden />
           </span>
           <div className="min-w-0">
-            <h2 className="text-base font-bold text-text">Starter Circles, member-facing</h2>
-            <p className="mt-0.5 text-sm text-muted">
+            <h2 className="text-body font-bold text-text">Starter Circles, member-facing</h2>
+            <p className="mt-0.5 text-body-sm text-muted">
               {on
                 ? 'On. Members can browse the gallery and make a template their own.'
                 : 'Off. The gallery is hidden from members no matter which templates are active.'}

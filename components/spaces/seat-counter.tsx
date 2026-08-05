@@ -39,11 +39,11 @@ export function SeatCounter({
           <Users className="h-4 w-4" />
         </span>
         <div>
-          <p className="text-sm font-semibold text-text">
+          <p className="text-body-sm font-semibold text-text">
             <span className="tabular-nums">{used}</span> of{' '}
             <span className="tabular-nums">{licensed}</span> operator seats used
           </p>
-          <p className="mt-0.5 text-xs text-muted">
+          <p className="mt-0.5 text-meta text-muted">
             {enforced ? (
               full ? (
                 <>
@@ -64,7 +64,7 @@ export function SeatCounter({
       {canManage && (
         <Link
           href={billingHref}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-control border border-border px-3 py-2 text-xs font-bold text-text transition-colors hover:bg-surface-elevated"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-control border border-border px-3 py-2 text-meta font-bold text-text transition-colors hover:bg-surface-elevated"
         >
           <Plus className="h-3.5 w-3.5" aria-hidden /> Add a seat
         </Link>

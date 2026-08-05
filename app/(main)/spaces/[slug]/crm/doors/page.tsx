@@ -53,7 +53,7 @@ export default async function SpaceDoorsPage({ params }: { params: Promise<{ slu
           action={
             <Link
               href={hasCrm ? `/spaces/${space.slug}` : spaceManageHref(space.type, space.slug)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
             >
               {hasCrm ? `Open ${brandName}` : `Manage ${brandName}`}
             </Link>

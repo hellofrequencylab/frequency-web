@@ -30,8 +30,8 @@ export default async function TrainingPage() {
           <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-pill bg-broadcast-bg text-broadcast-strong">
             <Trophy className="h-6 w-6" aria-hidden />
           </span>
-          <p className="text-sm font-semibold text-text">You’re all caught up</p>
-          <p className="mt-1 text-sm text-muted">No training assigned right now. New training appears when you take on a new role.</p>
+          <p className="text-body-sm font-semibold text-text">You’re all caught up</p>
+          <p className="mt-1 text-body-sm text-muted">No training assigned right now. New training appears when you take on a new role.</p>
         </div>
       ) : (
         <div className="space-y-5">
@@ -41,7 +41,7 @@ export default async function TrainingPage() {
             </span>
             <div>
               <h2 className="text-lg font-bold text-text">{active.title}</h2>
-              <p className="mt-1 text-sm leading-relaxed text-muted">{active.blurb}</p>
+              <p className="mt-1 text-body-sm leading-relaxed text-muted">{active.blurb}</p>
             </div>
           </div>
 
@@ -52,7 +52,7 @@ export default async function TrainingPage() {
                   href={s.href}
                   className="group flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 transition-colors hover:border-broadcast hover:bg-broadcast-bg/30"
                 >
-                  <span className="text-sm font-semibold text-text">{s.label}</span>
+                  <span className="text-body-sm font-semibold text-text">{s.label}</span>
                   <ArrowRight className="ml-auto h-4 w-4 text-subtle transition-colors group-hover:text-broadcast-strong" aria-hidden />
                 </Link>
               </li>

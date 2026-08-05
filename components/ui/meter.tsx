@@ -44,7 +44,7 @@ export function Meter({
       aria-label={`${label}: ${reading}`}
     >
       <div className="mb-1 flex items-baseline justify-between gap-3">
-        <span className="text-xs font-medium text-muted">{label}</span>
+        <span className="text-meta font-medium text-muted">{label}</span>
         <span className="font-mono text-2xs font-semibold tabular-nums text-text">
           {reading}
         </span>

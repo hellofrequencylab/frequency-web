@@ -91,7 +91,7 @@ export function PhotoHero({
         {eyebrow && (
           <p
             className={`font-bold uppercase tracking-[0.25em] text-primary ${
-              isScreen ? 'text-sm sm:text-base mb-4' : 'text-sm mb-5'
+              isScreen ? 'text-body-sm sm:text-base mb-4' : 'text-body-sm mb-5'
             }`}
           >
             {eyebrow}
@@ -107,7 +107,7 @@ export function PhotoHero({
         {subtitle && (
           <p
             className={`text-on-ink-muted leading-relaxed mx-auto max-w-2xl ${
-              isScreen ? 'mt-5 text-lg sm:text-xl' : 'mt-6 text-base sm:text-lg'
+              isScreen ? 'mt-5 text-lg sm:text-xl' : 'mt-6 text-body sm:text-lg'
             }`}
           >
             {subtitle}
@@ -120,7 +120,7 @@ export function PhotoHero({
         <div className="glass-ink lift-3 absolute -bottom-8 left-1/2 z-20 flex w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap items-start justify-center gap-6 rounded-2xl px-6 py-4 sm:gap-10 sm:px-9">
           {facts.map(([value, label]) => (
             <div key={label} className="text-center">
-              <div className="font-display text-2xl leading-none text-primary sm:text-3xl">
+              <div className="font-display text-page-title leading-none text-primary sm:text-3xl">
                 {value}
               </div>
               <div className="mt-1.5 text-3xs font-bold uppercase tracking-widest text-on-ink-muted">
@@ -156,7 +156,7 @@ export function PageHero({
     <section className={`px-6 ${pad ?? 'pt-20 pb-12 sm:pt-32 sm:pb-20'} ${vis}`}>
       <div className="max-w-3xl mx-auto text-center">
         {eyebrow && (
-          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-5">
+          <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-5">
             {eyebrow}
           </p>
         )}
@@ -164,7 +164,7 @@ export function PageHero({
           {title}
         </h1>
         {subtitle && (
-          <p className="mt-7 text-xl text-muted leading-relaxed max-w-2xl mx-auto">
+          <p className="mt-7 text-lead text-muted leading-relaxed max-w-2xl mx-auto">
             {subtitle}
           </p>
         )}
@@ -270,8 +270,8 @@ export function SectionHeading({
 export function BlockHeading({ title, kicker }: { title: React.ReactNode; kicker?: string }) {
   return (
     <div className="mb-5">
-      <h3 className="font-display uppercase text-text text-2xl">{title}</h3>
-      {kicker && <p className="mt-1 text-sm leading-relaxed text-muted">{kicker}</p>}
+      <h3 className="font-display uppercase text-text text-page-title">{title}</h3>
+      {kicker && <p className="mt-1 text-body-sm leading-relaxed text-muted">{kicker}</p>}
     </div>
   )
 }
@@ -356,7 +356,7 @@ export function Faq({ q, children }: { q: string; children: React.ReactNode }) {
           aria-hidden
         />
       </summary>
-      <div className="mt-4 text-base leading-relaxed text-muted">{children}</div>
+      <div className="mt-4 text-body leading-relaxed text-muted">{children}</div>
     </details>
   )
 }
@@ -382,8 +382,8 @@ type ButtonVariant = 'primary' | 'secondary' | 'ghost'
 type ButtonSize = 'sm' | 'md' | 'lg'
 
 const BUTTON_SIZES: Record<ButtonSize, string> = {
-  sm: 'px-5 py-2.5 text-sm gap-1.5',
-  md: 'px-8 py-3.5 text-base gap-2',
+  sm: 'px-5 py-2.5 text-body-sm gap-1.5',
+  md: 'px-8 py-3.5 text-body gap-2',
   lg: 'px-10 py-4 text-lg gap-2',
 }
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
@@ -542,7 +542,7 @@ export function Card({
 }
 
 export function Lead({ children }: { children: React.ReactNode }) {
-  return <p className="text-xl text-text/85 leading-relaxed mb-6">{children}</p>
+  return <p className="text-lead text-text/85 leading-relaxed mb-6">{children}</p>
 }
 
 // Numbered how-it-works steps — big display numerals, no imagery, so the
@@ -650,7 +650,7 @@ export function PhotoBeat({
       />
       <div className="relative z-10 mx-auto max-w-4xl text-center">
         {eyebrow && (
-          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary">{eyebrow}</p>
+          <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary">{eyebrow}</p>
         )}
         <p className="mt-4 font-display uppercase text-on-ink text-balance text-[clamp(2rem,4.6vw,3.5rem)] leading-[1.05]">
           {line}
@@ -688,8 +688,8 @@ export function PhotoTrio({
             sizes="(min-width: 640px) 22rem, 100vw"
           />
           <figcaption className="p-5">
-            <h3 className="text-base font-bold text-text">{item.title}</h3>
-            <p className="mt-1.5 text-sm leading-relaxed text-muted">{item.caption}</p>
+            <h3 className="text-body font-bold text-text">{item.title}</h3>
+            <p className="mt-1.5 text-body-sm leading-relaxed text-muted">{item.caption}</p>
           </figcaption>
         </Reveal>
       ))}
@@ -824,7 +824,7 @@ export function Marquee({ items }: { items: string[] }) {
         {row.map((t, i) => (
           <span key={i} className="flex items-center font-display uppercase text-3xl text-on-ink/15">
             <span className="px-7">{t}</span>
-            <span className="text-primary text-xl">&bull;</span>
+            <span className="text-primary text-lead">&bull;</span>
           </span>
         ))}
       </div>
@@ -947,7 +947,7 @@ export function BetaCTA({
       <div className="amber-glow absolute inset-0 pointer-events-none" />
       <div className="relative max-w-2xl mx-auto">
         <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl mb-6">{heading}</h2>
-        {body && <p className="text-xl text-on-ink-muted mb-9 leading-relaxed">{body}</p>}
+        {body && <p className="text-lead text-on-ink-muted mb-9 leading-relaxed">{body}</p>}
         <Button href={BETA_CTA_HREF} size="lg">
           {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" />
         </Button>

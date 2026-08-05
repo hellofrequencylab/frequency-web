@@ -59,7 +59,7 @@ export async function TicketsMember({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted">
+      <p className="text-body-sm text-muted">
         Reserve a spot to let the host know you are coming. We do not take a payment.
       </p>
       <div className="grid gap-4 @lg:grid-cols-2">
@@ -71,14 +71,14 @@ export async function TicketsMember({
               className="flex h-full flex-col rounded-2xl border border-border bg-surface p-5 lift-1"
             >
               <div className="flex items-start justify-between gap-2">
-                <h3 className="text-base font-bold leading-tight text-text">{tier.name}</h3>
+                <h3 className="text-body font-bold leading-tight text-text">{tier.name}</h3>
                 <span className="shrink-0 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
                   {tier.kind === 'free' ? 'Free entry' : 'RSVP'}
                 </span>
               </div>
 
               {tier.description && (
-                <p className="mt-2 text-sm leading-relaxed text-muted">{tier.description}</p>
+                <p className="mt-2 text-body-sm leading-relaxed text-muted">{tier.description}</p>
               )}
 
               {tier.kind === 'rsvp' && tier.capacity != null && (
@@ -87,11 +87,11 @@ export async function TicketsMember({
 
               <div className="mt-auto pt-4">
                 {tier.kind === 'free' ? (
-                  <p className="text-sm text-muted">Open entry. No reservation needed.</p>
+                  <p className="text-body-sm text-muted">Open entry. No reservation needed.</p>
                 ) : reservedHere && mine ? (
                   <div className="rounded-xl border border-success/30 bg-success-bg px-4 py-3 text-center">
                     <BadgeCheck className="mx-auto mb-1.5 h-6 w-6 text-success" aria-hidden />
-                    <p className="text-sm font-semibold text-text">You have a spot.</p>
+                    <p className="text-body-sm font-semibold text-text">You have a spot.</p>
                     <div className="mt-3 flex justify-center">
                       <TicketRsvpCancelButton rsvpId={mine.id} />
                     </div>

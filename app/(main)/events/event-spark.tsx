@@ -27,7 +27,7 @@ const SCAN_BUCKET = 'network-contacts'
 // cleanly when Vera is off.
 
 const FIELD =
-  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
+  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-body-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
 type Group = { id: string; name: string; kind?: 'circle' | 'space' }
 /** A Journey the manual form may link the event to. Passed straight through — the Spark's wizard
@@ -247,9 +247,9 @@ export function EventSpark({
       <WizardProgress current={current} total={total} label={label} />
 
       <div className="mt-7">
-        <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-primary-strong">New event</p>
-        <h1 className="text-2xl font-bold text-text">{heading.title}</h1>
-        <p className="mt-1 text-sm leading-relaxed text-muted">{heading.description}</p>
+        <p className="mb-1.5 text-meta font-semibold uppercase tracking-widest text-primary-strong">New event</p>
+        <h1 className="text-page-title font-bold text-text">{heading.title}</h1>
+        <p className="mt-1 text-body-sm leading-relaxed text-muted">{heading.description}</p>
 
         <div className="mt-5">
           {/* IMPORT path: paste the full write-up AND/OR attach a photo of the flyer. */}
@@ -268,7 +268,7 @@ export function EventSpark({
                 <div className="flex items-center gap-3 rounded-card border border-border bg-surface p-2.5">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={thumbUrl} alt="" className="h-14 w-14 shrink-0 rounded-lg border border-border object-cover" />
-                  <span className="min-w-0 flex-1 text-xs text-muted">
+                  <span className="min-w-0 flex-1 text-meta text-muted">
                     Photo attached. Vera reads it with the text and keeps it as the cover.
                   </span>
                   <button
@@ -291,7 +291,7 @@ export function EventSpark({
                   >
                     <ImagePlus className="h-4 w-4" /> Add a photo
                   </button>
-                  <span className="text-xs text-subtle">A flyer or poster image. Optional, and combined with the text.</span>
+                  <span className="text-meta text-subtle">A flyer or poster image. Optional, and combined with the text.</span>
                 </div>
               )}
 
@@ -323,8 +323,8 @@ export function EventSpark({
               >
                 <ScanLine className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-text">Found it somewhere? Import it.</span>
-                  <span className="block text-xs leading-snug text-muted">Paste the write-up from Eventbrite, a group, or a website, and/or upload a flyer photo. Vera builds the whole event.</span>
+                  <span className="block text-body-sm font-semibold text-text">Found it somewhere? Import it.</span>
+                  <span className="block text-meta leading-snug text-muted">Paste the write-up from Eventbrite, a group, or a website, and/or upload a flyer photo. Vera builds the whole event.</span>
                 </span>
               </button>
             </>
@@ -357,7 +357,7 @@ export function EventSpark({
                 <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Description</span>
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className={FIELD} placeholder="What it is and who it's for." />
               </label>
-              <div className="space-y-1.5 rounded-card border border-border bg-canvas px-3 py-3 text-sm text-muted">
+              <div className="space-y-1.5 rounded-card border border-border bg-canvas px-3 py-3 text-body-sm text-muted">
                 <p className="flex items-center gap-2">
                   <CalendarDays className="h-4 w-4 shrink-0 text-subtle" />
                   {draft.startsAt ? formatWhen(draft.startsAt) : 'Add a date in the editor'}
@@ -383,7 +383,7 @@ export function EventSpark({
           )}
         </div>
 
-        {error && <p className="mt-4 text-sm text-warning">{error}</p>}
+        {error && <p className="mt-4 text-body-sm text-warning">{error}</p>}
 
         <div className="mt-7 flex gap-3">
           {(step > 1 || (usingFlyer && !onReview)) && (
@@ -415,7 +415,7 @@ export function EventSpark({
       </div>
 
       {!onReview && (
-        <p className="mt-8 text-center text-xs text-subtle">
+        <p className="mt-8 text-center text-meta text-subtle">
           <button type="button" onClick={() => setMode('manual')} className="underline-offset-4 transition-colors hover:text-muted hover:underline">
             Fill it in myself
           </button>

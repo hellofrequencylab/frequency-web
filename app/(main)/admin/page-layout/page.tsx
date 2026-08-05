@@ -52,7 +52,7 @@ export default async function PageLayoutAdminPage() {
       width="default"
     >
       <AdminSection>
-        <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 text-sm text-muted">
+        <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 text-body-sm text-muted">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
           <p>
             Overrides take effect live: the shell merges each one into its right rail, so a

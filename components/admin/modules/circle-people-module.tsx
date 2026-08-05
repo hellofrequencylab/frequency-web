@@ -71,7 +71,7 @@ export function CirclePeopleModule() {
 
         {/* Capacity fill. */}
         <div className="mt-3 space-y-1.5">
-          <div className="flex items-center justify-between text-xs text-muted">
+          <div className="flex items-center justify-between text-meta text-muted">
             <span>How full</span>
             <span className="font-medium text-text">
               {data.memberCount} / {cap}
@@ -90,7 +90,7 @@ export function CirclePeopleModule() {
                   key={m.profileId}
                   className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface p-2.5"
                 >
-                  <span className="min-w-0 truncate text-sm text-text">
+                  <span className="min-w-0 truncate text-body-sm text-text">
                     {m.displayName}
                     {m.handle && <span className="text-subtle"> @{m.handle}</span>}
                   </span>
@@ -107,7 +107,7 @@ export function CirclePeopleModule() {
 
         {/* Invite tools — reuse the host invite link + email actions. */}
         <div className="mt-5 space-y-2 border-t border-border pt-4">
-          <p className="text-xs font-semibold text-text">Invite someone</p>
+          <p className="text-meta font-semibold text-text">Invite someone</p>
           <HostInviteButton circleId={data.circleId} />
           <HostInviteEmail circleId={data.circleId} />
         </div>

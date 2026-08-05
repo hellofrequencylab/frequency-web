@@ -85,13 +85,13 @@ export async function DonateMember({
           so this keeps the CTA telemetry the placeholder list used to fire. Fail-safe + fire-and-forget. */}
       {ask.id && <DonateCtaTracker spaceId={spaceId} />}
       <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
-        <h3 className="text-base font-bold leading-tight text-text">{ask.fundLabel}</h3>
+        <h3 className="text-body font-bold leading-tight text-text">{ask.fundLabel}</h3>
         {ask.description && (
-          <p className="mt-2 text-sm leading-relaxed text-muted">{ask.description}</p>
+          <p className="mt-2 text-body-sm leading-relaxed text-muted">{ask.description}</p>
         )}
 
         <div className="mt-4">
-          <p className="text-xs font-semibold text-text">Pick an amount</p>
+          <p className="text-meta font-semibold text-text">Pick an amount</p>
           <div className="mt-2">
             {/* Pricing Options P2 buyer control: quick-pick chips + a custom gift field. DISPLAY only,
                 no charge (giving is not wired up yet, per the note below). */}

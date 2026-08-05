@@ -64,12 +64,12 @@ export function SpacePracticeRow({ practice, slug }: { practice: RowPractice; sl
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <Link href={`/practices/${practice.id}/edit`} className="truncate text-base font-bold text-text hover:text-primary-strong">
+            <Link href={`/practices/${practice.id}/edit`} className="truncate text-body font-bold text-text hover:text-primary-strong">
               {practice.title}
             </Link>
             <span className={`shrink-0 rounded-pill px-2 py-0.5 text-2xs font-semibold ${badge.cls}`}>{badge.label}</span>
           </div>
-          {practice.summary && <p className="mt-0.5 line-clamp-1 text-sm text-muted">{practice.summary}</p>}
+          {practice.summary && <p className="mt-0.5 line-clamp-1 text-body-sm text-muted">{practice.summary}</p>}
         </div>
       </div>
 
@@ -88,8 +88,8 @@ export function SpacePracticeRow({ practice, slug }: { practice: RowPractice; sl
           </button>
         )}
       </div>
-      {note && <p className="mt-2 text-xs text-muted">{note}</p>}
-      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+      {note && <p className="mt-2 text-meta text-muted">{note}</p>}
+      {error && <p className="mt-2 text-meta text-danger">{error}</p>}
     </div>
   )
 }

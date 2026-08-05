@@ -120,7 +120,7 @@ export default async function MyJourneysPage({ searchParams }: { searchParams: P
                     active ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'
                   }`}
                 >
-                  {f.label} <span className="tabular-nums text-xs text-subtle">{countFor(f.key)}</span>
+                  {f.label} <span className="tabular-nums text-meta text-subtle">{countFor(f.key)}</span>
                 </Link>
               )
             })}

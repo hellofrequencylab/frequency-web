@@ -93,18 +93,18 @@ export function StreakHero({
         </span>
 
         <div className="min-w-0 flex-1">
-          <h2 id="streak-hero-title" className="text-sm font-semibold text-text">
+          <h2 id="streak-hero-title" className="text-body-sm font-semibold text-text">
             Daily practice streak
           </h2>
 
           {/* The number + the supporting counts. */}
           <div className="mt-1 flex items-baseline gap-1.5">
             <span className="text-4xl font-extrabold leading-none tabular-nums text-text">{current}</span>
-            <span className="text-sm text-subtle">{current === 1 ? 'day' : 'days'}</span>
+            <span className="text-body-sm text-subtle">{current === 1 ? 'day' : 'days'}</span>
           </div>
 
           {/* The state line — names the situation, never narrates a feeling. */}
-          <p className="mt-2 text-sm text-muted" role="status" aria-live="polite">
+          <p className="mt-2 text-body-sm text-muted" role="status" aria-live="polite">
             {status === 'logged_today' && (lit ? 'Logged today. You’re set until tomorrow.' : 'Logged today.')}
             {status === 'at_risk' && 'No practice logged yet today. One keeps it going.'}
             {status === 'resting' && (restEndsLabel
@@ -115,7 +115,7 @@ export function StreakHero({
           </p>
 
           {/* The three supporting counts: best, reserve, and a quiet "held" note. */}
-          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-body-sm">
             <span className="text-subtle">
               <span className="font-semibold tabular-nums text-muted">{longest}</span> best
             </span>
@@ -146,7 +146,7 @@ export function StreakHero({
           className="mt-4 flex items-center gap-2.5 rounded-2xl bg-success-bg/70 px-4 py-3 motion-safe:animate-[slideUp_0.4s_ease-out]"
         >
           <PartyPopper className="h-5 w-5 shrink-0 text-success" aria-hidden />
-          <p className="text-sm font-semibold text-success">
+          <p className="text-body-sm font-semibold text-success">
             Day {current}. {STREAK_MILESTONES.find((m) => m.day === current)?.label} badge earned.
           </p>
         </div>
@@ -182,7 +182,7 @@ export function StreakHero({
           })}
         </ol>
         {progress.next && (
-          <p className="mt-3 text-xs text-subtle">
+          <p className="mt-3 text-meta text-subtle">
             {progress.toNext} {progress.toNext === 1 ? 'day' : 'days'} to the {progress.next.label} badge
             {` · +${STREAK_MILESTONES.find((m) => m.day === progress.next!.day)?.zaps ?? 0} Zaps`}
           </p>
@@ -191,7 +191,7 @@ export function StreakHero({
 
       {/* The "life happens" pause — a planned break, not a failure. */}
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border-strong/60 pt-4">
-        <p className="text-xs text-muted">
+        <p className="text-meta text-muted">
           {resting
             ? 'Resting is part of the practice. End it whenever you’re ready.'
             : 'Planning time off? Set a rest so the break doesn’t count against you.'}
@@ -201,7 +201,7 @@ export function StreakHero({
             type="button"
             onClick={() => run(() => resumeStreak())}
             disabled={pending}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60 motion-reduce:transition-none"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60 motion-reduce:transition-none"
           >
             <Play className="h-4 w-4" aria-hidden />
             End rest
@@ -211,7 +211,7 @@ export function StreakHero({
             type="button"
             onClick={() => run(() => pauseStreak(REST_DAYS))}
             disabled={pending}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border-strong bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60 motion-reduce:transition-none"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border-strong bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60 motion-reduce:transition-none"
           >
             <Pause className="h-4 w-4" aria-hidden />
             Rest a week
@@ -220,7 +220,7 @@ export function StreakHero({
       </div>
 
       {note && (
-        <p className="mt-3 text-xs text-danger" role="alert">
+        <p className="mt-3 text-meta text-danger" role="alert">
           {note}
         </p>
       )}

@@ -108,7 +108,7 @@ export function EventCoreStatsCards({
         >
           <t.Icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
           <div className="min-w-0">
-            <div className="truncate text-sm font-bold leading-tight text-text">{t.value}</div>
+            <div className="truncate text-body-sm font-bold leading-tight text-text">{t.value}</div>
             <div className="truncate text-2xs font-medium uppercase tracking-wide text-muted">{t.label}</div>
             {t.detail && <div className="truncate text-2xs text-muted">{t.detail}</div>}
           </div>

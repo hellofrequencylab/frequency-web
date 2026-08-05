@@ -21,7 +21,7 @@ export const EventLocation = async () => {
   return (
     <div className="space-y-2.5 rounded-2xl border border-border bg-surface p-4">
       {facts.location && (
-        <p className="flex items-start gap-2 text-sm text-text">
+        <p className="flex items-start gap-2 text-body-sm text-text">
           <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
           {/* Deep-links into Maps (native app on a phone, the map site on desktop). */}
           {facts.mapsHref ? (

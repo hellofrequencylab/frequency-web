@@ -73,7 +73,7 @@ function ChannelHubNav({
             scroll={false}
             aria-current={on ? 'page' : undefined}
             className={
-              'rounded-pill px-3 py-1.5 text-sm font-medium transition-colors ' +
+              'rounded-pill px-3 py-1.5 text-body-sm font-medium transition-colors ' +
               (on
                 ? 'bg-primary text-on-primary'
                 : 'border border-border text-muted hover:bg-surface-elevated hover:text-text')
@@ -141,7 +141,7 @@ export default async function ManageChannelPage({
     >
       <div className="space-y-5">
         <ChannelHubNav idOrSlug={channel.slug} section={section} isProgramChannel={isProgramChannel} />
-        {blurb && section !== 'home' && <p className="max-w-2xl text-sm text-muted">{blurb}</p>}
+        {blurb && section !== 'home' && <p className="max-w-2xl text-body-sm text-muted">{blurb}</p>}
       </div>
 
       {section === 'home' && (
@@ -207,7 +207,7 @@ export default async function ManageChannelPage({
               destructive controls. It is offered FIRST so the tab is a route to it, not a
               dead end for anyone who wants more than a quick tweak. */}
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface-elevated/40 p-4">
-            <p className="text-sm text-muted">
+            <p className="text-body-sm text-muted">
               Editing more than one thing? The full editor has every field, the URL, and the archive
               and delete controls.
             </p>

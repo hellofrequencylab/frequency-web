@@ -434,7 +434,7 @@ export function PickerControl({
         {createHref ? (
           <Link
             href={createHref}
-            className="inline-flex items-center gap-1 rounded-lg border border-dashed border-border px-2.5 py-2 text-xs font-semibold text-primary-strong transition-colors hover:border-primary"
+            className="inline-flex items-center gap-1 rounded-lg border border-dashed border-border px-2.5 py-2 text-meta font-semibold text-primary-strong transition-colors hover:border-primary"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden /> {createLabel ?? 'Create the first one'}
           </Link>
@@ -594,7 +594,7 @@ export function IconPicker({
               value={query}
               placeholder={source === 'icon' ? 'Search icons' : 'Search emoji'}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text placeholder:text-subtle outline-none focus:border-primary"
+              className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta text-text placeholder:text-subtle outline-none focus:border-primary"
               autoFocus
             />
 

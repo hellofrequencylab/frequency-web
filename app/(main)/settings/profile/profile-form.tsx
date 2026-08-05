@@ -13,8 +13,8 @@ type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
 
 const HANDLE_RE = /^[a-z0-9_]+$/
 
-const input = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50'
-const lbl   = 'block text-sm font-medium text-text mb-1'
+const input = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50'
+const lbl   = 'block text-body-sm font-medium text-text mb-1'
 
 export function ProfileForm({
   userId,
@@ -276,15 +276,15 @@ export function ProfileForm({
               disabled={isPending}
               className="h-8 w-12 cursor-pointer rounded border border-border bg-surface disabled:opacity-60"
             />
-            <span className="text-xs text-subtle">Overlay color</span>
+            <span className="text-meta text-subtle">Overlay color</span>
             {overlayColor && (
-              <button type="button" onClick={() => setOverlayColor('')} className="text-xs text-subtle transition-colors hover:text-text">
+              <button type="button" onClick={() => setOverlayColor('')} className="text-meta text-subtle transition-colors hover:text-text">
                 Reset
               </button>
             )}
           </div>
         )}
-        <p className="mt-1 text-xs text-subtle">
+        <p className="mt-1 text-meta text-subtle">
           None keeps a clean photo. Shadow darkens it so overlaid text pops. Fade blends it into the page.
         </p>
       </div>
@@ -334,7 +334,7 @@ export function ProfileForm({
           Handle <span className="text-danger">*</span>
         </label>
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-subtle select-none">@</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-body-sm text-subtle select-none">@</span>
           <input
             id="handle"
             type="text"
@@ -348,24 +348,24 @@ export function ProfileForm({
             disabled={isPending}
             className={`${input} pl-7 pr-8`}
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm leading-none">
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-body-sm leading-none">
             {handleStatus === 'checking'  && <span className="text-subtle animate-pulse">•••</span>}
             {handleStatus === 'available' && <span className="text-success">✓</span>}
             {handleStatus === 'taken'     && <span className="text-danger">✗</span>}
           </span>
         </div>
         {handleStatus === 'taken' && (
-          <p className="mt-1 text-xs text-danger">This handle is already taken.</p>
+          <p className="mt-1 text-meta text-danger">This handle is already taken.</p>
         )}
         {handle && !HANDLE_RE.test(handle) && (
-          <p className="mt-1 text-xs text-danger">Lowercase letters, numbers, and underscores only.</p>
+          <p className="mt-1 text-meta text-danger">Lowercase letters, numbers, and underscores only.</p>
         )}
       </div>
 
       {/* ── Bio ─────────────────────────────────────── */}
       <div>
         <label htmlFor="bio" className={lbl}>
-          Bio <span className="text-subtle font-normal text-xs">(optional)</span>
+          Bio <span className="text-subtle font-normal text-meta">(optional)</span>
         </label>
         <textarea
           id="bio"
@@ -384,8 +384,8 @@ export function ProfileForm({
       {/* ── Personal info / contact ─────────────────── */}
       <div className="space-y-5 rounded-2xl border border-border bg-surface-elevated/40 p-4">
         <div>
-          <p className="text-sm font-semibold text-text">Personal info</p>
-          <p className="mt-0.5 text-xs text-muted">
+          <p className="text-body-sm font-semibold text-text">Personal info</p>
+          <p className="mt-0.5 text-meta text-muted">
             Private to you and your community leaders. Used to keep in touch, never shown on your public profile.
           </p>
         </div>
@@ -400,12 +400,12 @@ export function ProfileForm({
             disabled
             className={`${input} cursor-not-allowed text-muted`}
           />
-          <p className="mt-1 text-xs text-subtle">Your sign-in email. Contact support to change it.</p>
+          <p className="mt-1 text-meta text-subtle">Your sign-in email. Contact support to change it.</p>
         </div>
 
         <div>
           <label htmlFor="phone" className={lbl}>
-            Phone <span className="text-subtle font-normal text-xs">(optional)</span>
+            Phone <span className="text-subtle font-normal text-meta">(optional)</span>
           </label>
           <input
             id="phone"
@@ -420,7 +420,7 @@ export function ProfileForm({
 
         <div>
           <label className={lbl}>
-            City <span className="text-subtle font-normal text-xs">(optional)</span>
+            City <span className="text-subtle font-normal text-meta">(optional)</span>
           </label>
           <LocationAutocomplete
             value={city}
@@ -430,12 +430,12 @@ export function ProfileForm({
               setHome({ lat: p.lat, lng: p.lng, label: p.label })
             }}
           />
-          <p className="mt-1 text-xs text-subtle">Pick from the suggestions. It also sets your location so we can surface circles and events near you.</p>
+          <p className="mt-1 text-meta text-subtle">Pick from the suggestions. It also sets your location so we can surface circles and events near you.</p>
         </div>
 
         <div>
           <label htmlFor="website" className={lbl}>
-            Website <span className="text-subtle font-normal text-xs">(optional)</span>
+            Website <span className="text-subtle font-normal text-meta">(optional)</span>
           </label>
           <input
             id="website"
@@ -458,8 +458,8 @@ export function ProfileForm({
           <div className="flex items-start gap-2">
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
             <div>
-              <p className="text-sm font-semibold text-text">Your Spotlight page</p>
-              <p className="mt-0.5 text-xs text-muted">
+              <p className="text-body-sm font-semibold text-text">Your Spotlight page</p>
+              <p className="mt-0.5 text-meta text-muted">
                 Build a shareable page that&rsquo;s all yours: your bio, links, images, and what you
                 host, arranged however you like. Turn it on to start; nothing goes public until you
                 publish it.
@@ -470,12 +470,12 @@ export function ProfileForm({
             type="button"
             onClick={() => handleToggleEnable(true)}
             disabled={spotPending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {spotPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             Turn on your Spotlight
           </button>
-          {spotError && <p className="text-xs text-danger">{spotError}</p>}
+          {spotError && <p className="text-meta text-danger">{spotError}</p>}
         </div>
       )}
 
@@ -484,8 +484,8 @@ export function ProfileForm({
           <div className="flex items-start gap-2">
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
             <div>
-              <p className="text-sm font-semibold text-text">Your Spotlight page</p>
-              <p className="mt-0.5 text-xs text-muted">
+              <p className="text-body-sm font-semibold text-text">Your Spotlight page</p>
+              <p className="mt-0.5 text-meta text-muted">
                 A shareable page with your bio, links, and what you host. Themed to match your
                 profile. Anyone with the link can see it once you publish.
               </p>
@@ -497,13 +497,13 @@ export function ProfileForm({
               rows/slots builder, previewing every change live. */}
           <Link
             href={`/people/${initial.handle}`}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             <Sparkles className="h-3.5 w-3.5" /> Build your page (arrange your blocks)
           </Link>
 
           <div className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface px-3 py-2.5">
-            <span className="text-sm text-text">{spotPublished ? 'Published' : 'Draft (only you can see it)'}</span>
+            <span className="text-body-sm text-text">{spotPublished ? 'Published' : 'Draft (only you can see it)'}</span>
             <button
               type="button"
               onClick={handleTogglePublish}
@@ -519,13 +519,13 @@ export function ProfileForm({
             </button>
           </div>
 
-          {spotError && <p className="text-xs text-danger">{spotError}</p>}
+          {spotError && <p className="text-meta text-danger">{spotError}</p>}
 
           {spotPublished && spotlightUrl && (
             <Link
               href={spotlightUrl}
               target="_blank"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-strong hover:underline"
+              className="inline-flex items-center gap-1.5 text-body-sm font-medium text-primary-strong hover:underline"
             >
               <ExternalLink className="h-3.5 w-3.5" /> View your Spotlight
             </Link>
@@ -537,7 +537,7 @@ export function ProfileForm({
                 type="button"
                 onClick={() => handleToggleEnable(false)}
                 disabled={spotPending}
-                className="text-xs font-medium text-subtle transition-colors hover:text-danger disabled:opacity-50"
+                className="text-meta font-medium text-subtle transition-colors hover:text-danger disabled:opacity-50"
               >
                 Turn off Spotlight
               </button>
@@ -549,14 +549,14 @@ export function ProfileForm({
 
       {/* ── Error + Save ────────────────────────────── */}
       {saveError && (
-        <p className="text-sm text-danger">{saveError}</p>
+        <p className="text-body-sm text-danger">{saveError}</p>
       )}
 
       <div className="flex items-center gap-3 pt-1">
         <button
           type="submit"
           disabled={!canSave}
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
         >
           {isPending ? (
             <Loader2 className="w-4 h-4 animate-spin" />

@@ -23,11 +23,11 @@ export default async function SpaceCollaboratorsProfilePage({ params }: { params
     <div className="space-y-4">
       <div>
         {/* font-section: the page theme's heading face (ADR-578); a computed no-op for `bold`. */}
-        <h2 className="font-section text-xl font-bold text-text">Collaborators</h2>
-        <p className="text-sm text-muted">Businesses that operate together with {brandName}.</p>
+        <h2 className="font-section text-lead font-bold text-text">Collaborators</h2>
+        <p className="text-body-sm text-muted">Businesses that operate together with {brandName}.</p>
       </div>
       {collaborators.length === 0 ? (
-        <p className="rounded-card border border-dashed border-border bg-surface px-4 py-6 text-center text-sm text-muted">
+        <p className="rounded-card border border-dashed border-border bg-surface px-4 py-6 text-center text-body-sm text-muted">
           No collaborators yet.
         </p>
       ) : (
@@ -42,13 +42,13 @@ export default async function SpaceCollaboratorsProfilePage({ params }: { params
                 // eslint-disable-next-line @next/next/no-img-element -- operator-supplied space logo, not a build asset
                 <img src={v.partner.logoUrl} alt="" className="h-12 w-12 shrink-0 rounded-lg border border-border object-cover" />
               ) : (
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-elevated text-base font-bold text-subtle">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-elevated text-body font-bold text-subtle">
                   {v.partner.name.slice(0, 1).toUpperCase()}
                 </span>
               )}
               <div className="min-w-0">
                 <p className="truncate font-semibold text-text">{v.partner.name}</p>
-                {v.partner.tagline && <p className="truncate text-xs text-subtle">{v.partner.tagline}</p>}
+                {v.partner.tagline && <p className="truncate text-meta text-subtle">{v.partner.tagline}</p>}
               </div>
             </Link>
           ))}

@@ -51,7 +51,7 @@ export function FunnelsManager({
       {/* Templates (GE2-4) — clone a per-persona starting point. */}
       <section>
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h3 className="flex items-center gap-1.5 text-sm font-bold text-text">
+          <h3 className="flex items-center gap-1.5 text-body-sm font-bold text-text">
             <Sparkles className="h-4 w-4 text-primary-strong" aria-hidden /> Start from a template
           </h3>
           {!creating && (
@@ -76,7 +76,7 @@ export function FunnelsManager({
 
       {/* The funnel list. */}
       <section className="space-y-3">
-        <h3 className="text-sm font-bold text-text">All funnels</h3>
+        <h3 className="text-body-sm font-bold text-text">All funnels</h3>
         {funnels.length === 0 ? (
           <EmptyState
             variant="first-use"
@@ -111,8 +111,8 @@ function TemplateTile({ template }: { template: TemplateCard }) {
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
       <div className="min-w-0">
-        <p className="text-sm font-semibold text-text">{template.label}</p>
-        <p className="mt-0.5 text-xs leading-snug text-muted">{template.blurb}</p>
+        <p className="text-body-sm font-semibold text-text">{template.label}</p>
+        <p className="mt-0.5 text-meta leading-snug text-muted">{template.blurb}</p>
       </div>
       <div className="flex items-center justify-between gap-2">
         <span className="text-2xs uppercase tracking-wide text-muted">
@@ -122,7 +122,7 @@ function TemplateTile({ template }: { template: TemplateCard }) {
           {pending ? 'Creating…' : 'Use template'}
         </Button>
       </div>
-      {err && <p className="text-xs text-danger">{err}</p>}
+      {err && <p className="text-meta text-danger">{err}</p>}
     </div>
   )
 }
@@ -135,12 +135,12 @@ function FunnelRow({ funnel }: { funnel: FunnelListItem }) {
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <h4 className="truncate text-sm font-bold text-text">{funnel.name}</h4>
+          <h4 className="truncate text-body-sm font-bold text-text">{funnel.name}</h4>
           <StatusChip tone={STATUS_TONE[funnel.status] ?? 'neutral'} size="sm">
             <span className="capitalize">{funnel.status}</span>
           </StatusChip>
         </div>
-        <p className="mt-0.5 text-xs text-muted">
+        <p className="mt-0.5 text-meta text-muted">
           {funnel.persona && <span className="capitalize">{funnel.persona} · </span>}
           Goal <span className="font-semibold text-text">{funnel.goalEvent}</span> ·{' '}
           <span className="font-semibold text-text">{funnel.stageCount}</span> stage{funnel.stageCount === 1 ? '' : 's'} ·{' '}
@@ -230,7 +230,7 @@ function CreateForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => 
           />
         </div>
       </div>
-      {err && <p className="text-xs text-danger">{err}</p>}
+      {err && <p className="text-meta text-danger">{err}</p>}
       <div className="flex items-center gap-2">
         <Button size="sm" onClick={submit} disabled={pending || !name.trim()}>
           {pending ? 'Creating…' : 'Create funnel'}

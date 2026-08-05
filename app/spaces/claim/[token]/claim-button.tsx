@@ -23,14 +23,14 @@ export function ClaimSpaceButton({ token, size = 'md' }: { token: string; size?:
   return (
     <div className="space-y-2">
       {error && (
-        <p className="rounded-lg border border-danger/40 bg-danger-bg px-3 py-2 text-sm text-danger">{error}</p>
+        <p className="rounded-lg border border-danger/40 bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>
       )}
       <button
         type="button"
         onClick={handleClaim}
         disabled={pending}
         className={`inline-flex w-full items-center justify-center gap-2 rounded-control bg-primary font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover disabled:opacity-40 ${
-          lg ? 'px-8 py-4 text-base' : 'px-5 py-2.5 text-sm'
+          lg ? 'px-8 py-4 text-body' : 'px-5 py-2.5 text-body-sm'
         }`}
       >
         {pending ? (

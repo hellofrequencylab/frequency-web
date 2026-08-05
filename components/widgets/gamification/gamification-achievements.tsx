@@ -28,7 +28,7 @@ const achievementColumns: ColumnDef<AchievementRow>[] = [
   {
     key: 'name',
     header: 'Achievement',
-    render: (a) => <span className="text-sm font-medium text-text truncate">{a.name}</span>,
+    render: (a) => <span className="text-body-sm font-medium text-text truncate">{a.name}</span>,
   },
   {
     key: 'tier',
@@ -41,7 +41,7 @@ const achievementColumns: ColumnDef<AchievementRow>[] = [
   {
     key: 'category',
     header: 'Category',
-    render: (a) => <span className="text-xs text-muted capitalize">{a.category}</span>,
+    render: (a) => <span className="text-meta text-muted capitalize">{a.category}</span>,
   },
   {
     key: 'zaps_reward',

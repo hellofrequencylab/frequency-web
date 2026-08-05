@@ -131,7 +131,7 @@ function ReviewButtons({
         onClick={() => run('approved')}
         disabled={pending}
         title="Approve"
-        className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs font-semibold text-success transition-colors hover:bg-success/10 disabled:opacity-50"
+        className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-semibold text-success transition-colors hover:bg-success/10 disabled:opacity-50"
       >
         <Check className="h-3.5 w-3.5" /> Approve
       </button>
@@ -140,11 +140,11 @@ function ReviewButtons({
         onClick={() => run('rejected')}
         disabled={pending}
         title="Reject"
-        className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
+        className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
       >
         <X className="h-3.5 w-3.5" /> Reject
       </button>
-      {error && <span className="text-xs text-danger">{error}</span>}
+      {error && <span className="text-meta text-danger">{error}</span>}
     </span>
   )
 }
@@ -170,7 +170,7 @@ export function JourneyRestoreButton({ id }: { id: string }) {
       }
       disabled={pending}
       title="Restore to approved"
-      className="rounded-lg border border-border px-2 py-1 text-xs font-semibold text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-50"
+      className="rounded-lg border border-border px-2 py-1 text-meta font-semibold text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-50"
     >
       Restore
     </button>
@@ -281,7 +281,7 @@ export function JourneyOfficialControl({
           }}
           disabled={pending}
           title="The Quest this Journey files under"
-          className="max-w-32 rounded-md border border-border bg-canvas px-1.5 py-1 text-xs text-text disabled:opacity-50"
+          className="max-w-32 rounded-md border border-border bg-canvas px-1.5 py-1 text-meta text-text disabled:opacity-50"
         >
           {quests.map((q) => (
             <option key={q.id} value={q.id}>

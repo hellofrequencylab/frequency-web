@@ -62,8 +62,8 @@ export default async function KeystoneDensityPage() {
           />
         ) : (
           <div className="overflow-hidden rounded-2xl border border-border">
-            <table className="w-full text-sm">
-              <thead className="bg-surface-elevated/60 text-left text-xs font-medium text-muted">
+            <table className="w-full text-body-sm">
+              <thead className="bg-surface-elevated/60 text-left text-meta font-medium text-muted">
                 <tr>
                   <th className="px-4 py-2.5">Locality</th>
                   <th className="px-4 py-2.5">State</th>
@@ -81,7 +81,7 @@ export default async function KeystoneDensityPage() {
                     <tr key={c.key} className="text-text">
                       <td className="px-4 py-2.5">
                         <span className="font-medium tabular-nums">{c.key}</span>
-                        <span className="ml-2 text-xs text-subtle">
+                        <span className="ml-2 text-meta text-subtle">
                           {c.cells} {c.cells === 1 ? 'cell' : 'cells'}
                         </span>
                       </td>
@@ -106,7 +106,7 @@ export default async function KeystoneDensityPage() {
         )}
       </AdminSection>
 
-      <p className="text-xs text-subtle">
+      <p className="text-meta text-subtle">
         Localities are fuzzed ~11km buckets of the ~1.1km geocells, coarser than any cell and never a
         raw coordinate. A bucket with only a few people shows &ldquo;few&rdquo; instead of a precise count.
       </p>

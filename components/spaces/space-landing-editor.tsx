@@ -104,7 +104,7 @@ function ResetButton({ slug, pageSlug }: { slug: string; pageSlug: string }) {
       onClick={handleReset}
       disabled={status === 'working'}
       title="Clear your saved version. The page reverts to its starting template"
-      className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-danger hover:text-danger"
+      className="inline-flex items-center px-3 py-1.5 text-body-sm font-medium text-danger hover:text-danger"
     >
       {status === 'working' ? 'Resetting…' : status === 'error' ? 'Retry reset' : 'Reset to template'}
     </button>
@@ -138,7 +138,7 @@ export function SpaceLandingEditor({
   const exitControl = (
     <Link
       href={exitHref}
-      className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-muted hover:text-text"
+      className="inline-flex items-center px-3 py-1.5 text-body-sm font-medium text-muted hover:text-text"
     >
       ← Exit
     </Link>

@@ -32,7 +32,7 @@ export function JoinCircleButton({
       <button type="submit" disabled={pending} className={`${className} disabled:opacity-60`}>
         {pending ? 'Joining…' : label}
       </button>
-      {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+      {error && <p className="mt-1 text-meta text-danger">{error}</p>}
     </form>
   )
 }

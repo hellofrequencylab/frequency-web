@@ -68,18 +68,18 @@ export async function MeterUpsell({
       data-meter-upsell={featureKey}
       data-meter-surface={surface?.kind ?? 'unregistered'}
     >
-      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-subtle">
+      <p className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-widest text-subtle">
         <Gauge className="h-3.5 w-3.5 shrink-0" aria-hidden />
         {copy.dimension}
       </p>
       {/* WHAT YOU HAVE, then WHAT CHANGES. Never a sentence about what is missing. */}
-      <p className="mt-1.5 text-sm font-semibold text-text">{copy.have}</p>
-      <p className="mt-1 text-sm text-muted">{copy.change}</p>
+      <p className="mt-1.5 text-body-sm font-semibold text-text">{copy.have}</p>
+      <p className="mt-1 text-body-sm text-muted">{copy.change}</p>
       {/* The standing promise, stated in the affirmative: nothing is ever taken away at a limit. */}
       <p className="mt-1 text-2xs leading-relaxed text-muted">{copy.promise}</p>
       <Link
         href={upgradeHref}
-        className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
       >
         {METER_UPSELL_CTA}
       </Link>

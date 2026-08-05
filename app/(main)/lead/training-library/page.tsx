@@ -47,7 +47,7 @@ export default async function LeaderTrainingPage() {
               <span className="min-w-0 flex-1">
                 <span className="text-2xs font-semibold uppercase tracking-wide text-primary-strong">Start here</span>
                 <span className="mt-0.5 block font-semibold text-text">{start.title}</span>
-                {start.description && <span className="mt-0.5 block text-sm text-muted">{start.description}</span>}
+                {start.description && <span className="mt-0.5 block text-body-sm text-muted">{start.description}</span>}
               </span>
               <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-primary-strong transition-transform group-hover:translate-x-0.5" />
             </Link>
@@ -57,8 +57,8 @@ export default async function LeaderTrainingPage() {
           {categories.map((cat) => (
             <section key={cat.slug}>
               <div className="mb-3 border-b border-border pb-2">
-                <h2 className="text-base font-bold text-text">{cat.title}</h2>
-                {cat.description && <p className="mt-0.5 text-sm text-muted">{cat.description}</p>}
+                <h2 className="text-body font-bold text-text">{cat.title}</h2>
+                {cat.description && <p className="mt-0.5 text-body-sm text-muted">{cat.description}</p>}
               </div>
               <ul className="divide-y divide-border/60">
                 {cat.docs.map((d) => (
@@ -70,7 +70,7 @@ export default async function LeaderTrainingPage() {
                       <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
                       <span className="min-w-0 flex-1">
                         <span className="block font-medium text-text group-hover:text-primary-strong">{d.title}</span>
-                        {d.description && <span className="mt-0.5 block text-sm text-muted">{d.description}</span>}
+                        {d.description && <span className="mt-0.5 block text-body-sm text-muted">{d.description}</span>}
                       </span>
                       <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-subtle opacity-0 transition-opacity group-hover:opacity-100" />
                     </Link>

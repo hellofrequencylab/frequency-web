@@ -7,7 +7,7 @@ import { isError } from '@/lib/action-result'
 import { setListingStatusAction, deleteListingAction } from '@/app/(main)/classifieds/actions'
 import type { ListingStatus } from '@/lib/marketplace'
 
-const BTN = 'inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50'
+const BTN = 'inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50'
 
 export function ListingOwnerControls({
   id,
@@ -65,25 +65,25 @@ export function ListingOwnerControls({
           <button type="button" disabled={pending} onClick={() => setStatus('active')} className={BTN}><RotateCcw className="h-4 w-4" /> Reopen</button>
         )}
         {confirmDelete ? (
-          <button type="button" disabled={pending} onClick={remove} className="inline-flex items-center gap-1.5 rounded-xl bg-danger px-3 py-1.5 text-sm font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50">
+          <button type="button" disabled={pending} onClick={remove} className="inline-flex items-center gap-1.5 rounded-xl bg-danger px-3 py-1.5 text-body-sm font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50">
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Confirm delete
           </button>
         ) : (
           <button type="button" disabled={pending} onClick={() => setConfirmDelete(true)} className={`${BTN} hover:text-danger`}><Trash2 className="h-4 w-4" /> Delete</button>
         )}
       </div>
-      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+      {error && <p className="mt-2 text-meta text-danger">{error}</p>}
 
       {claimShareUrl && (
         <div className="mt-3 border-t border-border pt-3">
           <p className="mb-1.5 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
             <Send className="h-3.5 w-3.5" aria-hidden /> Claim Listing link
           </p>
-          <p className="mb-2 text-xs text-muted">Send this to the poster. Opening it lets them claim the listing in place of contacting the seller.</p>
+          <p className="mb-2 text-meta text-muted">Send this to the poster. Opening it lets them claim the listing in place of contacting the seller.</p>
           <button
             type="button"
             onClick={copyClaim}
-            className="inline-flex w-full items-center justify-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
           >
             {copied ? <Check className="h-4 w-4 text-success" /> : <Link2 className="h-4 w-4" />}
             {copied ? 'Copied' : 'Copy claim link'}

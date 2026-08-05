@@ -93,9 +93,9 @@ export function SmsForm({
     <div className="mt-6 rounded-card border border-border bg-surface lift-1 overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-surface-elevated">
         <MessageSquare className="w-4 h-4 text-muted" />
-        <span className="text-sm font-semibold text-text">Text messages</span>
+        <span className="text-body-sm font-semibold text-text">Text messages</span>
         {!smsProvisioned && (
-          <span className="ml-auto rounded-pill bg-surface px-2 py-0.5 text-xs font-medium text-muted">
+          <span className="ml-auto rounded-pill bg-surface px-2 py-0.5 text-meta font-medium text-muted">
             Coming soon
           </span>
         )}
@@ -107,7 +107,7 @@ export function SmsForm({
         // toggle that would silently do nothing. The interactive form returns once the
         // owner completes provisioning.
         <div className="px-4 py-4">
-          <p className="text-sm text-muted">
+          <p className="text-body-sm text-muted">
             Text messages are coming soon. When they turn on, you can opt in here to get
             event reminders and group updates by text.
           </p>
@@ -116,7 +116,7 @@ export function SmsForm({
       <div className="px-4 py-4 space-y-4">
         {!optedIn ? (
           <>
-            <p className="text-sm text-muted">
+            <p className="text-body-sm text-muted">
               Get event reminders and group updates by text. Standard message and data rates may
               apply. Consent is not a condition of anything. You can reply STOP any time.
             </p>
@@ -130,20 +130,20 @@ export function SmsForm({
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="Your mobile number"
-                  className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
                 <button
                   type="button"
                   onClick={onSendCode}
                   disabled={isPending || !phone.trim()}
-                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary disabled:opacity-50"
+                  className="rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary disabled:opacity-50"
                 >
                   {isPending ? 'Sending…' : 'Send code'}
                 </button>
               </div>
             ) : (
               <div className="space-y-2">
-                <p className="text-sm text-muted">
+                <p className="text-body-sm text-muted">
                   We texted a code to {sentTo ? maskNumber(sentTo) : 'your number'}. Enter it below.
                 </p>
                 <div className="flex flex-col gap-2 sm:flex-row">
@@ -154,13 +154,13 @@ export function SmsForm({
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
                     placeholder="6-digit code"
-                    className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                   <button
                     type="button"
                     onClick={onVerify}
                     disabled={isPending || !code.trim()}
-                    className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary disabled:opacity-50"
+                    className="rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary disabled:opacity-50"
                   >
                     {isPending ? 'Verifying…' : 'Verify'}
                   </button>
@@ -172,7 +172,7 @@ export function SmsForm({
                     setCode('')
                     setError(null)
                   }}
-                  className="text-xs font-medium text-muted underline"
+                  className="text-meta font-medium text-muted underline"
                 >
                   Use a different number
                 </button>
@@ -182,10 +182,10 @@ export function SmsForm({
         ) : (
           <>
             <div className="flex items-center justify-between">
-              <p className="text-sm text-text">
+              <p className="text-body-sm text-text">
                 Texting <span className="font-semibold">{maskedPhone ?? 'your number'}</span>
               </p>
-              <span className="flex items-center gap-1 text-xs font-medium text-success">
+              <span className="flex items-center gap-1 text-meta font-medium text-success">
                 <Check className="w-3 h-3" /> Verified
               </span>
             </div>
@@ -195,8 +195,8 @@ export function SmsForm({
               {SMS_CATEGORIES.map(({ key, label, description }) => (
                 <div key={key} className="flex items-center justify-between px-3 py-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-text">{label}</p>
-                    <p className="text-xs text-muted mt-0.5">{description}</p>
+                    <p className="text-body-sm font-medium text-text">{label}</p>
+                    <p className="text-meta text-muted mt-0.5">{description}</p>
                   </div>
                   <button
                     type="button"
@@ -219,11 +219,11 @@ export function SmsForm({
 
             {/* Quiet hours */}
             <div className="rounded-card border border-border px-3 py-3">
-              <p className="text-sm font-medium text-text">Quiet hours</p>
-              <p className="text-xs text-muted mt-0.5">
+              <p className="text-body-sm font-medium text-text">Quiet hours</p>
+              <p className="text-meta text-muted mt-0.5">
                 We only text between these hours, your local time. The widest window is 8am to 9pm.
               </p>
-              <div className="mt-2 flex items-center gap-2 text-sm text-text">
+              <div className="mt-2 flex items-center gap-2 text-body-sm text-text">
                 <HourSelect
                   value={prefs.sms_quiet_start_hour}
                   onChange={(v) => setQuietHour('sms_quiet_start_hour', v)}
@@ -238,9 +238,9 @@ export function SmsForm({
           </>
         )}
 
-        {error && <p className="text-xs text-danger">{error}</p>}
+        {error && <p className="text-meta text-danger">{error}</p>}
         {!error && savedAt && (
-          <p className="flex items-center gap-1.5 text-xs text-success">
+          <p className="flex items-center gap-1.5 text-meta text-success">
             <Check className="w-3 h-3" /> Saved
           </p>
         )}
@@ -255,7 +255,7 @@ function HourSelect({ value, onChange }: { value: number; onChange: (v: number) 
     <select
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
+      className="rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
     >
       {Array.from({ length: 24 }, (_, h) => (
         <option key={h} value={h}>

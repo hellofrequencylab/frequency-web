@@ -136,7 +136,7 @@ export function RoomThread({
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
         {messages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
-            <p className="text-sm text-subtle">No messages yet. Start the conversation.</p>
+            <p className="text-body-sm text-subtle">No messages yet. Start the conversation.</p>
           </div>
         ) : (
           messages.map((m, i) => {
@@ -153,7 +153,7 @@ export function RoomThread({
                   a.avatar_url ? (
                     <Image src={avatarSrc(a.avatar_url)} alt={a.display_name} width={36} height={36} className="w-9 h-9 rounded-pill object-cover shrink-0" style={avatarFocusStyle(a.avatar_url)} />
                   ) : (
-                    <div className="w-9 h-9 rounded-pill bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                    <div className="w-9 h-9 rounded-pill bg-primary-bg text-primary-strong text-meta font-semibold flex items-center justify-center shrink-0 select-none">
                       {getInitials(a.display_name)}
                     </div>
                   )
@@ -169,7 +169,7 @@ export function RoomThread({
                       <span className="text-3xs text-muted">{formatTime(m.created_at)}</span>
                     </div>
                   )}
-                  <p className="text-sm text-text whitespace-pre-wrap leading-relaxed">{m.body}</p>
+                  <p className="text-body-sm text-text whitespace-pre-wrap leading-relaxed">{m.body}</p>
                 </div>
               </div>
             )
@@ -188,7 +188,7 @@ export function RoomThread({
               onClick={() => setComposerOpen(true)}
               className="flex w-full items-center gap-3 rounded-control border border-border bg-surface px-3.5 py-2.5 text-left transition-colors hover:border-border-strong"
             >
-              <span className="min-w-0 flex-1 truncate text-sm text-subtle">
+              <span className="min-w-0 flex-1 truncate text-body-sm text-subtle">
                 Say something to the room. If it is a plan, put a time in it.
               </span>
               <PenLine className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
@@ -243,7 +243,7 @@ export function RoomThread({
                   rows={1}
                   autoFocus
                   disabled={isPending}
-                  className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm placeholder-subtle outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 leading-relaxed max-h-32"
+                  className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2 text-body-sm placeholder-subtle outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 leading-relaxed max-h-32"
                   style={{ minHeight: '2.5rem' }}
                 />
                 <button
@@ -263,7 +263,7 @@ export function RoomThread({
         )
       ) : (
         <div className="px-5 py-4 border-t border-border bg-surface/50 dark:bg-canvas/50 text-center">
-          <p className="text-xs text-muted">Join this room to send messages.</p>
+          <p className="text-meta text-muted">Join this room to send messages.</p>
         </div>
       )}
     </div>

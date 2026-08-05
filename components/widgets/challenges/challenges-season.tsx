@@ -82,8 +82,8 @@ export async function ChallengesSeason() {
               <Target className="h-5 w-5" />
             </span>
             <div>
-              <p className="text-sm font-semibold text-text">Season 1 progress</p>
-              <p className="text-xs text-muted">{stats.completed} of {stats.total} challenges complete</p>
+              <p className="text-body-sm font-semibold text-text">Season 1 progress</p>
+              <p className="text-meta text-muted">{stats.completed} of {stats.total} challenges complete</p>
             </div>
           </div>
           <div className="text-right">
@@ -116,7 +116,7 @@ export async function ChallengesSeason() {
         </div>
 
         {allDone && (
-          <p className="mt-4 flex items-center justify-center gap-1.5 text-sm font-semibold text-signal-strong">
+          <p className="mt-4 flex items-center justify-center gap-1.5 text-body-sm font-semibold text-signal-strong">
             <Trophy className="h-4 w-4" /> All challenges complete. Great work this season!
           </p>
         )}
@@ -181,11 +181,11 @@ export async function ChallengesSeason() {
                             <Zap className="h-3 w-3" /> {challenge.zaps_reward}
                           </span>
                         </div>
-                        <p className="mt-0.5 text-xs leading-snug text-muted">{challenge.description}</p>
+                        <p className="mt-0.5 text-meta leading-snug text-muted">{challenge.description}</p>
 
                         {isComplete ? (
                           challenge.completedAt && (
-                            <p className="mt-2 text-xs font-medium text-success">
+                            <p className="mt-2 text-meta font-medium text-success">
                               Completed {new Date(challenge.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                             </p>
                           )
@@ -193,7 +193,7 @@ export async function ChallengesSeason() {
                           <ExpressionAction journeyId={challenge.journey_id as string} />
                         ) : (
                           <div className="mt-2.5">
-                            <div className="mb-1 flex items-center justify-between text-xs tabular-nums text-subtle">
+                            <div className="mb-1 flex items-center justify-between text-meta tabular-nums text-subtle">
                               <span>{challenge.current} / {challenge.target}</span>
                               <span>{progressPct}%</span>
                             </div>

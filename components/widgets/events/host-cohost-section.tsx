@@ -61,14 +61,14 @@ export function HostCohostSection({
 
   return (
     <section className="rounded-2xl border border-border bg-surface p-4">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-subtle">{eyebrow}</p>
+      <p className="mb-3 text-meta font-semibold uppercase tracking-wide text-subtle">{eyebrow}</p>
 
       {/* 1. THE HOST. A hosting Space is the attribution and the person in host_id drops to the
           organizer credit below it; otherwise the person host leads with the Message Host CTA. */}
       {spaceHost ? (
         <>
           <SpaceCreditRow space={spaceHost} role="Hosting this event" lead />
-          {host ? <p className="mt-3 text-xs text-subtle">Organized by {host.display_name}</p> : null}
+          {host ? <p className="mt-3 text-meta text-subtle">Organized by {host.display_name}</p> : null}
         </>
       ) : host ? (
         <HostPersonCredit
@@ -83,7 +83,7 @@ export function HostCohostSection({
           sits above it. */}
       {hasCohosts ? (
         <div className={hasHost ? 'mt-4 border-t border-border pt-4' : ''}>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-subtle">Co Hosts</p>
+          <p className="mb-2 text-meta font-semibold uppercase tracking-wide text-subtle">Co Hosts</p>
 
           {/* 2a. SPACES — same surface, same row shape as the Host above them. */}
           {hasSpaceCohosts ? (
@@ -142,8 +142,8 @@ function PersonCohostRow({ cohost }: { cohost: CohostView }) {
         </div>
       )}
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-text">{cohost.displayName}</p>
-        <p className="truncate text-xs text-subtle">@{cohost.handle}</p>
+        <p className="truncate text-body-sm font-medium text-text">{cohost.displayName}</p>
+        <p className="truncate text-meta text-subtle">@{cohost.handle}</p>
       </div>
     </Link>
   )

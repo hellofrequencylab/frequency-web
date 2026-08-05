@@ -41,7 +41,7 @@ export function LeaderBroadcast({ reach }: { reach: number }) {
   }
 
   const field =
-    'w-full rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
+    'w-full rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
   return (
     <>
@@ -52,7 +52,7 @@ export function LeaderBroadcast({ reach }: { reach: number }) {
           setError(null)
           setOpen(true)
         }}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
       >
         <Send className="h-4 w-4" /> Message my group
       </button>
@@ -60,15 +60,15 @@ export function LeaderBroadcast({ reach }: { reach: number }) {
       <Dialog open={open} onClose={() => setOpen(false)} align="sheet" ariaLabel="Message my group">
         <div className="space-y-3 p-4">
           <div>
-            <h2 className="text-base font-semibold text-text">Message my group</h2>
-            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted">
+            <h2 className="text-body font-semibold text-text">Message my group</h2>
+            <p className="mt-0.5 flex items-center gap-1.5 text-meta text-muted">
               <Users className="h-3.5 w-3.5" />
               Goes to {reach} {reach === 1 ? 'person' : 'people'}, from you. Each reply comes back to your inbox.
             </p>
           </div>
 
           {result ? (
-            <div className="rounded-lg bg-success-bg px-3 py-3 text-sm text-success">
+            <div className="rounded-lg bg-success-bg px-3 py-3 text-body-sm text-success">
               Sent to {result.sent} {result.sent === 1 ? 'person' : 'people'}.
               {result.skipped > 0 && (
                 <span className="text-muted"> {result.skipped} skipped (they turned email off or have no address).</span>
@@ -77,7 +77,7 @@ export function LeaderBroadcast({ reach }: { reach: number }) {
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-text hover:bg-surface-elevated"
+                  className="rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-text hover:bg-surface-elevated"
                 >
                   Done
                 </button>
@@ -101,7 +101,7 @@ export function LeaderBroadcast({ reach }: { reach: number }) {
                 className={`${field} resize-none leading-relaxed`}
               />
               {error && (
-                <p role="alert" className="text-xs text-danger">
+                <p role="alert" className="text-meta text-danger">
                   {error}
                 </p>
               )}
@@ -112,7 +112,7 @@ export function LeaderBroadcast({ reach }: { reach: number }) {
                     type="button"
                     onClick={() => setOpen(false)}
                     disabled={pending}
-                    className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted hover:bg-surface-elevated disabled:opacity-50"
+                    className="rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-muted hover:bg-surface-elevated disabled:opacity-50"
                   >
                     Cancel
                   </button>
@@ -120,7 +120,7 @@ export function LeaderBroadcast({ reach }: { reach: number }) {
                     type="button"
                     onClick={submit}
                     disabled={pending || !subject.trim() || !body.trim()}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50"
                   >
                     {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                     Send to {reach}

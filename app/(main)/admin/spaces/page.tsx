@@ -79,7 +79,7 @@ function SpaceRow({ entry, masterProfileIntakeId }: { entry: SpaceWithHealth; ma
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/admin/spaces/${s.id}`}
-            className="truncate text-base font-bold text-text hover:text-primary-strong"
+            className="truncate text-body font-bold text-text hover:text-primary-strong"
           >
             {brandName}
           </Link>
@@ -93,7 +93,7 @@ function SpaceRow({ entry, masterProfileIntakeId }: { entry: SpaceWithHealth; ma
             {planLabel}
           </span>
         </div>
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-subtle">
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-subtle">
           <span>/{s.slug}</span>
           <span className="inline-flex items-center gap-1">
             <Users className="h-3 w-3" aria-hidden /> {memberCount}
@@ -103,7 +103,7 @@ function SpaceRow({ entry, masterProfileIntakeId }: { entry: SpaceWithHealth; ma
           </span>
         </div>
         {health.reasons.length > 0 && (
-          <p className="mt-2 text-sm text-muted">{health.reasons.join(' ')}</p>
+          <p className="mt-2 text-body-sm text-muted">{health.reasons.join(' ')}</p>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-2 sm:justify-end">
@@ -272,8 +272,8 @@ export default async function SpacesHealthPage() {
               <Sparkles className="h-5 w-5" aria-hidden />
             </span>
             <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-text">Import a business</h2>
-              <p className="mt-0.5 text-xs text-muted">
+              <h2 className="text-body-sm font-semibold text-text">Import a business</h2>
+              <p className="mt-0.5 text-meta text-muted">
                 Paste a website or social links. The importer researches, verifies every commercial fact,
                 and drafts a full Space you review before it goes live. Seeds land unlisted as a demo.
               </p>

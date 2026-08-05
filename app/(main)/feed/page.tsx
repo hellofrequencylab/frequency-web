@@ -344,7 +344,7 @@ export default async function FeedPage({
         />
 
         {sort === 'story' && (
-          <p className="-mt-1 mb-4 px-1 text-xs text-muted">
+          <p className="-mt-1 mb-4 px-1 text-meta text-muted">
             A record of what the community lived, not a scroll to consume.
           </p>
         )}

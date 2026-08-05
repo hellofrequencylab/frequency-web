@@ -57,11 +57,11 @@ type Lead = { name: string; email: string; handle: string }
 
 // Shared warm-light field style (matches the induction's inputs).
 const FIELD =
-  'w-full rounded-card border border-border bg-canvas px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none'
+  'w-full rounded-card border border-border bg-canvas px-4 py-3 text-body text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none'
 const PRIMARY_BTN =
-  'inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50'
+  'inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-3 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50'
 const GHOST_BTN =
-  'inline-flex items-center justify-center rounded-control border border-border px-5 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-50'
+  'inline-flex items-center justify-center rounded-control border border-border px-5 py-3 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-50'
 
 export default function FeatureFunnel({
   sequence,
@@ -207,16 +207,16 @@ function TimerScreen({
 }) {
   return (
     <div className="flex flex-col items-center gap-1 text-center md:gap-2">
-      <p className="flex animate-pulse items-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-primary-strong [animation-duration:3s]">
+      <p className="flex animate-pulse items-center gap-2 text-meta font-bold uppercase tracking-[0.3em] text-primary-strong [animation-duration:3s]">
         <LotusIcon className="h-[18px] w-[18px]" /> Mindless
       </p>
       <div className="-my-4 scale-[0.85] md:my-0 md:scale-[0.6]">
         <BreathVisualizer pattern={pattern} startedAt={startedAt} />
       </div>
-      <p className="text-2xl font-semibold tabular-nums text-text/70">
-        {mmss(remaining)} <span className="text-xs font-normal text-subtle">left</span>
+      <p className="text-page-title font-semibold tabular-nums text-text/70">
+        {mmss(remaining)} <span className="text-meta font-normal text-subtle">left</span>
       </p>
-      <p className="text-xs tabular-nums text-subtle">5 min session</p>
+      <p className="text-meta tabular-nums text-subtle">5 min session</p>
     </div>
   )
 }
@@ -302,13 +302,13 @@ function DemoStep({
       <span className="mb-3 inline-block animate-wiggle rounded-pill bg-primary px-3 py-1 text-2xs font-bold uppercase tracking-[0.3em] text-on-primary shadow-sm shadow-primary/25">
         Beta Launch
       </span>
-      <p className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-primary">Free breathwork timer</p>
+      <p className="mb-2 text-meta font-bold uppercase tracking-[0.3em] text-primary">Free breathwork timer</p>
       <h1 className="font-display text-3xl uppercase leading-[0.95] text-balance text-text sm:text-5xl">
         Breathe with the ring.
       </h1>
 
       {!nudge && (
-        <p className="mx-auto mt-4 max-w-md text-base leading-relaxed text-muted md:mx-0 md:text-lg">
+        <p className="mx-auto mt-4 max-w-md text-body leading-relaxed text-muted md:mx-0 md:text-lg">
           In as it grows. Hold at the top. Out as it settles. Let your shoulders drop.
         </p>
       )}
@@ -316,7 +316,7 @@ function DemoStep({
       {nudge && !showFields && (
         <div className="mt-4">
           <p className="text-lg font-semibold text-text">Keep going. You are doing it.</p>
-          <p className="mx-auto mt-1 max-w-md text-base text-muted md:mx-0">
+          <p className="mx-auto mt-1 max-w-md text-body text-muted md:mx-0">
             This timer is your invitation into the Frequency beta. Grab it and your streak starts today.
           </p>
           <button type="button" onClick={() => setShowFields(true)} className={`${PRIMARY_BTN} mt-4 sm:w-auto sm:px-6`}>
@@ -327,7 +327,7 @@ function DemoStep({
 
       {showFields && (
         <div className="mx-auto mt-4 max-w-sm md:mx-0">
-          <p className="text-base font-semibold text-text">Where should we send your invitation?</p>
+          <p className="text-body font-semibold text-text">Where should we send your invitation?</p>
           <div className="mt-3 space-y-2 text-left">
             <input
               type="text"
@@ -350,7 +350,7 @@ function DemoStep({
           <button type="button" onClick={proceed} disabled={!emailOk} className={`${PRIMARY_BTN} mt-3`}>
             Keep my timer
           </button>
-          <button type="button" onClick={onNext} className="mt-2 block w-full text-center text-xs text-subtle hover:underline">
+          <button type="button" onClick={onNext} className="mt-2 block w-full text-center text-meta text-subtle hover:underline">
             Skip for now
           </button>
         </div>
@@ -426,7 +426,7 @@ function RewardStep({
 
   return (
     <div className="mx-auto max-w-lg text-center">
-      <p className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-primary">Nice work</p>
+      <p className="mb-3 text-meta font-bold uppercase tracking-[0.3em] text-primary">Nice work</p>
       <h1 className="font-display text-4xl uppercase leading-[0.95] text-balance text-text sm:text-5xl">
         You started a streak.
       </h1>
@@ -438,29 +438,29 @@ function RewardStep({
         <Stat big="1" small="round logged" />
       </div>
 
-      <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-muted">
+      <p className="mx-auto mt-6 max-w-md text-body leading-relaxed text-muted">
         You are on the list for the Frequency beta, where this becomes a whole practice with real
         people. Keep showing up and the streak grows. First, claim your name so it is yours.
       </p>
 
       {/* Claim the @username. */}
       <div className="mx-auto mt-5 max-w-sm text-left">
-        <label className="mb-1 block text-xs font-semibold text-subtle">Your @username</label>
+        <label className="mb-1 block text-meta font-semibold text-subtle">Your @username</label>
         <div className="flex items-center gap-2 rounded-card border border-border bg-canvas px-3 focus-within:border-border-strong">
-          <span className="text-base text-subtle">@</span>
+          <span className="text-body text-subtle">@</span>
           <input
             type="text"
             value={handle}
             onChange={(e) => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
             placeholder="yourname"
             autoComplete="off"
-            className="w-full bg-transparent py-3 text-base text-text placeholder:text-subtle focus:outline-none"
+            className="w-full bg-transparent py-3 text-body text-text placeholder:text-subtle focus:outline-none"
           />
           {check.status === 'available' && check.handle === handle.trim().toLowerCase() && (
-            <span className="text-xs font-semibold text-success">free</span>
+            <span className="text-meta font-semibold text-success">free</span>
           )}
           {check.status === 'taken' && check.handle === handle.trim().toLowerCase() && (
-            <span className="text-xs font-semibold text-warning">taken</span>
+            <span className="text-meta font-semibold text-warning">taken</span>
           )}
         </div>
       </div>
@@ -473,7 +473,7 @@ function RewardStep({
           Continue
         </button>
       </div>
-      <button type="button" onClick={onNext} className="mt-2 block w-full text-center text-xs text-subtle hover:underline">
+      <button type="button" onClick={onNext} className="mt-2 block w-full text-center text-meta text-subtle hover:underline">
         Skip for now
       </button>
     </div>
@@ -483,8 +483,8 @@ function RewardStep({
 function Stat({ big, small }: { big: string; small: string }) {
   return (
     <div className="rounded-2xl border border-border bg-surface px-3 py-4 lift-1">
-      <p className="text-2xl font-bold text-text">{big}</p>
-      <p className="mt-0.5 text-xs text-muted">{small}</p>
+      <p className="text-page-title font-bold text-text">{big}</p>
+      <p className="mt-0.5 text-meta text-muted">{small}</p>
     </div>
   )
 }
@@ -572,7 +572,7 @@ function JoinStep({
       <div className="mx-auto max-w-lg text-center">
         <span className="mx-auto mb-4 block text-4xl" aria-hidden>🔥</span>
         <h1 className="font-display text-4xl uppercase leading-[0.95] text-text sm:text-5xl">You are in.</h1>
-        <p className="mx-auto mt-4 max-w-md text-base leading-relaxed text-muted">
+        <p className="mx-auto mt-4 max-w-md text-body leading-relaxed text-muted">
           Take your first real round and your streak starts for keeps.
         </p>
         <a href={to} className={`${PRIMARY_BTN} mx-auto mt-8 max-w-xs`}>Start breathing</a>
@@ -582,19 +582,19 @@ function JoinStep({
 
   return (
     <div className="mx-auto max-w-lg text-center">
-      <p className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-primary">You are invited</p>
+      <p className="mb-3 text-meta font-bold uppercase tracking-[0.3em] text-primary">You are invited</p>
       <div className="mb-4 flex items-center justify-center gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-pill bg-primary-bg px-3 py-1 text-sm font-semibold text-primary-strong">
+        <span className="inline-flex items-center gap-1.5 rounded-pill bg-primary-bg px-3 py-1 text-body-sm font-semibold text-primary-strong">
           <span aria-hidden>🔥</span> Day 1
         </span>
-        <span className="inline-flex items-center gap-1.5 rounded-pill bg-broadcast-bg px-3 py-1 text-sm font-semibold text-broadcast-strong">
+        <span className="inline-flex items-center gap-1.5 rounded-pill bg-broadcast-bg px-3 py-1 text-body-sm font-semibold text-broadcast-strong">
           <span aria-hidden>⚡</span> {zaps} Zaps
         </span>
       </div>
       <h1 className="font-display text-4xl uppercase leading-[0.95] text-balance text-text sm:text-5xl">
         Join the Frequency beta.
       </h1>
-      <p className="mx-auto mt-3 max-w-md text-base leading-relaxed text-muted">
+      <p className="mx-auto mt-3 max-w-md text-body leading-relaxed text-muted">
         Accept your invitation to keep the Day 1 streak and {zaps} Zaps you just started, and step into the
         beta with real people and real practice.
       </p>
@@ -607,7 +607,7 @@ function JoinStep({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={avatar} alt="" className="h-full w-full object-cover" />
             ) : (
-              <span className="text-xs font-semibold">Photo</span>
+              <span className="text-meta font-semibold">Photo</span>
             )}
             <input type="file" accept="image/*" onChange={onPickPhoto} className="sr-only" />
           </label>
@@ -622,8 +622,8 @@ function JoinStep({
             />
           </div>
         </div>
-        {photoError && <p className="mb-3 text-xs text-danger">{photoError}</p>}
-        {lead.handle && <p className="mb-3 text-sm text-muted">You are <span className="font-semibold text-text">@{lead.handle}</span></p>}
+        {photoError && <p className="mb-3 text-meta text-danger">{photoError}</p>}
+        {lead.handle && <p className="mb-3 text-body-sm text-muted">You are <span className="font-semibold text-text">@{lead.handle}</span></p>}
         <input
           type="email"
           value={lead.email}
@@ -639,10 +639,10 @@ function JoinStep({
         <button type="button" onClick={joinNow} disabled={!emailOk || signingIn} className={PRIMARY_BTN}>
           {signingIn ? 'Sending your link...' : `Join now, get ${zaps} Zaps`}
         </button>
-        <p className="mt-2 text-xs text-subtle">
+        <p className="mt-2 text-meta text-subtle">
           We email a sign-in link to confirm it is you. Click it and your {zaps} Zaps are yours.
         </p>
-        <button type="button" onClick={onBack} className="mt-3 block w-full text-center text-xs text-subtle hover:underline">
+        <button type="button" onClick={onBack} className="mt-3 block w-full text-center text-meta text-subtle hover:underline">
           Back
         </button>
       </div>

@@ -26,7 +26,7 @@ export function LinkTargetField({
   const inputId = id ?? `link-${reactId}`
   return (
     <div className="min-w-0">
-      <label htmlFor={inputId} className="mb-1 block text-xs font-semibold text-subtle">
+      <label htmlFor={inputId} className="mb-1 block text-meta font-semibold text-subtle">
         {label}
       </label>
       <input
@@ -37,7 +37,7 @@ export function LinkTargetField({
         disabled={disabled}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+        className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
       />
       <datalist id={listId}>
         {KNOWN_ROUTES.map((r) => (
@@ -46,7 +46,7 @@ export function LinkTargetField({
           </option>
         ))}
       </datalist>
-      <p className="mt-1 text-xs text-subtle">
+      <p className="mt-1 text-meta text-subtle">
         Pick a known route or type any custom or external URL.
       </p>
     </div>

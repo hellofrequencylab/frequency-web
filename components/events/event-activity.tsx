@@ -255,10 +255,10 @@ export function EventActivity({
 
   return (
     <section>
-      <h2 className="text-sm font-bold text-text mb-3">
+      <h2 className="text-body-sm font-bold text-text mb-3">
         Activity
         {posts.length > 0 && (
-          <span className="ml-2 text-xs font-normal text-subtle">{posts.length}</span>
+          <span className="ml-2 text-meta font-normal text-subtle">{posts.length}</span>
         )}
       </h2>
 
@@ -275,7 +275,7 @@ export function EventActivity({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Title (optional)"
               disabled={pending}
-              className="mb-2 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
+              className="mb-2 w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
             />
           )}
 
@@ -294,7 +294,7 @@ export function EventActivity({
             }
             rows={2}
             disabled={pending}
-            className="w-full resize-none bg-transparent text-sm leading-relaxed text-text/90 placeholder:text-subtle outline-none disabled:opacity-60"
+            className="w-full resize-none bg-transparent text-body-sm leading-relaxed text-text/90 placeholder:text-subtle outline-none disabled:opacity-60"
           />
 
           {!asDispatch && (imagePreview || gifUrl) && (
@@ -332,20 +332,20 @@ export function EventActivity({
                 }}
                 placeholder="Paste a GIF link"
                 disabled={pending}
-                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
+                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
               />
               <button
                 type="button"
                 onClick={applyGif}
                 disabled={pending}
-                className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-40"
+                className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-40"
               >
                 Add
               </button>
             </div>
           )}
 
-          {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
+          {error && <p className="mt-1.5 text-meta text-danger">{error}</p>}
 
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => void pickImage(e)} />
 
@@ -411,7 +411,7 @@ export function EventActivity({
               type="button"
               onClick={submit}
               disabled={!canSubmit}
-              className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+              className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
             >
               {pending ? 'Posting…' : asDispatch ? 'Send Dispatch' : 'Post'}
             </button>
@@ -427,11 +427,11 @@ export function EventActivity({
       ) : (
         // canContribute is false only for a signed-out visitor now (any signed-in
         // member may comment; the old RSVP requirement was dropped).
-        <p className="mb-4 text-sm text-subtle">Sign in to join the conversation.</p>
+        <p className="mb-4 text-body-sm text-subtle">Sign in to join the conversation.</p>
       )}
 
       {posts.length === 0 ? (
-        <p className="text-sm text-subtle">
+        <p className="text-body-sm text-subtle">
           {isPast ? 'No notes yet. Leave the first one.' : 'Quiet so far. Be the first to say hi.'}
         </p>
       ) : (
@@ -462,11 +462,11 @@ export function EventActivity({
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                       {a ? (
-                        <Link href={`/people/${a.handle}`} className="text-sm font-semibold text-text hover:underline">
+                        <Link href={`/people/${a.handle}`} className="text-body-sm font-semibold text-text hover:underline">
                           {a.displayName}
                         </Link>
                       ) : (
-                        <span className="text-sm font-semibold text-text">A member</span>
+                        <span className="text-body-sm font-semibold text-text">A member</span>
                       )}
                       {post.isDispatch && (
                         <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-3xs font-semibold text-primary-strong">
@@ -487,10 +487,10 @@ export function EventActivity({
                     )}
                   </div>
                   {post.isDispatch && post.title && (
-                    <p className="mt-0.5 text-sm font-bold text-text">{post.title}</p>
+                    <p className="mt-0.5 text-body-sm font-bold text-text">{post.title}</p>
                   )}
                   {post.body && (
-                    <p className="mt-0.5 whitespace-pre-wrap text-sm leading-relaxed text-text/90">{post.body}</p>
+                    <p className="mt-0.5 whitespace-pre-wrap text-body-sm leading-relaxed text-text/90">{post.body}</p>
                   )}
                   {post.imageUrl && !isRsvp && (
                     <Image
@@ -577,7 +577,7 @@ function BoopBar({
                 : 'border-border text-muted hover:border-border-strong hover:text-text'
             }`}
           >
-            <span className="text-sm leading-none">{kind}</span>
+            <span className="text-body-sm leading-none">{kind}</span>
             {counts[kind]}
           </button>
         )
@@ -593,7 +593,7 @@ function BoopBar({
               onClick={() => toggle(kind)}
               disabled={disabled || pending}
               aria-label={`Boop with ${kind}`}
-              className="rounded-pill px-1.5 py-0.5 text-base leading-none transition-transform hover:scale-125 disabled:opacity-50"
+              className="rounded-pill px-1.5 py-0.5 text-body leading-none transition-transform hover:scale-125 disabled:opacity-50"
             >
               {kind}
             </button>

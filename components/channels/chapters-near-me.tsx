@@ -61,13 +61,13 @@ export function ChaptersNearMe({ chapters }: { chapters: ChapterSummary[] }) {
       {anyCoords && (
         <div className="mb-3 flex items-center justify-end gap-2">
           {sorted && !error && (
-            <span className="text-xs text-muted">Closest first</span>
+            <span className="text-meta text-muted">Closest first</span>
           )}
           <button
             type="button"
             onClick={sortNearMe}
             disabled={locating}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
           >
             {locating
               ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -76,7 +76,7 @@ export function ChaptersNearMe({ chapters }: { chapters: ChapterSummary[] }) {
           </button>
         </div>
       )}
-      {error && <p className="mb-3 text-xs text-danger text-right">{error}</p>}
+      {error && <p className="mb-3 text-meta text-danger text-right">{error}</p>}
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {ordered.map((c) => (
@@ -86,7 +86,7 @@ export function ChaptersNearMe({ chapters }: { chapters: ChapterSummary[] }) {
             className="block rounded-2xl border border-border bg-surface px-3 py-2.5 hover:border-primary-bg dark:hover:border-primary transition-colors"
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-medium text-text truncate">
+              <span className="text-body-sm font-medium text-text truncate">
                 {c.name}
               </span>
               <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium shrink-0 ${
@@ -97,7 +97,7 @@ export function ChaptersNearMe({ chapters }: { chapters: ChapterSummary[] }) {
                 {c.type === 'in-person' ? 'In-person' : 'Online'}
               </span>
             </div>
-            <div className="mt-1 flex items-center gap-2 text-xs text-muted">
+            <div className="mt-1 flex items-center gap-2 text-meta text-muted">
               {(c.city || c.neighborhood) && (
                 <span className="flex items-center gap-0.5">
                   <MapPin className="w-2.5 h-2.5" />

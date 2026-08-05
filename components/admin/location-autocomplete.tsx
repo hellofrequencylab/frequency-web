@@ -70,7 +70,7 @@ export function LocationAutocomplete({
         onFocus={() => results.length > 0 && setOpen(true)}
         placeholder={placeholder}
         aria-label="Search a location"
-        className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-9 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+        className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-9 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
       />
       {(loading || q) && (
         <span className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -94,7 +94,7 @@ export function LocationAutocomplete({
                   setQ(r.label)
                   setOpen(false)
                 }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-body-sm text-text hover:bg-surface-elevated"
               >
                 <MapPin className="h-3.5 w-3.5 shrink-0 text-primary-strong" />
                 <span className="truncate">{r.label}</span>

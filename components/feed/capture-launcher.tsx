@@ -138,8 +138,8 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
                   <Zap className="h-5 w-5 fill-primary-strong/20" aria-hidden />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-base font-bold text-text">Capture a moment</p>
-                  <p className="text-xs leading-relaxed text-muted">
+                  <p className="text-body font-bold text-text">Capture a moment</p>
+                  <p className="text-meta leading-relaxed text-muted">
                     {veraLine ?? 'Catch something real from the day.'}
                   </p>
                 </div>
@@ -155,7 +155,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             </div>
 
             {showIntro && (
-              <p className="mb-3 shrink-0 rounded-xl bg-primary-bg/50 px-3 py-2 text-xs leading-relaxed text-primary-strong">
+              <p className="mb-3 shrink-0 rounded-xl bg-primary-bg/50 px-3 py-2 text-meta leading-relaxed text-primary-strong">
                 First time? Everything in this menu earns. Tap a tile, do the real
                 thing, and the Zaps follow.
               </p>
@@ -181,16 +181,16 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               <MindlessArt className="block h-12 shrink-0" />
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2">
-                  <span className="block text-base font-bold leading-tight text-text">Mindless</span>
+                  <span className="block text-body font-bold leading-tight text-text">Mindless</span>
                   <span className="hidden shrink-0 rounded-pill bg-primary/15 px-2 py-0.5 text-2xs font-bold uppercase tracking-wide text-primary-strong min-[400px]:inline-block">
                     Daily timer
                   </span>
                 </span>
-                <span className="mt-0.5 block truncate text-xs leading-snug text-muted">
+                <span className="mt-0.5 block truncate text-meta leading-snug text-muted">
                   Tune out.
                 </span>
               </span>
-              <span className="flex h-8 shrink-0 items-center gap-0.5 rounded-pill bg-primary pl-3 pr-2 text-xs font-bold text-on-primary shadow-sm transition-transform group-hover:scale-105">
+              <span className="flex h-8 shrink-0 items-center gap-0.5 rounded-pill bg-primary pl-3 pr-2 text-meta font-bold text-on-primary shadow-sm transition-transform group-hover:scale-105">
                 Start
                 <ChevronRight className="h-3.5 w-3.5" aria-hidden />
               </span>
@@ -209,7 +209,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             <Link
               href="/journal"
               onClick={tapTile('journal')}
-              className="mt-4 flex shrink-0 items-center justify-center gap-1.5 rounded-control px-3 py-2.5 text-xs font-semibold text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+              className="mt-4 flex shrink-0 items-center justify-center gap-1.5 rounded-control px-3 py-2.5 text-meta font-semibold text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <BookOpen className="h-3.5 w-3.5" aria-hidden /> View your log
             </Link>
@@ -249,7 +249,7 @@ function ZapTile({
         <span aria-hidden className="absolute right-2.5 top-2.5 h-2 w-2 rounded-pill bg-primary motion-safe:animate-pulse" />
       )}
       <span className="flex h-12 w-full items-center justify-center">{art}</span>
-      <span className="mt-1.5 block text-sm font-bold text-text">{label}</span>
+      <span className="mt-1.5 block text-body-sm font-bold text-text">{label}</span>
       <span className="block text-2xs leading-snug text-muted">{soon ? 'Soon' : sub}</span>
       {zaps && (
         <span className="mt-1 inline-flex items-center gap-0.5 rounded-pill bg-primary-bg px-1.5 py-0.5 text-3xs font-bold text-primary-strong">

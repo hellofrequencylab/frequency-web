@@ -383,18 +383,18 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
         <MindlessShell onClose={close}>
           <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
             <LotusIcon className="h-8 w-8 animate-pulse text-primary" />
-            <p className="text-sm font-medium text-muted">Settling in...</p>
+            <p className="text-body-sm font-medium text-muted">Settling in...</p>
           </div>
         </MindlessShell>
       )}
       {state.phase === 'error' && (
         <MindlessShell onClose={close}>
           <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
-            <p className="text-sm font-medium text-text">That didn&rsquo;t open. Give it another go.</p>
+            <p className="text-body-sm font-medium text-text">That didn&rsquo;t open. Give it another go.</p>
             <button
               type="button"
               onClick={() => open()}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
+              className="rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
             >
               Try again
             </button>
@@ -406,14 +406,14 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
           <MindlessShell onClose={close}>
             <div className="flex min-h-[60vh] flex-col items-center justify-center">
               <div className="w-full rounded-2xl border border-border bg-surface p-6 text-center">
-                <p className="text-sm font-medium text-text">Nothing on your list yet.</p>
-                <p className="mt-1 text-sm text-muted">
+                <p className="text-body-sm font-medium text-text">Nothing on your list yet.</p>
+                <p className="mt-1 text-body-sm text-muted">
                   Adopt a practice first; then this is where you do it.
                 </p>
                 <Link
                   href="/practices"
                   onClick={close}
-                  className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
+                  className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
                 >
                   Browse practices
                 </Link>

@@ -259,7 +259,7 @@ export function LoomPicker({
   const confirmMany = () => { if (selected.length) onSelectMany?.(selected); close() }
   // Auto width + no-shrink on mobile (the rail is a horizontal scroll strip there); full-width vertical
   // buttons on sm+ (the rail is a left column).
-  const rail = 'flex w-auto shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-2.5 py-2 text-left text-sm transition-colors sm:w-full'
+  const rail = 'flex w-auto shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-2.5 py-2 text-left text-body-sm transition-colors sm:w-full'
   const railOn = 'bg-primary-bg text-primary-strong font-semibold'
   const railOff = 'text-muted hover:bg-surface-elevated hover:text-text'
 
@@ -270,7 +270,7 @@ export function LoomPicker({
       <div className="flex h-full max-h-none flex-col overflow-hidden bg-surface pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:h-auto sm:max-h-[85vh] sm:rounded-2xl sm:border sm:border-border sm:pt-0 sm:pb-0 sm:shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <h2 className="text-base font-bold text-text">{title}</h2>
+          <h2 className="text-body font-bold text-text">{title}</h2>
           <button type="button" onClick={close} aria-label="Close" className="rounded-lg p-1 text-subtle hover:bg-surface-elevated hover:text-text">
             <X className="h-4 w-4" />
           </button>
@@ -365,7 +365,7 @@ export function LoomPicker({
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search this library"
-                  className="min-w-0 flex-1 bg-transparent text-sm text-text outline-none placeholder:text-subtle"
+                  className="min-w-0 flex-1 bg-transparent text-body-sm text-text outline-none placeholder:text-subtle"
                 />
               </div>
               {error && <p className="mt-2 text-2xs text-danger">{error}</p>}
@@ -376,7 +376,7 @@ export function LoomPicker({
               {activeView === 'tags' ? (
                 <div>
                   {tags.length === 0 ? (
-                    <p className="py-8 text-center text-sm text-subtle">No tags yet in this library.</p>
+                    <p className="py-8 text-center text-body-sm text-subtle">No tags yet in this library.</p>
                   ) : (
                     <div className="flex flex-wrap gap-1.5">
                       {tags.map((t) => (
@@ -384,7 +384,7 @@ export function LoomPicker({
                           key={t}
                           type="button"
                           onClick={() => { setTag(t); setView('images') }}
-                          className="inline-flex items-center gap-1 rounded-pill border border-border bg-surface px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-primary/50 hover:text-text"
+                          className="inline-flex items-center gap-1 rounded-pill border border-border bg-surface px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:border-primary/50 hover:text-text"
                         >
                           <TagIcon className="h-3 w-3" /> {t}
                         </button>
@@ -395,7 +395,7 @@ export function LoomPicker({
               ) : (
                 <>
                   {tag && (
-                    <div className="mb-2 flex items-center gap-2 text-xs text-muted">
+                    <div className="mb-2 flex items-center gap-2 text-meta text-muted">
                       <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 font-medium text-primary-strong">
                         <TagIcon className="h-3 w-3" /> {tag}
                       </span>
@@ -409,9 +409,9 @@ export function LoomPicker({
                     <p className="mb-2 text-2xs text-muted">Site icons plus any you upload. Search by name, or drop a new icon above.</p>
                   )}
                   {loading ? (
-                    <p className="flex items-center justify-center gap-2 py-10 text-sm text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading</p>
+                    <p className="flex items-center justify-center gap-2 py-10 text-body-sm text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading</p>
                   ) : tiles.length === 0 ? (
-                    <p className="py-10 text-center text-sm text-subtle">
+                    <p className="py-10 text-center text-body-sm text-subtle">
                       {activeView === 'elements' ? 'No AI-created images here yet.'
                         : activeView === 'icons' ? 'No icons here yet. Upload one above, or search the site icons.'
                         : 'Nothing here yet. Upload an image to get started.'}
@@ -456,12 +456,12 @@ export function LoomPicker({
         {/* Multi-select confirm bar */}
         {multiple && (
           <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-3">
-            <span className="text-sm text-muted">{selected.length} selected</span>
+            <span className="text-body-sm text-muted">{selected.length} selected</span>
             <button
               type="button"
               onClick={confirmMany}
               disabled={selected.length === 0}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               <Check className="h-3.5 w-3.5" /> Add {selected.length > 0 ? selected.length : ''}
             </button>

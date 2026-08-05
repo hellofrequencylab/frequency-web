@@ -15,14 +15,14 @@ export function ReportButton({ targetKind, targetId }: { targetKind: ReportTarge
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
 
-  if (done) return <p className="text-xs text-subtle">Thanks. Our team will take a look.</p>
+  if (done) return <p className="text-meta text-subtle">Thanks. Our team will take a look.</p>
 
   if (!open) {
     return (
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 text-xs text-subtle transition-colors hover:text-text"
+        className="inline-flex items-center gap-1.5 text-meta text-subtle transition-colors hover:text-text"
       >
         <Flag className="h-3.5 w-3.5" aria-hidden />
         Report
@@ -45,15 +45,15 @@ export function ReportButton({ targetKind, targetId }: { targetKind: ReportTarge
               else setError(res.error ?? 'Could not file the report.')
             })
           }
-          className="rounded-pill border border-border px-2.5 py-1 text-xs text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+          className="rounded-pill border border-border px-2.5 py-1 text-meta text-muted transition-colors hover:bg-surface-elevated hover:text-text"
         >
           {reason}
         </button>
       ))}
-      <button type="button" onClick={() => setOpen(false)} className="text-xs text-subtle hover:text-text">
+      <button type="button" onClick={() => setOpen(false)} className="text-meta text-subtle hover:text-text">
         Cancel
       </button>
-      {error && <p className="w-full text-xs text-warning">{error}</p>}
+      {error && <p className="w-full text-meta text-warning">{error}</p>}
     </div>
   )
 }

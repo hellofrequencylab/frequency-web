@@ -118,7 +118,7 @@ export function EventHeaderControls({
       {/* The standalone Header Preview band was removed: the header is previewed at the top of the
           gallery (the first photo IS the header), so a second preview in the rail was redundant. */}
 
-      {error && <p className="text-xs font-medium text-danger">{error}</p>}
+      {error && <p className="text-meta font-medium text-danger">{error}</p>}
     </div>
   )
 }

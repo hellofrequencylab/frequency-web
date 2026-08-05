@@ -162,7 +162,7 @@ async function TimelineBoard() {
             return (
               <div key={phase.id} className="grid grid-cols-[8rem_1fr] items-center gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-text">
+                  <p className="truncate text-body-sm font-semibold text-text">
                     <span className="text-primary-strong">{phase.key}</span> {phase.title}
                   </p>
                   <p className="text-2xs text-muted">{dateLabel}</p>
@@ -198,12 +198,12 @@ async function TimelineBoard() {
 
         {/* The scheduled-send list: the accessible, exact read under the visual. */}
         <div className="space-y-2 border-t border-border pt-5">
-          <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-subtle">
+          <h3 className="flex items-center gap-2 text-meta font-bold uppercase tracking-wide text-subtle">
             <CalendarClock className="h-3.5 w-3.5" aria-hidden />
             Scheduled sends
           </h3>
           {scheduled.length === 0 ? (
-            <p className="text-sm text-muted">
+            <p className="text-body-sm text-muted">
               Nothing is scheduled yet. Scheduled campaigns and admission waves show up here with
               their send date.
             </p>
@@ -221,11 +221,11 @@ async function TimelineBoard() {
                       key={`${item.type}:${item.id}`}
                       className="flex flex-wrap items-center gap-3 px-4 py-3"
                     >
-                      <span className="w-16 shrink-0 text-xs font-bold tabular-nums text-text">
+                      <span className="w-16 shrink-0 text-meta font-bold tabular-nums text-text">
                         {fmt(item.scheduledFor)}
                       </span>
                       <Icon className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-                      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-text">
+                      <span className="min-w-0 flex-1 truncate text-body-sm font-semibold text-text">
                         {item.label}
                       </span>
                       <StatusChip tone={APPROVAL_TONE[item.approvalStatus]} size="sm">

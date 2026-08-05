@@ -105,7 +105,7 @@ export function MenuLayoutPanel({
       actions={
         <div className="flex items-center gap-2">
           {status && (
-            <span className="text-xs text-subtle" aria-hidden>
+            <span className="text-meta text-subtle" aria-hidden>
               {status}
             </span>
           )}
@@ -113,7 +113,7 @@ export function MenuLayoutPanel({
             type="button"
             onClick={seed}
             disabled={isPending}
-            className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
           >
             <RotateCcw className="h-4 w-4 shrink-0" aria-hidden />
             {seedLabel}
@@ -125,13 +125,13 @@ export function MenuLayoutPanel({
         {status}
       </p>
       {error && (
-        <p className="mb-3 rounded-lg border border-danger/30 bg-danger-bg/40 px-3 py-2 text-sm text-danger">
+        <p className="mb-3 rounded-lg border border-danger/30 bg-danger-bg/40 px-3 py-2 text-body-sm text-danger">
           {error}
         </p>
       )}
       <div className="flex flex-wrap items-end gap-4 rounded-2xl border border-border bg-surface p-4 sm:p-5">
         <div className="min-w-0">
-          <label htmlFor={`cols-${surfaceKey}`} className="mb-1 flex items-center gap-2 text-xs font-semibold text-subtle">
+          <label htmlFor={`cols-${surfaceKey}`} className="mb-1 flex items-center gap-2 text-meta font-semibold text-subtle">
             <Columns3 className="h-3.5 w-3.5" aria-hidden />
             Columns
           </label>
@@ -149,9 +149,9 @@ export function MenuLayoutPanel({
                 if (Number.isFinite(n) && n !== columns) saveColumns(n)
                 else setColumnsDraft(String(columns))
               }}
-              className="w-24 rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-sm tabular-nums text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+              className="w-24 rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm tabular-nums text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
             />
-            <span className="text-xs text-subtle">1 to 12, default 6</span>
+            <span className="text-meta text-subtle">1 to 12, default 6</span>
           </div>
         </div>
       </div>

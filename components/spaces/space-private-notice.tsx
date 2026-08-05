@@ -42,13 +42,13 @@ export function SpacePrivateNotice({ spaceId }: { spaceId: string }) {
           <EyeOff className="h-4 w-4" aria-hidden />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-text">This page is private</p>
-          <p className="text-xs leading-relaxed text-muted">
+          <p className="text-body-sm font-semibold text-text">This page is private</p>
+          <p className="text-meta leading-relaxed text-muted">
             Only you and members can see it. It will not show up in Business Spaces, in search, or for anyone
             you share the link with. Make it public when you are ready for people to find it.
           </p>
           {error && (
-            <p className="mt-1 text-xs font-medium text-danger" role="alert">
+            <p className="mt-1 text-meta font-medium text-danger" role="alert">
               {error}
             </p>
           )}

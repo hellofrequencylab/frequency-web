@@ -41,12 +41,12 @@ export function JourneyExport({ slug }: { slug: string }) {
         type="button"
         onClick={exportJourney}
         disabled={pending}
-        className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+        className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Export as JSON
       </button>
       <p className="mt-1.5 text-2xs text-muted">Saves a portable copy you can import into another Space or a Hook cohort.</p>
-      {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
+      {error && <p className="mt-1.5 text-meta text-danger">{error}</p>}
     </div>
   )
 }

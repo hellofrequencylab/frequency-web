@@ -66,7 +66,7 @@ export default async function DiscoverJourneysPage() {
           </Button>
           <Link
             href="/discover/circles"
-            className="text-sm font-semibold text-on-ink/80 hover:text-on-ink transition-colors"
+            className="text-body-sm font-semibold text-on-ink/80 hover:text-on-ink transition-colors"
           >
             or just browse, no account needed →
           </Link>
@@ -162,7 +162,7 @@ export default async function DiscoverJourneysPage() {
       <div className="text-center bg-surface pb-16">
         <Link
           href="/discover"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong hover:underline"
+          className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline"
         >
           Back to Discover <ArrowRight className="w-4 h-4" />
         </Link>

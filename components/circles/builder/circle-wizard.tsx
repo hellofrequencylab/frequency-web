@@ -41,7 +41,7 @@ const PILLAR_LABELS: Record<PillarSlug, string> = {
 }
 
 const FIELD =
-  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
+  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-body-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
 type Mode = 'choose' | 'upload' | 'questions' | 'review'
 
@@ -155,9 +155,9 @@ export function CircleWizard() {
       <WizardProgress current={current} total={total} label={stepLabel} />
 
       <div className="mt-7">
-        <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-primary-strong">New Circle</p>
-        <h1 className="text-2xl font-bold text-text">{heading.title}</h1>
-        <p className="mt-1 text-sm leading-relaxed text-muted">{heading.description}</p>
+        <p className="mb-1.5 text-meta font-semibold uppercase tracking-widest text-primary-strong">New Circle</p>
+        <h1 className="text-page-title font-bold text-text">{heading.title}</h1>
+        <p className="mt-1 text-body-sm leading-relaxed text-muted">{heading.description}</p>
 
         <div className="mt-5">
           {/* ── CHOOSE ── */}
@@ -169,8 +169,8 @@ export function CircleWizard() {
               >
                 <LayoutTemplate className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-text">Start from a Starter Circle</span>
-                  <span className="block text-xs leading-snug text-muted">
+                  <span className="block text-body-sm font-semibold text-text">Start from a Starter Circle</span>
+                  <span className="block text-meta leading-snug text-muted">
                     Remix a staff-made blueprint, then make it yours.
                   </span>
                 </span>
@@ -183,8 +183,8 @@ export function CircleWizard() {
               >
                 <Upload className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-text">Upload an outline</span>
-                  <span className="block text-xs leading-snug text-muted">
+                  <span className="block text-body-sm font-semibold text-text">Upload an outline</span>
+                  <span className="block text-meta leading-snug text-muted">
                     Have it written already? Paste or upload it and Vera builds the frame.
                   </span>
                 </span>
@@ -197,8 +197,8 @@ export function CircleWizard() {
               >
                 <MessageCircleQuestion className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-text">Answer a few questions</span>
-                  <span className="block text-xs leading-snug text-muted">
+                  <span className="block text-body-sm font-semibold text-text">Answer a few questions</span>
+                  <span className="block text-meta leading-snug text-muted">
                     Tell Vera the basics and she drafts the whole Circle.
                   </span>
                 </span>
@@ -216,8 +216,8 @@ export function CircleWizard() {
                   <PenLine className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                 )}
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-text">Start from scratch</span>
-                  <span className="block text-xs leading-snug text-muted">A blank Circle. Write every field yourself.</span>
+                  <span className="block text-body-sm font-semibold text-text">Start from scratch</span>
+                  <span className="block text-meta leading-snug text-muted">A blank Circle. Write every field yourself.</span>
                 </span>
               </button>
             </div>
@@ -244,7 +244,7 @@ export function CircleWizard() {
                   {extracting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Upload className="h-4 w-4" aria-hidden />}{' '}
                   Upload a file
                 </button>
-                <span className="text-xs text-subtle">PDF, Word, or plain text</span>
+                <span className="text-meta text-subtle">PDF, Word, or plain text</span>
                 <input
                   ref={fileRef}
                   type="file"
@@ -357,7 +357,7 @@ export function CircleWizard() {
           )}
         </div>
 
-        {error && <p className="mt-4 text-sm text-warning">{error}</p>}
+        {error && <p className="mt-4 text-body-sm text-warning">{error}</p>}
 
         <div className="mt-7 flex gap-3">
           {mode === 'choose' ? (

@@ -43,7 +43,7 @@ export function MenuSurfacePicker({
       description="Pick which menu to edit. Each surface keeps its own groups, links, and rail cards."
       actions={
         isPending ? (
-          <span className="text-xs text-subtle" aria-live="polite">
+          <span className="text-meta text-subtle" aria-live="polite">
             Switching surface…
           </span>
         ) : undefined
@@ -68,7 +68,7 @@ export function MenuSurfacePicker({
             >
               {s.label}
               {defaults[s.key] && (
-                <span className="rounded-pill bg-surface-elevated px-1.5 py-0.5 text-xs font-semibold text-subtle">
+                <span className="rounded-pill bg-surface-elevated px-1.5 py-0.5 text-meta font-semibold text-subtle">
                   Default
                 </span>
               )}

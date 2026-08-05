@@ -51,7 +51,7 @@ function buildSelection(price: Price, cents: number | undefined): PriceSelection
   }
 }
 
-const HINT = 'mt-1 text-xs text-subtle'
+const HINT = 'mt-1 text-meta text-subtle'
 
 export function PriceInput({
   price,
@@ -128,7 +128,7 @@ export function PriceInput({
         type="button"
         onClick={onEnquire}
         disabled={disabled || !onEnquire}
-        className="inline-flex items-center justify-center rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated disabled:opacity-50"
+        className="inline-flex items-center justify-center rounded-lg border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated disabled:opacity-50"
       >
         Enquire
       </button>
@@ -168,7 +168,7 @@ export function PriceInput({
       )}
 
       <div>
-        <label htmlFor={`${idPrefix}-amount`} className="mb-1 block text-sm font-medium text-text">
+        <label htmlFor={`${idPrefix}-amount`} className="mb-1 block text-body-sm font-medium text-text">
           {donation
             ? chips.length > 0
               ? 'Or enter another amount'
@@ -179,7 +179,7 @@ export function PriceInput({
           )}
         </label>
         <div className="flex items-center gap-1.5">
-          <span className="text-sm text-subtle">$</span>
+          <span className="text-body-sm text-subtle">$</span>
           <input
             id={`${idPrefix}-amount`}
             type="number"
@@ -200,7 +200,7 @@ export function PriceInput({
           </p>
         )}
         {error && cents != null && (
-          <p className="mt-1 text-xs font-medium text-danger" role="alert">
+          <p className="mt-1 text-meta font-medium text-danger" role="alert">
             {error}
           </p>
         )}

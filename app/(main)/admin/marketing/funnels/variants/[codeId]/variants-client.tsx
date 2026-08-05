@@ -9,7 +9,7 @@ import type { DestinationGroup } from '@/lib/entry-points/destinations'
 import type { VariantResult } from '@/lib/entry-points/ab'
 import { addVariant, updateVariant, deleteVariant } from '../actions'
 
-const field = 'w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text'
+const field = 'w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text'
 const pct = (rate: number) => `${(rate * 100).toFixed(1)}%`
 
 function DestinationSelect({ value, onChange, groups }: { value: string; onChange: (v: string) => void; groups: DestinationGroup[] }) {
@@ -45,18 +45,18 @@ export function VariantManager({
 
   return (
     <div className="space-y-6">
-      <p className="rounded-card bg-surface-elevated/50 px-4 py-2.5 text-xs text-muted">
+      <p className="rounded-card bg-surface-elevated/50 px-4 py-2.5 text-meta text-muted">
         <span className="font-semibold text-text">Control (default):</span> {control || '–'} · shown when no active variant wins the split.
       </p>
 
       <section className="space-y-3">
         {results.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border bg-surface px-4 py-8 text-center text-sm text-muted">
+          <p className="rounded-2xl border border-dashed border-border bg-surface px-4 py-8 text-center text-body-sm text-muted">
             No variants yet. Add two or more destinations below to start splitting scans.
           </p>
         ) : (
           <div className="rounded-2xl bg-surface-elevated/40 px-2 py-1.5">
-            <div className="grid grid-cols-[3rem_1fr_3.5rem_3.5rem_4rem_4.5rem_2rem] gap-2 px-3 py-2 text-xs font-medium text-subtle">
+            <div className="grid grid-cols-[3rem_1fr_3.5rem_3.5rem_4rem_4.5rem_2rem] gap-2 px-3 py-2 text-meta font-medium text-subtle">
               <span>Key</span><span>Destination</span><span className="text-right">Wt</span>
               <span className="text-right">Scans</span><span className="text-right">Signups</span><span className="text-right">Rate</span><span></span>
             </div>
@@ -110,13 +110,13 @@ function VariantRow({ codeId, v, groups, isWinner }: { codeId: string; v: Varian
         <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label" className={field} />
         <DestinationSelect value={target} onChange={setTarget} groups={groups} />
         <div className="flex items-center gap-2">
-          <label className="text-xs text-subtle">Weight</label>
-          <input value={weight} onChange={(e) => setWeight(e.target.value)} inputMode="numeric" className="w-20 rounded-md border border-border bg-canvas px-2 py-1 text-sm" />
+          <label className="text-meta text-subtle">Weight</label>
+          <input value={weight} onChange={(e) => setWeight(e.target.value)} inputMode="numeric" className="w-20 rounded-md border border-border bg-canvas px-2 py-1 text-body-sm" />
         </div>
-        {error && <p className="text-xs text-danger">{error}</p>}
+        {error && <p className="text-meta text-danger">{error}</p>}
         <div className="flex gap-2">
-          <button onClick={save} disabled={pending} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">Save</button>
-          <button onClick={() => { setEditing(false); setError(null) }} className="px-2 py-1.5 text-xs font-semibold text-muted hover:text-text">Cancel</button>
+          <button onClick={save} disabled={pending} className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">Save</button>
+          <button onClick={() => { setEditing(false); setError(null) }} className="px-2 py-1.5 text-meta font-semibold text-muted hover:text-text">Cancel</button>
         </div>
       </div>
     )
@@ -125,23 +125,23 @@ function VariantRow({ codeId, v, groups, isWinner }: { codeId: string; v: Varian
   return (
     <div>
       <div className={`grid grid-cols-[3rem_1fr_3.5rem_3.5rem_4rem_4.5rem_2rem] gap-2 px-3 py-2.5 items-center rounded-lg ${v.active ? '' : 'opacity-50'}`}>
-        <span className="flex items-center gap-1 text-sm font-bold text-text">
+        <span className="flex items-center gap-1 text-body-sm font-bold text-text">
           {v.key}{isWinner && <Trophy className="h-3 w-3 text-primary" aria-label="Leading" />}
         </span>
         <button onClick={() => setEditing(true)} className="min-w-0 text-left">
-          <span className="block truncate text-sm text-text">{v.label}</span>
+          <span className="block truncate text-body-sm text-text">{v.label}</span>
           <span className="block truncate text-2xs text-muted">{v.targetUrl}</span>
         </button>
-        <span className="text-right text-sm tabular-nums text-muted">{v.weight}</span>
-        <span className="text-right text-sm tabular-nums text-text">{v.scans}</span>
-        <span className="text-right text-sm tabular-nums font-semibold text-text">{v.conversions}</span>
+        <span className="text-right text-body-sm tabular-nums text-muted">{v.weight}</span>
+        <span className="text-right text-body-sm tabular-nums text-text">{v.scans}</span>
+        <span className="text-right text-body-sm tabular-nums font-semibold text-text">{v.conversions}</span>
         <span className={`text-right text-sm tabular-nums ${isWinner ? 'font-bold text-primary-strong' : 'text-muted'}`}>{pct(v.rate)}</span>
         <div className="flex items-center justify-end gap-1">
           <button onClick={toggle} disabled={pending} title={v.active ? 'Pause' : 'Resume'} aria-label={v.active ? 'Pause variant' : 'Resume variant'} className="text-2xs font-semibold text-muted hover:text-text disabled:opacity-60">{v.active ? '❚❚' : '▶'}</button>
           <button onClick={remove} disabled={pending} aria-label="Delete variant" className="text-muted hover:text-danger disabled:opacity-60"><Trash2 className="h-3 w-3" /></button>
         </div>
       </div>
-      {error && <p role="alert" className="px-3 pb-1 text-xs text-danger">{error}</p>}
+      {error && <p role="alert" className="px-3 pb-1 text-meta text-danger">{error}</p>}
     </div>
   )
 }
@@ -166,7 +166,7 @@ function AddVariant({ codeId, groups }: { codeId: string; groups: DestinationGro
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:text-text hover:border-border-strong">
+      <button onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:text-text hover:border-border-strong">
         <Plus className="h-3.5 w-3.5" /> Add variant
       </button>
     )
@@ -179,13 +179,13 @@ function AddVariant({ codeId, groups }: { codeId: string; groups: DestinationGro
       </div>
       <DestinationSelect value={target} onChange={setTarget} groups={groups} />
       <div className="flex items-center gap-2">
-        <label className="text-xs text-subtle">Weight</label>
-        <input value={weight} onChange={(e) => setWeight(e.target.value)} inputMode="numeric" className="w-20 rounded-md border border-border bg-canvas px-2 py-1 text-sm" />
+        <label className="text-meta text-subtle">Weight</label>
+        <input value={weight} onChange={(e) => setWeight(e.target.value)} inputMode="numeric" className="w-20 rounded-md border border-border bg-canvas px-2 py-1 text-body-sm" />
       </div>
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-meta text-danger">{error}</p>}
       <div className="flex gap-2">
-        <button onClick={submit} disabled={pending} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">Add variant</button>
-        <button onClick={() => { setOpen(false); setError(null) }} className="px-2 py-1.5 text-xs font-semibold text-muted hover:text-text">Cancel</button>
+        <button onClick={submit} disabled={pending} className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">Add variant</button>
+        <button onClick={() => { setOpen(false); setError(null) }} className="px-2 py-1.5 text-meta font-semibold text-muted hover:text-text">Cancel</button>
       </div>
     </div>
   )

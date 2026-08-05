@@ -66,7 +66,7 @@ function ScreenPanel({ screen }: { screen: PracticeScreenResult }) {
     <div className="mt-2 rounded-card border border-border bg-surface-elevated/60 p-3">
       <div className="flex items-center gap-2">
         <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-        <span className="text-xs font-semibold text-text">Vera read</span>
+        <span className="text-meta font-semibold text-text">Vera read</span>
         <StatusChip tone={screen.ok ? 'success' : 'warning'} size="sm">
           {screen.ok ? `Looks ready · ${screen.score}` : `Take a look · ${screen.score}`}
         </StatusChip>
@@ -86,7 +86,7 @@ function ScreenPanel({ screen }: { screen: PracticeScreenResult }) {
                 <p className="text-2xs font-semibold uppercase tracking-wide text-muted">{g.label}</p>
                 <ul className="mt-0.5 space-y-0.5">
                   {g.notes.map((n, i) => (
-                    <li key={i} className="text-xs text-muted">
+                    <li key={i} className="text-meta text-muted">
                       {n}
                     </li>
                   ))}
@@ -95,7 +95,7 @@ function ScreenPanel({ screen }: { screen: PracticeScreenResult }) {
             ))}
         </div>
       ) : (
-        <p className="mt-2 text-xs text-muted">Nothing flagged. Reads clean on voice, completeness, and safety.</p>
+        <p className="mt-2 text-meta text-muted">Nothing flagged. Reads clean on voice, completeness, and safety.</p>
       )}
     </div>
   )
@@ -155,7 +155,7 @@ function ReviewRowItem({
           <div className="flex flex-wrap items-center gap-1.5">
             <Link
               href={`/practices/${row.id}`}
-              className="inline-flex items-center gap-1 text-sm font-medium text-text hover:underline"
+              className="inline-flex items-center gap-1 text-body-sm font-medium text-text hover:underline"
             >
               <span className="min-w-0 truncate">{row.title}</span>
               <ExternalLink className="h-3 w-3 shrink-0 text-subtle" aria-hidden />
@@ -177,7 +177,7 @@ function ReviewRowItem({
               </Link>
             )}
           </div>
-          <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted">
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-meta text-muted">
             <span>by {row.creator}</span>
             <span aria-hidden>·</span>
             <span>{ago(row.updatedAt)}</span>
@@ -198,7 +198,7 @@ function ReviewRowItem({
             onClick={prescreen}
             disabled={screening || disabled}
             title="Pre-screen with Vera (advisory)"
-            className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs font-semibold text-primary-strong transition-colors hover:bg-primary/10 disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary/10 disabled:opacity-50"
           >
             <Sparkles className="h-3.5 w-3.5" aria-hidden />
             {screening ? 'Reading…' : 'Pre-screen'}
@@ -207,7 +207,7 @@ function ReviewRowItem({
             type="button"
             onClick={() => decide('approved')}
             disabled={disabled}
-            className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs font-semibold text-success transition-colors hover:bg-success/10 disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-semibold text-success transition-colors hover:bg-success/10 disabled:opacity-50"
           >
             <Check className="h-3.5 w-3.5" aria-hidden /> Approve
           </button>
@@ -215,14 +215,14 @@ function ReviewRowItem({
             type="button"
             onClick={() => decide('rejected')}
             disabled={disabled}
-            className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
           >
             <X className="h-3.5 w-3.5" aria-hidden /> Reject
           </button>
         </div>
       </div>
 
-      {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+      {error && <p className="mt-1 text-meta text-danger">{error}</p>}
       {screen && <ScreenPanel screen={screen} />}
     </div>
   )
@@ -275,13 +275,13 @@ export function ReviewQueuePanel({ rows }: { rows: ReviewRow[] }) {
           aria-label="Bulk review"
           className="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-primary/30 bg-surface-elevated px-3 py-2 lift-1"
         >
-          <span className="text-sm font-semibold text-text">{selected.size} selected</span>
+          <span className="text-body-sm font-semibold text-text">{selected.size} selected</span>
           <span className="mx-1 hidden h-4 w-px bg-border sm:block" aria-hidden />
           <button
             type="button"
             disabled={pending}
             onClick={() => bulkReview('approved')}
-            className="inline-flex min-h-[2rem] items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-success transition-colors hover:bg-success/10 disabled:opacity-50"
+            className="inline-flex min-h-[2rem] items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-meta font-semibold text-success transition-colors hover:bg-success/10 disabled:opacity-50"
           >
             <Check className="h-3.5 w-3.5" aria-hidden /> Approve selected
           </button>
@@ -289,14 +289,14 @@ export function ReviewQueuePanel({ rows }: { rows: ReviewRow[] }) {
             type="button"
             disabled={pending}
             onClick={() => bulkReview('rejected')}
-            className="inline-flex min-h-[2rem] items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
+            className="inline-flex min-h-[2rem] items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
           >
             <X className="h-3.5 w-3.5" aria-hidden /> Reject selected
           </button>
           <button
             type="button"
             onClick={() => setSelected(new Set())}
-            className="ml-auto inline-flex min-h-[2rem] items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted transition-colors hover:text-text"
+            className="ml-auto inline-flex min-h-[2rem] items-center gap-1 rounded-lg px-2 py-1 text-meta font-medium text-muted transition-colors hover:text-text"
           >
             <X className="h-3.5 w-3.5" aria-hidden /> Clear
           </button>
@@ -324,7 +324,7 @@ export function ReviewQueuePanel({ rows }: { rows: ReviewRow[] }) {
               onChange={(e) => toggleAll(e.target.checked)}
               className="h-4 w-4 cursor-pointer rounded border-border-strong text-primary focus:ring-2 focus:ring-primary/50"
             />
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted">Select all</span>
+            <span className="text-meta font-semibold uppercase tracking-wide text-muted">Select all</span>
           </label>
         </div>
         <div className="divide-y divide-border/60">

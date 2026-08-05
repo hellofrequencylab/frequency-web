@@ -103,7 +103,7 @@ function NetworkGroup({ icon: Icon, label, items }: { icon: typeof Users; label:
       </p>
       <ul className="space-y-1">
         {items.map((it) => (
-          <li key={it.id} className="flex items-center gap-2 text-sm">
+          <li key={it.id} className="flex items-center gap-2 text-body-sm">
             {it.href ? (
               <Link href={it.href} className="truncate text-text hover:text-primary-strong">
                 {it.label}
@@ -135,7 +135,7 @@ function FullProfile({ detail }: { detail: CrmMemberDetail }) {
           <h4 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Notes</h4>
           <ul className="space-y-1.5">
             {notes.map((n) => (
-              <li key={n.id} className="flex items-start gap-2 text-sm text-muted">
+              <li key={n.id} className="flex items-start gap-2 text-body-sm text-muted">
                 <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
                 <span>{n.body}</span>
               </li>
@@ -181,13 +181,13 @@ function FullProfile({ detail }: { detail: CrmMemberDetail }) {
             <NetworkGroup icon={CalendarDays} label="Events hosted" items={network!.eventsHosted} />
             <NetworkGroup icon={Building2} label="Spaces owned" items={network!.spacesOwned} />
             {network!.circlesHosted.length === 0 && network!.eventsHosted.length === 0 && network!.spacesOwned.length === 0 && (
-              <p className="text-sm text-subtle">Not running anything yet.</p>
+              <p className="text-body-sm text-subtle">Not running anything yet.</p>
             )}
           </div>
           <div className="space-y-3">
             <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Part of</p>
             <NetworkGroup icon={UserCheck} label="Circles" items={network!.memberOf} />
-            {network!.memberOf.length === 0 && <p className="text-sm text-subtle">No circle memberships yet.</p>}
+            {network!.memberOf.length === 0 && <p className="text-body-sm text-subtle">No circle memberships yet.</p>}
           </div>
         </section>
       )}
@@ -222,7 +222,7 @@ function MoreAboutFold({ detail }: { detail: CrmMemberDetail }) {
         className="flex w-full items-center gap-2 rounded-2xl px-3 py-2.5 text-left transition-colors hover:bg-surface-elevated/60"
       >
         <UserCheck className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-        <span className="text-sm font-bold tracking-tight text-text">More about {firstName}</span>
+        <span className="text-body-sm font-bold tracking-tight text-text">More about {firstName}</span>
         <span className="min-w-0 flex-1 truncate text-right text-2xs text-muted">
           Scores, engagement, and their network
         </span>
@@ -298,8 +298,8 @@ export function CrmMemberDetailPane({
       <div className="flex items-start gap-4">
         <Avatar detail={detail} />
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-xl font-bold text-text">{detail.displayName}</h2>
-          <p className="truncate text-sm text-subtle">@{detail.handle}</p>
+          <h2 className="truncate text-lead font-bold text-text">{detail.displayName}</h2>
+          <p className="truncate text-body-sm text-subtle">@{detail.handle}</p>
           {detail.roles && detail.roles.length > 0 && (
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {detail.roles.map((r) => (
@@ -316,7 +316,7 @@ export function CrmMemberDetailPane({
       </div>
 
       {hasContact && (
-        <ul className="space-y-1.5 text-sm">
+        <ul className="space-y-1.5 text-body-sm">
           {contact!.email && (
             <li>
               <a href={`mailto:${contact!.email}`} className="inline-flex items-center gap-2 text-text hover:text-primary-strong">
@@ -365,7 +365,7 @@ export function CrmMemberDetailPane({
             <MessageCircle className="h-4 w-4" aria-hidden /> {dm.label ?? 'Message'}
           </Button>
           {dmError && (
-            <p role="alert" className="mt-1 text-xs text-danger">
+            <p role="alert" className="mt-1 text-meta text-danger">
               {dmError}
             </p>
           )}
@@ -380,7 +380,7 @@ export function CrmMemberDetailPane({
           <button
             type="button"
             onClick={() => setComposeOpen(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             <Mail className="h-4 w-4" aria-hidden /> Message Member
           </button>
@@ -395,7 +395,7 @@ export function CrmMemberDetailPane({
             <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface lift-3">
               <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-5 py-3">
                 <div className="min-w-0">
-                  <h3 className="truncate text-sm font-bold text-text">Message {detail.displayName}</h3>
+                  <h3 className="truncate text-body-sm font-bold text-text">Message {detail.displayName}</h3>
                   <p className="truncate text-2xs text-muted">
                     Saves automatically as you type. Close anytime and pick up where you left off.
                   </p>
@@ -472,8 +472,8 @@ function ComposeContextRail({ detail }: { detail: CrmMemberDetail }) {
     <aside className="hidden w-80 shrink-0 flex-col gap-5 overflow-y-auto border-l border-border bg-canvas p-4 lg:flex">
       <div>
         <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Reaching</p>
-        <p className="mt-1 truncate text-sm font-bold text-text">{detail.displayName}</p>
-        {contact?.email && <p className="truncate text-xs text-subtle">{contact.email}</p>}
+        <p className="mt-1 truncate text-body-sm font-bold text-text">{detail.displayName}</p>
+        {contact?.email && <p className="truncate text-meta text-subtle">{contact.email}</p>}
       </div>
 
       {/* Resonance chips — health / tier / lifecycle at a glance. */}
@@ -521,10 +521,10 @@ function ComposeContextRail({ detail }: { detail: CrmMemberDetail }) {
             {interactions.map((it, i) => (
               <li key={`${it.kind}-${it.when}-${i}`} className="relative">
                 <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-pill bg-primary" aria-hidden />
-                <p className="text-xs font-semibold text-text">
+                <p className="text-meta font-semibold text-text">
                   {it.kind} <span className="font-normal text-subtle">· {it.when}</span>
                 </p>
-                <p className="text-xs text-muted">{it.summary}</p>
+                <p className="text-meta text-muted">{it.summary}</p>
               </li>
             ))}
           </ol>
@@ -537,7 +537,7 @@ function ComposeContextRail({ detail }: { detail: CrmMemberDetail }) {
           <h4 className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Notes</h4>
           <ul className="space-y-1.5">
             {notes.map((n) => (
-              <li key={n.id} className="flex items-start gap-2 text-xs text-muted">
+              <li key={n.id} className="flex items-start gap-2 text-meta text-muted">
                 <StickyNote className="mt-0.5 h-3 w-3 shrink-0 text-subtle" aria-hidden />
                 <span>{n.body}</span>
               </li>
@@ -547,7 +547,7 @@ function ComposeContextRail({ detail }: { detail: CrmMemberDetail }) {
       )}
 
       {!hasHistory && (
-        <p className="text-xs text-subtle">
+        <p className="text-meta text-subtle">
           No communication history yet. This will be your first touch with {detail.displayName}.
         </p>
       )}

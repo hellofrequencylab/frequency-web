@@ -23,7 +23,7 @@ const TOP_CODE_COLUMNS: ColumnDef<TopCode>[] = [
     render: (c) => (
       <div className="min-w-0">
         <div className="truncate font-medium text-text">{c.title}</div>
-        <div className="text-xs text-subtle">/q/{c.slug}</div>
+        <div className="text-meta text-subtle">/q/{c.slug}</div>
       </div>
     ),
   },
@@ -47,9 +47,9 @@ export function Analytics({ data }: { data: AnalyticsData }) {
       </div>
 
       <section className="rounded-2xl border border-border bg-surface p-4 lift-1">
-        <h2 className="text-sm font-bold text-text">Scans · last 30 days</h2>
+        <h2 className="text-body-sm font-bold text-text">Scans · last 30 days</h2>
         {windowTotal === 0 ? (
-          <p className="mt-3 py-6 text-center text-xs text-muted">No scans yet in this window.</p>
+          <p className="mt-3 py-6 text-center text-meta text-muted">No scans yet in this window.</p>
         ) : (
           <div className="mt-4 h-28" role="img" aria-label="Daily scans, last 30 days">
             <WeekBars values={data.daily.map((d) => d.count)} height={112} />
@@ -58,7 +58,7 @@ export function Analytics({ data }: { data: AnalyticsData }) {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-bold text-text">Top dynamic links</h2>
+        <h2 className="text-body-sm font-bold text-text">Top dynamic links</h2>
         <DataTable
           rows={data.topCodes}
           getRowId={(c) => c.id}
@@ -67,7 +67,7 @@ export function Analytics({ data }: { data: AnalyticsData }) {
           caption="Top dynamic links by scan volume"
           empty={
             <div className="rounded-2xl border border-border bg-surface p-4">
-              <p className="text-xs text-muted">No dynamic links have been scanned yet.</p>
+              <p className="text-meta text-muted">No dynamic links have been scanned yet.</p>
             </div>
           }
         />

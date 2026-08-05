@@ -43,7 +43,7 @@ export function Toggle({
         />
       </button>
       {saveState !== 'idle' && (
-        <span className="text-xs text-subtle" aria-live="polite">
+        <span className="text-meta text-subtle" aria-live="polite">
           {saveState === 'saving' ? (
             'Saving…'
           ) : (

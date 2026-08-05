@@ -48,8 +48,8 @@ export default async function NonprofitVerificationsPage() {
               <li key={v.id} className="rounded-2xl border border-border bg-surface p-5 lift-1">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0 space-y-1">
-                    <p className="text-sm font-bold text-text">{v.orgLegalName || 'No legal name given'}</p>
-                    <p className="text-xs text-muted">EIN {formatEin(v.ein)}</p>
+                    <p className="text-body-sm font-bold text-text">{v.orgLegalName || 'No legal name given'}</p>
+                    <p className="text-meta text-muted">EIN {formatEin(v.ein)}</p>
                     <p className="text-2xs text-muted">
                       {v.spaceSlug ? (
                         <Link href={`/spaces/${v.spaceSlug}`} className="font-semibold text-primary-strong hover:underline">

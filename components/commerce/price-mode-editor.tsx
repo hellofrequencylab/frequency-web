@@ -53,8 +53,8 @@ function dollarsToCents(text: string): number | undefined {
   return Number.isFinite(c) ? c : undefined
 }
 
-const LABEL = 'mb-1 block text-sm font-medium text-text'
-const HINT = 'mt-1 text-xs text-subtle'
+const LABEL = 'mb-1 block text-body-sm font-medium text-text'
+const HINT = 'mt-1 text-meta text-subtle'
 
 /** A dollars input that lifts integer cents (or undefined when blank/invalid). Keeps its own text so a
  *  mid-typed value like "25." round-trips; seeded once from the incoming cents. */
@@ -254,7 +254,7 @@ function PriceControl({
           />
 
           {!lockDonation && (
-            <label className="flex items-center gap-2 text-sm text-text">
+            <label className="flex items-center gap-2 text-body-sm text-text">
               <input
                 type="checkbox"
                 checked={donation}
@@ -328,9 +328,9 @@ function PriceControl({
         </div>
       )}
 
-      {mode === 'free' && <p className="text-sm text-muted">No charge. This offer shows as Free.</p>}
+      {mode === 'free' && <p className="text-body-sm text-muted">No charge. This offer shows as Free.</p>}
       {mode === 'contact' && (
-        <p className="text-sm text-muted">No checkout. Buyers see an Enquire button and reach out.</p>
+        <p className="text-body-sm text-muted">No checkout. Buyers see an Enquire button and reach out.</p>
       )}
     </div>
   )
@@ -415,14 +415,14 @@ export function PriceModeEditor({
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-muted">
+          <p className="text-body-sm text-muted">
             Offer a few named options. The one marked Most popular is highlighted for buyers.
           </p>
           <button
             type="button"
             onClick={backToSingle}
             disabled={disabled}
-            className="shrink-0 text-xs font-medium text-muted underline underline-offset-2 hover:text-text disabled:opacity-50"
+            className="shrink-0 text-meta font-medium text-muted underline underline-offset-2 hover:text-text disabled:opacity-50"
           >
             Use a single price
           </button>
@@ -465,7 +465,7 @@ export function PriceModeEditor({
               onChange={(price) => updateOption(idx, { price })}
             />
 
-            <label className="flex items-center gap-2 text-sm text-text">
+            <label className="flex items-center gap-2 text-body-sm text-text">
               <input
                 type="radio"
                 name={`${idPrefix}-recommended`}
@@ -484,7 +484,7 @@ export function PriceModeEditor({
             type="button"
             onClick={addOption}
             disabled={disabled}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
           >
             <Plus className="h-3.5 w-3.5" /> Add option
           </button>
@@ -510,7 +510,7 @@ export function PriceModeEditor({
           type="button"
           onClick={promoteToPackages}
           disabled={disabled}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
         >
           <Plus className="h-3.5 w-3.5" /> Add option
         </button>

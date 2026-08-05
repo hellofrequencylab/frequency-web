@@ -82,7 +82,7 @@ export function SpaceBodyPanel({ slug, panel, area }: { slug: string; panel: str
         <div className="flex items-center gap-3">
           <Link
             href={`/spaces/${slug}`}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-text"
+            className="inline-flex items-center gap-1.5 text-body-sm font-medium text-muted transition-colors hover:text-text"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden />
             Back to page
@@ -90,11 +90,11 @@ export function SpaceBodyPanel({ slug, panel, area }: { slug: string; panel: str
           <span className="text-border" aria-hidden>
             /
           </span>
-          <h1 className="text-xl font-bold text-text">{entry.label}</h1>
+          <h1 className="text-lead font-bold text-text">{entry.label}</h1>
         </div>
         <Link
           href={entry.fullHref(slug)}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-strong transition-colors hover:text-primary"
+          className="inline-flex items-center gap-1.5 text-body-sm font-medium text-primary-strong transition-colors hover:text-primary"
         >
           Open full page
           <ExternalLink className="h-4 w-4" aria-hidden />

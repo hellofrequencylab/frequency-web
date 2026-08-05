@@ -82,13 +82,13 @@ export function EventHostOfferField({ eventId, slug }: { eventId: string; slug: 
 
   return (
     <div>
-      <p className="flex items-center gap-1.5 text-xs font-semibold text-text">
+      <p className="flex items-center gap-1.5 text-meta font-semibold text-text">
         <Crown className="h-3.5 w-3.5 text-subtle" /> Hand hosting to another Space
       </p>
 
       {offer ? (
         <div className="mt-1.5 rounded-lg border border-border bg-surface p-2.5">
-          <p className="text-xs text-text">
+          <p className="text-meta text-text">
             <span className="font-semibold">{offer.toSpace.name}</span>{' '}
             {offer.initiatedBy === 'host' ? 'has been asked to host this event.' : 'asked to host this event.'}
           </p>
@@ -105,7 +105,7 @@ export function EventHostOfferField({ eventId, slug }: { eventId: string; slug: 
                   type="button"
                   disabled={pending}
                   onClick={() => void run(() => acceptEventHostTransfer(offer.id), 'This Space now hosts the event.')}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
                 >
                   {pending && <Loader2 className="h-3 w-3 animate-spin" aria-hidden />} Accept hosting
                 </button>
@@ -113,7 +113,7 @@ export function EventHostOfferField({ eventId, slug }: { eventId: string; slug: 
                   type="button"
                   disabled={pending}
                   onClick={() => void run(() => declineEventHostTransfer(offer.id))}
-                  className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+                  className="rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
                 >
                   Decline
                 </button>
@@ -126,7 +126,7 @@ export function EventHostOfferField({ eventId, slug }: { eventId: string; slug: 
                 type="button"
                 disabled={pending}
                 onClick={() => void run(() => revokeEventHostTransfer(offer.id))}
-                className="mt-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-60"
+                className="mt-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-60"
               >
                 Withdraw
               </button>
@@ -146,8 +146,8 @@ export function EventHostOfferField({ eventId, slug }: { eventId: string; slug: 
         </>
       )}
 
-      {error && <p className="mt-1 text-xs text-danger">{error}</p>}
-      {done && <p className="mt-1 text-xs text-success">{done}</p>}
+      {error && <p className="mt-1 text-meta text-danger">{error}</p>}
+      {done && <p className="mt-1 text-meta text-success">{done}</p>}
       {/* `slug` is accepted so the caller passes the same pair every other control in this card takes;
           the server actions revalidate by the slug they read off the event row themselves. */}
       <span className="hidden">{slug}</span>
@@ -230,7 +230,7 @@ function HostSpaceSearch({ pending, onPick }: { pending: boolean; onPick: (space
           }}
           placeholder="Search Spaces by name"
           disabled={pending}
-          className="min-w-0 flex-1 bg-transparent text-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
+          className="min-w-0 flex-1 bg-transparent text-body-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
         />
       </div>
 
@@ -262,7 +262,7 @@ function HostSpaceSearch({ pending, onPick }: { pending: boolean; onPick: (space
                   {getInitials(h.name)}
                 </div>
               )}
-              <span className="min-w-0 flex-1 truncate text-xs font-semibold text-text">{h.name}</span>
+              <span className="min-w-0 flex-1 truncate text-meta font-semibold text-text">{h.name}</span>
               {h.type_label && (
                 <span className="shrink-0 rounded-md bg-surface-elevated px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-muted">
                   {h.type_label}

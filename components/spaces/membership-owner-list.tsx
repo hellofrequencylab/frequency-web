@@ -34,7 +34,7 @@ export async function MembershipOwnerList({ spaceId }: { spaceId: string }) {
       {members.map((m) => (
         <li key={m.id} className="flex items-center justify-between gap-4 px-4 py-3">
           <div className="min-w-0">
-            <p className="flex items-center gap-2 truncate text-sm font-semibold text-text">
+            <p className="flex items-center gap-2 truncate text-body-sm font-semibold text-text">
               {m.memberName}
               {m.status === 'waitlist' && (
                 <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
@@ -42,7 +42,7 @@ export async function MembershipOwnerList({ spaceId }: { spaceId: string }) {
                 </span>
               )}
             </p>
-            <p className="text-xs text-muted">
+            <p className="text-meta text-muted">
               {m.tierName} ·{' '}
               {m.status === 'waitlist'
                 ? `waiting since ${sinceFmt.format(new Date(m.startedAt))}`

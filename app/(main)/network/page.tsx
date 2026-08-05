@@ -403,7 +403,7 @@ export default async function CommunityPage({
             {ctaLabel && ctaHref && (
               <a
                 href={ctaHref}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
               >
                 {ctaLabel}
               </a>
@@ -414,7 +414,7 @@ export default async function CommunityPage({
       >
       {/* Community size, pinned right against a baseline rule under the header. */}
       <div className="flex flex-wrap items-end justify-end gap-x-4 gap-y-1 border-b border-border">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pb-2.5 text-sm text-muted">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pb-2.5 text-body-sm text-muted">
           <span>
             <span className="font-bold text-text">{typedProfiles.length}</span> Members Worldwide
           </span>
@@ -455,13 +455,13 @@ export default async function CommunityPage({
         {/* No-location affordance — nudge the viewer to set a location so the
             directory can lead with who's nearby. Subtle, on the page background. */}
         {connectionSettings.proximityEnabled && !hasViewerLocation && (
-          <p className="mt-2 flex items-center gap-1.5 text-xs text-subtle">
+          <p className="mt-2 flex items-center gap-1.5 text-meta text-subtle">
             <MapPin className="h-3.5 w-3.5 shrink-0 text-subtle" />
             Set your location to see who&rsquo;s nearby.
           </p>
         )}
         {proximityActive && (
-          <p className="mt-2 text-xs text-subtle">
+          <p className="mt-2 text-meta text-subtle">
             Showing members near {placeParam ?? 'you'} first.
           </p>
         )}
@@ -508,15 +508,15 @@ export default async function CommunityPage({
                     href={l.href ?? '#'}
                     className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition-colors hover:bg-surface-elevated"
                   >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-sm font-semibold text-primary-strong select-none">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-body-sm font-semibold text-primary-strong select-none">
                       {getInitials(l.displayName)}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-1.5">
-                        <span className="truncate text-sm font-semibold text-text">{l.displayName}</span>
+                        <span className="truncate text-body-sm font-semibold text-text">{l.displayName}</span>
                         <span className="shrink-0 rounded-md bg-surface-elevated px-1.5 py-0.5 text-3xs font-medium text-muted">Lead</span>
                       </span>
-                      <span className="mt-0.5 block truncate text-xs text-muted">
+                      <span className="mt-0.5 block truncate text-meta text-muted">
                         {[l.email, l.city, l.ownerName ? `shared by ${l.ownerName}` : null]
                           .filter(Boolean)
                           .join(' · ') || 'Saved contact'}
@@ -564,7 +564,7 @@ export default async function CommunityPage({
                 ))}
               </div>
               {filtered.length > VISIBLE_LIMIT && (
-                <p className="mt-4 text-center text-sm text-muted">
+                <p className="mt-4 text-center text-body-sm text-muted">
                   Showing the first {VISIBLE_LIMIT} of {filtered.length} members. Narrow with search or the filters above to find someone.
                 </p>
               )}
@@ -576,7 +576,7 @@ export default async function CommunityPage({
             pulse below them. The pulse (P5/P3b) is Suspense-wrapped so it never blocks. */}
         <aside className="flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start">
           <div>
-            <label className="mb-2 block text-sm font-bold tracking-tight text-text">
+            <label className="mb-2 block text-body-sm font-bold tracking-tight text-text">
               Search members
             </label>
             <DirectorySearch placeholder="Search by name or @handle…" />

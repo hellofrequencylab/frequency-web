@@ -32,7 +32,7 @@ export function DailyCheckIn({ celebrate = true }: { celebrate?: boolean }) {
 
   return (
     <div className="fixed left-1/2 top-20 z-[60] -translate-x-1/2 motion-safe:animate-[slideUp_0.25s_ease-out]">
-      <div className="flex items-center gap-2.5 rounded-pill border border-border bg-surface px-4 py-2 text-sm font-semibold text-text shadow-pop">
+      <div className="flex items-center gap-2.5 rounded-pill border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-text shadow-pop">
         👋 Welcome back
         <span className="inline-flex items-center gap-1 text-primary-strong">
           <Flame className="h-4 w-4" aria-hidden /> Day {res.dayStreak}

@@ -30,7 +30,7 @@ export const LEAD_FUNNEL_STEPS: readonly LeadFunnelStep[] = [
 ] as const
 
 const BADGE =
-  'absolute -left-1 -top-1 flex h-7 w-7 items-center justify-center rounded-pill bg-primary text-sm font-semibold text-on-primary'
+  'absolute -left-1 -top-1 flex h-7 w-7 items-center justify-center rounded-pill bg-primary text-body-sm font-semibold text-on-primary'
 
 function StepCard({
   step,
@@ -52,8 +52,8 @@ function StepCard({
           {showNumbers && <span className={BADGE}>{n}</span>}
         </div>
         <div className="min-w-0">
-          <h3 className="font-display text-base uppercase leading-tight text-text">{step.label}</h3>
-          <p className="mt-1 text-sm leading-relaxed text-muted">{step.caption}</p>
+          <h3 className="font-display text-body uppercase leading-tight text-text">{step.label}</h3>
+          <p className="mt-1 text-body-sm leading-relaxed text-muted">{step.caption}</p>
         </div>
       </div>
     )
@@ -66,7 +66,7 @@ function StepCard({
         {showNumbers && <span className={BADGE}>{n}</span>}
       </div>
       <h3 className="font-display text-lg uppercase leading-tight text-text">{step.label}</h3>
-      <p className="mt-1 text-sm leading-relaxed text-muted">{step.caption}</p>
+      <p className="mt-1 text-body-sm leading-relaxed text-muted">{step.caption}</p>
     </div>
   )
 }

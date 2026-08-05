@@ -79,7 +79,7 @@ export default function ComparisonsIndexPage() {
                 <span className="block text-lg font-semibold text-text">
                   Frequency vs {c.name}
                 </span>
-                <span className="mt-0.5 block text-sm text-muted">{c.category}</span>
+                <span className="mt-0.5 block text-body-sm text-muted">{c.category}</span>
               </span>
               <ArrowRight className="h-5 w-5 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong" aria-hidden />
             </Link>

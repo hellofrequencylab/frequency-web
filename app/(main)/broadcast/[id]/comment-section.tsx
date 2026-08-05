@@ -67,7 +67,7 @@ export function CommentSection({
     <div>
       <div className="flex items-center gap-2 mb-5">
         <MessageCircle className="w-4 h-4 text-subtle" />
-        <h2 className="text-sm font-semibold text-text">
+        <h2 className="text-body-sm font-semibold text-text">
           {comments.length > 0 ? `${comments.length} comment${comments.length !== 1 ? 's' : ''}` : 'Comments'}
         </h2>
       </div>
@@ -88,13 +88,13 @@ export function CommentSection({
                 <div className="flex items-baseline gap-2 flex-wrap">
                   <Link
                     href={`/people/${c.author.handle}`}
-                    className="text-xs font-semibold text-text hover:underline"
+                    className="text-meta font-semibold text-text hover:underline"
                   >
                     {c.author.display_name}
                   </Link>
                   <span className="text-2xs text-muted">{relativeTime(c.created_at)}</span>
                 </div>
-                <p className="text-sm text-text leading-relaxed mt-0.5 whitespace-pre-wrap break-words">
+                <p className="text-body-sm text-text leading-relaxed mt-0.5 whitespace-pre-wrap break-words">
                   {c.body}
                 </p>
               </div>
@@ -112,7 +112,7 @@ export function CommentSection({
           ))}
         </div>
       ) : (
-        <p className="text-sm text-subtle mb-5">No comments yet. Be the first.</p>
+        <p className="text-body-sm text-subtle mb-5">No comments yet. Be the first.</p>
       )}
 
       {/* Compose */}
@@ -126,22 +126,22 @@ export function CommentSection({
             placeholder="Add a comment… (⌘↵ to post)"
             rows={2}
             disabled={isPending}
-            className="flex-1 rounded-control border border-border bg-surface px-3 py-2 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 resize-none disabled:opacity-50"
+            className="flex-1 rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 resize-none disabled:opacity-50"
           />
           <button
             type="submit"
             disabled={!body.trim() || isPending}
-            className="self-end inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors shrink-0"
+            className="self-end inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors shrink-0"
           >
             {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Post'}
           </button>
         </form>
       ) : (
-        <p className="text-sm text-subtle">
+        <p className="text-body-sm text-subtle">
           <Link href="/sign-in" className="text-primary-strong hover:underline">Sign in</Link> to comment.
         </p>
       )}
-      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+      {error && <p className="mt-2 text-meta text-danger">{error}</p>}
     </div>
   )
 }

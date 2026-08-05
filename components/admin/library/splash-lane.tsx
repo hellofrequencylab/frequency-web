@@ -105,8 +105,8 @@ export function SplashLane({
     return (
       <div className="rounded-2xl border border-dashed border-border-strong px-6 py-16 text-center">
         <LayoutTemplate className="mx-auto mb-3 h-8 w-8 text-subtle" aria-hidden />
-        <p className="text-base text-muted">No splashes match.</p>
-        <p className="mt-1 text-sm text-subtle">Try clearing the search or picking another folder.</p>
+        <p className="text-body text-muted">No splashes match.</p>
+        <p className="mt-1 text-body-sm text-subtle">Try clearing the search or picking another folder.</p>
       </div>
     )
   }
@@ -116,7 +116,7 @@ export function SplashLane({
       {/* ── (a) CATALOG — templates, browse cards ─────────────────────────────── */}
       {showTemplates && templates.length > 0 && (
         <section>
-          <h3 className="mb-3 font-display text-sm uppercase tracking-wide text-subtle">Templates</h3>
+          <h3 className="mb-3 font-display text-body-sm uppercase tracking-wide text-subtle">Templates</h3>
           {view === 'list' ? (
             <div className="overflow-hidden rounded-2xl border border-border">
               {templates.map((t) => (
@@ -127,7 +127,7 @@ export function SplashLane({
                   className="flex w-full items-center gap-3 border-b border-border px-3 py-2 text-left last:border-b-0 hover:bg-surface-elevated"
                 >
                   <span className="block h-10 w-14 shrink-0 overflow-hidden rounded-lg bg-surface-elevated">{t.preview}</span>
-                  <span className="min-w-0 flex-1 truncate text-sm text-text" title={t.title}>{t.title}</span>
+                  <span className="min-w-0 flex-1 truncate text-body-sm text-text" title={t.title}>{t.title}</span>
                   <KindBadge kind={t.kind} />
                 </button>
               ))}
@@ -145,7 +145,7 @@ export function SplashLane({
                     </span>
                     <span className="block px-3 py-2">
                       <span className="flex items-center justify-between gap-2">
-                        <span className="truncate text-sm text-text" title={t.title}>{t.title}</span>
+                        <span className="truncate text-body-sm text-text" title={t.title}>{t.title}</span>
                         <span className="shrink-0 text-2xs uppercase tracking-wide text-muted">Splash</span>
                       </span>
                       <span className="mt-1.5 flex flex-wrap gap-1">
@@ -163,7 +163,7 @@ export function SplashLane({
       {/* ── (b) GOVERNANCE — live splashes, status rows with a deep-link-out Edit ─ */}
       {showLive && liveRows.length > 0 && (
         <section>
-          <h3 className="mb-3 font-display text-sm uppercase tracking-wide text-subtle">Live splashes</h3>
+          <h3 className="mb-3 font-display text-body-sm uppercase tracking-wide text-subtle">Live splashes</h3>
           <div className="overflow-hidden rounded-2xl border border-border">
             {liveRows.map((l) => {
               const { label: sourceLabel, Icon: SourceIcon } = SOURCE_META[l.source]
@@ -179,25 +179,25 @@ export function SplashLane({
                   <button
                     type="button"
                     onClick={() => setOpenLiveId(l.id)}
-                    className="min-w-0 flex-1 truncate text-left text-sm text-text hover:underline"
+                    className="min-w-0 flex-1 truncate text-left text-body-sm text-text hover:underline"
                     title={l.title}
                   >
                     {l.title}
                   </button>
                   <StatusChip status={l.status} />
                   {l.target && (
-                    <span className="hidden min-w-0 max-w-[14rem] items-center gap-1 truncate text-xs text-subtle sm:inline-flex" title={l.target}>
+                    <span className="hidden min-w-0 max-w-[14rem] items-center gap-1 truncate text-meta text-subtle sm:inline-flex" title={l.target}>
                       <Target className="h-3 w-3 shrink-0" aria-hidden /> {l.target}
                     </span>
                   )}
                   {when && (
-                    <span className="hidden shrink-0 items-center gap-1 text-xs text-subtle md:inline-flex">
+                    <span className="hidden shrink-0 items-center gap-1 text-meta text-subtle md:inline-flex">
                       <CalendarClock className="h-3 w-3" aria-hidden /> {when}
                     </span>
                   )}
                   <Link
                     href={l.editHref}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-control border border-border-strong px-2.5 py-1 text-xs font-semibold text-text hover:bg-surface"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-control border border-border-strong px-2.5 py-1 text-meta font-semibold text-text hover:bg-surface"
                     title={l.editLabel}
                   >
                     <PencilLine className="h-3.5 w-3.5" aria-hidden /> Edit
@@ -207,7 +207,7 @@ export function SplashLane({
               )
             })}
           </div>
-          <p className="mt-2 text-xs text-subtle">
+          <p className="mt-2 text-meta text-subtle">
             Editing opens the real editor: the Puck page editor for a micro-site, the QR studio for a QR
             splash. The Loom catalogs and governs; it does not edit the splash here.
           </p>
@@ -224,7 +224,7 @@ export function SplashLane({
  *  to its editor when one exists (a page usage → the Puck micro-site editor). Empty → a quiet line. */
 function UsageList({ usages }: { usages: SplashUsage[] }) {
   if (usages.length === 0) {
-    return <p className="text-sm text-subtle">Not referenced yet</p>
+    return <p className="text-body-sm text-subtle">Not referenced yet</p>
   }
   return (
     <ul className="space-y-1.5">
@@ -234,7 +234,7 @@ function UsageList({ usages }: { usages: SplashUsage[] }) {
         return (
           <li
             key={`${u.context}:${u.refId ?? ''}:${u.blockId ?? ''}:${i}`}
-            className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm"
+            className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-body-sm"
           >
             <span className="shrink-0 rounded-pill border border-border bg-surface-elevated px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-muted">
               {u.context}
@@ -247,7 +247,7 @@ function UsageList({ usages }: { usages: SplashUsage[] }) {
             ) : (
               <span className="min-w-0 truncate text-text" title={label}>{label}</span>
             )}
-            {u.blockId && <span className="text-xs text-subtle">block {u.blockId}</span>}
+            {u.blockId && <span className="text-meta text-subtle">block {u.blockId}</span>}
           </li>
         )
       })}
@@ -259,7 +259,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
       <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-muted">{label}</p>
-      <div className="text-sm text-text">{children}</div>
+      <div className="text-body-sm text-text">{children}</div>
     </div>
   )
 }
@@ -283,21 +283,21 @@ function TemplateDrawer({ template, onClose }: { template: SplashTemplateCard; o
 
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <h3 className="min-w-0 flex-1 truncate text-base font-semibold text-text" title={template.title}>
+              <h3 className="min-w-0 flex-1 truncate text-body font-semibold text-text" title={template.title}>
                 {template.title}
               </h3>
               <KindBadge kind={template.kind} />
             </div>
-            <p className="text-xs text-subtle">Splash{template.sourceSlug ? ` · from ${template.sourceSlug}` : ''}</p>
-            <p className="pt-1 text-sm text-muted">{template.description}</p>
+            <p className="text-meta text-subtle">Splash{template.sourceSlug ? ` · from ${template.sourceSlug}` : ''}</p>
+            <p className="pt-1 text-body-sm text-muted">{template.description}</p>
           </div>
 
           {/* Source — code is the source of truth; the Loom indexes it read-only (§10). */}
           <div className="rounded-2xl border border-border bg-surface-elevated/50 p-3">
-            <p className="flex items-center gap-1.5 text-sm font-semibold text-text">
+            <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
               <GitBranch className="h-4 w-4 text-primary-strong" aria-hidden /> Source: code
             </p>
-            <p className="mt-1 text-xs text-subtle">
+            <p className="mt-1 text-meta text-subtle">
               This template is drawn from code. The Loom catalogs it; the splash itself is composed in the
               real editor, never as blocks here.
             </p>
@@ -306,7 +306,7 @@ function TemplateDrawer({ template, onClose }: { template: SplashTemplateCard; o
           <Field label="Compose">
             <Link
               href={template.composeHref}
-              className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-1.5 text-sm font-semibold text-text hover:bg-surface-elevated"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-1.5 text-body-sm font-semibold text-text hover:bg-surface-elevated"
             >
               {template.composeLabel}
               <ExternalLink className="h-3.5 w-3.5 text-subtle" aria-hidden />
@@ -339,12 +339,12 @@ function LiveSplashDrawer({ splash, onClose }: { splash: LiveSplashCard; onClose
         <div className="space-y-5 p-5">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <h3 className="min-w-0 flex-1 truncate text-base font-semibold text-text" title={splash.title}>
+              <h3 className="min-w-0 flex-1 truncate text-body font-semibold text-text" title={splash.title}>
                 {splash.title}
               </h3>
               <StatusChip status={splash.status} />
             </div>
-            <p className="inline-flex items-center gap-1.5 text-xs text-subtle">
+            <p className="inline-flex items-center gap-1.5 text-meta text-subtle">
               <SourceIcon className="h-3.5 w-3.5" aria-hidden /> {sourceLabel}
             </p>
           </div>
@@ -372,7 +372,7 @@ function LiveSplashDrawer({ splash, onClose }: { splash: LiveSplashCard; onClose
           <Field label="Edit">
             <Link
               href={splash.editHref}
-              className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-1.5 text-sm font-semibold text-text hover:bg-surface-elevated"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-1.5 text-body-sm font-semibold text-text hover:bg-surface-elevated"
               title={splash.editLabel}
             >
               <PencilLine className="h-3.5 w-3.5" aria-hidden /> {splash.editLabel}
@@ -384,7 +384,7 @@ function LiveSplashDrawer({ splash, onClose }: { splash: LiveSplashCard; onClose
             <UsageList usages={splash.usages} />
           </Field>
 
-          <p className="text-xs text-subtle">
+          <p className="text-meta text-subtle">
             Editing opens the real editor: the Puck page editor for a micro-site, the QR studio for a QR
             splash. The Loom catalogs and governs; it does not edit the splash here.
           </p>

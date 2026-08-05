@@ -402,14 +402,14 @@ export default function WhatIsFrequencyPage() {
               className="rounded-2xl border border-border bg-surface p-5 sm:flex sm:items-baseline sm:gap-5"
             >
               <div className="flex items-baseline gap-3 sm:w-64 sm:shrink-0">
-                <span className="font-display uppercase text-text text-xl leading-none">
+                <span className="font-display uppercase text-text text-lead leading-none">
                   {t.name}
                 </span>
-                <span className="text-sm font-bold text-primary-strong">{t.price}</span>
+                <span className="text-body-sm font-bold text-primary-strong">{t.price}</span>
               </div>
               <div className="mt-2 sm:mt-0 min-w-0">
-                <p className="text-base text-muted leading-relaxed">{t.who}</p>
-                <p className="mt-1 text-xs font-bold uppercase tracking-widest text-subtle">
+                <p className="text-body text-muted leading-relaxed">{t.who}</p>
+                <p className="mt-1 text-meta font-bold uppercase tracking-widest text-subtle">
                   {t.take}
                 </p>
               </div>
@@ -456,11 +456,11 @@ export default function WhatIsFrequencyPage() {
                 href={p.href}
                 className="block h-full rounded-3xl border border-border bg-surface p-6 transition-colors hover:border-border-strong"
               >
-                <p className="font-display uppercase text-text text-2xl leading-none">
+                <p className="font-display uppercase text-text text-page-title leading-none">
                   {p.label}
                 </p>
-                <p className="mt-3 text-sm text-muted leading-relaxed">{p.text}</p>
-                <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong">
+                <p className="mt-3 text-body-sm text-muted leading-relaxed">{p.text}</p>
+                <span className="mt-4 inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong">
                   Read more <ArrowRight className="h-4 w-4" />
                 </span>
               </a>

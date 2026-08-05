@@ -34,13 +34,13 @@ export default async function EntryPointsPage() {
         <div className="rounded-2xl border border-border bg-surface p-8 text-center lift-1">
           <Megaphone className="mx-auto h-8 w-8 text-primary-strong" aria-hidden />
           <p className="mt-3 text-lg font-bold text-text">Entry points are a Crew feature</p>
-          <p className="mx-auto mt-1.5 max-w-md text-sm text-muted">
+          <p className="mx-auto mt-1.5 max-w-md text-body-sm text-muted">
             Crew can spin up a branded flyer with a QR code in under a minute, and earn for every
             person it brings in. Join Crew to start your own.
           </p>
           <Link
             href="/upgrade"
-            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover"
+            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 text-body-sm font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover"
           >
             Become Crew
           </Link>

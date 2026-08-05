@@ -360,17 +360,17 @@ export function PracticesTable({
           aria-label="Bulk actions"
           className="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-primary/30 bg-surface-elevated px-3 py-2 lift-1"
         >
-          <span className="text-sm font-semibold text-text">{selectedCount} selected</span>
+          <span className="text-body-sm font-semibold text-text">{selectedCount} selected</span>
           <span className="mx-1 hidden h-4 w-px bg-border sm:block" aria-hidden />
 
-          <span className="text-xs font-medium text-muted">Weight</span>
+          <span className="text-meta font-medium text-muted">Weight</span>
           {(['light', 'standard', 'heavy'] as const).map((w) => (
             <button
               key={w}
               type="button"
               disabled={pending}
               onClick={() => bulkWeight(w)}
-              className="inline-flex min-h-[2rem] items-center rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface disabled:opacity-50 motion-reduce:transition-none"
+              className="inline-flex min-h-[2rem] items-center rounded-lg border border-border px-2.5 py-1 text-meta font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface disabled:opacity-50 motion-reduce:transition-none"
             >
               {WEIGHT_META[w].label}
             </button>
@@ -381,7 +381,7 @@ export function PracticesTable({
             type="button"
             disabled={pending}
             onClick={() => bulkPublic(true)}
-            className="inline-flex min-h-[2rem] items-center rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-success transition-colors hover:bg-success/10 disabled:opacity-50 motion-reduce:transition-none"
+            className="inline-flex min-h-[2rem] items-center rounded-lg border border-border px-2.5 py-1 text-meta font-semibold text-success transition-colors hover:bg-success/10 disabled:opacity-50 motion-reduce:transition-none"
           >
             Publish
           </button>
@@ -389,18 +389,18 @@ export function PracticesTable({
             type="button"
             disabled={pending}
             onClick={() => bulkPublic(false)}
-            className="inline-flex min-h-[2rem] items-center rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-muted transition-colors hover:bg-surface disabled:opacity-50 motion-reduce:transition-none"
+            className="inline-flex min-h-[2rem] items-center rounded-lg border border-border px-2.5 py-1 text-meta font-semibold text-muted transition-colors hover:bg-surface disabled:opacity-50 motion-reduce:transition-none"
           >
             Unpublish
           </button>
 
           <span className="mx-1 hidden h-4 w-px bg-border sm:block" aria-hidden />
-          <span className="text-xs font-medium text-muted">Template</span>
+          <span className="text-meta font-medium text-muted">Template</span>
           <button
             type="button"
             disabled={pending}
             onClick={() => bulkTemplate(true)}
-            className="inline-flex min-h-[2rem] items-center rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface disabled:opacity-50 motion-reduce:transition-none"
+            className="inline-flex min-h-[2rem] items-center rounded-lg border border-border px-2.5 py-1 text-meta font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface disabled:opacity-50 motion-reduce:transition-none"
           >
             On
           </button>
@@ -408,7 +408,7 @@ export function PracticesTable({
             type="button"
             disabled={pending}
             onClick={() => bulkTemplate(false)}
-            className="inline-flex min-h-[2rem] items-center rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-muted transition-colors hover:bg-surface disabled:opacity-50 motion-reduce:transition-none"
+            className="inline-flex min-h-[2rem] items-center rounded-lg border border-border px-2.5 py-1 text-meta font-semibold text-muted transition-colors hover:bg-surface disabled:opacity-50 motion-reduce:transition-none"
           >
             Off
           </button>
@@ -418,7 +418,7 @@ export function PracticesTable({
             type="button"
             disabled={pending}
             onClick={bulkArchive}
-            className="inline-flex min-h-[2rem] items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-muted transition-colors hover:bg-surface disabled:opacity-50 motion-reduce:transition-none"
+            className="inline-flex min-h-[2rem] items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-meta font-semibold text-muted transition-colors hover:bg-surface disabled:opacity-50 motion-reduce:transition-none"
           >
             <Archive className="h-3.5 w-3.5" aria-hidden /> Archive
           </button>
@@ -426,7 +426,7 @@ export function PracticesTable({
             type="button"
             disabled={pending}
             onClick={bulkRestore}
-            className="inline-flex min-h-[2rem] items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-muted transition-colors hover:bg-surface disabled:opacity-50 motion-reduce:transition-none"
+            className="inline-flex min-h-[2rem] items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-meta font-semibold text-muted transition-colors hover:bg-surface disabled:opacity-50 motion-reduce:transition-none"
           >
             <RotateCcw className="h-3.5 w-3.5" aria-hidden /> Restore
           </button>
@@ -434,7 +434,7 @@ export function PracticesTable({
           <button
             type="button"
             onClick={() => setSelected(new Set())}
-            className="ml-auto inline-flex min-h-[2rem] items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted transition-colors hover:text-text motion-reduce:transition-none"
+            className="ml-auto inline-flex min-h-[2rem] items-center gap-1 rounded-lg px-2 py-1 text-meta font-medium text-muted transition-colors hover:text-text motion-reduce:transition-none"
           >
             <X className="h-3.5 w-3.5" aria-hidden /> Clear
           </button>
@@ -451,18 +451,18 @@ export function PracticesTable({
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-        <span className="text-xs text-muted">
+        <span className="text-meta text-muted">
           {total === 0 ? 'No practices match' : `Showing ${showingFrom} to ${showingTo} of ${total}`}
         </span>
         {/* Reach past the loaded page: apply a bulk op to EVERY match of the current filter. */}
         {moreThanPage && (
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-subtle">All {total} matching:</span>
+            <span className="text-meta text-subtle">All {total} matching:</span>
             <button
               type="button"
               disabled={pending}
               onClick={() => runFiltered({ kind: 'setFlag', flag: 'is_public', value: true }, 'Published')}
-              className="inline-flex items-center rounded-lg border border-border px-2 py-0.5 text-xs font-semibold text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-50"
+              className="inline-flex items-center rounded-lg border border-border px-2 py-0.5 text-meta font-semibold text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-50"
             >
               Publish all
             </button>
@@ -470,7 +470,7 @@ export function PracticesTable({
               type="button"
               disabled={pending}
               onClick={() => runFiltered({ kind: 'archive' }, 'Archived')}
-              className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-0.5 text-xs font-semibold text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-0.5 text-meta font-semibold text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-50"
             >
               <Archive className="h-3 w-3" aria-hidden /> Archive all
             </button>
@@ -478,7 +478,7 @@ export function PracticesTable({
               type="button"
               disabled={pending}
               onClick={() => runFiltered({ kind: 'restore' }, 'Restored')}
-              className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-0.5 text-xs font-semibold text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-0.5 text-meta font-semibold text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-50"
             >
               <RotateCcw className="h-3 w-3" aria-hidden /> Restore all
             </button>
@@ -528,7 +528,7 @@ export function PracticesTable({
                     <Link
                       href={`/practices/${p.id}/edit`}
                       title={`Edit ${p.title}`}
-                      className="truncate text-sm font-medium text-text hover:underline"
+                      className="truncate text-body-sm font-medium text-text hover:underline"
                     >
                       {p.title}
                     </Link>
@@ -553,12 +553,12 @@ export function PracticesTable({
                       <span className="hidden shrink-0 text-2xs text-muted lg:inline">Unset weight</span>
                     )}
                   </div>
-                  <span className="mt-0.5 block text-xs text-subtle lg:hidden">
+                  <span className="mt-0.5 block text-meta text-subtle lg:hidden">
                     {wt ? `${wt.label} · ` : 'No weight · '}{p.logs_30d} in 30d · {p.creator}
                   </span>
                 </div>
                 <span
-                  className="hidden min-w-0 items-center gap-1 truncate text-xs text-muted lg:flex"
+                  className="hidden min-w-0 items-center gap-1 truncate text-meta text-muted lg:flex"
                   title={p.isHouse ? 'A Frequency house practice (no member creator)' : p.creator}
                 >
                   <span className="truncate">{p.creator}</span>
@@ -567,7 +567,7 @@ export function PracticesTable({
                   className="hidden flex-col items-center text-center lg:flex"
                   title={`${p.adopters} adopters · ${p.logs_total} logs all-time`}
                 >
-                  <span className="text-sm font-semibold tabular-nums text-text">{p.logs_30d}</span>
+                  <span className="text-body-sm font-semibold tabular-nums text-text">{p.logs_30d}</span>
                   <span className="text-2xs tabular-nums text-muted">{p.logs_total} total · {p.adopters} adopt</span>
                 </span>
                 <span className="hidden lg:inline-flex">
@@ -608,7 +608,7 @@ function Pagination({
         <Link
           href={pagination.moreHref}
           scroll={false}
-          className="inline-flex items-center rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+          className="inline-flex items-center rounded-lg border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
         >
           Load more
         </Link>
@@ -623,26 +623,26 @@ function Pagination({
         <Link
           href={pagination.prevHref}
           scroll={false}
-          className="inline-flex items-center rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+          className="inline-flex items-center rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
         >
           Previous
         </Link>
       ) : (
-        <span className="inline-flex items-center rounded-lg border border-border/50 px-3 py-1.5 text-sm font-medium text-subtle">
+        <span className="inline-flex items-center rounded-lg border border-border/50 px-3 py-1.5 text-body-sm font-medium text-subtle">
           Previous
         </span>
       )}
-      <span className="text-xs text-muted">Page {pagination.page} of {pagination.pageCount}</span>
+      <span className="text-meta text-muted">Page {pagination.page} of {pagination.pageCount}</span>
       {pagination.nextHref ? (
         <Link
           href={pagination.nextHref}
           scroll={false}
-          className="inline-flex items-center rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+          className="inline-flex items-center rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
         >
           Next
         </Link>
       ) : (
-        <span className="inline-flex items-center rounded-lg border border-border/50 px-3 py-1.5 text-sm font-medium text-subtle">
+        <span className="inline-flex items-center rounded-lg border border-border/50 px-3 py-1.5 text-body-sm font-medium text-subtle">
           Next
         </span>
       )}

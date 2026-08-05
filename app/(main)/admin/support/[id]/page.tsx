@@ -37,7 +37,7 @@ export default async function AdminSupportTicketPage({ params }: { params: Promi
       eyebrow={
         <span className="inline-flex flex-wrap items-center gap-2">
           <StatusChip tone={STATUS_TONE[ticket.status]} size="sm">{STATUS_LABELS[ticket.status]}</StatusChip>
-          <span className="text-xs font-medium text-subtle">{TYPE_LABELS[ticket.type]} · #{ticket.ref} · opened {relativeTime(ticket.createdAt)}</span>
+          <span className="text-meta font-medium text-subtle">{TYPE_LABELS[ticket.type]} · #{ticket.ref} · opened {relativeTime(ticket.createdAt)}</span>
         </span>
       }
     >
@@ -65,16 +65,16 @@ export default async function AdminSupportTicketPage({ params }: { params: Promi
           {ticket.reporter && (
             <div className="rounded-2xl border border-border bg-surface p-4">
               <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Reporter</p>
-              <p className="mt-1.5 text-sm font-bold text-text">{ticket.reporter.name}</p>
-              <p className="text-xs text-subtle">@{ticket.reporter.handle}</p>
-              <p className="mt-1 text-xs text-muted">
+              <p className="mt-1.5 text-body-sm font-bold text-text">{ticket.reporter.name}</p>
+              <p className="text-meta text-subtle">@{ticket.reporter.handle}</p>
+              <p className="mt-1 text-meta text-muted">
                 {reporterTickets.total} ticket{reporterTickets.total === 1 ? '' : 's'} · {reporterTickets.open} open
               </p>
               <div className="mt-3 space-y-1.5">
-                <Link href={`/people/${ticket.reporter.handle}`} className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated">
+                <Link href={`/people/${ticket.reporter.handle}`} className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated">
                   <User className="h-3.5 w-3.5 text-subtle" /> View profile <ExternalLink className="ml-auto h-3 w-3 text-subtle" />
                 </Link>
-                <Link href={`/connections?q=${encodeURIComponent(ticket.reporter.handle)}`} className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated">
+                <Link href={`/connections?q=${encodeURIComponent(ticket.reporter.handle)}`} className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated">
                   <KanbanSquare className="h-3.5 w-3.5 text-subtle" /> Find in CRM <ExternalLink className="ml-auto h-3 w-3 text-subtle" />
                 </Link>
               </div>

@@ -23,7 +23,7 @@ export async function TopCircles() {
           <li key={circle.id}>
             <Link
               href={`/circles/${circle.slug}`}
-              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-text hover:bg-border"
+              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-meta text-text hover:bg-border"
             >
               <CircleDot className="h-3.5 w-3.5 shrink-0 text-muted" aria-hidden />
               <span className="truncate">{circle.name}</span>

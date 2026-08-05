@@ -12,7 +12,7 @@ export async function BookingMine({ spaceId }: { spaceId: string }) {
 
   return (
     <div className="mb-6 space-y-2">
-      <h3 className="text-sm font-bold tracking-tight text-text">Your upcoming bookings</h3>
+      <h3 className="text-body-sm font-bold tracking-tight text-text">Your upcoming bookings</h3>
       <BookingMineList spaceId={spaceId} bookings={bookings} timezone={timezone} />
     </div>
   )

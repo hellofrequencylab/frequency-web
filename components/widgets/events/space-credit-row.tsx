@@ -43,15 +43,15 @@ export function SpaceCreditRow({
       ) : (
         <div
           className={`${box} flex shrink-0 select-none items-center justify-center rounded-xl bg-primary-bg font-semibold text-primary-strong ${
-            lead ? 'text-base' : 'text-sm'
+            lead ? 'text-body' : 'text-body-sm'
           }`}
         >
           {getInitials(space.name)}
         </div>
       )}
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-text">{space.name}</p>
-        <p className="text-xs text-subtle">{role}</p>
+        <p className="truncate text-body-sm font-semibold text-text">{space.name}</p>
+        <p className="text-meta text-subtle">{role}</p>
       </div>
     </Link>
   )

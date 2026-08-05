@@ -43,13 +43,13 @@ export async function GamificationTopAchievers() {
                   i < topEarners.length - 1 ? 'border-b border-border' : ''
                 }`}
               >
-                <span className="text-sm font-bold text-subtle w-5 tabular-nums">{i + 1}</span>
+                <span className="text-body-sm font-bold text-subtle w-5 tabular-nums">{i + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <Link href={`/people/${p.handle}`} className="text-sm font-medium text-text hover:underline truncate block">
+                  <Link href={`/people/${p.handle}`} className="text-body-sm font-medium text-text hover:underline truncate block">
                     {p.display_name}
                   </Link>
                 </div>
-                <div className="flex items-center gap-3 shrink-0 text-xs text-muted">
+                <div className="flex items-center gap-3 shrink-0 text-meta text-muted">
                   <span className="flex items-center gap-1 tabular-nums">
                     <Award className="w-3 h-3 text-signal" aria-hidden />
                     {p.achievement_count ?? 0}

@@ -55,8 +55,8 @@ export function ImportContactsForm({ spaceId }: { spaceId: string }) {
           <Users className="h-5 w-5" aria-hidden />
         </span>
         <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-text">Bring your contacts into your Space CRM</h3>
-          <p className="mt-0.5 text-xs text-muted">
+          <h3 className="text-body-sm font-semibold text-text">Bring your contacts into your Space CRM</h3>
+          <p className="mt-0.5 text-meta text-muted">
             Copy the people from My Contacts into this space, with a deal started for each one. We skip
             anyone you have already brought in. Your private My Contacts list stays as it is.
           </p>
@@ -71,14 +71,14 @@ export function ImportContactsForm({ spaceId }: { spaceId: string }) {
         }}
       >
         <div>
-          <Label htmlFor="grad-status" className="text-xs font-semibold">
+          <Label htmlFor="grad-status" className="text-meta font-semibold">
             Status
           </Label>
           <select
             id="grad-status"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="mt-1 rounded-lg border border-border-strong bg-surface px-2 py-1.5 text-sm text-text focus:border-border-strong focus:outline-none"
+            className="mt-1 rounded-lg border border-border-strong bg-surface px-2 py-1.5 text-body-sm text-text focus:border-border-strong focus:outline-none"
           >
             {STATUS_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -89,7 +89,7 @@ export function ImportContactsForm({ spaceId }: { spaceId: string }) {
         </div>
 
         <div>
-          <Label htmlFor="grad-tag" className="text-xs font-semibold">
+          <Label htmlFor="grad-tag" className="text-meta font-semibold">
             Tag (optional)
           </Label>
           <Input
@@ -116,14 +116,14 @@ export function ImportContactsForm({ spaceId }: { spaceId: string }) {
       </form>
 
       {error && (
-        <p className="mt-3 rounded-lg bg-danger-bg px-3 py-2 text-sm font-medium text-danger" role="alert">
+        <p className="mt-3 rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
 
       {result && !pending && (
         <p
-          className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-2 text-sm font-medium text-success"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-2 text-body-sm font-medium text-success"
           role="status"
         >
           <Check className="h-4 w-4" aria-hidden />

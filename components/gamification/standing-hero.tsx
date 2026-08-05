@@ -57,13 +57,13 @@ export function StandingHero({
             <p className="text-2xs font-semibold uppercase tracking-widest text-primary-strong">
               {seasonName ? `Season · ${seasonName}` : 'Season standing'}
             </p>
-            <p className="flex items-center gap-2 text-xl font-bold leading-tight text-text">
+            <p className="flex items-center gap-2 text-lead font-bold leading-tight text-text">
               {RANK_LABELS[rank] ?? rank}
               <span className="rank-badge text-2xs" style={seasonRankStyle(rank)}>{def.label}</span>
             </p>
           </div>
         </div>
-        <p className="text-sm text-muted">
+        <p className="text-body-sm text-muted">
           {next ? (
             <>
               <span className="font-bold tabular-nums text-text">{zapsToNext.toLocaleString()}</span>{' '}
@@ -136,10 +136,10 @@ function FeatureTile({
   const inner = (
     <>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-2xl font-extrabold leading-none tabular-nums text-text">{value}</p>
+        <p className="text-page-title font-extrabold leading-none tabular-nums text-text">{value}</p>
         <Icon className={`h-4 w-4 shrink-0 ${iconCls}`} aria-hidden />
       </div>
-      <p className="mt-1.5 text-xs font-medium text-muted">{label}</p>
+      <p className="mt-1.5 text-meta font-medium text-muted">{label}</p>
     </>
   )
   const cls = 'bg-surface px-4 py-3.5'

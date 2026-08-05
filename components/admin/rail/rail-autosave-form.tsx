@@ -33,7 +33,7 @@ export function useRailSaveNow(): () => void {
 export function RailSaveRow({ state, error }: { state: RailSaveState; error: string | null }) {
   if (state === 'error') {
     return (
-      <p role="alert" className="flex items-center gap-1.5 text-xs font-medium text-danger">
+      <p role="alert" className="flex items-center gap-1.5 text-meta font-medium text-danger">
         <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden />
         {error ?? 'Could not save. Try again.'}
       </p>
@@ -43,7 +43,7 @@ export function RailSaveRow({ state, error }: { state: RailSaveState; error: str
     return <p className="text-2xs text-muted">Changes save automatically.</p>
   }
   return (
-    <p className="flex items-center gap-1.5 text-xs font-medium text-subtle" aria-live="polite">
+    <p className="flex items-center gap-1.5 text-meta font-medium text-subtle" aria-live="polite">
       {state === 'saving' ? (
         'Saving…'
       ) : (

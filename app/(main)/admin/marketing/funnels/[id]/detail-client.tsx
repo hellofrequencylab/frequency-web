@@ -79,39 +79,39 @@ export function CampaignDetail({
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+              className="rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
             />
             <button
               onClick={saveName}
               disabled={pending}
-              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60"
+              className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60"
             >
               Save
             </button>
-            <button onClick={() => { setRenaming(false); setName(campaign.name) }} className="px-2 py-1.5 text-xs font-semibold text-muted hover:text-text">
+            <button onClick={() => { setRenaming(false); setName(campaign.name) }} className="px-2 py-1.5 text-meta font-semibold text-muted hover:text-text">
               Cancel
             </button>
           </>
         ) : (
           <>
-            <button onClick={() => setRenaming(true)} className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted transition-colors hover:text-text">
+            <button onClick={() => setRenaming(true)} className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted transition-colors hover:text-text">
               <Pencil className="h-3 w-3" /> Rename
             </button>
             {campaign.status !== 'archived' && (
-              <button onClick={archive} disabled={pending} className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted transition-colors hover:text-danger disabled:opacity-60">
+              <button onClick={archive} disabled={pending} className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-meta text-muted transition-colors hover:text-danger disabled:opacity-60">
                 <Archive className="h-3 w-3" /> Archive
               </button>
             )}
             <button
               onClick={() => setAdding(true)}
-              className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               <Plus className="h-3.5 w-3.5" /> Add entry point
             </button>
           </>
         )}
         {error && (
-          <p role="alert" className="basis-full text-xs text-danger">
+          <p role="alert" className="basis-full text-meta text-danger">
             {error}
           </p>
         )}
@@ -123,8 +123,8 @@ export function CampaignDetail({
           {!template ? (
             <div>
               <div className="mb-3 flex items-center justify-between">
-                <p className="text-sm font-semibold text-text">Pick a template</p>
-                <button onClick={closeAdd} className="text-xs font-medium text-muted hover:text-text">Cancel</button>
+                <p className="text-body-sm font-semibold text-text">Pick a template</p>
+                <button onClick={closeAdd} className="text-meta font-medium text-muted hover:text-text">Cancel</button>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 {listEntryTemplates().map((t) => (
@@ -133,10 +133,10 @@ export function CampaignDetail({
                     onClick={() => setTemplate(t)}
                     className="flex items-start gap-3 rounded-2xl border border-border bg-canvas/40 px-4 py-3 text-left transition-colors hover:border-primary/40"
                   >
-                    <span className="text-2xl leading-none" aria-hidden>{t.emoji}</span>
+                    <span className="text-page-title leading-none" aria-hidden>{t.emoji}</span>
                     <span>
-                      <span className="block text-sm font-bold text-text">{t.label}</span>
-                      <span className="mt-0.5 block text-xs text-muted">{t.blurb}</span>
+                      <span className="block text-body-sm font-bold text-text">{t.label}</span>
+                      <span className="mt-0.5 block text-meta text-muted">{t.blurb}</span>
                     </span>
                   </button>
                 ))}
@@ -144,7 +144,7 @@ export function CampaignDetail({
             </div>
           ) : (
             <div>
-              <button onClick={() => setTemplate(null)} className="mb-3 inline-flex items-center gap-1 text-xs font-medium text-muted hover:text-text">
+              <button onClick={() => setTemplate(null)} className="mb-3 inline-flex items-center gap-1 text-meta font-medium text-muted hover:text-text">
                 <ArrowLeft className="h-3 w-3" /> {template.label} · change
               </button>
               <EntryForm
@@ -161,7 +161,7 @@ export function CampaignDetail({
       {/* Entry points in this campaign. */}
       <section className="space-y-3">
         {cards.length === 0 && !adding && (
-          <p className="rounded-2xl border border-dashed border-border bg-surface px-4 py-8 text-center text-sm text-muted">
+          <p className="rounded-2xl border border-dashed border-border bg-surface px-4 py-8 text-center text-body-sm text-muted">
             No entry points in this campaign yet. Add one above.
           </p>
         )}

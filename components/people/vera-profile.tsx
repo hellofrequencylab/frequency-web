@@ -72,13 +72,13 @@ export function VeraProfile({
         </span>
       }
       subtitle={<span className="font-medium">@{handle} · the voice of Frequency</span>}
-      badges={<RoleBadge role="moderator" className="text-xs leading-tight" />}
+      badges={<RoleBadge role="moderator" className="text-meta leading-tight" />}
       actions={<AskVeraButton />}
     >
-      {bio && <p className="mb-6 max-w-prose text-sm leading-relaxed text-text/90">{bio}</p>}
+      {bio && <p className="mb-6 max-w-prose text-body-sm leading-relaxed text-text/90">{bio}</p>}
 
       <section>
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-subtle">
+        <h2 className="mb-3 text-body-sm font-bold uppercase tracking-wider text-subtle">
           What Vera does
         </h2>
         <ul className="space-y-2.5">
@@ -91,8 +91,8 @@ export function VeraProfile({
                 <Icon className="h-[18px] w-[18px]" aria-hidden />
               </span>
               <span className="min-w-0">
-                <p className="text-sm font-semibold text-text">{title}</p>
-                <p className="mt-0.5 text-sm leading-relaxed text-muted">
+                <p className="text-body-sm font-semibold text-text">{title}</p>
+                <p className="mt-0.5 text-body-sm leading-relaxed text-muted">
                   {line}
                   {href && linkLabel && (
                     <>
@@ -109,7 +109,7 @@ export function VeraProfile({
         </ul>
       </section>
 
-      <p className="mt-6 flex items-start gap-2 text-xs leading-relaxed text-subtle">
+      <p className="mt-6 flex items-start gap-2 text-meta leading-relaxed text-subtle">
         <BookOpen className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
         Vera is the platform&rsquo;s voice, not a player: no streaks, no rank, and her job is to
         get you to real people, then step back.

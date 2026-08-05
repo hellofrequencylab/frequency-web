@@ -14,15 +14,15 @@ export const EventSales = async () => {
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
+      <p className="text-meta font-semibold uppercase tracking-wide text-subtle">
         Sales <span className="ml-1 font-normal normal-case text-muted">{soldTickets.length} sold</span>
       </p>
       {soldTickets.length === 0 ? (
-        <p className="mt-2 text-sm text-subtle">No tickets sold yet.</p>
+        <p className="mt-2 text-body-sm text-subtle">No tickets sold yet.</p>
       ) : (
         <ul className="mt-3 space-y-1.5">
           {soldTickets.map((t) => (
-            <li key={t.id} className="flex items-center justify-between gap-3 text-sm">
+            <li key={t.id} className="flex items-center justify-between gap-3 text-body-sm">
               <span className="min-w-0 truncate text-text">
                 {t.buyer?.display_name ?? 'A member'}
                 <span className="ml-2 text-subtle">

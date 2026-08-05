@@ -136,7 +136,7 @@ export function MenuArrangeBoard({
               href={`/admin/menu/arrange?surface=${s.key}`}
               aria-current={on ? 'page' : undefined}
               className={
-                'rounded-pill px-3 py-1.5 text-sm font-medium transition-colors ' +
+                'rounded-pill px-3 py-1.5 text-body-sm font-medium transition-colors ' +
                 (on ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:bg-surface-elevated hover:text-text')
               }
             >
@@ -147,16 +147,16 @@ export function MenuArrangeBoard({
       </nav>
 
       {error && (
-        <p className="mb-4 rounded-lg border border-border bg-surface-elevated px-3 py-2 text-sm text-warning">{error}</p>
+        <p className="mb-4 rounded-lg border border-border bg-surface-elevated px-3 py-2 text-body-sm text-warning">{error}</p>
       )}
 
       {loading ? (
-        <p className="text-sm text-muted">Loading the menu…</p>
+        <p className="text-body-sm text-muted">Loading the menu…</p>
       ) : (
         <div className="flex flex-col gap-6 lg:flex-row">
           {/* The board — category boxes, drag to reorder */}
           <div className="flex-1">
-            <p className="mb-3 text-sm text-muted">
+            <p className="mb-3 text-body-sm text-muted">
               Drag a box by its handle to reorder. Drag a page from the right onto a box to add it.
             </p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -193,7 +193,7 @@ export function MenuArrangeBoard({
                         title="Drag to reorder"
                       >
                         <GripVertical className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-                        <span className="truncate text-sm font-semibold text-text">{box.label}</span>
+                        <span className="truncate text-body-sm font-semibold text-text">{box.label}</span>
                       </div>
                       {hiddenCount > 0 && (
                         <span
@@ -207,14 +207,14 @@ export function MenuArrangeBoard({
                     </div>
                     <ul className="space-y-1">
                       {box.items.length === 0 ? (
-                        <li className="rounded-lg border border-dashed border-border px-2 py-2 text-xs text-subtle">
+                        <li className="rounded-lg border border-dashed border-border px-2 py-2 text-meta text-subtle">
                           Empty group. Drop a page here
                         </li>
                       ) : (
                         box.items.map((it) => (
                           <li
                             key={it.id}
-                            className="flex items-center justify-between gap-2 rounded-lg px-2 py-1 text-sm"
+                            className="flex items-center justify-between gap-2 rounded-lg px-2 py-1 text-body-sm"
                           >
                             <span className={it.mode === 'hidden' ? 'truncate text-subtle line-through' : 'truncate text-text'}>
                               {it.label}
@@ -228,7 +228,7 @@ export function MenuArrangeBoard({
                 )
               })}
               {boxes.length === 0 && (
-                <p className="text-sm text-muted">This menu has no groups yet.</p>
+                <p className="text-body-sm text-muted">This menu has no groups yet.</p>
               )}
             </div>
           </div>
@@ -238,11 +238,11 @@ export function MenuArrangeBoard({
             <div className="rounded-2xl border border-border bg-surface-elevated p-3">
               <div className="mb-2 flex items-center gap-1.5">
                 <Inbox className="h-4 w-4 text-muted" aria-hidden />
-                <h3 className="text-sm font-semibold text-text">Unlinked pages</h3>
+                <h3 className="text-body-sm font-semibold text-text">Unlinked pages</h3>
               </div>
-              <p className="mb-3 text-xs text-subtle">Pages not in this menu. Drag one onto a box to add it.</p>
+              <p className="mb-3 text-meta text-subtle">Pages not in this menu. Drag one onto a box to add it.</p>
               {palette.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-border px-2 py-3 text-center text-xs text-subtle">
+                <p className="rounded-lg border border-dashed border-border px-2 py-3 text-center text-meta text-subtle">
                   Every page is placed. 🎉
                 </p>
               ) : (
@@ -260,7 +260,7 @@ export function MenuArrangeBoard({
                         dragKind.current = null
                         setOverId(null)
                       }}
-                      className="flex cursor-grab items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text active:cursor-grabbing hover:border-primary"
+                      className="flex cursor-grab items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text active:cursor-grabbing hover:border-primary"
                       title={p.href}
                     >
                       <Plus className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />

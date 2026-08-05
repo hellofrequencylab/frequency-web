@@ -49,7 +49,7 @@ export async function VaultAwards() {
   return (
     <section id="awards" className="scroll-mt-24">
       <SectionHeader title="Your Awards" />
-      <p className="-mt-2 mb-3 text-xs text-subtle">
+      <p className="-mt-2 mb-3 text-meta text-subtle">
         Badges you earn by showing up. Some are secret. Keep exploring to find them all.
       </p>
 
@@ -88,8 +88,8 @@ function AwardsCollection({
       {/* Collection progress bar. */}
       <div className="mb-6">
         <div className="mb-1.5 flex items-center justify-between">
-          <span className="text-xs font-medium text-muted">Collection Progress</span>
-          <span className="text-xs text-subtle">{stats.earned} of {stats.total}</span>
+          <span className="text-meta font-medium text-muted">Collection Progress</span>
+          <span className="text-meta text-subtle">{stats.earned} of {stats.total}</span>
         </div>
         <ProgressTrack value={earnedPct} label={`${stats.earned} of ${stats.total} awards earned`} size="xl" animate />
       </div>
@@ -105,7 +105,7 @@ function AwardsCollection({
               <SectionHeader
                 title={catConfig.label}
                 action={
-                  <span className="text-xs font-medium tabular-nums text-subtle">
+                  <span className="text-meta font-medium tabular-nums text-subtle">
                     {earned}/{items.length}
                   </span>
                 }
@@ -141,18 +141,18 @@ function AwardsCollection({
                               {tier.label}
                             </span>
                           </div>
-                          <p className="mt-0.5 text-xs leading-relaxed text-muted">
+                          <p className="mt-0.5 text-meta leading-relaxed text-muted">
                             {isSecret ? 'Keep exploring to discover this Award.' : a.description}
                           </p>
                           {a.earned && a.unlockedAt && (
-                            <p className="mt-1 text-xs text-subtle">
+                            <p className="mt-1 text-meta text-subtle">
                               Unlocked {new Date(a.unlockedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </p>
                           )}
                           {!a.earned && a.zaps_reward > 0 && !isSecret && (
                             <div className="mt-1 flex items-center gap-1">
                               <Zap className="h-3 w-3 text-primary" />
-                              <span className="text-xs font-medium text-subtle">+{a.zaps_reward} Zaps</span>
+                              <span className="text-meta font-medium text-subtle">+{a.zaps_reward} Zaps</span>
                             </div>
                           )}
                         </div>

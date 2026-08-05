@@ -17,7 +17,7 @@ export async function VenueHoldsSection({ spaceId }: { spaceId: string }) {
   return (
     <section className="mt-8">
       <SectionHeader title="Shared venue" />
-      <p className="mb-3 text-sm text-muted">
+      <p className="mb-3 text-body-sm text-muted">
         Coordinate use of a collaborator&rsquo;s venue. A request is an advisory hold the venue owner
         approves, never a customer booking, so it cannot double-book.
       </p>

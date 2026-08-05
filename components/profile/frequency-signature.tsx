@@ -99,8 +99,8 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
         className={`rounded-2xl border border-dashed border-border bg-surface/50 px-6 py-10 text-center ${className ?? ''}`}
       >
         <Compass className="mx-auto mb-3 h-8 w-8 text-subtle" />
-        <p className="text-sm font-semibold text-text">No Frequency Signature yet</p>
-        <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
+        <p className="text-body-sm font-semibold text-text">No Frequency Signature yet</p>
+        <p className="mx-auto mt-1 max-w-sm text-body-sm text-muted">
           {name ? `${name} hasn't` : 'You haven’t'} logged any practice yet. A signature takes
           shape across the four Pillars (Mind, Body, Spirit, and Expression) as the practice
           spreads.
@@ -284,12 +284,12 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
         {/* Legend — balance read + per-pillar bars. */}
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
-            <p className="text-base font-bold text-text">{balanceLabel(signature)}</p>
-            <span className="text-xs font-medium text-subtle">
+            <p className="text-body font-bold text-text">{balanceLabel(signature)}</p>
+            <span className="text-meta font-medium text-subtle">
               {signature.spread} of 4 Pillars
             </span>
           </div>
-          <p className="mt-0.5 text-sm text-muted">
+          <p className="mt-0.5 text-body-sm text-muted">
             <span className="font-semibold" style={{ color: accentColor(domAccent) }}>
               {PILLARS[dominant].label}
             </span>
@@ -301,7 +301,7 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
               quiet stretch lets it ease back. Painted in the balance tint (currentColor). */}
           <div className="mt-3" style={{ color: balanceTint }}>
             <div className="flex items-baseline justify-between gap-2">
-              <span className="text-xs font-semibold text-text">Bloom</span>
+              <span className="text-meta font-semibold text-text">Bloom</span>
               <span className="text-2xs font-medium tabular-nums text-muted">
                 {Math.round(fill * 100)}% to full
               </span>
@@ -323,7 +323,7 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
               return (
                 <li key={k} className="flex items-center gap-2.5">
                   <span className="h-2 w-2 shrink-0 rounded-pill" style={{ backgroundColor: acc }} />
-                  <span className="w-20 shrink-0 text-xs font-medium text-text">{PILLARS[k].label}</span>
+                  <span className="w-20 shrink-0 text-meta font-medium text-text">{PILLARS[k].label}</span>
                   <span className="h-1.5 flex-1 overflow-hidden rounded-pill bg-surface-elevated">
                     <span
                       className="block h-full rounded-pill"

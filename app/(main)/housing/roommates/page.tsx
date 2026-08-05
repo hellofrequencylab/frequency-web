@@ -41,7 +41,7 @@ function FitChips({ chips }: { chips: string[] }) {
       {chips.map((c) => (
         <span
           key={c}
-          className="rounded-pill border border-border bg-surface-elevated px-2 py-0.5 text-xs text-subtle"
+          className="rounded-pill border border-border bg-surface-elevated px-2 py-0.5 text-meta text-subtle"
         >
           {c}
         </span>
@@ -115,7 +115,7 @@ export default async function RoommatesPage({
             action={
               <Link
                 href="/settings/connections"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 <Sparkles className="h-4 w-4" aria-hidden /> Turn on Resonance matching
               </Link>
@@ -137,7 +137,7 @@ export default async function RoommatesPage({
                         <Sparkles className="h-4 w-4 text-primary" aria-hidden />
                         {pct(m.score)}% match
                       </p>
-                      <p className="mt-0.5 flex items-center gap-2 text-sm text-subtle">
+                      <p className="mt-0.5 flex items-center gap-2 text-body-sm text-subtle">
                         {m.city && (
                           <span className="inline-flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
@@ -152,7 +152,7 @@ export default async function RoommatesPage({
                         </div>
                       )}
                     </div>
-                    <span className="shrink-0 text-sm font-medium text-primary">View</span>
+                    <span className="shrink-0 text-body-sm font-medium text-primary">View</span>
                   </Link>
                 )
               })}
@@ -170,7 +170,7 @@ export default async function RoommatesPage({
             action={
               <Link
                 href="/settings/connections"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 <Sparkles className="h-4 w-4" aria-hidden /> Turn on Resonance matching
               </Link>

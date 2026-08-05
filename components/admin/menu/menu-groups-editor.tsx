@@ -385,7 +385,7 @@ export function MenuGroupsEditor({
       actions={
         <div className="flex items-center gap-2">
           {status && (
-            <span className="text-xs text-subtle" aria-hidden>
+            <span className="text-meta text-subtle" aria-hidden>
               {status}
             </span>
           )}
@@ -393,7 +393,7 @@ export function MenuGroupsEditor({
             type="button"
             onClick={() => addItem(null)}
             disabled={isPending}
-            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
           >
             <Plus className="h-4 w-4" aria-hidden />
             Menu-level link
@@ -402,7 +402,7 @@ export function MenuGroupsEditor({
             type="button"
             onClick={() => addCategory(null)}
             disabled={isPending}
-            className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             <FolderPlus className="h-4 w-4" aria-hidden />
             Add group
@@ -416,13 +416,13 @@ export function MenuGroupsEditor({
       </p>
 
       {error && (
-        <p className="mb-3 rounded-lg border border-danger/30 bg-danger-bg/40 px-3 py-2 text-sm text-danger">
+        <p className="mb-3 rounded-lg border border-danger/30 bg-danger-bg/40 px-3 py-2 text-body-sm text-danger">
           {error}
         </p>
       )}
 
       {menu.isDefault && (
-        <div className="mb-4 rounded-2xl border border-dashed border-border bg-surface/50 p-4 text-sm text-muted">
+        <div className="mb-4 rounded-2xl border border-dashed border-border bg-surface/50 p-4 text-body-sm text-muted">
           This surface has no saved menu yet, so it is showing the site defaults. Editing
           anything, or seeding, creates an editable copy in the database.
         </div>
@@ -456,7 +456,7 @@ export function MenuGroupsEditor({
             <button
               type="button"
               onClick={() => addCategory(null)}
-              className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               Add a group
             </button>
@@ -584,8 +584,8 @@ function Bucket({
       }}
       className="mt-3"
     >
-      {title && <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">{title}</p>}
-      {hint && <p className="mb-2 text-xs text-subtle">{hint}</p>}
+      {title && <p className="mb-1 text-meta font-semibold uppercase tracking-wide text-subtle">{title}</p>}
+      {hint && <p className="mb-2 text-meta text-subtle">{hint}</p>}
       <ul className="space-y-1.5">
         {pinnedLead && (
           <ItemEditor
@@ -620,7 +620,7 @@ function Bucket({
           type="button"
           onClick={onAddItem}
           disabled={isPending}
-          className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-border px-3 py-3 text-xs font-medium text-subtle transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+          className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-border px-3 py-3 text-meta font-medium text-subtle transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
         >
           <Plus className="h-3.5 w-3.5" aria-hidden />
           Add a link, or drop one here
@@ -664,7 +664,7 @@ function CategoryHeader({
     <div className="space-y-3">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <label className="mb-1 block text-xs font-semibold text-subtle" htmlFor={`cat-${cat.id}`}>
+          <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`cat-${cat.id}`}>
             Group heading
           </label>
           <input
@@ -675,7 +675,7 @@ function CategoryHeader({
             disabled={isPending}
             onChange={(e) => setLabel(e.target.value)}
             onBlur={() => label !== (cat.label ?? '') && onRename(label)}
-            className="w-full max-w-sm rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-sm font-semibold text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+            className="w-full max-w-sm rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm font-semibold text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
           />
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -683,7 +683,7 @@ function CategoryHeader({
             type="button"
             onClick={onAddItem}
             disabled={isPending}
-            className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden />
             Link
@@ -692,7 +692,7 @@ function CategoryHeader({
             type="button"
             onClick={onAddSub}
             disabled={isPending}
-            className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
           >
             <FolderPlus className="h-3.5 w-3.5" aria-hidden />
             Sub-group
@@ -719,7 +719,7 @@ function CategoryHeader({
       )}
       {/* Section access gate (ADR-390): floor + optional staff domain for the whole group. */}
       <div>
-        <p className="mb-1.5 text-xs font-semibold text-subtle">Who can see this group</p>
+        <p className="mb-1.5 text-meta font-semibold text-subtle">Who can see this group</p>
         <GateControls
           minAccess={cat.minAccess}
           staffDomain={cat.staffDomain}

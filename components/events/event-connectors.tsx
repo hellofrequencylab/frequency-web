@@ -26,7 +26,7 @@ export async function EventConnectors({
     <section className="rounded-2xl border border-border bg-surface-elevated p-5">
       <div className="flex items-center gap-2">
         <Users className="h-4 w-4 text-primary-strong" />
-        <h2 className="text-sm font-bold tracking-tight text-text">People to meet</h2>
+        <h2 className="text-body-sm font-bold tracking-tight text-text">People to meet</h2>
       </div>
       <p className="mt-1 text-2xs text-muted">
         Going to the same things you are, into the same Channels. Say hi before the room does.
@@ -43,7 +43,7 @@ export async function EventConnectors({
             <div className="min-w-0 flex-1">
               <a
                 href={`/people/${s.handle}`}
-                className="block truncate text-sm font-semibold text-text hover:text-primary-strong"
+                className="block truncate text-body-sm font-semibold text-text hover:text-primary-strong"
               >
                 {s.displayName}
               </a>

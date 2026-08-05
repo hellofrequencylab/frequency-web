@@ -12,8 +12,8 @@ import type { VeraConfig, FeaturedRow } from './load-vera'
 // explicit-save (one "Save Vera" button); the splash-feed section keeps its own
 // imperative refresh/veto controls. Grouped with the kit's annotated FormSection.
 
-const FIELD = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:border-border-strong focus:outline-none'
-const LABEL = 'block text-xs font-semibold uppercase tracking-wide text-subtle'
+const FIELD = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none'
+const LABEL = 'block text-meta font-semibold uppercase tracking-wide text-subtle'
 
 export function VeraConfigForm({ cfg, featured }: { cfg: VeraConfig; featured: FeaturedRow[] }) {
   const oaths = [0, 1, 2].map((i) => cfg.induction.oathLabels[i] ?? '')
@@ -102,7 +102,7 @@ export function VeraConfigForm({ cfg, featured }: { cfg: VeraConfig; featured: F
 
         <div className="flex items-center gap-3 pt-6">
           <Button type="submit" className="lift-1">Save Vera</Button>
-          <span className="text-xs text-subtle">Changes apply to new conversations immediately.</span>
+          <span className="text-meta text-subtle">Changes apply to new conversations immediately.</span>
         </div>
       </form>
 
@@ -117,7 +117,7 @@ export function VeraConfigForm({ cfg, featured }: { cfg: VeraConfig; featured: F
           </form>
 
           {featured.length === 0 ? (
-            <p className="rounded-lg border border-border bg-surface-elevated px-3 py-2 text-xs text-subtle">
+            <p className="rounded-lg border border-border bg-surface-elevated px-3 py-2 text-meta text-subtle">
               Nothing featured yet. The home page falls back to the latest public posts until Vera curates a set.
             </p>
           ) : (
@@ -125,11 +125,11 @@ export function VeraConfigForm({ cfg, featured }: { cfg: VeraConfig; featured: F
               {featured.map((post) => (
                 <li key={post.id} className="flex items-start gap-3 rounded-lg border border-border bg-surface-elevated px-3 py-2">
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-text">
+                    <p className="text-meta font-semibold text-text">
                       {post.author_display_name ?? 'Community member'}
                       {post.author_handle && <span className="font-normal text-subtle"> @{post.author_handle}</span>}
                     </p>
-                    <p className="mt-0.5 line-clamp-2 text-sm text-muted">{post.body}</p>
+                    <p className="mt-0.5 line-clamp-2 text-body-sm text-muted">{post.body}</p>
                   </div>
                   <form action={vetoFeatured} className="shrink-0">
                     <input type="hidden" name="postId" value={post.id} />

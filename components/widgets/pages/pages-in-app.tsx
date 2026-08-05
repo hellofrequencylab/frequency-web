@@ -15,11 +15,11 @@ function InAppSection({ area, label }: { area: 'Member' | 'Focus surfaces'; labe
   return (
     <section>
       <SectionHeader title={`In-app pages / ${label}`} />
-      <p className="-mt-1 mb-4 max-w-2xl text-sm text-muted">
+      <p className="-mt-1 mb-4 max-w-2xl text-body-sm text-muted">
         Open any member-facing page with edit mode on. Staff edit it in place, right on the page.
       </p>
       <div className={`max-w-3xl ${TABLE_WRAP}`}>
-        <table className="w-full text-sm">
+        <table className="w-full text-body-sm">
           <thead>
             <tr className={HEAD_ROW}>
               <th className={TH}>Page</th>
@@ -31,7 +31,7 @@ function InAppSection({ area, label }: { area: 'Member' | 'Focus surfaces'; labe
             {routes.map((r) => (
               <tr key={r.route} className={BODY_ROW}>
                 <td className="px-4 py-3 font-medium text-text">{r.label}</td>
-                <td className="px-4 py-3 font-mono text-xs text-subtle">{r.route}</td>
+                <td className="px-4 py-3 font-mono text-meta text-subtle">{r.route}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-3">
                     <a href={r.route} target="_blank" rel="noreferrer" className={VIEW_LINK}>

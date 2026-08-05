@@ -1001,7 +1001,7 @@ export function MovementSession({
       <Overlay>
         {/* Sequenced run (P6): a progress chip; when more remain, closing this rolls into the next. */}
         {queuePosition && (
-          <div className="mx-auto shrink-0 rounded-pill bg-surface-elevated px-3 py-1.5 text-center text-xs font-medium text-muted">
+          <div className="mx-auto shrink-0 rounded-pill bg-surface-elevated px-3 py-1.5 text-center text-meta font-medium text-muted">
             Practice {queuePosition.index + 1} of {queuePosition.total}
             {hasNext ? ' · closing this starts the next' : ' · last one'}
           </div>
@@ -1010,12 +1010,12 @@ export function MovementSession({
             back to finish for the rest. A top-up (finished) celebrates the rest landing.
             Plain, no shame, no em or en dashes (docs/CONTENT-VOICE.md). */}
         {payload.partial && (
-          <div className="shrink-0 rounded-xl border border-success/40 bg-success-bg/30 px-4 py-2.5 text-center text-sm text-text">
+          <div className="shrink-0 rounded-xl border border-success/40 bg-success-bg/30 px-4 py-2.5 text-center text-body-sm text-text">
             1 Zap now, and the day is logged. Finish the rest of it later for the full reward.
           </div>
         )}
         {payload.finished && (
-          <div className="shrink-0 rounded-xl border border-success/40 bg-success-bg/30 px-4 py-2.5 text-center text-sm text-text">
+          <div className="shrink-0 rounded-xl border border-success/40 bg-success-bg/30 px-4 py-2.5 text-center text-body-sm text-text">
             You finished it. The rest of the Zaps just landed.
           </div>
         )}
@@ -1029,7 +1029,7 @@ export function MovementSession({
       <Overlay>
         <CenterScreen>
           <MovementArt className="block h-10 animate-pulse" />
-          <p className="text-sm font-medium text-muted">Counting it up...</p>
+          <p className="text-body-sm font-medium text-muted">Counting it up...</p>
         </CenterScreen>
       </Overlay>
     )
@@ -1039,14 +1039,14 @@ export function MovementSession({
     return (
       <Overlay>
         <CenterScreen>
-          <p className="text-sm font-medium text-text">That did not save. Your movement still happened.</p>
+          <p className="text-body-sm font-medium text-text">That did not save. Your movement still happened.</p>
           <button
             type="button"
             onClick={() => {
               const done = resumeOffset + Math.round((Date.now() - startedAt) / 1000)
               void finishWith(Math.max(0, finishCap === null ? done : Math.min(done, finishCap)))
             }}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
+            className="rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
           >
             Try again
           </button>
@@ -1083,7 +1083,7 @@ export function MovementSession({
             stays visible (LAYOUT directive). Bottom padding keeps the last line clear of
             the docked bar so nothing (e.g. "Next: ...") ever sits under the button. */}
         <div className="flex flex-1 flex-col items-center justify-center gap-4 pt-[max(3rem,env(safe-area-inset-top))] pb-6">
-          <p className="flex animate-pulse items-center gap-2.5 text-sm font-bold uppercase tracking-[0.3em] text-move [animation-duration:3s]">
+          <p className="flex animate-pulse items-center gap-2.5 text-body-sm font-bold uppercase tracking-[0.3em] text-move [animation-duration:3s]">
             <MovementArt className="block h-5" /> Get Moving
           </p>
 
@@ -1094,14 +1094,14 @@ export function MovementSession({
           {warming ? (
             <>
               <p
-                className="text-xs font-bold uppercase tracking-[0.3em] text-move"
+                className="text-meta font-bold uppercase tracking-[0.3em] text-move"
                 aria-live="polite"
               >
                 Warm up
               </p>
               {/* The target the member is settling into, shown below the label through warm-up. */}
               {targetLabel && (
-                <p className="text-sm tabular-nums text-subtle">
+                <p className="text-body-sm tabular-nums text-subtle">
                   Settling into {targetLabel.replace(' session', '')}
                 </p>
               )}
@@ -1111,7 +1111,7 @@ export function MovementSession({
               {/* The warm-up message (ADR-592): a Journey step's override (P5) wins over the
                   practice's own message; shown as the timer counts in. */}
               {(warmupMessageOverride ?? practice?.warmupMessage) ? (
-                <p className="mt-1 max-w-sm text-balance text-base font-medium text-text/80">{warmupMessageOverride ?? practice?.warmupMessage}</p>
+                <p className="mt-1 max-w-sm text-balance text-body font-medium text-text/80">{warmupMessageOverride ?? practice?.warmupMessage}</p>
               ) : (
                 // A fixed-height spacer matches the running screen's phase chip + Next lines so
                 // the ring does not jump when the run begins.
@@ -1122,7 +1122,7 @@ export function MovementSession({
             <>
               {/* The full session length, kept below the header once the run begins. */}
               {targetLabel && (
-                <p className="text-sm tabular-nums text-subtle">{targetLabel}</p>
+                <p className="text-body-sm tabular-nums text-subtle">{targetLabel}</p>
               )}
 
               {/* The phase chip — color-coded, with the round counter for Strength. */}
@@ -1150,7 +1150,7 @@ export function MovementSession({
               </div>
 
               {/* Next up — the line that lets the member anticipate the change. */}
-              <p className="h-5 text-sm text-subtle">
+              <p className="h-5 text-body-sm text-subtle">
                 {ended ? 'Done' : pos.nextLabel ? `Next: ${pos.nextLabel}` : plan.openEnded ? 'Stop when you are done' : ' '}
               </p>
               {resumeOffset > 0 && (
@@ -1163,7 +1163,7 @@ export function MovementSession({
             <button
               type="button"
               onClick={restoreCues}
-              className="rounded-pill border border-move/50 bg-move-bg/40 px-3 py-1.5 text-xs font-medium text-move transition-colors hover:bg-move-bg/60"
+              className="rounded-pill border border-move/50 bg-move-bg/40 px-3 py-1.5 text-meta font-medium text-move transition-colors hover:bg-move-bg/60"
             >
               Tap to restore sound
             </button>
@@ -1177,12 +1177,12 @@ export function MovementSession({
             Voice: plain, no narrated feelings, no em dashes. */}
         {!warming && runOverPrompt && (
           <div className="mx-auto mb-2 w-full max-w-sm rounded-2xl border border-move/50 bg-move-bg/30 px-4 py-3 text-center">
-            <p className="text-sm font-semibold text-text">Still moving?</p>
-            <p className="mt-0.5 text-xs text-muted">Confirm to keep logging.</p>
+            <p className="text-body-sm font-semibold text-text">Still moving?</p>
+            <p className="mt-0.5 text-meta text-muted">Confirm to keep logging.</p>
             <button
               type="button"
               onClick={confirmRunOver}
-              className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-move px-3.5 py-1.5 text-sm font-bold text-on-move transition-colors hover:bg-move-hover"
+              className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-move px-3.5 py-1.5 text-body-sm font-bold text-on-move transition-colors hover:bg-move-hover"
             >
               Still here
             </button>
@@ -1201,14 +1201,14 @@ export function MovementSession({
               }
               togglePause()
             }}
-            className="min-w-44 rounded-pill bg-primary px-10 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+            className="min-w-44 rounded-pill bg-primary px-10 py-3 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
           >
             {warming ? 'Begin now' : ended ? 'Finish' : paused ? 'Resume' : 'Pause'}
           </button>
           <button
             type="button"
             onClick={() => void finish()}
-            className="rounded-pill px-4 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
+            className="rounded-pill px-4 py-1.5 text-meta font-medium text-subtle transition-colors hover:text-text"
           >
             Stop &amp; Log
           </button>
@@ -1238,7 +1238,7 @@ export function MovementSession({
           // Standalone fallback (no door): the engine's own masthead, unchanged.
           <>
             <div className="relative flex items-center justify-center pb-2">
-              <p className="flex items-center gap-2.5 text-base font-bold uppercase tracking-[0.35em] text-move">
+              <p className="flex items-center gap-2.5 text-body font-bold uppercase tracking-[0.35em] text-move">
                 <MovementArt className="block h-6" /> Get Moving
               </p>
               <button
@@ -1250,7 +1250,7 @@ export function MovementSession({
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <p className="pb-6 text-center text-xs text-subtle">Move on a timer. Walk, run, flow, train, stretch, or play.</p>
+            <p className="pb-6 text-center text-meta text-subtle">Move on a timer. Walk, run, flow, train, stretch, or play.</p>
           </>
         )}
 
@@ -1396,7 +1396,7 @@ export function MovementSession({
         )}
 
         {mode === 'play' && (
-          <div className="rounded-card border border-border px-4 py-3 text-sm text-muted">
+          <div className="rounded-card border border-border px-4 py-3 text-body-sm text-muted">
             An open count-up. Start, move, and Stop when you are done.
           </div>
         )}
@@ -1425,7 +1425,7 @@ export function MovementSession({
         )}
 
         {/* The plan read-out + total. */}
-        <p className="text-center text-xs text-subtle">
+        <p className="text-center text-meta text-subtle">
           {plan.label}
           {totalSeconds(plan) !== null && <span className="tabular-nums"> · {fmt(totalSeconds(plan)!)}</span>}
         </p>
@@ -1434,7 +1434,7 @@ export function MovementSession({
             stopped. The plan is seeded to the target, so it ends at the target and runs only the
             remaining time. Surfaced so the setup makes the resume clear (it is no longer the full walk). */}
         {activeResume && remainingMin > 0 && (
-          <p className="text-center text-xs font-semibold text-move">
+          <p className="text-center text-meta font-semibold text-move">
             Continue Practice, {remainingMin} min left.
           </p>
         )}
@@ -1457,7 +1457,7 @@ export function MovementSession({
                 </span>
               </p>
             )}
-            <p className="flex min-w-0 items-center justify-center gap-1.5 text-sm text-text">
+            <p className="flex min-w-0 items-center justify-center gap-1.5 text-body-sm text-text">
               <span className="shrink-0 text-subtle">Logs as</span>
               <span className="truncate font-semibold">{practice.title}</span>
               {practice.loggedToday && <Check className="h-3.5 w-3.5 shrink-0 text-success" />}
@@ -1480,7 +1480,7 @@ export function MovementSession({
             type="button"
             onClick={() => void start()}
             disabled={!practiceId}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-move px-4 py-3.5 text-sm font-bold text-on-move transition-colors hover:bg-move-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-move px-4 py-3.5 text-body-sm font-bold text-on-move transition-colors hover:bg-move-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
           >
             <OnAirIcon className="h-4 w-4" />{' '}
             {activeResume ? 'Continue Practice' : 'Start Practice'}
@@ -1494,7 +1494,7 @@ export function MovementSession({
 // --- small setup atoms ------------------------------------------------------
 
 function Label({ children }: { children: React.ReactNode }) {
-  return <p className="text-xs font-semibold uppercase tracking-wider text-subtle">{children}</p>
+  return <p className="text-meta font-semibold uppercase tracking-wider text-subtle">{children}</p>
 }
 
 /** A mode tile, matching the Mindless ModeButton (C.1): an icon over a label in a
@@ -1575,7 +1575,7 @@ function Stepper({
       >
         <Minus className="h-3.5 w-3.5" />
       </button>
-      <span className="text-sm font-semibold tabular-nums text-text">{label}</span>
+      <span className="text-body-sm font-semibold tabular-nums text-text">{label}</span>
       <button
         type="button"
         onClick={onMore}

@@ -27,7 +27,7 @@ export function GroupCard({ group }: { group: GroupCardData }) {
       className="block rounded-2xl border border-border bg-surface px-3 py-2.5 hover:border-primary-bg dark:hover:border-primary transition-colors"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium text-text truncate">{group.name}</span>
+        <span className="text-body-sm font-medium text-text truncate">{group.name}</span>
         <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium shrink-0 ${
           group.type === 'in-person'
             ? 'bg-success-bg text-success'
@@ -36,7 +36,7 @@ export function GroupCard({ group }: { group: GroupCardData }) {
           {group.type === 'in-person' ? 'In-person' : 'Online'}
         </span>
       </div>
-      <div className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-muted">
+      <div className="mt-1 flex flex-wrap items-center gap-x-2 text-meta text-muted">
         {(group.city || group.neighborhood) && (
           <span className="flex items-center gap-0.5">
             <MapPin className="w-2.5 h-2.5" />

@@ -73,7 +73,7 @@ export function PricingBillingToggle({
         />
       </div>
       {interval === 'year' && (
-        <p className="mb-8 -mt-4 text-center text-sm font-semibold text-primary-strong">{yearlyNote}</p>
+        <p className="mb-8 -mt-4 text-center text-body-sm font-semibold text-primary-strong">{yearlyNote}</p>
       )}
     </div>
   )

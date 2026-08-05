@@ -204,7 +204,7 @@ export function SeederImages({
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-sm font-semibold text-text">
+        <div className="flex items-center gap-2 text-body-sm font-semibold text-text">
           <ImageIcon className="h-4 w-4 text-primary-strong" aria-hidden />
           Images
           {images.length > 0 && <span className="font-normal text-muted">· {images.length}</span>}
@@ -214,14 +214,14 @@ export function SeederImages({
             type="button"
             onClick={arrange}
             disabled={arranging || busy}
-            className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface px-3 py-1 text-xs font-semibold text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface px-3 py-1 text-meta font-semibold text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-50"
           >
             {arranging ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Sparkles className="h-3.5 w-3.5" aria-hidden />}
             {arranging ? 'Arranging…' : 'Auto-arrange with AI'}
           </button>
         )}
       </div>
-      <p className="mt-0.5 text-xs text-muted">
+      <p className="mt-0.5 text-meta text-muted">
         Add photos for this Space. The first is the primary image. Auto-arrange lets the AI designer read
         every photo, pick the hero, and order the rest. Every image is filed into the Space&rsquo;s Loom, so
         the owner has them the moment they claim it: on approval for a new seed, or right away once live.

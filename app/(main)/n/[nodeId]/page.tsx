@@ -64,7 +64,7 @@ export default async function NodePage({
           <MapPin className="h-8 w-8" />
         </div>
 
-        <p className="mt-4 text-sm text-muted">
+        <p className="mt-4 text-body-sm text-muted">
           {node.zaps_value > 0
             ? `Claim this spot to earn ${node.zaps_value} Zaps.`
             : 'Claim this spot.'}

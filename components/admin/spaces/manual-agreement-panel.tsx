@@ -43,7 +43,7 @@ const METHOD_OPTIONS = [
 ]
 
 const inputClass =
-  'w-full rounded-card border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary'
+  'w-full rounded-card border border-border bg-surface px-3 py-2 text-body-sm text-text focus:outline-none focus:ring-2 focus:ring-primary'
 
 function dateLabel(dateISO: string): string {
   return new Date(`${dateISO}T00:00:00Z`).toLocaleDateString('en-US', {
@@ -72,23 +72,23 @@ export function ManualAgreementPanel({
     const planLabel = PLAN_OPTIONS.find((p) => p.value === agreement.plan)?.label ?? agreement.plan
     return (
       <div className="space-y-4">
-        <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+        <dl className="grid gap-x-6 gap-y-2 text-body-sm sm:grid-cols-2">
           <div>
-            <dt className="text-xs text-subtle">Plan</dt>
+            <dt className="text-meta text-subtle">Plan</dt>
             <dd className="font-medium text-text">
               {planLabel}, billed {agreement.interval === 'year' ? 'yearly' : 'monthly'}
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-subtle">Locked rate</dt>
+            <dt className="text-meta text-subtle">Locked rate</dt>
             <dd className="font-medium text-text">{agreement.label ?? rate}</dd>
           </div>
           <div>
-            <dt className="text-xs text-subtle">Paid through</dt>
+            <dt className="text-meta text-subtle">Paid through</dt>
             <dd className="font-medium text-text">{dateLabel(agreement.paidThrough)}</dd>
           </div>
           <div>
-            <dt className="text-xs text-subtle">Method</dt>
+            <dt className="text-meta text-subtle">Method</dt>
             <dd className="font-medium text-text">{methodLabel}</dd>
           </div>
         </dl>
@@ -108,11 +108,11 @@ export function ManualAgreementPanel({
             {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
             Record payment
           </Button>
-          <p className="text-xs text-muted">
+          <p className="text-meta text-muted">
             Extends paid-through by one {agreement.interval} and resets the reminders.
           </p>
         </div>
-        {error && <p className="text-sm text-danger">{error}</p>}
+        {error && <p className="text-body-sm text-danger">{error}</p>}
       </div>
     )
   }
@@ -143,8 +143,8 @@ export function ManualAgreementPanel({
       }}
     >
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block text-sm">
-          <span className="mb-1 block text-xs font-semibold text-subtle">Plan</span>
+        <label className="block text-body-sm">
+          <span className="mb-1 block text-meta font-semibold text-subtle">Plan</span>
           <select name="plan" defaultValue="collective" className={inputClass}>
             {PLAN_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -153,19 +153,19 @@ export function ManualAgreementPanel({
             ))}
           </select>
         </label>
-        <label className="block text-sm">
-          <span className="mb-1 block text-xs font-semibold text-subtle">Billed</span>
+        <label className="block text-body-sm">
+          <span className="mb-1 block text-meta font-semibold text-subtle">Billed</span>
           <select name="interval" defaultValue="year" className={inputClass}>
             <option value="year">Yearly</option>
             <option value="month">Monthly</option>
           </select>
         </label>
-        <label className="block text-sm">
-          <span className="mb-1 block text-xs font-semibold text-subtle">Amount per interval (dollars)</span>
+        <label className="block text-body-sm">
+          <span className="mb-1 block text-meta font-semibold text-subtle">Amount per interval (dollars)</span>
           <input name="amount" type="number" min="0" step="0.01" required className={inputClass} placeholder="490" />
         </label>
-        <label className="block text-sm">
-          <span className="mb-1 block text-xs font-semibold text-subtle">Method</span>
+        <label className="block text-body-sm">
+          <span className="mb-1 block text-meta font-semibold text-subtle">Method</span>
           <select name="method" defaultValue="cash" className={inputClass}>
             {METHOD_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -174,17 +174,17 @@ export function ManualAgreementPanel({
             ))}
           </select>
         </label>
-        <label className="block text-sm">
-          <span className="mb-1 block text-xs font-semibold text-subtle">Started</span>
+        <label className="block text-body-sm">
+          <span className="mb-1 block text-meta font-semibold text-subtle">Started</span>
           <input name="started_at" type="date" required className={inputClass} />
         </label>
-        <label className="block text-sm">
-          <span className="mb-1 block text-xs font-semibold text-subtle">Paid through</span>
+        <label className="block text-body-sm">
+          <span className="mb-1 block text-meta font-semibold text-subtle">Paid through</span>
           <input name="paid_through" type="date" required className={inputClass} />
         </label>
       </div>
-      <label className="block text-sm">
-        <span className="mb-1 block text-xs font-semibold text-subtle">Rate label (shown to the owner)</span>
+      <label className="block text-body-sm">
+        <span className="mb-1 block text-meta font-semibold text-subtle">Rate label (shown to the owner)</span>
         <input
           name="label"
           type="text"
@@ -192,15 +192,15 @@ export function ManualAgreementPanel({
           placeholder="Grandfathered at $49/mo, normally $79"
         />
       </label>
-      <label className="block text-sm">
-        <span className="mb-1 block text-xs font-semibold text-subtle">Crew note (private)</span>
+      <label className="block text-body-sm">
+        <span className="mb-1 block text-meta font-semibold text-subtle">Crew note (private)</span>
         <textarea name="note" rows={2} className={inputClass} />
       </label>
       <Button type="submit" disabled={pending}>
         {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
         Record agreement
       </Button>
-      {error && <p className="text-sm text-danger">{error}</p>}
+      {error && <p className="text-body-sm text-danger">{error}</p>}
     </form>
   )
 }

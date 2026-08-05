@@ -187,12 +187,12 @@ export function JourneySettings(props: JourneySettingsProps) {
   return (
     <section className="space-y-6">
       {celebrate === 'live' && (
-        <div className="flex items-center gap-2 rounded-xl border border-success/50 bg-success-bg px-4 py-3 text-sm font-medium text-success">
+        <div className="flex items-center gap-2 rounded-xl border border-success/50 bg-success-bg px-4 py-3 text-body-sm font-medium text-success">
           <PartyPopper className="h-5 w-5 shrink-0" /> Live in the community library. Anyone can adopt it now.
         </div>
       )}
       {celebrate === 'review' && (
-        <div className="flex items-center gap-2 rounded-xl border border-warning/50 bg-warning-bg px-4 py-3 text-sm font-medium text-warning">
+        <div className="flex items-center gap-2 rounded-xl border border-warning/50 bg-warning-bg px-4 py-3 text-body-sm font-medium text-warning">
           <PartyPopper className="h-5 w-5 shrink-0" /> Submitted. A Guide reviews it, then it goes live in the library.
         </div>
       )}
@@ -207,14 +207,14 @@ export function JourneySettings(props: JourneySettingsProps) {
             onBlur={(e) => meta({ title: e.target.value })}
             maxLength={120}
             placeholder="Name your Journey"
-            className="w-full bg-transparent text-xl font-bold text-text outline-none placeholder:text-subtle"
+            className="w-full bg-transparent text-lead font-bold text-text outline-none placeholder:text-subtle"
           />
           <input
             defaultValue={props.initialSummary ?? ''}
             onBlur={(e) => meta({ summary: e.target.value })}
             maxLength={280}
             placeholder="One line on what this is and who it's for"
-            className="mt-1 w-full bg-transparent text-sm text-muted outline-none placeholder:text-subtle"
+            className="mt-1 w-full bg-transparent text-body-sm text-muted outline-none placeholder:text-subtle"
           />
         </div>
       )}
@@ -287,9 +287,9 @@ export function JourneySettings(props: JourneySettingsProps) {
                   onChange={(e) => { setOverlayColor(e.target.value); meta({ headerOverlayColor: e.target.value }) }}
                   className="h-8 w-12 cursor-pointer rounded border border-border bg-surface"
                 />
-                <span className="text-xs text-subtle">Overlay color</span>
+                <span className="text-meta text-subtle">Overlay color</span>
                 {overlayColor && (
-                  <button type="button" onClick={() => { setOverlayColor(''); meta({ headerOverlayColor: null }) }} className="text-xs text-subtle transition-colors hover:text-text">
+                  <button type="button" onClick={() => { setOverlayColor(''); meta({ headerOverlayColor: null }) }} className="text-meta text-subtle transition-colors hover:text-text">
                     Reset
                   </button>
                 )}
@@ -314,7 +314,7 @@ export function JourneySettings(props: JourneySettingsProps) {
             value={gems}
             onChange={(e) => setGems(Number(e.target.value))}
             onBlur={() => save(() => setJourneyRewards(props.planId, gems))}
-            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
           />
         </label>
         <label className="flex flex-col gap-1">
@@ -328,7 +328,7 @@ export function JourneySettings(props: JourneySettingsProps) {
             value={drip}
             onChange={(e) => setDrip(Number(e.target.value))}
             onBlur={() => save(() => setJourneyDelivery(props.planId, { dripIntervalDays: drip }))}
-            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
           />
         </label>
         </div>
@@ -336,7 +336,7 @@ export function JourneySettings(props: JourneySettingsProps) {
             so the control isn't cramped beside the number inputs. */}
         <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-canvas px-3 py-2.5">
           <span className="flex min-w-0 flex-col">
-            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-text">
+            <span className="inline-flex items-center gap-1.5 text-body-sm font-medium text-text">
               <Award className="h-4 w-4 text-rank-gold" aria-hidden /> Certificate
             </span>
             <span className="text-2xs text-muted">A printable certificate when someone finishes.</span>
@@ -355,7 +355,7 @@ export function JourneySettings(props: JourneySettingsProps) {
       {/* Publish / visibility */}
       <div className="space-y-2.5">
         <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Who can see it</p>
-        <div className="flex flex-wrap items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2 text-meta">
         {([
           ['private', Lock, 'Just me'],
           ['unlisted', Link2, 'Anyone with the link'],
@@ -406,7 +406,7 @@ export function JourneySettings(props: JourneySettingsProps) {
             onChange={(e) => setCategory(e.target.value)}
             onBlur={() => attrs({ category: category || null })}
             placeholder="e.g. Rest and recovery"
-            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
           />
         </label>
 
@@ -417,7 +417,7 @@ export function JourneySettings(props: JourneySettingsProps) {
             onChange={(e) => setTags(e.target.value)}
             onBlur={() => attrs({ tags: tags.split(',').map((t) => t.trim()).filter(Boolean) })}
             placeholder="e.g. sleep, calm, screens"
-            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
           />
         </label>
 
@@ -432,7 +432,7 @@ export function JourneySettings(props: JourneySettingsProps) {
               onChange={(e) => setDailyMinutes(Number(e.target.value))}
               onBlur={() => attrs({ dailyMinutes: dailyMinutes || null })}
               placeholder="optional"
-              className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+              className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
             />
           </label>
           <label className="flex flex-col gap-1">
@@ -444,7 +444,7 @@ export function JourneySettings(props: JourneySettingsProps) {
               onChange={(e) => setEnrollCap(Number(e.target.value))}
               onBlur={() => attrs({ enrollCap: enrollCap || null })}
               placeholder="no limit"
-              className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+              className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
             />
             <span className="text-2xs text-muted">A Run of about 8 to 12 keeps real accountability.</span>
           </label>
@@ -514,7 +514,7 @@ function TouchpointForm({
   return (
     <div className="space-y-2.5 rounded-card border border-border bg-canvas/40 p-3">
       <div>
-        <p className="text-sm font-semibold text-text">{title}</p>
+        <p className="text-body-sm font-semibold text-text">{title}</p>
         <p className="mt-0.5 text-2xs text-muted">{hint}</p>
       </div>
 
@@ -554,7 +554,7 @@ function TouchpointForm({
             onBlur={(e) => onCommit({ schedule: e.target.value })}
             maxLength={120}
             placeholder="e.g. Sundays 7pm"
-            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
           />
         </label>
         <label className="flex flex-col gap-1 sm:w-28">
@@ -567,7 +567,7 @@ function TouchpointForm({
             onBlur={(e) => onCommit({ timezone: e.target.value })}
             maxLength={40}
             placeholder="e.g. ET"
-            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
           />
         </label>
       </div>
@@ -583,7 +583,7 @@ function TouchpointForm({
             onBlur={(e) => onCommit({ location: e.target.value })}
             maxLength={200}
             placeholder="e.g. The community hall, 14 Main St"
-            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
           />
         </label>
       )}
@@ -600,7 +600,7 @@ function TouchpointForm({
             onBlur={(e) => onCommit({ link: e.target.value })}
             maxLength={500}
             placeholder="https://"
-            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
           />
         </label>
       )}
@@ -621,7 +621,7 @@ function TouchpointForm({
           maxLength={500}
           rows={2}
           placeholder="Any other details people should know before they join"
-          className="resize-none rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+          className="resize-none rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
         />
       </label>
     </div>
@@ -642,7 +642,7 @@ function VeraRankPanel({
 }) {
   if (reviewing && !review) {
     return (
-      <div className="flex items-center gap-2 rounded-card border border-border bg-canvas px-4 py-3 text-sm text-muted">
+      <div className="flex items-center gap-2 rounded-card border border-border bg-canvas px-4 py-3 text-body-sm text-muted">
         <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary-strong" aria-hidden /> Vera is reading your
         Journey to see if it can count toward rank.
       </div>
@@ -671,7 +671,7 @@ function VeraRankPanel({
         <tone.Icon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden /> {headline}
       </p>
       {review.feedback.length > 0 && (
-        <ul className="space-y-1.5 text-sm text-text">
+        <ul className="space-y-1.5 text-body-sm text-text">
           {review.feedback.map((line, i) => (
             <li key={i} className="flex gap-2">
               <span aria-hidden className="select-none text-subtle">·</span>
@@ -685,7 +685,7 @@ function VeraRankPanel({
           type="button"
           onClick={onResubmit}
           disabled={reviewing}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${reviewing ? 'animate-spin' : ''}`} aria-hidden />
           {reviewing ? 'Vera is reviewing' : 'Revise and submit for review'}

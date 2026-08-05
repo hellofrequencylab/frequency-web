@@ -50,12 +50,12 @@ export default async function LeaderTrainingDocPage({ params }: Params) {
         </div>
 
         {doc.updated && (
-          <p className="mt-10 border-t border-border pt-4 text-xs text-subtle">
+          <p className="mt-10 border-t border-border pt-4 text-meta text-subtle">
             Last updated {doc.updated}
           </p>
         )}
 
-        <nav className="mt-6 flex justify-between gap-4 text-sm">
+        <nav className="mt-6 flex justify-between gap-4 text-body-sm">
           {prev ? (
             <Link href={trainingHref(cat.slug, prev.slug)} className="text-primary-strong hover:underline">
               &larr; {prev.title}

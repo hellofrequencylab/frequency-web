@@ -39,7 +39,7 @@ export function ActivityChart({
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
       {/* View toggle — Days · Weeks · Months. */}
-      <div className="mb-3 inline-flex rounded-lg bg-surface-elevated p-0.5 text-xs font-medium">
+      <div className="mb-3 inline-flex rounded-lg bg-surface-elevated p-0.5 text-meta font-medium">
         {VIEWS.map((v) => (
           <button
             key={v.key}
@@ -56,8 +56,8 @@ export function ActivityChart({
       </div>
 
       <div className="mb-2.5 flex items-end justify-between gap-2">
-        <span className="text-xs font-medium text-subtle">{PERIOD[view]}</span>
-        <span className="text-sm font-semibold text-text">
+        <span className="text-meta font-medium text-subtle">{PERIOD[view]}</span>
+        <span className="text-body-sm font-semibold text-text">
           {activeCount} {activeCount === 1 ? unit : `${unit}s`}
           {totalMin > 0 ? <span className="font-normal text-muted"> · {totalMin} min</span> : null}
         </span>
@@ -85,7 +85,7 @@ export function ActivityChart({
       </div>
 
       {activity.streakLine && (
-        <p className="mt-2.5 flex items-center gap-1.5 text-sm font-medium text-text">
+        <p className="mt-2.5 flex items-center gap-1.5 text-body-sm font-medium text-text">
           <Flame className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden /> {activity.streakLine}
         </p>
       )}

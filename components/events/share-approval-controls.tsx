@@ -26,17 +26,17 @@ export function ShareApprovalControls({ shareId }: { shareId: string }) {
   }
 
   if (done) {
-    return <span className="text-xs font-medium text-subtle">{done === 'accepted' ? 'Added' : 'Declined'}</span>
+    return <span className="text-meta font-medium text-subtle">{done === 'accepted' ? 'Added' : 'Declined'}</span>
   }
 
   return (
     <div className="flex items-center gap-2">
-      {error && <span className="text-xs text-danger">{error}</span>}
+      {error && <span className="text-meta text-danger">{error}</span>}
       <button
         type="button"
         onClick={() => act('decline')}
         disabled={pending}
-        className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
+        className="rounded-lg px-2.5 py-1.5 text-meta font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
       >
         Decline
       </button>
@@ -44,7 +44,7 @@ export function ShareApprovalControls({ shareId }: { shareId: string }) {
         type="button"
         onClick={() => act('approve')}
         disabled={pending}
-        className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+        className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
       >
         {pending ? 'Saving…' : 'Add to calendar'}
       </button>

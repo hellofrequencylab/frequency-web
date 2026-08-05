@@ -8,16 +8,16 @@ import { Users } from 'lucide-react'
 import { getPostedAdminData } from './load-posted'
 import { BandChip } from './band-chip'
 
-const thCls = 'px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-subtle'
-const numTh = 'px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-subtle'
-const tdCls = 'px-3 py-2.5 text-sm'
+const thCls = 'px-3 py-2 text-left text-meta font-semibold uppercase tracking-wide text-subtle'
+const numTh = 'px-3 py-2 text-right text-meta font-semibold uppercase tracking-wide text-subtle'
+const tdCls = 'px-3 py-2.5 text-body-sm'
 
 export async function PosterQualitySection() {
   const { posters } = await getPostedAdminData()
 
   if (posters.length === 0) {
     return (
-      <p className="rounded-2xl border border-dashed border-border bg-surface/50 px-4 py-6 text-center text-sm text-muted">
+      <p className="rounded-2xl border border-dashed border-border bg-surface/50 px-4 py-6 text-center text-body-sm text-muted">
         Nobody has posted an event yet. Posters appear here with their band after their first publish.
       </p>
     )
@@ -44,7 +44,7 @@ export async function PosterQualitySection() {
                 <span className="inline-flex items-center gap-1.5">
                   <Users className="h-3.5 w-3.5 shrink-0 text-subtle" />
                   <span className="font-medium text-text">{p.name}</span>
-                  {p.handle && <span className="text-xs text-subtle">@{p.handle}</span>}
+                  {p.handle && <span className="text-meta text-subtle">@{p.handle}</span>}
                 </span>
               </td>
               <td className={tdCls}>

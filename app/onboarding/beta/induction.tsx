@@ -503,12 +503,12 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
 
   // ── Styles (warm light throughout) ───────────────────────────────────────────
   const inputInset =
-    'w-full rounded-card border border-border bg-canvas px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus-visible:shadow-none'
-  const fieldLabel = 'mb-1.5 block text-left text-xs font-semibold uppercase tracking-wider text-subtle'
-  const backLink = 'text-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline'
+    'w-full rounded-card border border-border bg-canvas px-4 py-3 text-body text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus-visible:shadow-none'
+  const fieldLabel = 'mb-1.5 block text-left text-meta font-semibold uppercase tracking-wider text-subtle'
+  const backLink = 'text-body-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline'
   // Primary action — the shared Wizard button (app register), used across the beats.
   const btnPrimary = wizardPrimaryClass
-  const eyebrow = 'text-sm font-semibold uppercase tracking-[0.25em] text-primary'
+  const eyebrow = 'text-body-sm font-semibold uppercase tracking-[0.25em] text-primary'
   const heading = 'font-display uppercase leading-[1.0] text-text'
 
   const slide = reel[reelIndex]
@@ -531,9 +531,9 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       {preview && previewDone && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6">
           <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-7 text-center lift-3">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-pill bg-primary-bg text-2xl text-primary-strong">✓</div>
-            <h2 className="mt-4 text-xl font-bold text-text">Welcome in.</h2>
-            <p className="mt-2 text-sm leading-relaxed text-muted">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-pill bg-primary-bg text-page-title text-primary-strong">✓</div>
+            <h2 className="mt-4 text-lead font-bold text-text">Welcome in.</h2>
+            <p className="mt-2 text-body-sm leading-relaxed text-muted">
               In the real induction this writes your profile and drops you into the feed to make your
               first post. Here it just stops, nothing was saved.
             </p>
@@ -544,7 +544,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                 setReelIndex(0)
                 setOaths({ unfinished: false, report: false, build: false })
               }}
-              className="mt-5 w-full rounded-pill border border-border px-6 py-3 text-sm font-semibold text-muted transition-colors hover:text-text"
+              className="mt-5 w-full rounded-pill border border-border px-6 py-3 text-body-sm font-semibold text-muted transition-colors hover:text-text"
             >
               Run it again
             </button>
@@ -555,7 +555,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       {/* Stage: one centered column — logo, content, progress — with tight, consistent gaps. */}
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-12">
         <div className="flex shrink-0 flex-col items-center">
-          <span className="animate-wiggle inline-block rounded-pill bg-primary px-3 py-1 text-xs font-bold uppercase tracking-[0.35em] text-on-primary shadow-sm shadow-primary/25">
+          <span className="animate-wiggle inline-block rounded-pill bg-primary px-3 py-1 text-meta font-bold uppercase tracking-[0.35em] text-on-primary shadow-sm shadow-primary/25">
             Welcome
           </span>
           <span className="brandmark-link mt-5 block">
@@ -574,7 +574,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                   {getInitials(inviter.displayName) || '?'}
                 </span>
               )}
-              <span className="text-sm text-muted">
+              <span className="text-body-sm text-muted">
                 Invited by <span className="font-semibold text-text">{inviter.displayName}</span>
               </span>
             </div>
@@ -629,7 +629,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                 <h1 className={`mx-auto mt-3 max-w-3xl text-balance text-6xl sm:text-7xl ${heading}`}>
                   {accent(VERA.intro.heading)}
                 </h1>
-                <p className="mx-auto mt-4 max-w-2xl text-xl leading-relaxed text-muted">{VERA.intro.body}</p>
+                <p className="mx-auto mt-4 max-w-2xl text-lead leading-relaxed text-muted">{VERA.intro.body}</p>
 
                 {/* Beat-1 fork. NICHE funnel: 4 informational "what are you into" cards tuned to
                     the niche, in place of the persona picker (the reel is replaced on Beat 2 too,
@@ -637,8 +637,8 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                     funnel). GENERAL funnel: the multi-select persona fork, exactly as before. */}
                 {hasNicheFeatures ? (
                   <>
-                    <p className="mt-9 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">First off, what are you into?</p>
-                    <p className="mt-1.5 text-sm text-muted">Click all that apply.</p>
+                    <p className="mt-9 text-body-sm font-bold uppercase tracking-[0.25em] text-primary-strong">First off, what are you into?</p>
+                    <p className="mt-1.5 text-body-sm text-muted">Click all that apply.</p>
                     <div className="mx-auto mt-4 grid max-w-2xl gap-3 sm:grid-cols-2">
                       {slide2Features!.map((f, i) => {
                         const Icon = funnelIcon(f.icon)
@@ -656,8 +656,8 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                               <Icon className="h-5 w-5" />
                             </span>
                             <span>
-                              <span className="block text-base font-bold text-text">{f.title}</span>
-                              <span className="mt-0.5 block text-sm text-muted">{f.blurb}</span>
+                              <span className="block text-body font-bold text-text">{f.title}</span>
+                              <span className="mt-0.5 block text-body-sm text-muted">{f.blurb}</span>
                             </span>
                             {active && (
                               <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-pill bg-primary text-on-primary" aria-hidden>
@@ -674,8 +674,8 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                     {/* Persona fork — first, who are you? Pre-selected if they came in
                         through a lead flow; changeable here. Branches the tour reel and
                         is stamped on the member so the site + Vera can tailor later. */}
-                    <p className="mt-9 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">First, who are you?</p>
-                    <p className="mt-1.5 text-sm text-muted">Pick all that fit.</p>
+                    <p className="mt-9 text-body-sm font-bold uppercase tracking-[0.25em] text-primary-strong">First, who are you?</p>
+                    <p className="mt-1.5 text-body-sm text-muted">Pick all that fit.</p>
                     <div className="mx-auto mt-4 grid max-w-2xl gap-3 sm:grid-cols-2">
                       {listPersonas().map((p) => {
                         const active = personas.includes(p.id)
@@ -691,8 +691,8 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                               <p.Icon className="h-5 w-5" />
                             </span>
                             <span>
-                              <span className="block text-base font-bold text-text">{p.label}</span>
-                              <span className="mt-0.5 block text-sm text-muted">{p.pitch}</span>
+                              <span className="block text-body font-bold text-text">{p.label}</span>
+                              <span className="mt-0.5 block text-body-sm text-muted">{p.pitch}</span>
                             </span>
                             {/* Multi-select checkmark — reads clearly as "more than one is fine". */}
                             {active && (
@@ -749,8 +749,8 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                               aria-pressed={active}
                               className={`rounded-2xl border px-4 py-3 text-left transition-colors ${active ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
                             >
-                              <span className="block text-base font-bold text-text">{c.title}</span>
-                              <span className="mt-0.5 block text-sm text-muted">{c.blurb}</span>
+                              <span className="block text-body font-bold text-text">{c.title}</span>
+                              <span className="mt-0.5 block text-body-sm text-muted">{c.blurb}</span>
                             </button>
                           )
                         })}
@@ -832,7 +832,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                     <div>
                       <label htmlFor="induction-handle" className={fieldLabel}>Handle</label>
                       <div className="relative">
-                        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-subtle" aria-hidden>@</span>
+                        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-body text-subtle" aria-hidden>@</span>
                         <input
                           id="induction-handle"
                           type="text"
@@ -846,14 +846,14 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                           aria-describedby="induction-handle-status"
                           className={`${inputInset} pl-9 pr-9`}
                         />
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm leading-none" aria-hidden>
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-body-sm leading-none" aria-hidden>
                           {handleStatus === 'checking' && <span className="animate-pulse text-subtle">•••</span>}
                           {handleStatus === 'available' && <span className="text-success">✓</span>}
                           {handleStatus === 'taken' && <span className="text-danger">✗</span>}
                         </span>
                       </div>
                       {/* Live status — read by assistive tech as availability resolves. */}
-                      <p id="induction-handle-status" role="status" aria-live="polite" className={handleStatus === 'taken' ? 'mt-1.5 text-left text-xs text-danger' : 'sr-only'}>
+                      <p id="induction-handle-status" role="status" aria-live="polite" className={handleStatus === 'taken' ? 'mt-1.5 text-left text-meta text-danger' : 'sr-only'}>
                         {handleStatus === 'checking'
                           ? 'Checking availability…'
                           : handleStatus === 'available'
@@ -899,7 +899,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                                     setCoords({ lat: r.lat, lng: r.lng })
                                     setLocOpen(false)
                                   }}
-                                  className="block w-full px-4 py-2.5 text-left text-base text-text transition-colors hover:bg-primary-bg"
+                                  className="block w-full px-4 py-2.5 text-left text-body text-text transition-colors hover:bg-primary-bg"
                                 >
                                   {r.label}
                                 </button>
@@ -915,12 +915,12 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                   <div className="flex w-full max-w-xs flex-col items-center gap-4 text-center md:items-start md:text-left">
                     <button type="button" onClick={() => fileInputRef.current?.click()} className="group">
                       <div className="rounded-pill ring-4 ring-surface lift-1">{renderAvatar()}</div>
-                      <span className="mt-2 block text-center text-xs font-semibold text-primary group-hover:underline">
+                      <span className="mt-2 block text-center text-meta font-semibold text-primary group-hover:underline">
                         {avatarPreview ? 'Change photo' : 'Add a photo'}
                       </span>
                     </button>
                     <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                    {uploadError && <p className="text-xs text-danger">{uploadError}</p>}
+                    {uploadError && <p className="text-meta text-danger">{uploadError}</p>}
                     <p className="text-lg leading-relaxed text-muted">{VERA.identity.body}</p>
                     <div className="mt-2 flex flex-col items-center gap-3 md:items-start">
                       <button disabled={!identityValid || uploading} onClick={advanceFromIdentity} className={btnPrimary}>
@@ -943,9 +943,9 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                   {/* portrait profile card with blank slots */}
                   <div className="w-full max-w-72 shrink-0 rounded-3xl border border-border bg-surface p-7 text-center lift-1">
                     <div className="mx-auto w-fit rounded-pill ring-4 ring-surface">{renderAvatar()}</div>
-                    <p className="mt-4 text-xl font-semibold text-text">{displayName || <span className="text-subtle">Your name</span>}</p>
-                    <p className="text-sm text-muted">@{handle || 'handle'}</p>
-                    <div className="mt-4 space-y-2 border-t border-border pt-4 text-left text-sm">
+                    <p className="mt-4 text-lead font-semibold text-text">{displayName || <span className="text-subtle">Your name</span>}</p>
+                    <p className="text-body-sm text-muted">@{handle || 'handle'}</p>
+                    <div className="mt-4 space-y-2 border-t border-border pt-4 text-left text-body-sm">
                       <p className="text-text">{location || <span className="italic text-subtle">Add your city</span>}</p>
                     </div>
                   </div>
@@ -953,7 +953,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                   {/* copy + button under it, right */}
                   <div className="w-full max-w-xs text-center md:text-left">
                     <p className="text-lg leading-relaxed text-muted">{VERA.enter.body}</p>
-                    {submitError && <p className="mt-3 text-sm text-danger">{submitError}</p>}
+                    {submitError && <p className="mt-3 text-body-sm text-danger">{submitError}</p>}
                     <div className="mt-6 flex flex-col items-center gap-3 md:items-start">
                       <button onClick={submit} disabled={submitting} className={btnPrimary}>
                         {submitting ? 'Stepping in…' : VERA.enter.cta}{!submitting && <ArrowRight />}
@@ -975,9 +975,9 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                   {/* portrait profile card — everything they just built */}
                   <div className="w-full max-w-72 shrink-0 rounded-3xl border border-border bg-surface p-7 text-center lift-1">
                     <div className="mx-auto w-fit rounded-pill ring-4 ring-surface">{renderAvatar()}</div>
-                    <p className="mt-4 text-xl font-semibold text-text">{displayName || <span className="text-subtle">Your name</span>}</p>
-                    <p className="text-sm text-muted">@{handle || 'handle'}</p>
-                    <div className="mt-4 space-y-2 border-t border-border pt-4 text-left text-sm">
+                    <p className="mt-4 text-lead font-semibold text-text">{displayName || <span className="text-subtle">Your name</span>}</p>
+                    <p className="text-body-sm text-muted">@{handle || 'handle'}</p>
+                    <div className="mt-4 space-y-2 border-t border-border pt-4 text-left text-body-sm">
                       <p className="text-text">{location || <span className="italic text-subtle">Add your city</span>}</p>
                     </div>
                   </div>
@@ -1008,13 +1008,13 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
 
                     <div className="relative my-4">
                       <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-                      <div className="relative flex justify-center text-xs uppercase"><span className="bg-canvas px-2 text-subtle">or</span></div>
+                      <div className="relative flex justify-center text-meta uppercase"><span className="bg-canvas px-2 text-subtle">or</span></div>
                     </div>
 
                     <button
                       onClick={deferredGoogle}
                       disabled={signingIn}
-                      className="flex w-full items-center justify-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 text-base font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+                      className="flex w-full items-center justify-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 text-body font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
                     >
                       <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -1026,7 +1026,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                     </button>
 
                     <button onClick={() => setBeat(3)} className={`${backLink} mt-4 block`}>Back</button>
-                    <p className="mt-4 text-xs text-subtle">Free to join. No card. Leave anytime.</p>
+                    <p className="mt-4 text-meta text-subtle">Free to join. No card. Leave anytime.</p>
                   </div>
                 </div>
               </div>
@@ -1040,7 +1040,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
 
         {/* A quiet way out on every step — never trap anyone, but keep focus on
             the onboarding (small + low-contrast). */}
-        <p className="mt-6 shrink-0 text-center text-xs text-subtle/70">
+        <p className="mt-6 shrink-0 text-center text-meta text-subtle/70">
           <Link href="/" className="underline-offset-4 transition-colors hover:text-muted hover:underline">
             Home
           </Link>

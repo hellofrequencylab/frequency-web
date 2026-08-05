@@ -48,7 +48,7 @@ function LeadGrabGuide({ codesHref }: { codesHref: string }) {
   return (
     <section className="rounded-2xl border border-border bg-surface/50 p-5">
       <SectionHeader title="How lead-grabs work" />
-      <p className="text-sm text-muted">
+      <p className="text-body-sm text-muted">
         A lead-grab turns a scan or a sign-up into a person in your CRM, with the door they came through kept
         forever. The door is set once and never changes, so you always know where a relationship started.
       </p>
@@ -59,23 +59,23 @@ function LeadGrabGuide({ codesHref }: { codesHref: string }) {
             <li key={door} className="flex gap-3 rounded-card border border-border/60 bg-surface p-3">
               <m.Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
               <div>
-                <p className="text-sm font-semibold text-text">{m.label}</p>
-                <p className="mt-0.5 text-xs text-muted">{m.blurb}</p>
+                <p className="text-body-sm font-semibold text-text">{m.label}</p>
+                <p className="mt-0.5 text-meta text-muted">{m.blurb}</p>
               </div>
             </li>
           )
         })}
       </ul>
       <div className="mt-4 rounded-card border border-dashed border-border bg-surface p-4">
-        <p className="text-sm font-semibold text-text">Make a lead-grab QR code</p>
-        <p className="mt-1 text-xs text-muted">
+        <p className="text-body-sm font-semibold text-text">Make a lead-grab QR code</p>
+        <p className="mt-1 text-meta text-muted">
           Open your space codes, add a code pointed at your booking page, class, or offer, and turn on
           lead-grab. Print it or add it to a flyer. Every scan lands here. If the code unlocks an offer, turn
           on the offer switch so people who scan can hear from you.
         </p>
         <Link
           href={codesHref}
-          className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
         >
           <QrCode className="h-4 w-4" aria-hidden /> Manage your codes
         </Link>
@@ -87,26 +87,26 @@ function LeadGrabGuide({ codesHref }: { codesHref: string }) {
 function ConsentBadge({ state }: { state: SpaceLead['consentState'] }) {
   if (state === 'subscribed') {
     return (
-      <span className="inline-flex items-center gap-1 rounded-pill bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
+      <span className="inline-flex items-center gap-1 rounded-pill bg-success/10 px-2 py-0.5 text-meta font-medium text-success">
         <UserCheck className="h-3 w-3" aria-hidden /> Mailable
       </span>
     )
   }
   if (state === 'unsubscribed') {
-    return <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-subtle">Opted out</span>
+    return <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-medium text-subtle">Opted out</span>
   }
   return (
-    <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">Not mailable</span>
+    <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-medium text-muted">Not mailable</span>
   )
 }
 
 function ClaimBadge({ claimed }: { claimed: boolean }) {
   return claimed ? (
-    <span className="inline-flex items-center gap-1 rounded-pill bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-strong">
+    <span className="inline-flex items-center gap-1 rounded-pill bg-primary/10 px-2 py-0.5 text-meta font-medium text-primary-strong">
       <CircleCheck className="h-3 w-3" aria-hidden /> Joined
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-xs font-medium text-subtle">
+    <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-medium text-subtle">
       <CircleDashed className="h-3 w-3" aria-hidden /> Lead
     </span>
   )
@@ -123,8 +123,8 @@ function LeadRow({ lead, boardHref }: { lead: SpaceLead; boardHref: string }) {
       >
         <m.Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-text">{name}</p>
-          <p className="truncate text-xs text-muted">
+          <p className="truncate text-body-sm font-semibold text-text">{name}</p>
+          <p className="truncate text-meta text-muted">
             {m.label}
             {lead.where ? ` · ${lead.where}` : ''}
             {lead.email && lead.displayName ? ` · ${lead.email}` : ''}
@@ -164,7 +164,7 @@ export function LeadsView({
             action={
               <Link
                 href={codesHref}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
               >
                 <QrCode className="h-4 w-4" aria-hidden /> Make a lead-grab code
               </Link>

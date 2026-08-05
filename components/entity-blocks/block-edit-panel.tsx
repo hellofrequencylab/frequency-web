@@ -68,7 +68,7 @@ export type UploadImage = (file: File) => Promise<{ url: string } | { error: str
 // Semantic DAWN tokens, no hex, voice canon (no em dashes).
 
 const inputCls =
-  'w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text placeholder:text-subtle outline-none focus:border-primary'
+  'w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta text-text placeholder:text-subtle outline-none focus:border-primary'
 const labelCls = 'block text-2xs font-semibold uppercase tracking-wide text-muted'
 
 /** Whether a field stays in the SETTINGS-ONLY rail when block content is edited on the live page (the
@@ -188,7 +188,7 @@ export function BlockEditPanel({
       {isData && editHref && (
         <Link
           href={editHref}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline"
+          className="inline-flex items-center gap-1 text-meta font-semibold text-primary-strong hover:underline"
         >
           Manage {block?.label ?? 'this section'}
           <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
@@ -715,7 +715,7 @@ function CompactItemRow({
         type="button"
         onClick={onOpen}
         aria-label={`Edit ${noun} ${index + 1}`}
-        className="min-w-0 flex-1 truncate text-left text-xs font-semibold text-text transition-colors hover:text-primary-strong"
+        className="min-w-0 flex-1 truncate text-left text-meta font-semibold text-text transition-colors hover:text-primary-strong"
       >
         {title}
       </button>

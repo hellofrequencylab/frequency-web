@@ -55,20 +55,20 @@ export function CircleHandoffBanner({ circleId }: { circleId: string }) {
       <div className="flex items-start gap-3">
         <Gift className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-text">
+          <p className="text-body-sm font-semibold text-text">
             {offer.fromName} wants to hand you {offer.circleName}
           </p>
-          <p className="mt-0.5 text-xs text-subtle">
+          <p className="mt-0.5 text-meta text-subtle">
             Accept and it becomes your circle, with you hosting. Its members and anything it is
             running come with it.
           </p>
-          {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+          {error && <p className="mt-2 text-meta text-danger">{error}</p>}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => respond('accept')}
               disabled={pending}
-              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+              className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               Accept
             </button>
@@ -76,7 +76,7 @@ export function CircleHandoffBanner({ circleId }: { circleId: string }) {
               type="button"
               onClick={() => respond('decline')}
               disabled={pending}
-              className="rounded-lg px-3 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
+              className="rounded-lg px-3 py-1.5 text-meta font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
             >
               No thanks
             </button>

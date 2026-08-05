@@ -54,7 +54,7 @@ export function AutonomyControl({ slug, level }: { slug: string; level: Autonomy
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-center justify-between gap-2">
-        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-subtle">
+        <p className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wider text-subtle">
           <ShieldCheck className="h-3.5 w-3.5" /> How much Vera does on its own
         </p>
         {pending && <Loader2 className="h-4 w-4 animate-spin text-subtle" aria-hidden />}
@@ -85,13 +85,13 @@ export function AutonomyControl({ slug, level }: { slug: string; level: Autonomy
               <span className={`inline-flex items-center gap-1.5 text-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
                 <Icon className="h-4 w-4" /> {opt.label}
               </span>
-              <span className="mt-1 block text-xs text-muted">{opt.help}</span>
+              <span className="mt-1 block text-meta text-muted">{opt.help}</span>
             </button>
           )
         })}
       </div>
 
-      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+      {error && <p className="mt-2 text-body-sm text-danger">{error}</p>}
     </div>
   )
 }

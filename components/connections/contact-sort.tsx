@@ -27,13 +27,13 @@ export function ContactSort({ value }: { value: ContactSortValue }) {
   }
 
   return (
-    <label className="flex items-center gap-1.5 pb-2 text-sm text-muted">
+    <label className="flex items-center gap-1.5 pb-2 text-body-sm text-muted">
       <ArrowDownNarrowWide className="h-3.5 w-3.5 text-subtle" aria-hidden />
       <span className="sr-only">Sort contacts</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-lg border border-border-strong bg-surface py-1.5 pl-2 pr-7 text-sm text-text focus:border-border-strong focus:outline-none"
+        className="rounded-lg border border-border-strong bg-surface py-1.5 pl-2 pr-7 text-body-sm text-text focus:border-border-strong focus:outline-none"
       >
         {OPTIONS.map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>

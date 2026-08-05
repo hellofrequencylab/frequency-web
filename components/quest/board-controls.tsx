@@ -115,7 +115,7 @@ export function BoardControls({
         onClick={toggleVisibility}
         disabled={pending}
         aria-pressed={isHidden}
-        className="ml-auto inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50 motion-reduce:transition-none"
+        className="ml-auto inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50 motion-reduce:transition-none"
       >
         {pending ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" aria-hidden />

@@ -26,16 +26,16 @@ export function ChannelCard({
   return (
     <Link href={`/discover/topics/${channel.slug}`} className="group block h-full">
       <Card tone="feature" className="h-full hover:border-border-strong transition-colors flex flex-col">
-        <h3 className="break-words text-base font-bold text-text mb-2 group-hover:text-primary-strong transition-colors">
+        <h3 className="break-words text-body font-bold text-text mb-2 group-hover:text-primary-strong transition-colors">
           {channel.name}
         </h3>
         {channel.description && (
-          <p className="text-sm text-muted leading-relaxed line-clamp-3 flex-1">
+          <p className="text-body-sm text-muted leading-relaxed line-clamp-3 flex-1">
             {channel.description}
           </p>
         )}
         {typeof circleCount === 'number' && (
-          <p className="text-xs text-subtle mt-4 font-medium">
+          <p className="text-meta text-subtle mt-4 font-medium">
             {circleCount} {circleCount === 1 ? 'circle' : 'circles'}
           </p>
         )}
@@ -55,7 +55,7 @@ export function CircleCard({ circle, isAuthed = false }: { circle: PublicCircle;
             /discover renders OUTSIDE the app shell, which is the only thing in this codebase
             carrying overflow-x-clip. Without these a single long, hyphen-free name scrolls the
             page sideways. Names here are member-supplied, so the input is unbounded. */}
-        <h3 className="min-w-0 break-words text-base font-bold text-text group-hover:text-primary-strong transition-colors">
+        <h3 className="min-w-0 break-words text-body font-bold text-text group-hover:text-primary-strong transition-colors">
           {circle.name}
         </h3>
         {circle.status === 'forming' && (
@@ -65,9 +65,9 @@ export function CircleCard({ circle, isAuthed = false }: { circle: PublicCircle;
         )}
       </div>
       {circle.about && (
-        <p className="text-sm text-muted leading-relaxed line-clamp-2 flex-1">{circle.about}</p>
+        <p className="text-body-sm text-muted leading-relaxed line-clamp-2 flex-1">{circle.about}</p>
       )}
-      <div className="flex items-center gap-4 text-xs text-subtle mt-4">
+      <div className="flex items-center gap-4 text-meta text-subtle mt-4">
         <span className="inline-flex items-center gap-1">
           <Users className="w-3.5 h-3.5" />
           {circle.member_count}
@@ -97,11 +97,11 @@ export function EventRow({ event, isAuthed = false }: { event: PublicEvent; isAu
       >
         <div className="shrink-0 w-12 h-12 rounded-xl bg-primary-bg flex flex-col items-center justify-center">
           <span className="text-3xs font-bold text-primary-strong leading-none">{badge.month}</span>
-          <span className="text-base font-bold text-primary-strong leading-tight">{badge.day}</span>
+          <span className="text-body font-bold text-primary-strong leading-tight">{badge.day}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-text truncate">{event.title}</p>
-          <p className="text-xs text-subtle mt-0.5">
+          <p className="text-body-sm font-semibold text-text truncate">{event.title}</p>
+          <p className="text-meta text-subtle mt-0.5">
             {formatEventDate(event.starts_at)}
             {event.city && <> &middot; {event.city}</>}
           </p>
@@ -123,7 +123,7 @@ export function JourneyCard({ journey }: { journey: JourneyPlan }) {
       <Card tone="feature" className="h-full p-5 hover:border-border-strong transition-colors flex flex-col">
         <div className="flex items-start gap-3 mb-2">
           {journey.emoji ? (
-            <span className="text-2xl leading-none shrink-0" aria-hidden>
+            <span className="text-page-title leading-none shrink-0" aria-hidden>
               {journey.emoji}
             </span>
           ) : (
@@ -131,14 +131,14 @@ export function JourneyCard({ journey }: { journey: JourneyPlan }) {
               <MapIcon className="w-4 h-4" />
             </span>
           )}
-          <h3 className="min-w-0 break-words text-base font-bold text-text group-hover:text-primary-strong transition-colors">
+          <h3 className="min-w-0 break-words text-body font-bold text-text group-hover:text-primary-strong transition-colors">
             {journey.title}
           </h3>
         </div>
         {journey.summary && (
-          <p className="text-sm text-muted leading-relaxed line-clamp-3 flex-1">{journey.summary}</p>
+          <p className="text-body-sm text-muted leading-relaxed line-clamp-3 flex-1">{journey.summary}</p>
         )}
-        <div className="flex items-center gap-4 text-xs text-subtle mt-4">
+        <div className="flex items-center gap-4 text-meta text-subtle mt-4">
           {journey.adopt_count > 0 && (
             <span className="inline-flex items-center gap-1">
               <Users className="w-3.5 h-3.5" />
@@ -168,7 +168,7 @@ export function PostPreview({ post, isAuthed = false }: { post: PublicPost; isAu
       style={avatarFocusStyle(post.author_avatar_url)}
     />
   ) : (
-    <div className="w-10 h-10 rounded-pill bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+    <div className="w-10 h-10 rounded-pill bg-surface-elevated text-muted text-meta font-semibold flex items-center justify-center shrink-0 select-none">
       {initials}
     </div>
   )
@@ -176,7 +176,7 @@ export function PostPreview({ post, isAuthed = false }: { post: PublicPost; isAu
     <>
       {avatar}
       <div className="flex-1 min-w-0">
-        <span className="text-sm font-semibold text-text truncate block">
+        <span className="text-body-sm font-semibold text-text truncate block">
           {post.author_display_name ?? 'Community member'}
         </span>
         <p className="text-2xs text-muted mt-0.5">
@@ -198,7 +198,7 @@ export function PostPreview({ post, isAuthed = false }: { post: PublicPost; isAu
       ) : (
         <div className="flex items-start gap-3 mb-3">{identity}</div>
       )}
-      <p className="text-sm text-text leading-relaxed line-clamp-3 mb-3">{post.body}</p>
+      <p className="text-body-sm text-text leading-relaxed line-clamp-3 mb-3">{post.body}</p>
       {post.media_urls && post.media_urls.length > 0 && (
         <div className="relative h-72 w-full rounded-card overflow-hidden border border-border">
           <Image
@@ -235,7 +235,7 @@ export function SignInCta({
   return (
     <Card tone="feature" className="p-8 text-center">
       <p className="text-lg font-bold text-text mb-2">{title}</p>
-      <p className="text-sm text-muted leading-relaxed mb-6 max-w-sm mx-auto">{body}</p>
+      <p className="text-body-sm text-muted leading-relaxed mb-6 max-w-sm mx-auto">{body}</p>
       <Button href={href} size="sm">
         {action}
       </Button>

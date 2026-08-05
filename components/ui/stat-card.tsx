@@ -84,18 +84,18 @@ export function StatCard({
         <p
           className={`tabular-nums text-text ${
             sm
-              ? 'text-sm font-bold'
+              ? 'text-body-sm font-bold'
               : xs
-                ? 'text-base font-extrabold leading-none'
-                : 'text-xl font-extrabold leading-none'
+                ? 'text-body font-extrabold leading-none'
+                : 'text-lead font-extrabold leading-none'
           }`}
         >
           {value}
         </p>
         {Icon && <Icon className={`mt-0.5 shrink-0 text-subtle ${xs ? 'h-3 w-3' : 'h-3.5 w-3.5'}`} />}
       </div>
-      <p className={`font-medium text-muted ${xs ? 'mt-0.5 text-2xs' : 'mt-1 text-xs'}`}>{label}</p>
-      {detail && <p className={`text-muted ${xs ? 'mt-0.5 text-2xs' : 'mt-0.5 text-xs'}`}>{detail}</p>}
+      <p className={`font-medium text-muted ${xs ? 'mt-0.5 text-2xs' : 'mt-1 text-meta'}`}>{label}</p>
+      {detail && <p className={`text-muted ${xs ? 'mt-0.5 text-2xs' : 'mt-0.5 text-meta'}`}>{detail}</p>}
       {delta && t && (
         <p className={`mt-1 inline-flex items-center gap-1 text-xs font-medium ${t.cls}`}>
           <t.Icon className="h-3.5 w-3.5 shrink-0" />

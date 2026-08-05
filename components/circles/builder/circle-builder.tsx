@@ -37,7 +37,7 @@ const PILLAR_LABELS: Record<PillarSlug, string> = {
 type SaveState = 'idle' | 'saving' | 'saved'
 
 const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors hover:border-border-strong focus:border-primary placeholder:text-subtle'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none transition-colors hover:border-border-strong focus:border-primary placeholder:text-subtle'
 
 export function CircleBuilder({ draft }: { draft: CircleDraft }) {
   const router = useRouter()
@@ -173,15 +173,15 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
         <header className="mb-6">
           <Link
             href="/circles/templates"
-            className="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-text"
+            className="mb-2 inline-flex items-center gap-1.5 text-body-sm font-medium text-muted transition-colors hover:text-text"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden /> Starter Circles
           </Link>
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-primary-strong">
+          <p className="mb-1.5 text-meta font-semibold uppercase tracking-widest text-primary-strong">
             Circle builder · Make it yours
           </p>
-          <h1 className="text-2xl font-bold text-text">{name || 'Your circle'}</h1>
-          <p className="mt-1 text-sm leading-relaxed text-muted">
+          <h1 className="text-page-title font-bold text-text">{name || 'Your circle'}</h1>
+          <p className="mt-1 text-body-sm leading-relaxed text-muted">
             A private draft only you can see. Edit every field, then publish it as a live Circle. Every change saves
             as you go.
           </p>
@@ -452,7 +452,7 @@ function CircleActions({
   const [eventsDone, setEventsDone] = useState(false)
   const live = published || justPublished
   const btn =
-    'inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition-colors disabled:opacity-60'
+    'inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-body-sm font-semibold transition-colors disabled:opacity-60'
 
   const publish = () => {
     setError(null)
@@ -562,7 +562,7 @@ function Section({
 }) {
   return (
     <section>
-      <h2 className="mb-2 text-sm font-bold text-text">{title}</h2>
+      <h2 className="mb-2 text-body-sm font-bold text-text">{title}</h2>
       <div className="mb-3">
         <CircleCallouts anchor={anchor} editorNotes={editorNotes} />
       </div>
@@ -637,7 +637,7 @@ function ListEditor({
       <button
         type="button"
         onClick={() => setDraftRows([...draftRows, ''])}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/40 hover:text-text"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-2 text-body-sm font-medium text-muted transition-colors hover:border-primary/40 hover:text-text"
       >
         <Plus className="h-4 w-4" aria-hidden /> {addLabel}
       </button>

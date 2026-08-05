@@ -7,5 +7,5 @@ export async function PracticeDetailAbout() {
   if (!practice) return null
   const hook = practice.summary ?? practice.description
   if (!practice.description || practice.description === hook) return null
-  return <p className="text-base leading-relaxed text-muted">{practice.description}</p>
+  return <p className="text-body leading-relaxed text-muted">{practice.description}</p>
 }

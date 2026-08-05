@@ -145,7 +145,7 @@ async function DashboardNeedsAttention({ spaceId, slug }: { spaceId: string; slu
       {unanswered > 0 && (
         <Link
           href={`/spaces/${slug}/crm/conversations`}
-          className="flex items-center gap-3 rounded-2xl border border-warning/40 bg-warning-bg/40 px-4 py-3 text-sm font-medium text-text transition-colors hover:bg-warning-bg/60"
+          className="flex items-center gap-3 rounded-2xl border border-warning/40 bg-warning-bg/40 px-4 py-3 text-body-sm font-medium text-text transition-colors hover:bg-warning-bg/60"
         >
           <Inbox className="h-4 w-4 shrink-0 text-warning" aria-hidden />
           {unanswered} {unanswered === 1 ? 'conversation is' : 'conversations are'} waiting on your reply
@@ -217,7 +217,7 @@ function ActivityRow({ item }: { item: ContactInteraction }) {
         <Icon className="h-3.5 w-3.5" aria-hidden />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm text-text">{line}</p>
+        <p className="truncate text-body-sm text-text">{line}</p>
         <p className="text-2xs text-muted">{relativeTime(item.occurredAt)}</p>
       </div>
     </li>
@@ -262,7 +262,7 @@ async function DashboardUpcoming({ spaceId, slug }: { spaceId: string; slug: str
                 <CalendarClock className="h-3.5 w-3.5" aria-hidden />
               </span>
               <div className="min-w-0 flex-1">
-                <Link href={`/events/${e.slug}`} className="truncate text-sm font-medium text-text hover:underline">
+                <Link href={`/events/${e.slug}`} className="truncate text-body-sm font-medium text-text hover:underline">
                   {e.title || 'Event'}
                 </Link>
                 <p className="text-2xs text-muted">

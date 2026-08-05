@@ -71,7 +71,7 @@ export function QrShareDropdown({
         aria-expanded={open}
         className={
           className ??
-          'inline-flex shrink-0 items-center gap-1 rounded-md bg-canvas px-1.5 py-0.5 text-xs font-semibold text-muted transition-colors hover:text-text'
+          'inline-flex shrink-0 items-center gap-1 rounded-md bg-canvas px-1.5 py-0.5 text-meta font-semibold text-muted transition-colors hover:text-text'
         }
       >
         {/* In a header (className given) match the Space "Connect" button EXACTLY: the label "QR" then a

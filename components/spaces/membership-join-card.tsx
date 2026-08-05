@@ -105,8 +105,8 @@ export function MembershipJoinCard({
 
   return (
     <div className="flex h-full flex-col rounded-2xl border border-border bg-surface p-5 lift-1">
-      <h3 className="text-base font-bold leading-tight text-text">{tier.name}</h3>
-      <p className="mt-1 text-sm text-muted">
+      <h3 className="text-body font-bold leading-tight text-text">{tier.name}</h3>
+      <p className="mt-1 text-body-sm text-muted">
         {free ? (
           'Free'
         ) : (
@@ -118,13 +118,13 @@ export function MembershipJoinCard({
       </p>
 
       {tier.description && (
-        <p className="mt-3 text-sm leading-relaxed text-muted">{tier.description}</p>
+        <p className="mt-3 text-body-sm leading-relaxed text-muted">{tier.description}</p>
       )}
 
       {tier.benefits.length > 0 && (
         <ul className="mt-3 space-y-1.5">
           {tier.benefits.map((benefit, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm text-text">
+            <li key={i} className="flex items-start gap-2 text-body-sm text-text">
               <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden />
               <span>{benefit}</span>
             </li>
@@ -135,7 +135,7 @@ export function MembershipJoinCard({
       {includedEvents.length > 0 && (
         <ul className="mt-3 space-y-1.5">
           {includedEvents.map((e) => (
-            <li key={e.slug} className="flex items-start gap-2 text-sm text-text">
+            <li key={e.slug} className="flex items-start gap-2 text-body-sm text-text">
               <Ticket className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
               <span>
                 Member ticket to{' '}

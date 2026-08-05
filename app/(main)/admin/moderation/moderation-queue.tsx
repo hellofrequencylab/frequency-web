@@ -109,7 +109,7 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
       {error && (
         <p
           role="alert"
-          className="rounded-lg border border-danger/40 bg-danger-bg/40 px-3 py-2 text-xs font-medium text-danger"
+          className="rounded-lg border border-danger/40 bg-danger-bg/40 px-3 py-2 text-meta font-medium text-danger"
         >
           {error}
         </p>
@@ -135,21 +135,21 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
                   style={avatarFocusStyle(report.reporter.avatar_url)}
                 />
               ) : (
-                <div className="w-8 h-8 rounded-pill bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                <div className="w-8 h-8 rounded-pill bg-primary-bg text-primary-strong text-meta font-semibold flex items-center justify-center shrink-0 select-none">
                   {getInitials(report.reporter.display_name)}
                 </div>
               )}
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-sm font-medium text-text">
+                  <span className="text-body-sm font-medium text-text">
                     {report.reporter.display_name}
                   </span>
-                  <span className="text-xs text-subtle">
+                  <span className="text-meta text-subtle">
                     @{report.reporter.handle}
                   </span>
                 </div>
-                <p className="text-xs text-subtle">
+                <p className="text-meta text-subtle">
                   Reported {relativeTime(report.created_at)}
                 </p>
               </div>
@@ -159,14 +159,14 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
 
             {/* Target type + reason + prior-report badge */}
             <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="text-xs px-2 py-0.5 rounded-md bg-primary-bg text-primary-strong dark:bg-primary-bg dark:text-primary-strong font-medium">
+              <span className="text-meta px-2 py-0.5 rounded-md bg-primary-bg text-primary-strong dark:bg-primary-bg dark:text-primary-strong font-medium">
                 {targetLabel}
               </span>
               <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${reasonInfo.cls}`}>
                 {reasonInfo.label}
               </span>
               {report.target_type === 'member' && (report.priorReports ?? 0) > 1 && (
-                <span className="text-xs px-2 py-0.5 rounded-pill bg-danger-bg text-danger font-medium flex items-center gap-1">
+                <span className="text-meta px-2 py-0.5 rounded-pill bg-danger-bg text-danger font-medium flex items-center gap-1">
                   <Flag className="w-3 h-3" />
                   {report.priorReports} prior report{(report.priorReports ?? 0) === 1 ? '' : 's'}
                 </span>
@@ -175,7 +175,7 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
 
             {/* Content preview */}
             <div className="rounded-lg bg-surface-elevated border border-border p-3 mb-3">
-              <p className="text-sm text-text leading-relaxed">
+              <p className="text-body-sm text-text leading-relaxed">
                 {report.preview}
               </p>
             </div>
@@ -183,10 +183,10 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
             {/* Details */}
             {report.details && (
               <div className="mb-3">
-                <p className="text-sm font-bold text-text mb-1">
+                <p className="text-body-sm font-bold text-text mb-1">
                   Reporter&apos;s note
                 </p>
-                <p className="text-sm text-muted italic">
+                <p className="text-body-sm text-muted italic">
                   &ldquo;{report.details}&rdquo;
                 </p>
               </div>
@@ -288,7 +288,7 @@ function SuspendDurationPicker({
   ]
   return (
     <div className="mt-3 rounded-lg border border-danger/40 bg-danger-bg p-3">
-      <p className="text-xs font-semibold text-danger mb-2">
+      <p className="text-meta font-semibold text-danger mb-2">
         Suspend posting for how long?
       </p>
       <div className="flex flex-wrap gap-2 mb-3">
@@ -297,7 +297,7 @@ function SuspendDurationPicker({
             key={label}
             disabled={disabled}
             onClick={() => onConfirm(days)}
-            className="rounded-md bg-surface border border-danger/40 px-2.5 py-1 text-xs font-medium text-danger hover:bg-danger-bg disabled:opacity-50 transition-colors"
+            className="rounded-md bg-surface border border-danger/40 px-2.5 py-1 text-meta font-medium text-danger hover:bg-danger-bg disabled:opacity-50 transition-colors"
           >
             {label}
           </button>
@@ -305,13 +305,13 @@ function SuspendDurationPicker({
       </div>
       <div className="flex items-center gap-2">
         <CheckCircle className="w-3 h-3 text-danger" />
-        <p className="text-xs text-danger">
+        <p className="text-meta text-danger">
           Blocks posts, comments, and dispatches. Reading and DMs remain.
         </p>
         <button
           disabled={disabled}
           onClick={onCancel}
-          className="ml-auto text-xs text-subtle hover:text-text"
+          className="ml-auto text-meta text-subtle hover:text-text"
         >
           Cancel
         </button>

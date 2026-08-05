@@ -143,7 +143,7 @@ export function GalleryLightbox({
           )}
 
           {count > 1 && (
-            <span className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-pill bg-surface/80 px-3 py-1 text-xs font-medium text-text lift-1">
+            <span className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-pill bg-surface/80 px-3 py-1 text-meta font-medium text-text lift-1">
               {open + 1} / {count}
             </span>
           )}

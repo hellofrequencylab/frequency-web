@@ -18,7 +18,7 @@ export function AdminAutoBackLink({ back }: { back?: { href: string; label: stri
   return (
     <Link
       href={resolved.href}
-      className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text"
+      className="mb-3 inline-flex items-center gap-1 text-body-sm font-medium text-muted transition-colors hover:text-text"
     >
       <ChevronLeft className="h-4 w-4" />
       {resolved.label}
