@@ -135,7 +135,6 @@ const MARKETING_PREFIXES = [
   '/the-quest',
   '/tools-for-community-builders',
   '/vs',
-  '/waitlist',
   '/what-is-a-third-space',
   '/what-is-frequency',
 ] as const

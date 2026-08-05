@@ -8,6 +8,7 @@ import { buttonClasses } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { monthMatrix, monthLabel, addMonth, WEEKDAY_LABELS } from '@/lib/events/calendar-grid'
 import { eventCoverFocusStyle } from '@/lib/events/cover-focus'
+import { IconButton } from '@/components/ui/icon-button'
 
 // The month-grid events calendar (Events EC2). Renders a Space's (or the platform's) events on a month
 // grid; clicking an event opens a TRUNCATED popup (title, when, where) with a "Go to Event" link that
@@ -135,14 +136,9 @@ export function EventCalendar({
         <div className="flex items-center gap-2">
           {view === 'grid' && (
             <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setMonth(addMonth(year, month1, -1))}
-                aria-label="Previous month"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-              >
+              <IconButton label="Previous month" onClick={() => setMonth(addMonth(year, month1, -1))}>
                 <ChevronLeft className="h-4 w-4" aria-hidden />
-              </button>
+              </IconButton>
               <button
                 type="button"
                 onClick={() => setMonth({ year: initialYear, month1: initialMonth1 })}
@@ -150,14 +146,9 @@ export function EventCalendar({
               >
                 Today
               </button>
-              <button
-                type="button"
-                onClick={() => setMonth(addMonth(year, month1, 1))}
-                aria-label="Next month"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-              >
+              <IconButton label="Next month" onClick={() => setMonth(addMonth(year, month1, 1))}>
                 <ChevronRight className="h-4 w-4" aria-hidden />
-              </button>
+              </IconButton>
             </div>
           )}
           {/* Grid / list view toggle. */}

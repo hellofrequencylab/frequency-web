@@ -320,7 +320,7 @@ function QuickLink({ href, Icon, label, sub, color }: {
       href={href}
       className="group rounded-2xl border border-border bg-surface p-3 lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
     >
-      <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-lg ${color}`}>
+      <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-control ${color}`}>
         <Icon className="h-4 w-4" />
       </div>
       <div className="text-sm font-semibold leading-none text-text">{label}</div>

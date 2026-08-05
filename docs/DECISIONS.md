@@ -17297,3 +17297,92 @@ Five edge-pinned elements had no inset: the app nav drawer's **head** (its foot 
 **Consequences.** ⚠️ Nothing in the visual harness measures the routes where overflow is still *possible* — a full-page mobile screenshot is `scrollWidth` wide, so the 390px baselines are a real measurement, but the registry only covers `EDITABLE_PAGES` + `/discover`. Space profiles, event pages and `/help` are unmeasured. ⚠️ **Do not fix overflow by putting `overflow-x: hidden` on `html`/`body`** — ADR-925's rule holds: the shell already clips, so "no horizontal scroll" proves nothing; a root band-aid would extend that blindness to the only surfaces where the bug is still visible enough to be reported.
 
 The durable rule: **a guard that makes a bug invisible is not a fix, it is a delay** — the shell's clip bought three years of overflow debt that only shows up where the clip is absent.
+
+## ADR-939 — `unused-javascript` was one server/client boundary violation, not a payload shape (2026-08-04)
+
+**Supersedes the diagnosis in ADR-934.** That entry called the marketing pages' zero score
+"a payload-shape problem" and named route-level splitting as the fix. That was a guess and
+it was wrong: route splitting would not have moved the number by a byte.
+
+The cause is a five-hop import chain, every link of which looks harmless alone:
+
+```
+app/layout.tsx:175                     <WebVitals />        root layout, EVERY page
+components/analytics/web-vitals.tsx    'use client'
+lib/analytics/vitals.ts                getSessionId      -> observe
+lib/analytics/observe.ts               MAX_BATCH         -> interaction-events
+lib/analytics/interaction-events.ts    sanitizeProps     -> track
+lib/analytics/track.ts                 recordEngagementEvent
+                                         -> lib/supabase/admin -> @supabase/supabase-js
+                                         -> lib/automations -> node:crypto polyfill
+```
+
+A `'use client'` component mounted in the **root layout** therefore statically reached the
+service-role Supabase client and a `crypto-browserify` graph, on ~390 of 481 routes.
+
+**The payload was never the problem.** `sanitizeProps` is a pure function with no imports
+and `MAX_BATCH` is `= 50`. They were parked in a module whose *other* exports reach the
+database, and a bundler follows modules, not intentions. `interaction-events.ts` even
+carries a header promising "Pure + server-shared. No DB, no IO here" — true of every line
+except its import.
+
+**The ruling.** A pure helper that client code needs does not live in a module that reaches
+the database, however small the helper is. `sanitizeProps` moved to `lib/analytics/sanitize.ts`,
+which has no imports and must never acquire any.
+
+**Why nothing caught it.** `scripts/check-admin-client.mjs` is a *direct-importer* ratchet.
+It cannot see reachability through five hops from a `'use client'` boundary, so `admin.ts`
+never appeared to be imported by client code. The prose warning at the top of `admin.ts`
+had been correct and present the whole time; prose does not compile. A transitive check is
+the real gate and is not yet written.
+
+**`import 'server-only'` is the right guard and is NOT on yet.** Turning it on fails the
+build, because it catches a second, pre-existing leak on a different path:
+`journey-settings.tsx` ('use client') → `lib/journey-plans.ts` → `lib/practices.ts` →
+`track.ts`, where the client needs exactly one pure function (`normalizeJourneyMeeting`).
+Same shape, different chain. That extraction is its own change; the guard goes on there,
+where it can be proven rather than asserted.
+
+**Process note worth keeping.** The first build I ran to verify this "passed" — I had read
+the exit status of a wrapper subshell rather than of `next build`, which had failed with 2
+errors. Every measurement taken off those artifacts was worthless. Verify a build with
+`pnpm build; echo $?`, and treat a number from a failed build as no number at all.
+Separately: a local `pnpm build` in the agent sandbox always fails on
+`/discover/cities/[citySlug]` for missing Supabase env vars — `main` fails identically, so
+that specific failure is environmental and never a regression.
+
+## ADR-940 — The Growth OS Engine 3 intakes are retired: an unreachable queue with no exit (2026-08-04)
+
+`/apply` and `/waitlist` (ADR-456, Growth OS Engine 3) are deleted along with their server
+actions, the shared `lib/applications/` module, and the operator review queue at
+`/admin/growth/applications`. `public.applications` and `public.waitlist_entries` are
+dropped in `20270212000000_retire_growth_engine3_intakes.sql`.
+
+**This is not the Beta waitlist.** ADR-933 was careful to delete only the first of the two
+things named "waitlist"; this is the *seeker* waitlist, people waiting for Frequency to open
+in their city, which that ADR deliberately spared. They share no table, no module and no
+route — only the word.
+
+**Three facts decided it, and "no inbound links" is the weakest of them.**
+
+1. **Zero rows.** Nothing in `waitlist_entries`, nothing in `applications`, no
+   `waitlist.joined` engagement events. No member to strand, no data to migrate.
+2. **No anonymous visitor could reach either page.** Both live under `app/(main)`, whose
+   layout redirects a signed-out visitor to `/`. A crawler is always signed out, so neither
+   was ever indexable and neither is in the sitemap. The usual reason to leave a 308 behind
+   — inbound SEO equity, or a shared link — cannot apply. Anyone holding such a link has
+   been landing on the homepage all along. **This is why no redirect was added.**
+3. **They promised what no code could deliver.** `WaitlistStatus` carries `'invited'` and
+   `'converted'` and nothing anywhere ever moved a row off `'waiting'`. The page said "We
+   will reach out the moment your area opens." That fails the CONTENT-VOICE §10 skeptic
+   test, and it is precisely the empty frame ADR-933's own durable rule names: when a queue
+   is removed, the thing in front of it has to become an open door, not an empty frame.
+
+**Kept:** `contacts` rows with `source='beta_waitlist'` (untouched by these routes — they
+only ever wrote `waitlist_entries` + `engagement_events`), and all `engagement_events`
+history. The ledger is append-only; a signal no longer being produced is not a reason to
+erase that it once was.
+
+**`FOCUS_NONE_PREFIXES` is now empty rather than deleted.** These routes were its only
+entries, but the mechanism is the contract (PAGE-FRAMEWORK §8): the next Focus flow adds one
+prefix there instead of editing the shell.

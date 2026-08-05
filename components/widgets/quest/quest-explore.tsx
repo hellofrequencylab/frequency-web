@@ -39,7 +39,7 @@ function QuickLink({
       href={href}
       className="rounded-2xl bg-surface-elevated/60 p-3 transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
     >
-      <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-lg ${color}`}>
+      <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-control ${color}`}>
         <Icon className="h-4 w-4" />
       </div>
       <div className="text-sm font-semibold leading-none text-text">{label}</div>

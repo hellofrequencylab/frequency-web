@@ -49,14 +49,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 3841,
+      "baseline": 3833,
       "frozen": {
         "at": "2026-08-04",
-        "value": 3841,
+        "value": 3833,
         "direction": "lowered",
         "basis": "d2a53ce6b015",
-        "reason": "The icon-tile pass: 10 decorative tiles off rounded-card onto rounded-control, plus 15 hand-rolled icon squares retired into the kit's new IconButton bordered variant. Takes literal-radius to 3841, below the 3851 it stood at before the two spinners raised it, so that raise is paid back.",
-        "from": 3853
+        "reason": "Five more hand-rolled icon controls retired into the kit (page-editor desktop back/close, calendar month nav, practice overflow) and three more small icon tiles moved from the rounded-lg literal onto rounded-control.",
+        "from": 3841
       },
       "history": [
         {
@@ -93,6 +93,13 @@
           "to": 3841,
           "direction": "lowered",
           "reason": "The icon-tile pass: 10 decorative tiles off rounded-card onto rounded-control, plus 15 hand-rolled icon squares retired into the kit's new IconButton bordered variant. Takes literal-radius to 3841, below the 3851 it stood at before the two spinners raised it, so that raise is paid back."
+        },
+        {
+          "at": "2026-08-04",
+          "from": 3841,
+          "to": 3833,
+          "direction": "lowered",
+          "reason": "Five more hand-rolled icon controls retired into the kit (page-editor desktop back/close, calendar month nav, practice overflow) and three more small icon tiles moved from the rounded-lg literal onto rounded-control."
         }
       ]
     },

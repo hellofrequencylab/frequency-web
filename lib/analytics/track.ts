@@ -5,29 +5,38 @@
 // Protocol, ADR-093) — the counterpart to the client's gtag mirror in trackClient —
 // so events that never touch the browser (QR scans, referral attribution) still land.
 
+// NOT `import 'server-only'` YET, and that is a finding rather than an omission.
+//
+// Adding it here is the right end state: this module reaches the database, and it was the
+// payload at the end of the five-hop chain from <WebVitals /> in the root layout. That
+// chain is broken now (sanitizeProps moved to ./sanitize).
+//
+// But turning the guard on fails the build, because it catches a SECOND, pre-existing
+// leak on a completely different path:
+//
+//   lib/analytics/track.ts        [Client Component Browser]
+//     <- lib/practices.ts
+//     <- lib/journey-plans.ts
+//     <- components/journey/v2/journey-settings.tsx   ('use client')
+//
+// journey-settings needs exactly one thing from journey-plans -- `normalizeJourneyMeeting`,
+// a pure function -- and journey-plans imports `adoptPracticesForJourney` from practices,
+// which imports track(). So the same shape as the analytics leak: a client component
+// dragging a database module in for the sake of one pure helper.
+//
+// Fixing that means extracting the meeting-normalisation helpers out of journey-plans, and
+// it deserves its own change with its own verification rather than being smuggled in here.
+// The guard goes on in that change, where it can be proven rather than asserted.
+
 import { recordEngagementEvent } from '@/lib/engagement/events'
+// sanitizeProps lives in ./sanitize (dependency-free) rather than here, so client code
+// can reach it without dragging THIS module's database imports into the browser bundle.
+// Imported for local use and re-exported, because callers already import it from track.
+import { sanitizeProps } from './sanitize'
+export { sanitizeProps } from './sanitize'
 import { isTrackedEvent } from './events'
 import { gaServerEnabled, sendGa4Event } from './ga-server'
 import { hasConsent } from '@/lib/consent/consent'
-
-/** Keep only primitive prop values, cap count + string length, so the ledger never
- *  stores nested junk or unbounded payloads. Exported for the /api/track endpoint. */
-export function sanitizeProps(input: unknown, maxKeys = 20, maxLen = 500): Record<string, string | number | boolean> {
-  const out: Record<string, string | number | boolean> = {}
-  if (!input || typeof input !== 'object') return out
-  let n = 0
-  for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
-    if (n >= maxKeys) break
-    if (typeof v === 'number' || typeof v === 'boolean') {
-      out[k] = v
-      n++
-    } else if (typeof v === 'string') {
-      out[k] = v.slice(0, maxLen)
-      n++
-    }
-  }
-  return out
-}
 
 /** Record a product event into engagement_events. Unknown events are dropped (not an
  *  error). Each call is a distinct ledger row (analytics events aren't deduped). */
