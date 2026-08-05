@@ -190,7 +190,7 @@ export default async function DiscoverCityPage({
       {/* ── If you would rather start one ───────────────────────── */}
       <Section tone="surface">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="mb-4 font-display text-3xl uppercase text-text sm:text-4xl">
+          <h2 className="mb-4 font-display text-display-h3 uppercase text-text">
             Want to start one in {city}?
           </h2>
           <p className="text-body-lg leading-relaxed text-muted">

@@ -120,7 +120,7 @@ export function RecapAlbum({
                 type="button"
                 onClick={clearImage}
                 aria-label="Remove image"
-                className="absolute right-1.5 top-1.5 rounded-pill bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
+                className="absolute right-1.5 top-1.5 rounded-pill bg-ink/60 p-1 text-on-ink transition-colors hover:bg-ink/80"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -203,7 +203,7 @@ function DeleteMediaButton({ mediaId, slug }: { mediaId: string; slug: string })
       onClick={() => startTransition(() => deleteEventMedia(mediaId, slug))}
       disabled={pending}
       aria-label="Remove photo"
-      className="absolute right-1.5 top-1.5 rounded-pill bg-black/60 p-1.5 text-white opacity-0 transition-opacity hover:bg-black/80 focus:opacity-100 group-hover:opacity-100 disabled:opacity-40"
+      className="absolute right-1.5 top-1.5 rounded-pill bg-ink/60 p-1.5 text-on-ink opacity-0 transition-opacity hover:bg-ink/80 focus:opacity-100 group-hover:opacity-100 disabled:opacity-40"
     >
       <Trash2 className="h-3.5 w-3.5" />
     </button>

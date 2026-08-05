@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import { Check, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { getPageLayoutForEditor, savePageLayout, type LayoutEditorItem, type SlotHeaderState } from '@/lib/page-settings/actions'
 import { MODULE_ROLES, ROW_HEADER_MAX, type ModuleRole } from '@/lib/page-settings/layout'
@@ -381,37 +382,39 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
                             {multiSlot && (
                               <label className="flex items-center gap-2">
                                 <span className="text-2xs font-medium uppercase tracking-wide text-muted">Area</span>
-                                <select
+                                <Select
                                   value={item.slot}
                                   onChange={(e) => setSlot(item.id, e.target.value)}
                                   disabled={pending}
                                   aria-label={`Area for ${item.label}`}
-                                  className="rounded-lg border border-border bg-surface px-2 py-1 text-meta text-text disabled:opacity-40"
+                                  wrapperClassName="inline-block w-max max-w-full"
+                                  className="text-meta"
                                 >
                                   {slots.map((opt) => (
                                     <option key={opt.id} value={opt.id}>
                                       {opt.label}
                                     </option>
                                   ))}
-                                </select>
+                                </Select>
                               </label>
                             )}
                             <label className="flex min-w-0 flex-1 items-center gap-2">
                               <span className="shrink-0 text-2xs font-medium uppercase tracking-wide text-muted">Who sees it</span>
-                              <select
+                              <Select
                                 value={item.role ?? ''}
                                 onChange={(e) => setRole(item.id, (e.target.value || null) as ModuleRole | null)}
                                 disabled={pending}
                                 aria-label={`Who can see ${item.label}`}
-                                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1 text-meta text-text disabled:opacity-40"
+                                emptyLabel="Everyone"
+                                wrapperClassName="min-w-0 flex-1"
+                                className="text-meta"
                               >
-                                <option value="">Everyone</option>
                                 {MODULE_ROLES.map((r) => (
                                   <option key={r} value={r}>
                                     {ROLE_LABEL[r]}
                                   </option>
                                 ))}
-                              </select>
+                              </Select>
                             </label>
                           </div>
                         </li>

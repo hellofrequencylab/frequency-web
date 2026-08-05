@@ -132,7 +132,7 @@ export function TeaserGate({
       {/* Upgrade modal once gated */}
       {gated && !dismissed && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+          <div className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]" />
           <div className="relative w-full max-w-sm rounded-3xl border border-border bg-surface p-7 text-center lift-3">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-bg">
               <Lock className="h-6 w-6 text-primary-strong" />

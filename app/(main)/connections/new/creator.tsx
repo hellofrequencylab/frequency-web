@@ -541,7 +541,7 @@ export function Creator({ userId }: { userId: string }) {
                     onClick={() => removeExtraFile(i)}
                     aria-label={`Remove extra image ${i + 1}`}
                     // KEEP the black/white pair: A scrim chip painted on a photo thumbnail, not on a themed surface, so the monochrome pair stays.
-                    className="absolute right-1 top-1 rounded-pill bg-black/55 p-0.5 text-white transition-colors hover:bg-black/70"
+                    className="absolute right-1 top-1 rounded-pill bg-ink/55 p-0.5 text-on-ink transition-colors hover:bg-ink/70"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -606,8 +606,8 @@ export function Creator({ userId }: { userId: string }) {
               Upload opens the library. Shown when a slot is tapped. */}
           {pickSide && (
             <div
-              // KEEP bg-black/40: A modal backdrop scrim over whatever is behind it (same value components/ui/dialog.tsx uses), so it stays monochrome.
-              className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center"
+              // The modal backdrop scrim is the INK tone at low alpha, not raw black, so the dim follows the skin.
+              className="fixed inset-0 z-[80] flex items-end justify-center bg-ink/40 backdrop-blur-sm sm:items-center"
               onClick={() => setPickSide(null)}
               role="dialog"
               aria-modal="true"
@@ -843,7 +843,7 @@ function CardSlot({
       </button>
       {/* KEEP the black/white pair below: a scrim chip painted on a photo thumbnail, not on a themed surface. */}
       {thumb && (
-        <span className="pointer-events-none absolute bottom-1 left-1 rounded bg-black/55 px-1.5 py-0.5 text-meta font-medium text-white">
+        <span className="pointer-events-none absolute bottom-1 left-1 rounded bg-ink/55 px-1.5 py-0.5 text-meta font-medium text-on-ink">
           {label}
         </span>
       )}
@@ -852,7 +852,7 @@ function CardSlot({
           type="button"
           onClick={onClear}
           aria-label={`Remove ${label.toLowerCase()}`}
-          className="absolute right-1 top-1 rounded-pill bg-black/55 p-0.5 text-white transition-colors hover:bg-black/70"
+          className="absolute right-1 top-1 rounded-pill bg-ink/55 p-0.5 text-on-ink transition-colors hover:bg-ink/70"
         >
           <X className="h-3 w-3" />
         </button>

@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Megaphone, ShieldCheck, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { StatusChip, Banner, type StatusTone } from '@/components/admin/status'
 import { isError } from '@/lib/action-result'
 import type { OutboundItem, ApprovalStatus } from '@/lib/beta/approvals'
@@ -75,9 +76,6 @@ const APPROVAL_LABEL: Record<ApprovalStatus, string> = {
   cancelled: 'Cancelled',
 }
 
-const selectClass =
-  'rounded-lg border border-border bg-surface px-2.5 py-1 text-meta font-semibold text-text outline-none transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50'
-
 // ── Phase status ─────────────────────────────────────────────────────────────
 
 export function PhaseStatusControl({
@@ -110,9 +108,10 @@ export function PhaseStatusControl({
       <label className="sr-only" htmlFor={`phase-status-${phaseId}`}>
         Phase status
       </label>
-      <select
+      <Select
         id={`phase-status-${phaseId}`}
-        className={selectClass}
+        wrapperClassName="inline-block w-max max-w-full"
+        className="text-meta font-semibold"
         value={current}
         disabled={pending}
         onChange={(e) => change(e.target.value as PhaseStatus)}
@@ -122,7 +121,7 @@ export function PhaseStatusControl({
             {PHASE_STATUS_LABEL[s]}
           </option>
         ))}
-      </select>
+      </Select>
       {error && <span className="text-2xs font-semibold text-danger">{error}</span>}
     </div>
   )
@@ -162,9 +161,10 @@ export function TaskStatusControl({
       <label className="sr-only" htmlFor={`task-status-${taskId}`}>
         Task status
       </label>
-      <select
+      <Select
         id={`task-status-${taskId}`}
-        className={selectClass}
+        wrapperClassName="inline-block w-max max-w-full"
+        className="text-meta font-semibold"
         value={current}
         disabled={pending}
         onChange={(e) => change(e.target.value as TaskStatus)}
@@ -174,7 +174,7 @@ export function TaskStatusControl({
             {TASK_STATUS_LABEL[s]}
           </option>
         ))}
-      </select>
+      </Select>
       {error && <span className="text-2xs font-semibold text-danger">{error}</span>}
     </div>
   )

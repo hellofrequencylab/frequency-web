@@ -318,7 +318,7 @@ export function EventActivity({
                 type="button"
                 onClick={() => (gifUrl ? clearGif() : clearImage())}
                 aria-label={gifUrl ? 'Remove GIF' : 'Remove image'}
-                className="absolute right-1.5 top-1.5 rounded-pill bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
+                className="absolute right-1.5 top-1.5 rounded-pill bg-ink/60 p-1 text-on-ink transition-colors hover:bg-ink/80"
               >
                 <X className="h-3.5 w-3.5" />
               </button>

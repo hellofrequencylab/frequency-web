@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { useRailSaveNow } from '@/components/admin/rail/rail-autosave-form'
 import { VenueAutocomplete } from '@/components/admin/venue-autocomplete'
 import type { PlaceResult } from '@/lib/geocode'
@@ -131,19 +132,19 @@ export function EventLocationFields({
       {/* Format select — toggles the join link + address / map. */}
       <label className="block min-w-0 space-y-1.5">
         <span className={fieldLabel}>Format</span>
-        <select
+        <Select
           name="attendance_mode"
           value={mode}
           onChange={(e) => setMode(e.target.value)}
           disabled={disabled}
-          className={`${input} min-w-0 px-2`}
+          wrapperClassName="min-w-0"
         >
           {ATTENDANCE_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
 
       {/* Join link (online / hybrid only). */}

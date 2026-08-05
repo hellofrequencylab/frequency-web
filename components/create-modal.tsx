@@ -79,7 +79,7 @@ export function CreateModal({
   return (
     <div
       onClick={() => !isPending && onClose()}
-      className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4"
+      className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4"
     >
       <form
         ref={panelRef}

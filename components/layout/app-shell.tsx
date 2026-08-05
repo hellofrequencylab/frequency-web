@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react'
 import {
   Globe,
   User,
@@ -19,8 +19,6 @@ import {
   Monitor,
   ChevronUp,
   Menu,
-  ChevronsLeft,
-  ChevronsRight,
   Flame,
   Bug,
   Gift,
@@ -65,6 +63,17 @@ import { AREA_ICONS, railIconFor } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
 import { DemoToggle } from '@/components/layout/demo-toggle'
 import { railFor, leftRailFor, mergeChrome, railStartsCollapsed, isFullViewportEditor, isFullWidthEditor, type ChromeOverrides } from '@/lib/layout/page-chrome'
+import {
+  DEFAULT_RAIL_FOLDS,
+  nextRailFold,
+  railFoldsSnapshot,
+  resolveRailFold,
+  setRailFolds,
+  subscribeRailFolds,
+  type RailFolds,
+  type RailSide,
+} from '@/lib/layout/rail-fold'
+import { RailFoldControl } from '@/components/layout/rail-fold-control'
 import type { AppOverrides } from '@/lib/apps/overrides'
 import { isJanitor, type WebRole } from '@/lib/core/roles'
 import type { Capability } from '@/lib/core/capabilities'
@@ -906,11 +915,22 @@ function NavLinkList({
         return (
         <div
           key={section.label ?? `top-${i}`}
+          // A FOLDED rail keeps its group dividers — DAWN's nav-rail.jsx draws exactly this
+          // hairline before each group when `collapsed`, because a strip that loses its
+          // grouping is a stack of anonymous icons, not the same menu made narrow. The
+          // divider is drawn as a leading `border-t` on every group after the first (rather
+          // than a trailing `border-b` on the home anchor) so two adjacent groups can never
+          // stack two hairlines.
           className={
             compact
-              ? `flex flex-col items-center gap-1 ${isHomeAnchor ? 'pb-1.5 mb-0.5 border-b border-border' : ''}`
+              ? `flex flex-col items-center gap-1 ${i > 0 && section.label ? 'mt-2 pt-2 border-t border-chrome-border' : ''}`
               : `space-y-0.5 ${i > 0 ? 'mt-4' : ''} ${isHomeAnchor ? 'pb-2 mb-1 border-b border-chrome-border' : ''}`
           }
+          // Folding drops the visible group label, so the grouping has to survive for a screen
+          // reader some other way: the section becomes a named group. A hairline is not an
+          // accessible name any more than a tooltip is.
+          role={compact && section.label ? 'group' : undefined}
+          aria-label={compact && section.label ? section.label : undefined}
         >
           {!compact && section.label && <p className={sectionLabelClass}>{section.label}</p>}
           {visibleItems.map((item) => {
@@ -931,7 +951,7 @@ function NavLinkList({
                       ghostTier={item.ghostTier}
                       ghostMessage={item.ghostMessage}
                       ariaLabel={label}
-                      className="flex h-11 w-11 items-center justify-center rounded-xl text-subtle"
+                      className="flex h-11 w-11 items-center justify-center rounded-control text-subtle"
                     >
                       <Icon className="h-5 w-5" strokeWidth={2} aria-hidden />
                     </GhostLink>
@@ -958,7 +978,7 @@ function NavLinkList({
                     onClick={onNavigate}
                     aria-label={label}
                     title={label}
-                    className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${
+                    className={`flex h-11 w-11 items-center justify-center rounded-control transition-colors ${
                       active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-chrome-hover hover:text-text'
                     }`}
                   >
@@ -993,9 +1013,13 @@ function NavLinkList({
                     key={href}
                     aria-disabled="true"
                     title="You don't have access to this yet"
-                    className="flex h-11 w-11 items-center justify-center rounded-xl text-subtle opacity-50 cursor-not-allowed select-none"
+                    className="flex h-11 w-11 items-center justify-center rounded-control text-subtle opacity-50 cursor-not-allowed select-none"
                   >
-                    <Icon className="h-5 w-5" strokeWidth={2} />
+                    <Icon className="h-5 w-5" strokeWidth={2} aria-hidden />
+                    {/* The open rail names this row with visible text. Folding takes the text
+                        away, and `title` is a TOOLTIP, not an accessible name — so the name is
+                        carried explicitly. Same reason the reachable rows carry aria-label. */}
+                    <span className="sr-only">{label}</span>
                   </div>
                 )
               }
@@ -1006,7 +1030,7 @@ function NavLinkList({
                   onClick={onNavigate}
                   aria-label={label}
                   title={label}
-                  className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${
+                  className={`flex h-11 w-11 items-center justify-center rounded-control transition-colors ${
                     active
                       ? 'bg-primary-bg text-primary-strong'
                       : reachable
@@ -1085,7 +1109,7 @@ function NavLinkList({
                   onClick={onNavigate}
                   aria-label={label}
                   title={label}
-                  className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${
+                  className={`flex h-11 w-11 items-center justify-center rounded-control transition-colors ${
                     active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-chrome-hover hover:text-text'
                   }`}
                 >
@@ -1175,7 +1199,7 @@ function MobileLeftDrawer({
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${
+        className={`absolute inset-0 bg-ink/40 transition-opacity duration-200 ${
           open ? 'opacity-100' : 'opacity-0'
         }`}
       />
@@ -1484,6 +1508,7 @@ export default function AppShell({
   profileMenu,
   menuViewerRole = 'visitor',
   menuTimings,
+  railFold,
 }: {
   profile: Profile
   /** True DB role, ignoring any view-as override. Defaults to the (effective)
@@ -1596,6 +1621,17 @@ export default function AppShell({
   menuViewerRole?: MenuAccess
   /** Mega-menu interaction timings from the global Menu Manager settings. */
   menuTimings?: MenuSettings
+  /** The viewer's STANDING RAIL INSTRUCTIONS (lib/layout/rail-fold), read SERVER-SIDE from the
+   *  `freq-rail-fold` cookie the shell writes.
+   *
+   *  🔴 THIS IS THE NO-FLASH SEAM, and it is the only one that can exist. A rail fold is MARKUP
+   *  (an icon strip is a different tree, not a restyled one), so unlike the theme it cannot be
+   *  corrected by a pre-paint inline script: by the time any script runs, the server has already
+   *  put the open rail in the HTML. The server has to know. Wiring it is one line in the authed
+   *  layout — `readRailFoldCookie((await cookies()).get(RAIL_FOLD_COOKIE)?.value)` — and that file
+   *  is outside this pass's domain, so the prop ships unwired and OPTIONAL. Omitted, both sides
+   *  start on Auto (today's exact first paint) and the stored instruction is applied at hydration. */
+  railFold?: Partial<RailFolds>
 }) {
   const pathname = usePathname()
   const profileHref = `/people/${profile.handle}`
@@ -1626,9 +1662,30 @@ export default function AppShell({
   const { theme, setTheme } = useTheme()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [lastPath, setLastPath] = useState(pathname)
-  // Per-route override for the right rail's collapsed state (mini-rail build surfaces). Keyed
-  // by path so it auto-resets on navigation — see the railCollapsed derivation below.
-  const [railOverride, setRailOverride] = useState<{ path: string; collapsed: boolean } | null>(null)
+
+  // ── The rails' three-position ladder (DAWN § "Rails", lib/layout/rail-fold) ───────────────
+  //
+  // Auto follows the room; Open and Strip are STANDING instructions. What this replaces was a
+  // `{ path, collapsed }` override that only the RIGHT rail had and that was keyed on the
+  // pathname — so it reset itself on every navigation, which is the opposite of standing.
+  //
+  // The instruction is SUBSCRIBED TO, not copied into state: localStorage is an external system,
+  // and `useSyncExternalStore` is the API that has a server snapshot as a first-class concept —
+  // which is precisely this problem's shape. The server renders `railFold` (the cookie) or Auto;
+  // the client then renders what is actually stored, and a fold made in another tab arrives here
+  // too. Copying it into `useState` inside an effect would be a cascading render on every mount
+  // (and `react-hooks/set-state-in-effect` fails the build on it, correctly).
+  const seededFolds = useMemo<RailFolds>(
+    () => ({ ...DEFAULT_RAIL_FOLDS, ...railFold }),
+    [railFold],
+  )
+  const serverFolds = useCallback(() => seededFolds, [seededFolds])
+  const folds = useSyncExternalStore(subscribeRailFolds, railFoldsSnapshot, serverFolds)
+
+  // One press of a rail's foot glyph. Writes through to localStorage + the cookie mirror, so the
+  // instruction survives a reload and (once the layout passes `railFold`) the very first paint.
+  const cycleFold = (side: RailSide, autoStrip: boolean) =>
+    setRailFolds({ ...folds, [side]: nextRailFold(folds[side], autoStrip) })
 
   // The shell-level admin bar (ADR-128, rebuilt; owner revision 2026-06-21; unified in ADMIN-RAIL
   // Phase 2). The AdminBar owns open/persistence + the grab-handle resize + the `open-admin-bar` /
@@ -1721,17 +1778,17 @@ export default function AppShell({
   const fullWidthEditor = isFullWidthEditor(pathname)
   const edgeToEdge = editorTakeover || fullWidthEditor
 
-  // Mini rail (immersive build surfaces — the Journey course builder). The GLOBAL rail is
-  // still mounted (never removed), but on these routes it STARTS collapsed to a thin strip
-  // so the builder gets the full center width; a foot toggle expands/collapses it. The
-  // default comes from page-chrome (railStartsCollapsed); a member can flip it for the
-  // current route, and the override resets when they navigate away — so the builder always
-  // opens collapsed, per the design. Pure derivation (no effect): railOverride only applies
-  // when its path matches the live pathname.
-  const railCollapsible = showSidebar && railStartsCollapsed(pathname)
-  const railCollapsed =
-    railOverride?.path === pathname ? railOverride.collapsed : railCollapsible
-  const toggleRail = () => setRailOverride({ path: pathname, collapsed: !railCollapsed })
+  // What AUTO means on this route: the immersive build surfaces (the Journey course builder)
+  // arrive folded — "folding gives the space to the canvas, which is why the editors arrive
+  // folded" — and everything else arrives open, because both rails are primarily open. One
+  // declarative source (page-chrome's railStartsCollapsed), now read by BOTH rails: DAWN's
+  // editor screens show the rails folded, plural.
+  const autoStrip = railStartsCollapsed(pathname)
+
+  // The right rail. `railCollapsed` keeps its name (and its 56 / 288 widths) — only what
+  // decides it changed: a standing instruction instead of a per-path scratch value.
+  const railCollapsed = showSidebar && resolveRailFold(folds.right, autoStrip) === 'strip'
+  const toggleRail = () => cycleFold('right', autoStrip)
 
   // The global MEMBER left rail is swapped out on workspace routes (today: /admin/*),
   // which mount their OWN left nav in their layout (the admin sidebar). Suppressing
@@ -1740,6 +1797,17 @@ export default function AppShell({
   // A full-viewport editor takeover also drops the LEFT nav (the editor owns the whole viewport with
   // its own top bar), so the desktop <Puck> reads truly full-screen like the mobile dock does.
   const showLeftRail = leftRailFor(pathname) === 'global' && !editorTakeover && !fullWidthEditor
+
+  // The LEFT rail's fold. Production could not fold the menu on desktop at all: NavLinkList has
+  // carried a working `compact` (icon-strip) path for a long time and nothing ever passed it —
+  // a dead path with a live implementation. It is wired here rather than reimplemented.
+  //
+  // The narrow-window yield is NOT decided here. The rail is `hidden md:flex`, so below that the
+  // menu leaves the layout entirely and arrives as the overlay drawer — the responsive rule wins
+  // over any stored position, without this component having to measure a viewport the server
+  // cannot see (measuring it is how you ship the flash).
+  const leftStrip = showLeftRail && resolveRailFold(folds.left, autoStrip) === 'strip'
+  const toggleLeftRail = () => cycleFold('left', autoStrip)
 
   // The member sitemap footer (canvas, end of the center column, scrolls with the
   // page). Shown only on real MEMBER content pages: skip stripped shells
@@ -2007,16 +2075,31 @@ export default function AppShell({
               // The top bar has paired chrome with `border-chrome-border` since it landed; the
               // rails took the ground without the hairline, so the band had no defined edge and
               // the rail read as a slightly-off patch of page rather than as frame.
-              <aside className="hidden md:flex w-48 shrink-0 flex-col border-r border-chrome-border bg-chrome">
+              // FOLDED, the rail is a visible STRIP, never a missing track: same column, same
+              // ground, same hairline edge, `w-14` instead of `w-48` — the same class step the
+              // RIGHT rail's folded strip has always used, so both sides of the grid fold to one
+              // measure. Written as two whole class strings rather than an interpolated width,
+              // because Tailwind generates utilities by scanning source text for complete class
+              // names; and the OPEN spelling stays literally `hidden md:flex w-48 shrink-0`,
+              // which is the geometry lib/layout/shell-metrics.ts publishes to the out-of-shell
+              // claim page and reads back out of this file as its drift guard.
+              <aside
+                className={
+                  leftStrip
+                    ? 'hidden md:flex w-14 shrink-0 flex-col border-r border-chrome-border bg-chrome'
+                    : 'hidden md:flex w-48 shrink-0 flex-col border-r border-chrome-border bg-chrome'
+                }
+              >
                 {/* The menu + profile footer live in NORMAL FLOW and scroll WITH the page
                     (no sticky pin, no inner scrollbar): the menu rides up as you scroll and
                     the profile card sits at the bottom of the column, revealed as you reach
                     the end of the page — like the right rail's dock. */}
                 {/* No outer px here: items carry their own px-3, so their hover boxes sit flush
                     to the column edge — matching the right rail's cards, so the outer margin reads
-                    the same on both sides. */}
-                <nav className="flex-1 py-3 space-y-1">
-                  <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} operatesSpaces={operatesSpaces} sections={navSections} menuDriven={menuDriven} />
+                    the same on both sides. Folded, the rows are centred 44px squares, so the
+                    column takes a small symmetric inset instead. */}
+                <nav className={leftStrip ? 'flex-1 px-1.5 py-3' : 'flex-1 py-3 space-y-1'}>
+                  <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} operatesSpaces={operatesSpaces} sections={navSections} menuDriven={menuDriven} compact={leftStrip} />
                 </nav>
                 {/* Bottom-left profile card — the account dock at the rail's FOOT (three-docks
                     law): the admin canvas corner-tab skin (rounded top, hairline, canvas-tinted
@@ -2030,8 +2113,47 @@ export default function AppShell({
                     longer needs, the account dock is simply the FOOT of the rail now, separated
                     the way DAWN separates rail sections: a hairline and space. Group, don't box. */}
                 <div className="sticky bottom-0 z-10 border-t border-chrome-border bg-chrome px-1.5 pt-1">
-                  {!hideAppNav && role === 'member' && <UpgradeCrew />}
-                  <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} operatorContext={operatorContext} availableContexts={availableContexts} menu={profileMenu} viewerRole={menuViewerRole} staffRole={staffRole} canReceivePayouts={canReceivePayouts} />
+                  {leftStrip ? (
+                    // Folded, the account dock keeps its PLACE (the rail's foot is you and what
+                    // you run) but not its panel: one avatar that still reaches the profile. The
+                    // full dock's links all live in the top-right account menu too, so nothing
+                    // becomes unreachable by folding — and the name is on the link, not a tooltip.
+                    <Link
+                      href={profileHref}
+                      aria-label={`Your profile, ${profile.display_name}`}
+                      title={profile.display_name}
+                      className="mx-auto mb-1 flex h-9 w-9 items-center justify-center"
+                      data-tour-anchor="avatar"
+                    >
+                      {profile.avatar_url ? (
+                        <Image
+                          src={avatarSrc(profile.avatar_url)}
+                          alt=""
+                          width={36}
+                          height={36}
+                          style={avatarFocusStyle(profile.avatar_url)}
+                          className="h-9 w-9 rounded-pill object-cover"
+                        />
+                      ) : (
+                        <span className="flex h-9 w-9 items-center justify-center rounded-pill bg-primary text-2xs font-bold text-on-primary select-none">
+                          {getInitials(profile.display_name)}
+                        </span>
+                      )}
+                    </Link>
+                  ) : (
+                    <>
+                      {!hideAppNav && role === 'member' && <UpgradeCrew />}
+                      <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} operatorContext={operatorContext} availableContexts={availableContexts} menu={profileMenu} viewerRole={menuViewerRole} staffRole={staffRole} canReceivePayouts={canReceivePayouts} />
+                    </>
+                  )}
+                  {/* The fold control, at the FOOT and under everything it affects (DAWN § "Rail
+                      controls sit at the foot"): quiet, borderless, warm only on hover, because
+                      folding a menu is rare and the control must not compete with the first real
+                      row. Centred on the strip, trailing when the rail is open — DAWN's own
+                      nav-rail.jsx alignment. */}
+                  <div className={`flex pb-1 ${leftStrip ? 'justify-center' : 'justify-end pr-1'}`}>
+                    <RailFoldControl side="left" showing={leftStrip ? 'strip' : 'open'} onPress={toggleLeftRail} />
+                  </div>
                 </div>
               </aside>
             )}
@@ -2103,15 +2225,7 @@ export default function AppShell({
                       ))}
                     </div>
                     <div className="flex-1" />
-                    <button
-                      type="button"
-                      onClick={toggleRail}
-                      title="Show the rail"
-                      aria-label="Show the rail"
-                      className="sticky bottom-6 inline-flex h-7 w-7 items-center justify-center rounded-md text-subtle transition-colors hover:text-muted"
-                    >
-                      <ChevronsLeft className="h-3.5 w-3.5" aria-hidden />
-                    </button>
+                    <RailFoldControl side="right" showing="strip" onPress={toggleRail} className="sticky bottom-6" />
                   </aside>
                 ) : (
                   // Mirrors the left rail: chrome plus the hairline that gives the band an edge.
@@ -2123,23 +2237,16 @@ export default function AppShell({
                         the window and come to rest against the last rail card instead. Zero-height
                         and aria-hidden: it is a ruler, not content. */}
                     <div id={RAIL_END_SENTINEL_ID} aria-hidden className="h-0" />
-                    {railCollapsible && (
-                      // The collapse TOGGLE at the BOTTOM, sticky so it stays visible as the rail
-                      // scrolls. Rail-control law (DAWN 2026-08-03): one affordance at the FOOT,
-                      // a small borderless glyph, subtle -> muted on hover — never a bordered
-                      // button, which competed with real rows.
-                      <div className="sticky bottom-4 mt-2 flex justify-end">
-                        <button
-                          type="button"
-                          onClick={toggleRail}
-                          title="Hide the rail"
-                          aria-label="Hide the rail"
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-subtle transition-colors hover:text-muted"
-                        >
-                          <ChevronsRight className="h-3.5 w-3.5" aria-hidden />
-                        </button>
-                      </div>
-                    )}
+                    {/* The fold TOGGLE at the BOTTOM, sticky so it stays visible as the rail
+                        scrolls. Rail-control law (DAWN 2026-08-03): one affordance at the FOOT,
+                        a small borderless glyph, subtle -> muted on hover — never a bordered
+                        button, which competed with real rows.
+                        Shown on EVERY rail page now, not only the builder surfaces it used to be
+                        gated to: "either rail collapsible by user control" is the law, and a rail
+                        that can only be folded on two routes is not a ladder. */}
+                    <div className="sticky bottom-4 mt-2 flex justify-end pr-1">
+                      <RailFoldControl side="right" showing="open" onPress={toggleRail} />
+                    </div>
                   </aside>
                 )}
                 {/* The settings drawer slides over THIS column (absolute, full height) on the

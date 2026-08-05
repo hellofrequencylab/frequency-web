@@ -23,6 +23,7 @@ import {
   Moon,
 } from 'lucide-react'
 import { LotusIcon, BreatheIcon, BoltIcon, BellCueIcon, VibrationIcon, OnAirIcon } from './icons'
+import { IconButton } from '@/components/ui/icon-button'
 import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
@@ -1785,23 +1786,13 @@ export function OnAirSession({
             </div>
             {/* The stepper: any length, one minute at a time (1–120). Its own row, like Walk. */}
             <div className="mt-2 flex items-center justify-between rounded-card border border-border px-1.5">
-              <button
-                type="button"
-                onClick={() => setMinutes((m) => clampMinutes(m - 1))}
-                aria-label="One minute less"
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-              >
+              <IconButton label="One minute less" onClick={() => setMinutes((m) => clampMinutes(m - 1))}>
                 <Minus className="h-3.5 w-3.5" />
-              </button>
+              </IconButton>
               <span className="text-body-sm font-semibold tabular-nums text-text">{minutes}m</span>
-              <button
-                type="button"
-                onClick={() => setMinutes((m) => clampMinutes(m + 1))}
-                aria-label="One minute more"
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-              >
+              <IconButton label="One minute more" onClick={() => setMinutes((m) => clampMinutes(m + 1))}>
                 <Plus className="h-3.5 w-3.5" />
-              </button>
+              </IconButton>
             </div>
           </div>
         )}

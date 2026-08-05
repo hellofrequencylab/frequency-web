@@ -5,6 +5,8 @@ import { usePathname, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { ImagePlus } from 'lucide-react'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { RailSaveRow } from '@/components/admin/rail/rail-autosave-form'
 import { useRailAutosave, isInstant, isTextLike } from '@/components/admin/rail/use-rail-autosave'
 import { createClient } from '@/lib/supabase/client'
@@ -391,11 +393,11 @@ export function EventSettingsModule() {
             buying the way in (no RSVP switch). */}
         <label className="block space-y-1.5">
           <span className={fieldLabel}>How people join</span>
-          <select name="join_mode" defaultValue={data.join_mode ?? 'auto'} className={`${input} min-w-0 px-2`}>
+          <Select name="join_mode" defaultValue={data.join_mode ?? 'auto'} wrapperClassName="min-w-0">
             <option value="auto">Automatic (tickets when priced, else RSVP)</option>
             <option value="rsvp">RSVP, first come first served (prices are informational)</option>
             <option value="tickets">Tickets (buying is how people attend)</option>
-          </select>
+          </Select>
         </label>
 
         {/* TICKET PRICE — blank keeps the event a free RSVP. */}
@@ -437,7 +439,7 @@ export function EventSettingsModule() {
             {/* "My circle" is only offered when the event's home IS a circle — on any other scope
                 the server steps it down to unlisted (coerceVisibilityForScope, ADR-883), so the
                 dead option never renders. Same rule as the member form's filter. */}
-            <select
+            <Select
               name="visibility"
               defaultValue={
                 data.scope_type === 'circle'
@@ -446,7 +448,7 @@ export function EventSettingsModule() {
                     ? 'unlisted'
                     : data.visibility
               }
-              className={`${input} min-w-0 px-2`}
+              wrapperClassName="min-w-0"
             >
               {(data.scope_type === 'circle'
                 ? VISIBILITY_OPTIONS
@@ -456,26 +458,21 @@ export function EventSettingsModule() {
                   {o.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           {/* Public listing (ADR-844) — a SEPARATE question from who can see it: given a public
               event, is it merchandised when people browse. Controlled hidden input ('on'/'off') so
               the field is always in the autosave snapshot and no other form can silently relist it. */}
-          <label className="col-span-full flex items-start gap-2 pt-1">
-            <input
-              type="checkbox"
-              checked={marketListed}
-              onChange={(e) => {
-                setMarketListed(e.target.checked)
-                requestAnimationFrame(saveNow)
-              }}
-              className="mt-0.5 h-4 w-4 rounded border-border"
-            />
-            <span className="text-body-sm text-text">
-              {MARKET_LISTING_LABEL}
-              <span className="block text-2xs font-normal text-muted">{MARKET_LISTING_HELP}</span>
-            </span>
-          </label>
+          <Checkbox
+            checked={marketListed}
+            onChange={(e) => {
+              setMarketListed(e.target.checked)
+              requestAnimationFrame(saveNow)
+            }}
+            label={MARKET_LISTING_LABEL}
+            hint={MARKET_LISTING_HELP}
+            wrapperClassName="col-span-full pt-1"
+          />
           <input type="hidden" name="market_listed" value={marketListed ? 'on' : 'off'} />
         </div>
 
@@ -483,33 +480,33 @@ export function EventSettingsModule() {
         <div className="grid grid-cols-3 gap-2">
           <label className="block min-w-0 space-y-1.5">
             <span className={fieldLabel}>Format</span>
-            <select name="attendance_mode" value={mode} onChange={(e) => setMode(e.target.value)} className={`${input} min-w-0 px-2`}>
+            <Select name="attendance_mode" value={mode} onChange={(e) => setMode(e.target.value)} wrapperClassName="min-w-0">
               {ATTENDANCE_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <label className="block min-w-0 space-y-1.5">
             <span className={fieldLabel}>What kind</span>
-            <select name="category" defaultValue={data.category ?? 'gathering'} className={`${input} min-w-0 px-2`}>
+            <Select name="category" defaultValue={data.category ?? 'gathering'} wrapperClassName="min-w-0">
               {CATEGORY_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <label className="block min-w-0 space-y-1.5">
             <span className={fieldLabel}>Energy</span>
-            <select name="energy_tag" defaultValue={data.energy_tag ?? ''} className={`${input} min-w-0 px-2`}>
+            <Select name="energy_tag" defaultValue={data.energy_tag ?? ''} wrapperClassName="min-w-0">
               {ENERGY_OPTIONS.map((o) => (
                 <option key={o.value || 'none'} value={o.value}>
                   {o.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
         </div>
 
@@ -517,23 +514,23 @@ export function EventSettingsModule() {
         <div className="grid grid-cols-2 gap-2">
           <label className="block min-w-0 space-y-1.5">
             <span className={fieldLabel}>Time zone</span>
-            <select name="time_zone" defaultValue={zone} className={`${input} min-w-0 px-2`}>
+            <Select name="time_zone" defaultValue={zone} wrapperClassName="min-w-0">
               {zones.map((z) => (
                 <option key={z.value} value={z.value}>
                   {z.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <label className="block min-w-0 space-y-1.5">
             <span className={fieldLabel}>Repeats</span>
-            <select name="recurrence_type" value={recurrence} onChange={(e) => setRecurrence(e.target.value)} className={`${input} min-w-0 px-2`}>
+            <Select name="recurrence_type" value={recurrence} onChange={(e) => setRecurrence(e.target.value)} wrapperClassName="min-w-0">
               {RECURRENCE_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
         </div>
 
@@ -617,24 +614,16 @@ export function EventSettingsModule() {
               {/* Hidden address (ADR-825). A controlled HIDDEN input ('on'/'off') so the field is
                   ALWAYS present in the autosave snapshot — the action only writes when present, so
                   no other form can silently reset it. */}
-              <label className="flex items-start gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  checked={hideAddress}
-                  onChange={(e) => {
-                    setHideAddress(e.target.checked)
-                    requestAnimationFrame(saveNow)
-                  }}
-                  className="mt-0.5 h-4 w-4 rounded border-border"
-                />
-                <span className="text-body-sm text-text">
-                  Hide the address until someone registers
-                  <span className="block text-2xs font-normal text-muted">
-                    People browsing see the city only. The venue, street, map pin, and directions
-                    show after they RSVP or get a ticket.
-                  </span>
-                </span>
-              </label>
+              <Checkbox
+                checked={hideAddress}
+                onChange={(e) => {
+                  setHideAddress(e.target.checked)
+                  requestAnimationFrame(saveNow)
+                }}
+                label="Hide the address until someone registers"
+                hint="People browsing see the city only. The venue, street, map pin, and directions show after they RSVP or get a ticket."
+                wrapperClassName="flex pt-1"
+              />
               <input type="hidden" name="hide_address" value={hideAddress ? 'on' : 'off'} />
             </div>
 

@@ -534,7 +534,7 @@ function Step({
         <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-primary-bg/50">
           <Icon className="w-5 h-5 text-primary-strong" />
         </span>
-        <span className="font-display uppercase text-4xl text-border-strong leading-none">
+        <span className="font-display uppercase text-display-h3 text-border-strong leading-none">
           {n}
         </span>
       </div>

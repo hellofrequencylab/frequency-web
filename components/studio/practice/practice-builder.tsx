@@ -40,10 +40,14 @@ import {
 // icon — the kit is composed-from, not a rigid template.
 
 const CADENCES = ['Daily', 'A few times a week', 'Weekly', 'As needed']
-const ICONS: { key: string; Icon: LucideIcon }[] = [
-  { key: 'sparkles', Icon: Sparkles }, { key: 'waves', Icon: Waves }, { key: 'footprints', Icon: Footprints },
-  { key: 'snowflake', Icon: Snowflake }, { key: 'brain', Icon: Brain }, { key: 'flame', Icon: Flame },
-  { key: 'heart', Icon: Heart }, { key: 'leaf', Icon: Leaf }, { key: 'sun', Icon: Sun }, { key: 'moon', Icon: Moon },
+// `label` is the accessible name for the icon picker below. It is not decoration: the picker
+// shipped as ten icon-only buttons with no name at all, which reads as ten identical "button"s.
+const ICONS: { key: string; label: string; Icon: LucideIcon }[] = [
+  { key: 'sparkles', label: 'Sparkles', Icon: Sparkles }, { key: 'waves', label: 'Waves', Icon: Waves },
+  { key: 'footprints', label: 'Footprints', Icon: Footprints }, { key: 'snowflake', label: 'Snowflake', Icon: Snowflake },
+  { key: 'brain', label: 'Brain', Icon: Brain }, { key: 'flame', label: 'Flame', Icon: Flame },
+  { key: 'heart', label: 'Heart', Icon: Heart }, { key: 'leaf', label: 'Leaf', Icon: Leaf },
+  { key: 'sun', label: 'Sun', Icon: Sun }, { key: 'moon', label: 'Moon', Icon: Moon },
 ]
 const ICON_BY_KEY = new Map(ICONS.map((i) => [i.key, i.Icon]))
 
@@ -330,14 +334,22 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           {iconOpen && (
             <div className="absolute left-0 top-[4.5rem] z-10 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface p-3 lift-3">
               <div className="grid grid-cols-5 gap-1">
-                {ICONS.map(({ key, Icon }) => (
+                {/* Every one of these shipped with NO accessible name: icon-only, the glyph
+                    marked nothing, so a screen reader read ten buttons called "button" and the
+                    picker was unusable without sight. `label` names each one. It stays
+                    hand-rolled rather than composing IconButton because the chosen icon carries
+                    a tinted fill and a ring, which the primitive has no variant for. */}
+                {ICONS.map(({ key, label, Icon }) => (
                   <button
                     key={key}
                     type="button"
+                    aria-label={label}
+                    title={label}
+                    aria-pressed={icon === key && !headerImage}
                     onClick={() => { setIcon(key); setIconOpen(false); queueSave({ icon: key }) }}
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${icon === key && !headerImage ? 'bg-primary-bg text-primary-strong ring-2 ring-primary' : 'text-muted hover:bg-surface-elevated'}`}
+                    className={`tap-target flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${icon === key && !headerImage ? 'bg-primary-bg text-primary-strong ring-2 ring-primary' : 'text-muted hover:bg-surface-elevated'}`}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-4 w-4" aria-hidden />
                   </button>
                 ))}
               </div>

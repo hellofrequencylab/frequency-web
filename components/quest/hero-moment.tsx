@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Trophy, Zap, X, Sparkles, ArrowRight, Check } from 'lucide-react'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { keepPracticeAction } from '@/app/(main)/practices/actions'
+import { IconButton } from '@/components/ui/icon-button'
 
 // HeroMoment — the landmark celebration for the real Journey landmarks: a Journey
 // just finished, the rank it pushed you to, and (at the apex) the whole season
@@ -161,17 +162,13 @@ function KeepAnchorBand({ anchor }: { anchor: { practiceId: string; title: strin
   )
 }
 
-// The dismiss control, shared by both reads. 44x44 tap target.
+// The dismiss control, shared by both reads. IconButton owns the density: 32px for a mouse,
+// 44px on a coarse pointer, plus the focus ring and the press this used to go without.
 function DismissButton({ onClose }: { onClose: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClose}
-      aria-label="Dismiss"
-      className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-pill text-subtle transition-colors hover:bg-surface-elevated hover:text-text motion-reduce:transition-none"
-    >
+    <IconButton label="Dismiss" onClick={onClose} className="absolute right-3 top-3">
       <X className="h-4 w-4" />
-    </button>
+    </IconButton>
   )
 }
 

@@ -87,8 +87,7 @@ export function BlockButton({
             })
           }}
           className={`${base} ${
-            // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
-            isLink ? 'text-danger hover:underline disabled:opacity-60' : 'border-danger bg-danger text-white disabled:opacity-60'
+            isLink ? 'text-danger hover:underline disabled:opacity-60' : 'border-danger bg-danger text-on-danger disabled:opacity-60'
           }`}
         >
           {pending ? 'Blocking…' : 'Confirm block'}

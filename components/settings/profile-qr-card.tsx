@@ -61,6 +61,7 @@ export function ProfileQrCard({
       </p>
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div
+          // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
           className="h-40 w-40 shrink-0 overflow-hidden rounded-card border border-border bg-white p-2 [&>svg]:h-full [&>svg]:w-full"
           dangerouslySetInnerHTML={{ __html: svg }}
         />

@@ -115,7 +115,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
           inline Capture box is the entry. This component only hosts the modal. */}
       {open && (
         <div
-          className="fixed inset-0 z-[70] flex items-stretch justify-center bg-black/70 backdrop-blur-sm sm:items-center sm:p-4"
+          className="fixed inset-0 z-[70] flex items-stretch justify-center bg-ink/70 backdrop-blur-sm sm:items-center sm:p-4"
           onMouseDown={(e) => {
             if (e.target === e.currentTarget) close()
           }}

@@ -49,7 +49,7 @@ function SwipeRow({
   return (
     <div className="relative overflow-hidden">
       {/* Delete affordance revealed behind the row as it slides left. */}
-      <div className="absolute inset-y-0 right-0 flex w-24 items-center justify-center bg-danger text-body-sm font-semibold text-white">
+      <div className="absolute inset-y-0 right-0 flex w-24 items-center justify-center bg-danger text-body-sm font-semibold text-on-danger">
         Delete
       </div>
       <div

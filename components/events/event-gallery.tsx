@@ -72,13 +72,13 @@ export function EventGallery({ images }: { images: string[] }) {
           aria-modal="true"
           aria-label="Event photo viewer"
           onClick={close}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/90 p-4 backdrop-blur-sm"
         >
           <button
             type="button"
             onClick={close}
             aria-label="Close"
-            className="absolute right-4 top-4 rounded-pill bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
+            className="absolute right-4 top-4 rounded-pill bg-on-ink/10 p-2 text-on-ink transition-colors hover:bg-on-ink/20"
           >
             <X className="h-5 w-5" />
           </button>
@@ -91,7 +91,7 @@ export function EventGallery({ images }: { images: string[] }) {
                 show(open - 1)
               }}
               aria-label="Previous photo"
-              className="absolute left-3 top-1/2 -translate-y-1/2 rounded-pill bg-white/10 p-2 text-white transition-colors hover:bg-white/20 sm:left-6"
+              className="absolute left-3 top-1/2 -translate-y-1/2 rounded-pill bg-on-ink/10 p-2 text-on-ink transition-colors hover:bg-on-ink/20 sm:left-6"
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
@@ -120,13 +120,13 @@ export function EventGallery({ images }: { images: string[] }) {
                 show(open + 1)
               }}
               aria-label="Next photo"
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-pill bg-white/10 p-2 text-white transition-colors hover:bg-white/20 sm:right-6"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-pill bg-on-ink/10 p-2 text-on-ink transition-colors hover:bg-on-ink/20 sm:right-6"
             >
               <ChevronRight className="h-6 w-6" />
             </button>
           )}
 
-          <span className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-pill bg-white/10 px-3 py-1 text-meta font-medium text-white">
+          <span className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-pill bg-on-ink/10 px-3 py-1 text-meta font-medium text-on-ink">
             {open + 1} / {count}
           </span>
         </div>

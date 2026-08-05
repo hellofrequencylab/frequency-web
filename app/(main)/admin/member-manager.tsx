@@ -126,8 +126,7 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
               <button
                 disabled={isPending}
                 onClick={() => handleDeactivate(confirmId)}
-                // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
-                className="rounded-lg bg-danger px-3 py-1.5 text-meta font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-colors"
+                className="rounded-lg bg-danger px-3 py-1.5 text-meta font-semibold text-on-danger hover:opacity-90 disabled:opacity-50 transition-colors"
               >
                 {isPending ? 'Deactivating...' : 'Deactivate'}
               </button>

@@ -2,10 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { Hash, MessageSquare, Loader2, ArrowRight, Users, ChevronLeft, Info } from 'lucide-react'
-import { getInitials, relativeTime } from '@/lib/utils'
-import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
+import { relativeTime } from '@/lib/utils'
 import {
   fetchMessagesSummary,
   loadDockDmThread,
@@ -19,6 +17,11 @@ import { RoomThread } from '@/components/rooms/room-thread'
 import { DockThreadDetails } from '@/components/messages/dock-thread-details'
 import { DOCK_BACK_EVENT, type DockOpenDetail } from '@/lib/messages/dock-open'
 import { dmTitle } from '@/lib/messages/dm-title'
+import { IconButton } from '@/components/ui/icon-button'
+import { Avatar } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { buttonClasses } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 
 // Module-level cache so reopening the dock is INSTANT (the summary is a few RPCs, which
 // is what felt slow). Warmed by the launcher on mount (prefetchDockSummary) and refreshed
@@ -246,11 +249,11 @@ export function DockChat({
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
-          {/* p-1 on a 20px icon is a ~28px target. Padding to a 40px hit area WITHOUT changing
-              the rendered glyph, so the desktop card looks identical and a thumb can find it. */}
-          <button type="button" onClick={back} aria-label="Back to inbox" className="-ml-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-subtle transition-colors hover:bg-surface-elevated hover:text-text">
+          {/* IconButton owns the density here: 32px for a mouse, 44px on a coarse pointer, so
+              the dock header keeps its thumb-reachable back control without a hand-rolled box. */}
+          <IconButton label="Back to inbox" onClick={back} className="-ml-1 shrink-0">
             <ChevronLeft className="h-5 w-5" aria-hidden />
-          </button>
+          </IconButton>
           {/* Parity with the page's title: a 1:1 thread is a route to the person you are
               talking to. From the dock there was no way to reach their profile at all. */}
           {open.kind === 'dm' && peer ? (
@@ -261,19 +264,18 @@ export function DockChat({
             <span className="min-w-0 flex-1 truncate text-body-sm font-semibold text-text">{heading}</span>
           )}
           {open.kind === 'dm' && dm && (
-            <button
+            <IconButton
               ref={detailsButtonRef}
-              type="button"
+              label="Conversation details"
               onClick={() => setDetailsOpen((v) => !v)}
               aria-expanded={detailsOpen}
               // Only while the layer exists: aria-controls pointing at an id that is not in
               // the document is a dangling reference, and the layer is mounted on open.
               aria-controls={detailsOpen ? 'dock-thread-details' : undefined}
-              aria-label="Conversation details"
-              className="-mr-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+              className="-mr-1 shrink-0"
             >
               <Info className="h-4 w-4" aria-hidden />
-            </button>
+            </IconButton>
           )}
         </div>
         <div className="relative min-h-0 flex-1 overflow-hidden">
@@ -321,13 +323,17 @@ export function DockChat({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      {/* Both actions go through the kit's button tokens rather than two hand-rolled fill
+          strings: `primarySoft` is the muted amber the dock tab already wears, `secondary` is
+          the bordered neighbour. That also takes the pair off the literal `rounded-lg` step and
+          onto the skinnable role radius, which is what the rest of the panel is on. */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
-        <Link ref={inboxFirstRef} href="/people" onClick={onNavigate} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary-bg px-3 py-1.5 text-body-sm font-medium text-primary-strong transition-colors hover:bg-primary-bg/70">
+        <Link ref={inboxFirstRef} href="/people" onClick={onNavigate} className={buttonClasses('primarySoft', 'sm', 'flex-1')}>
           <Users className="h-4 w-4" aria-hidden /> Message someone
         </Link>
         {/* /messages/rooms holds only an actions.ts and no page.tsx, so this 404'd — on the one
             surface the owner wants chat to live in. The rooms list is the inbox's Rooms filter. */}
-        <Link href="/messages?filter=rooms" onClick={onNavigate} className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated">
+        <Link href="/messages?filter=rooms" onClick={onNavigate} className={buttonClasses('secondary', 'sm')}>
           <Hash className="h-4 w-4" aria-hidden /> Rooms
         </Link>
       </div>
@@ -342,11 +348,16 @@ export function DockChat({
         {loading && (
           <div className="flex items-center justify-center py-10 text-subtle"><Loader2 className="h-5 w-5 animate-spin" aria-hidden /></div>
         )}
+        {/* The kit's empty, not a third hand-rolled one. Same two sentences, same glyph — what
+            changes is that it now carries DAWN's icon-chip anatomy and the dashed first-use
+            frame, so a quiet inbox reads as a state rather than as a failed load. */}
         {empty && (
-          <div className="px-4 py-10 text-center">
-            <MessageSquare className="mx-auto h-8 w-8 text-subtle" aria-hidden />
-            <p className="mt-2 text-body-sm text-muted">No conversations yet.</p>
-            <p className="mt-0.5 text-meta text-subtle">Find a member to start chatting.</p>
+          <div className="px-3 py-4">
+            <EmptyState
+              icon={MessageSquare}
+              title="No conversations yet."
+              description="Find a member to start chatting."
+            />
           </div>
         )}
         {!loading && !empty && (
@@ -357,11 +368,12 @@ export function DockChat({
               return (
                 <li key={c.id}>
                   <button type="button" onClick={() => openDm(c.id, title)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-elevated">
-                    {peer?.avatar_url ? (
-                      <Image src={avatarSrc(peer.avatar_url)} alt="" width={36} height={36} className="h-9 w-9 rounded-pill object-cover" style={avatarFocusStyle(peer.avatar_url)} />
-                    ) : (
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-2xs font-bold text-primary-strong select-none">{getInitials(title)}</div>
-                    )}
+                    {/* THE kit avatar. This row hand-rolled both halves of it — a raw next/image
+                        with its own focal style, and an initials disc — which is exactly the
+                        duplication components/ui/avatar.tsx was extracted to end. `sm` is 36px,
+                        the size this row already asked for, and the focal point still comes off
+                        the URL fragment because Avatar reads it itself. */}
+                    <Avatar src={peer?.avatar_url ?? null} name={title} size="sm" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate text-body-sm font-medium text-text">{title}</span>
@@ -369,7 +381,12 @@ export function DockChat({
                       </div>
                       <span className="block truncate text-meta text-muted">{c.lastMessage?.body ?? 'No messages yet'}</span>
                     </div>
-                    {c.unread > 0 && <span className="ml-1 inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-pill bg-primary px-1.5 text-2xs font-bold text-on-primary">{c.unread}</span>}
+                    {/* Unread is a DANGER badge, through the kit: `bg-danger` + the minted
+                        `text-on-danger`, so the count stays legible in every skin. It used to be
+                        solid amber, which is the brand accent this panel spends on its tab, its
+                        chips and its links — an unread has to be the one mark that is none of
+                        those. */}
+                    {c.unread > 0 && <Badge tone="danger" size="sm" solid className="ml-1">{c.unread}</Badge>}
                   </button>
                 </li>
               )
@@ -377,7 +394,10 @@ export function DockChat({
             {rooms.map((r) => (
               <li key={r.id}>
                 <button type="button" onClick={() => openRoom(r.id, r.name)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-elevated">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-subtle">
+                  {/* NOT an Avatar: a room is not a person, and DAWN's message-board draws it as
+                      a hash mark rather than a face. The rounded-square keeps that distinction
+                      readable at a glance beside the round avatars above it. */}
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-surface-elevated text-subtle">
                     <Hash className="h-4 w-4" aria-hidden />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -387,7 +407,7 @@ export function DockChat({
                     </div>
                     <span className="block truncate text-meta text-muted capitalize">{r.visibility} room</span>
                   </div>
-                  {r.unread > 0 && <span className="ml-1 inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-pill bg-primary px-1.5 text-2xs font-bold text-on-primary">{r.unread}</span>}
+                  {r.unread > 0 && <Badge tone="danger" size="sm" solid className="ml-1">{r.unread}</Badge>}
                 </button>
               </li>
             ))}

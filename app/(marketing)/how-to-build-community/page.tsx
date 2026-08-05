@@ -289,7 +289,7 @@ export default function HowToBuildCommunityPage() {
 
       {/* The core plan, as numbered steps (mirrors the first HowTo schema). */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How do I start a community group?
         </h2>
         <Lead>
@@ -337,7 +337,7 @@ export default function HowToBuildCommunityPage() {
 
       {/* Absorbed track 1: recurrence logistics (from host-a-recurring-gathering). */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How do I host a recurring gathering?
         </h2>
         <Lead>
@@ -392,7 +392,7 @@ export default function HowToBuildCommunityPage() {
 
       {/* Absorbed track 2: the operator playbook (from how-to-run-a-community-space). */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How do I run a community space?
         </h2>
         <Lead>
@@ -442,7 +442,7 @@ export default function HowToBuildCommunityPage() {
 
       {/* One concept per section: why groups fizzle. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Why do most groups fizzle out?
         </h2>
         <Lead>
@@ -490,7 +490,7 @@ export default function HowToBuildCommunityPage() {
 
       {/* The ladder. Leaderful, not leader-dependent. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Do I have to do this alone?
         </h2>
         <Lead>
@@ -521,7 +521,7 @@ export default function HowToBuildCommunityPage() {
 
       {/* Builder CTA into the product (Build pillar). Pricing intent handled honestly. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Where do I start?
         </h2>
         <Body>
@@ -547,7 +547,7 @@ export default function HowToBuildCommunityPage() {
 
       {/* FAQ. Mirrors the FAQPage schema above. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-7">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-7">
           Common questions
         </h2>
         <FaqList items={FAQ} />

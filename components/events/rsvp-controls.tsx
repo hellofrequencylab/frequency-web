@@ -10,6 +10,7 @@ import {
   type GuestQuestionnaire,
 } from '@/app/(main)/events/[slug]/manage/questionnaire-actions'
 import type { EventQuestion } from '@/lib/events/questions'
+import { IconButton } from '@/components/ui/icon-button'
 
 // Detail-page RSVP controls (event Detail template). Three warm states a member
 // can move between — Going · Interested (maybe) · (Join waitlist when full) —
@@ -320,27 +321,25 @@ export function RsvpControls({
             Bringing {plusOnes > 0 ? `+${plusOnes}` : 'no'} {plusOnes === 1 ? 'guest' : 'guests'}
           </span>
           <div className="inline-flex items-center gap-1">
-            <button
-              type="button"
-              aria-label="One fewer guest"
+            <IconButton
+              variant="bordered"
+              label="One fewer guest"
               onClick={() => setGuests(plusOnes - 1)}
               disabled={pending || plusOnes <= 0}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-primary-bg hover:text-primary-strong disabled:opacity-40"
             >
               <Minus className="h-3.5 w-3.5" />
-            </button>
+            </IconButton>
             <span className="w-6 text-center text-body-sm font-semibold tabular-nums text-text">
               {plusOnes}
             </span>
-            <button
-              type="button"
-              aria-label="One more guest"
+            <IconButton
+              variant="bordered"
+              label="One more guest"
               onClick={() => setGuests(plusOnes + 1)}
               disabled={pending || plusOnes >= MAX_PLUS_ONES}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-primary-bg hover:text-primary-strong disabled:opacity-40"
             >
               <Plus className="h-3.5 w-3.5" />
-            </button>
+            </IconButton>
           </div>
         </div>
       ) : null}
@@ -664,15 +663,15 @@ function PlusOneNames({
             disabled={pending}
             className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
           />
-          <button
-            type="button"
+          <IconButton
+            label="Remove guest"
+            tone="danger"
             onClick={() => remove(i)}
-            aria-label="Remove guest"
             disabled={pending}
-            className="shrink-0 rounded-lg p-1.5 text-subtle transition-colors hover:text-danger disabled:opacity-40"
+            className="shrink-0"
           >
             <X className="h-4 w-4" />
-          </button>
+          </IconButton>
         </div>
       ))}
       {names.length < MAX_PLUS_ONES && (

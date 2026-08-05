@@ -111,13 +111,13 @@ function fadeScrim(color: string): string {
  *  (app/(main)/spaces/[slug]/(profile)/layout.tsx) so the "look like the button on Spaces" ask holds for
  *  every header button site-wide. Import this for any button placed in a PageHero `actions` slot. */
 export const HERO_ACTION_CLASS =
-  'inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/40 bg-white/10 px-3 py-1.5 text-body-sm font-semibold text-on-ink backdrop-blur-sm transition-colors hover:bg-white/20'
+  'inline-flex items-center justify-center gap-1.5 rounded-lg border border-on-ink/40 bg-on-ink/10 px-3 py-1.5 text-body-sm font-semibold text-on-ink backdrop-blur-sm transition-colors hover:bg-on-ink/20'
 
 /** The header-action button style for an ADAPTIVE hero (`adaptiveText`). Same geometry as
  *  HERO_ACTION_CLASS, but its border, glass and text colour all derive from the ZONE's
  *  `--color-on-media` via `.hero-chip` in globals.css — so a chip cluster sitting on the bright
  *  half of a cover goes dark while the name on the dark half stays light. HERO_ACTION_CLASS is
- *  fixed white-on-glass and cannot do that, which is why this is a SECOND constant rather than an
+ *  fixed on-ink-on-glass and cannot do that, which is why this is a SECOND constant rather than an
  *  edit: seven non-profile heroes depend on that one byte for byte, and a test names it.
  *  Use this for any button in the `actions` slot of a hero with `adaptiveText` on. */
 export const HERO_ACTION_CLASS_ADAPTIVE =

@@ -407,7 +407,7 @@ export function AdminBar({
         // is why the first drift guard (matching `onClose=`) missed it while reporting the surface
         // as fully covered.
         onClick={closeGuarded}
-        className="absolute inset-0 bg-black/40"
+        className="absolute inset-0 bg-ink/40"
       />
       {/* Sheet — full-width on a phone (w-full), a right-side sheet on a tablet (max-w-md). */}
       <div className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-border bg-surface shadow-pop">

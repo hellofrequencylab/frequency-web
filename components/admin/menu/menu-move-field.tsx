@@ -1,5 +1,6 @@
 'use client'
 
+import { Select } from '@/components/ui/select'
 import type { MenuSurfaceKey } from '@/lib/menus/types'
 import { MENU_SURFACE_LABELS } from './known-routes'
 
@@ -26,7 +27,7 @@ export function MenuMoveField({
   return (
     <label className="flex items-center gap-2 text-meta font-semibold text-subtle">
       {label}
-      <select
+      <Select
         defaultValue=""
         disabled={disabled}
         onChange={(e) => {
@@ -35,15 +36,16 @@ export function MenuMoveField({
           e.currentTarget.value = ''
           if (dest) onMove(dest)
         }}
-        className="rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm font-normal text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+        emptyLabel="Another menu…"
+        wrapperClassName="inline-block w-max max-w-full"
+        className="font-normal"
       >
-        <option value="">Another menu…</option>
         {others.map((k) => (
           <option key={k} value={k}>
             {MENU_SURFACE_LABELS[k]}
           </option>
         ))}
-      </select>
+      </Select>
     </label>
   )
 }

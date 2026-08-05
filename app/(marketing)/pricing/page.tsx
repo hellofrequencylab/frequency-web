@@ -580,7 +580,7 @@ function PlanCard({
         </span>
       )}
       <h3
-        className={`font-display uppercase ${featured ? 'text-3xl' : 'text-page-title'} ${
+        className={`font-display uppercase ${featured ? 'text-display-h3' : 'text-page-title'} ${
           ink ? 'text-on-ink' : 'text-text'
         }`}
       >

@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Minus, Plus, Loader2, Check } from 'lucide-react'
 import { isError } from '@/lib/action-result'
+import { IconButton } from '@/components/ui/icon-button'
 import { setOperatorSeats } from './actions'
 
 // OPERATOR SEAT EDITOR (client, A4/A5). Change a paying Space's LICENSED operator-seat count directly on
@@ -76,27 +77,23 @@ export function SeatEditor({
         </div>
         <div className="flex items-center gap-3">
           <div className="inline-flex items-center gap-1 rounded-lg border border-border">
-            <button
-              type="button"
-              aria-label="Remove a seat"
+            <IconButton
+              label="Remove a seat"
               onClick={() => setSeats((n) => Math.max(floor, n - 1))}
               disabled={pending || seats <= floor}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-l-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-40"
             >
               <Minus className="h-4 w-4" aria-hidden />
-            </button>
+            </IconButton>
             <span className="min-w-10 text-center text-body-sm font-semibold tabular-nums text-text" aria-live="polite">
               {seats}
             </span>
-            <button
-              type="button"
-              aria-label="Add a seat"
+            <IconButton
+              label="Add a seat"
               onClick={() => setSeats((n) => Math.min(MAX, n + 1))}
               disabled={pending || seats >= MAX}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-r-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-40"
             >
               <Plus className="h-4 w-4" aria-hidden />
-            </button>
+            </IconButton>
           </div>
           <button
             type="button"

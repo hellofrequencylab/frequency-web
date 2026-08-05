@@ -152,7 +152,7 @@ export function Scanner({ hint = 'default' }: { hint?: string }) {
   const scanning = state.kind === 'scanning' || state.kind === 'starting'
 
   return (
-    <div className="fixed inset-0 z-50 bg-black">
+    <div className="fixed inset-0 z-50 bg-ink">
       {/* Viewfinder */}
       <video
         ref={videoRef}
@@ -166,12 +166,12 @@ export function Scanner({ hint = 'default' }: { hint?: string }) {
       {/* Chrome: title up top, reticle center, status at the bottom. */}
       <div className="absolute inset-0 flex flex-col items-center justify-between px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]">
         <div className="relative flex w-full max-w-md items-center justify-center">
-          <p className="text-body-sm font-bold uppercase tracking-[0.3em] text-white/90">{copy.title}</p>
+          <p className="text-body-sm font-bold uppercase tracking-[0.3em] text-on-ink/90">{copy.title}</p>
           <button
             type="button"
             onClick={leave}
             aria-label="Close"
-            className="absolute right-0 rounded-pill bg-black/40 p-2 text-white/80 transition-colors hover:text-white"
+            className="absolute right-0 rounded-pill bg-ink/40 p-2 text-on-ink/80 transition-colors hover:text-on-ink"
           >
             <X className="h-5 w-5" />
           </button>
@@ -184,19 +184,19 @@ export function Scanner({ hint = 'default' }: { hint?: string }) {
               'top-0 right-0 border-t-2 border-r-2 rounded-tr-2xl',
               'bottom-0 left-0 border-b-2 border-l-2 rounded-bl-2xl',
               'bottom-0 right-0 border-b-2 border-r-2 rounded-br-2xl'] as const).map((pos) => (
-              <span key={pos} className={`absolute h-10 w-10 border-white/80 ${pos}`} />
+              <span key={pos} className={`absolute h-10 w-10 border-on-ink/80 ${pos}`} />
             ))}
           </div>
         )}
 
         <div className="flex w-full max-w-md flex-col items-center gap-3 text-center">
-          {scanning && <p className="text-body-sm text-white/85">{copy.line}</p>}
+          {scanning && <p className="text-body-sm text-on-ink/85">{copy.line}</p>}
           {state.kind === 'navigating' && (
-            <p className="text-body-sm font-semibold text-white">Got it. One sec…</p>
+            <p className="text-body-sm font-semibold text-on-ink">Got it. One sec…</p>
           )}
           {state.kind === 'foreign' && (
             <>
-              <p className="text-body-sm text-white/90">
+              <p className="text-body-sm text-on-ink/90">
                 That code points to <span className="font-semibold">{state.host}</span>. Not a
                 Frequency code.
               </p>
@@ -206,19 +206,19 @@ export function Scanner({ hint = 'default' }: { hint?: string }) {
                   setState({ kind: 'starting' })
                   setAttempt((a) => a + 1)
                 }}
-                className="rounded-pill bg-white px-6 py-2.5 text-body-sm font-bold text-black transition-opacity hover:opacity-90"
+                className="rounded-pill bg-on-ink px-6 py-2.5 text-body-sm font-bold text-ink transition-opacity hover:opacity-90"
               >
                 Scan again
               </button>
             </>
           )}
           {state.kind === 'denied' && (
-            <p className="text-body-sm text-white/90">
+            <p className="text-body-sm text-on-ink/90">
               The camera needs your permission. Allow it in your browser settings, then come back.
             </p>
           )}
           {state.kind === 'unsupported' && (
-            <p className="text-body-sm text-white/90">
+            <p className="text-body-sm text-on-ink/90">
               This browser can’t open the camera. Your phone’s own camera app works too: Frequency
               codes are plain links.
             </p>
@@ -226,7 +226,7 @@ export function Scanner({ hint = 'default' }: { hint?: string }) {
           {(state.kind === 'denied' || state.kind === 'unsupported') && (
             <Link
               href="/feed"
-              className="rounded-pill bg-white px-6 py-2.5 text-body-sm font-bold text-black transition-opacity hover:opacity-90"
+              className="rounded-pill bg-on-ink px-6 py-2.5 text-body-sm font-bold text-ink transition-opacity hover:opacity-90"
             >
               Back home
             </Link>

@@ -4,6 +4,7 @@ import { useState, useTransition, type ReactNode } from 'react'
 import { Check, MapPin, Radar, ShieldCheck, Sparkles } from 'lucide-react'
 import { AdminModuleCard } from '@/components/admin/admin-module-card'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { LOCATION_BAND_OPTIONS, type LocationBand } from '@/lib/connections/location'
 import { saveConnectionSettings } from '@/lib/connections/connection-settings-actions'
@@ -111,8 +112,7 @@ export function ConnectionSettingsAdmin({ settings }: { settings: ConnectionSett
         <div className="space-y-4">
           <label className="block space-y-1.5">
             <span className={labelClasses}>Default location precision</span>
-            <select
-              className={fieldClasses}
+            <Select
               value={form.defaultLocationBand}
               disabled={pending}
               onChange={(e) => set('defaultLocationBand', e.target.value as LocationBand)}
@@ -122,7 +122,7 @@ export function ConnectionSettingsAdmin({ settings }: { settings: ConnectionSett
                   {o.label}
                 </option>
               ))}
-            </select>
+            </Select>
             <span className="block text-meta text-subtle">
               {LOCATION_BAND_OPTIONS.find((o) => o.value === form.defaultLocationBand)?.hint}
             </span>

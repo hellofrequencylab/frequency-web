@@ -8,6 +8,7 @@ import {
   GAP_LG,
   RAILS_MD,
   RAILS_LG_REM,
+  RAIL_STRIP_CLASS,
   SHELL_ROW_CLASS,
   SHELL_CONTENT_WIDTH_CLASS,
 } from './shell-metrics'
@@ -47,6 +48,22 @@ describe('the numbers still match the shell', () => {
   it('the left rail is still w-48 and still hides below md', () => {
     expect(shell).toContain('hidden md:flex w-48 shrink-0')
     expect(LEFT_RAIL).toBe(12) // w-48 = 12rem
+  })
+
+  it('a FOLDED rail is a w-14 strip on both sides, and the claim page ignores it', () => {
+    // The fold ladder (lib/layout/rail-fold.ts) gave the LEFT rail a desktop fold too, so the left
+    // column is now conditional. The claim page still derives from the OPEN widths: the fold is a
+    // per-viewer standing instruction, and the claim page has neither rails nor a viewer to read
+    // one from. Both strips use the same class step.
+    expect(shell).toContain(`hidden md:flex ${RAIL_STRIP_CLASS} shrink-0`) // left, folded
+    expect(shell).toContain(`flex ${RAIL_STRIP_CLASS} shrink-0 flex-col items-center`) // right, folded
+    // ⚠️ The right rail's COLUMN still carries an inline `56`, which is NOT what `w-14` computes
+    // to at a 17px root (3.5rem = 59.5px). That predates the fold ladder and is left alone here —
+    // asserted so the discrepancy is on the record rather than quietly "corrected" into a number
+    // this file would then be wrong about (see the RIGHT_RAIL_PX warning above).
+    expect(shell).toContain('railCollapsed ? 56 : 288')
+    // Whatever those strips are, they are not in the claim page's arithmetic.
+    expect(SHELL_CONTENT_WIDTH_CLASS).not.toContain('56')
   })
 
   it('the right rail is still 288px and still hides below lg', () => {

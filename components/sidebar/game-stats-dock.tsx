@@ -10,6 +10,7 @@ import { ProgressTrack } from '@/components/ui/progress-track'
 import { StreakMeter } from '@/components/ui/streak-meter'
 import { Counter } from '@/components/ui/counter'
 import { StandingTiles } from '@/components/gamification/standing-tiles'
+import { announceDockSegmentOpen, onOtherDockSegmentOpen } from '@/components/layout/dock-bar'
 
 // ── Data shape (assembled server-side in right-sidebar.tsx) ───────────────────
 
@@ -84,6 +85,14 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
   const rootRef = useRef<HTMLDivElement>(null)
 
   // Esc or an outside click dismisses, like the other dock popovers.
+  //
+  // ONE PANEL AT A TIME (the bar's two segments are mutually exclusive). The mouse case was
+  // already covered — the chat tab portals into the bar's OTHER segment, so clicking it is an
+  // outside click on this root and this panel closed. What it could not see was every other way
+  // the chat opens: the `open-chat` event, a `?chat=…` deep link, ⌘K, the admin "Ask Vera" bar.
+  // The bar's announcement channel covers all of them with the same one line, and because the
+  // listener only exists WHILE THIS IS OPEN, being told to close while already closed is not a
+  // case that can arise. Nothing here fights the two dismissals above: it calls the same setter.
   useEffect(() => {
     if (!open) return
     function onDoc(e: MouseEvent) {
@@ -94,9 +103,11 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
     }
     document.addEventListener('mousedown', onDoc)
     document.addEventListener('keydown', onKey)
+    const offOther = onOtherDockSegmentOpen('vault', () => setOpen(false))
     return () => {
       document.removeEventListener('mousedown', onDoc)
       document.removeEventListener('keydown', onKey)
+      offOther()
     }
   }, [open])
 
@@ -104,10 +115,17 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
   return (
     <div
       ref={rootRef}
-      // Positioning belongs to DockBar now, not here. This is a SEGMENT of the anchored bar
-      // (components/layout/dock-bar.tsx) rather than its own floating object, so it carries
-      // only its surface: the top-rounded crest, the border and the blur.
-      className="w-full rounded-t-2xl border-x border-t border-border/70 bg-[var(--color-canvas)]/95 px-2 pt-1 backdrop-blur-sm"
+      // Positioning AND surface belong to DockBar, not here. This is a SEGMENT of the anchored
+      // bar (components/layout/dock-bar.tsx), so it draws NO crest, NO border and NO blur — the
+      // bar already draws all three around both segments.
+      //
+      // It used to keep its own `rounded-t-2xl border-x border-t bg-canvas/95 backdrop-blur-sm`
+      // INSIDE the bar's `rounded-t-card` + border + blur. Two nested crests, two hairlines, two
+      // blurs: the Vault read as a separate rounded pill sitting in a tray, while the chat side
+      // was correctly flush (`rounded-none h-full`). That mismatch is the whole reason the two
+      // halves looked like different objects. A split button shares one surface; only the
+      // divider between the halves says there are two.
+      className="w-full px-2 pt-1"
     >
       {/* The panel reveals INSIDE the tab (grid-rows 0fr -> 1fr) rather than as a sibling above
           it, so the tab's bottom edge stays pinned to 0 and the corner never lifts off. */}
@@ -132,7 +150,14 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
           give (it managed 2 of 5); rank moved into the panel when the chat segment landed. */}
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          const next = !open
+          setOpen(next)
+          // Announce OUTSIDE the updater: an updater must stay pure, and this is a side effect
+          // that has to run exactly once per press. Only on the way OPEN — closing the Vault is
+          // nobody else's business.
+          if (next) announceDockSegmentOpen('vault')
+        }}
         aria-expanded={open}
         aria-label="The Vault. Your Zaps, Gems and streak"
         className="flex h-10 w-full items-center gap-2 rounded-lg px-1.5 transition-colors hover:bg-surface-elevated"

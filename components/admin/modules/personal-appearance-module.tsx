@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { ChevronDown, ChevronUp, Loader2, Plus, Upload, X } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Select } from '@/components/ui/select'
 import { getAppearanceRailData } from '@/app/(main)/settings/rail-getters'
 import {
   setSpotlightTheme,
@@ -201,16 +203,15 @@ export function PersonalAppearanceModule() {
       <div>
         <SectionHeader title="Header" />
         <div className="space-y-4 rounded-2xl border border-border bg-surface-elevated/40 p-4">
-          <label className="flex items-center justify-between gap-3">
-            <span className="text-body-sm text-text">Show the cover band</span>
-            <input
-              type="checkbox"
-              checked={theme.header.show}
-              onChange={(e) => patchHeader({ show: e.target.checked })}
-              disabled={pending}
-              className="h-4 w-4 accent-[color:var(--color-primary)]"
-            />
-          </label>
+          {/* Row order is preserved by reversing the flex, so the text stays on the left of the
+              box the way every other row in this panel reads. */}
+          <Checkbox
+            label="Show the cover band"
+            checked={theme.header.show}
+            onChange={(e) => patchHeader({ show: e.target.checked })}
+            disabled={pending}
+            wrapperClassName="w-full flex-row-reverse justify-between gap-3"
+          />
 
           {theme.header.show && (
             <>
@@ -520,18 +521,13 @@ function SelectRow({
   return (
     <label className="flex items-center justify-between gap-3">
       <span className="text-body-sm text-text">{label}</span>
-      <select
+      <Select
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-lg border border-border bg-canvas px-2 py-1 text-body-sm text-text outline-none focus:border-primary disabled:opacity-50"
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+        options={options}
+        wrapperClassName="inline-block w-max max-w-full shrink-0"
+      />
     </label>
   )
 }

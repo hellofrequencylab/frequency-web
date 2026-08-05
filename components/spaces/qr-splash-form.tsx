@@ -10,6 +10,7 @@ import { isError } from '@/lib/action-result'
 import { createSpaceCode, setCodeSplash } from '@/lib/qr/space-codes-actions'
 import { emptySplash, type Splash, type SplashLink } from '@/lib/qr/splash'
 import type { SpaceCode } from '@/lib/qr/space-codes'
+import { IconButton } from '@/components/ui/icon-button'
 
 // OWNER QR + SPLASH EDITOR (client) for the per-space QR studio (ENTITY-SPACES-BUILD §C, Phase 2).
 // Two jobs, both behind canEditProfile-gated server actions:
@@ -385,14 +386,14 @@ function SplashEditor({
                 className="mt-1"
               />
             </div>
-            <button
-              type="button"
+            <IconButton
+              variant="bordered"
+              tone="danger"
+              label="Remove this link"
               onClick={() => removeLink(i)}
-              aria-label="Remove this link"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-danger/40 hover:text-danger"
             >
               <X className="h-4 w-4" aria-hidden />
-            </button>
+            </IconButton>
           </div>
         ))}
         {draft.links.length < MAX_SPLASH_LINKS && (

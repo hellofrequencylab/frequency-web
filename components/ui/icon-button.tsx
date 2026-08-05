@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react'
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, Ref, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 // The modern icon-group control: a tight 32px icon-only affordance for row-action (44px on
@@ -71,6 +71,10 @@ function iconControl(variant: IconButtonVariant = 'plain', tone: IconButtonTone 
     : cn(iconControlBase, 'text-subtle hover:bg-surface-elevated', PLAIN_TONE[tone])
 }
 
+// `ref` is a plain prop, not a forwardRef wrapper: React 19 passes it through like any other,
+// and several adopters need the node (a dock header that returns focus to its own trigger, a
+// mobile editor that focuses Back on mount). Without it in the props type those sites had to
+// stay hand-rolled, which is the primitive losing a call site over a one-line gap.
 /** An icon-only <button> for a row action. `label` names it for a11y + the tooltip. */
 export function IconButton({
   label,
@@ -78,15 +82,18 @@ export function IconButton({
   tone,
   className,
   children,
+  ref,
   ...props
 }: {
   label: string
   variant?: IconButtonVariant
   tone?: IconButtonTone
   children: ReactNode
+  ref?: Ref<HTMLButtonElement>
 } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label'>) {
   return (
     <button
+      ref={ref}
       type="button"
       aria-label={label}
       title={label}
@@ -106,6 +113,7 @@ export function IconLink({
   href,
   className,
   children,
+  ref,
   ...props
 }: {
   label: string
@@ -113,9 +121,11 @@ export function IconLink({
   tone?: IconButtonTone
   href: string
   children: ReactNode
+  ref?: Ref<HTMLAnchorElement>
 } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'aria-label' | 'href'>) {
   return (
     <Link
+      ref={ref}
       href={href}
       aria-label={label}
       title={label}

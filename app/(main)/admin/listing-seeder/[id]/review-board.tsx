@@ -595,7 +595,7 @@ function PhotoStrip({
             <Image src={url} alt="" width={240} height={240} unoptimized className="h-full w-full object-cover" />
             {/* KEEP the black/white pair below: A scrim chip painted on a photo thumbnail, not on a themed surface, so the monochrome pair stays. */}
             {i === 0 && (
-              <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-pill bg-black/60 px-1.5 py-0.5 text-2xs font-semibold text-white">
+              <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-pill bg-ink/60 px-1.5 py-0.5 text-2xs font-semibold text-on-ink">
                 <Star className="h-3 w-3 fill-current" aria-hidden /> Primary
               </span>
             )}
@@ -604,7 +604,7 @@ function PhotoStrip({
               onClick={() => remove(url)}
               disabled={busy}
               aria-label="Remove photo"
-              className="absolute right-1.5 top-1.5 rounded-pill bg-black/60 p-1 text-white opacity-0 transition-opacity hover:bg-black/80 focus:opacity-100 group-hover:opacity-100 disabled:opacity-60"
+              className="absolute right-1.5 top-1.5 rounded-pill bg-ink/60 p-1 text-on-ink opacity-0 transition-opacity hover:bg-ink/80 focus:opacity-100 group-hover:opacity-100 disabled:opacity-60"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -614,7 +614,7 @@ function PhotoStrip({
                 onClick={() => makePrimary(url)}
                 disabled={busy}
                 aria-label="Make primary"
-                className="absolute inset-x-1.5 bottom-1.5 inline-flex items-center justify-center gap-1 rounded-pill bg-black/60 px-2 py-1 text-2xs font-semibold text-white opacity-0 transition-opacity hover:bg-black/80 focus:opacity-100 group-hover:opacity-100 disabled:opacity-60"
+                className="absolute inset-x-1.5 bottom-1.5 inline-flex items-center justify-center gap-1 rounded-pill bg-ink/60 px-2 py-1 text-2xs font-semibold text-on-ink opacity-0 transition-opacity hover:bg-ink/80 focus:opacity-100 group-hover:opacity-100 disabled:opacity-60"
               >
                 <Star className="h-3 w-3" /> Primary
               </button>

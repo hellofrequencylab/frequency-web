@@ -112,7 +112,7 @@ export function ListingDetailTemplate({
           view.isOwner && editHref ? (
             <Link
               href={editHref}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-body-sm font-semibold text-black transition-colors hover:bg-white/90"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-on-ink px-4 py-2.5 text-body-sm font-semibold text-ink transition-colors hover:bg-on-ink/90"
             >
               <Pencil className="h-4 w-4" aria-hidden /> Edit listing
             </Link>

@@ -361,7 +361,7 @@ function BuildStep({
     <Reveal>
       <Card tone={final ? 'highlight' : 'feature'} className="lift-2 h-full">
         <span
-          className={`font-display text-4xl leading-none ${final ? 'text-primary-strong' : 'text-text'}`}
+          className={`font-display text-display-h3 leading-none ${final ? 'text-primary-strong' : 'text-text'}`}
         >
           {when}
         </span>

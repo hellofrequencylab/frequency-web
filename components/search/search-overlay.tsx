@@ -115,7 +115,7 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
   return (
     <div className="fixed inset-0 z-[60] flex flex-col sm:items-center sm:justify-start sm:p-6">
       {/* Backdrop */}
-      <div onClick={onClose} className="absolute inset-0 bg-black/40 backdrop-blur-sm" aria-hidden />
+      <div onClick={onClose} className="absolute inset-0 bg-ink/40 backdrop-blur-sm" aria-hidden />
 
       {/* Panel. role/aria-modal name it as a modal dialog (the backdrop already hides the page
           visually, but nothing told assistive tech this was a dialog); tabIndex={-1} gives the

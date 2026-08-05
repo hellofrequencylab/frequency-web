@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { RailAutosaveForm, useRailSaveNow } from '@/components/admin/rail/rail-autosave-form'
 import { COMMON_TIME_ZONES } from './event-shared-fields-module'
 import { getCirclePlaceTimeData, updateCirclePlaceTime } from '@/app/(main)/circles/admin-actions'
@@ -120,25 +121,26 @@ function PlaceTimeFields({
       <div className="grid grid-cols-1 gap-2 @sm:grid-cols-2">
         <label className="block min-w-0 space-y-1.5">
           <span className={fieldLabel}>How you meet</span>
-          <select
+          <Select
             name="type"
             value={type}
             onChange={(e) => onType(e.target.value === 'online' ? 'online' : 'in-person')}
-            className={`${input} min-w-0 px-2`}
-          >
-            <option value="in-person">In person</option>
-            <option value="online">Online</option>
-          </select>
+            wrapperClassName="min-w-0"
+            options={[
+              { value: 'in-person', label: 'In person' },
+              { value: 'online', label: 'Online' },
+            ]}
+          />
         </label>
         <label className="block min-w-0 space-y-1.5">
           <span className={fieldLabel}>Time zone</span>
-          <select name="timezone" defaultValue={zone} className={`${input} min-w-0 px-2`}>
+          <Select name="timezone" defaultValue={zone} wrapperClassName="min-w-0">
             {zones.map((z) => (
               <option key={z.value} value={z.value}>
                 {z.label}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
       </div>
 

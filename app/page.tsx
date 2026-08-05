@@ -517,7 +517,7 @@ function Splash({
             <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary mb-5">
               Moonlight Beach · 2020
             </p>
-            <h2 className="font-display uppercase text-on-ink text-5xl sm:text-6xl lg:text-8xl leading-[0.9] text-balance">
+            <h2 className="font-display uppercase text-on-ink text-display-hero leading-[0.9] text-balance">
               It already
               <br />
               <span className="text-primary">happened once.</span>
@@ -545,7 +545,7 @@ function Splash({
           </div>
           <Reveal delay={200} className="mt-16 grid grid-cols-3 gap-6 max-w-2xl">
             <div>
-              <p className="font-display text-5xl sm:text-7xl text-on-ink">
+              <p className="font-display text-stat text-on-ink">
                 <CountUp value={500} />+
               </p>
               <p className="mt-3 text-meta uppercase tracking-widest font-bold text-on-ink/50">
@@ -553,7 +553,7 @@ function Splash({
               </p>
             </div>
             <div>
-              <p className="font-display text-5xl sm:text-7xl text-on-ink">
+              <p className="font-display text-stat text-on-ink">
                 <CountUp value={1000} />+
               </p>
               <p className="mt-3 text-meta uppercase tracking-widest font-bold text-on-ink/50">
@@ -561,7 +561,7 @@ function Splash({
               </p>
             </div>
             <div>
-              <p className="font-display text-5xl sm:text-7xl text-primary">{MEMBER_PRICE}</p>
+              <p className="font-display text-stat text-primary">{MEMBER_PRICE}</p>
               <p className="mt-3 text-meta uppercase tracking-widest font-bold text-on-ink/50">
                 To show up
               </p>
@@ -623,7 +623,7 @@ function Splash({
             <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary mb-4">
               The honest part
             </p>
-            <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl mb-6 text-balance">
+            <h2 className="font-display uppercase text-on-ink text-display-h2 mb-6 text-balance">
               We are early. That&apos;s the offer.
             </h2>
           </Reveal>
@@ -705,7 +705,7 @@ function Splash({
         <div className="light-strip absolute inset-x-0 top-0" />
         <div className="amber-glow absolute inset-0 pointer-events-none" />
         <div className="relative mx-auto max-w-2xl">
-          <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl mb-6 text-balance">
+          <h2 className="font-display uppercase text-on-ink text-display-h2 mb-6 text-balance">
             Be the reason your people have somewhere to go.
           </h2>
           <p className="text-lead text-on-ink-muted mb-9 leading-relaxed">
@@ -757,7 +757,7 @@ async function LiveProof() {
             <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary mb-4">
               Not a someday idea
             </p>
-            <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl mb-6">
+            <h2 className="font-display uppercase text-on-ink text-display-h2 mb-6">
               It&apos;s already happening.
             </h2>
           </Reveal>
@@ -790,7 +790,7 @@ async function LiveProof() {
           <div className="max-w-2xl mx-auto">
             <Reveal className="flex items-center justify-center gap-2 mb-9">
               <CalendarDays className="w-5 h-5 text-primary-strong" aria-hidden />
-              <h2 className="font-display uppercase text-text text-3xl sm:text-4xl text-center">
+              <h2 className="font-display uppercase text-text text-display-h3 text-center">
                 Coming up near you
               </h2>
             </Reveal>
@@ -813,7 +813,7 @@ async function LiveProof() {
               <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">
                 In their own words
               </p>
-              <h2 className={`font-display uppercase text-text text-3xl sm:text-4xl text-balance ${postsCurated ? 'mb-3' : 'mb-10'}`}>
+              <h2 className={`font-display uppercase text-text text-display-h3 text-balance ${postsCurated ? 'mb-3' : 'mb-10'}`}>
                 People showing up for each other
               </h2>
               {postsCurated && (

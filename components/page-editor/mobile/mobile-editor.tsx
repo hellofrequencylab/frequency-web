@@ -22,6 +22,7 @@ import { ChevronLeft, Eye, EyeOff, Layers, Plus, Trash2 } from 'lucide-react'
 import type { Config, Data } from '@/lib/page-editor/types'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/icon-button'
 import {
   addBlock,
   blockTitle,
@@ -373,14 +374,13 @@ export function MobileEditor({
         </div>
       ) : (
         // Full-bleed preview: a single always-visible control brings the dock back.
-        <button
-          type="button"
-          aria-label="Show editor controls"
+        <IconButton
+          label="Show editor controls"
           onClick={() => setDockHidden(false)}
-          className="absolute bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] right-4 z-[60] flex h-12 w-12 items-center justify-center rounded-pill bg-surface-elevated text-text shadow-xl"
+          className="absolute bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] right-4 z-[60] h-12 w-12 rounded-pill bg-surface-elevated lift-3"
         >
           <Eye className="h-5 w-5" aria-hidden />
-        </button>
+        </IconButton>
       )}
 
       {/* Blocks sheet: the block list + a prominent Add block. Expandable, capped at
@@ -612,15 +612,14 @@ function FormScreen({
   return (
     <div className="min-h-[100dvh] bg-canvas">
       <header className="sticky top-0 z-[55] flex items-center gap-2 border-b border-border bg-canvas/95 px-2 py-2 backdrop-blur">
-        <button
+        <IconButton
           ref={backRef}
-          type="button"
+          label="Save and go back"
           onClick={onBack}
-          aria-label="Save and go back"
-          className="flex h-11 w-11 items-center justify-center rounded-lg text-text hover:bg-surface-elevated"
+          className="h-11 w-11"
         >
           <ChevronLeft className="h-6 w-6" aria-hidden />
-        </button>
+        </IconButton>
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-body-sm font-semibold text-text">{heading}</h1>
           {saveState === 'saving' && <p className="text-meta text-muted">Saving…</p>}

@@ -5,6 +5,7 @@ import { SmilePlus } from 'lucide-react'
 import { toggleReaction } from '@/app/(main)/feed/actions'
 import { isError } from '@/lib/action-result'
 import { REACTIONS, reactionLabel } from '@/lib/feed/reactions'
+import { IconButton } from '@/components/ui/icon-button'
 
 // The emoji reactions on every post and comment — the site's highest-frequency
 // interaction. Each emoji fills INSTANTLY on click (optimistic), runs the server
@@ -155,8 +156,12 @@ export function ReactionInlinePicker({ base, toggle, pending, quickCount = 5 }: 
   }, [pickerOpen])
 
   const quick = REACTIONS.slice(0, quickCount)
+  // Emoji GLYPH toggles, not icon buttons -- the reaction itself is the content and `mine`
+  // tints the fill, so IconButton's icon colour pair is the wrong word for them. What they
+  // were missing is the floor: 28px shipped under both the 32px density minimum and the 44px
+  // coarse-pointer target, which `tap-target` (the same utility IconButton composes) fixes.
   const emojiBtn = (mine: boolean | undefined) =>
-    `flex h-7 w-7 items-center justify-center rounded-pill text-body transition-transform hover:scale-110 hover:bg-surface-elevated ${
+    `tap-target flex h-7 w-7 items-center justify-center rounded-pill text-body transition-transform hover:scale-110 hover:bg-surface-elevated ${
       mine ? 'bg-primary-bg/60' : ''
     }`
 
@@ -176,16 +181,14 @@ export function ReactionInlinePicker({ base, toggle, pending, quickCount = 5 }: 
       ))}
       {/* Picker for the full set (the sixth emoji + a discoverable menu). */}
       <div className="relative" ref={pickerRef}>
-        <button
-          type="button"
+        <IconButton
+          label="More reactions"
           onClick={() => setPickerOpen((o) => !o)}
-          aria-label="More reactions"
           aria-expanded={pickerOpen}
           disabled={pending}
-          className="flex h-7 w-7 items-center justify-center rounded-pill text-subtle transition-colors hover:bg-surface-elevated hover:text-muted"
         >
           <SmilePlus className="h-4 w-4" />
-        </button>
+        </IconButton>
         {pickerOpen && (
           <div
             role="menu"

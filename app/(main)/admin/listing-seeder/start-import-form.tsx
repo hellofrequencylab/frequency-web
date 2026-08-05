@@ -220,7 +220,7 @@ export function StartImportForm() {
             <Image src={safeUploadPreviewSrc(p.url) ?? ''} alt="" width={200} height={200} unoptimized className="h-full w-full object-cover" />
             {/* KEEP the black/white pair below: A scrim chip painted on a photo thumbnail, not on a themed surface, so the monochrome pair stays. */}
             {i === 0 && (
-              <span className="absolute left-1.5 top-1.5 rounded-pill bg-black/60 px-1.5 py-0.5 text-2xs font-semibold text-white">
+              <span className="absolute left-1.5 top-1.5 rounded-pill bg-ink/60 px-1.5 py-0.5 text-2xs font-semibold text-on-ink">
                 Primary
               </span>
             )}
@@ -228,7 +228,7 @@ export function StartImportForm() {
               type="button"
               onClick={() => setPhotos((prev) => prev.filter((f) => f !== p.file))}
               aria-label="Remove photo"
-              className="absolute right-1.5 top-1.5 rounded-pill bg-black/60 p-1 text-white opacity-0 transition-opacity hover:bg-black/80 focus:opacity-100 group-hover:opacity-100"
+              className="absolute right-1.5 top-1.5 rounded-pill bg-ink/60 p-1 text-on-ink opacity-0 transition-opacity hover:bg-ink/80 focus:opacity-100 group-hover:opacity-100"
             >
               <X className="h-3.5 w-3.5" />
             </button>

@@ -189,7 +189,7 @@ export default function LonelinessPage() {
 
       {/* One concept per section. Question H2s in the reader's words, answer first. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           What is high-functioning loneliness?
         </h2>
         <Lead>
@@ -206,7 +206,7 @@ export default function LonelinessPage() {
       </Section>
 
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Can you be lonely but not alone?
         </h2>
         <Lead>
@@ -223,7 +223,7 @@ export default function LonelinessPage() {
       </Section>
 
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Why do I feel lonely when I have friends?
         </h2>
         <Lead>
@@ -246,7 +246,7 @@ export default function LonelinessPage() {
 
       {/* ── Absorbed: what-is-a-third-space ──────────────────────────────────── */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           What is a third place, and why does it matter?
         </h2>
         <Lead>
@@ -268,7 +268,7 @@ export default function LonelinessPage() {
       </Section>
 
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           What counts as a third place?
         </h2>
         <Lead>
@@ -316,7 +316,7 @@ export default function LonelinessPage() {
 
       {/* ── Absorbed: life-after-the-feed (doomscrolling) ────────────────────── */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How do I quit doomscrolling?
         </h2>
         <Lead>
@@ -359,7 +359,7 @@ export default function LonelinessPage() {
       </ZigZag>
 
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Does deleting the app work?
         </h2>
         <Lead>
@@ -387,7 +387,7 @@ export default function LonelinessPage() {
       <Section tone="surface" pad="pt-16 pb-8 sm:pt-20 sm:pb-10">
         <h2
           id="how-to-feel-less-alone"
-          className="font-display uppercase text-text text-3xl sm:text-4xl mb-5"
+          className="font-display uppercase text-text text-display-h3 mb-5"
         >
           How do I actually feel less alone?
         </h2>
@@ -489,7 +489,7 @@ export default function LonelinessPage() {
 
       {/* FAQ: answer-first pairs, mirrored into FAQPage schema above. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-7">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-7">
           Common questions
         </h2>
         <FaqList items={FAQ} />

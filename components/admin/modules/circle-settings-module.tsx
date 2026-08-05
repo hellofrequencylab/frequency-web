@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { InlineCover } from '@/components/admin/inline/inline-cover'
 import { RailAutosaveForm } from '@/components/admin/rail/rail-autosave-form'
 import {
@@ -138,10 +139,14 @@ export function CircleSettingsModule() {
         <div className="grid grid-cols-2 gap-3">
           <label className="block space-y-1.5">
             <span className={fieldLabel}>Type</span>
-            <select name="type" defaultValue={data.type} className={input}>
-              <option value="in-person">In-person</option>
-              <option value="online">Online</option>
-            </select>
+            <Select
+              name="type"
+              defaultValue={data.type}
+              options={[
+                { value: 'in-person', label: 'In-person' },
+                { value: 'online', label: 'Online' },
+              ]}
+            />
           </label>
 
           <label className="block space-y-1.5">
@@ -153,23 +158,27 @@ export function CircleSettingsModule() {
         <div className="grid grid-cols-2 gap-3">
           <label className="block space-y-1.5">
             <span className={fieldLabel}>Status</span>
-            <select name="status" defaultValue={data.status} className={input}>
+            <Select name="status" defaultValue={data.status}>
               <option value="draft">Draft (only you can see it)</option>
               <option value="forming">Forming</option>
               <option value="active">Active</option>
               <option value="paused">Paused</option>
               <option value="archived">Archived</option>
-            </select>
+            </Select>
           </label>
 
           {/* Visibility — a select (not a checkbox) so the native autosave form always submits a value,
               which lets a host switch it back to Listed. Unlisted hides the circle from discovery. */}
           <label className="block space-y-1.5">
             <span className={fieldLabel}>Visibility</span>
-            <select name="unlisted" defaultValue={data.unlisted ? 'on' : 'off'} className={input}>
-              <option value="off">Listed</option>
-              <option value="on">Unlisted</option>
-            </select>
+            <Select
+              name="unlisted"
+              defaultValue={data.unlisted ? 'on' : 'off'}
+              options={[
+                { value: 'off', label: 'Listed' },
+                { value: 'on', label: 'Unlisted' },
+              ]}
+            />
           </label>
         </div>
         <p className="text-2xs text-muted">Unlisted keeps this circle off the directory, map, and search. The link still works and members always see it.</p>
@@ -178,14 +187,18 @@ export function CircleSettingsModule() {
       {/* Channel — its own action: the save can be refused (a paused Program takes no
           new Circles), so the refusal shows here and the pick rolls back. */}
       <div className="space-y-1.5">
-        <span className={fieldLabel}>Channel</span>
-        <select
+        {/* A <label htmlFor>, not the bare <span> this used to be: this select lives outside the
+            autosave form in its own block, so nothing was naming it. */}
+        <label htmlFor="circle-channel" className={fieldLabel}>
+          Channel
+        </label>
+        <Select
+          id="circle-channel"
           value={channelId}
           onChange={(e) => handleChannel(e.target.value)}
           disabled={channelPending}
-          className={input}
+          emptyLabel="No Channel"
         >
-          <option value="">No Channel</option>
           {data.channel_groups.map((g) => (
             <optgroup key={g.pillar} label={g.pillar}>
               {g.channels.map((c) => (
@@ -196,7 +209,7 @@ export function CircleSettingsModule() {
               ))}
             </optgroup>
           ))}
-        </select>
+        </Select>
         <p className="text-2xs text-muted">
           The Channel this circle practices in. It shows up on that Channel&apos;s page, and its
           posts join that feed.

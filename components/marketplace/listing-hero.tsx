@@ -32,7 +32,7 @@ export function ListingHero({
               bypass the optimizer to match the events gallery + cover treatment. */}
           <Image src={image} alt="" fill sizes="(max-width: 1024px) 100vw, 1344px" preload unoptimized className="object-cover" />
           {/* Ink scrim so the overlaid title/badges stay legible over any photo. */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-black/25" aria-hidden />
+          <div className="absolute inset-0 bg-gradient-to-t from-ink/75 via-ink/20 to-ink/25" aria-hidden />
         </>
       ) : (
         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong">
@@ -44,7 +44,7 @@ export function ListingHero({
       {priceShort && (
         <span
           className={`absolute left-4 top-4 inline-flex items-center rounded-card px-3 py-1.5 text-body-lg font-bold lift-1 sm:text-lead ${
-            image ? 'bg-white text-black' : 'bg-primary text-on-primary'
+            image ? 'bg-on-ink text-ink' : 'bg-primary text-on-primary'
           }`}
         >
           {priceShort}
@@ -55,7 +55,7 @@ export function ListingHero({
       {categoryLabel && (
         <span
           className={`absolute right-4 top-4 inline-flex items-center rounded-pill px-3 py-1 text-2xs font-semibold uppercase tracking-wide ${
-            image ? 'bg-white/20 text-white backdrop-blur-sm' : 'bg-primary-bg text-primary-strong'
+            image ? 'bg-on-ink/20 text-on-ink backdrop-blur-sm' : 'bg-primary-bg text-primary-strong'
           }`}
         >
           {categoryLabel}
@@ -63,7 +63,7 @@ export function ListingHero({
       )}
 
       {/* BOTTOM: the title (h1) + the primary action, anchored to the base of the scrim. */}
-      <div className={`absolute inset-x-0 bottom-0 flex flex-col gap-3 p-4 sm:flex-row sm:items-end sm:justify-between sm:gap-4 sm:p-6 ${image ? 'text-white' : 'text-text'}`}>
+      <div className={`absolute inset-x-0 bottom-0 flex flex-col gap-3 p-4 sm:flex-row sm:items-end sm:justify-between sm:gap-4 sm:p-6 ${image ? 'text-on-ink' : 'text-text'}`}>
         <h1 className="min-w-0 text-page-title font-bold leading-tight break-words sm:text-3xl">{title}</h1>
         {actionSlot && <div className="shrink-0">{actionSlot}</div>}
       </div>

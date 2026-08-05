@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import {
   createAgreementAction,
@@ -145,20 +146,18 @@ export function ManualAgreementPanel({
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block text-body-sm">
           <span className="mb-1 block text-meta font-semibold text-subtle">Plan</span>
-          <select name="plan" defaultValue="collective" className={inputClass}>
-            {PLAN_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+          <Select name="plan" defaultValue="collective" options={PLAN_OPTIONS} />
         </label>
         <label className="block text-body-sm">
           <span className="mb-1 block text-meta font-semibold text-subtle">Billed</span>
-          <select name="interval" defaultValue="year" className={inputClass}>
-            <option value="year">Yearly</option>
-            <option value="month">Monthly</option>
-          </select>
+          <Select
+            name="interval"
+            defaultValue="year"
+            options={[
+              { value: 'year', label: 'Yearly' },
+              { value: 'month', label: 'Monthly' },
+            ]}
+          />
         </label>
         <label className="block text-body-sm">
           <span className="mb-1 block text-meta font-semibold text-subtle">Amount per interval (dollars)</span>
@@ -166,13 +165,7 @@ export function ManualAgreementPanel({
         </label>
         <label className="block text-body-sm">
           <span className="mb-1 block text-meta font-semibold text-subtle">Method</span>
-          <select name="method" defaultValue="cash" className={inputClass}>
-            {METHOD_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+          <Select name="method" defaultValue="cash" options={METHOD_OPTIONS} />
         </label>
         <label className="block text-body-sm">
           <span className="mb-1 block text-meta font-semibold text-subtle">Started</span>

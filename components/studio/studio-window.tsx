@@ -59,7 +59,7 @@ export function StudioWindow({
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-stretch justify-center bg-black/50 backdrop-blur-sm sm:items-center sm:p-4 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150"
+      className="fixed inset-0 z-[80] flex items-stretch justify-center bg-ink/50 backdrop-blur-sm sm:items-center sm:p-4 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}

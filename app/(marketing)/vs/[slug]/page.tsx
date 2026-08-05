@@ -124,7 +124,7 @@ export default async function ComparisonPage({
 
       {/* The scannable contrast. One concept per row; honest about both sides. */}
       <Section tone="surface">
-        <h2 className="mb-6 font-display text-3xl uppercase text-text sm:text-4xl">
+        <h2 className="mb-6 font-display text-display-h3 uppercase text-text">
           {comparison.name} vs Frequency, side by side
         </h2>
         <div className="overflow-hidden rounded-2xl border border-border">
@@ -154,7 +154,7 @@ export default async function ComparisonPage({
 
       {/* Soft, honest hand-off into the product. Two doors. */}
       <Section tone="canvas">
-        <h2 className="mb-5 font-display text-3xl uppercase text-text sm:text-4xl">
+        <h2 className="mb-5 font-display text-display-h3 uppercase text-text">
           Where to start
         </h2>
         <Body>
@@ -183,7 +183,7 @@ export default async function ComparisonPage({
 
       {/* FAQ: answer-first pairs, mirrored into the FAQPage schema above. */}
       <Section tone="surface">
-        <h2 className="mb-7 font-display text-3xl uppercase text-text sm:text-4xl">
+        <h2 className="mb-7 font-display text-display-h3 uppercase text-text">
           Common questions
         </h2>
         <FaqList items={copy.faq.map((f) => ({ q: f.q, a: f.a }))} />

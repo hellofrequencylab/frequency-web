@@ -9,6 +9,7 @@ import { isError } from '@/lib/action-result'
 import type { Space } from '@/lib/spaces/types'
 import { SPACE_THEMES, parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
 import { updateSpaceBranding } from '@/app/(main)/admin/spaces/actions'
+import { Select } from '@/components/ui/select'
 
 // The per-Space branding form (docs/SPACES.md, ADR-249/250). A FOCUS surface: pick the
 // Space's theme (a select of built-in code skins + active skin themes), set the brand name,
@@ -93,18 +94,13 @@ export function SpaceBrandEditor({
             <label htmlFor="space-skin" className={labelClass}>
               Theme
             </label>
-            <select
-              id="space-skin"
-              value={skin}
-              onChange={(e) => setSkin(e.target.value)}
-              className={fieldClass}
-            >
+            <Select id="space-skin" value={skin} onChange={(e) => setSkin(e.target.value)}>
               {options.map((o) => (
                 <option key={o.slug} value={o.slug}>
                   {o.name}
                 </option>
               ))}
-            </select>
+            </Select>
             <p className="mt-1 text-meta text-subtle">
               The token set applied to this Space. Takes effect through the shell&rsquo;s{' '}
               <code>data-skin</code> resolution.

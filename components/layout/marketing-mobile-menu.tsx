@@ -60,7 +60,7 @@ export function MarketingMobileMenu({ light }: { light: boolean }) {
       {open && (
         <div className="fixed inset-0 z-[60]">
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-ink/40 backdrop-blur-sm"
             onClick={() => setOpen(false)}
             aria-hidden
           />

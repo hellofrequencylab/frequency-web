@@ -19,6 +19,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { StatusChip } from '@/components/admin/status'
 import { cn } from '@/lib/utils'
 import { isError } from '@/lib/action-result'
@@ -418,19 +419,18 @@ function StagePanel({
         <label className="sr-only" htmlFor={`reftype-${stage.id}`}>
           What to wire this step to
         </label>
-        <select
+        <Select
           id={`reftype-${stage.id}`}
           value={refType}
           disabled={pending}
           onChange={(e) => setRefType(e.target.value as StageRefType)}
-          className="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text outline-none focus:border-primary"
         >
           {REF_TYPE_OPTIONS.map((t) => (
             <option key={t} value={t}>
               {REF_TYPE_META[t].label}
             </option>
           ))}
-        </select>
+        </Select>
         <input
           type="text"
           value={refValue}

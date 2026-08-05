@@ -9,6 +9,7 @@ import { isError } from '@/lib/action-result'
 import { setSpaceSchedule } from '@/lib/spaces/booking-actions'
 import type { ScheduleSettings, SlotOverride } from '@/lib/spaces/booking'
 import { cn } from '@/lib/utils'
+import { IconButton } from '@/components/ui/icon-button'
 
 // OWNER SCHEDULING RULES EDITOR (client, P2, ADR-605). Buffers before / after a booking, a minimum
 // scheduling notice, a rolling booking window, and date-specific overrides (a day off, or one-off
@@ -284,14 +285,15 @@ export function BookingScheduleForm({
                 </label>
               </>
             )}
-            <button
-              type="button"
+            <IconButton
+              variant="bordered"
+              tone="danger"
+              label="Remove this override"
               onClick={() => removeOverride(i)}
-              aria-label="Remove this override"
-              className="mb-1 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-danger/40 hover:text-danger"
+              className="mb-1"
             >
               <Trash2 className="h-4 w-4" aria-hidden />
-            </button>
+            </IconButton>
           </div>
         ))}
         <button

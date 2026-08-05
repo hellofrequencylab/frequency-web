@@ -431,7 +431,7 @@ export default async function SpaceProfileChromeLayout({
           // `font-section`: the cover title joins the page theme's heading face (ADR-578 — the owner's
           // "from header to end"). With no theme (or `bold`) it resolves to the body stack this h1
           // already inherits, so the default look is untouched.
-          'font-section min-w-0 break-words text-page-title font-bold leading-tight sm:text-3xl',
+          'font-section min-w-0 break-words text-display-h3 font-bold leading-tight',
           onInk ? 'text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]' : 'text-text',
         )}
       >

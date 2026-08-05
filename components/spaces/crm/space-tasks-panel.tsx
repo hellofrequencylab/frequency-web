@@ -10,6 +10,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { isError } from '@/lib/action-result'
 import { createTask, updateTask, setTaskDone, deleteTask } from '@/lib/crm/space-tasks-actions'
 import type { SpaceTask } from '@/lib/crm/pipeline'
+import { IconButton } from '@/components/ui/icon-button'
 
 // PER-SPACE TASKS PANEL (client, CRM-STRATEGY §6/§7). The interactive surface for a Space's CRM tasks:
 // create (title, optional due date, optional deal/contact link), edit a title/due date inline, mark
@@ -295,15 +296,16 @@ export function SpaceTasksPanel({
                     </div>
                   </div>
                   {!readOnly && (
-                    <button
-                      type="button"
+                    <IconButton
+                      variant="bordered"
+                      tone="danger"
+                      label="Delete task"
                       onClick={() => remove(task.id)}
                       disabled={pending}
-                      aria-label="Delete task"
-                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-danger/40 hover:text-danger disabled:opacity-40"
+                      className="shrink-0"
                     >
                       <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                    </button>
+                    </IconButton>
                   )}
                 </div>
               )}
@@ -340,15 +342,15 @@ export function SpaceTasksPanel({
                     {task.linkLabel && <p className="mt-0.5 truncate text-meta text-subtle">{task.linkLabel}</p>}
                   </div>
                   {!readOnly && (
-                    <button
-                      type="button"
+                    <IconButton
+                      variant="bordered"
+                      label="Reopen task"
                       onClick={() => toggle(task.id, false)}
                       disabled={pending}
-                      aria-label="Reopen task"
-                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-40"
+                      className="shrink-0"
                     >
                       <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-                    </button>
+                    </IconButton>
                   )}
                 </li>
               ))}

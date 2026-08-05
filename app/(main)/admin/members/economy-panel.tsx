@@ -77,15 +77,14 @@ export function EconomyPanel({ profileId, displayName }: Props) {
             <button
               type="button"
               onClick={() => { setOp('grant'); setStatus(null) }}
-              // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
-              className={`flex items-center gap-1 px-3 py-1.5 transition-colors ${op === 'grant' ? 'bg-success text-white' : 'text-muted hover:bg-surface-elevated'}`}
+              className={`flex items-center gap-1 px-3 py-1.5 transition-colors ${op === 'grant' ? 'bg-success text-on-success' : 'text-muted hover:bg-surface-elevated'}`}
             >
               <PlusCircle className="w-3 h-3" /> Grant
             </button>
             <button
               type="button"
               onClick={() => { setOp('revoke'); setStatus(null) }}
-              className={`flex items-center gap-1 px-3 py-1.5 transition-colors ${op === 'revoke' ? 'bg-danger text-white' : 'text-muted hover:bg-surface-elevated'}`}
+              className={`flex items-center gap-1 px-3 py-1.5 transition-colors ${op === 'revoke' ? 'bg-danger text-on-danger' : 'text-muted hover:bg-surface-elevated'}`}
             >
               <MinusCircle className="w-3 h-3" /> Revoke
             </button>
@@ -119,8 +118,7 @@ export function EconomyPanel({ profileId, displayName }: Props) {
         <button
           type="submit"
           disabled={isPending}
-          // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
-          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-meta font-semibold text-white transition-colors disabled:opacity-50 ${op === 'grant' ? 'bg-success hover:bg-success' : 'bg-danger hover:bg-danger'}`}
+          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-meta font-semibold transition-colors disabled:opacity-50 ${op === 'grant' ? 'bg-success text-on-success hover:bg-success' : 'bg-danger text-on-danger hover:bg-danger'}`}
         >
           {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : (op === 'grant' ? <PlusCircle className="w-3 h-3" /> : <MinusCircle className="w-3 h-3" />)}
           {op === 'grant' ? `Grant ${currency}` : `Revoke ${currency}`}

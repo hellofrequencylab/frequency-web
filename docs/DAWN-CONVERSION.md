@@ -110,10 +110,21 @@ product is visibly wrong on any look but the default.
 > add a *third* icon entry point against an ADR that explicitly rules direct `lucide-react` use
 > "the normal path, not a stopgap". Per AGENTS.md, the code and the ADR beat the plan doc.
 >
-> **Remaining: `CounterRow`**, plus finishing the wiring of `StreakMeter` and `GateNotice`, both
-> of which need a widening rather than an adoption (no second day-run surface exists for
-> StreakMeter; GateNotice's single-`<p>` body cannot hold the three-paragraph notices that would
-> otherwise adopt it).
+> **`Avatar` and `Toast` shipped; `CounterRow` was already built.** `components/ui/avatar.tsx` is
+> the one round member/entity image — initials fallback, the `ring` halo, a named size scale, and
+> the optional presence dot that `components/presence/presence-dot.tsx` had been offering to
+> nobody. `ProfileAvatar` and `PulseAvatar` keep their exports and now compose it, so no call site
+> was touched. `components/ui/toast.tsx` is the one transient notice; `achievement-toast.tsx` and
+> `zap-toast.tsx` keep their events, copy and dwell (6s and 4s) and compose it, which retired two
+> card shells, two elevation vocabularies, two slide-up copies and two dismissal timers — and
+> added the `role="status"` **neither** of them had, so a member on a screen reader was previously
+> awarded Zaps in silence. `CounterRow` was found already present, exported and tested in
+> `components/ui/counter.tsx` with three call sites: an audit lead the code had already answered,
+> like Glyph, but this one needed no ruling — just a `grep`.
+>
+> **Remaining: the wiring of `StreakMeter` and `GateNotice`**, both of which need a widening
+> rather than an adoption (no second day-run surface exists for StreakMeter; GateNotice's
+> single-`<p>` body cannot hold the three-paragraph notices that would otherwise adopt it).
 
 Sweeping 3,124 elements onto primitives that do not exist is not possible. This phase is small in
 line count and unblocks the largest phase in the plan.
@@ -124,9 +135,10 @@ line count and unblocks the largest phase in the plan.
 | **Checkbox** | none | build it |
 | **Badge** | 5 one-off pill components | one `Badge` with a tone prop; retire the five |
 | ~~**Glyph**~~ | ~~raw `lucide-react` everywhere~~ | **Struck.** `components/ui/icon.tsx` already is it (ADR-505); a Glyph would be a third icon entry point |
-| **Stat** / **RankBadge** / **CounterRow** | none | build from the DAWN reference |
-| **Avatar** | split across 2 files, neither wired to `presence-dot` | merge into one |
-| **Toast** | 2 renderers sharing a lane | unify |
+| **Stat** / **RankBadge** | none | build from the DAWN reference |
+| ~~**CounterRow**~~ | ~~none~~ | **Already built.** Exported + tested in `components/ui/counter.tsx`, 3 call sites. The census row was wrong, not the code |
+| **Avatar** | ~~split across 2 files, neither wired to `presence-dot`~~ | ✅ `components/ui/avatar.tsx`; both wrappers compose it and keep their exports |
+| **Toast** | ~~2 renderers sharing a lane~~ | ✅ `components/ui/toast.tsx`; both renderers compose it, timings and copy unchanged |
 | **UnderlineTabs** | lives in `components/admin/` | promote to `components/ui/`, then retire the 6 rival tab strips |
 | **Meter** / **GateNotice** / **StreakMeter** / **Counter** | 0–1 call sites | wire to their intended callers, not rebuild |
 

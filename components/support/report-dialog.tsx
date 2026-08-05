@@ -135,7 +135,7 @@ export function ReportDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-stretch justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:p-4"
+      className="fixed inset-0 z-[80] flex items-stretch justify-center bg-ink/60 backdrop-blur-sm sm:items-center sm:p-4"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
@@ -238,7 +238,7 @@ export function ReportDialog({
                 <div className="relative overflow-hidden rounded-card border border-border">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={safeUploadPreviewSrc(shot?.url) ?? undefined} alt="Attached screenshot" className="max-h-48 w-full object-contain bg-surface-elevated" />
-                  <button type="button" onClick={() => setShot(null)} aria-label="Remove screenshot" className="absolute right-2 top-2 rounded-pill bg-black/60 p-1.5 text-white transition-colors hover:bg-black/80">
+                  <button type="button" onClick={() => setShot(null)} aria-label="Remove screenshot" className="absolute right-2 top-2 rounded-pill bg-ink/60 p-1.5 text-on-ink transition-colors hover:bg-ink/80">
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>

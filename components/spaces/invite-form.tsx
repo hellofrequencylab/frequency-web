@@ -13,6 +13,7 @@ import { createInvite, revokeInvite } from '@/lib/spaces/invites-actions'
 import { inviteAcceptUrl, type SpaceInvite } from '@/lib/spaces/invites-shared'
 import type { SpaceRole } from '@/lib/spaces/membership'
 import { cn } from '@/lib/utils'
+import { IconButton } from '@/components/ui/icon-button'
 
 // INVITE A TEAMMATE (client). The owner (or admin) of a Space invites a teammate by email at a role,
 // through the canManageMembers-gated createInvite action. The server is authoritative: it validates
@@ -242,15 +243,16 @@ export function InviteForm({
                       Invited as {ROLE_LABEL[invite.role]}
                     </p>
                   </div>
-                  <button
-                    type="button"
+                  <IconButton
+                    variant="bordered"
+                    tone="danger"
+                    label={`Revoke the invite for ${invite.email}`}
                     onClick={() => revoke(invite.id)}
                     disabled={revoking}
-                    aria-label={`Revoke the invite for ${invite.email}`}
-                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-danger/40 hover:text-danger disabled:opacity-40"
+                    className="shrink-0"
                   >
                     <Trash2 className="h-4 w-4" aria-hidden />
-                  </button>
+                  </IconButton>
                 </div>
                 <CopyLink url={inviteAcceptUrl(invite.token)} />
               </li>

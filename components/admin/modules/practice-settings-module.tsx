@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Wand2, ChevronRight } from 'lucide-react'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { InlineCover } from '@/components/admin/inline/inline-cover'
 import { RailAutosaveForm } from '@/components/admin/rail/rail-autosave-form'
 import {
@@ -133,8 +134,7 @@ export function PracticeSettingsModule() {
           </label>
           <label className="block space-y-1.5">
             <span className={fieldLabel}>Category</span>
-            <select name="category" defaultValue={data.category ?? ''} className={input}>
-              <option value="">None</option>
+            <Select name="category" defaultValue={data.category ?? ''} emptyLabel="None">
               {/* An off-list stored value stays selectable and MARKED (ADR-879): the form
                   autosaves as a whole, so re-submitting it must never rewrite the field. */}
               {data.category && !isChannelCategory(data.category) && (
@@ -145,7 +145,7 @@ export function PracticeSettingsModule() {
                   {c.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
         </div>
       </RailAutosaveForm>

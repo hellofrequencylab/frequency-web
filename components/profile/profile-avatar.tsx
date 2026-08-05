@@ -1,9 +1,13 @@
-import Image from 'next/image'
-import { avatarSrc, readAvatarFocus } from '@/lib/images/avatar-focus'
+import { Avatar } from '@/components/ui/avatar'
 
 // The identity avatar shown in a profile's Detail title row (the brand mark for an
 // entity space, the member's photo for a person). Inline beside the name, sized to
 // sit on the title band below the cover — the house pattern shared with VeraProfile.
+//
+// This is now a NAMED SIZE of the one kit Avatar (components/ui/avatar.tsx), not a second
+// implementation of it. The wrapper survives so the ~1 call site keeps its own vocabulary
+// (`initials`, `dimmed`) and so "the profile title-band avatar" stays a thing with a name,
+// rather than an `xl ring` spelled out at every site that grows one.
 // Presentational + server-friendly (no hooks).
 export function ProfileAvatar({
   src,
@@ -24,21 +28,7 @@ export function ProfileAvatar({
    *  Falls back to the URL's own #fp fragment (ADR-829), then to a centered default. */
   focus?: string | null
 }) {
-  const resolvedFocus = focus ?? readAvatarFocus(src)
-  return src ? (
-    <Image
-      src={avatarSrc(src)}
-      alt={name}
-      width={112}
-      height={112}
-      style={resolvedFocus ? { objectPosition: resolvedFocus } : undefined}
-      className={`h-16 w-16 shrink-0 rounded-pill object-cover ring-4 ring-surface sm:h-20 sm:w-20 ${
-        dimmed ? 'dimmed' : ''
-      }`}
-    />
-  ) : (
-    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-page-title font-semibold text-primary-strong ring-4 ring-surface sm:h-20 sm:w-20">
-      {initials}
-    </span>
+  return (
+    <Avatar src={src} name={name} initials={initials} size="xl" ring dimmed={dimmed} focus={focus} />
   )
 }

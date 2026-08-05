@@ -188,8 +188,7 @@ function VerificationQueue({ items }: { items: PendingVerification[] }) {
                 onClick={() => handleApprove(c.id)}
                 disabled={isPending}
                 title="Approve"
-                // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-success text-white text-meta font-semibold hover:bg-success disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-success text-on-success text-meta font-semibold hover:bg-success disabled:opacity-50 transition-colors"
               >
                 <ShieldCheck className="w-3.5 h-3.5" /> Approve
               </button>

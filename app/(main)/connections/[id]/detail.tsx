@@ -542,7 +542,7 @@ function CardImage({ url, label }: { url: string; label: string }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={url} alt={`${label} of the card`} className="w-full object-contain" />
       {/* KEEP the black/white pair: A scrim chip painted on a photo thumbnail, not on a themed surface, so the monochrome pair stays. */}
-      <span className="absolute bottom-1.5 left-1.5 rounded bg-black/55 px-1.5 py-0.5 text-meta font-medium text-white">
+      <span className="absolute bottom-1.5 left-1.5 rounded bg-ink/55 px-1.5 py-0.5 text-meta font-medium text-on-ink">
         {label}
       </span>
     </a>
