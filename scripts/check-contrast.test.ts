@@ -8,6 +8,7 @@ import {
   resolveTokens,
   deref,
   evaluateContrast,
+  withAlpha,
   ROLE_MINIMUM,
   PAIRS,
   STATES,
@@ -174,6 +175,62 @@ describe('check-contrast — the shipped palette', () => {
       const inState = rows.filter((r) => r.state === s.key)
       expect(inState.length, `${s.key} produced no rows`).toBe(PAIRS.length)
       expect(inState.every((r) => !r.unresolved), `${s.key} has unresolved tokens`).toBe(true)
+    }
+  })
+})
+
+describe('the focus ring is measured AS PAINTED, not as declared', () => {
+  // 🔴 THE BUG. globals.css drew the control ring through
+  // `color-mix(in srgb, var(--color-focus-ring) 45%, transparent)`. This gate read the TOKEN,
+  // at full opacity, and reported a comfortable 3.87:1 — while the page painted 1.75:1, well
+  // under the 3:1 WCAG 1.4.11 requires of a non-text indicator. A gate that measures the
+  // declaration cannot see a use site that thins it.
+  const css = readFileSync('app/globals.css', 'utf8')
+
+  it('withAlpha multiplies into any alpha the colour already carries', () => {
+    expect(withAlpha('#B86A15', 1)?.a).toBe(1)
+    expect(withAlpha('#B86A15', 0.45)?.a).toBeCloseTo(0.45, 6)
+    // rgba(…, 0.5) painted at 50% is 25% — the two compose, they do not replace.
+    expect(withAlpha('rgba(0, 0, 0, 0.5)', 0.5)?.a).toBeCloseTo(0.25, 6)
+    expect(withAlpha('not-a-colour', 0.5)).toBeNull()
+  })
+
+  it('a 45% ring on the page canvas is under 3:1 — the ratio that actually shipped', () => {
+    const painted = contrastRatio(withAlpha('#B86A15', 0.45), '#FAF8F4')
+    expect(painted).toBeLessThan(ROLE_MINIMUM.edge)
+    expect(painted).toBeCloseTo(1.75, 1)
+    // And solid, the same token clears the bar — so the ALPHA was the defect, not the hue.
+    expect(contrastRatio('#B86A15', '#FAF8F4')).toBeGreaterThan(ROLE_MINIMUM.edge)
+  })
+
+  it('no colour could have rescued a 45% ring — pure black tops out under 3.4:1', () => {
+    // The decisive fact: at 45% over white the best achievable contrast is ~3.35:1, and that is
+    // with pure black. Re-tinting the token was never going to fix this; the opacity had to go.
+    expect(contrastRatio(withAlpha('#000000', 0.45), '#FFFFFF')).toBeLessThan(3.4)
+  })
+
+  it('globals.css paints both focus rings at full strength', () => {
+    // Guards the fix at its source. If either use site reintroduces a color-mix, the matching
+    // `alpha` must be added to the PAIRS entry or this table silently starts lying again.
+    const rings = css.match(/:focus-visible\s*\{[^}]*box-shadow:[^;]*;/g) ?? []
+    const thinned = rings.filter((r) => /color-mix\([^)]*transparent/.test(r))
+    expect(thinned, `focus rings drawn through a transparent color-mix: ${thinned.join(' | ')}`).toEqual([])
+  })
+
+  it('fields and controls share one focus token, so one measurement covers both', () => {
+    // Fields used to ring with --color-border-strong at 60% (1.26:1 on white). That token is a
+    // hairline tone step; its own waiver argues controls are identified by "fill + label + focus
+    // ring", which only holds while the ring is visible.
+    const fieldRule = css.match(/:where\(input, textarea\):focus-visible\s*\{[^}]*\}/)?.[0] ?? ''
+    expect(fieldRule).toContain('var(--color-focus-ring)')
+    expect(fieldRule).not.toContain('--color-border-strong')
+  })
+
+  it('every focus-ring pair clears the edge minimum in every state', () => {
+    const rows = evaluateContrast(css).filter((r) => r.pair.startsWith('focus-ring'))
+    expect(rows.length).toBeGreaterThan(0)
+    for (const r of rows) {
+      expect(r.pass, `${r.state}: ${r.pair} = ${r.ratio?.toFixed(2)}:1 (min ${r.min})`).toBe(true)
     }
   })
 })

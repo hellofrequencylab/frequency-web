@@ -1503,13 +1503,34 @@ h1, h2, h3, h4, h5, h6 {
    and used to paint the amber ring around the WHOLE content column. Ringing a
    programmatic-only focus target is never wanted, so it is dropped here; genuinely
    tabbable custom controls (`tabindex="0"`) keep their ring. */
+/* 🔴 THE RING IS PAINTED AT FULL STRENGTH, and that is a WCAG 1.4.11 fix, not a style choice.
+   Both rules used to thin their colour with `color-mix(… N%, transparent)` — 45% for controls,
+   60% for fields. Composited against the page that gives:
+
+     control ring  #B86A15 @45% on canvas #FAF8F4  →  1.75:1   (dark skins ~2.9:1)
+     field ring    #D9D3C8 @60% on white           →  1.26:1
+
+   against the 3:1 that 1.4.11 requires of a non-text indicator. The ceiling proves the alpha
+   was the defect and not the hue: PURE BLACK at 45% over white tops out at 3.35:1, so no colour
+   choice could have rescued a 45% ring. Solid, the same tokens measure 3.87:1 / 4.11:1 in the
+   light skins and 9.87:1 / 9.53:1 in the dark ones.
+
+   The FIELD ring also changes token. `--color-border-strong` is a hairline tone step, 1.40:1 on
+   canvas even at full strength — it can never carry an indicator, and its own contrast waiver
+   says so, arguing that controls are identified by "fill + label + focus ring". That argument
+   only holds if the focus ring is visible, so fields now take the focus-ring token too. One
+   focus affordance, one token, and it is the same one the check-contrast gate measures.
+
+   check-contrast.mjs was blind to all of this: it measured the TOKEN at full opacity and
+   reported a passing 3.87:1 while the page painted 1.75:1. Pairs now carry an `alpha` so the
+   gate measures what actually renders. */
 :where(button, a, select, [tabindex]:not([tabindex="-1"])):focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-focus-ring) 45%, transparent);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 :where(input, textarea):focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-border-strong) 60%, transparent);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 /* Two surfaces opt OUT of the global focus ring (owner directives, 2026-06-21).
