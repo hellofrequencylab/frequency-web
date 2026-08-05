@@ -262,9 +262,30 @@ the rail shows everywhere by design). Fix the doc, do not "fix" the code.
 
 ### 🔴 Phase 7 — Marketing
 
-15 of 38 marketing pages bypass `Section` and its four-role rhythm. `.mk-cream` / `.mk-ink` have
-**zero** adopters, so the same-tone-halving rule never fires and the thing that makes a tone change
-read as a change is inert. Size: M.
+~~15 of 38 marketing pages bypass `Section` and its four-role rhythm.~~ **Corrected 2026-08-05: this
+census row was wrong.** All 38 were re-checked one by one, and **the 15 are redirect stubs** —
+eight-line files whose entire body is a `permanentRedirect()`. They have no layout to bypass. The
+only non-redirect pages with zero `<Section>` were `beta/[slug]` (now composing `Section role="band"`)
+plus `rsvp/[token]` and `subscribe/confirm`, both single-section transactional surfaces. An audit
+finding is a lead, not a fact; this one survived unverified until someone opened all 38 files.
+
+What was true and remains the real work: `.mk-cream` / `.mk-ink` have **zero** adopters, so the
+same-tone-halving rule never fires and the thing that makes a tone change read as a change is inert.
+That is not 15 stubborn pages — it is **one line in `Section`** (`components/marketing/marketing-ui.tsx`),
+which must emit the class before any page can adopt it.
+
+A second dead rule found in the same pass: `.mk-hero:not(.mk-hero-dock) + .mk-beat { padding-top: 0 }`
+in `app/globals.css` **has never fired for any hero on the site**, because `PageHero` never emits
+`.mk-hero` and `PhotoHero` emits it only when it has `facts`. That is why eight pages carried
+hand-written `pt-0`. The pages now declare `role="cont"` instead, which is correct regardless, but
+the adjacency rule stays dead code until a hero carries the class.
+
+Marketing page-level rhythm is **done**: all 22 `pad=` opt-outs under `app/(marketing)/**` are
+retired but one, and that one is a component gap rather than a holdout (`Section`'s `role` prop has
+no `'cont-soft'` member, so `about/page.tsx` reaches `mk-cont-soft` through the escape hatch). What
+remains is in `components/marketing/**`: the two class emissions above, plus `Statement` and
+`BetaCTA` hand-rolling padding that is exactly `mk-tight` and `mk-band`. Size: M → **S**, and it
+moved to a different file than this row assumed.
 
 ### 🅿️ Phase 8 — `resonance/`
 
