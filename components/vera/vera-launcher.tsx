@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
@@ -21,7 +21,14 @@ import {
   type DockOpenDetail,
 } from '@/lib/messages/dock-open'
 import { EdgePill } from '@/components/layout/edge-pill'
-import { DOCK_CHAT_SLOT_ID } from '@/components/layout/dock-bar'
+import {
+  DOCK_CHAT_SLOT_ID,
+  announceDockSegmentOpen,
+  getDockGeometry,
+  getServerDockGeometry,
+  onOtherDockSegmentOpen,
+  subscribeDockGeometry,
+} from '@/components/layout/dock-bar'
 import type { TeaseGate } from '@/lib/pricing/upsell-tease'
 import { buttonClasses } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
@@ -72,8 +79,34 @@ const TAB_BASE =
   'inline-flex flex-1 items-center justify-center gap-1.5 rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors'
 const TAB_ON = 'bg-primary-bg text-primary-strong'
 const TAB_OFF = 'text-muted hover:text-text'
+/** The unread count on the Messages tab. Unread is a DANGER badge, not an amber one: amber is
+ *  the brand accent and it is already carrying the tab's own on/off state two pixels away, so an
+ *  amber-on-amber count says nothing. `bg-danger` + `text-on-danger` is the kit's minted pair. */
 const TAB_COUNT =
-  'inline-flex h-4 min-w-4 items-center justify-center rounded-pill bg-primary px-1 text-3xs font-bold text-on-primary'
+  'inline-flex h-4 min-w-4 items-center justify-center rounded-pill bg-danger px-1 text-3xs font-bold text-on-danger'
+
+// ── ITEM 5: the tab activates when you reach the end of the rail ─────────────────────────────
+//
+// The bar already knows this. It measures the rail's end to ride up and meet it, and now
+// publishes `atRailEnd` from that SAME measurement (components/layout/dock-bar.tsx) — so this is
+// one subscription, not a second scroll listener racing the first.
+//
+// WHAT "ACTIVATE" MEANS. Two readings were possible, and the shipped one is the quiet one:
+//
+//   'nudge'  the tab takes its ACTIVE VISUAL STATE. Nothing moves, nothing is announced, and a
+//            member who was reading keeps reading. ← SHIPPED
+//   'open'   the panel opens itself.
+//
+// 'open' is hostile: a panel that unfurls under someone's cursor because they scrolled takes the
+// page away from them without being asked, and it would fight every dismissal in this file (you
+// close it, you are still at the end of the rail, it comes back). Both branches are wired below,
+// so the choice is this one word rather than a rewrite.
+const RAIL_END_ACTIVATION: 'nudge' | 'open' = 'nudge'
+
+/** Below this the panel stops shrinking to fit the rail. A rail shorter than a usable chat window
+ *  is a page with almost nothing on it; overhanging its top edge there beats handing a member a
+ *  three-line transcript. */
+const MIN_PANEL_HEIGHT = 320
 
 /** How far the panel's bottom edge tucks BEHIND the bar's crest. Without it the bar's rounded
  *  top corners leave two notches of canvas showing under the panel; with it the panel simply
@@ -199,6 +232,12 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
   // the bar, and a remembered rect would strand the panel where the bar used to be.
   const measured = useDockAnchor(slot)
   const anchor = slot ? measured : null
+  // The BAR's own measurement, subscribed rather than retaken (items 5 + 8). DockBar reads the
+  // rail once per frame it needs to; this is that read, not a second one.
+  const geometry = useSyncExternalStore(subscribeDockGeometry, getDockGeometry, getServerDockGeometry)
+  const bar = slot ? geometry.bar : null
+  const railTopAboveBottom = slot ? geometry.railTopAboveBottom : null
+  const atRailEnd = slot ? geometry.atRailEnd : false
   const results = useMemo(() => searchHelp(index, q, 6), [q, index])
 
   // Remember the last mode across sessions.
@@ -235,6 +274,11 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
     if (collapseTimer.current) { clearTimeout(collapseTimer.current); collapseTimer.current = null }
     setRender(true)
     setOpen(true)
+    // ITEMS 6 + 7: the bar's two segments are mutually exclusive, so the Vault closes when this
+    // opens. Announced from `show()` because it is the ONE funnel every open path already goes
+    // through — the tab, open-chat / open-vera / open-help, and the `?chat=` deep link — so no
+    // caller can open this dock without the Vault hearing about it.
+    announceDockSegmentOpen('chat')
   }
 
   useEffect(() => {
@@ -336,6 +380,27 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
     // Same reasoning as the ESC listener above: `close` is stable in behaviour, not identity.
   }, [open])
 
+  // The receiving half of items 6 + 7. Bound only WHILE OPEN, which is what makes "close me"
+  // idempotent without a guard: there is no listener to fire when there is nothing to close. It
+  // routes through the same `close()` as Esc and the outside click, so focus return and the
+  // collapse timer stay in one place and cannot run twice.
+  useEffect(() => {
+    if (!open) return
+    return onOtherDockSegmentOpen('chat', close)
+    // Same reasoning as the two listeners above: `close` is stable in behaviour, not identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  // ITEM 5, the 'open' reading — INERT while RAIL_END_ACTIVATION is 'nudge' (see the constant).
+  // Wired rather than described so flipping the behaviour is one word and not a rewrite.
+  useEffect(() => {
+    if (RAIL_END_ACTIVATION !== 'open') return
+    if (!atRailEnd) return
+    show()
+    // `show` is re-created every render; this must fire on the rail-end EDGE, never per render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [atRailEnd])
+
   function close() {
     setOpen(false)
     setHelpOpen(false)
@@ -360,6 +425,33 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
     }, PANEL_COLLAPSE_MS)
   }
 
+  // ── ITEM 8: the panel is the RAIL's drawer, not a window parked near the bar ────────────────
+  //
+  // It used to be a 24rem card at `md:bottom-6 md:right-6` — a separate object that happened to
+  // sit nearby, dropping straight down out of a 48px tab. It now takes the BAR's exact box (which
+  // at lg+ IS the rail's box, by construction: DockBar spans the rail) and the rail's full height,
+  // with its bottom edge still tucked behind the crest. Because its right edge is pinned to the
+  // tab it emerges from while its body is the whole rail-wide column, it grows out to the LEFT.
+  //
+  // Every number here comes from DockBar's ONE measurement plus the segment anchor this file
+  // already took. The rail is not measured a second time.
+  //
+  // `right: 'auto'` is required, not decorative: the class fallback carries `md:right-6` for the
+  // surfaces that have no bar, and left + width + right would otherwise be three constraints on a
+  // two-constraint box.
+  const panelBox = anchor
+    ? bar
+      ? { left: bar.left, width: bar.width, right: 'auto' as const, bottom: anchor.bottom }
+      : anchor
+    : undefined
+  // Rail top → the panel's tucked bottom edge. Both are distances from the viewport's BOTTOM, so
+  // the height is a subtraction and never needs `innerHeight` at render time. Null keeps the
+  // md-band class height (`md:h-[35rem]`), which is the right answer where there is no rail.
+  const panelHeight =
+    anchor && railTopAboveBottom !== null
+      ? Math.max(MIN_PANEL_HEIGHT, railTopAboveBottom - anchor.bottom)
+      : null
+
   const showInstant = helpOpen && q.trim().length >= 2
   const headerTitle = helpOpen ? 'Help & support' : tab === 'vera' ? 'Vera' : 'Messages'
   const headerSub = helpOpen
@@ -380,6 +472,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
           slot={slot}
           slotChecked={slotChecked}
           open={open}
+          atRailEnd={atRailEnd}
           waiting={pulse || unread > 0}
           unread={unread}
           onOpen={openPanel}
@@ -393,14 +486,19 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
           had), collapsed to zero and `inert` — so nothing inside it is tabbable, hittable or
           announced until the dock is actually open. */}
       <div
-        style={anchor ?? undefined}
+        style={panelBox}
         inert={!open || undefined}
         className={cn(
           // Bottom sheet on a phone, an extension of the bar from md. `md:z-30` puts it UNDER
           // the bar (z-40) on purpose: the tucked bottom edge has to disappear behind the crest,
           // not paint over it. Below md there is no bar, and the sheet keeps its z-50 so the
           // mobile tab bar cannot cover it.
+          // The `md:` box here is now only the FALLBACK for surfaces that have no bar at all
+          // ((marketing), (help), /discover — the EdgePill's neighbours). Wherever a bar exists,
+          // `panelBox` above overrides left/width/right/bottom with the bar's own measurement.
           'fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md md:mx-0 md:inset-x-auto md:bottom-6 md:right-6 md:z-30 md:w-96 md:max-w-none',
+          // The reveal is unchanged: a grid row travelling 0fr → 1fr on `--motion-base`, which IS
+          // the cue-pop beat the three docks arrive on, with `motion-reduce` collapsing it.
           'grid overflow-hidden transition-[grid-template-rows] duration-[var(--motion-base)] ease-[var(--ease-out)] motion-reduce:transition-none print:hidden',
           open ? 'grid-rows-[1fr]' : 'pointer-events-none grid-rows-[0fr]',
         )}
@@ -420,7 +518,14 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
               // The shared dock popover shell: `.glass` + `.lift-3` on the role radius, the same
               // object the system menu and the Vault wear. Bottom sheet on a phone (square top
               // corners hug the viewport edge), an extension of the bar on desktop.
-              className="glass lift-3 flex h-[68dvh] max-h-[37.5rem] w-full flex-col overflow-hidden rounded-t-card pb-[env(safe-area-inset-bottom)] outline-none md:h-[35rem] md:pb-2"
+              //
+              // `md:max-h-none` releases the phone sheet's 37.5rem cap above md: covering the
+              // rail is the whole point of the desktop panel, and a cap measured for a 68dvh
+              // sheet would stop it two thirds of the way up. `md:h-[35rem]` stays as the height
+              // for the md band, where there is no rail to cover; `panelHeight` overrides it
+              // wherever there is one.
+              style={panelHeight ? { height: panelHeight } : undefined}
+              className="glass lift-3 flex h-[68dvh] max-h-[37.5rem] w-full flex-col overflow-hidden rounded-t-card pb-[env(safe-area-inset-bottom)] outline-none md:h-[35rem] md:max-h-none md:pb-2"
             >
               {/* Header — canvas, so it reads as the dock's own chrome rather than more
                   transcript. Reflects the active view; Help gets a Back affordance. */}

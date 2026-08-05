@@ -7,6 +7,122 @@ export const DOCK_CHAT_SLOT_ID = 'fq-dock-chat-slot'
 /** A zero-height marker at the END of the right rail's content. The bar rides up to meet it. */
 export const RAIL_END_SENTINEL_ID = 'fq-rail-end'
 
+// ── ONE bar, two segments, ONE open panel ─────────────────────────────────────
+//
+// The Vault's open state lives in components/sidebar/game-stats-dock.tsx and the chat panel's in
+// components/vera/vera-launcher.tsx: two components, two owners, no common parent to hold the
+// answer. So both could be open at once — and were, the Vault unfurling underneath a chat panel
+// that now covers the same column.
+//
+// They get one source of truth WITHOUT a context: a window event, the pattern the shell already
+// uses for `open-support` (components/support/support-launcher.tsx). Whoever opens announces it;
+// everyone else closes. Two properties make that safe rather than a broadcast free-for-all:
+//
+//   • a segment IGNORES its own announcement, so opening can never close what just opened;
+//   • a segment only LISTENS WHILE IT IS OPEN, so "close" is never asked of something already
+//     closed. Idempotence is structural here, not a guard someone has to remember to write.
+//
+// And it does not fight the Esc / outside-click dismissal either side already owns: this calls
+// the SAME close each side already exposes, so focus return, the collapse timer and the inbox
+// reset all still run exactly once, through one path.
+
+/** Which segment of the bar owns the open panel. */
+export type DockSegment = 'vault' | 'chat'
+
+export const DOCK_SEGMENT_OPEN_EVENT = 'fq-dock-segment-open'
+
+/** Announce that `segment` just opened its panel. Safe on every open, including a re-open. */
+export function announceDockSegmentOpen(segment: DockSegment): void {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent(DOCK_SEGMENT_OPEN_EVENT, { detail: { segment } }))
+}
+
+/**
+ * Listen for "some OTHER segment opened" and close. Call it from an effect that runs only while
+ * your own panel is open, and return the unsubscribe it hands back — that is what makes closing
+ * idempotent by construction rather than by a `if (!open) return` inside the handler.
+ */
+export function onOtherDockSegmentOpen(mine: DockSegment, close: () => void): () => void {
+  const handler = (e: Event) => {
+    const segment = (e as CustomEvent<{ segment?: DockSegment }>).detail?.segment
+    if (!segment || segment === mine) return
+    close()
+  }
+  window.addEventListener(DOCK_SEGMENT_OPEN_EVENT, handler)
+  return () => window.removeEventListener(DOCK_SEGMENT_OPEN_EVENT, handler)
+}
+
+// ── The bar's measurement, published once ─────────────────────────────────────
+//
+// The bar already measures the rail on every frame that needs it (see `measure` below). The chat
+// panel needs the SAME numbers, because it now covers the rail — and a second ResizeObserver over
+// the same <aside> would be a second answer to one question, free to disagree by a frame and to
+// double the cost of every scroll. So the measurement is published from where it is TAKEN and the
+// panel subscribes; nothing downstream re-measures the rail.
+//
+// A plain module store rather than a context: DockBar is a shell sibling fed by the `dock` prop
+// while the launcher is mounted in the (main) layout, so there is no common provider to hang a
+// context on without one of them having to own the other.
+
+export type DockGeometry = {
+  /** The BAR's own box. Null below md (the bar is display:none) and on surfaces with no bar at
+   *  all. A panel that belongs to the bar takes its width from here, so the two can never drift. */
+  bar: { left: number; width: number } | null
+  /** How far the RAIL's top edge sits ABOVE the viewport's bottom edge, or null when no rail is
+   *  mounted (md–lg, /admin, a folded rail).
+   *
+   *  Bottom-up on purpose: a panel anchored by `bottom` subtracts its own offset and has its
+   *  height, with no second read of `window.innerHeight` at render time. Clamped so a rail taller
+   *  than the window cannot push a full-height panel up over the app header. */
+  railTopAboveBottom: number | null
+  /** True once the bar has ridden up to meet the end of a rail that was TALLER than the window —
+   *  i.e. you actually scrolled to the bottom of it. Deliberately FALSE on a short page, where the
+   *  bar comes to rest against the rail's end without anyone having scrolled anywhere: lighting a
+   *  persistent control on every short page would say "act on me" all day, which is the one thing
+   *  furniture must not say. */
+  atRailEnd: boolean
+}
+
+/** No bar, no rail. ONE frozen instance: `useSyncExternalStore` compares snapshots by identity,
+ *  and a freshly built object per read is an infinite render loop. */
+const NO_GEOMETRY: DockGeometry = { bar: null, railTopAboveBottom: null, atRailEnd: false }
+
+/** Headroom, in px, that a rail-height panel must leave for the app header. The rail's box starts
+ *  at the top of the content row, which on a long page is far above the viewport. */
+const HEADER_HEADROOM = 72
+
+let geometry: DockGeometry = NO_GEOMETRY
+const listeners = new Set<() => void>()
+
+function sameGeometry(a: DockGeometry, b: DockGeometry): boolean {
+  if (a.atRailEnd !== b.atRailEnd || a.railTopAboveBottom !== b.railTopAboveBottom) return false
+  if (a.bar === b.bar) return true
+  if (!a.bar || !b.bar) return false
+  return a.bar.left === b.bar.left && a.bar.width === b.bar.width
+}
+
+function publishGeometry(next: DockGeometry): void {
+  if (sameGeometry(geometry, next)) return
+  geometry = next
+  for (const listener of listeners) listener()
+}
+
+export function subscribeDockGeometry(onChange: () => void): () => void {
+  listeners.add(onChange)
+  return () => {
+    listeners.delete(onChange)
+  }
+}
+
+export function getDockGeometry(): DockGeometry {
+  return geometry
+}
+
+/** The server render has no DOM to measure, so it gets the same empty answer every time. */
+export function getServerDockGeometry(): DockGeometry {
+  return NO_GEOMETRY
+}
+
 // ── The anchored bottom dock: one bar, two segments ───────────────────────────
 //
 // Bottom right used to hold TWO unrelated floating objects: the Vault tab flush to the
@@ -62,6 +178,15 @@ export function DockBar({ vault }: { vault: React.ReactNode }) {
       // Clearing matters on a resize DOWN: a stale span from a wide viewport would strand the
       // bar off-screen. Null hands placement back to the class fallback.
       setSpan(null)
+      // No rail, but there may still be a BAR (md–lg renders one at its class fallback, and a
+      // panel that belongs to it still wants its width). Its own rect is exact here: `left` and
+      // `width` are untouched by the ride-up transform, and with no rail there is no lift.
+      const barRect = bar.getBoundingClientRect()
+      publishGeometry({
+        bar: barRect.width > 0 ? { left: Math.round(barRect.left), width: Math.round(barRect.width) } : null,
+        railTopAboveBottom: null,
+        atRailEnd: false,
+      })
       return
     }
 
@@ -72,9 +197,26 @@ export function DockBar({ vault }: { vault: React.ReactNode }) {
     // scroll back. It is scroll-linked on purpose (no transition), so it tracks rather than
     // chases.
     const railBottom = sentinel.getBoundingClientRect().bottom
-    setLift(Math.max(0, Math.round(window.innerHeight - railBottom)))
+    const lift = Math.max(0, Math.round(window.innerHeight - railBottom))
+    setLift(lift)
 
-    setSpan({ left: Math.round(rect.left), width: Math.round(rect.width) })
+    const span = { left: Math.round(rect.left), width: Math.round(rect.width) }
+    setSpan(span)
+
+    // Publish the SAME numbers the bar just placed itself with. The bar's box is the span rather
+    // than a fresh `getBoundingClientRect()` on itself: the span is what the bar is about to BE,
+    // and reading its rect in this pass would return the position it is leaving.
+    publishGeometry({
+      bar: span,
+      // Clamped so a rail taller than the window cannot hand a panel a top edge above the header.
+      railTopAboveBottom: Math.min(
+        Math.round(window.innerHeight - rect.top),
+        window.innerHeight - HEADER_HEADROOM,
+      ),
+      // "You scrolled to the end of the rail", not "the rail happens to end on screen". A rail
+      // shorter than the window is at its end from the first paint, and nobody scrolled.
+      atRailEnd: lift > 0 && rect.height > window.innerHeight,
+    })
   }, [])
 
   useEffect(() => {
@@ -103,6 +245,9 @@ export function DockBar({ vault }: { vault: React.ReactNode }) {
       window.removeEventListener('scroll', schedule)
       window.removeEventListener('resize', schedule)
       ro?.disconnect()
+      // The bar unmounts on /admin and on an editor takeover. A remembered rail would leave the
+      // chat panel sized to a column that is no longer on the page.
+      publishGeometry(NO_GEOMETRY)
     }
   }, [measure])
 
