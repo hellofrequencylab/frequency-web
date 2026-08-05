@@ -849,10 +849,16 @@ function NavLinkList({
   // A nested Admin tool (ADR-848): indented under its box and hung off a hairline, the same
   // treatment the Space rail uses for its twelve boxes. Never applied in `compact` (the icon-only
   // edge column has no room for a hierarchy, and the tooltip already names the destination).
-  const nestClass = (depth?: number) => (depth ? 'ml-3 border-l border-border ' : '')
+  const nestClass = (depth?: number) => (depth ? 'ml-3 border-l border-chrome-border ' : '')
 
   // The row. `rounded-control` (not a literal step) so a skin retunes the rail with the rest
   // of the controls — Midnight sharpens it, the kids generations round it right off.
+  //
+  // `py-2` is a DELIBERATE divergence from DAWN's 0.42rem, and the one place this rail does not
+  // chase the mock. 0.42rem is 7.14px here, which puts a row at ~31px — under the 32px density
+  // floor `--tap-min` defends, before a coarse pointer even asks for 44. The mock is a static
+  // capture with no pointer to satisfy; accessibility floors are not a style to match. It costs
+  // ~1.4px a row against the reference and is worth it.
   // The WEIGHT LADDER is DAWN's (ui_kits/app/nav-rail.jsx NavRow): a resting row is 600 and the
   // active row is 800, because the active row is meant to be "the one amber moment" in the rail
   // and colour alone was carrying it. The home anchor keeps its own 700 brand treatment.
@@ -870,7 +876,7 @@ function NavLinkList({
   // is to look deliberately spaced. Size stays `text-2xs` (DAWN's rail overrides the eyebrow
   // utility's own size the same way), so this moves tracking only and cannot reflow the rail.
   const sectionLabelClass =
-    'px-3 pt-1 pb-1 text-2xs font-semibold uppercase tracking-eyebrow text-muted'
+    'px-3 pt-1 pb-1.5 text-2xs font-semibold uppercase tracking-eyebrow text-muted'
 
   return (
     <>
@@ -903,7 +909,7 @@ function NavLinkList({
           className={
             compact
               ? `flex flex-col items-center gap-1 ${isHomeAnchor ? 'pb-1.5 mb-0.5 border-b border-border' : ''}`
-              : `space-y-0.5 ${i > 0 ? 'mt-2' : ''} ${isHomeAnchor ? 'pb-2 mb-1 border-b border-border' : ''}`
+              : `space-y-0.5 ${i > 0 ? 'mt-4' : ''} ${isHomeAnchor ? 'pb-2 mb-1 border-b border-chrome-border' : ''}`
           }
         >
           {!compact && section.label && <p className={sectionLabelClass}>{section.label}</p>}
@@ -939,7 +945,7 @@ function NavLinkList({
                     ariaLabel={label}
                     className={`${nest}flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm font-medium text-subtle`}
                   >
-                    <Icon className="h-[18px] w-[18px] shrink-0 text-subtle" strokeWidth={2} aria-hidden />
+                    <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden />
                     {label}
                   </GhostLink>
                 )
@@ -963,7 +969,7 @@ function NavLinkList({
               return (
                 <Link key={item.key} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active, false, item.depth)}>
                   <Icon
-                    className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : 'text-subtle'}`}
+                    className="w-[18px] h-[18px] shrink-0"
                     strokeWidth={active ? 2.5 : 2}
                   />
                   {label}
@@ -1029,7 +1035,7 @@ function NavLinkList({
                     active ? 'bg-chrome-hover text-muted' : 'text-subtle hover:bg-chrome-hover hover:text-muted'
                   }`}
                 >
-                  <Icon className="h-[18px] w-[18px] shrink-0 text-subtle" strokeWidth={2} />
+                  <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
                   {label}
                 </Link>
               )
@@ -1043,7 +1049,7 @@ function NavLinkList({
                   title="You don't have access to this yet"
                   className={`${nest}flex items-center gap-2.5 px-3 py-2 rounded-lg text-body-sm font-medium text-subtle opacity-50 cursor-not-allowed select-none`}
                 >
-                  <Icon className="w-[18px] h-[18px] shrink-0 text-subtle" strokeWidth={2} />
+                  <Icon className="w-[18px] h-[18px] shrink-0" strokeWidth={2} />
                   {label}
                 </div>
               )
@@ -1052,7 +1058,7 @@ function NavLinkList({
             return (
               <Link key={href} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active, false, item.depth)}>
                 <Icon
-                  className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : 'text-subtle'}`}
+                  className="w-[18px] h-[18px] shrink-0"
                   strokeWidth={active ? 2.5 : 2}
                 />
                 {label}
@@ -1090,7 +1096,7 @@ function NavLinkList({
             return (
               <Link key={href} href={href} onClick={onNavigate} className={itemClass(active)}>
                 <Icon
-                  className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : 'text-subtle'}`}
+                  className="w-[18px] h-[18px] shrink-0"
                   strokeWidth={active ? 2.5 : 2}
                 />
                 {label}
@@ -1995,7 +2001,13 @@ export default function AppShell({
               // were the same ground and only the cards' hairlines separated them. The token has
               // been in globals.css since the 2026-08-03 round with the top bar as its only
               // adopter.
-              <aside className="hidden md:flex w-48 shrink-0 flex-col bg-chrome">
+              // The frame needs an EDGE, not just a tone. chrome against canvas is 1.083:1 —
+              // above the threshold where a difference is theoretically visible, and well below
+              // where a boundary reads as deliberate, especially with a canvas gutter after it.
+              // The top bar has paired chrome with `border-chrome-border` since it landed; the
+              // rails took the ground without the hairline, so the band had no defined edge and
+              // the rail read as a slightly-off patch of page rather than as frame.
+              <aside className="hidden md:flex w-48 shrink-0 flex-col border-r border-chrome-border bg-chrome">
                 {/* The menu + profile footer live in NORMAL FLOW and scroll WITH the page
                     (no sticky pin, no inner scrollbar): the menu rides up as you scroll and
                     the profile card sits at the bottom of the column, revealed as you reach
@@ -2098,11 +2110,14 @@ export default function AppShell({
                       aria-label="Show the rail"
                       className="sticky bottom-6 inline-flex h-7 w-7 items-center justify-center rounded-md text-subtle transition-colors hover:text-muted"
                     >
-                      <ChevronsLeft className="h-5 w-5" aria-hidden />
+                      <ChevronsLeft className="h-3.5 w-3.5" aria-hidden />
                     </button>
                   </aside>
                 ) : (
-                  <aside className="flex w-72 shrink-0 flex-col bg-chrome py-6">
+                  // Mirrors the left rail: chrome plus the hairline that gives the band an edge.
+                  // The collapsed strip already had `border-l border-chrome-border`; the OPEN
+                  // rail did not, so folding the rail was the only way to see where it began.
+                  <aside className="flex w-72 shrink-0 flex-col border-l border-chrome-border bg-chrome py-6">
                     {sidebar}
                     {/* The rail's end. DockBar measures this to know when to stop being pinned to
                         the window and come to rest against the last rail card instead. Zero-height
@@ -2121,7 +2136,7 @@ export default function AppShell({
                           aria-label="Hide the rail"
                           className="inline-flex h-7 w-7 items-center justify-center rounded-md text-subtle transition-colors hover:text-muted"
                         >
-                          <ChevronsRight className="h-5 w-5" aria-hidden />
+                          <ChevronsRight className="h-3.5 w-3.5" aria-hidden />
                         </button>
                       </div>
                     )}

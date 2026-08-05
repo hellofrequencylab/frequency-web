@@ -25,9 +25,16 @@ const UNIT: Record<ActivityView, string> = { days: 'day', weeks: 'week', months:
 export function ActivityChart({
   activity,
   defaultView = 'days',
+  framed = true,
 }: {
   activity: MemberActivity
   defaultView?: ActivityView
+  /** Draw the surrounding card. TRUE on a page, where the chart is its own object. FALSE in
+   *  the right rail, where the panel above it is already a titled group and a card here makes
+   *  the rail a stack of boxes again — the exact thing "group, don't box" retires. The rail's
+   *  panels went borderless without this, so the box simply moved one level down and the
+   *  column still read as three different treatments in one column. */
+  framed?: boolean
 }) {
   const [view, setView] = useState<ActivityView>(defaultView)
   const bars = activity[view]
@@ -37,7 +44,7 @@ export function ActivityChart({
   const unit = UNIT[view]
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
+    <div className={framed ? 'rounded-card border border-border bg-surface p-4' : ''}>
       {/* View toggle — Days · Weeks · Months. */}
       <div className="mb-3 inline-flex rounded-lg bg-surface-elevated p-0.5 text-meta font-medium">
         {VIEWS.map((v) => (
