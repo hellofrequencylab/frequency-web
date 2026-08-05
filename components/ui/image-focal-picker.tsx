@@ -210,14 +210,19 @@ export function ImageFocalPicker({
           heightClassName,
         )}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={safeImageSrc(imageUrl) ?? undefined}
-          alt={alt}
-          draggable={false}
-          style={{ objectPosition }}
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-        />
+        {/* Rendered only when the guard passes. With no branch at all, a refused URL painted an
+            empty <img> inside the frame — a broken-image glyph under the focal marker, which
+            reads as "this picker is broken" rather than "that image was not allowed". */}
+        {safeImageSrc(imageUrl) && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={safeImageSrc(imageUrl) ?? undefined}
+            alt={alt}
+            draggable={false}
+            style={{ objectPosition }}
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+          />
+        )}
         {/* Marker only — a high-contrast ring that reads over any photo. The crosshair guide lines
             were removed to declutter the preview; the marker alone shows the focal point clearly, and
             the sliders below give precise, accessible control. */}

@@ -13,7 +13,7 @@ import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shr
 import { TYPE_LABELS, type SupportContext, type TicketType } from '@/lib/support/types'
 import type { HelpCitation } from '@/lib/ai/help-rag'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
-import { safeImageSrc } from '@/lib/safe-image-src'
+import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
 const TYPE_META: { key: TicketType; icon: typeof Bug }[] = [
   { key: 'bug', icon: Bug },
@@ -228,10 +228,16 @@ export function ReportDialog({
             {/* Screenshot */}
             <div className="mt-3">
               <span className="mb-1 block text-meta font-medium text-subtle">Screenshot <span className="font-normal text-subtle">· optional, paste or attach</span></span>
-              {shot ? (
+              {/* safeUploadPreviewSrc, not safeImageSrc: `shot.url` is a createObjectURL from the
+                  file input or the paste handler, and lib/safe-image-src.ts names this exact
+                  surface as one of the seven upload previews. It was calling the WIDER sibling,
+                  which also permits data: and same-origin paths a screenshot can never be.
+                  Branching on the guarded value too, so a refused URL shows the attach button
+                  again rather than an empty framed <img> with a Remove control over it. */}
+              {safeUploadPreviewSrc(shot?.url) ? (
                 <div className="relative overflow-hidden rounded-card border border-border">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={safeImageSrc(shot.url) ?? undefined} alt="Attached screenshot" className="max-h-48 w-full object-contain bg-surface-elevated" />
+                  <img src={safeUploadPreviewSrc(shot?.url) ?? undefined} alt="Attached screenshot" className="max-h-48 w-full object-contain bg-surface-elevated" />
                   <button type="button" onClick={() => setShot(null)} aria-label="Remove screenshot" className="absolute right-2 top-2 rounded-pill bg-black/60 p-1.5 text-white transition-colors hover:bg-black/80">
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>

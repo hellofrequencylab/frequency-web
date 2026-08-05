@@ -34,6 +34,7 @@ import { downscaleImageFile } from '@/lib/images/downscale-image'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { beginFeatureFunnelSignup } from './feature-actions'
 import { signInWithMagicLink } from '@/app/sign-in/actions'
+import { safeImageSrc } from '@/lib/safe-image-src'
 
 // Avatar is too big for a cookie, so the deferred flow parks it in localStorage and
 // /onboarding/beta/complete uploads it. Same key the finalizer reads.
@@ -605,7 +606,7 @@ function JoinStep({
           <label className="group relative flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-pill border border-border bg-primary-bg text-primary-strong">
             {avatar ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatar} alt="" className="h-full w-full object-cover" />
+              <img src={safeImageSrc(avatar) ?? undefined} alt="" className="h-full w-full object-cover" />
             ) : (
               <span className="text-meta font-semibold">Photo</span>
             )}

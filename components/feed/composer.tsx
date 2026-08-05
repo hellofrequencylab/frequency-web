@@ -523,7 +523,11 @@ export function Composer({
       </div>
 
       {/* Image preview */}
-      {imagePreview && (
+      {/* Branch on the GUARDED value, not the raw one. Branching on `imagePreview` rendered the
+          bordered frame, the preview box and the Remove button around an <img> with no src
+          whenever the guard rejected — a broken-image chrome that looks like a bug in the
+          uploader rather than a refused URL. */}
+      {safeUploadPreviewSrc(imagePreview) && (
         <div className="relative mt-3 inline-block">
           {/* Local object-URL preview of the file being uploaded — a transient
               blob: src that the Next image optimizer can't (and shouldn't) touch,

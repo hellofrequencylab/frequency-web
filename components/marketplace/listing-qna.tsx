@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
+import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB (post-prep; HEIC is converted and big photos shrink first)
 
@@ -164,10 +165,10 @@ export function ListingQna({
             className="w-full resize-none bg-transparent text-body-sm leading-relaxed text-text/90 outline-none placeholder:text-subtle disabled:opacity-60"
           />
 
-          {imagePreview && (
+          {safeUploadPreviewSrc(imagePreview) && (
             <div className="relative mt-2 inline-block">
               <Image
-                src={imagePreview}
+                src={safeUploadPreviewSrc(imagePreview)!}
                 alt="Upload preview"
                 width={160}
                 height={160}

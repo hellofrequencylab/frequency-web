@@ -5,6 +5,7 @@ import { CalendarDays, Home, MapPin, ShieldCheck, Users } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { previewImport } from './actions'
 import type { ClassifiedItem, ImportPreview } from '@/lib/whatsapp/types'
+import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
 // The dry-run console. Reads the exported chat .txt plus (for a media-included export)
 // its image files, runs the read-only previewImport action, and renders what the
@@ -247,14 +248,17 @@ function Thumbnails({ names, images }: { names: string[]; images: ImageMap }) {
 }
 
 // One thumbnail. Mints an object URL from the operator's OWN selected File and
-// revokes it on unmount (mirrors the poster-scan creator). The src is therefore a
-// local blob: URL we just created, never a string derived from the chat text.
+// revokes it on unmount (mirrors the poster-scan creator). The src is a local blob: URL
+// we just created, never a string derived from the chat text -- and it is STILL routed
+// through the shared guard. Reasoning a site safe instead of guarding it is how the
+// unguarded ones happen; that argument was made here and in four other files, and four
+// of the five turned out to be wrong. One rule, no exemptions for the obvious cases.
 function Thumb({ file }: { file: File }) {
   const url = useMemo(() => URL.createObjectURL(file), [file])
   useEffect(() => () => URL.revokeObjectURL(url), [url])
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={url} alt="" className="h-16 w-16 rounded-lg border border-border object-cover" />
+    <img src={safeUploadPreviewSrc(url) ?? undefined} alt="" className="h-16 w-16 rounded-lg border border-border object-cover" />
   )
 }
 

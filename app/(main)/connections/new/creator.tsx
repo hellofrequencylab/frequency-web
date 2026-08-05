@@ -535,7 +535,7 @@ export function Creator({ userId }: { userId: string }) {
               {extraThumbs.map((src, i) => (
                 <div key={src} className="relative aspect-square overflow-hidden rounded-lg border border-border bg-surface-elevated">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt={`Extra image ${i + 1}`} className="h-full w-full object-cover" />
+                  <img src={safeUploadPreviewSrc(src) ?? undefined} alt={`Extra image ${i + 1}`} className="h-full w-full object-cover" />
                   <button
                     type="button"
                     onClick={() => removeExtraFile(i)}
@@ -832,7 +832,7 @@ function CardSlot({
       >
         {thumb ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={thumb} alt={label} className="h-full w-full object-cover" />
+          <img src={safeUploadPreviewSrc(thumb) ?? undefined} alt={label} className="h-full w-full object-cover" />
         ) : (
           <>
             <Camera className="h-5 w-5 text-subtle" />

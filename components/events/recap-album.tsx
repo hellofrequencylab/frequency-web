@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { ImagePlus, X, Trash2 } from 'lucide-react'
 import { uploadEventMedia, deleteEventMedia } from '@/app/(main)/events/[slug]/social-actions'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
+import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
 export type RecapPhoto = {
   id: string
@@ -108,7 +109,7 @@ export function RecapAlbum({
               {/* Local blob preview of the file being uploaded; next/image with
                   `unoptimized` passes the object URL straight through. */}
               <Image
-                src={imagePreview}
+                src={safeUploadPreviewSrc(imagePreview)!}
                 alt="Upload preview"
                 width={192}
                 height={192}

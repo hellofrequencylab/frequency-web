@@ -45,21 +45,28 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 //      what "competed with the chat launcher for the same corner" meant.
 //   3. A 146px chip could only carry 2 of 5 numbers, which is the owner's other complaint:
 //      "a score you have to click to see is a score you stop reading."
-// A 288px tab head carries zaps, gems, streak AND rank at rest, and being flush to the edge it
-// is no longer a floating object competing with another floating object.
+// A tab head flush to the edge carries the numbers at rest and is no longer a floating object
+// competing with another floating object.
+//
+// AMENDED 2026-08-05: the head is ~240px, not 288, and carries zaps, gems and streak — NOT rank.
+// The Vault is now the left SEGMENT of the anchored bar in components/layout/dock-bar.tsx, which
+// gives the right ~48px to the chat button. The rank chip moved into the panel below rather than
+// squeeze the three numbers you actually read at rest.
 //
 // THE BOTTOM-RIGHT CONTRACT, from the edge up. Every number is stated, because the last
 // version of this comment asserted a lane the arithmetic did not support.
 //
-//   >= 768 (the tab renders):
-//     SLOT 0 - the Vault tab: bottom-0 right-3, z-40, w-72. Occupies [0, 69] vertically:
-//              1px border-t + 4px pt-1 + 64px head (h-10 crest + py-3).
+//   >= 768 (the bar renders):
+//     SLOT 0 - the anchored bar: bottom-0 right-3, z-40, w-72, split into the Vault segment
+//              (flex-1) and the chat segment (~48px). Occupies [0, 69] vertically: 1px border-t
+//              + 4px pt-1 + 64px head (h-10 crest + py-3).
 //     SLOT 1 - toasts: right-4, z-50, md:bottom-24 = 96px. NOT bottom-20: 80px would sit 1px
 //              INSIDE a 69px tab. 96 clears it by 27.
-//     SLOT 2 - the chat edge pill: moved off the corner entirely to top-1/2 of the right edge.
-//              It is a tab tucked into the margin by its own definition, not a corner object.
-//     The chat PANEL moves to md:bottom-[4.75rem] = 76px (69 + 7 gap) so it stops covering the
-//     tab. That line is load-bearing, not cosmetic.
+//     SLOT 2 - RETIRED. The chat used to be an edge pill at top-1/2 of the right edge, off the
+//              corner, because it and the Vault were two floating objects fighting for it. They
+//              are one bar now, so there is no second object to keep away.
+//     The chat PANEL stays at md:bottom-[4.75rem] = 76px (69 + 7 gap) so it does not cover the
+//     bar. That line is load-bearing, not cosmetic.
 //
 //   < 768 (the tab does NOT render):
 //     The bottom edge belongs to the tab bar: [0, 56 + env(safe-area-inset-bottom)], up to 90px
@@ -69,7 +76,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 //
 // SCORE ONCE PER VIEWPORT: < 768 the drawer cluster; >= 768 this tab. Nothing else renders it.
 export function GameStatsDockClient({ data }: { data: DockData }) {
-  const { zaps, gems, streak, rank } = data
+  const { zaps, gems, streak } = data
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -90,12 +97,14 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
     }
   }, [open])
 
-  const rankStyle = rank ? seasonRankStyle(rank) : null
 
   return (
     <div
       ref={rootRef}
-      className="pointer-events-auto fixed bottom-0 right-3 z-40 hidden w-72 rounded-t-2xl border-x border-t border-border/70 bg-[var(--color-canvas)]/95 px-2 pt-1 backdrop-blur-sm md:block print:hidden"
+      // Positioning belongs to DockBar now, not here. This is a SEGMENT of the anchored bar
+      // (components/layout/dock-bar.tsx) rather than its own floating object, so it carries
+      // only its surface: the top-rounded crest, the border and the blur.
+      className="w-full rounded-t-2xl border-x border-t border-border/70 bg-[var(--color-canvas)]/95 px-2 pt-1 backdrop-blur-sm"
     >
       {/* The panel reveals INSIDE the tab (grid-rows 0fr -> 1fr) rather than as a sibling above
           it, so the tab's bottom edge stays pinned to 0 and the corner never lifts off. */}
@@ -115,12 +124,13 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
         </div>
       </div>
 
-      {/* Tab head — all five numbers at rest. This is the readability the chip could not give. */}
+      {/* Tab head — zaps, gems and streak at rest. Still the readability the chip could not
+          give (it managed 2 of 5); rank moved into the panel when the chat segment landed. */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        aria-label="The Vault. Your Zaps, Gems, streak and rank"
+        aria-label="The Vault. Your Zaps, Gems and streak"
         className="flex h-10 w-full items-center gap-2 rounded-lg px-1.5 transition-colors hover:bg-surface-elevated"
       >
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-primary">
@@ -137,13 +147,12 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
           <Flame className="h-3.5 w-3.5 text-primary-strong" />
           {streak}
         </span>
-        {rankStyle && (
-          <span className={`ml-auto rounded-pill px-2 py-0.5 text-3xs font-bold uppercase tracking-widest ${rankStyle}`}>
-            {rank ? RANK_LABELS[rank] : ''}
-          </span>
-        )}
+        {/* The rank chip used to sit here. It does not fit once the chat segment takes ~48px off
+            this head, and squeezing it would have come out of the three numbers, which are the
+            thing you actually read at rest. Rank lives in the panel below (and in the summary),
+            one click away, rather than truncated to nothing up here. */}
         <ChevronUp
-          className={`h-4 w-4 shrink-0 text-subtle transition-transform ${open ? 'rotate-180' : ''} ${rankStyle ? '' : 'ml-auto'}`}
+          className={`ml-auto h-4 w-4 shrink-0 text-subtle transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
     </div>
