@@ -43,6 +43,15 @@ describe('SITE_TAGLINE', () => {
     expect(typeof SITE_TAGLINE).toBe('string')
     expect(SITE_TAGLINE.length).toBeGreaterThan(0)
   })
+
+  // ADR-944. NAMING.md §ADR-811 makes "Community Collective" the canonical descriptor for the
+  // platform, and the logo artwork sets it that way — so the tagline takes no article. The tier
+  // ladder heading "The Community Collective" is a DIFFERENT name that keeps its article; this
+  // guard exists so the two are never quietly collapsed back together.
+  it('takes no leading article — it is the wording under the mark in the lockup', () => {
+    expect(SITE_TAGLINE).toBe('Community Collective')
+    expect(SITE_TAGLINE).not.toMatch(/^the\s/i)
+  })
 })
 
 describe('SITE_DESCRIPTION', () => {

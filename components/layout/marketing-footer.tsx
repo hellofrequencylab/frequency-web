@@ -34,7 +34,10 @@ export function MarketingFooter({ menu }: { menu?: ResolvedMenu }) {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-8">
           {/* Brand */}
           <div className="max-w-xs">
-            <Wordmark className="h-6 w-auto opacity-50 mb-3" />
+            {/* The footer is the one surface with room for the full lockup: a 2rem mark puts the
+                tagline at ~9.5px, where small caps are still legible. Headers take the mark
+                alone — see the note in wordmark.tsx. */}
+            <Wordmark tagline mark="2rem" className="opacity-50 mb-3" />
             <p className="text-body-sm text-muted leading-relaxed">
               Frequency is a Community Collective for real-world connection. Find local Circles and Events
               near you, keep a private book of the Contacts you meet, and stay in touch. Not home,

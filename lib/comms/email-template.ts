@@ -1,5 +1,5 @@
 import 'server-only'
-import { SITE_TAGLINE } from '@/lib/site'
+import { SITE_NAME, SITE_TAGLINE } from '@/lib/site'
 
 // The standard, deliberately-basic branded wrapper for outbound conversation email: a simple Frequency
 // header, the message body, the sender's signature, and a footer with frequencylocal.com. Applied to the
@@ -28,7 +28,10 @@ export function signatureInnerHtml(signature: string | null): string {
 /** Wrap inner message HTML in the standard basic Frequency header + footer. token-ok: email inline styles. */
 export function wrapEmailHtml(innerHtml: string): string {
   return `<div style="max-width:560px;margin:0 auto;padding:0 12px;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#111827">
-  <div style="padding:18px 0 14px;border-bottom:1px solid #ececec;font-weight:700;font-size:17px;letter-spacing:-0.01em;color:#111827">Frequency</div>
+  <div style="padding:18px 0 14px;border-bottom:1px solid #ececec">
+    <div style="font-weight:700;font-size:17px;letter-spacing:-0.01em;color:#111827">${SITE_NAME}</div>
+    <div style="margin-top:3px;font-weight:700;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a6">${SITE_TAGLINE}</div>
+  </div>
   <div style="padding:20px 2px;font-size:15px;line-height:1.55">${innerHtml}</div>
   <div style="padding:14px 0;border-top:1px solid #ececec;color:#9aa0a6;font-size:12px;line-height:1.5">
     ${SITE_TAGLINE}. <a href="${APP}" style="color:#9aa0a6">frequencylocal.com</a>

@@ -31,7 +31,7 @@ const BANNED = [
   { name: 'retired "keeps the rooms open"', re: /keeps?\s+the\s+rooms\s+open/i, hint: 'do not tie membership to funding the rooms' },
   { name: 'breaks promise #1 ("cut on what you sell")', re: /a?\s*small\s+cut\s+only\s+on\s+what\s+you\s+sell/i, hint: '0% on your own bookings; a cut only on network-sourced business' },
   { name: 'false "lowest fee on the platform"', re: /lowest\s+fee\s+on\s+the\s+platform/i, hint: 'false against the 0% Non Profit / Independent tiers' },
-  { name: 'retired tagline "a place to be human"', re: /a\s+place\s+to\s+be\s+human/i, hint: 'tagline is "The Community Collective"' },
+  { name: 'retired tagline "a place to be human"', re: /a\s+place\s+to\s+be\s+human/i, hint: 'tagline is "Community Collective"' },
   { name: 'retired "one price, five doors"', re: /one\s+price,?\s+five\s+doors/i, hint: 'six-tier ladder now (ADR-811)' },
   { name: 'retired "flat 3%" take-rate', re: /flat\s+3\s?%/i, hint: 'take-rate is network-only + tier-declining, never a flat fee on your work' },
   // 🔴 THREE RULES WERE DELETED FROM HERE, AND THE REASON MATTERS (ADR-914, superseding ADR-913).

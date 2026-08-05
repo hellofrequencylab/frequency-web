@@ -452,6 +452,11 @@ cleanly by audience and this section pins which is which.
 - **Frequency IS a Community Collective** (brand essence + public positioning): a collaboration-first network
   that exists to support every community effort and help everyone in it succeed. "Community Collective" is the
   canonical descriptor for the whole platform. Full spec: [COMMUNITY-COLLECTIVE-STRATEGY.md](COMMUNITY-COLLECTIVE-STRATEGY.md).
+- **The TAGLINE takes no article: "Community Collective"** (ADR-944). That is the descriptor above,
+  used as a tagline, and it is the exact wording under the mark in the logo lockup. `SITE_TAGLINE`
+  in `lib/site.ts` is the single source — it feeds the lockup, the OG card, the `<title>`, `llms.txt`
+  and the email footer, so they cannot drift apart. **Do not confuse it with the tier-ladder heading
+  "The Community Collective"** immediately below, which is a different name and keeps its article.
 - **The tier ladder (named tiers are now canonical, superseding the ADR-552 "no tier names" clause):**
   **Member** (free) · **Crew** ($9, personal) · **Business** ($29) · **Collective** ($79, beta $49) ·
   **Non Profit** ($39) · **Independent** (white-label, ~$249). "Business" and "Non Profit" remain the two
