@@ -39,6 +39,20 @@ export default defineConfig({
   // capped networkidle, wait out font swap, THEN run axe or take a full-page capture".
   timeout: 60_000,
   forbidOnly: !!process.env.CI,
+  // WORKERS. Playwright defaults to cores/2, which is 2 on a 4-vCPU ubuntu-latest runner,
+  // and that default is tuned for CPU-bound suites. This one is not: every test navigates to
+  // a REMOTE Vercel preview and then spends its time waiting -- on the network, on a capped
+  // networkidle, on font swap -- before a brief burst of axe or screenshot work. Two workers
+  // left the box mostly idle while 166 tests queued behind them.
+  //
+  // Measured on run 30965372151: 166 tests at ~11.5s each, 2 at a time = ~16 minutes, which
+  // is arithmetic rather than slowness. Four workers halves the queue without oversubscribing
+  // 4 vCPU, since the contended resource is latency, not CPU.
+  //
+  // Not higher than 4: past that we would be issuing enough concurrent requests at one preview
+  // deployment to risk cold-start contention showing up as flake, and a flaky visual gate is
+  // worse than a slow one.
+  workers: process.env.CI ? 4 : undefined,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI
     ? [['list'], ['html', { open: 'never' }]]
