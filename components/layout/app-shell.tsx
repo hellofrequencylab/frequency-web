@@ -1162,7 +1162,7 @@ function MobileLeftDrawer({
             (marketing-mobile-menu, search-overlay, loom-picker, capture-launcher) does this. */}
         <div className="shrink-0 flex items-center px-4 border-b border-border h-14 box-content pt-[env(safe-area-inset-top)]">
           <Link href="/feed" onClick={onClose} className="flex items-center">
-            <Wordmark className="h-7 w-auto dark:invert" priority />
+            <Wordmark tagline className="h-9 w-auto dark:invert" priority />
           </Link>
         </div>
 

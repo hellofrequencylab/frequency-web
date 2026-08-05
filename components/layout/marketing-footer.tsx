@@ -34,7 +34,7 @@ export function MarketingFooter({ menu }: { menu?: ResolvedMenu }) {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-8">
           {/* Brand */}
           <div className="max-w-xs">
-            <Wordmark className="h-6 w-auto opacity-50 mb-3" />
+            <Wordmark tagline className="h-9 w-auto opacity-50 mb-3" />
             <p className="text-body-sm text-muted leading-relaxed">
               Frequency is a Community Collective for real-world connection. Find local Circles and Events
               near you, keep a private book of the Contacts you meet, and stay in touch. Not home,
