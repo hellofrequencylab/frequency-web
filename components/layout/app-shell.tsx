@@ -72,7 +72,7 @@ import {
   type RailFolds,
   type RailSide,
 } from '@/lib/layout/rail-fold'
-import { RailEdgeHandle } from '@/components/layout/rail-fold-control'
+import { RailFoldTick } from '@/components/layout/rail-fold-control'
 import type { AppOverrides } from '@/lib/apps/overrides'
 import { isJanitor, type WebRole } from '@/lib/core/roles'
 import type { Capability } from '@/lib/core/capabilities'
@@ -517,7 +517,13 @@ function ProfileCard({
           onClick={() => setManualOpen((v) => !v)}
           aria-expanded={open}
           aria-label={open ? 'Collapse profile menu' : 'Expand profile menu'}
-          className="shrink-0 p-1.5 rounded-md text-subtle hover:text-primary-strong hover:bg-chrome-hover transition-colors"
+          // `relative` so this keeps every pixel of its own target. The rail's fold tick is
+          // absolutely positioned over the tab's top-right corner and its tap-target floor
+          // (32px on a mouse, 44 coarse, up to 56 on the kids generations) reaches down into
+          // this corner of the head; a positioned sibling later in the tree hit-tests above an
+          // absolutely positioned one, so the chevron wins the overlap and the tick keeps the
+          // rest. Two neighbouring controls, neither able to steal the other's press.
+          className="relative shrink-0 p-1.5 rounded-md text-subtle hover:text-primary-strong hover:bg-chrome-hover transition-colors"
         >
           <ChevronUp className={`w-4 h-4 transition-transform duration-300 ${open ? '' : 'rotate-180'}`} />
         </button>
@@ -915,20 +921,37 @@ function NavLinkList({
         return (
         <div
           key={section.label ?? `top-${i}`}
-          // A FOLDED rail keeps its group dividers — DAWN's nav-rail.jsx draws exactly this
-          // hairline before each group when `collapsed`, because a strip that loses its
-          // grouping is a stack of anonymous icons, not the same menu made narrow. The
-          // divider is drawn as a leading `border-t` on every group after the first (rather
-          // than a trailing `border-b` on the home anchor) so two adjacent groups can never
-          // stack two hairlines.
+          // ── NO HAIRLINES BETWEEN GROUPS. SPACE DOES THE GROUPING. ─────────────────────────
+          //
+          // OWNER, 2026-08-05, off a live screenshot of /feed: "remove the horizontal lines in
+          // the rail menu." Both went — the `border-b` under the home anchor in the open rail and
+          // the leading `border-t` before each labelled group in the folded strip.
+          //
+          // 🔴 A DIVIDER REMOVED WITHOUT COMPENSATION IS NOT A CLEANER MENU, IT IS ONE LONG LIST.
+          // The line was carrying real separation, so the gaps grew to carry it instead — measured
+          // at this app's 17px root, not eyeballed:
+          //
+          //   open rail    group gap `mt-4` → `mt-6`, 17px → 25.5px (+50%), which is 6x the 4.25px
+          //                `space-y-0.5` between rows INSIDE a group. At mt-4 it was only 4x, and
+          //                4x plus a hairline reads as a break where 4x alone reads as a pause.
+          //                The home anchor keeps its extra breath as `pb-1`: it used to run
+          //                pb-2 + mb-1 + the next group's mt-4 = 29.75px and a line, and it now
+          //                runs pb-1 + mt-6 = 29.75px exactly. Same distance, no rule.
+          //   folded strip group gap `mt-2 pt-2` → `mt-5`, 17px → 21.25px, against a 4.25px
+          //                `gap-1` between icons. The strip has no labels and no text to read, so
+          //                it needs the RATIO to be unmistakable more than the open rail does.
+          //
+          // 🔴 AND THE FOLDED STRIP'S GROUPS STAY NAMED. Folding drops the visible group label, so
+          // the grouping survives for a screen reader as `role="group"` + `aria-label` — that is
+          // what carried it before, because a hairline was never an accessible name any more than
+          // a tooltip is. Deleting the line therefore costs assistive tech NOTHING: it never had
+          // the line. Losing this pair would be the silent half of the owner's instruction going
+          // wrong, which is why rail-fold.test.ts pins it.
           className={
             compact
-              ? `flex flex-col items-center gap-1 ${i > 0 && section.label ? 'mt-2 pt-2 border-t border-chrome-border' : ''}`
-              : `space-y-0.5 ${i > 0 ? 'mt-4' : ''} ${isHomeAnchor ? 'pb-2 mb-1 border-b border-chrome-border' : ''}`
+              ? `flex flex-col items-center gap-1 ${i > 0 && section.label ? 'mt-5' : ''}`
+              : `space-y-0.5 ${i > 0 ? 'mt-6' : ''} ${isHomeAnchor ? 'pb-1' : ''}`
           }
-          // Folding drops the visible group label, so the grouping has to survive for a screen
-          // reader some other way: the section becomes a named group. A hairline is not an
-          // accessible name any more than a tooltip is.
           role={compact && section.label ? 'group' : undefined}
           aria-label={compact && section.label ? section.label : undefined}
         >
@@ -2083,16 +2106,17 @@ export default function AppShell({
               // the geometry lib/layout/shell-metrics.ts publishes to the out-of-shell claim page
               // and reads back out of this file as its drift guard.
               //
-              // `relative` is new and load-bearing: the fold HANDLE below is positioned against
-              // this box, straddling the hairline it moves.
+              // (`relative` came off both spellings with the mid-edge handle: it existed only to
+              // be that handle's containing block. The fold TICK is positioned against the account
+              // dock at the foot instead, which is already `sticky` and therefore already a
+              // containing block of its own — see components/layout/rail-fold-control.tsx.)
               <aside
                 className={
                   leftStrip
-                    ? 'relative hidden md:flex w-14 shrink-0 flex-col border-r border-chrome-border'
-                    : 'relative hidden md:flex w-48 shrink-0 flex-col border-r border-chrome-border'
+                    ? 'hidden md:flex w-14 shrink-0 flex-col border-r border-chrome-border'
+                    : 'hidden md:flex w-48 shrink-0 flex-col border-r border-chrome-border'
                 }
               >
-                <RailEdgeHandle side="left" showing={leftStrip ? 'strip' : 'open'} onPress={toggleLeftRail} />
                 {/* The menu + profile footer live in NORMAL FLOW and scroll WITH the page
                     (no sticky pin, no inner scrollbar): the menu rides up as you scroll and
                     the profile card sits at the bottom of the column, revealed as you reach
@@ -2121,6 +2145,17 @@ export default function AppShell({
                     has no fill now, so the same tint lifts it off the page exactly the way the
                     right one does. */}
                 <div className="sticky bottom-0 z-10 rounded-tl-control rounded-tr-card border-x border-t border-chrome-border bg-chrome/95 px-2 pt-1 backdrop-blur-sm">
+                  {/* The LEFT rail's fold TICK, on this tab's top-RIGHT corner — the corner
+                      nearest the seam it moves (the rail's right hairline). A child of the tab,
+                      not a sibling parked near it: `sticky` is already a containing block, so the
+                      tick rides the tab up when the quick-actions panel rises and can never be
+                      painted underneath it. That is the structural answer to the failure the FOOT
+                      control shipped with, which was a `sticky` control against a `fixed` bar. */}
+                  <RailFoldTick
+                    side="left"
+                    showing={leftStrip ? 'strip' : 'open'}
+                    onPress={toggleLeftRail}
+                  />
                   {leftStrip ? (
                     // Folded, the account dock keeps its PLACE (the rail's foot is you and what
                     // you run) but not its panel: one avatar that still reaches the profile. The
@@ -2133,7 +2168,12 @@ export default function AppShell({
                       // Same head height as every other dock head, folded or not: a tab that
                       // changed height when you folded the menu would make the two bottom
                       // corners disagree on which line the page ends at.
-                      className={`mx-auto flex ${DOCK_HEAD_H_CLASS} w-9 items-center justify-center`}
+                      // `relative` is not decoration. The fold tick is absolutely positioned over
+                      // this tab's top-right corner, and a POSITIONED sibling later in the tree
+                      // paints — and therefore hit-tests — above it. Without this, the tick's
+                      // tap-target floor would overlap the avatar and win, so a member aiming at
+                      // their own profile would fold the menu instead.
+                      className={`relative mx-auto flex ${DOCK_HEAD_H_CLASS} w-9 items-center justify-center`}
                       data-tour-anchor="avatar"
                     >
                       {profile.avatar_url ? (
@@ -2157,10 +2197,11 @@ export default function AppShell({
                       <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} operatorContext={operatorContext} availableContexts={availableContexts} menu={profileMenu} viewerRole={menuViewerRole} staffRole={staffRole} canReceivePayouts={canReceivePayouts} />
                     </>
                   )}
-                  {/* The fold control used to sit HERE, at the foot, under everything it affects.
-                      It is on the rail's edge now (RailEdgeHandle, rendered at the top of this
-                      <aside>) — owner's call, 2026-08-05. Deleted rather than left beside the new
-                      handle: two controls for one fold is worse than either. */}
+                  {/* The fold control used to sit HERE as a row IN this tab, at the foot, under
+                      everything it affects — and it painted under the dock bar. It is a tick on
+                      this tab's own top corner now (RailFoldTick, the first child of this box),
+                      which is the same corner without being the same mistake: a child of the tab
+                      cannot be underneath it. One control per rail, never two. */}
                 </div>
               </aside>
             )}
@@ -2217,9 +2258,14 @@ export default function AppShell({
                   // for the rail's items (the Quest stats); clicking any reopens the rail. The
                   // collapse/expand TOGGLE sits at the BOTTOM. The rail is never removed.
                   // No fill, same as the left rail (owner, 2026-08-05): the strip is the page's
-                  // own ground with a hairline for its edge. `relative` carries the edge handle.
-                  <aside className="relative flex w-14 shrink-0 flex-col items-center border-l border-chrome-border py-6">
-                    <RailEdgeHandle side="right" showing="strip" onPress={toggleRail} />
+                  // own ground with a hairline for its edge.
+                  //
+                  // NO FOLD CONTROL IN HERE, and that is deliberate rather than an omission. The
+                  // right rail's tick rides its TAB, and the tab that survives a fold is the chat
+                  // tab in the bottom corner (components/layout/dock-bar.tsx) — so putting a
+                  // second one on the strip would be two controls for one fold. The three icons
+                  // below already reopen the rail on click, as they always have.
+                  <aside className="flex w-14 shrink-0 flex-col items-center border-l border-chrome-border py-6">
                     <div className="flex flex-col items-center gap-1.5">
                       {([['Quest', Zap], ['Gems', Gem], ['Streak', Flame]] as const).map(([label, Icon]) => (
                         <button
@@ -2240,9 +2286,9 @@ export default function AppShell({
                   // read as the same surface as the page), and the hairline that gives the track
                   // its edge. The collapsed strip already had `border-l border-chrome-border`;
                   // the OPEN rail did not, so folding it was once the only way to see where it
-                  // began. `relative` carries the edge handle.
-                  <aside className="relative flex w-72 shrink-0 flex-col border-l border-chrome-border py-6">
-                    <RailEdgeHandle side="right" showing="open" onPress={toggleRail} />
+                  // began. (`relative` came off with the mid-edge handle it existed for; the fold
+                  // tick lives on the dock tab at the foot of this column instead.)
+                  <aside className="flex w-72 shrink-0 flex-col border-l border-chrome-border py-6">
                     {sidebar}
                     {/* The rail's end. DockBar measures this to know when to stop being pinned to
                         the window and come to rest against the last rail card instead. Zero-height
@@ -2251,9 +2297,13 @@ export default function AppShell({
                         LAST in the rail, with nothing after it. It used to have to sit after the
                         foot fold-control, which was rail content — a sentinel above it told the
                         bar the rail ended one control early and the bar came to rest on top of
-                        the affordance it should have been under. The control is on the edge now
-                        (RailEdgeHandle, absolutely positioned and out of flow), so the sentinel
-                        is simply the end of the rail again. */}
+                        the affordance it should have been under. The fold control is not rail
+                        content at all now (it is a tick on the dock tab's corner), so the sentinel
+                        is simply the end of the rail again.
+
+                        It also lives ONLY here, in the OPEN rail. That is what makes the Vault's
+                        rail-end auto-open inert while folded: no sentinel, no rail end, nothing
+                        to auto-open a segment that is not on screen (dock-bar.ts RAIL_END_OPENS). */}
                     <div id={RAIL_END_SENTINEL_ID} aria-hidden className="h-0" />
                   </aside>
                 )}
@@ -2309,12 +2359,18 @@ export default function AppShell({
 
           `folded` is the SAME `railCollapsed` the rail column above is sized by -- passed down,
           never re-derived. The bar spans the OPEN rail's 288px, so under a 56px strip it
-          overhung the content column by ~232px; the owner's call is that it hides there rather
-          than shrinking to icons. It hides in CSS at lg+ only, because the md-lg band has no
-          right rail and therefore no fold control to bring it back with -- see the comment above
-          DockBar for the full trade, including what the fold costs (one-tap Vault and Messages).
+          overhung the content column by ~232px. ADR-946 answered that by hiding the whole bar;
+          the owner has since amended it (2026-08-05) -- the VAULT segment goes with the rail and
+          the CHAT tab stays, with the bar shrinking to fit it, so the overhang is gone without
+          Messages going with it. Both halves of that still yield at lg only, because the md-lg
+          band has no right rail and therefore no fold tick to bring anything back with. See the
+          comment above DockBar for the full trade.
+          `onFold` is what puts the rail's fold TICK on this tab's corner: one control per rail,
+          on the tab, and the operator bar on /admin passes none because its rail cannot fold.
           The bar closes whatever was open on the way out, through each segment's own close(). */}
-      {showSidebar && !editorTakeover && <DockBar vault={dock} folded={railCollapsed} />}
+      {showSidebar && !editorTakeover && (
+        <DockBar vault={dock} folded={railCollapsed} onFold={toggleRail} />
+      )}
 
       {!editorTakeover && (
         <MobileTabBar

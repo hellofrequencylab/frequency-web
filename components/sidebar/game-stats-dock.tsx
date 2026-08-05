@@ -18,6 +18,7 @@ import {
   getDockGeometry,
   onOtherDockSegmentOpen,
   railEndOpenDue,
+  setDockPanelOpen,
   subscribeDockGeometry,
 } from '@/components/layout/dock-bar'
 
@@ -162,6 +163,22 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
   // arrive" and "will not stay closed": `atRailEnd` remains true while you sit at the end of the
   // rail, and the store notifies on every scroll frame that changes anything, so an unguarded
   // open re-opens the panel on the next pixel after the member dismisses it.
+  // ── "When the Vault is open, the message tab stays closed" (owner, 2026-08-05) ──────────────
+  //
+  // The announcement channel above is an EVENT — it says "I just opened", never "I just closed" —
+  // so a neighbour that listened to it alone would latch on the first open and never learn that
+  // the Vault went away again. The chat tab needs the standing fact, not the edge, so this
+  // publishes its open state to the small store in dock-bar.ts and the tab reads it there.
+  //
+  // Reported from an effect rather than from `openVault()` / `setOpen(false)` so it cannot drift:
+  // every path that changes `open` — the head button, the rail's end, Esc, an outside click, the
+  // fold's dismissal — arrives here, and the CLEANUP covers the one path none of them can (this
+  // component unmounting on a route that has no rail) without a sixth call site.
+  useEffect(() => {
+    setDockPanelOpen('vault', open)
+    return () => setDockPanelOpen('vault', false)
+  }, [open])
+
   const wasAtRailEnd = useRef(false)
   useEffect(() => {
     if (RAIL_END_OPENS !== 'vault') return

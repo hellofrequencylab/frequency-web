@@ -169,13 +169,45 @@ describe('the control names the rail out loud', () => {
     expect(railFoldControlLabel('right', 'strip')).toBe('Unfold the rail')
   })
 
-  it('and its handle is findable from outside the rail, per side', () => {
+  it('and its tick is findable from outside the rail, per side', () => {
     // DockBar renders from md while the rail column only exists from lg, so it cannot hold a ref
-    // to the control it hands focus to. The id names the SIDE, not the position: the open rail
-    // and the strip render the same handle in branches that are never both in the document.
+    // to the control it hands focus to. The id names the SIDE, not the position: each rail has
+    // exactly one tick in the document, wherever that rail's tab currently is.
     expect(railHandleId('right')).toBe('fq-rail-handle-right')
     expect(railHandleId('left')).toBe('fq-rail-handle-left')
     expect(railHandleId('left')).not.toBe(railHandleId('right'))
+  })
+})
+
+// ── The rail menu has no horizontal rules left (owner, 2026-08-05) ─────────────────────────
+
+describe('the group dividers are gone, and SPACE took over their job', () => {
+  const code = readFileSync('components/layout/app-shell.tsx', 'utf8')
+
+  it('neither rail draws a hairline between menu groups', () => {
+    // The two spellings the owner pointed at: the home anchor's trailing rule in the open rail,
+    // and the leading rule before each labelled group in the folded strip.
+    expect(code).not.toContain("mb-1 border-b border-chrome-border")
+    expect(code).not.toContain("mt-2 pt-2 border-t border-chrome-border")
+  })
+
+  it('🔴 the gaps GREW to carry what the lines were carrying', () => {
+    // Removing a divider without compensating turns a grouped menu into one long list. These are
+    // the compensations, and they are the assertion — not the removal, which is the easy half.
+    expect(code).toContain("`space-y-0.5 ${i > 0 ? 'mt-6' : ''}") // open rail: 17px -> 25.5px
+    expect(code).toContain("flex flex-col items-center gap-1 ${i > 0 && section.label ? 'mt-5' : ''}") // strip
+    // The home anchor kept its extra breath: pb-1 + the next group's mt-6 is the 29.75px it ran
+    // at before (pb-2 + mb-1 + mt-4), with no rule.
+    expect(code).toContain("${isHomeAnchor ? 'pb-1' : ''}")
+  })
+
+  it('🔴 and the FOLDED strip still names its groups for a screen reader', () => {
+    // The accessibility job the hairline never did. Folding drops the visible group label, so the
+    // section carries `role="group"` + `aria-label` instead — that is what a screen reader user
+    // has always had, and deleting the line must not take it. This is the silent half of the
+    // instruction, and the one that would go wrong without a test.
+    expect(code).toContain("role={compact && section.label ? 'group' : undefined}")
+    expect(code).toContain('aria-label={compact && section.label ? section.label : undefined}')
   })
 })
 
@@ -209,25 +241,36 @@ describe('the shell actually wires this', () => {
     // same surface as the page). The hairline STAYS in both — with the fill gone it is the only
     // thing left defining where the track ends, and an ambiguous edge is the bug the fill was
     // introduced to fix. If a future edit drops the border too, this is what notices.
-    expect(code).toContain("'relative hidden md:flex w-14 shrink-0 flex-col border-r border-chrome-border'")
-    expect(code).toContain("'relative hidden md:flex w-48 shrink-0 flex-col border-r border-chrome-border'")
+    expect(code).toContain("'hidden md:flex w-14 shrink-0 flex-col border-r border-chrome-border'")
+    expect(code).toContain("'hidden md:flex w-48 shrink-0 flex-col border-r border-chrome-border'")
   })
 
   it('BOTH rails read as the page, and BOTH keep their hairline — never one and not the other', () => {
     // The owner's instruction was explicit that the two sides must not diverge. The right rail's
     // two branches are inline class strings rather than the quoted pair above.
-    expect(code).toContain('relative flex w-14 shrink-0 flex-col items-center border-l border-chrome-border py-6')
-    expect(code).toContain('relative flex w-72 shrink-0 flex-col border-l border-chrome-border py-6')
+    expect(code).toContain('flex w-14 shrink-0 flex-col items-center border-l border-chrome-border py-6')
+    expect(code).toContain('flex w-72 shrink-0 flex-col border-l border-chrome-border py-6')
     // The fill is gone from every rail <aside>. (`bg-chrome` survives elsewhere in the shell —
     // the header, the mobile drawer — so this is deliberately scoped to the rail spellings.)
     expect(code).not.toMatch(/flex-col[^'"]*border-[rl] border-chrome-border bg-chrome/)
   })
 
-  it('the dock bar hides on the fold, off the SAME resolved value the rail uses', () => {
+  it('no rail <aside> keeps a `relative` it no longer uses', () => {
+    // `relative` on the four rail spellings existed for ONE thing: to be the containing block of
+    // the mid-edge handle. The handle is gone and the tick is positioned against the TAB (already
+    // `sticky` / `fixed`, and therefore already a containing block), so a `relative` left behind
+    // would be dead text asserting a relationship that no longer exists.
+    expect(code).not.toContain("'relative hidden md:flex w-48")
+    expect(code).not.toContain('relative flex w-72 shrink-0 flex-col border-l')
+  })
+
+  it('the dock bar answers the fold off the SAME resolved value the rail uses', () => {
     // 🔴 The bug: DockBar is `w-72`, which is the OPEN rail (288px). The rail folds to a 56px
     // strip on any route, and the bar had no input for it — so it overhung the content column by
-    // ~232px. The owner's decision is that it hides. The prop is what carries it.
-    expect(code).toContain('<DockBar vault={dock} folded={railCollapsed} />')
+    // ~232px. The prop is what carries the answer; what the bar DOES with it changed when the
+    // owner amended ADR-946 (the Vault segment goes, the chat tab stays), and that half is pinned
+    // in components/layout/dock-bar.test.ts.
+    expect(code).toContain('<DockBar vault={dock} folded={railCollapsed} onFold={toggleRail} />')
   })
 
   it('the fold has exactly ONE derivation for the right rail, and everything reads it', () => {
@@ -237,60 +280,96 @@ describe('the shell actually wires this', () => {
     expect(code).toContain('const railCollapsed = showSidebar && resolveRailFold(folds.right, autoStrip)')
   })
 
-  it('the handle carries the id the bar hands focus to, for whichever rail', () => {
-    // The id moved INTO the shared handle when the control did, so it cannot be dropped from one
-    // rail branch and not the other — which is what a per-branch id invited. If it goes, a
-    // keyboard member who folds while focus is in the bar lands on <body> and restarts their tab
-    // order.
+  it('the tick carries the id the bar hands focus to, for whichever rail', () => {
+    // The id lives in the shared tick, so it cannot be dropped from one rail's mount and not the
+    // other. If it goes, a keyboard member who folds while focus is in the Vault lands on <body>
+    // and restarts their tab order.
     const control = readFileSync('components/layout/rail-fold-control.tsx', 'utf8')
     expect(control).toContain('id={railHandleId(side)}')
   })
 
-  it('both rails fold from the ONE shared handle, on the edge, and nothing at the foot', () => {
-    // Owner, 2026-08-05: a subtle handle in the vertical middle of the rail's edge, replacing the
-    // glyph at the foot. One component, both rails, both directions.
-    expect(code).toContain('<RailEdgeHandle side="left"')
-    expect(code).toContain('<RailEdgeHandle side="right"')
-    // The foot control is DELETED, not left beside it: two controls for one fold is worse than
-    // either, and the old one is exactly what a half-finished migration would leave behind.
+  it('the LEFT rail folds from a tick on its profile tab, and NOTHING floats on the seam', () => {
+    // Owner, 2026-08-05: the mid-edge handle shipped hours earlier is gone; the control is a micro
+    // tick on the corner of each rail's tab. One component, both rails, both directions.
+    expect(code).toContain('<RailFoldTick')
+    expect(code).toContain('side="left"')
+    // Every predecessor is deleted rather than left beside it — two controls for one fold is
+    // worse than either, and a half-finished migration is exactly what leaves both.
+    expect(code).not.toContain('RailEdgeHandle')
     expect(code).not.toContain('<RailFoldControl')
-    // The bespoke chevron buttons that predated both are still gone.
+    // The bespoke chevron buttons that predated all of them are still gone.
     expect(code).not.toContain('ChevronsLeft')
     expect(code).not.toContain('ChevronsRight')
   })
 
-  it('the strip branch shows the handle too — folding is never a one-way door', () => {
-    expect(code).toContain('<RailEdgeHandle side="right" showing="strip"')
-    expect(code).toContain('<RailEdgeHandle side="right" showing="open"')
+  it('the tick is a CHILD of the tab, which is why nothing can paint over it', () => {
+    // 🔴 THE FAILURE THIS REPLACES. The foot control was `sticky bottom-4` against a `fixed
+    // bottom-0` dock bar: sticky offsets do not stack against a fixed SIBLING, so it painted
+    // underneath the bar — invisible and unclickable — and needed a literal clearance held by two
+    // constants. A child cannot be under its own parent, so the placement is safe by structure.
+    // The left tick's parent is the account dock (`sticky bottom-0`); the right tick's is DockBar.
+    expect(code).toContain(
+      'bg-chrome/95 px-2 pt-1 backdrop-blur-sm">\n                  {/* The LEFT rail\'s fold TICK',
+    )
+    // And no rail re-introduces a sticky control at the foot.
+    expect(code).not.toMatch(/sticky bottom-(?:4|6|14)/)
+  })
+
+  it('the RIGHT rail folds from the tick on the dock tab — in BOTH fold states', () => {
+    // The dock tab is the right rail's tab, and it survives the fold (the chat segment stays), so
+    // one mount serves open AND folded. `showing` comes off `folded`, so the label always states
+    // the destination the press will actually reach.
+    const dock = readFileSync('components/layout/dock-bar.tsx', 'utf8')
+    expect(dock).toContain('side="right"')
+    expect(dock).toContain("showing={folded ? 'strip' : 'open'}")
+    // Never in the rail column itself: that would be a second control for one fold.
+    expect(code).not.toContain('side="right"')
   })
 })
 
-describe('the handle sits on the edge, centred on the SCREEN', () => {
+describe('the tick is micro in INK and full-size in TARGET', () => {
   const control = readFileSync('components/layout/rail-fold-control.tsx', 'utf8')
 
-  it('is centred in the viewport, not in the rail', () => {
-    // 🔴 The trap this pins. The rails are flex children of the page row, so their box is as tall
-    // as the whole page — on a long feed, a handle centred in the rail's own box sits screens
-    // below the fold. The sticky viewport-tall box is what makes "vertical middle" mean the
-    // middle of the WINDOW while any part of the rail is on screen.
-    expect(control).toContain('sticky top-0 flex h-screen items-center')
-    expect(control).toContain('absolute inset-y-0')
+  it('🔴 the floor is on the pressable box, never on the visible mark', () => {
+    // The checkbox lesson (components/ui/checkbox.tsx): a min-size on an element that IS the
+    // visible box grows the BOX. `tap-target` here is on the <button>; the mark is a decorative
+    // span inside it, free to be 4.25 x 10.625px while the target is 32 / 44 / up to 56.
+    expect(control).toContain('tap-target')
+    expect(control).toMatch(/const TICK_BOX =[\s\S]{0,200}tap-target/)
+    // The mark must NOT carry the floor, or the ink grows with the generation.
+    expect(control).not.toMatch(/const TICK_MARK_BASE =[\s\S]{0,200}tap-target/)
   })
 
-  it('straddles the seam it moves, on the correct side of each rail', () => {
-    expect(control).toContain("side === 'left' ? '-right-2.5' : '-left-2.5'")
+  it('the ink genuinely shrank against the mid-edge mark it replaces', () => {
+    // Asserted on the CONSTANT, not on the file: the prose above it quotes the old `h-10 w-1` /
+    // `h-16 w-5` on purpose (that is the comparison the owner asked for), so a file-wide "must not
+    // contain" would be a test that fails on its own documentation.
+    expect(control).toMatch(/const TICK_MARK_BASE =\s*'h-1 w-2\.5 rounded-pill/)
+    // And no CLASS anywhere in the control still spells the old handle's geometry.
+    expect(control).not.toMatch(/^const TICK[\s\S]*?'[^']*\bh-10 w-1\b/m)
+    expect(control).not.toMatch(/^const TICK[\s\S]*?'[^']*\bh-16 w-5\b/m)
   })
 
-  it('never lays a dead zone over the gutter', () => {
-    // The strip is as tall as the rail. If it took pointer events, it would eat clicks down the
-    // whole edge of the content column.
-    expect(control).toContain('pointer-events-none absolute')
-    expect(control).toContain('pointer-events-auto')
+  it('sits on the corner NEAREST THE SEAM, one side each, centred by translate', () => {
+    // Centred by translate rather than by a negative inset on purpose: `--tap-min` changes with
+    // the generation, and a fixed negative inset would slide the centre off the corner with it.
+    expect(control).toContain("left: 'right-0 top-0 translate-x-1/2 -translate-y-1/2'")
+    expect(control).toContain("right: 'left-0 top-0 -translate-x-1/2 -translate-y-1/2'")
+    // The MARK is offset back inside the tab by a FIXED 8.5px, so the ink never straddles the
+    // corner and never moves when the target grows.
+    expect(control).toContain("left: '-translate-x-2 translate-y-2'")
+    expect(control).toContain("right: 'translate-x-2 translate-y-2'")
   })
 
-  it('is subtle but not a dare: the ink is smaller than the target', () => {
-    expect(control).toContain('h-10 w-1 rounded-pill')   // the mark
-    expect(control).toContain('h-16 w-5')                // the pressable box
+  it('ONE press, ONE meaning — and a boundary a pointer can see', () => {
+    // The tick rides a tab that has its own press. It never borrows that press: a control whose
+    // meaning depends on invisible state is worse than two controls.
+    expect(control).toContain('e.stopPropagation()')
+    expect(control).toContain('onPress()')
+    // The hover ground IS the boundary: at rest the tick is a bare hairline, and lighting its own
+    // rounded box on hover/focus is what tells a pointer where the tick ends and the tab begins.
+    expect(control).toContain('hover:bg-chrome-hover')
+    expect(control).toContain('focus-visible:bg-chrome-hover')
   })
 
   it('is borderless and quiet, and states its destination out loud', () => {
