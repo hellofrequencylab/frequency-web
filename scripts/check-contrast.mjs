@@ -128,8 +128,16 @@ export const PAIRS = [
   // hairline), so it is out of scope by design — `--color-border-strong` is the control edge.
   { fg: '--color-border-strong', bg: '--color-canvas', role: 'edge', note: 'control edge on the canvas' },
   { fg: '--color-border-strong', bg: '--color-surface', role: 'edge', note: 'control edge on a card' },
+  // The focus ring, measured AS PAINTED. globals.css draws it at full strength, so no `alpha`
+  // here — but the field ring below shares the token, and if either use site ever reintroduces a
+  // `color-mix(… N%, transparent)` the matching `alpha` has to come with it or this table starts
+  // lying again. That is exactly how a 1.75:1 indicator shipped under a green 3.87:1.
   { fg: '--color-focus-ring', bg: '--color-canvas', role: 'edge', note: 'focus ring on the canvas' },
   { fg: '--color-focus-ring', bg: '--color-surface', role: 'edge', note: 'focus ring on a card' },
+  // Fields take the same ring. Previously they took --color-border-strong at 60%, which is a
+  // hairline tone step and measured 1.26:1 — an indicator nobody could see. It was never in this
+  // table, so nothing caught it.
+  { fg: '--color-focus-ring', bg: '--color-surface-elevated', role: 'edge', note: 'focus ring on a field' },
   { fg: '--color-primary', bg: '--color-surface', role: 'edge', note: 'primary fill/graphic on a card' },
 ]
 
@@ -338,6 +346,17 @@ export function parseColor(value) {
   return null
 }
 
+/**
+ * Re-declare a colour at the opacity it is PAINTED at, multiplying into any alpha it already
+ * carries. Returns a parsed colour (or null when the token did not resolve), so it drops
+ * straight into contrastRatio alongside a plain string.
+ */
+export function withAlpha(color, alpha) {
+  const c = typeof color === 'string' ? parseColor(color) : color
+  if (!c) return null
+  return { ...c, a: (c.a ?? 1) * alpha }
+}
+
 /** Composite a translucent foreground over an opaque backdrop (simple source-over). */
 export function composite(fg, bg) {
   if (fg.a >= 1) return fg
@@ -390,7 +409,13 @@ export function evaluateContrast(src, { pairs = PAIRS, states = STATES } = {}) {
       if (pair.only && !pair.only.includes(state.key)) continue
       const fgValue = deref(tokens, pair.fg)
       const bgValue = deref(tokens, pair.bg)
-      const ratio = contrastRatio(fgValue, bgValue)
+      // `alpha` models the opacity the token is PAINTED AT, which is not always the opacity it
+      // is DEFINED at. The focus ring was the case that proved this matters: globals.css drew it
+      // through `color-mix(… 45%, transparent)`, so the gate measured a passing 3.87:1 on the
+      // token while the page rendered 1.75:1 — under the 3:1 that 1.4.11 requires, and invisible
+      // to a check that only ever looked at the declaration.
+      const fgPainted = pair.alpha === undefined ? fgValue : withAlpha(fgValue, pair.alpha)
+      const ratio = contrastRatio(fgPainted, bgValue)
       const waiver = waiverFor(pair, state.key)
       const min = waiver ? waiver.floor : ROLE_MINIMUM[pair.role]
       rows.push({
