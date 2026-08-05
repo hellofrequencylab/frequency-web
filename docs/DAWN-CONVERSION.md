@@ -365,9 +365,27 @@ that five separate gates were **green over the exact defects they existed to cat
 | `check:bridge` | a token *mentioned* in a comment 1,000 lines from the real at-rule | ✅ (handoff §3.5) |
 | `select-checkbox.test.tsx` | a `className` string containing `w-auto` while the element rendered `w-full` — asserted under the name "shrinks to its options" | ✅ now asks the compiler |
 
-Plus two blind spots that are scope gaps rather than bugs: `check:headers` walks `page.tsx` only,
-so a delegated `<h1>` is invisible to it (3 hand-rolled ones evade it today), and `check:seo`
-scans `app/(marketing)/**` only, so the marketplace routes are unwatched.
+Plus three blind spots that are scope gaps rather than bugs: `check:headers` walks `page.tsx` only,
+so a delegated `<h1>` is invisible to it (3 hand-rolled ones evade it today); `check:seo` scans
+`app/(marketing)/**` only, so the marketplace routes are unwatched; and **`pr-compare` cannot see
+the app shell at all.**
+
+> **The sharpest instance, and it arrived last: a gate whose blind spot is exactly where the
+> change lands.** #2048 removed the rail fill, moved the fold control to an edge handle, and
+> resized both dock heads. `pr-compare` returned `12 skipped · 64 passed` — **green**. The 12 skips
+> are the whole member shell (`/feed`, the room, `/settings`, the Space console), skipped because
+> `PW_STORAGE_STATE` is unset; the 64 passes are marketing pages that render outside the `(main)`
+> shell and have no rail to photograph.
+>
+> The gate was not wrong. It reported accurately on what it can reach, and what it can reach
+> excludes the product. That is a different failure from the five above — those were instruments
+> mis-measuring their subject, this is an instrument pointed somewhere else entirely — and it is
+> worse, because nothing about the output hints at it. A skip count is not a failure, so a green
+> board and a green board with the app missing from it look identical.
+>
+> It also inverts the sequencing on ADR-948. See its 🔴 amendment: `PW_STORAGE_STATE` first,
+> baselines second, required third. Required-and-blind promotes a known gap to an institutional
+> claim.
 
 **The rule this yields, and the one worth carrying past this conversion:**
 
@@ -393,7 +411,8 @@ or display that does not compile `app/globals.css` is asserting about a string, 
 | `raw-button-bg` → opening-tag form | S | It is a 500-char proximity window over arbitrary JSX, not a count of buttons: collapsing indentation alone moves it 529 → 564. It cannot measure the largest sweep in Phase 3 |
 | `check:headers` sees delegated `<h1>` | S | 3 known evaders |
 | `check:seo` covers non-marketing indexable routes | S | `/market`, `/housing`, `/classifieds` are crawlable and unwatched |
-| `pr-compare` required | XS | Approved; see §3.1. One settings change, three recapture cycles already spent |
+| 🔴 **`PW_STORAGE_STATE`** | S | **Now the top of this queue.** The visual suite skips all four member-shell surfaces without it, so `pr-compare` photographs the marketing site and nothing else. Measured on #2048: rails, fold handle and both dock heads all changed, gate returned `12 skipped · 64 passed` — green, and blind to every one of them |
+| `pr-compare` required | XS | Approved (ADR-948) — but **strictly after** `PW_STORAGE_STATE`. Required-and-blind is worse than advisory-and-blind: it turns a known gap into a merge gate asserting the shell is fine |
 
 **Sequencing note.** Every sweep after this point is measured by these instruments. Fixing them
 first is not overhead — a sweep verified by a gate that cannot see its subject produces a number,

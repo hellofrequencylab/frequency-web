@@ -17833,6 +17833,49 @@ already differs. On #2047, 56 of 64 shots passed and the capture rewrote **exact
 failed** — mechanical proof the other 56 surfaces were pixel-identical. Read it in both directions:
 **if a capture rewrites more files than the run reported failing, the extras are the regression.**
 
+### 🔴 AMENDMENT, 2026-08-05 — `PW_STORAGE_STATE` is a HARD PREREQUISITE, not a companion task
+
+**Do not apply the branch-protection change until `PW_STORAGE_STATE` is set.** Ordering matters
+here in a way it usually does not, and the reason was found the same day this ADR was written.
+
+**What happened.** #2048 removed `bg-chrome` from all four rail branches, moved the fold control to
+an edge handle, and resized both dock heads from 72px and 48px onto a shared measure. Every one of
+those is a visible change on every page of the app shell. `pr-compare` came back **green**:
+
+```
+  12 skipped
+  64 passed (3.5m)
+```
+
+Those 12 skips are the **entire member shell** — `/feed`, the room, `/settings`, the Space console
+(`test/e2e/surfaces.ts` → `appSurfaces()`). They are the only captured surfaces that *have* rails,
+and they sit behind `test.use({ storageState: STORAGE_STATE })` with a `test.skip` when the env var
+is absent. The 64 that passed are anonymous marketing pages, which render **outside** the `(main)`
+shell and therefore have no rail, no dock and no fold control to photograph.
+
+So the gate did not miss the change. It reported honestly on the surfaces it can reach, and **the
+surfaces it can reach exclude the entire app.** Sign-in is magic-link only, so there is nothing to
+script — the suite cannot authenticate itself, by design.
+
+**Why the ordering is the whole point.** Required-and-blind is strictly worse than
+advisory-and-blind. Advisory, a green `pr-compare` means "either nothing changed, or nobody
+looked" — this ADR's own words, and a reader who knows that goes and looks. Required, the same
+green becomes a merge gate saying the shell is fine, and it will say that no matter what happens to
+the shell. That converts a known blind spot into an institutional claim, which is the exact failure
+ADR-949 was written about, promoted to a branch-protection rule.
+
+**Therefore:**
+
+1. **First** — create the beta member account, save its Playwright storage state, expose the file
+   to CI as `PW_STORAGE_STATE`. `test/e2e/surfaces.ts:225` already carries this as a 🔴 owner
+   action; it is now blocking rather than aspirational.
+2. **Then** — capture baselines for the four member-shell surfaces, which have never had any.
+3. **Only then** — add `pr-compare` to the required checks on `main`.
+
+Until step 1 lands, every rendering change to the app shell is verified by types, tests and the
+token gates, and looked at by nobody. The honest mitigation in the meantime is a human opening the
+Vercel preview, and saying so in the PR rather than pointing at a green tick.
+
 ---
 
 ## ADR-949 — Prove a guard can fail before trusting it
