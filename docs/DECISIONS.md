@@ -17685,3 +17685,157 @@ product that does not exist. ⚠️ Applying through the platform records the mi
 timestamp, so the repo file `20270212000000` shows as version-drifted against the remote ledger — the
 same drift the seven migrations before it already carry. That is a pre-existing bookkeeping wrinkle in
 how this project applies migrations, not a schema difference; the applied SQL is byte-equivalent.
+
+---
+
+## ADR-946 — The Vault dock hides at strip width rather than shrinking to icons
+
+**Date.** 2026-08-05 · **Status.** Accepted (owner decision) · **Scope.** `components/layout/dock-bar.tsx`, `components/layout/app-shell.tsx`
+
+**Context.** `DockBar` is `fixed bottom-0 right-3 w-72`, and its own comment states the coupling
+plainly: "the rail is `w-72` and the dock was built to sit under it." That was true while the fold
+was gated to two builder routes. ADR-925's rail ladder made either rail foldable to a 56px strip on
+**every** page, and the bar was never told. At strip width it spans 288px against a 56px rail and
+overhangs the content column by ~232px — a visible box sitting on top of the page.
+
+The bug is pre-existing. What changed is its reach: a rare state on two routes became a one-click
+state everywhere, which is the difference between a latent defect and a shipped one.
+
+**Options.** (a) Narrow the bar to the strip and collapse both segments to glyphs — preserves
+one-tap Vault and Messages at every rail width, and keeps the three-docks law whole, at the cost of
+a second layout for the bar and a second tone treatment for the chat tab's unread states.
+(b) Hide the bar while the rail is folded. (c) Anchor the bar to the viewport and accept the
+overlap.
+
+**Decision.** **(b) — hide it.** (c) is not a decision, it is the current bug restated. Between (a)
+and (b), the owner's call is that a member who has *deliberately folded the rail away* has asked
+for the page, not for more chrome over it; re-asserting a 56px dock on top of that argues with the
+instruction they just gave.
+
+**What is genuinely lost, stated rather than glossed.** One-tap Vault and one-tap Messages. Nothing
+becomes unreachable — the rail-foot account dock and the top-right system dock still carry
+navigation, and every account link in the folded rail's foot also lives in the system menu — but
+"still reachable" is not "still one tap," and this ADR does not pretend otherwise. If the Vault
+proves to be a surface members reach for constantly while folded, (a) is the upgrade path and this
+ADR is what to revisit.
+
+**Consequences.** ✅ The content column is never overlapped. ✅ The fold means one thing on every
+route. ⚠️ Hiding must route through the same `close()` path Esc and outside-click already use, or
+folding while a panel is open strands that panel and drops keyboard focus onto `<body>`, restarting
+the member's tab order. ⚠️ `RAIL_END_SENTINEL_ID` is measured by the bar; with the bar unmounted
+that measurement must not run against a null ref. ⚠️ `railFoldClearsDock()` in
+`lib/layout/shell-metrics.ts` pins the fold control's sticky offset above the bar's height — with
+no bar to clear, that clearance becomes conditional and the guard must say which case it is
+asserting.
+
+---
+
+## ADR-947 — Three fixed type roles, because the ladder is fluid all the way down
+
+**Date.** 2026-08-05 · **Status.** Accepted (owner decision) · **Scope.** `app/globals.css` type roles
+
+**Context.** The `app/**` display sweep took `literal-display-type` from 300 to 112 and stopped,
+leaving 12 literals rather than guess at them. Reading what survived, the residue is not 12
+unrelated judgment calls — it is **one gap, named three ways**. Every display role in the
+vocabulary is `clamp()`-based and fluid, so there is nothing to reach for when a figure must *not*
+scale:
+
+- A 4-up KPI strip in a page header (`admin/page.tsx:214`) — `text-stat` at 3.5–4.5rem breaks the
+  row, and the ladder has no rung between that and body copy.
+- A hero price (`upgrade` ×2, `pricing`) — `display-h3` shrinks the conversion-critical figure ~22%
+  on phones, which is the one place it must not shrink.
+- A print poster title — viewport units resolve against the **page box** on a print surface, so
+  every fluid role sizes unpredictably there.
+
+**Decision.** Add three roles: a **compact stat** (~1.875rem, fixed), a **fixed mid-scale numeral**
+(~2.25rem, not fluid), and a **non-viewport display** role. Name them consistently with the
+existing vocabulary and register them in `scripts/check-phantom-classes.mjs` so a typo in a
+consumer is caught rather than silently emitting nothing.
+
+**What is deliberately NOT a role.** `pricing`'s `sizeFor()` is a length-driven fitting algorithm —
+four sizes chosen by label character count so the display face never wraps mid-figure. Roles have
+no 4-step ladder in that band, and inventing one to serve a single call site would be fitting the
+vocabulary to a layout problem. Likewise emoji glyphs, avatar initials, and single-letter fallback
+cover glyphs: sized to fill a tile, not display type, and a role would be wrong on all three.
+
+**Consequences.** ✅ The 12 remaining literals get a home. ✅ "Fixed" becomes expressible, which it
+was not. ⚠️ Tailwind v4 generates utilities from `@theme inline`, not `:root` — a role defined in
+the wrong block emits nothing while reading correctly, which is the exact failure `check:bridge`
+exists for. ⚠️ `events/[slug]:1705` and `detail-template.tsx:133` are a pair: the first is an
+inline-edit input mirroring the second's chain verbatim, and they must move together or the editor
+stops matching the title it edits.
+
+---
+
+## ADR-948 — `pr-compare` becomes a required check
+
+**Date.** 2026-08-05 · **Status.** Accepted (owner decision); **branch protection not yet applied**
+
+**Context.** Three baseline recaptures in two days, every one the same shape: a rendering change
+merges while `pr-compare` is advisory, and the *next* PR inherits red shots for a diff it did not
+make. Measured instances — #2038 recaptured across six merges; #2042 merged red and the next PR
+inherited 4 failures on `/about` mobile; #2046 merged a one-line type-role change on `/pricing` and
+#2047 inherited 8 failures across four theme states and two viewports, `18869px` vs `18864px`.
+
+An advisory gate cannot block anything, so "merged red" is not a mistake anyone makes — it is the
+only behaviour available.
+
+**Decision.** Require `pr-compare` on `main`, beside the existing `checks` and `analyze`. Applied
+in Settings → Branches → `main` → *Require status checks to pass*; needs repo-admin rights, so it
+is recorded here as approved and pending rather than done.
+
+**Consequences.** ✅ A green `pr-compare` starts meaning "nothing rendered differently" instead of
+"either nothing changed, or nobody looked." ⚠️ Every rendering PR gains ~11 minutes before it can
+merge — preview resolution plus a ~5-minute visual pass. ⚠️ A legitimately-changed surface now
+**blocks** until its baselines are recaptured rather than merging red. That is the point, not a
+side effect: it converts a silent inheritance into a step someone has to take.
+
+**The recapture procedure, and the trap in it.** Dispatch `e2e-manual.yml` with `base_url` = the
+PR's preview and `update_baselines: true`; then **check the capture commit's file list against the
+failing-test list — they must match**; then **push a real commit**. The runner commits with
+`GITHUB_TOKEN`, which GitHub excludes from triggering workflow runs so an Action cannot recurse, so
+the baseline commit lands with no checks at all — and re-running the failed job replays the old SHA
+against the new baselines. Only a fresh push fires `pull_request: synchronize`. The failure mode is
+silent waiting.
+
+**The attribution property, three-for-three and worth relying on.** A capture can only rewrite what
+already differs. On #2047, 56 of 64 shots passed and the capture rewrote **exactly the 8 that
+failed** — mechanical proof the other 56 surfaces were pixel-identical. Read it in both directions:
+**if a capture rewrites more files than the run reported failing, the extras are the regression.**
+
+---
+
+## ADR-949 — Prove a guard can fail before trusting it
+
+**Date.** 2026-08-05 · **Status.** Accepted · **Scope.** every `scripts/check-*.mjs` and every drift-guard test
+
+**Context.** A day of DAWN conversion work produced one finding larger than any of the sweeps: the
+palette was already 100% correct — all 81 tokens present, value-for-value — and **five separate
+gates were green over the exact defects they existed to catch.**
+
+| Gate | Green over |
+| :--- | :--- |
+| `check:adoption` | comments — `shadow-lg` inside a `//` raised the count with no markup involved, so a sweep could bank a phantom win by deleting prose |
+| `check:phantom` | all of `lib/`, every `.ts` file, every alpha modifier — precisely where a sweep moves classes *to* |
+| `check:contrast` | white on all 10 rank cores at 2.46:1–3.88:1, because it models named pairs and has no `white-on-rank` entry |
+| `check:bridge` | a token *mentioned* in a comment 1,000 lines from the real at-rule |
+| `select-checkbox.test.tsx` | a `className` string containing `w-auto` while the element rendered `w-full`, under the name "shrinks to its options" |
+
+**Decision.** A guard is not trusted until it has been **observed failing**: reintroduce the
+defect, watch the assertion go red, restore, watch it go green — and record that you did. Applied
+to every guard added on 2026-08-05; the dock-clearance pair was proven by re-applying `sticky
+bottom-4` and confirming two assertions flipped.
+
+**The shape to watch for, which is the transferable part.** Four of the five share one form: **a
+test that greps the string it was handed cannot see what the compiler or the cascade does with
+it.** `cn()` here is a plain join, not `tailwind-merge`, so a class passed to a primitive does not
+replace the default — both reach the attribute and emit order decides. Measured against the real
+compiled sheet: `.w-auto` (8610) precedes `.w-full` (8643) so `w-auto` loses; `.w-max` (8676)
+follows, so it wins. No call site can see this. Any assertion about width, padding, or display that
+does not compile `app/globals.css` is asserting about a string, not a rendering.
+
+**Consequences.** ✅ A green board becomes evidence again. ⚠️ Proving a failure costs a minute per
+guard and cannot be skipped when the guard is the reason a sweep is believed. ⚠️ Seven
+`adoption-baselines.json` entries carry rebase provenance rather than earned falls, because they
+were measured under a question the instrument was asking wrong — those are debt the ratchet stopped
+guarding, and they stay named until a sweep brings them down.
