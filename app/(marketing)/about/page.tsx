@@ -29,8 +29,13 @@ export const revalidate = 3600
 export function generateMetadata(): Metadata {
   return {
     title: 'About',
+    // Capped under the ~155 char search-snippet window, the same rule
+    // /discover/circles/[id] already applies. This ran 326 characters, so
+    // everything after "where they live" was cut by the SERP and the money
+    // model was being written to an audience that never saw it. That paragraph
+    // lives on the page and on /pricing, where a reader can actually read it.
     description:
-      'The story behind Frequency, born on a cliff at Moonlight Beach in 2020. We hand ordinary people the tools to rebuild the third place where they live. You keep 100% of your own bookings; we earn only a small, shrinking cut on what the network sends you, and the physical Spaces are funded by a separate community-owned vehicle.',
+      'The story behind Frequency, born on a cliff at Moonlight Beach in 2020. We hand ordinary people the tools to rebuild the third place where they live.',
     alternates: { canonical: '/about' },
     openGraph: {
       title: 'About Frequency',
@@ -294,7 +299,7 @@ function Value({
   body: string
 }) {
   return (
-    <Reveal as="article" className="sheen rounded-2xl border border-on-ink/10 bg-on-ink/5 p-6">
+    <Reveal as="article" className="sheen rounded-card border border-on-ink/10 bg-on-ink/5 p-6">
       <div className="flex items-center gap-3">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary/20 text-primary">
           <Icon className="h-5 w-5" aria-hidden />

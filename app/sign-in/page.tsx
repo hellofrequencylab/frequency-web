@@ -29,7 +29,7 @@ export default async function SignInPage({
       title="Sign in"
       subtitle="A place you’re actually missed when you’re gone."
     >
-      <div className="mx-auto mt-2 w-full max-w-sm rounded-2xl border border-on-ink/10 bg-surface/95 p-6 text-left shadow-pop backdrop-blur">
+      <div className="mx-auto mt-2 w-full max-w-sm rounded-card border border-on-ink/10 bg-surface/95 p-6 text-left shadow-pop backdrop-blur">
         {error && (
           <div className="mb-4 rounded-lg bg-danger-bg px-4 py-3 text-body-sm text-danger ring-1 ring-danger">
             {decodeURIComponent(error)}
@@ -50,7 +50,7 @@ export default async function SignInPage({
               autoComplete="email"
               required
               placeholder="you@example.com"
-              className="mt-1 block w-full rounded-lg border border-border-strong bg-surface px-3 py-2.5 text-body-sm text-text placeholder-subtle lift-1 focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30"
+              className="mt-1 block w-full rounded-control border border-border-strong bg-surface px-3 py-2.5 text-body-sm text-text placeholder-subtle lift-1 focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30"
             />
           </div>
           <button

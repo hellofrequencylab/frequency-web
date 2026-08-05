@@ -350,7 +350,7 @@ export default async function PricingPage() {
       </PhotoHero>
 
       {/* Mission framing, stated plainly, with the "we only earn when you do" infographic. */}
-      <Section tone="canvas" pad="pt-14 pb-10 sm:pt-16 sm:pb-12">
+      <Section tone="canvas">
         <div className="mx-auto mb-6 h-28 w-full max-w-xs">
           <Illustration name="earn-together" className="h-full" />
         </div>
@@ -573,7 +573,7 @@ function PlanCard({
       }`
     : `lift-1 border p-6 ${ink ? 'border-on-ink/10 bg-on-ink/5' : 'border-border bg-surface'}`
   return (
-    <Reveal as="article" className={`relative flex flex-col rounded-2xl ${shell}`}>
+    <Reveal as="article" className={`relative flex flex-col rounded-card ${shell}`}>
       {featured && (
         <span className="absolute -top-3 left-6 rounded-md bg-primary px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-on-primary">
           Most chosen
@@ -752,7 +752,7 @@ function IndependentStrip({ offering }: { offering: Offering }) {
   return (
     <Reveal
       as="article"
-      className="lift-1 mt-8 flex flex-col gap-5 rounded-2xl border border-on-ink/10 bg-on-ink/5 p-6 sm:flex-row sm:items-center sm:justify-between"
+      className="lift-1 mt-8 flex flex-col gap-5 rounded-card border border-on-ink/10 bg-on-ink/5 p-6 sm:flex-row sm:items-center sm:justify-between"
     >
       <div>
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">

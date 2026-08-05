@@ -483,7 +483,7 @@ function RewardStep({
 
 function Stat({ big, small }: { big: string; small: string }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface px-3 py-4 lift-1">
+    <div className="rounded-card border border-border bg-surface px-3 py-4 lift-1">
       <p className="text-page-title font-bold text-text">{big}</p>
       <p className="mt-0.5 text-meta text-muted">{small}</p>
     </div>

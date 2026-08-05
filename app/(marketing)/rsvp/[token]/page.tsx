@@ -105,7 +105,7 @@ async function RsvpInvite({ params }: { params: Promise<{ token: string }> }) {
   }
 
   return (
-    <section className="px-6 py-24 sm:py-28">
+    <section className="mk-band">
       <div className="mx-auto max-w-md">
         <div className="mb-8">
           {invite.inviterName && (

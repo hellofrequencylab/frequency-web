@@ -119,7 +119,7 @@ function LoomImageField({
               type="button"
               onClick={() => setPicking((p) => !p)}
               disabled={busy}
-              className="min-h-[32px] rounded-lg bg-canvas/90 px-2.5 py-1 text-meta font-medium text-text shadow-sm backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60"
+              className="min-h-8 rounded-control bg-canvas/90 px-2.5 py-1 text-meta font-medium text-text shadow-sm backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60"
             >
               Change
             </button>
@@ -128,7 +128,7 @@ function LoomImageField({
               onClick={() => onChange('')}
               disabled={busy}
               aria-label="Remove image"
-              className="flex min-h-[32px] items-center rounded-lg bg-canvas/90 p-1 text-subtle shadow-sm backdrop-blur transition-colors hover:text-danger disabled:opacity-60"
+              className="flex min-h-8 items-center rounded-control bg-canvas/90 p-1 text-subtle shadow-sm backdrop-blur transition-colors hover:text-danger disabled:opacity-60"
             >
               <X className="h-4 w-4" aria-hidden />
             </button>
@@ -154,7 +154,7 @@ function LoomImageField({
           type="button"
           onClick={() => setPicking((p) => !p)}
           disabled={!slug}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-control border border-border px-2.5 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
         >
           <ImageIcon className="h-3.5 w-3.5" aria-hidden />
           {picking ? 'Close library' : 'Browse the Loom'}
@@ -163,7 +163,7 @@ function LoomImageField({
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={busy || !slug}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-control border border-border px-2.5 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
         >
           <Upload className="h-3.5 w-3.5" aria-hidden />
           {busy ? 'Uploading…' : 'Upload'}
@@ -176,7 +176,7 @@ function LoomImageField({
 
       {picking && slug && (
         <div className="rounded-card border border-border bg-surface p-2">
-          <div className="mb-2 flex items-center gap-2 rounded-lg border border-border bg-surface px-2">
+          <div className="mb-2 flex items-center gap-2 rounded-control border border-border bg-surface px-2">
             <Search className="h-3.5 w-3.5 text-subtle" aria-hidden />
             <input
               type="text"

@@ -315,7 +315,7 @@ function ProfileStep({ content, draft, patch, report, ctx }: StepViewProps) {
 
   return (
     <div className="mt-2 space-y-5">
-      <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-4">
+      <div className="flex items-center gap-4 rounded-card border border-border bg-surface p-4">
         <Avatar url={preview ?? ''} name={draft.displayName} email={ctx.userEmail} />
         <div className="flex flex-col items-start gap-1">
           <button
@@ -417,7 +417,7 @@ const reviewContent = z
 
 function ReviewStep({ draft, ctx }: StepViewProps) {
   return (
-    <div className="mt-2 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+    <div className="mt-2 divide-y divide-border overflow-hidden rounded-card border border-border bg-surface shadow-sm">
       <div className="flex items-center gap-4 p-5">
         <Avatar url={draft.avatarUrl} name={draft.displayName} email={ctx.userEmail} size="lg" />
         <div className="min-w-0">

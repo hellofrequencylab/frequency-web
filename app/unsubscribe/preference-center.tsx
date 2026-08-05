@@ -84,7 +84,7 @@ export function PreferenceCenter({
         stop getting that kind of email, while keeping the rest.
       </p>
 
-      <div className="rounded-2xl border border-border bg-surface divide-y divide-border overflow-hidden">
+      <div className="rounded-card border border-border bg-surface divide-y divide-border overflow-hidden">
         {topics.map(({ topic, subscribed }) => {
           const meta = TOPIC_LABELS[topic]
           if (!meta) return null

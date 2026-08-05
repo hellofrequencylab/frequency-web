@@ -14,7 +14,7 @@ export default function OrganizerLoading() {
       <Skeleton className="h-4 w-3/4 mb-8" />
 
       {/* Subscribe band */}
-      <Skeleton className="h-16 w-full rounded-2xl mb-10" />
+      <Skeleton className="h-16 w-full rounded-card mb-10" />
 
       {/* Upcoming heading */}
       <Skeleton className="h-6 w-40 mb-6" />
@@ -22,12 +22,12 @@ export default function OrganizerLoading() {
       {/* Event rows */}
       <div className="space-y-3 mb-12">
         {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+          <Skeleton key={i} className="h-20 w-full rounded-card" />
         ))}
       </div>
 
       {/* CTA */}
-      <Skeleton className="h-24 w-full rounded-2xl" />
+      <Skeleton className="h-24 w-full rounded-card" />
     </div>
   )
 }

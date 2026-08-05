@@ -77,7 +77,7 @@ function Layout({
 }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-canvas px-6 py-12">
-      <div className="max-w-md w-full bg-surface border border-border rounded-2xl lift-1 p-8">
+      <div className="max-w-md w-full bg-surface border border-border rounded-card lift-1 p-8">
         <Link href="/" className="inline-block text-lead font-black tracking-tight text-text mb-6">
           frequency
         </Link>
@@ -94,7 +94,7 @@ function SettingsLink() {
     <div className="pt-3">
       <Link
         href="/settings/notifications"
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary text-body-sm font-semibold px-4 py-2 hover:bg-primary-hover transition-colors"
+        className="inline-flex items-center gap-1.5 rounded-control bg-primary text-on-primary text-body-sm font-semibold px-4 py-2 hover:bg-primary-hover transition-colors"
       >
         Manage all preferences →
       </Link>

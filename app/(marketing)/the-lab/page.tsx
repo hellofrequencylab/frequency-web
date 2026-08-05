@@ -330,7 +330,7 @@ function Room({
   return (
     <Reveal
       as="article"
-      className="lift-2 h-full overflow-hidden rounded-2xl border border-on-ink/10 bg-on-ink/5"
+      className="lift-2 h-full overflow-hidden rounded-card border border-on-ink/10 bg-on-ink/5"
     >
       <div className="relative">
         <SiteImage src={img} alt={alt} aspect="16/10" sizes="(min-width: 640px) 22rem, 100vw" />

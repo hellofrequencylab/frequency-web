@@ -29,7 +29,7 @@ export default function PublicEventDetailLoading() {
             <Skeleton className="h-4 w-3/4" />
           </div>
         }
-        interiorSide={<Skeleton className="h-48 w-full rounded-2xl" />}
+        interiorSide={<Skeleton className="h-48 w-full rounded-card" />}
       />
     </div>
   )

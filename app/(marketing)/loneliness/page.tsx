@@ -172,7 +172,7 @@ export default function LonelinessPage() {
       </PhotoHero>
 
       {/* Answer-first: the direct answer in the first two sentences. */}
-      <Section tone="canvas" pad="pt-14 pb-16 sm:pt-16 sm:pb-20">
+      <Section tone="canvas">
         <Lead>
           High-functioning loneliness is feeling alone while your outer life
           looks fine. You hold down a job, keep plans, and answer texts, and you
@@ -391,7 +391,7 @@ export default function LonelinessPage() {
       </PullQuote>
 
       {/* ── The answer: how to feel less alone (steps → HowTo schema) ─────────── */}
-      <Section tone="surface" pad="pt-16 pb-8 sm:pt-20 sm:pb-10">
+      <Section tone="surface">
         <h2
           id="how-to-feel-less-alone"
           className="font-display uppercase text-text text-display-h3 mb-5"
@@ -411,7 +411,7 @@ export default function LonelinessPage() {
           to become a friend.
         </Body>
       </Section>
-      <Section tone="surface" pad="pt-0 pb-16 sm:pb-20">
+      <Section tone="surface" role="cont">
         <Steps steps={HOWTO_STEPS} tone="surface" />
       </Section>
 

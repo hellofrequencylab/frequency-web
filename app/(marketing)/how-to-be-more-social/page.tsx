@@ -181,7 +181,7 @@ export default function HowToBeMoreSocialPage() {
       </PhotoHero>
 
       {/* Answer-first opening: the direct answer in the first two sentences. */}
-      <Section tone="canvas" pad="pt-16 pb-16 sm:pt-20 sm:pb-20">
+      <Section tone="canvas">
         <Lead>
           To be more social, pick one recurring thing you would actually show up
           for, put it on the calendar, and go back until people there know your

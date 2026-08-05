@@ -81,7 +81,7 @@ export default async function DiscoverCirclesPage() {
       </PhotoHero>
 
       {/* ── The premise ─────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-surface px-6 py-20 sm:py-24">
+      <section className="relative overflow-hidden bg-surface mk-beat">
         {/* Ripple rings: a single circle widening into the room, the core motif. */}
         <RippleRings
           aria-hidden
@@ -103,7 +103,7 @@ export default async function DiscoverCirclesPage() {
       </section>
 
       {/* ── The grid ────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-marketing-canvas px-6 py-20 sm:py-24">
+      <section className="relative overflow-hidden bg-marketing-canvas mk-beat">
         {/* A loose constellation of people behind the grid, the network each circle opens. */}
         <CircleConstellation
           aria-hidden
@@ -124,7 +124,7 @@ export default async function DiscoverCirclesPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {circles.map((c) => (
-                <div key={c.id} className="rounded-2xl transition-shadow hover:shadow-pop">
+                <div key={c.id} className="rounded-card transition-shadow hover:shadow-pop">
                   <CircleCard circle={c} isAuthed={isAuthed} />
                 </div>
               ))}

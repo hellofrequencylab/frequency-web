@@ -189,7 +189,7 @@ function LegacyTheQuest() {
       </PhotoHero>
 
       {/* The premise */}
-      <Section tone="canvas" pad="pt-20 pb-10 sm:pt-24 sm:pb-12">
+      <Section tone="canvas">
         <SectionHeading
           eyebrow="The premise"
           title="Most games waste your life. This one builds it."
@@ -249,7 +249,7 @@ function LegacyTheQuest() {
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Card tone="feature" className="hover:border-border-strong transition-colors">
-            <div className="w-11 h-11 rounded-2xl bg-signal-bg flex items-center justify-center mb-4">
+            <div className="w-11 h-11 rounded-card bg-signal-bg flex items-center justify-center mb-4">
               <Zap className="w-5 h-5 text-signal-strong" aria-hidden />
             </div>
             <h3 className="font-display uppercase text-text text-page-title leading-none">
@@ -262,7 +262,7 @@ function LegacyTheQuest() {
             </p>
           </Card>
           <Card tone="feature" className="hover:border-border-strong transition-colors">
-            <div className="w-11 h-11 rounded-2xl bg-primary-bg flex items-center justify-center mb-4">
+            <div className="w-11 h-11 rounded-card bg-primary-bg flex items-center justify-center mb-4">
               <Gem className="w-5 h-5 text-primary-strong" aria-hidden />
             </div>
             <h3 className="font-display uppercase text-text text-page-title leading-none">
@@ -454,7 +454,7 @@ function LegacyTheQuest() {
         />
         <dl className="space-y-6">
           {QUEST_FAQ.map((item) => (
-            <div key={item.q} className="rounded-2xl border border-border bg-canvas p-6">
+            <div key={item.q} className="rounded-card border border-border bg-canvas p-6">
               <dt className="font-display uppercase text-text text-lead leading-tight mb-2">
                 {item.q}
               </dt>

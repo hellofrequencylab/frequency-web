@@ -476,7 +476,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   function renderCoreArt(art: FunnelCoreFeature['art'], active: boolean) {
     if (art.kind === 'image') {
       // eslint-disable-next-line @next/next/no-img-element
-      return <img src={art.src} alt="" className="h-full w-full rounded-2xl border border-border object-cover" />
+      return <img src={art.src} alt="" className="h-full w-full rounded-card border border-border object-cover" />
     }
     const C = RENDERS[art.render] ?? EventsRender
     return <C animate={active} />
@@ -530,7 +530,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       {/* The modal backdrop scrim is the INK tone at low alpha, not raw black, so the dim follows the skin. */}
       {preview && previewDone && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-6">
-          <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-7 text-center lift-3">
+          <div className="w-full max-w-sm rounded-card border border-border bg-surface p-7 text-center lift-3">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-pill bg-primary-bg text-page-title text-primary-strong">✓</div>
             <h2 className="mt-4 text-lead font-bold text-text">Welcome in.</h2>
             <p className="mt-2 text-body-sm leading-relaxed text-muted">
@@ -559,7 +559,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             Welcome
           </span>
           <span className="brandmark-link mt-5 block">
-            <span className="brandmark h-12 sm:h-[52px]" aria-hidden />
+            <span className="brandmark h-12 sm:h-13" aria-hidden />
           </span>
 
           {/* Scanned in via a member's QR code → a warm "Invited by {name}" chip with

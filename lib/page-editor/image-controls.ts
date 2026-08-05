@@ -11,12 +11,17 @@ const FOCAL: Record<string, string> = {
   right: 'object-right',
 }
 
+// Radius ROLES where one exists, matching the CARD_RADIUS precedent in fields.tsx (ADR-578):
+// `rounded-card` (1rem) and `rounded-pill` resolve identically to the old rounded-2xl /
+// rounded-full at the root, but retheme inside a Space subtree. 'sm' and 'lg' keep their
+// literals because no 0.75rem or 1.5rem role exists yet — a literal is honest here, a
+// mis-sized role is not.
 const RADIUS: Record<string, string> = {
   none: 'rounded-none',
   sm: 'rounded-xl',
-  md: 'rounded-2xl',
+  md: 'rounded-card',
   lg: 'rounded-3xl',
-  full: 'rounded-full',
+  full: 'rounded-pill',
 }
 
 const SHADOW: Record<string, string> = {

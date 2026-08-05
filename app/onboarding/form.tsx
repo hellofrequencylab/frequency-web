@@ -348,7 +348,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
       {/* ── Step 2: Bio + Avatar ── */}
       {step === 2 && (
                 <div className="mt-2 space-y-5">
-                  <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-4">
+                  <div className="flex items-center gap-4 rounded-card border border-border bg-surface p-4">
                     {renderAvatar()}
                     <div className="flex flex-col items-start gap-1">
                       <button
@@ -432,7 +432,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
 
       {/* ── Step 4: Review ── */}
       {step === 4 && (
-                <div className="mt-2 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface lift-1">
+                <div className="mt-2 divide-y divide-border overflow-hidden rounded-card border border-border bg-surface lift-1">
                   <div className="flex items-center gap-4 p-5">
                     {renderAvatar('lg')}
                     <div className="min-w-0">

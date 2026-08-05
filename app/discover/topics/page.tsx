@@ -75,7 +75,7 @@ export default async function DiscoverTopicsPage() {
       </PhotoHero>
 
       {/* ── The premise ─────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-surface px-6 py-20 sm:py-24">
+      <section className="relative overflow-hidden bg-surface mk-beat">
         {/* A constellation of people: the network a single Channel opens onto. */}
         <CircleConstellation
           aria-hidden
@@ -113,7 +113,7 @@ export default async function DiscoverTopicsPage() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     {channel.topics.map((ch) => (
-                      <div key={ch.id} className="transition-shadow hover:shadow-pop rounded-2xl">
+                      <div key={ch.id} className="transition-shadow hover:shadow-pop rounded-card">
                         <ChannelCard channel={ch} circleCount={ch.circleCount} />
                       </div>
                     ))}

@@ -152,7 +152,7 @@ export default async function DiscoverHubPage() {
       </PhotoHero>
 
       {/* ── Locator map (privacy-safe: city centroids only) ──────── */}
-      <section className="relative overflow-hidden bg-surface px-6 py-20 sm:py-24 border-b border-border/60">
+      <section className="relative overflow-hidden bg-surface mk-beat border-b border-border/60">
         {/* Frequency motif radiating up from the map, tying the discover hero to place. */}
         <FrequencyArcs
           aria-hidden
@@ -183,7 +183,7 @@ export default async function DiscoverHubPage() {
               isAuthed={isAuthed}
             />
           ) : (
-            <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-marketing-canvas p-8 text-center">
+            <div className="mx-auto max-w-2xl rounded-card border border-border bg-marketing-canvas p-8 text-center">
               <p className="mb-1 text-body-lg font-semibold text-text">We&apos;re starting in {FOUNDING_PLACE}.</p>
               <p className="mb-5 text-body-sm text-muted leading-relaxed">
                 The first Circles are forming now. Be one of the first in your neighborhood.
@@ -205,7 +205,7 @@ export default async function DiscoverHubPage() {
 
       {/* ── Channels ──────────────────────────────────────────── */}
       {channels.length > 0 && (
-        <section className="relative overflow-hidden bg-marketing-canvas px-6 py-20 sm:py-24">
+        <section className="relative overflow-hidden bg-marketing-canvas mk-beat">
           {/* A loose constellation of people, the network a Channel opens onto. */}
           <CircleConstellation
             aria-hidden
@@ -245,7 +245,7 @@ export default async function DiscoverHubPage() {
 
       {/* ── Upcoming events ───────────────────────────────────── */}
       {events.length > 0 && (
-        <section className="bg-surface px-6 py-20 sm:py-24">
+        <section className="bg-surface mk-beat">
           <div className="max-w-3xl mx-auto">
             <div className="text-center max-w-2xl mx-auto">
               <SectionHeading
@@ -274,7 +274,7 @@ export default async function DiscoverHubPage() {
 
       {/* ── Featured circles ──────────────────────────────────── */}
       {circles.length > 0 && (
-        <section className="relative overflow-hidden bg-marketing-canvas px-6 py-20 sm:py-24">
+        <section className="relative overflow-hidden bg-marketing-canvas mk-beat">
           {/* Ripple rings: a Circle widening out, the core motif for this beat. */}
           <RippleRings
             aria-hidden
@@ -335,7 +335,7 @@ export default async function DiscoverHubPage() {
 
       {/* ── Feed preview ──────────────────────────────────────── */}
       {posts.length > 0 && (
-        <section className="bg-marketing-canvas px-6 py-20 sm:py-24">
+        <section className="bg-marketing-canvas mk-beat">
           <div className="max-w-3xl mx-auto">
             <div className="text-center">
               <SectionHeading eyebrow="What people are saying" title="From the community" />
@@ -356,7 +356,7 @@ export default async function DiscoverHubPage() {
       )}
 
       {/* ── FAQ ───────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-surface px-6 py-20 sm:py-24 border-t border-border/60">
+      <section className="relative overflow-hidden bg-surface mk-beat border-t border-border/60">
         {/* A soft warm blob behind the FAQ, easing the page toward the closing CTA. */}
         <OrganicBlob
           aria-hidden

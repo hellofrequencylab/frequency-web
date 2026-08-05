@@ -6,7 +6,7 @@ export default function NotFound() {
     <div className="min-h-screen bg-canvas flex items-center justify-center px-4">
       <div className="text-center max-w-sm">
         <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-primary-bg flex items-center justify-center">
+          <div className="w-16 h-16 rounded-card bg-primary-bg flex items-center justify-center">
             <Radio className="w-8 h-8 text-primary-strong" strokeWidth={2} />
           </div>
         </div>

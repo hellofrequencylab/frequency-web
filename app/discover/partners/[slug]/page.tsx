@@ -121,7 +121,7 @@ export default async function PublicPartnerPage({
             <h2 className="mb-3 text-body-sm font-semibold uppercase tracking-wide text-subtle">Member offers</h2>
             <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {partner.offers.map((o) => (
-                <li key={o.id} className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
+                <li key={o.id} className="flex items-start gap-3 rounded-card border border-border bg-surface p-4">
                   <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
                     <Ticket className="h-4 w-4" aria-hidden />
                   </span>
