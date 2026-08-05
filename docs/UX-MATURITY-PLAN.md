@@ -516,3 +516,107 @@ DB-authored page-doc references — verify against published Puck docs before de
 Landed at scale: EmptyState 244 · SectionHeader 141 · StatCard 114 · EntityCard 42.
 Shipped-but-idle (STALE — ProgressTrack has 34 importers and `adhoc-progress` was swept to 0 before a pattern correction reset it to 14; StreakMeter is rendered in components/sidebar/game-stats-dock.tsx): ProgressTrack 0 · StreakMeter 0 · Meter 1 · Counter 2 · GateNotice 3 —
 the fabric phase's first targets, now with exact counts to ratchet against.
+
+---
+
+## Addendum 2026-08-05 — DAWN parity: the full design pass, scored
+
+> **The answer, first.** The site is at **~80% DAWN parity**, and the missing 20% is
+> **not the palette**. Every colour, type, space, radius, motion and shadow token in
+> `design_handoff/dawn/tokens/` already exists in `app/globals.css` value for value, and on
+> four of them production is *ahead* of DAWN. What is left is **expression**: type roles that
+> stop at the display sizes, an eyebrow that was never unified, a radius ladder whose top rung
+> is a no-op, five kit primitives with single-digit adopters, a right rail that folds but
+> cannot be told to stay folded, and a marketing rhythm whose tone-adjacency half never landed.
+>
+> Nobody needs to re-theme anything. The remaining work is **adoption of a system that is
+> already fully specified and already in the stylesheet**.
+
+Measured 2026-08-05 against `31e2acb`. Sources: `design_handoff/dawn/` (readme + tokens +
+`CHANGES.md` through the 2026-08-03 final round), `app/globals.css`, `scripts/adoption-baselines.json`
+(live via `node scripts/check-adoption.mjs`), and a census of `app/` + `components/`.
+
+### 1. The scorecard
+
+Ten dimensions, weighted by how much each one carries of "does this look like DAWN". The weight
+column is the model; the score column is measured. **Total: 80.0 / 100.**
+
+| # | Dimension | Wt | Score | Contribution | What the number is |
+|---|---|---:|---:|---:|---|
+| 1 | **Token layer** (colour · type · space · radius · motion · shadow) | 15 | 95% | 14.25 | Every DAWN `:root` / `.dark` / `.theme-light-lock` token present. 4 deliberate divergences, all prod-ahead. Docked 5 for the `--radius-cover` phantom + the R3 ladder split |
+| 2 | **Theming machinery** (mode · skin · occasion · generation · `@theme` bridge · registry guards) | 10 | 100% | 10.00 | Production is **ahead of DAWN**: DAWN ships one alternate skin, production ships four composing axes, 8 feel generations, a typed resolver and CSS⇄registry drift tests |
+| 3 | **Effects + texture** (`lift` · `sheen` · `halo` · `spot` · `grain` · `dot-grid` · `arc-top` · `rule-amber` · `light-strip` · `glass` · `bg-slat` · `amber-glow` · `brandmark` · `reveal` · `stagger` · `press` · `dimmed`) | 10 | 90% | 9.00 | All 20 classes in CSS, 17 adopted. `shadow-literals` 684 → 54. Three classes at zero adopters |
+| 4 | **Kit primitives** (13 pieces) | 15 | 85% | 12.75 | All 13 exist. ~609 adopter sites vs ~91 hand-rolled equivalents still standing |
+| 5 | **Page framework** (5 templates + chrome map) | 10 | 75% | 7.50 | 250 / 382 `page.tsx` compose a template. `PageHero` / `PageHeading` is a single edit |
+| 6 | **Rails + docks + chrome** | 10 | 70% | 7.00 | Three-docks law ✅, foot-mounted rail control ✅, mini-strip ✅. Missing: the three-position ladder, persistence, any desktop left-rail fold |
+| 7 | **Marketing rhythm + page spine** | 10 | 70% | 7.00 | `Section` defaults to the four `mk-*` roles ✅. 23 / 38 marketing pages route through it; the tone-adjacency half is unadopted |
+| 8 | **Type roles** (body ✅ · display ⏳ · eyebrow 🔴) | 10 | 60% | 6.00 | `literal-type` at a defended **0** (7,578 sites swept). `literal-display-type` **301**; the eyebrow is split ten ways across ~698 sites |
+| 9 | **Radius roles** | 5 | 45% | 2.25 | Role tokens shipped and bridged; `literal-radius` still **3,824** |
+| 10 | **Contrast · a11y · interaction states** | 5 | 85% | 4.25 | Focus ring 1.75:1 → 3.87:1, alpha-aware contrast script, axe baselines, ×5 render states. `subtle-tiny-type` 24 open; the kit state sweep (8b) has not run |
+| | **Total** | **100** | | **80.0** | |
+
+### 2. What is genuinely finished (do not re-do it)
+
+| Area | Evidence |
+| :--- | :--- |
+| ✅ The whole colour system | 81 DAWN tokens, 0 missing, 0 unintended drift |
+| ✅ Four-axis theming, guarded | `lib/theme/` registries + `skins/generations/occasions.test.ts` read the CSS from disk |
+| ✅ The token bridge | `check:bridge` (#2037) fails on the exact Tailwind-shadows-`:root` collision that made designed tokens dead text |
+| ✅ Shadow → lift | the single biggest visual win on the board, already banked |
+| ✅ Body type roles | `literal-type` 0, paired display line-heights in `@theme` |
+| ✅ Three-docks law | top-right system · rail-foot account · bottom-right Vault/page. Nothing offered twice |
+| ✅ Rail-control law | 26px borderless glyph at the **foot**, subtle → muted, sticky |
+| ✅ Marketing four-role rhythm | `Section` derives `mk-band` / `mk-beat` and the double-count correction is live |
+| ✅ The ratchet itself | 14 debt classes, provenance-stamped, rises refused, basis fingerprinted |
+
+### 3. What is left, ordered by payoff per unit of effort
+
+Sizes: **S** one PR · **M** 1 to 3 PRs · **L** a wave. "Gain" is points on the §1 scorecard.
+
+| # | Package | Size | Gain | Why this order |
+| :--- | :--- | :---: | ---: | :--- |
+| 1 | **`raw-palette` — 48 sites, one file** | S | +1.5 | Every one is in `lib/gamification.ts` (`TIER_CONFIG` / `DIFFICULTY_CONFIG`), exported, so raw Tailwind palette classes propagate into every achievement surface and **ignore every skin, occasion and generation**. Best ratio on the board: one file, whole-app effect |
+| 2 | **R3 — the radius ladder** | S | +2.0 | `sm`…`2xl` authored in `px`, `xs`/`3xl`/`4xl` left at Tailwind's `rem`: the top rung is a 1.5px step and the only part of the scale that ignores the density lever. Also retire `--radius-cover`, declared in five generation blocks, never in `:root`, never bridged, so `rounded-cover` generates **nothing** while a comment claims it themes covers. Touches 1,317 sites' *meaning*, so it owes a baseline recapture |
+| 3 | **`subtle-tiny-type` AA rule + 24 sites** | S | +1.0 | The rule is the valuable half; the population is 24, not the 832 the audit implied |
+| 4 | **Adopt or retire `edge-light` · `scanlines` · `vignette`** | XS | +0.5 | Three effect classes at zero adopters. Either give them a home or delete them; a contract class nobody calls is a lie in the stylesheet |
+| 5 | **R7 — unify the eyebrow** | M | +3.0 | Split **ten** ways: `tracking-wide` 484 · `wider` 77 · `widest` 75 · 62 arbitrary values, against **3** adopters of the `eyebrow` utility. The dominant hand-rolled value is 7.2× tighter than `--tracking-eyebrow`. Largely mechanical, and it is the single most visible type tell |
+| 6 | **Kit sweeps** (`bespoke-cards` 23 · `bespoke-rows` 14 · `handrolled-icon-button` 37 · `adhoc-progress` 14 · `handrolled-tabs` 3 + move `UnderlineTabs` to `components/ui/`) | M×5 | +4.0 | 91 sites. `components/events/rsvp-controls.tsx` ships a **28px** stepper, under both the 32px density floor and the 44px tap target; `components/gamification/standing-hero.tsx` is a five-line copy of `ProgressTrack`'s own render |
+| 7 | **The rail ladder** (Auto / Open / Strip, persisted; a desktop left-rail fold) | M | +3.0 | Today the right rail is binary, its state lives in `useState` keyed on `pathname` so it resets on navigation, and the left rail has a `compact` mode with **no user control at all**. DAWN's law is a three-position standing instruction honoured until the window is too narrow |
+| 8 | **Marketing: the last 15 pages + tone tagging** | M | +3.0 | 15 of 38 marketing pages bypass `Section`. `.mk-cream` / `.mk-ink` have **0** adopters, so the same-tone-halving rule never fires and the thing that makes a tone change read as a change is inert |
+| 9 | **Pass 2b — 301 display literals** | M/L | +4.0 | `text-3xl`…`9xl` onto the display roles across 67 files. Per-site design judgment (*which role is this heading?*), not a codemod |
+| 10 | **`literal-radius` — 3,824** | L | +2.0 | Biggest number, worst ratio. The plan's own advice stands: **spend it inside screen passes, never as its own wave** |
+
+**Reaching 100 is packages 1 to 9 (~24 points, capping at 100); packages 1 to 4 are a single
+afternoon and buy 5 of them.** Package 10 is not a project, it is a habit.
+
+### 4. Three findings that are not on any list yet
+
+1. **`--radius-cover` is a phantom.** Declared in five `data-generation` blocks, absent from
+   `:root`, absent from `@theme`. `rounded-cover` compiles to nothing, and the comment in
+   `app/spaces/claim/[token]/page.tsx` claiming it themes covers is describing a no-op. This is
+   exactly the failure mode `check:bridge` was built for, one rung below its current reach.
+2. **`.mk-cream` / `.mk-ink` at zero adopters is a silent half-system.** The four-role rhythm
+   landed; the tone-adjacency correction that pairs with it did not. The rhythm is therefore
+   uniform again wherever two same-tone sections stack, which is the exact failure the round was
+   written to fix.
+3. **Four tokens where production is ahead of DAWN, and DAWN does not know.** `SYNC.md` §"Going
+   the other way" requires these go back on the next round:
+
+   | Token | DAWN | Production | Why production is right |
+   | :--- | :--- | :--- | :--- |
+   | `--color-focus-ring` | `#E2912F` | `#B86A15` | PR #2036, 1.75:1 → 3.87:1 |
+   | `--color-text-on-primary` | `#FFFFFF` | `#1A1206` | white on amber fails AA; ink passes |
+   | `--color-text-on-broadcast` | `#FFFFFF` | `#1A1206` | same, on the broadcast cyan |
+   | `--color-text-subtle` | `#8F8675` | `#6E6558` | the contrast sweep darkened it |
+
+### 5. The constraint that governs the whole plan
+
+Every package above 4 changes rendering, and `pr-compare` **is still not a required check**
+(handoff §3.1). Drift compounded silently across six merges before the last session caught it.
+Two consequences, both non-negotiable if this plan is going to hold:
+
+- **Batch the rendering packages, then capture once.** One recapture against a finished tree
+  beats four against a moving target, and the runner's capture commit does not re-trigger CI.
+- 🔴 **Owner:** flip `pr-compare`, `check:adoption` and `check:contrast` to required in branch
+  protection now that all three are green. Until then the ratchet is the only thing holding
+  the line, and it cannot see a visual regression.
