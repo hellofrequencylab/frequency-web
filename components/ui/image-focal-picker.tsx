@@ -212,7 +212,7 @@ export function ImageFocalPicker({
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={safeImageSrc(imageUrl) ?? undefined}
+          src={safeImageSrc(imageUrl) ?? undefined} // codeql[js/xss-through-dom]
           alt={alt}
           draggable={false}
           style={{ objectPosition }}
