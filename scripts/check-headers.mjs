@@ -42,8 +42,9 @@
 // hand-roll an `<h1>` header (exactly the podcast-show case), and only the element check catches it.
 //
 // Escape hatch: an inline `// header-ok: <reason>` (or, inside JSX, a `{/* header-ok: … */}` block
-// comment) on the `<h1>` line or the line directly above it, for a genuinely special surface (e.g. a
-// bespoke chat/takeover pane, MEMBER-DESIGN-SYSTEM §207).
+// comment) on the `<h1>` line, or anywhere in the comment block directly above it, for a genuinely
+// special surface (e.g. a bespoke chat/takeover pane, MEMBER-DESIGN-SYSTEM §207). The whole block
+// counts because a reason worth writing rarely fits on one line.
 //
 // Usage: `node scripts/check-headers.mjs` (or `pnpm check:headers`). Exits 1 on violation, printing
 // file:line so CI fails the PR. Model: scripts/check-menu.mjs + scripts/check-tokens.mjs.
@@ -201,7 +202,7 @@ export function headerViolations(src) {
  * Walk a route entry and the co-located modules it delegates to.
  * @returns {Map<string, string>} module path → the route entry that reaches it (itself, for entries)
  */
-export function delegationClosure(entries, read = (f) => readFileSync(f, 'utf8')) {
+export function delegationClosure(entries, read = (f) => readFileSync(f, 'utf8'), exists = existsSync) {
   const reachedBy = new Map()
   for (const entry of entries) {
     const rel = posix(entry)
@@ -216,7 +217,7 @@ export function delegationClosure(entries, read = (f) => readFileSync(f, 'utf8')
       let src
       try { src = read(file) } catch { continue }
       for (const spec of importSpecifiers(src)) {
-        const target = resolveImport(spec, file)
+        const target = resolveImport(spec, file, exists)
         if (target && isRouteModule(target) && !seen.has(target)) stack.push([target, depth + 1])
       }
     }

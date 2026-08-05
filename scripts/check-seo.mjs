@@ -45,8 +45,9 @@
 // the code that actually makes them private rather than from a hand-kept list here:
 //   * app/robots.ts `DISALLOW` — the crawler is told not to fetch them at all.
 //   * proxy.ts `PROTECTED_PATHS` — an anonymous request is redirected to /sign-in.
-//   * an in-page auth guard (requireAdmin / requireLeadFloor / getMyProfileId / …) or a
-//     redirect stub — the surfaces whose wall is the page's own first statement.
+//   * an in-page auth guard (requireAdmin / requireLeadFloor / …) or a redirect stub —
+//     the surfaces whose wall is the page's own first statement. Reading the VIEWER is not
+//     a wall: see the PAGE_GUARD note on why getMyProfileId is deliberately not a signal.
 // Both lists are PARSED, so when a path is added to either, this gate follows on its own.
 // A page's own layout chain is read too: app/(main)/pages/layout.tsx noindexes its whole
 // subtree, and a per-page-only reader would have called those pages undeclared.
@@ -197,9 +198,12 @@ export function parsePathList(file, name) {
 }
 
 /** Does route `r` fall under one of the private prefixes? A trailing `/` prefix (e.g. `/join/`)
- *  walls the subtree only; a bare one walls the route and its subtree. */
+ *  walls the SUBTREE ONLY — `/join` itself is not covered, exactly as robots.txt reads it — while a
+ *  bare prefix walls the route and its subtree. Matching is per SEGMENT, so `/admin` never swallows
+ *  `/administration`; that is narrower than proxy.ts's literal `startsWith`, and narrower is the
+ *  safe direction here (it checks a page rather than excusing one). */
 export function isPrivateRoute(r, prefixes) {
-  return prefixes.some((p) => (p.endsWith('/') ? `${r}/`.startsWith(p) : r === p || r.startsWith(`${p}/`)))
+  return prefixes.some((p) => (p.endsWith('/') ? r.startsWith(p) : r === p || r.startsWith(`${p}/`)))
 }
 
 // The page's own wall: `require*` (lib/admin/guard — these throw or redirect by contract), and the
