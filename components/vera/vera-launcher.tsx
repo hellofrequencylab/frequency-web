@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { Sparkles, Search, BookOpen, X, MessageSquare, LifeBuoy, Bug, ArrowLeft } from 'lucide-react'
@@ -20,7 +21,9 @@ import {
   type DockOpenDetail,
 } from '@/lib/messages/dock-open'
 import { EdgePill } from '@/components/layout/edge-pill'
+import { DOCK_CHAT_SLOT_ID } from '@/components/layout/dock-bar'
 import type { TeaseGate } from '@/lib/pricing/upsell-tease'
+import { buttonClasses } from '@/components/ui/button'
 
 // The persistent dock (ADR-086 + messaging MVP; unified shell per docs/CHAT-SHELL-PLAN.md C1).
 // ONE floating tab on every member page that opens a panel in the site's popup-shell language:
@@ -199,15 +202,10 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
           numeric unread badge. NOT on /admin (the page-admin dock owns that corner); the
           panel stays mounted so the admin "Ask Vera" bar (open-vera) still works. */}
       {!onAdmin && (
-        <EdgePill
-          side="right"
-          glow="orange"
-          label="Chat"
-          icon={<MessageSquare className="h-[18px] w-[18px]" aria-hidden />}
+        <ChatTrigger
           waiting={pulse || unread > 0}
-          badgeCount={unread}
+          unread={unread}
           onOpen={openPanel}
-          ariaLabel="Open messages, Vera, and help"
         />
       )}
 
@@ -366,5 +364,97 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
         </div>
       )}
     </>
+  )
+}
+
+// ── The chat trigger, in the anchored dock when there is one ──────────────────
+//
+// The chat used to be an EdgePill at `top-1/2 right-0` — pushed to the middle of the right
+// edge because it and the Vault were two floating objects fighting for the same corner. The
+// owner's read: nobody looks halfway down the screen for chat. So on member surfaces it now
+// renders INTO the anchored bottom bar (components/layout/dock-bar.tsx), beside the Vault.
+//
+// It PORTALS rather than being a child of DockBar because the two have different owners:
+// DockBar is a shell sibling fed by the `dock` prop, while this launcher is mounted in the
+// (main) layout and persists across navigation. A portal lets the button sit in the bar's
+// geometry without either component having to own the other's state.
+//
+// The EdgePill stays as the fallback, and it is not dead code: (marketing), (help) and
+// /discover mount this launcher with no Vault and therefore no dock slot. `mounted` gates the
+// decision so the pill never flashes on a surface that does have a dock.
+function ChatTrigger({
+  waiting,
+  unread,
+  onOpen,
+}: {
+  waiting: boolean
+  unread: number
+  onOpen: () => void
+}) {
+  const [mounted, setMounted] = useState(false)
+  const [slot, setSlot] = useState<HTMLElement | null>(null)
+
+  useEffect(() => {
+    // Reading the DOM for the portal target: the slot is rendered by a different component, so
+    // its existence is external state React cannot tell us about. Synchronous on purpose —
+    // deferring it would blink the fallback pill onto surfaces that do have a dock.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSlot(document.getElementById(DOCK_CHAT_SLOT_ID))
+    setMounted(true)
+  }, [])
+
+  if (!mounted) return null
+
+  if (!slot) {
+    return (
+      <EdgePill
+        side="right"
+        glow="orange"
+        label="Chat"
+        icon={<MessageSquare className="h-[18px] w-[18px]" aria-hidden />}
+        waiting={waiting}
+        badgeCount={unread}
+        onOpen={onOpen}
+        ariaLabel="Open messages, Vera, and help"
+      />
+    )
+  }
+
+  // Same bottom edge and top-only rounding as the Vault crest, so the two read as one
+  // anchored system; primary-filled and square so they never read as one control.
+  //
+  // It takes its classes from the kit primitive rather than a hand-rolled fill string — the
+  // raw-button-bg ratchet exists to stop that, and this control tripped it before being moved
+  // onto `buttonClasses`. The overrides are geometry only (the crest's height and top-only
+  // rounding), which is what the primitive's `className` argument is for.
+  //
+  // The note lives ABOVE the element on purpose: that ratchet's pattern is a 500-character
+  // proximity window over raw source, comments included, so spelling the class name out inside
+  // the tag made a comment explaining the rule count as a violation of it.
+  return createPortal(
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label="Open messages, Vera, and help"
+      title="Messages, Vera and help"
+      className={buttonClasses(
+        'primary',
+        'md',
+        'relative h-[3.25rem] w-11 rounded-none rounded-t-2xl border-x border-t border-primary/40 px-0 py-0',
+      )}
+    >
+      <MessageSquare className="h-5 w-5" aria-hidden />
+      {unread > 0 && (
+        <span className="absolute right-1 top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-pill bg-danger px-1 text-3xs font-bold text-on-danger">
+          {unread > 9 ? '9+' : unread}
+        </span>
+      )}
+      {/* The "something is waiting" tell. A dot, not the pill's wiggle: the bar is anchored
+          furniture now, and furniture that shakes reads as broken rather than as a nudge. */}
+      {waiting && unread === 0 && (
+        <span aria-hidden className="absolute right-1.5 top-1.5 h-2 w-2 rounded-pill bg-on-primary/90" />
+      )}
+    </button>,
+    slot,
   )
 }

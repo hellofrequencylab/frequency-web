@@ -33,6 +33,7 @@ import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { ViewAsControl } from '@/components/layout/view-as-control'
 import { ContextSwitcher } from '@/components/layout/context-switcher'
 import { ContextBadge } from '@/components/layout/context-badge'
+import { DockBar, RAIL_END_SENTINEL_ID } from '@/components/layout/dock-bar'
 import type { AvailableContext, OperatorContext } from '@/lib/context/operator-context'
 import {
   type CommunityRole,
@@ -2058,6 +2059,10 @@ export default function AppShell({
                 ) : (
                   <aside className="flex w-72 shrink-0 flex-col py-6">
                     {sidebar}
+                    {/* The rail's end. DockBar measures this to know when to stop being pinned to
+                        the window and come to rest against the last rail card instead. Zero-height
+                        and aria-hidden: it is a ruler, not content. */}
+                    <div id={RAIL_END_SENTINEL_ID} aria-hidden className="h-0" />
                     {railCollapsible && (
                       // The collapse TOGGLE at the BOTTOM, sticky so it stays visible as the rail
                       // scrolls. Rail-control law (DAWN 2026-08-03): one affordance at the FOOT,
@@ -2126,7 +2131,7 @@ export default function AppShell({
           dock, which occupies these exact coordinates on /admin. Outside the editor-takeover
           guard below because it is not part of the mobile tab bar -- it is hidden md:block, so
           it never renders at the width the tab bar occupies. */}
-      {showSidebar && !editorTakeover && dock}
+      {showSidebar && !editorTakeover && <DockBar vault={dock} />}
 
       {!editorTakeover && (
         <MobileTabBar

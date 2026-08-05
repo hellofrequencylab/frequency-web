@@ -1,4 +1,5 @@
 import 'server-only'
+import { SITE_TAGLINE } from '@/lib/site'
 
 // The standard, deliberately-basic branded wrapper for outbound conversation email: a simple Frequency
 // header, the message body, the sender's signature, and a footer with frequencylocal.com. Applied to the
@@ -30,12 +31,16 @@ export function wrapEmailHtml(innerHtml: string): string {
   <div style="padding:18px 0 14px;border-bottom:1px solid #ececec;font-weight:700;font-size:17px;letter-spacing:-0.01em;color:#111827">Frequency</div>
   <div style="padding:20px 2px;font-size:15px;line-height:1.55">${innerHtml}</div>
   <div style="padding:14px 0;border-top:1px solid #ececec;color:#9aa0a6;font-size:12px;line-height:1.5">
-    A place to be human. <a href="${APP}" style="color:#9aa0a6">frequencylocal.com</a>
+    ${SITE_TAGLINE}. <a href="${APP}" style="color:#9aa0a6">frequencylocal.com</a>
   </div>
 </div>`
 }
 
-const TEXT_FOOTER = `\n\nA place to be human · ${APP}`
+// The tagline comes from lib/site.ts, not a literal. It was hardcoded as the RETIRED
+// "A place to be human" and shipped in the footer of every branded reply and digest --
+// scripts/check-canon.mjs bans that string, but lib/comms/ is outside the gate's SRC_DIRS,
+// so nothing caught it. Sourcing it means the ban and the ship cannot drift again.
+const TEXT_FOOTER = `\n\n${SITE_TAGLINE} · ${APP}`
 
 /** Render a single reply body (+ optional signature) as a full branded email. */
 export function renderReplyEmail(body: string, signature: string | null): { html: string; text: string } {

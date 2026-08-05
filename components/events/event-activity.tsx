@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
+import { safeImageSrc, safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB (post-prep; HEIC is converted and big photos shrink first)
 
@@ -297,13 +298,16 @@ export function EventActivity({
             className="w-full resize-none bg-transparent text-body-sm leading-relaxed text-text/90 placeholder:text-subtle outline-none disabled:opacity-60"
           />
 
-          {!asDispatch && (imagePreview || gifUrl) && (
+          {/* Both arms guarded. gifUrl was validated at its setter, but the blob arm was not,
+              and the two share one sink -- so they share one guard here rather than relying on a
+              check made 130 lines away. */}
+          {!asDispatch && (safeUploadPreviewSrc(imagePreview) || safeImageSrc(gifUrl)) && (
             <div className="relative mt-2 inline-block">
               {/* Local blob preview of the file being uploaded, or the chosen GIF;
                   next/image with `unoptimized` passes object URLs / GIFs straight
                   through (no optimization of animated frames). */}
               <Image
-                src={imagePreview ?? gifUrl!}
+                src={safeUploadPreviewSrc(imagePreview) ?? safeImageSrc(gifUrl) ?? ''}
                 alt={gifUrl ? 'GIF preview' : 'Upload preview'}
                 width={160}
                 height={160}

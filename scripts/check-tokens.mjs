@@ -229,7 +229,9 @@ function main() {
   console.error(
     '\nReplace the literal with a DAWN token (names in app/globals.css: primary/signal/broadcast/ink/on-ink/\n' +
       'surface/border/success/warning/danger/info + -bg/-strong/-hover, plus text/muted/subtle) and text-[Npx]\n' +
-      'with the named scale (text-3xs / text-2xs / text-xs / text-sm / text-base). If a literal is genuinely\n' +
+      'with a TYPE ROLE (text-3xs / text-2xs / text-meta / text-body-sm / text-body / text-body-lg /\n' +
+      'text-lead / text-page-title). NOT text-xs/sm/base -- those are literals check:adoption now fails\n' +
+      'on, and this hint used to recommend exactly the three classes the other gate bans. If a literal is genuinely\n' +
       'required, add `// token-ok: <reason>` on the line (or the line above), or allowlist the file in\n' +
       'scripts/check-tokens.mjs. See AGENTS.md §46,63.\n',
   )

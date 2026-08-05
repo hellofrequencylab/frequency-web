@@ -16,6 +16,7 @@ import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { startListingIntake, uploadListingImages } from './actions'
 import { detectListingKind } from '@/lib/listing-seeder/detect'
 import type { ListingSeedKind } from '@/lib/listing-seeder/types'
+import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
 const field =
   'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
@@ -216,7 +217,7 @@ export function StartImportForm() {
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
         {previews.map((p, i) => (
           <div key={p.url} className="group relative aspect-square overflow-hidden rounded-card border border-border">
-            <Image src={p.url} alt="" width={200} height={200} unoptimized className="h-full w-full object-cover" />
+            <Image src={safeUploadPreviewSrc(p.url) ?? ''} alt="" width={200} height={200} unoptimized className="h-full w-full object-cover" />
             {/* KEEP the black/white pair below: A scrim chip painted on a photo thumbnail, not on a themed surface, so the monochrome pair stays. */}
             {i === 0 && (
               <span className="absolute left-1.5 top-1.5 rounded-pill bg-black/60 px-1.5 py-0.5 text-2xs font-semibold text-white">

@@ -107,7 +107,10 @@ for (const file of mdFiles(ROOT)) {
 // phrases only (never the casing rules, which are ambiguous in code). Comments are STRIPPED first so a
 // historical reference in a code comment ("purged the pay-it-forward copy") never trips the gate; only a
 // live string/JSX-text reappearance does.
-const SRC_DIRS = ['app/(marketing)', 'lib/page-editor/templates', 'lib/marketing', 'components/marketing']
+// `lib/comms` is here because the retired tagline shipped in the footer of EVERY branded
+// reply and digest for as long as this gate has existed, and the gate could not see it:
+// member-facing copy is not only on marketing pages. If we send it to a person, scan it.
+const SRC_DIRS = ['app/(marketing)', 'lib/page-editor/templates', 'lib/marketing', 'components/marketing', 'lib/comms']
 const SRC_FILES = ['lib/site.ts', 'lib/jsonld.ts', 'app/page.tsx', 'app/llms.txt/route.ts', 'app/llms-full.txt/route.ts']
 
 function srcFiles(dir) {

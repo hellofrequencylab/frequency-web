@@ -392,7 +392,11 @@ export function SpaceAboutBlock({
 }) {
   // Honest-empty: no story, no card on the LIVE page (a heading over nothing reads as broken to a
   // visitor); the stub keeps the section placeable in the editor.
-  if (!body) {
+  // `!body?.trim()`, not `!body`: a whitespace-only story is truthy, so it cleared the old guard
+  // and then `split('\n').filter(Boolean)` returned [] — an InfoCard with a heading over an empty
+  // div, which is exactly the "heading over nothing reads as broken" case this guard exists to
+  // prevent. The guard was one character short of doing what its own comment promised.
+  if (!body?.trim()) {
     if (!editing) return null
     return (
       <div>
@@ -401,16 +405,17 @@ export function SpaceAboutBlock({
       </div>
     )
   }
+  // No `{body && …}` here: both arms of the guard above return, so every path that reaches this
+  // point has a non-empty body and TypeScript has already narrowed it to `string`. The wrapper
+  // could never be false — CodeQL flagged it, and it was right.
   return (
     <InfoCard ink={ink}>
       <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
-      {body && (
-        <div className={`space-y-3 text-body leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
-          {body.split('\n').filter(Boolean).map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
-        </div>
-      )}
+      <div className={`space-y-3 text-body leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
+        {body.split('\n').filter(Boolean).map((p, i) => (
+          <p key={i}>{p}</p>
+        ))}
+      </div>
     </InfoCard>
   )
 }

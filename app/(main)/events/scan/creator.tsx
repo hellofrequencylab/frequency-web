@@ -461,7 +461,7 @@ export function Creator({ userId }: { userId: string }) {
           {thumbs.map((src, i) => (
             <div key={src} className="relative aspect-square overflow-hidden rounded-lg border border-border bg-surface-elevated">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt={`Shot ${i + 1}`} className="h-full w-full object-cover" />
+              <img src={safeUploadPreviewSrc(src) ?? undefined} alt={`Shot ${i + 1}`} className="h-full w-full object-cover" />
               <button
                 type="button"
                 onClick={() => removeFile(i)}
