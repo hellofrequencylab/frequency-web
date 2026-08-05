@@ -1699,14 +1699,16 @@ export default async function EventDetailPage({
       titleScale="display"
       title={
         canManage ? (
-          /* 🔴 The size chain here MIRRORS DetailTemplate's `titleScale="display"` h1 verbatim,
-             so the input matches the title it replaces. Change one and you must change both.
-             Left on literals with that h1 (ADR-947): it is a responsive ramp, and none of the
-             fixed roles reproduces one — see the note at components/templates/detail-template.tsx. */
+          /* 🔴 The size here MIRRORS DetailTemplate's `titleScale="display"` h1, so the input
+             matches the title it replaces. Change one and you must change both — an input gets
+             the browser's own form-control font, so it cannot simply inherit the h1 it sits in.
+             Converted with that h1 to the single fluid role (ADR-949): the mirrored thing is now
+             one token rather than a three-step ramp across two breakpoints, which is a smaller
+             coupling but the same one. See the note at components/templates/detail-template.tsx. */
           <InlineText
             value={event.title}
             save={updateEventField.bind(null, event.id, slug, 'title')}
-            inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-page-title sm:text-3xl lg:text-4xl font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
+            inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-page-title-lg font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
           />
         ) : (
           event.title

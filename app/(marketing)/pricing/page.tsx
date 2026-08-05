@@ -652,15 +652,25 @@ function PlanPrice({
   ]
   // A long price label (pay-what-you-want Crew reads "from $4.99/mo") steps down a size so the display
   // face never wraps mid-figure; the reference sizes by string length the same way.
+  //
+  // THIS FUNCTION STAYS (ADR-947). It is not four stray literals — it is a length-driven FITTING
+  // algorithm, and collapsing it to one role would let a long figure wrap mid-price. What the roles
+  // can do is name three of its four outputs, at exactly the sizes it already picked:
+  // `stat-sm` IS 1.875rem with text-3xl's ratio and `stat-md` IS 2.25rem with text-4xl's, so these
+  // swaps are byte-identical renders that additionally put the price back on the --type-scale axis.
+  // The featured/short branch keeps its literals: it runs 3rem → 3.75rem, and the ladder has no rung
+  // between `stat-md` (2.25rem) and the hero `stat` (3.5rem floor, and fluid). The new
+  // `page-title-lg` does not reach it either — it CEILINGS at 2.25rem, i.e. where this branch starts.
+  // Inventing a role for one call site is the thing ADR-947 declined to do; that has not changed.
   const sizeFor = (label: string) => {
     const long = label.length > 8
     return featured
       ? long
-        ? 'text-3xl sm:text-4xl'
+        ? 'text-stat-sm sm:text-stat-md'
         : 'text-5xl sm:text-6xl'
       : long
-        ? 'text-3xl'
-        : 'text-4xl'
+        ? 'text-stat-sm'
+        : 'text-stat-md'
   }
   return (
     <div className="mt-4">
