@@ -353,6 +353,25 @@ wild (27 sites at `tracking-[0.25em]`, matching the prose). We resolved to **0.1
 per the rule that machine-readable state beats prose. **Please fix the readme sentence** — this is
 the exact value the R7 sweep is converging ~698 sites onto.
 
+**1b. And DAWN contradicts itself on eyebrow SIZE too — same shape, second axis.**
+`tokens/typography.css` declares `--text-eyebrow: 0.875rem`, but the `.eyebrow` class two
+declarations below reads `--text-meta` (0.75rem). So the token named for the role is not the one
+the role renders, and a consumer gets a different size depending on whether they write the class
+or the token. Production had inherited both.
+
+**Resolved DOWN to 0.75rem, and our `eyebrow` utility now reads `--text-eyebrow` so the role owns
+its own size.** The reasoning, in case DAWN wants to resolve the other way: 0.875rem is also
+`--text-body-sm`, so an eyebrow at that size is exactly as large as the sentence it is meant to
+label, and stops reading as a label at all. `--text-meta` is documented as the content FLOOR,
+which is where a small uppercase chrome label belongs. Net rendered change for us was zero.
+
+**Suggestion:** make `--text-eyebrow` the single declaration and have `.eyebrow` read it, rather
+than keeping a role token that nothing uses. A token whose own class ignores it will drift again.
+
+The eyebrow now has one answer on both axes here — **0.75rem / 0.18em / semibold / uppercase** —
+guarded by `lib/theme/eyebrow-role.test.ts`, which reads `globals.css` from disk and fails if the
+utility and the token ever point at different values again.
+
 **2. Four tokens where production is ahead** (contrast fixes DAWN has not picked up):
 
 | Token | DAWN | Production | Why |
