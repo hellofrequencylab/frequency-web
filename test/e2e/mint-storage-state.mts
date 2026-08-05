@@ -215,10 +215,22 @@ try {
   const location = response.headers.get('location')
   landed = location ? new URL(location, baseUrl).pathname : '/feed'
   if (landed.startsWith('/sign-in')) {
+    // Print what we actually sent and got. The three obvious causes (wrong project, deleted
+    // account, expired token) are all cheap to rule out from the DB side, so when they are ruled
+    // out the next question is always "what cookie NAME did we write, and did the app want a
+    // different one" — and guessing at that from outside costs far more than printing it.
+    // Names only, never values: the value IS the session.
     fail(
       `The minted session does NOT authenticate against ${baseUrl.origin} (/feed → ${landed}).`,
-      'Most likely the deployment points at a different Supabase project than the one this',
-      'script just used, or the member account was deleted. Nothing was written.',
+      `  probe status : ${response.status}`,
+      `  cookies sent : ${cookies.map((c) => c.name).join(', ') || '(none)'}`,
+      `  cookie domain: ${baseUrl.hostname}   secure=${baseUrl.protocol === 'https:'}`,
+      `  session user : ${session.session?.user?.email ?? '(none)'} (expires ${session.session?.expires_at ?? '?'})`,
+      '',
+      'The app reads its session with createServerClient(NEXT_PUBLIC_SUPABASE_URL, ...), and',
+      '@supabase/ssr derives the cookie NAME from that URL. If the name above does not match the',
+      'one your browser holds when signed in (DevTools → Application → Cookies), the two are',
+      'pointed at different projects — check the deployment env, not this script. Nothing written.',
     )
   }
   if (response.status >= 500) {
