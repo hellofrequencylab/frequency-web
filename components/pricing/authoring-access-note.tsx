@@ -39,7 +39,7 @@ export function AuthoringAccessNote({
 }) {
   const betaLead = betaLeadLine()
   return (
-    <div className="flex gap-3 rounded-card border border-border bg-surface-subtle p-4 text-sm">
+    <div className="flex gap-3 rounded-card border border-border bg-surface-elevated p-4 text-sm">
       <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
       <div className="space-y-1.5 text-muted">
         {betaLead && <p className="font-medium text-text">{betaLead}</p>}

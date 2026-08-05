@@ -782,7 +782,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         {/* LIVE LAUNCH PREVIEW (PRACTICE-TIMER-CONTINUITY P5): the exact summary line the member's
             card + detail page render (the same pure timerPreview the cards call), recomputed live
             as the creator edits. The creator sees what they are shipping, not an approximation. */}
-        <p className="mt-3 rounded-lg bg-surface-2 px-3 py-2 text-xs text-text">
+        <p className="mt-3 rounded-lg bg-surface-elevated px-3 py-2 text-xs text-text">
           <span className="font-semibold">Members will see:</span>{' '}
           {timerPreview({
             timerKind,

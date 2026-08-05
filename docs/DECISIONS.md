@@ -17386,3 +17386,119 @@ erase that it once was.
 **`FOCUS_NONE_PREFIXES` is now empty rather than deleted.** These routes were its only
 entries, but the mechanism is the contract (PAGE-FRAMEWORK §8): the next Focus flow adds one
 prefix there instead of editing the shell.
+
+## ADR-941 — The type vocabulary lands, and the rail's labels live in the database (2026-08-05)
+
+The owner opened production beside the DAWN mockup and asked why the app does not look
+like the design system. Two separate answers, and the first correction is to the question.
+
+### The DAWN round ran in REVERSE, so the mockup is not a target
+
+`design_handoff/dawn/readme.md:22` — *"This round production was the source of truth …
+Token values here match `app/globals.css` value for value."* `CHANGES.md:8` says the same.
+The mockup's left rail was drawn FROM `lib/nav-areas.ts`. So "the design was never built"
+is backwards, and in several places the app is AHEAD of the mockup: it carries five rail
+rows DAWN never drew, and the floating Vault dock is ADR-932 (2026-08-04), which post-dates
+the 2026-08-03 kit and explicitly deleted the in-rail panel the mockup still shows.
+`AGENTS.md` already governs this: code wins over a plan doc. **Do not rebuild a screen to
+match a mockup without checking which one moved last.**
+
+Two things in the screenshot were settled canon, not gaps: the "A place to be human"
+tagline is retired and CI-banned (`scripts/check-canon.mjs:34`), and the dock overlap is a
+consequence ADR-932 accepted in writing.
+
+### What was actually missing: the entire typographic vocabulary
+
+Colors were never the problem — 61/61 DAWN color tokens and 21/21 skin tokens are present
+and consumed (`app-shell.tsx:1746` `bg-canvas`, `:1769` `bg-chrome`). **Typography was
+0/24.** Not one `--text-*` role, weight, leading or tracking existed. Every heading in the
+product was sized by a raw Tailwind literal: `PageHeading`'s h1 was `text-xl sm:text-2xl`,
+so a page title was 1.25rem on mobile against DAWN's 1.5rem, and it stepped at an arbitrary
+breakpoint instead of holding one role. `.eyebrow` was the one DAWN utility with no
+definition at all, so every eyebrow was hand-rolled at `tracking-widest` (0.1em) against
+DAWN's 0.18em — nearly half the tracking on the element whose whole job is to look spaced.
+
+"No text styles are present" was literally true, and it is BRIEF-05's own diagnosis #2
+("type too small and unexpressive") and principle #1 ("type is the hero").
+
+**Every content role is `calc(… * var(--type-scale))`.** A fixed rem would sit outside the
+generation axis, so the bold preset could not tighten type and kids-early could not enlarge
+it — the axis would quietly stop reaching the elements it most needs. This mirrors the
+existing `text-scaled-*` utilities. The sub-xs chrome steps are deliberately NOT scaled:
+they are floors, and multiplying a 10px floor by a shrinking preset walks it under AA.
+
+Verified by compiling `globals.css` through the Tailwind API and asserting each utility
+emits a rule — a token in `@theme inline` that generates no class is indistinguishable from
+a token that works, until a call site silently does nothing.
+
+### The rail is DB-driven, and that is why ADR-937 never shipped
+
+`app/(main)/layout.tsx:329` reads `getMenu('left')`, and `app-shell.tsx:1575-1579` replaces
+`NAV_AREAS` ENTIRELY when that menu has real rows. Production has 31 such rows. So the rail
+a member sees is database state, not `lib/nav-areas.ts`.
+
+Three labels had drifted from the code they were seeded from:
+
+| href | was | now |
+|---|---|---|
+| `/marketplace` | Marketplace | **Market** (ADR-937) |
+| `/crew/store` | My Vault | **The Vault** |
+| `/messages` | Messages | **Message Boards** |
+
+ADR-937 renamed the row in code on 2026-08-04, CI went green, the ledger recorded it as
+decided — and production kept saying "Marketplace" for a day, because the string lives in a
+row nobody updated. **A rename that only touches code is not shipped when the surface reads
+from the database.** Corrected in production directly; the four `mode:'hidden'` rows
+(Around You, Journal, Message Boards, Frequency Store) are left alone as an operator choice.
+
+**Consequence.** ⚠️ There is no gate that compares seeded menu rows against `NAV_AREAS`.
+`pnpm check:menu` enforces the ADMIN catalog contract, not the member rail's DB copy, so
+this class of drift can recur silently on any future rename. A drift check belongs with the
+menu contract; not written here.
+
+## ADR-942 — A className is a string to every gate we own, so compile it (2026-08-05)
+
+Five classes were live in the product that emit **no CSS at all**:
+
+| class | file | the real token |
+|---|---|---|
+| `bg-surface-2` | `components/studio/practice/practice-builder.tsx` | `bg-surface-elevated` |
+| `bg-surface-subtle` | `components/pricing/authoring-access-note.tsx` | `bg-surface-elevated` |
+| `border-line` | `components/widgets/admin/admin-journeys-library.tsx` | `border-border` |
+| `border-primary-border` | `components/widgets/events/event-checkin.tsx` | `border-primary/30` |
+| `text-muted-foreground` | `app/discover/spaces/[type]/page.tsx` | `text-muted` |
+
+Each renders nothing. The element loses its background, its border, or its colour, and
+**nothing anywhere reports it.**
+
+**Why every existing gate missed them.** `check:tokens` greps for literals, `check:adoption`
+counts them, eslint parses the AST, tsc types the props. All of them read SOURCE, and to all
+of them a `className` is an opaque string. None owns the vocabulary, so a plausible-looking
+class that no rule matches is invisible. `text-muted-foreground` is the tell: that is
+**shadcn's** name for this colour, not ours. It arrives with a pasted snippet and survives
+review because it reads perfectly.
+
+**The ruling: prove a class PAINTS, not that it exists.** `scripts/check-phantom-classes.mjs`
+runs the real `globals.css` through the real Tailwind compiler and asserts every
+design-system-shaped class in `app/**` and `components/**` emits a rule. Wired as
+`pnpm check:phantom` in CI.
+
+**Deliberately narrow.** Only prefixes this system owns (`bg|text|border|rounded|tracking|
+leading|shadow|lift`), only bare tokens, no arbitrary values or `${}` fragments. A broad scan
+drowns in English words sitting in string literals — "texture", "pressure", "textarea" — and
+a noisy gate gets ignored. A real subset every run beats a superset once.
+
+**It carries a self-check, and that is the point.** A broken extractor and a clean repo both
+print "0 problems", so the script asserts a known-good control class (`rounded-card`) emits
+CSS before trusting its own silence, and fails loudly if it does not. This was written after
+a probe earlier the same night reported `--radius-xl` "NOT EMITTED" purely because the probe
+generated two utilities and nothing else — a false alarm that nearly became a bug report.
+
+**Verified by reintroducing the defect.** `bg-surface-subtle` was put back and the gate exited
+**1**; removed, it exited **0**. Checked with `echo $?` on the script directly, not through a
+pipe — a `| head` reports the exit code of `head`, which is how a failed `pnpm build` got
+reported as passing earlier the same night.
+
+**Consequence.** ⚠️ Variants and arbitrary values (`hover:bg-foo`, `bg-[#abc]`) are out of
+scope, so a phantom inside a variant still ships silently. Widening the pattern needs a way to
+tell a class from an English word first.

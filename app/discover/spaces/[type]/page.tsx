@@ -111,7 +111,7 @@ export default async function DiscoverSpacesByTypePage({
         <Section tone="surface">
           <div className="mx-auto max-w-md text-center">
             <Building2 className="mx-auto h-8 w-8 text-subtle" aria-hidden />
-            <p className="mt-3 text-sm text-muted-foreground">
+            <p className="mt-3 text-sm text-muted">
               No {hub.plural.toLowerCase()} here yet. Be the first to claim one.
             </p>
           </div>

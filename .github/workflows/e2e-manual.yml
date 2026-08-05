@@ -17,6 +17,19 @@
 #   run_visual       also run the @visual compare against committed baselines
 #   update_baselines CAPTURE fresh @visual baselines and commit them to the branch
 #   update_a11y      CAPTURE the @a11y ratchet counts and commit them to the branch
+#
+# ⚠️ THE COMMIT THIS MAKES WILL NOT RE-RUN CI. Both capture jobs push with GITHUB_TOKEN, and
+# GitHub deliberately suppresses workflow runs triggered by that token so an Action cannot
+# recurse into itself. So after a capture lands you get a branch whose newest commit has NO
+# `checks`, NO `pr-compare`, NO `analyze` — only Vercel, which uses its own webhook and is
+# unaffected. Observed on PR #2026 (2026-08-05): commit 6ced257 re-captured all 64 baselines
+# and produced exactly one check run.
+#
+# The failure mode is waiting: the PR looks mid-run forever because the run was never queued.
+#
+# And re-running the PREVIOUS failed run does NOT fix it — a re-run replays the same SHA, so
+# it would judge the new baselines' commit against the old commit's tree. Push a commit to
+# the branch instead (any real change), which fires `pull_request: synchronize` normally.
 name: e2e (manual)
 
 on:

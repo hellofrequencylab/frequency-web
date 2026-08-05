@@ -55,6 +55,9 @@ jobs:
         run: pnpm check:elements
       - name: Token contract check (no hardcoded style)
         run: pnpm check:tokens
+
+      - name: Phantom classes (a className that emits no CSS)
+        run: pnpm check:phantom
       - name: Contrast gate (WCAG token pairs, all four render states — Lift 3a)
         run: pnpm check:contrast
       - name: Adoption ratchet (design debt may shrink, never grow — Lift 2a)

@@ -200,6 +200,68 @@
      the calm + kids ends (simple) get a roomier flow and the bold preset (dense) a
      tighter one, from the SAME content. 1 = the proven standard composition. */
   --structure-rhythm: 1;
+
+  /* ── TYPE ROLES (DAWN tokens/typography.css) ─────────────────────────────────
+     Ported 2026-08-05. Every one of these was missing: the product sized headings
+     with raw Tailwind literals, so an h1 was `text-xl` (1.25rem on mobile) against
+     DAWN's 1.5rem page title, and eyebrows used Tailwind's `tracking-widest`
+     (0.1em) against DAWN's 0.18em. That is what "no text styles are present" meant
+     — not a missing stylesheet, a missing vocabulary. BRIEF-05 names it as
+     diagnosis #2 ("type too small and unexpressive") and principle #1 ("type is
+     the hero").
+
+     EVERY CONTENT ROLE IS MULTIPLIED BY --type-scale, and that is the whole point.
+     A fixed rem here would sit OUTSIDE the generation axis, so the bold preset
+     could not tighten type and kids-early could not enlarge it — the axis would
+     silently stop working for exactly the elements it most needs to reach. This
+     mirrors `text-scaled-*` below, which already does calc(_ * var(--type-scale)).
+     (I hardcoded past the --tap-min axis once this week; not twice.)
+
+     Defining only. Nothing consumes these yet beyond the three sites below, so
+     adding them changes no pixel until a call site opts in. */
+
+  /* Display (Anton) — marketing headlines, pull-quotes, big numerals. */
+  --text-display-hero: calc(clamp(3rem, 6vw, 5rem) * var(--type-scale, 1));
+  --text-display-h1:   calc(clamp(2.75rem, 5vw, 4.5rem) * var(--type-scale, 1));
+  --text-display-h2:   calc(clamp(2.25rem, 4vw, 3rem) * var(--type-scale, 1));
+  --text-display-h3:   calc(clamp(1.75rem, 3vw, 2.25rem) * var(--type-scale, 1));
+  --text-display-card: calc(1.5rem * var(--type-scale, 1));
+  --text-stat:         calc(clamp(3.5rem, 6vw, 4.5rem) * var(--type-scale, 1));
+
+  /* Sans (Nunito) — body, in-app headings, UI. */
+  --text-page-title:   calc(1.5rem * var(--type-scale, 1));
+  --text-lead:         calc(1.25rem * var(--type-scale, 1));
+  --text-card-title:   calc(1.0625rem * var(--type-scale, 1));
+  --text-body:         calc(1rem * var(--type-scale, 1));
+  --text-body-sm:      calc(0.875rem * var(--type-scale, 1));
+  --text-meta:         calc(0.75rem * var(--type-scale, 1));
+  --text-eyebrow:      calc(0.875rem * var(--type-scale, 1));
+
+  /* Sub-xs chrome. DELIBERATELY NOT scaled: these are FLOORS, and DAWN's own note
+     says chrome only, never content type. Multiplying a 10px floor by a preset that
+     shrinks type walks it under the AA minimum, which is the one direction a floor
+     must not move. */
+  --text-2xs: 0.6875rem;  /* 11px */
+  --text-3xs: 0.625rem;   /* 10px */
+
+  /* Weights. `heading` is the role to reach for; 800/900 are for a numeral or one
+     deliberate emphasis, never every title on a page. */
+  --weight-normal:    400;
+  --weight-medium:    500;
+  --weight-semibold:  600;
+  --weight-heading:   700;
+  --weight-bold:      700;
+  --weight-extrabold: 800;
+  --weight-black:     900;
+
+  /* Line heights + tracking. Unitless / em, so they ride the font size already. */
+  --leading-display: 0.95;
+  --leading-snug:    1.2;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.65;
+  --tracking-tight:         -0.015em;
+  --tracking-tight-display: -0.03em;
+  --tracking-eyebrow:        0.18em;
 }
 
 /* Always-light lock. The cinematic beta induction is a branded cream experience
@@ -1043,16 +1105,70 @@
   --type-scale: var(--type-scale);
   --ornament:   var(--ornament);
   --tap-min:    var(--tap-min);
+
+  /* Type roles → `text-*` utilities. Tailwind v4 synthesizes a font-size utility from
+     every `--text-*` here, so `text-page-title` / `text-lead` / `text-body-sm` exist as
+     classes and each re-resolves per data-generation (the roles are calc'd against
+     --type-scale at :root). This is the bridge that turns the ported vocabulary from
+     "defined" into "usable at a call site". */
+  --text-display-hero: var(--text-display-hero);
+  --text-display-h1:   var(--text-display-h1);
+  --text-display-h2:   var(--text-display-h2);
+  --text-display-h3:   var(--text-display-h3);
+  --text-display-card: var(--text-display-card);
+  --text-stat:         var(--text-stat);
+  --text-page-title:   var(--text-page-title);
+  --text-lead:         var(--text-lead);
+  --text-card-title:   var(--text-card-title);
+  --text-body:         var(--text-body);
+  --text-body-sm:      var(--text-body-sm);
+  --text-meta:         var(--text-meta);
+  --text-eyebrow:      var(--text-eyebrow);
+
+  /* Weight / leading / tracking roles → `font-*`, `leading-*`, `tracking-*`. */
+  --font-weight-heading:   var(--weight-heading);
+  --font-weight-extrabold: var(--weight-extrabold);
+  --font-weight-black:     var(--weight-black);
+  --leading-display: var(--leading-display);
+  --leading-snug:    var(--leading-snug);
+  --leading-normal:  var(--leading-normal);
+  --leading-relaxed: var(--leading-relaxed);
+  --tracking-tight-display: var(--tracking-tight-display);
+  --tracking-eyebrow:       var(--tracking-eyebrow);
 }
 
 /* Sub-xs type scale — named steps so tiny labels/badges stop using the
    text-[10/11px] arbitrary anti-pattern (AGENTS.md). Font-size only (matching the
    px values they replace), so no line-height is coupled in. */
 @utility text-2xs {
-  font-size: 11px;
+  font-size: var(--text-2xs);
 }
 @utility text-3xs {
-  font-size: 10px;
+  font-size: var(--text-3xs);
+}
+
+/* EYEBROW — the small uppercase tracked label above a heading.
+   DAWN defines this as a locked utility (tokens/typography.css) and it was the ONE
+   DAWN class with no definition here at all, so every eyebrow in the product was
+   hand-rolled as `text-xs uppercase tracking-widest`. Tailwind's tracking-widest is
+   0.1em; DAWN's eyebrow tracking is 0.18em. Nearly double, on the element whose
+   entire job is to look deliberately spaced — which is a large part of why the
+   product reads undesigned next to the mockup.
+
+   Size follows DAWN's own class body (--text-meta, 0.75rem), NOT the --text-eyebrow
+   token (0.875rem). DAWN's file disagrees with itself there; matching the class keeps
+   the rendered size identical to today's `text-xs`, so this change moves TRACKING
+   only and cannot reflow a layout.
+
+   Color is deliberately absent — context sets it (text-primary-strong on light,
+   text-primary on dark/photo). --font-grotesk is not ported yet, so the fallback
+   keeps the current face rather than silently dropping to a browser default. */
+@utility eyebrow {
+  font-family: var(--font-grotesk, var(--font-sans));
+  font-size: var(--text-meta);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
 }
 
 /* ── Marketing vertical rhythm — the four-role system (DAWN 2026-08-03, final round).
