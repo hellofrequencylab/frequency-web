@@ -252,3 +252,23 @@ export function railFoldControlLabel(side: RailSide, showing: RailState): string
   const what = side === 'left' ? 'the menu' : 'the rail'
   return showing === 'open' ? `Fold ${what} to a strip` : `Unfold ${what}`
 }
+
+/**
+ * DOM id of the box holding one rail's fold HANDLE — the subtle mark on the rail's edge, centred
+ * on the screen (owner, 2026-08-05; it replaced a glyph at the rail's foot). The open rail and
+ * the strip render the same handle in exclusive branches, so the id names the SIDE, not the
+ * position: exactly one of them is in the document at a time.
+ *
+ * It exists for one caller, and only because that caller is OUTSIDE the rail. DockBar is a shell
+ * sibling (it renders from md, the rail column only exists from lg), so it cannot hold a ref to
+ * the handle. When folding the rail takes the bar off the screen with focus still inside it, the
+ * bar hands focus here rather than letting the browser drop a keyboard member onto <body> and
+ * restart their tab order — the same duty `close()` performs in components/vera/vera-launcher.tsx.
+ *
+ * The id is on the BOX, not on the button: RailFoldControl takes placement classes, not an id,
+ * and widening its props to serve one focus hand-off would be a heavier change than asking the
+ * box for its one button.
+ */
+export function railHandleId(side: RailSide): string {
+  return `fq-rail-handle-${side}`
+}

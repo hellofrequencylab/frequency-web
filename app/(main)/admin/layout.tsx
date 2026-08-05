@@ -84,7 +84,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           is the page dock, right segment is the chat, one crest across the rail. `railFor`
           returns 'none' on /admin, so the member dock never renders here and the two can never
           collide. */}
-      <DockBar vault={<AdminPageDock role={role} webRole={webRole} staffRole={staffRole} />} />
+      {/* `folded` is FALSE here, and it is a statement rather than a placeholder: the operator
+          info rail (AdminRailDrawerColumn) is not on DAWN's fold ladder at all — it carries no
+          RailFoldControl, so there is no press that could fold it and nothing for the bar to
+          react to. The member rail's fold cannot reach this bar either; `railFor` returns 'none'
+          on /admin, so the two bars never co-exist. If the operator rail ever joins the ladder,
+          this is where its resolved fold goes — one prop, same behaviour. */}
+      <DockBar folded={false} vault={<AdminPageDock role={role} webRole={webRole} staffRole={staffRole} />} />
 
       <AdminFooter role={role} webRole={webRole} staffRole={staffRole} />
     </div>

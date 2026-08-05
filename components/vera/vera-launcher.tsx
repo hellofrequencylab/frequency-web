@@ -23,10 +23,12 @@ import {
 import { EdgePill } from '@/components/layout/edge-pill'
 import {
   DOCK_CHAT_SLOT_ID,
+  RAIL_END_OPENS,
   announceDockSegmentOpen,
   getDockGeometry,
   getServerDockGeometry,
   onOtherDockSegmentOpen,
+  railEndOpenDue,
   subscribeDockGeometry,
 } from '@/components/layout/dock-bar'
 import type { TeaseGate } from '@/lib/pricing/upsell-tease'
@@ -85,23 +87,22 @@ const TAB_OFF = 'text-muted hover:text-text'
 const TAB_COUNT =
   'inline-flex h-4 min-w-4 items-center justify-center rounded-pill bg-danger px-1 text-3xs font-bold text-on-danger'
 
-// ── ITEM 5: the tab activates when you reach the end of the rail ─────────────────────────────
+// ── THE RAIL'S END BELONGS TO THE VAULT NOW (owner, 2026-08-05) ──────────────────────────────
 //
-// The bar already knows this. It measures the rail's end to ride up and meet it, and now
-// publishes `atRailEnd` from that SAME measurement (components/layout/dock-bar.tsx) — so this is
-// one subscription, not a second scroll listener racing the first.
+// "Scroll-to-bottom OR click opens the Vault." That decision lives in ONE place —
+// `RAIL_END_OPENS` in components/layout/dock-bar.tsx, which is where the rail's end is measured —
+// and this file reads it rather than keeping a second constant that could name a different
+// winner. Only one segment may claim the rail's end: if both did, arriving there would make each
+// announce and close the other, and which survived would come down to subscription order.
 //
-// WHAT "ACTIVATE" MEANS. Two readings were possible, and the shipped one is the quiet one:
+// WHAT THIS FILE LOST WITH IT: the chat tab's `atRailEnd` NUDGE (it took its lit state when you
+// reached the end of the rail). It is gone rather than kept, because the rail's end now performs
+// a real action on the other segment; a chat tab lighting up at the same moment says something is
+// waiting there when nothing is. The tab is still lit by the two things that mean it: an unread,
+// and its own panel being open.
 //
-//   'nudge'  the tab takes its ACTIVE VISUAL STATE. Nothing moves, nothing is announced, and a
-//            member who was reading keeps reading. ← SHIPPED
-//   'open'   the panel opens itself.
-//
-// 'open' is hostile: a panel that unfurls under someone's cursor because they scrolled takes the
-// page away from them without being asked, and it would fight every dismissal in this file (you
-// close it, you are still at the end of the rail, it comes back). Both branches are wired below,
-// so the choice is this one word rather than a rewrite.
-const RAIL_END_ACTIVATION: 'nudge' | 'open' = 'nudge'
+// The auto-open branch below stays wired for 'chat' so the owner's choice is one word in
+// dock-bar.ts and not a rewrite here.
 
 /** Below this the panel stops shrinking to fit the rail. A rail shorter than a usable chat window
  *  is a page with almost nothing on it; overhanging its top edge there beats handing a member a
@@ -228,16 +229,24 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
   // `dock` prop while this launcher is mounted in the (main) layout, so neither owns the other.
   const [slot, setSlot] = useState<HTMLElement | null>(null)
   const [slotChecked, setSlotChecked] = useState(false)
-  // The measurement only applies while there IS a segment to measure: navigating to /admin drops
-  // the bar, and a remembered rect would strand the panel where the bar used to be.
-  const measured = useDockAnchor(slot)
-  const anchor = slot ? measured : null
   // The BAR's own measurement, subscribed rather than retaken (items 5 + 8). DockBar reads the
   // rail once per frame it needs to; this is that read, not a second one.
   const geometry = useSyncExternalStore(subscribeDockGeometry, getDockGeometry, getServerDockGeometry)
+  // The measurement only applies while there IS a segment to measure: navigating to /admin drops
+  // the bar, and a remembered rect would strand the panel where the bar used to be.
+  //
+  // `geometry.bar` is the second half of that guard, and it is what a FOLDED rail needs. Folding
+  // hides the bar in CSS (DockBar keeps its node so the md–lg band still has a dock), so the slot
+  // is still findable and still portalled into — it is simply not on screen. Its own rect goes to
+  // zero and DockBar publishes a null box, which is the honest answer to "is there a bar to hang
+  // this panel off". Without this gate a chat opened while folded (⌘K, `open-chat`, a `?chat=`
+  // link — none of which need the tab) would anchor to the last rect the bar had and paint a
+  // panel over the content column where the bar no longer is. Null hands it back to the class
+  // fallback, which is the same place the panel lives on every surface that has no bar at all.
+  const measured = useDockAnchor(slot)
+  const anchor = slot && geometry.bar ? measured : null
   const bar = slot ? geometry.bar : null
   const railTopAboveBottom = slot ? geometry.railTopAboveBottom : null
-  const atRailEnd = slot ? geometry.atRailEnd : false
   const results = useMemo(() => searchHelp(index, q, 6), [q, index])
 
   // Remember the last mode across sessions.
@@ -390,17 +399,26 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
     // Same reasoning as the two listeners above: `close` is stable in behaviour, not identity.
   }, [open])
 
-  // ITEM 5, the 'open' reading — INERT while RAIL_END_ACTIVATION is 'nudge' (see the constant).
-  // Wired rather than described, so flipping the behaviour is one word and not a rewrite.
+  // The rail's end, IF this segment is the one that claims it (it is not — the Vault is; see the
+  // note at the top of this file). Kept wired so the owner's choice stays one word in dock-bar.ts.
   //
   // It reacts inside the store's CALLBACK rather than in the effect body on `atRailEnd`. That is
   // not a style preference: an effect body that calls `show()` when a subscribed value changes is
   // a cascading render, and this repo's lint (react-hooks/set-state-in-effect) rejects it by name.
   // Reacting to an external system from the callback it hands you is the shape the rule sanctions.
+  //
+  // `railEndOpenDue` is the rising edge: `atRailEnd` stays true while you sit at the rail's end
+  // and the store notifies on every scroll frame, so an unguarded open would re-open the panel on
+  // the next pixel after a member closed it — the exact "you close it, it comes back" hostility
+  // this branch was left inert over.
+  const wasAtRailEnd = useRef(false)
   useEffect(() => {
-    if (RAIL_END_ACTIVATION !== 'open') return
+    if (RAIL_END_OPENS !== 'chat') return
     return subscribeDockGeometry(() => {
-      if (getDockGeometry().atRailEnd) show()
+      const atEnd = getDockGeometry().atRailEnd
+      const due = railEndOpenDue(wasAtRailEnd.current, atEnd)
+      wasAtRailEnd.current = atEnd
+      if (due) show()
     })
     // `show` only touches setters and refs, all of which are stable for this component's life.
   }, [])
@@ -477,7 +495,6 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
           slotChecked={slotChecked}
           open={open}
           panelMounted={render}
-          atRailEnd={atRailEnd}
           waiting={pulse || unread > 0}
           unread={unread}
           onOpen={openPanel}
@@ -694,27 +711,31 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
 // /discover mount this launcher with no Vault and therefore no dock slot. `slotChecked` gates
 // the decision so the pill never flashes on a surface that does have a dock.
 //
+// A FOLDED RAIL IS NOT ONE OF THOSE SURFACES, and nothing here has to know that. DockBar hides
+// itself in CSS rather than unmounting, so the slot stays in the document, `slot` stays non-null
+// and this keeps portalling into it — into a `display:none` box, so the trigger simply is not on
+// screen. That is the owner's decision working out to a no-op here, and it is the RIGHT no-op:
+// falling back to the EdgePill would answer a fold by re-planting the floating edge launcher this
+// bar was built to retire, and the member who folded the rail asked for less furniture, not more.
+// (It also means the trigger returns on unfold with no re-lookup: same node, still portalled.)
+//
 // TONE. The tile is MUTED at rest and full-strength only when something is actually waiting.
 // A solid amber block that is always solid amber says "act on me" on every page of the app,
 // which is the one thing a persistent piece of furniture must not say; and when a message
 // really does arrive it has nowhere left to go. So rest is the muted pair (`primarySoft` —
 // `bg-primary-bg` + `text-primary-strong`) and an unread promotes it to the full fill.
 //
-// ITEM 5 adds two more ways into that same full fill, and neither of them dilutes the rule
-// above, because neither is on for longer than it is true:
-//   • OPEN — the tab is lit while its own panel is showing, which is what an active tab does.
-//   • AT THE RAIL'S END — the nudge. `atRailEnd` is deliberately not "the rail ended on screen":
-//     DockBar only reports it for a rail that was TALLER than the window, so it means "you
-//     scrolled down to me" and it is false on every short page. Purely visual: no announcement,
-//     no aria change, no focus move. The badge and the waiting dot still carry "something is
-//     waiting", so a lit tab and a lit tab with a red count are still two different sentences.
+// OPEN is the one other way into that full fill, and it does not dilute the rule above because it
+// is not on for longer than it is true: the tab is lit while its own panel is showing, which is
+// what an active tab does. The rail-end nudge that used to be a third way is retired — the rail's
+// end opens the VAULT now (owner, 2026-08-05), and a chat tab lighting up at that moment would
+// say something is waiting here when nothing is.
 function ChatTrigger({
   ref,
   slot,
   slotChecked,
   open,
   panelMounted,
-  atRailEnd,
   waiting,
   unread,
   onOpen,
@@ -727,7 +748,6 @@ function ChatTrigger({
    *  outlives its own close by PANEL_COLLAPSE_MS so the collapse can animate, and it has never
    *  been mounted at all before the first open. aria-controls must follow the DOM, not intent. */
   panelMounted: boolean
-  atRailEnd: boolean
   waiting: boolean
   unread: number
   onOpen: () => void
@@ -768,7 +788,7 @@ function ChatTrigger({
       aria-label="Open messages, Vera, and help"
       title="Messages, Vera and help"
       className={buttonClasses(
-        unread > 0 || open || (RAIL_END_ACTIVATION === 'nudge' && atRailEnd) ? 'primary' : 'primarySoft',
+        unread > 0 || open ? 'primary' : 'primarySoft',
         'md',
         TRIGGER_SHAPE,
       )}
