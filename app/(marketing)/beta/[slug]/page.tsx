@@ -35,6 +35,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     robots: { index: false },
     alternates: { canonical: `/beta/${slug}` },
     openGraph: { title: splash.headline, description: splash.body, url: `/beta/${slug}` },
+    // Metadata merges per top-level key: omitting `twitter` inherits the ROOT block, so a shared
+    // /beta/<slug> link would preview as generic site copy instead of this sequence's splash.
+    twitter: { card: 'summary_large_image', title: splash.headline, description: splash.body },
   }
 }
 

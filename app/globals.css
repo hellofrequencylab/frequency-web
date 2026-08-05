@@ -231,7 +231,36 @@
   --text-display-h2:   calc(clamp(2.25rem, 4vw, 3rem) * var(--type-scale, 1));
   --text-display-h3:   calc(clamp(1.75rem, 3vw, 2.25rem) * var(--type-scale, 1));
   --text-display-card: calc(1.5rem * var(--type-scale, 1));
+  /* THE FIXED DISPLAY ROLE, for surfaces that have no viewport (ADR-948).
+     Every other display role above is a clamp with a `vw` term, and that is correct on
+     screen and wrong on paper: in print, viewport units resolve against the PAGE BOX, so
+     `--text-display-h3` on an A4 sheet at 12mm margins (≈186mm ≈ 703px of page area)
+     evaluates 3vw ≈ 21px, falls to its 1.75rem floor, and a wall-poster title prints 22%
+     smaller than the same markup shows on screen — silently, and differently again on
+     Letter or at a different margin. A poster title must not be a function of the medium.
+     1.5rem was already available (`display-card`) and is a card title, not a poster; this
+     is the ladder's next fixed step up, and equals `--text-display-h3`'s CEILING, i.e. the
+     size a display-h3 was always meant to reach when nothing was squeezing it.
+     Named for the artifact, exactly like `display-card`. */
+  --text-display-poster: calc(2.25rem * var(--type-scale, 1));
   --text-stat:         calc(clamp(3.5rem, 6vw, 4.5rem) * var(--type-scale, 1));
+  /* THE TWO FIXED STAT STEPS BELOW IT (ADR-948). `--text-stat` is a HERO numeral: one per
+     surface, 3.5rem floor, and its own `6vw` term. Two jobs the ladder had no answer for:
+
+       stat-md  A price or headline figure. Fixed BECAUSE it is fixed: a fluid role shrinks
+                the conversion-critical number on exactly the device most people convert on
+                (`display-h3` prints it ~22% smaller on a phone than on a desktop), which is
+                the one direction a price must never move on its own.
+       stat-sm  A KPI in a dense strip — four numerals abreast inside a page header. The hero
+                `stat` cannot be used there at any width: its 3.5rem FLOOR breaks the row.
+
+     Suffixes follow the component vocabulary already in use (StatCard's `size: md | sm | xs`,
+     where md is the larger), so the family reads stat > stat-md > stat-sm.
+     No `vw`, no breakpoint, and deliberately no media query: this app's root is 17px but a
+     media query resolves against 16px, so a breakpointed numeral changes size on TWO axes at
+     once. These change on neither. */
+  --text-stat-md:      calc(2.25rem * var(--type-scale, 1));
+  --text-stat-sm:      calc(1.875rem * var(--type-scale, 1));
 
   /* PAIRED LINE-HEIGHTS for the display roles — the same prerequisite the content
      roles needed, and for the same reason. `text-4xl` emits font-size AND
@@ -255,6 +284,15 @@
   --text-display-h3--line-height:   calc(2.5 / 2.25);
   --text-display-card--line-height: calc(2 / 1.5);
   --text-stat--line-height:         1;
+  /* The three roles added by ADR-948 take the SAME rule, and it is worth saying out loud why
+     they do not inherit `--text-stat`'s flat 1: that 1 is not a house style for numerals, it
+     is text-7xl's line-height. Tailwind only flattens to 1 from text-5xl up. All three of
+     these replace a text-3xl/text-4xl literal, which still carry ratios — so copying stat's 1
+     would tighten every adopting site by 11-20% and hide a leading change inside a size
+     change, which is the exact failure the rule above exists to prevent. */
+  --text-display-poster--line-height: calc(2.5 / 2.25);
+  --text-stat-md--line-height:        calc(2.5 / 2.25);
+  --text-stat-sm--line-height:        calc(2.25 / 1.875);
 
   /* Sans (Nunito) — body, in-app headings, UI. */
   --text-page-title:   calc(1.5rem * var(--type-scale, 1));
@@ -1261,7 +1299,10 @@
   --text-display-h2:   var(--text-display-h2);
   --text-display-h3:   var(--text-display-h3);
   --text-display-card: var(--text-display-card);
+  --text-display-poster: var(--text-display-poster);
   --text-stat:         var(--text-stat);
+  --text-stat-md:      var(--text-stat-md);
+  --text-stat-sm:      var(--text-stat-sm);
 
   /* Same @theme requirement as the content roles: declared in :root alone, Tailwind v4
      leaves the utility emitting font-size ONLY. Verified by compiling, not by reading. */
@@ -1270,7 +1311,10 @@
   --text-display-h2--line-height:   var(--text-display-h2--line-height);
   --text-display-h3--line-height:   var(--text-display-h3--line-height);
   --text-display-card--line-height: var(--text-display-card--line-height);
+  --text-display-poster--line-height: var(--text-display-poster--line-height);
   --text-stat--line-height:         var(--text-stat--line-height);
+  --text-stat-md--line-height:      var(--text-stat-md--line-height);
+  --text-stat-sm--line-height:      var(--text-stat-sm--line-height);
   /* The `--text-{role}--line-height` companions MUST be bridged here, not just declared in
      :root. Tailwind v4 only pairs a line-height onto a `text-*` utility when it can see the
      companion inside @theme; declaring it in :root alone leaves the utility emitting

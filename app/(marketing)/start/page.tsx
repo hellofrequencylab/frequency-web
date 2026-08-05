@@ -26,6 +26,14 @@ export function generateMetadata(): Metadata {
         'Build, Practice, or Spread. Pick the door that fits and we point you at your first move.',
       url: '/start',
     },
+    // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+    // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Where do you want to start? · Frequency',
+      description:
+        'Build, Practice, or Spread. Pick the door that fits and we point you at your first move.',
+    },
   }
 }
 

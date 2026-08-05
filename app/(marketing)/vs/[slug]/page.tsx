@@ -40,6 +40,13 @@ export function generateStaticParams() {
 // A real gathering photo doubles as the multimodal AIO signal + E-E-A-T proof.
 const HERO_IMAGE = '/images/site/community-dinner.jpg'
 
+// Article dates for every comparison page. Google requires datePublished/dateModified on an
+// Article node, and each pillar page stamps them as literals the same way; without them all five
+// /vs/<slug> URLs published a dateless Article. One template, one build date, so the whole set
+// stays honest at once: first shipped 2026-07-28, last revised 2026-08-05.
+const PUBLISHED = '2026-07-28'
+const UPDATED = '2026-08-05'
+
 export async function generateMetadata({
   params,
 }: {
@@ -88,6 +95,8 @@ export default async function ComparisonPage({
             title: copy.metaTitle,
             description: copy.description,
             path,
+            published: PUBLISHED,
+            updated: UPDATED,
             image: HERO_IMAGE,
           }),
           faqSchema(copy.faq),

@@ -45,6 +45,14 @@ export const metadata: Metadata = {
       'Bring your community onto Frequency as a Space: a real front door, the format for Circles and Runs, and tools to grow without losing what made it yours.',
     url: '/spaces',
   },
+  // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+  // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Spaces · Frequency',
+    description:
+      'Bring your community onto Frequency as a Space: a real front door, the format for Circles and Runs, and tools to grow without losing what made it yours.',
+  },
 }
 
 // getPublishedData -> getTemplate -> legacy, mirroring every other marketing route.

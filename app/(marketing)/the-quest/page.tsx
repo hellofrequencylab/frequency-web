@@ -50,7 +50,21 @@ export const metadata: Metadata = {
       'Real life is the reward. Zaps, Gems, season ranks, and Journeys: a path that rewards showing up, not scrolling.',
     url: '/the-quest',
   },
+  // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+  // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+  twitter: {
+    card: 'summary_large_image',
+    title: 'The Quest · Frequency',
+    description:
+      'Real life is the reward. Zaps, Gems, season ranks, and Journeys: a path that rewards showing up, not scrolling.',
+  },
 }
+
+// Article dates. Google requires datePublished/dateModified on an Article node, and every other
+// pillar page stamps them as literals here; without them this URL published a dateless Article.
+// Sourced from the page's own history: first shipped 2026-07-28, last revised 2026-08-05.
+const PUBLISHED = '2026-07-28'
+const UPDATED = '2026-08-05'
 
 // Answer-first FAQ for AIO. Answers match the definitions the page ships (how the
 // game works, Zaps vs Gems, the season ranks, a Journey) so structured data and
@@ -129,7 +143,9 @@ export default async function TheQuestPage() {
         // Article, and the template's Accordion block emits the FAQPage. Emitting the
         // page-level copies here too shipped BOTH nodes twice on every render, because
         // `data` is never null (templates.test.ts asserts the template is renderable).
-        <BlockDocJsonLd data={data} path="/the-quest" />
+        // The dates are passed on BOTH rungs: this one renders in practice, so leaving them off
+        // here is what actually shipped the dateless Article.
+        <BlockDocJsonLd data={data} path="/the-quest" published={PUBLISHED} updated={UPDATED} />
       ) : (
         <JsonLd
           data={[
@@ -138,6 +154,8 @@ export default async function TheQuestPage() {
               description:
                 'How The Quest works: a light, in-person game where you earn Zaps for showing up in real life and Gems online, climb the season ranks, and run Journeys of small daily Practices, solo or with your Circle.',
               path: '/the-quest',
+              published: PUBLISHED,
+              updated: UPDATED,
               image: '/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg',
             }),
             faqSchema(QUEST_FAQ.map(({ q, a }) => ({ q, a }))),

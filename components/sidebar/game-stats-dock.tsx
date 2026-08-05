@@ -5,7 +5,8 @@ import Link from 'next/link'
 import {
   Zap, Gem, Flame, Target, Sparkles, CheckCircle2, ArrowRight, Lock, ChevronUp,
 } from 'lucide-react'
-import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
+import { RankBadge } from '@/components/ui/rank-badge'
 import { ProgressTrack } from '@/components/ui/progress-track'
 import { StreakMeter } from '@/components/ui/streak-meter'
 import { Counter } from '@/components/ui/counter'
@@ -234,9 +235,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
       {rank && (
         <div className="flex items-center justify-between gap-2 border-b border-border pb-3">
           <SectionLabel>Season standing</SectionLabel>
-          <span className="rank-badge text-3xs leading-tight" style={seasonRankStyle(rank)}>
-            {RANK_LABELS[rank] ?? rank}
-          </span>
+          <RankBadge rank={rank} size="sm">{RANK_LABELS[rank] ?? rank}</RankBadge>
         </div>
       )}
 

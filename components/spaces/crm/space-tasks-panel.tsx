@@ -269,15 +269,27 @@ export function SpaceTasksPanel({
                 </div>
               ) : (
                 <div className="flex items-start gap-3">
+                  {/* TOUCH TARGET, the same split the kit's Checkbox makes (components/ui/checkbox.tsx):
+                      the floor goes on a WRAPPER, never on the visible marker. The marker IS the 20px
+                      box, so a min-size floor on it would grow the box itself (and at the kids
+                      generations `--tap-min` reaches 56px), leaving it three sizes out of step with the
+                      identical static marker on a completed row. Growing the flex ITEM instead of
+                      bleeding a ::before is what keeps this collision-free: `gap-3` is a flex gap, so
+                      the 12.75px channel between this target and the title button survives at every
+                      floor (32px fine, 44px coarse, 56px kids) and the title column, `flex-1 min-w-0`,
+                      absorbs the width. `items-start` + the wrapper's `mt-0.5` hold the marker exactly
+                      where it sat before; only empty target area is added, below and to the right. */}
                   {!readOnly && (
                     <button
                       type="button"
                       onClick={() => toggle(task.id, true)}
                       disabled={pending}
                       aria-label="Mark task complete"
-                      className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border text-transparent transition-colors hover:border-success hover:text-success disabled:opacity-40"
+                      className="tap-target group/check mt-0.5 inline-flex shrink-0 items-start disabled:opacity-40"
                     >
-                      <Check className="h-3.5 w-3.5" aria-hidden />
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-md border border-border text-transparent transition-colors group-hover/check:border-success group-hover/check:text-success">
+                        <Check className="h-3.5 w-3.5" aria-hidden />
+                      </span>
                     </button>
                   )}
                   <div className="min-w-0 flex-1">
@@ -332,11 +344,13 @@ export function SpaceTasksPanel({
                   key={task.id}
                   className="flex items-start gap-3 rounded-2xl border border-border bg-surface-elevated/40 p-3"
                 >
-                  <span
-                    className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-success-bg text-success"
-                    aria-hidden
-                  >
-                    <Check className="h-3.5 w-3.5" />
+                  {/* The completed row's marker is static, but its gutter takes the same
+                      `tap-target` floor the open row's button claims, so the two lists stay
+                      aligned at any tap floor (the roster-manager gutter does the same). */}
+                  <span className="tap-target mt-0.5 inline-flex shrink-0 items-start" aria-hidden>
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-success-bg text-success">
+                      <Check className="h-3.5 w-3.5" />
+                    </span>
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-body-sm text-muted line-through">{task.title}</p>

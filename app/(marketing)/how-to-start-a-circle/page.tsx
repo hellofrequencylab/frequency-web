@@ -35,18 +35,25 @@ const HERO_IMAGE = '/images/site/community-1.jpg'
 const ROOM_IMAGE = '/images/site/mens-group.jpg'
 const TABLE_IMAGE = '/images/site/community-dinner.jpg'
 
+// Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
+const OG_TITLE = 'How to start a Circle · Frequency'
+const OG_DESCRIPTION =
+  'You do not have to build a community. Start one small Circle: one thing, a standing time, a few people, the same simple format every week.'
+
 export function generateMetadata(): Metadata {
   return {
     title: TITLE,
     description: DESCRIPTION,
     alternates: { canonical: PATH },
     openGraph: {
-      title: 'How to start a Circle · Frequency',
-      description:
-        'You do not have to build a community. Start one small Circle: one thing, a standing time, a few people, the same simple format every week.',
+      title: OG_TITLE,
+      description: OG_DESCRIPTION,
       url: PATH,
       images: [{ url: HERO_IMAGE }],
     },
+    // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+    // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+    twitter: { card: 'summary_large_image', title: OG_TITLE, description: OG_DESCRIPTION },
   }
 }
 

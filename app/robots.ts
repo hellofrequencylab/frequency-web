@@ -18,9 +18,12 @@ const DISALLOW = [
   "/events/new",
   // App-shell TWINS of canonical /discover surfaces — these pages canonical to
   // /discover/partners|journeys, so keep crawlers off the twins to stop them cannibalizing
-  // the canonicals. (/discover/* is NOT disallowed.) NOTE: /store is deliberately NOT listed —
-  // its /store/<id> product pages are self-canonical + indexable (Product schema), so a blanket
-  // /store rule would deindex them; the /store index carries its own noindex instead.
+  // the canonicals. (/discover/* is NOT disallowed.) NOTE: the four marketplace indexes —
+  // /store, /market, /housing, /classifieds — are deliberately NOT listed. Their
+  // /<vertical>/<id> detail pages are self-canonical + indexable (Product / Accommodation
+  // schema) and are what app/sitemap.ts advertises, so a blanket rule on any of the four
+  // would deindex them; each index carries its own `robots: { index: false, follow: true }`
+  // instead, which keeps crawlers walking THROUGH the index to those detail pages.
   "/partners",
   "/journeys",
   // /spaces/directory is the app-shell twin of the canonical /discover/spaces (it canonicals there),

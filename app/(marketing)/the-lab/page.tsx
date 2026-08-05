@@ -37,6 +37,14 @@ export const metadata: Metadata = {
       'A vision for 2028: a sauna, a cold plunge, and rooms to gather in person. Nothing is bookable yet. The first Lab is planned for North County San Diego.',
     url: '/the-lab',
   },
+  // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+  // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+  twitter: {
+    card: 'summary_large_image',
+    title: 'The Lab · Frequency',
+    description:
+      'A vision for 2028: a sauna, a cold plunge, and rooms to gather in person. Nothing is bookable yet. The first Lab is planned for North County San Diego.',
+  },
 }
 
 // Answer-first FAQ schema that matches the honest present: The Lab is a vision

@@ -16,6 +16,13 @@ export const metadata: Metadata = {
     description: 'Be one of the first. The community Beta is open.',
     url: '/beta',
   },
+  // Without this the page inherits the ROOT twitter block (generic site copy) — metadata merges
+  // per top-level key, not per field. Mirrors the openGraph values above.
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Join the Frequency Beta',
+    description: 'Be one of the first. The community Beta is open.',
+  },
 }
 
 export const revalidate = 3600

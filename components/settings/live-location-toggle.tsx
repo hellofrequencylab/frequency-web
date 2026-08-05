@@ -58,7 +58,7 @@ export function LiveLocationToggle({
     <section className="rounded-2xl border border-border bg-surface p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h2 className="flex items-center gap-2 text-body-sm font-bold text-text">
+          <h2 id="live-location-heading" className="flex items-center gap-2 text-body-sm font-bold text-text">
             <Radio className="h-4 w-4 text-primary-strong" /> Live location
           </h2>
           <p className="mt-1 text-body-sm text-muted">
@@ -66,10 +66,13 @@ export function LiveLocationToggle({
             where you actually are. Off by default; reverts to your home city when you turn it off.
           </p>
         </div>
+        {/* Named by the section's own heading, so the switch announces the same words a
+            sighted member reads above it. `aria-checked` carries on/off. */}
         <button
           type="button"
           role="switch"
           aria-checked={live}
+          aria-labelledby="live-location-heading"
           onClick={toggle}
           disabled={pending}
           className={`relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-pill transition-colors disabled:opacity-50 ${

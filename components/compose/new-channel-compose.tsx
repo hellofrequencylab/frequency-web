@@ -183,10 +183,14 @@ export function NewChannelCompose({
             </div>
 
             <div className="flex items-center gap-2 pt-1">
+              {/* The text beside the switch reports the STATE, and it flips with the toggle, so
+                  it cannot be the name (a name that changes when you flip it is not a name).
+                  `aria-checked` already carries the state; the name says what the switch does. */}
               <button
                 type="button"
                 role="switch"
                 aria-checked={isPublic}
+                aria-label="Public channel"
                 onClick={() => setIsPublic(!isPublic)}
                 disabled={isPending}
                 className={`relative inline-flex h-5 w-9 shrink-0 rounded-pill border-2 border-transparent transition-colors ${

@@ -31,18 +31,25 @@ const HERO_IMAGE = '/images/site/group-of-friends.jpg'
 const GATHER_IMAGE = '/images/site/breathwork-circle.jpg'
 const STACK_IMAGE = '/images/site/community-1.jpg'
 
+// Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
+const OG_TITLE = 'Tools for community builders · Frequency'
+const OG_DESCRIPTION =
+  'Membership, gatherings, a shared feed, and recognition: the four tools every community builder needs, and how Frequency Labs covers them in one place.'
+
 export function generateMetadata(): Metadata {
   return {
     title: TITLE,
     description: DESCRIPTION,
     alternates: { canonical: '/tools-for-community-builders' },
     openGraph: {
-      title: 'Tools for community builders · Frequency',
-      description:
-        'Membership, gatherings, a shared feed, and recognition: the four tools every community builder needs, and how Frequency Labs covers them in one place.',
+      title: OG_TITLE,
+      description: OG_DESCRIPTION,
       url: '/tools-for-community-builders',
       images: [{ url: HERO_IMAGE }],
     },
+    // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+    // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+    twitter: { card: 'summary_large_image', title: OG_TITLE, description: OG_DESCRIPTION },
   }
 }
 

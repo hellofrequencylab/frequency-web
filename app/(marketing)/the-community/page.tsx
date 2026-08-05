@@ -61,7 +61,21 @@ export const metadata: Metadata = {
       'Four Pillars, your Channels, and a Circle near you. Community with a shape, leaderful and built to last.',
     url: '/the-community',
   },
+  // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+  // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+  twitter: {
+    card: 'summary_large_image',
+    title: 'The Community · Frequency',
+    description:
+      'Four Pillars, your Channels, and a Circle near you. Community with a shape, leaderful and built to last.',
+  },
 }
+
+// Article dates. Google requires datePublished/dateModified on an Article node, and every other
+// pillar page stamps them as literals here; without them this URL published a dateless Article.
+// Sourced from the page's own history: first shipped 2026-07-28, last revised 2026-08-05.
+const PUBLISHED = '2026-07-28'
+const UPDATED = '2026-08-05'
 
 // Answer-first FAQ for AIO. Every answer matches the definitions the page ships
 // (Circle, Channel, the four Pillars, how growth works) so structured data and
@@ -132,7 +146,9 @@ export default async function TheCommunityPage() {
         // this template contains no Accordion, so the Q&A copy the schema described is not
         // on the page at all. Asserting answers a visitor cannot read is the exact thing
         // /pricing:309-313 refuses to do.
-        <BlockDocJsonLd data={data} path="/the-community" />
+        // The dates are passed on BOTH rungs: this one renders in practice, so leaving them off
+        // here is what actually shipped the dateless Article.
+        <BlockDocJsonLd data={data} path="/the-community" published={PUBLISHED} updated={UPDATED} />
       ) : (
         <JsonLd
           data={[
@@ -141,6 +157,8 @@ export default async function TheCommunityPage() {
               description:
                 'How Frequency organizes community: four Pillars to find your practice, Channels to find your people, and Circles, small standing local groups that meet in person and grow on their own.',
               path: '/the-community',
+              published: PUBLISHED,
+              updated: UPDATED,
               image: '/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg',
             }),
             faqSchema(COMMUNITY_FAQ.map(({ q, a }) => ({ q, a }))),

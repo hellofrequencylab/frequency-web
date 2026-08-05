@@ -35,18 +35,25 @@ const FEED_IMAGE = '/images/site/PHOTO-2020-09-09-16-38-27.jpeg'
 const BUILD_IMAGE = '/images/site/community-1.jpg'
 const TABLE_IMAGE = '/images/site/community-dinner.jpg'
 
+// Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
+const OG_TITLE = 'High-functioning loneliness, explained · Frequency'
+const OG_DESCRIPTION =
+  'A hundred contacts and no one to call on a Tuesday. What high-functioning loneliness is, why third places got rare, how to beat the feed, and small ways back to real connection.'
+
 export function generateMetadata(): Metadata {
   return {
     title: TITLE,
     description: DESCRIPTION,
     alternates: { canonical: '/loneliness' },
     openGraph: {
-      title: 'High-functioning loneliness, explained · Frequency',
-      description:
-        'A hundred contacts and no one to call on a Tuesday. What high-functioning loneliness is, why third places got rare, how to beat the feed, and small ways back to real connection.',
+      title: OG_TITLE,
+      description: OG_DESCRIPTION,
       url: '/loneliness',
       images: [{ url: HERO_IMAGE }],
     },
+    // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+    // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+    twitter: { card: 'summary_large_image', title: OG_TITLE, description: OG_DESCRIPTION },
   }
 }
 

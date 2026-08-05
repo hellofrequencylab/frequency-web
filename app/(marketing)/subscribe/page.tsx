@@ -16,6 +16,13 @@ export const metadata: Metadata = {
     description: 'A few notes a month on Circles, practices, and events. Confirm your email and you’re on the list.',
     url: '/subscribe',
   },
+  // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+  // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Get notes from Frequency',
+    description: 'A few notes a month on Circles, practices, and events. Confirm your email and you’re on the list.',
+  },
 }
 
 export const revalidate = 3600

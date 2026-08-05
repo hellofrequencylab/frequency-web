@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Trophy, Zap, X, Sparkles, ArrowRight, Check } from 'lucide-react'
-import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 import { keepPracticeAction } from '@/app/(main)/practices/actions'
 import { IconButton } from '@/components/ui/icon-button'
+import { RankBadge } from '@/components/ui/rank-badge'
 
 // HeroMoment — the landmark celebration for the real Journey landmarks: a Journey
 // just finished, the rank it pushed you to, and (at the apex) the whole season
@@ -225,9 +226,7 @@ function FinishMoment({
               +{zaps} Zaps
             </span>
             {rankAdvanced && (
-              <span className="rank-badge text-2xs" style={seasonRankStyle(rank)}>
-                {RANK_LABELS[rank] ?? rank} reached
-              </span>
+              <RankBadge rank={rank}>{RANK_LABELS[rank] ?? rank} reached</RankBadge>
             )}
           </div>
 
@@ -316,9 +315,7 @@ function SeasonCompleteMoment({
             <Zap className="h-3.5 w-3.5 text-primary" aria-hidden />
             +{zaps} Zaps
           </span>
-          <span className="rank-badge text-2xs" style={seasonRankStyle('master')}>
-            Master reached
-          </span>
+          <RankBadge rank="master">Master reached</RankBadge>
         </div>
 
         {anchor && <KeepAnchorBand anchor={anchor} />}

@@ -4,7 +4,8 @@ import {
 } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { getEarningLog, ledgerLabel, type LedgerEntry, type LedgerStreakType } from '@/lib/economy/ledger'
-import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
+import { RankBadge } from '@/components/ui/rank-badge'
 import { amplitudeLevel, formatAmplitude } from '@/lib/amplitude'
 import { DashboardTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -72,9 +73,11 @@ export default async function VaultLedgerPage() {
             value={
               rank && rank !== 'ghost' ? (
                 <span className="flex items-center gap-1.5">
-                  <span className="rank-badge text-body-sm leading-tight" style={seasonRankStyle(rank)}>
-                    {RANK_LABELS[rank] ?? rank}
-                  </span>
+                  {/* `lg` is the primitive's largest role. The hand-rolled chip declared
+                      `text-body-sm`, which never painted: `.rank-badge` is unlayered CSS and
+                      its 12px beats any layered `text-*` utility (see the sweep note in
+                      components/ui/rank-badge.tsx). */}
+                  <RankBadge rank={rank} size="lg">{RANK_LABELS[rank] ?? rank}</RankBadge>
                   <span>{formatAmplitude(totals.amplitude)}</span>
                 </span>
               ) : (

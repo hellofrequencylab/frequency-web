@@ -58,17 +58,24 @@ const DESCRIPTION =
 // The hero photo, fed to the Article schema for richer-result eligibility.
 const HERO_IMAGE = '/images/site/community-1.jpg'
 
+// Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
+const OG_TITLE = 'What is Frequency and how does it work? · Frequency'
+const OG_DESCRIPTION =
+  'Frequency is a Community Collective: small local Circles, nearby Events, a real space to gather, and the tools to grow together. What it is, how it works, and what it costs.'
+
 export function generateMetadata(): Metadata {
   return {
     title: TITLE,
     description: META_DESCRIPTION,
     alternates: { canonical: '/what-is-frequency' },
     openGraph: {
-      title: 'What is Frequency and how does it work? · Frequency',
-      description:
-        'Frequency is a Community Collective: small local Circles, nearby Events, a real space to gather, and the tools to grow together. What it is, how it works, and what it costs.',
+      title: OG_TITLE,
+      description: OG_DESCRIPTION,
       url: '/what-is-frequency',
     },
+    // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+    // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+    twitter: { card: 'summary_large_image', title: OG_TITLE, description: OG_DESCRIPTION },
   }
 }
 

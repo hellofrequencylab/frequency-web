@@ -23,12 +23,22 @@ import { resolveHeaderElement } from '@/lib/elements/header'
 // URL-driven and shareable without any client JS: the server reads searchParams and narrows the read
 // through listHousingListings(facets). No em or en dashes.
 
+// Same posture as the Frequency Store index (app/(main)/store/page.tsx:19-23): no /discover twin
+// exists for Housing, and this facet-filtered index is not the SEO surface — the individual
+// /housing/<id> pages are (self-canonical, Accommodation schema, and the ones app/sitemap.ts
+// advertises). So the index is noindexed but still FOLLOWED, letting crawlers walk through to the
+// indexable listing pages. It stays out of the robots.ts DISALLOW list for exactly the reason noted
+// there: a blanket "/housing" rule would deindex the listing pages too.
 export const metadata = {
   title: 'Housing',
   description: 'Find a rental or a roommate who actually fits, in your community.',
+  robots: { index: false, follow: true },
 }
 
-const HERO_IMAGE = 'https://picsum.photos/seed/frequency-housing/1600/600'
+// A real community photo, not a random stock placeholder. This is the hero and the LCP element, and
+// it is what any social or AI preview of the page surfaces, so it has to be ours. This one shows the
+// street the community actually lives on, homes and all, which is what the page is about.
+const HERO_IMAGE = '/images/site/community-1.jpg'
 
 type HousingSearchParams = {
   type?: string

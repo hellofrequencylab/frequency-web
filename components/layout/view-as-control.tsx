@@ -6,7 +6,7 @@ import { Eye, Check, X, ChevronDown } from 'lucide-react'
 import {
   type CommunityRole,
   ROLE_LABEL,
-  roleBadgeStyle,
+  RoleBadge,
 } from '@/lib/community-roles'
 import { ROLE_HIERARCHY, atLeastRole, roleRank } from '@/lib/core/roles'
 import { setViewAsRole } from '@/app/(main)/view-as-actions'
@@ -127,9 +127,7 @@ export function ViewAsControl({
                 onClick={() => choose(r)}
                 className="flex w-full items-center gap-2 px-3 py-2 text-body-sm text-text hover:bg-surface transition-colors"
               >
-                <span className="rank-badge text-3xs leading-tight" style={roleBadgeStyle(r)}>
-                  {ROLE_LABEL[r]}
-                </span>
+                <RoleBadge role={r} />
                 {isSelf && <span className="text-meta text-subtle">(you)</span>}
                 {active && <Check className="w-3.5 h-3.5 ml-auto text-primary-strong" />}
               </button>

@@ -35,8 +35,7 @@ import { DockBar, RAIL_END_SENTINEL_ID } from '@/components/layout/dock-bar'
 import type { AvailableContext, OperatorContext } from '@/lib/context/operator-context'
 import {
   type CommunityRole,
-  ROLE_LABEL,
-  roleBadgeStyle,
+  RoleBadge,
 } from '@/lib/community-roles'
 import { NAV_AREAS, meetsAccess, meetsStaff, type NavAccess, type NavArea } from '@/lib/nav-areas'
 import { calmSpine, canSee, type NavViewer, type SpineTab } from '@/lib/nav/registry'
@@ -502,12 +501,7 @@ function ProfileCard({
             // The real role badge stays; the context badge sits beside it as an ADDITIONAL,
             // clearly-labelled FRAMING signal (operator → the Space brand, admin → an Admin mark).
             <span className="mt-1 flex flex-wrap items-center gap-1">
-              <span
-                className="rank-badge inline-block text-3xs leading-tight"
-                style={roleBadgeStyle(role)}
-              >
-                {ROLE_LABEL[role]}
-              </span>
+              <RoleBadge role={role} />
               <ContextBadge context={context} available={availableContexts} />
             </span>
           )}
@@ -1254,12 +1248,7 @@ function MobileLeftDrawer({
               <p className="text-body-sm font-semibold text-text truncate leading-tight">
                 {profile.display_name}
               </p>
-              <span
-                className="rank-badge mt-0.5 inline-block text-3xs leading-tight"
-                style={roleBadgeStyle(identityRole)}
-              >
-                {ROLE_LABEL[identityRole]}
-              </span>
+              <RoleBadge role={identityRole} className="mt-0.5" />
             </div>
           </Link>
 

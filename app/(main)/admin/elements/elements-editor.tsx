@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useId, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Check, Loader2, ExternalLink } from 'lucide-react'
 import { isError } from '@/lib/action-result'
@@ -17,6 +17,9 @@ export function ElementEditor({ def, resolved }: { def: ElementDef; resolved: Re
   const [roles, setRoles] = useState<Record<string, ElementRole>>({ ...resolved.roles })
   const [pending, start] = useTransition()
   const [note, setNote] = useState<string | null>(null)
+  // One card per element, all rendered on the same page, so feature-label ids are minted
+  // per instance rather than derived from the feature key alone.
+  const cardId = useId()
 
   const save = () =>
     start(async () => {
@@ -49,16 +52,18 @@ export function ElementEditor({ def, resolved }: { def: ElementDef; resolved: Re
         {def.features.map((f) => (
           <li key={f.key} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-2.5">
             <div className="min-w-0 flex-1">
-              <p className="text-body-sm font-medium text-text">{f.label}</p>
+              <p id={`${cardId}-${f.key}`} className="text-body-sm font-medium text-text">{f.label}</p>
               {f.help && <p className="text-2xs text-muted">{f.help}</p>}
             </div>
 
-            {/* Value: a toggle, or a choice select */}
+            {/* Value: a toggle, or a choice select. The switch is named by the feature label
+                sitting to its left, so the spoken name is the one on screen. */}
             {f.kind === 'toggle' ? (
               <button
                 type="button"
                 role="switch"
                 aria-checked={settings[f.key] === true}
+                aria-labelledby={`${cardId}-${f.key}`}
                 onClick={() => setSettings((s) => ({ ...s, [f.key]: !(s[f.key] === true) }))}
                 className={`inline-flex h-6 w-11 shrink-0 items-center rounded-pill border transition-colors ${settings[f.key] === true ? 'border-primary bg-primary' : 'border-border bg-surface-elevated'}`}
               >

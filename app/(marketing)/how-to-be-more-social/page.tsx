@@ -40,18 +40,25 @@ const AWKWARD_IMAGE = '/images/site/song-circle.jpg'
 const SOBER_IMAGE = '/images/site/group-singing.jpg'
 const ROOM_IMAGE = '/images/site/community-dinner.jpg'
 
+// Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
+const OG_TITLE = 'How to be more social · Frequency'
+const OG_DESCRIPTION =
+  'You want to be more social and still end up home alone. The fix is not a new personality. Pick one recurring thing, put it on the calendar, and become a regular.'
+
 export function generateMetadata(): Metadata {
   return {
     title: TITLE,
     description: DESCRIPTION,
     alternates: { canonical: '/how-to-be-more-social' },
     openGraph: {
-      title: 'How to be more social · Frequency',
-      description:
-        'You want to be more social and still end up home alone. The fix is not a new personality. Pick one recurring thing, put it on the calendar, and become a regular.',
+      title: OG_TITLE,
+      description: OG_DESCRIPTION,
       url: '/how-to-be-more-social',
       images: [{ url: HERO_IMAGE }],
     },
+    // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+    // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+    twitter: { card: 'summary_large_image', title: OG_TITLE, description: OG_DESCRIPTION },
   }
 }
 

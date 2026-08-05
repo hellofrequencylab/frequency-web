@@ -30,18 +30,25 @@ const TITLE = 'How to build community (and keep it going)'
 const DESCRIPTION =
   'How to build community: pick one thing, set a standing time and place, keep it small, and meet again. The full builder guide to starting a group, hosting a recurring gathering, and running a community space.'
 
+// Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
+const OG_TITLE = 'How to build community · Frequency'
+const OG_DESCRIPTION =
+  'You do not have to build a whole community. Host one small group, on a regular rhythm, with a format that already works. The builder guide, start to lasting.'
+
 export function generateMetadata(): Metadata {
   return {
     title: TITLE,
     description: DESCRIPTION,
     alternates: { canonical: PATH },
     openGraph: {
-      title: 'How to build community · Frequency',
-      description:
-        'You do not have to build a whole community. Host one small group, on a regular rhythm, with a format that already works. The builder guide, start to lasting.',
+      title: OG_TITLE,
+      description: OG_DESCRIPTION,
       url: PATH,
       images: [{ url: '/images/site/community-1.jpg' }],
     },
+    // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+    // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+    twitter: { card: 'summary_large_image', title: OG_TITLE, description: OG_DESCRIPTION },
   }
 }
 
