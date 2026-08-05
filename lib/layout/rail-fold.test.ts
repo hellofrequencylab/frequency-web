@@ -8,9 +8,13 @@ import {
   parseRailFold,
   parseRailFolds,
   railFoldControlLabel,
+  railFoldsSnapshot,
   readRailFoldCookie,
+  resetRailFoldsCache,
   resolveRailFold,
   serializeRailFolds,
+  setRailFolds,
+  subscribeRailFolds,
   type RailFolds,
 } from './rail-fold'
 
@@ -128,6 +132,30 @@ describe('the cookie is the SERVER half of the no-flash path', () => {
     expect(RAIL_FOLD_COOKIE).toBe(RAIL_FOLD_STORAGE_KEY)
     // The `freq-*` namespace the theme established (app/layout.tsx reads `freq-theme`).
     expect(RAIL_FOLD_STORAGE_KEY.startsWith('freq-')).toBe(true)
+  })
+})
+
+describe('the store is snapshot-stable (useSyncExternalStore compares by IDENTITY)', () => {
+  it('hands back the same object until something changes it', () => {
+    resetRailFoldsCache()
+    const first = railFoldsSnapshot()
+    // A fresh read of storage on every call would return a new object each render and spin the
+    // subscription forever. This is the assertion that keeps the cache in place.
+    expect(railFoldsSnapshot()).toBe(first)
+  })
+
+  it('a write changes the snapshot and tells every subscriber', () => {
+    resetRailFoldsCache()
+    const before = railFoldsSnapshot()
+    let told = 0
+    const unsubscribe = subscribeRailFolds(() => { told += 1 })
+    setRailFolds({ left: 'strip', right: 'open' })
+    expect(told).toBe(1)
+    expect(railFoldsSnapshot()).not.toBe(before)
+    expect(railFoldsSnapshot()).toEqual({ left: 'strip', right: 'open' })
+    unsubscribe()
+    setRailFolds({ left: 'auto', right: 'auto' })
+    expect(told).toBe(1) // unsubscribed
   })
 })
 
