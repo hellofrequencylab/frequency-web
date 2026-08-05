@@ -145,7 +145,7 @@ async function DashboardNeedsAttention({ spaceId, slug }: { spaceId: string; slu
       {unanswered > 0 && (
         <Link
           href={`/spaces/${slug}/crm/conversations`}
-          className="flex items-center gap-3 rounded-2xl border border-warning/40 bg-warning-bg/40 px-4 py-3 text-body-sm font-medium text-text transition-colors hover:bg-warning-bg/60"
+          className="flex items-center gap-3 rounded-card border border-warning/40 bg-warning-bg/40 px-4 py-3 text-body-sm font-medium text-text transition-colors hover:bg-warning-bg/60"
         >
           <Inbox className="h-4 w-4 shrink-0 text-warning" aria-hidden />
           {unanswered} {unanswered === 1 ? 'conversation is' : 'conversations are'} waiting on your reply
@@ -198,7 +198,7 @@ async function DashboardActivity({ spaceId, slug }: { spaceId: string; slug: str
           description="Emails, messages, event check-ins, and joins show up here as they happen."
         />
       ) : (
-        <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
+        <ul className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
           {items.map((it) => (
             <ActivityRow key={it.id} item={it} />
           ))}
@@ -213,7 +213,7 @@ function ActivityRow({ item }: { item: ContactInteraction }) {
   const line = item.summary?.trim() || channelFallback(item.channel)
   return (
     <li className="flex items-start gap-3 px-4 py-2.5">
-      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
         <Icon className="h-3.5 w-3.5" aria-hidden />
       </span>
       <div className="min-w-0 flex-1">
@@ -255,10 +255,10 @@ async function DashboardUpcoming({ spaceId, slug }: { spaceId: string; slug: str
           description="Upcoming events and bookings for your space show up here."
         />
       ) : (
-        <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
+        <ul className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
           {events.map((e) => (
             <li key={e.id} className="flex items-center gap-3 px-4 py-2.5">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
                 <CalendarClock className="h-3.5 w-3.5" aria-hidden />
               </span>
               <div className="min-w-0 flex-1">
@@ -289,12 +289,12 @@ function StatRowSkeleton() {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {[0, 1, 2, 3].map((i) => (
-        <Skeleton key={i} className="h-20 rounded-2xl" />
+        <Skeleton key={i} className="h-20 rounded-card" />
       ))}
     </div>
   )
 }
 
 function BlockSkeleton() {
-  return <Skeleton className="h-40 rounded-2xl" />
+  return <Skeleton className="h-40 rounded-card" />
 }

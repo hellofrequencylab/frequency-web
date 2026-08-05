@@ -214,9 +214,9 @@ export function SpaceBrandingForm({
   }
 
   return (
-    <div className="space-y-8 rounded-2xl border border-border bg-surface p-5 lift-1 sm:p-6">
+    <div className="space-y-8 rounded-card border border-border bg-surface p-5 lift-1 sm:p-6">
       {error && (
-        <p className="rounded-lg border border-danger bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger">
+        <p className="rounded-card border border-danger bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger">
           {error}
         </p>
       )}
@@ -313,7 +313,7 @@ export function SpaceBrandingForm({
                     }}
                     aria-pressed={active}
                     className={cn(
-                      'rounded-lg border px-3 py-2 text-body-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
+                      'rounded-control border px-3 py-2 text-body-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
                       active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-border-strong',
                     )}
                   >
@@ -357,7 +357,7 @@ export function SpaceBrandingForm({
                   }}
                   aria-pressed={active}
                   className={cn(
-                    'rounded-lg border px-3 py-2 text-body-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
+                    'rounded-control border px-3 py-2 text-body-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
                     active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-border-strong',
                   )}
                 >
@@ -389,7 +389,7 @@ export function SpaceBrandingForm({
                   aria-pressed={active}
                   title={c.tagline}
                   className={cn(
-                    'rounded-lg border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
+                    'rounded-control border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
                     active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
                   )}
                 >
@@ -438,7 +438,7 @@ export function SpaceBrandingForm({
                   }}
                   aria-pressed={active}
                   className={cn(
-                    'rounded-lg border px-3 py-2 text-body-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
+                    'rounded-control border px-3 py-2 text-body-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
                     active
                       ? 'border-primary bg-primary-bg text-text'
                       : 'border-border bg-surface text-muted hover:border-border-strong',
@@ -477,7 +477,7 @@ export function SpaceBrandingForm({
                       aria-pressed={active}
                       title={f.hint}
                       className={cn(
-                        'rounded-lg border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
+                        'rounded-control border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
                         active
                           ? 'border-primary bg-primary-bg'
                           : 'border-border bg-surface hover:border-border-strong',
@@ -582,7 +582,7 @@ export function SpaceBrandingForm({
                   // and `font-display` on the label renders it in that theme's display face.
                   data-space-theme={t.id}
                   className={cn(
-                    'rounded-lg border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
+                    'rounded-control border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
                     active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
                   )}
                 >

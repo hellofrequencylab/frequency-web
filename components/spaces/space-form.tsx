@@ -129,7 +129,7 @@ export function VisibilityField({
   const isNetwork = value === 'network'
   return (
     <Field id="visibility" label="Visibility">
-      <div className="flex items-start justify-between gap-3 rounded-lg border border-border bg-surface p-3">
+      <div className="flex items-start justify-between gap-3 rounded-card border border-border bg-surface p-3">
         <div className="min-w-0">
           <span className="block text-body-sm font-semibold text-text">{isNetwork ? 'Network' : 'Private'}</span>
           <span className="mt-0.5 block text-meta text-muted">
@@ -226,7 +226,7 @@ export function AccentPicker({
               value={currentHex ?? '#E2912F'}
               disabled={disabled}
               onChange={(e) => onChange(e.target.value)}
-              className="h-9 w-12 shrink-0 cursor-pointer rounded-lg border border-border bg-surface p-1 disabled:cursor-default disabled:opacity-60"
+              className="h-9 w-12 shrink-0 cursor-pointer rounded-control border border-border bg-surface p-1 disabled:cursor-default disabled:opacity-60"
             />
             <input
               type="text"
@@ -245,7 +245,7 @@ export function AccentPicker({
                 }
               }}
               className={cn(
-                'w-28 rounded-lg border bg-surface px-3 py-1.5 text-body-sm text-text outline-none focus:border-primary placeholder:text-subtle disabled:opacity-60',
+                'w-28 rounded-control border bg-surface px-3 py-1.5 text-body-sm text-text outline-none focus:border-primary placeholder:text-subtle disabled:opacity-60',
                 draftValid ? 'border-border' : 'border-danger',
               )}
             />
@@ -255,7 +255,7 @@ export function AccentPicker({
               disabled={disabled}
               aria-pressed={value === ''}
               className={cn(
-                'rounded-lg border px-3 py-1.5 text-meta font-semibold transition-colors disabled:opacity-60',
+                'rounded-control border px-3 py-1.5 text-meta font-semibold transition-colors disabled:opacity-60',
                 value === ''
                   ? 'border-primary bg-primary-bg text-primary-strong'
                   : 'border-border text-muted hover:border-border-strong',
@@ -283,7 +283,7 @@ export function AccentPicker({
                 title={s.name}
                 aria-label={s.name}
                 className={cn(
-                  'flex h-7 w-7 items-center justify-center rounded-md border transition-transform disabled:opacity-60',
+                  'flex h-7 w-7 items-center justify-center rounded-control border transition-transform disabled:opacity-60',
                   active
                     ? 'border-primary ring-2 ring-primary ring-offset-1 ring-offset-surface'
                     : 'border-border hover:scale-105 motion-reduce:hover:scale-100',
@@ -303,7 +303,7 @@ export function AccentPicker({
 /** A small inline error banner for a failed save. */
 export function FormError({ message }: { message: string }) {
   return (
-    <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+    <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
       {message}
     </p>
   )

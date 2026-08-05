@@ -104,7 +104,7 @@ function MemberPostsToggle({ slug, initial }: { slug: string; initial: boolean }
   const [on, setOn] = useState(initial)
   const [, start] = useTransition()
   return (
-    <div className="rounded-2xl border border-border bg-surface-elevated/50 px-4 py-2">
+    <div className="rounded-card border border-border bg-surface-elevated/50 px-4 py-2">
       <ToggleRow
         label="Allow members to post"
         checked={on}
@@ -169,7 +169,7 @@ function MemberComposer({ slug, spaceId }: { slug: string; spaceId: string }) {
 /** The prompt a non-interacting viewer sees: follow to join in, or sign in first. */
 function JoinPrompt({ spaceId, brandName, signedIn }: { spaceId: string; brandName: string; signedIn: boolean }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface-elevated/50 p-4">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface-elevated/50 p-4">
       <p className="text-body-sm text-muted">
         {signedIn
           ? `Follow ${brandName} to react, comment, and post.`
@@ -180,7 +180,7 @@ function JoinPrompt({ spaceId, brandName, signedIn }: { spaceId: string; brandNa
       ) : (
         <Link
           href="/sign-in"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           Sign in
         </Link>
@@ -191,7 +191,7 @@ function JoinPrompt({ spaceId, brandName, signedIn }: { spaceId: string; brandNa
 
 function EmptyState({ canPost, brandName }: { canPost: boolean; brandName: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border p-10 text-center">
+    <div className="rounded-card border border-dashed border-border p-10 text-center">
       <MessageCircle className="mx-auto h-8 w-8 text-subtle" aria-hidden />
       <p className="mt-3 text-body-sm font-semibold text-text">
         {canPost ? 'Post your first update' : `${brandName} has not posted yet`}
@@ -286,7 +286,7 @@ function PostCard({
 
   return (
     <article
-      className={`space-y-3 rounded-2xl border bg-surface p-4 lift-1 ${pinned ? 'border-primary/50' : 'border-border'}`}
+      className={`space-y-3 rounded-card border bg-surface p-4 lift-1 ${pinned ? 'border-primary/50' : 'border-border'}`}
     >
       <header className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5">
@@ -323,7 +323,7 @@ function PostCard({
       {update.title && <h3 className="text-body-lg font-bold text-text">{update.title}</h3>}
       {update.body && <PostBody body={update.body} className="text-body-sm leading-relaxed text-muted" />}
       {update.imageUrl && (
-        <Image src={update.imageUrl} alt="" width={800} height={450} unoptimized className="w-full rounded-xl object-cover" />
+        <Image src={update.imageUrl} alt="" width={800} height={450} unoptimized className="w-full rounded-card object-cover" />
       )}
 
       {/* Reaction bar */}
@@ -379,7 +379,7 @@ function PostCard({
             onClick={submitComment}
             disabled={pending || !draft.trim()}
             aria-label="Post comment"
-            className="mt-0.5 inline-flex shrink-0 items-center rounded-lg bg-primary p-2 text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+            className="mt-0.5 inline-flex shrink-0 items-center rounded-control bg-primary p-2 text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Send className="h-4 w-4" aria-hidden />}
           </button>

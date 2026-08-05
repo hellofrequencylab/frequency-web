@@ -42,7 +42,7 @@ function ContactConsentBar({ reach }: { reach: ContactReach }) {
   ] as const
 
   return (
-    <div className="mb-4 rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="mb-4 rounded-card border border-border bg-surface p-4 lift-1">
       <div className="mb-2 flex items-baseline justify-between gap-3">
         <p className="text-body-sm font-medium text-text">Who you can reach</p>
         <span className="text-meta tabular-nums text-subtle">
@@ -83,7 +83,7 @@ function ContactConsentBar({ reach }: { reach: ContactReach }) {
  *  threaded to the win-back action. */
 function AtRiskPanel({ atRisk, slug }: { atRisk: AtRiskSummary; slug: string }) {
   return (
-    <div className="mb-4 rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="mb-4 rounded-card border border-border bg-surface p-4 lift-1">
       <div className="mb-3 flex items-baseline justify-between gap-3">
         <div className="flex items-center gap-2">
           <TrendingDown className="h-4 w-4 shrink-0 text-warning" aria-hidden />
@@ -197,7 +197,7 @@ export async function CrmFunnelPanel({ spaceId, slug }: { spaceId: string; slug:
       )}
 
       {/* The stage-by-stage funnel: a labeled bar per stage, scaled to the widest stage. */}
-      <div className="space-y-2 rounded-2xl border border-border bg-surface p-4 lift-1">
+      <div className="space-y-2 rounded-card border border-border bg-surface p-4 lift-1">
         {funnel.stages.map((stage) => {
           const width = maxCount > 0 ? Math.round((stage.count / maxCount) * 100) : 0
           return (

@@ -95,14 +95,14 @@ export function SpaceMarketingWorkspace({
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search your emails..."
             aria-label="Search your emails"
-            className="w-full rounded-lg border border-border bg-canvas py-2 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary"
+            className="w-full rounded-control border border-border bg-canvas py-2 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary"
           />
         </label>
         {!readOnly && (
           <button
             type="button"
             onClick={openNew}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             <Send className="h-4 w-4" aria-hidden /> New email
           </button>
@@ -110,7 +110,7 @@ export function SpaceMarketingWorkspace({
       </div>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm text-danger" role="alert">
+        <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm text-danger" role="alert">
           {error}
         </p>
       )}

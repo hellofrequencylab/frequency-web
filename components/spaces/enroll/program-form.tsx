@@ -129,7 +129,7 @@ export function ProgramForm({
         if (!pending) save()
       }}
     >
-      <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
+      <div className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1">
         <div>
           <Label htmlFor="program-name" className="font-semibold">
             Name
@@ -219,7 +219,7 @@ export function ProgramForm({
       </p>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}

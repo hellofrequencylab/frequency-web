@@ -142,7 +142,7 @@ export function BookingPicker({
       minute: '2-digit',
     }).format(new Date(booked))
     return (
-      <div className="rounded-2xl border border-success/30 bg-success-bg px-6 py-8 text-center">
+      <div className="rounded-card border border-success/30 bg-success-bg px-6 py-8 text-center">
         <CalendarCheck className="mx-auto mb-3 h-8 w-8 text-success" aria-hidden />
         <p className="text-body-sm font-semibold text-text">
           {isReschedule ? 'You are rescheduled.' : 'You are booked.'}
@@ -189,7 +189,7 @@ export function BookingPicker({
                     }}
                     aria-pressed={active}
                     className={cn(
-                      'rounded-lg border px-3 py-1.5 text-body-sm font-semibold tabular-nums transition-colors',
+                      'rounded-control border px-3 py-1.5 text-body-sm font-semibold tabular-nums transition-colors',
                       active
                         ? 'border-primary bg-primary-bg text-primary-strong'
                         : 'border-border text-text hover:border-border-strong hover:bg-surface-elevated',
@@ -205,7 +205,7 @@ export function BookingPicker({
       </div>
 
       {selected && (
-        <div className="space-y-3 rounded-2xl border border-border bg-surface p-4 lift-1">
+        <div className="space-y-3 rounded-card border border-border bg-surface p-4 lift-1">
           <p className="text-body-sm font-semibold text-text">
             Confirm {timeFmt.format(new Date(selected.startsAt))} on{' '}
             {dayFmt.format(new Date(selected.startsAt))} ({viewerTzLabel})
@@ -259,7 +259,7 @@ export function BookingPicker({
             </>
           )}
           {error && (
-            <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+            <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
               {error}
             </p>
           )}
@@ -294,7 +294,7 @@ export function BookingPicker({
       )}
 
       {error && !selected && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}

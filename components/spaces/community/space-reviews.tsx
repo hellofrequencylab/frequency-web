@@ -122,7 +122,7 @@ export function SpaceReviews({
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       {/* Rating summary: big average + stars + count, beside the per-star distribution. */}
-      <section className="rounded-2xl border border-border bg-surface p-5 lift-1">
+      <section className="rounded-card border border-border bg-surface p-5 lift-1">
         {hasReviews ? (
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
             <div className="flex shrink-0 flex-col items-center gap-1 sm:w-32">
@@ -168,11 +168,11 @@ export function SpaceReviews({
       {canReview ? (
         <ReviewForm slug={slug} initial={myReview} />
       ) : !signedIn ? (
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface-elevated/50 p-4">
+        <div className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface-elevated/50 p-4">
           <p className="text-body-sm text-muted">Sign in to leave a review.</p>
           <Link
             href="/sign-in"
-            className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             Sign in
           </Link>
@@ -193,7 +193,7 @@ export function SpaceReviews({
                     type="button"
                     onClick={() => setSort(s.key)}
                     aria-pressed={sort === s.key}
-                    className={`rounded-lg px-2 py-1 text-2xs font-semibold transition-colors ${
+                    className={`rounded-control px-2 py-1 text-2xs font-semibold transition-colors ${
                       sort === s.key
                         ? 'bg-primary-bg text-primary-strong'
                         : 'text-muted hover:text-text'
@@ -256,10 +256,10 @@ function ReviewCard({
   const [hidden, setHidden] = useState(false)
   const name = review.author?.displayName ?? 'Member'
 
-  if (hidden) return <li className="rounded-2xl border border-dashed border-border p-4 text-2xs text-muted">Hidden.</li>
+  if (hidden) return <li className="rounded-card border border-dashed border-border p-4 text-2xs text-muted">Hidden.</li>
 
   return (
-    <li className="space-y-3 rounded-2xl border border-border bg-surface p-4 lift-1">
+    <li className="space-y-3 rounded-card border border-border bg-surface p-4 lift-1">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <Avatar name={name} avatarUrl={review.author?.avatarUrl ?? null} />
@@ -412,7 +412,7 @@ function ResponseBlock({
                 setDraft(response?.body ?? '')
                 setError(null)
               }}
-              className="rounded-lg px-3 py-1.5 text-2xs font-semibold text-muted hover:text-text"
+              className="rounded-control px-3 py-1.5 text-2xs font-semibold text-muted hover:text-text"
             >
               Cancel
             </button>
@@ -420,7 +420,7 @@ function ResponseBlock({
               type="button"
               onClick={save}
               disabled={pending}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-2xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-2xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
             >
               {pending && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />}
               {response ? 'Save reply' : 'Post reply'}
@@ -457,7 +457,7 @@ function ReviewForm({ slug, initial }: { slug: string; initial: { rating: number
   }
 
   return (
-    <div className="space-y-2 rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="space-y-2 rounded-card border border-border bg-surface p-4 lift-1">
       <p className="text-body-sm font-semibold text-text">{initial ? 'Update your review' : 'Leave a review'}</p>
       <div className="flex items-center gap-1" onMouseLeave={() => setHover(0)}>
         {[1, 2, 3, 4, 5].map((n) => (
@@ -488,7 +488,7 @@ function ReviewForm({ slug, initial }: { slug: string; initial: { rating: number
           type="button"
           onClick={submit}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           {initial ? 'Update review' : 'Post review'}

@@ -154,14 +154,14 @@ export function TicketTierForm({
     >
       <div className="space-y-4">
         {rows.length === 0 && (
-          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
+          <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
             No tiers yet. Add one to open tickets.
           </p>
         )}
         {rows.map((r, i) => (
           <div
             key={i}
-            className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1"
+            className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1"
           >
             <div className="flex items-start justify-between gap-3">
               <span className="text-meta font-semibold text-subtle">Tier {i + 1}</span>
@@ -277,7 +277,7 @@ export function TicketTierForm({
       </p>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}

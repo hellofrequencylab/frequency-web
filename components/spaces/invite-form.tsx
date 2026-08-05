@@ -139,7 +139,7 @@ export function InviteForm({
   return (
     <div className="space-y-6">
       <form
-        className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1"
+        className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1"
         onSubmit={(e) => {
           e.preventDefault()
           if (!pending) send()
@@ -194,7 +194,7 @@ export function InviteForm({
 
         {error && (
           <p
-            className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger"
+            className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger"
             role="alert"
           >
             {error}
@@ -222,7 +222,7 @@ export function InviteForm({
         </h3>
 
         {invites.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
+          <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
             No invites waiting. Invite a teammate above to add them to your team.
           </p>
         ) : (
@@ -230,7 +230,7 @@ export function InviteForm({
             {invites.map((invite) => (
               <li
                 key={invite.id}
-                className="space-y-3 rounded-2xl border border-border bg-surface p-4 lift-1"
+                className="space-y-3 rounded-card border border-border bg-surface p-4 lift-1"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

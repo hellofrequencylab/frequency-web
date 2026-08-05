@@ -83,7 +83,7 @@ export function TemplatePicker({
   const selected = selectedId ? templates.find((t) => t.id === selectedId) : null
 
   return (
-    <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 lift-1">
+    <div className="space-y-3 rounded-card border border-border bg-surface p-5 lift-1">
       <div>
         <p className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-text">
           <FileText className="h-4 w-4 text-subtle" aria-hidden /> Templates
@@ -150,7 +150,7 @@ export function TemplatePicker({
       )}
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}

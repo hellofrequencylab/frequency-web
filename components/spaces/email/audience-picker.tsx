@@ -122,7 +122,7 @@ export function AudiencePicker({
     : null
 
   return (
-    <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 lift-1">
+    <div className="space-y-3 rounded-card border border-border bg-surface p-5 lift-1">
       <div>
         <p className="text-body-sm font-semibold text-text">Audience</p>
         <p className="mt-0.5 text-meta text-muted">
@@ -209,7 +209,7 @@ export function AudiencePicker({
           )}
 
           {manageError && (
-            <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+            <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
               {manageError}
             </p>
           )}

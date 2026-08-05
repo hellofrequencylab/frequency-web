@@ -92,7 +92,7 @@ export function SpaceProfileMenu({
           <span className="text-muted">You are editing</span>
           <span
             aria-current="page"
-            className="inline-flex items-center rounded-lg bg-primary-bg px-2.5 py-1 font-medium text-primary-strong"
+            className="inline-flex items-center rounded-pill bg-primary-bg px-2.5 py-1 font-medium text-primary-strong"
           >
             {openPanelLabel}
           </span>

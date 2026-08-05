@@ -65,7 +65,7 @@ export interface SpaceMemberComposerProps {
 }
 
 const inputClass =
-  'w-full rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none'
+  'w-full rounded-control border border-border bg-canvas px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none'
 
 /** Normalize an email for the chip key + de-dupe (trim + lowercase). */
 function normalize(email: string): string {
@@ -218,7 +218,7 @@ export function SpaceMemberComposer({
 
   if (initError) {
     return (
-      <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+      <div className="space-y-3 rounded-card border border-border bg-surface p-4">
         <Banner tone="critical" title="Could not start a message">
           {initError}
         </Banner>
@@ -231,7 +231,7 @@ export function SpaceMemberComposer({
 
   if (sentTo != null) {
     return (
-      <div className="rounded-2xl border border-border bg-surface p-4">
+      <div className="rounded-card border border-border bg-surface p-4">
         {sentTo > 0 ? (
           <Banner
             tone="info"
@@ -249,7 +249,7 @@ export function SpaceMemberComposer({
   }
 
   return (
-    <section className="space-y-4 rounded-2xl border border-border bg-surface p-4 lift-1">
+    <section className="space-y-4 rounded-card border border-border bg-surface p-4 lift-1">
       <div className="flex items-center gap-2">
         <Mail className="h-4 w-4 text-primary" aria-hidden />
         <h3 className="text-body-sm font-bold text-text">Send a message</h3>
@@ -292,7 +292,7 @@ export function SpaceMemberComposer({
             className={`${inputClass} pl-8`}
           />
           {(searching || results.length > 0) && query.trim().length >= 2 && (
-            <ul className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-border bg-surface lift-1">
+            <ul className="absolute z-10 mt-1 w-full overflow-hidden rounded-card border border-border bg-surface lift-1">
               {searching && results.length === 0 ? (
                 <li className="flex items-center gap-2 px-3 py-2 text-meta text-muted">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Searching
@@ -344,7 +344,7 @@ export function SpaceMemberComposer({
           colors={colors}
         />
       ) : (
-        <div className="flex min-h-[200px] items-center justify-center rounded-2xl border border-border">
+        <div className="flex min-h-[200px] items-center justify-center rounded-card border border-border">
           <Loader2 className="h-5 w-5 animate-spin text-subtle" aria-hidden />
         </div>
       )}

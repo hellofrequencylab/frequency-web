@@ -45,7 +45,7 @@ export function SpaceProfileTabs({
   }
 
   const itemClasses = (active: boolean) =>
-    `whitespace-nowrap rounded-lg px-3 py-1.5 text-body-sm font-medium transition-colors ${
+    `whitespace-nowrap rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors ${
       active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'
     }`
 

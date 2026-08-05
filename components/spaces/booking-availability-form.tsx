@@ -138,7 +138,7 @@ export function BookingAvailabilityForm({
 
   return (
     <form
-      className="space-y-6 rounded-2xl border border-border bg-surface p-5 lift-1 sm:p-6"
+      className="space-y-6 rounded-card border border-border bg-surface p-5 lift-1 sm:p-6"
       onSubmit={(e) => {
         e.preventDefault()
         if (!pending) save()
@@ -163,14 +163,14 @@ export function BookingAvailabilityForm({
       <div className="space-y-3">
         <Label className="font-semibold">Weekly windows</Label>
         {rows.length === 0 && (
-          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
+          <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
             No windows yet. Add one to start taking bookings.
           </p>
         )}
         {rows.map((r, i) => (
           <div
             key={i}
-            className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface-elevated/40 p-3"
+            className="flex flex-wrap items-end gap-3 rounded-card border border-border bg-surface-elevated/40 p-3"
           >
             <label className="flex flex-col gap-1">
               <span className="text-meta font-medium text-muted">Day</span>
@@ -237,7 +237,7 @@ export function BookingAvailabilityForm({
       </div>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}

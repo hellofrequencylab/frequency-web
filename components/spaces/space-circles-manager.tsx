@@ -238,13 +238,13 @@ export function SpaceCirclesManager({
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Tuesday morning group"
                 disabled={pending}
-                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
+                className="min-w-0 flex-1 rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
               />
               <button
                 type="button"
                 onClick={create}
                 disabled={pending || !newName.trim()}
-                className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
               >
                 Create
               </button>
@@ -256,7 +256,7 @@ export function SpaceCirclesManager({
                   setError(null)
                 }}
                 disabled={pending}
-                className="rounded-lg px-3 py-1.5 text-meta font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
+                className="rounded-control px-3 py-1.5 text-meta font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
               >
                 Cancel
               </button>
@@ -296,7 +296,7 @@ export function SpaceCirclesManager({
                   type="button"
                   onClick={attach}
                   disabled={pending || !pickedCircle}
-                  className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                  className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                 >
                   Attach
                 </button>
@@ -314,7 +314,7 @@ export function SpaceCirclesManager({
                   setError(null)
                 }}
                 disabled={pending}
-                className="rounded-lg px-3 py-1.5 text-meta font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
+                className="rounded-control px-3 py-1.5 text-meta font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
               >
                 Cancel
               </button>
@@ -379,7 +379,7 @@ export function SpaceCirclesManager({
                         type="button"
                         onClick={() => endRun(c.run!.id, 'completed', c.name)}
                         disabled={pending}
-                        className="rounded-lg border border-border px-2 py-1 text-2xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+                        className="rounded-control border border-border px-2 py-1 text-2xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
                       >
                         Finish
                       </button>
@@ -387,7 +387,7 @@ export function SpaceCirclesManager({
                         type="button"
                         onClick={() => endRun(c.run!.id, 'cancelled', c.name)}
                         disabled={pending}
-                        className="rounded-lg px-2 py-1 text-2xs font-medium text-muted transition-colors hover:text-danger disabled:opacity-40"
+                        className="rounded-control px-2 py-1 text-2xs font-medium text-muted transition-colors hover:text-danger disabled:opacity-40"
                       >
                         Cancel Run
                       </button>
@@ -401,7 +401,7 @@ export function SpaceCirclesManager({
                         setError(null)
                       }}
                       disabled={pending}
-                      className="rounded-lg border border-border px-2.5 py-1 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+                      className="rounded-control border border-border px-2.5 py-1 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
                     >
                       Start a Run
                     </button>
@@ -412,7 +412,7 @@ export function SpaceCirclesManager({
                     onClick={() => openMove(c.id)}
                     disabled={pending}
                     aria-label={`Move ${c.name}`}
-                    className="rounded-lg px-2 py-1 text-2xs font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
+                    className="rounded-control px-2 py-1 text-2xs font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
                   >
                     Move
                   </button>
@@ -444,7 +444,7 @@ export function SpaceCirclesManager({
                       type="button"
                       onClick={() => move(c.id, c.name)}
                       disabled={pending || !pickedTarget}
-                      className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                      className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                     >
                       Move it
                     </button>
@@ -452,7 +452,7 @@ export function SpaceCirclesManager({
                       type="button"
                       onClick={() => setMoveFor(null)}
                       disabled={pending}
-                      className="rounded-lg px-3 py-1.5 text-meta font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
+                      className="rounded-control px-3 py-1.5 text-meta font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
                     >
                       Cancel
                     </button>
@@ -475,10 +475,10 @@ export function SpaceCirclesManager({
                       onChange={(e) => searchPeople(e.target.value)}
                       placeholder="Search by name or @handle"
                       disabled={pending}
-                      className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
+                      className="w-full rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
                     />
                     {handoffHits.length > 0 && (
-                      <div className="overflow-hidden rounded-lg border border-border bg-surface">
+                      <div className="overflow-hidden rounded-card border border-border bg-surface">
                         {handoffHits.map((p) => (
                           <button
                             key={p.id}
@@ -527,7 +527,7 @@ export function SpaceCirclesManager({
                       type="button"
                       onClick={() => startRun(c.id)}
                       disabled={pending || !pickedPlan}
-                      className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                      className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                     >
                       Start the Run
                     </button>

@@ -79,7 +79,7 @@ export async function SpacePipeline({
             return (
               <div
                 key={stage.id}
-                className="w-64 shrink-0 rounded-2xl border border-border bg-surface-elevated/40 p-3"
+                className="w-64 shrink-0 rounded-card border border-border bg-surface-elevated/40 p-3"
               >
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">

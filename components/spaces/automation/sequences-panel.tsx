@@ -127,7 +127,7 @@ export function SequencesPanel({
           {sequences.map((seq) => (
             <li
               key={seq.id}
-              className="space-y-3 rounded-2xl border border-border bg-surface p-4 lift-1"
+              className="space-y-3 rounded-card border border-border bg-surface p-4 lift-1"
             >
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
@@ -188,7 +188,7 @@ export function SequencesPanel({
 
       {!readOnly &&
         (showForm ? (
-          <div className="space-y-4 rounded-2xl border border-border bg-surface p-4 lift-1">
+          <div className="space-y-4 rounded-card border border-border bg-surface p-4 lift-1">
             <div className="space-y-1">
               <Label htmlFor="seq-name">Sequence name</Label>
               <Input
@@ -295,7 +295,7 @@ function StepList({
           {sequence.steps.map((step, i) => (
             <li
               key={step.id}
-              className="flex items-center justify-between gap-3 rounded-lg bg-surface-elevated/50 px-3 py-2"
+              className="flex items-center justify-between gap-3 rounded-card bg-surface-elevated/50 px-3 py-2"
             >
               <div className="flex min-w-0 items-center gap-2 text-body-sm">
                 <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-pill bg-surface text-meta font-semibold text-muted">
@@ -324,7 +324,7 @@ function StepList({
 
       {!readOnly &&
         (adding ? (
-          <div className="space-y-3 rounded-lg border border-border bg-surface-elevated/30 p-3">
+          <div className="space-y-3 rounded-card border border-border bg-surface-elevated/30 p-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label htmlFor={`step-delay-${sequence.id}`}>Wait (hours)</Label>

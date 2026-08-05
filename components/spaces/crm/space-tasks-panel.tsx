@@ -157,7 +157,7 @@ export function SpaceTasksPanel({
 
       {!readOnly && (
         <form
-          className="mb-4 rounded-2xl border border-border bg-surface p-4 lift-1"
+          className="mb-4 rounded-card border border-border bg-surface p-4 lift-1"
           onSubmit={(e) => {
             e.preventDefault()
             if (!pending) add()
@@ -222,7 +222,7 @@ export function SpaceTasksPanel({
       )}
 
       {error && (
-        <p className="mb-3 rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="mb-3 rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
@@ -236,7 +236,7 @@ export function SpaceTasksPanel({
       ) : (
         <ul className="space-y-2">
           {open.map((task) => (
-            <li key={task.id} className="rounded-2xl border border-border bg-surface p-3 lift-1">
+            <li key={task.id} className="rounded-card border border-border bg-surface p-3 lift-1">
               {editingId === task.id ? (
                 <div className="space-y-2">
                   <Input
@@ -287,7 +287,7 @@ export function SpaceTasksPanel({
                       aria-label="Mark task complete"
                       className="tap-target group/check mt-0.5 inline-flex shrink-0 items-start disabled:opacity-40"
                     >
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-md border border-border text-transparent transition-colors group-hover/check:border-success group-hover/check:text-success">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-control border border-border text-transparent transition-colors group-hover/check:border-success group-hover/check:text-success">
                         <Check className="h-3.5 w-3.5" aria-hidden />
                       </span>
                     </button>
@@ -342,13 +342,13 @@ export function SpaceTasksPanel({
               {done.map((task) => (
                 <li
                   key={task.id}
-                  className="flex items-start gap-3 rounded-2xl border border-border bg-surface-elevated/40 p-3"
+                  className="flex items-start gap-3 rounded-card border border-border bg-surface-elevated/40 p-3"
                 >
                   {/* The completed row's marker is static, but its gutter takes the same
                       `tap-target` floor the open row's button claims, so the two lists stay
                       aligned at any tap floor (the roster-manager gutter does the same). */}
                   <span className="tap-target mt-0.5 inline-flex shrink-0 items-start" aria-hidden>
-                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-success-bg text-success">
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-control bg-success-bg text-success">
                       <Check className="h-3.5 w-3.5" />
                     </span>
                   </span>
@@ -389,7 +389,7 @@ function DueChip({ dueAt }: { dueAt: string | null }) {
         : 'bg-surface-elevated text-muted'
   const prefix = tone === 'overdue' ? 'Overdue ' : 'Due '
   return (
-    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-meta font-medium ${cls}`}>
+    <span className={`inline-flex items-center rounded-pill px-2 py-0.5 text-meta font-medium ${cls}`}>
       {prefix}
       {label}
     </span>

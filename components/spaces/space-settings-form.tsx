@@ -43,7 +43,7 @@ export function SpaceSettingsForm({
   }
 
   return (
-    <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1 sm:p-6">
+    <div className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1 sm:p-6">
       <section className="space-y-3">
         <SectionHeader title="Visibility" />
         <VisibilityField

@@ -29,7 +29,7 @@ function ProfileSectionSkeleton({ cards = 4 }: { cards?: number }) {
       </div>
       <div className="grid gap-5 @lg:grid-cols-2">
         {Array.from({ length: cards }).map((_, i) => (
-          <Skeleton key={i} className="h-32 rounded-xl" />
+          <Skeleton key={i} className="h-32 rounded-card" />
         ))}
       </div>
     </div>
