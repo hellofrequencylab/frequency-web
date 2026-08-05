@@ -32,18 +32,26 @@ const HERO_IMAGE = '/images/site/breathwork-circle.jpg'
 const PRACTICE_IMAGE = '/images/site/meditation-circle-outdoor.jpg'
 const COMMUNITY_IMAGE = '/images/site/nature-viewing-sunset.jpg'
 
+// Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
+const OG_TITLE = 'How to calm down fast when you cannot switch off · Frequency'
+const OG_DESCRIPTION =
+  'A 60-second way to calm down fast, why you stay wired even when you are exhausted, and how to make calm a habit instead of a rescue.'
+
 export function generateMetadata(): Metadata {
   return {
     title: TITLE,
     description: DESCRIPTION,
     alternates: { canonical: '/calm-down-fast' },
     openGraph: {
-      title: 'How to calm down fast when you cannot switch off · Frequency',
-      description:
-        'A 60-second way to calm down fast, why you stay wired even when you are exhausted, and how to make calm a habit instead of a rescue.',
+      title: OG_TITLE,
+      description: OG_DESCRIPTION,
       url: '/calm-down-fast',
       images: [{ url: HERO_IMAGE }],
     },
+    // Metadata merges per TOP-LEVEL KEY: a page that sets only `openGraph` inherits the root
+    // `twitter` block verbatim, so the X/Slack card read generic site copy while the OG tags
+    // were correct. Mirror the page's own share copy.
+    twitter: { card: 'summary_large_image', title: OG_TITLE, description: OG_DESCRIPTION },
   }
 }
 

@@ -37,6 +37,13 @@ export function generateMetadata(): Metadata {
       description: 'The third place is gone. We hand ordinary people the tools to bring it back.',
       url: '/about',
     },
+    // Metadata merges per TOP-LEVEL KEY, so a page that sets only `openGraph` inherits the ROOT
+    // `twitter` block verbatim and posts the generic site card. Mirror the page's own OG values.
+    twitter: {
+      card: 'summary_large_image',
+      title: 'About Frequency',
+      description: 'The third place is gone. We hand ordinary people the tools to bring it back.',
+    },
   }
 }
 

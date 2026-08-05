@@ -14,15 +14,20 @@ export function SectionHeader({
   count,
   action,
   href,
+  id,
 }: {
   title: string
   count?: number
   action?: React.ReactNode
   /** When set, the title + count link here (the section's library/index). */
   href?: string
+  /** Lands on the `<h2>` so a wrapping `<section aria-labelledby>` can name itself from
+   *  the heading a sighted person already reads. The spoken name and the seen name then
+   *  cannot drift, because they are the same string. */
+  id?: string
 }) {
   const heading = (
-    <h2 className="flex items-baseline gap-2 text-body-sm font-bold tracking-tight text-text transition-colors group-hover:text-primary-strong">
+    <h2 id={id} className="flex items-baseline gap-2 text-body-sm font-bold tracking-tight text-text transition-colors group-hover:text-primary-strong">
       {title}
       {count != null && <span className="text-meta font-medium tabular-nums text-subtle">{count}</span>}
       {href && (

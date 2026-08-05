@@ -22,15 +22,26 @@ const CONTENT_FALLBACK = {
   description: 'Swap, give, lend, and find things with people near you. No fees, no in-app payment, just neighbors helping out. Arrange the handoff offline.',
 }
 
-export function generateMetadata() {
-  return pageContentMetadata('/classifieds', {
+// Same posture as the Frequency Store index (app/(main)/store/page.tsx:19-23): no /discover twin
+// exists for Classifieds, and this kind-filtered board is not the SEO surface — the individual
+// /classifieds/<id> pages are (self-canonical, Product schema, and the ones app/sitemap.ts
+// advertises). So the index is noindexed but still FOLLOWED, letting crawlers walk through to the
+// indexable listing pages. It stays out of the robots.ts DISALLOW list for exactly the reason noted
+// there: a blanket "/classifieds" rule would deindex the listing pages too. The rest of the head
+// (title, description, canonical, og/twitter) still comes from the operator-editable page content.
+export async function generateMetadata() {
+  const meta = await pageContentMetadata('/classifieds', {
     title: 'Classifieds',
     description: 'Swap, give, lend, and find things with people near you. No fees, just neighbors.',
   })
+  return { ...meta, robots: { index: false, follow: true } }
 }
 export const dynamic = 'force-dynamic'
 
-const HERO_IMAGE = 'https://picsum.photos/seed/frequency-classifieds/1600/600'
+// A real community photo, not a random stock placeholder. This is the hero and the LCP element, and
+// it is what any social or AI preview of the page surfaces, so it has to be ours. Neighbors sharing
+// a shaded spot, which is the handoff this board is for.
+const HERO_IMAGE = '/images/site/outdoor-group.jpg'
 
 export default async function ClassifiedsPage({ searchParams }: { searchParams: Promise<{ kind?: string }> }) {
   const { kind } = await searchParams

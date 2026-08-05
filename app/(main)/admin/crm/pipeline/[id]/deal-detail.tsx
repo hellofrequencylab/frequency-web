@@ -263,21 +263,32 @@ export function DealDetail({
             const done = !!a.completed_at
             return (
               <li key={a.id} className="flex items-start gap-3 rounded-card border border-border bg-surface p-3">
+                {/* TOUCH TARGET: the floor goes on a WRAPPER, not on the 20px marker itself (same
+                    split as components/ui/checkbox.tsx), so the task box stays the same size as the
+                    static activity marker it alternates with down the timeline. Growing the flex item
+                    keeps `gap-3` intact at every floor, so nothing overlaps the body column; the
+                    non-task rows take the same floor as a spacer so the gutter never jumps. */}
                 {isTask ? (
                   <button
                     type="button"
                     disabled={pending}
                     onClick={() => run(() => toggleTask(a.id, deal.id, !done))}
                     aria-label={done ? 'Mark task not done' : 'Mark task done'}
-                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
-                      done ? 'border-success bg-success text-on-success' : 'border-border-strong hover:border-primary'
-                    }`}
+                    className="tap-target group/check mt-0.5 inline-flex shrink-0 items-start"
                   >
-                    {done && <Check className="h-3.5 w-3.5" />}
+                    <span
+                      className={`flex h-5 w-5 items-center justify-center rounded-md border transition-colors ${
+                        done ? 'border-success bg-success text-on-success' : 'border-border-strong group-hover/check:border-primary'
+                      }`}
+                    >
+                      {done && <Check className="h-3.5 w-3.5" />}
+                    </span>
                   </button>
                 ) : (
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-surface-elevated text-subtle">
-                    <Icon className="h-3.5 w-3.5" />
+                  <span className="tap-target mt-0.5 inline-flex shrink-0 items-start">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-surface-elevated text-subtle">
+                      <Icon className="h-3.5 w-3.5" />
+                    </span>
                   </span>
                 )}
                 <div className="min-w-0 flex-1">

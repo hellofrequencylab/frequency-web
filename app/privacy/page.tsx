@@ -10,6 +10,13 @@ export const metadata: Metadata = {
     description: 'How Frequency collects, uses, and protects your personal information.',
     url: '/privacy',
   },
+  // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+  // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Privacy policy',
+    description: 'How Frequency collects, uses, and protects your personal information.',
+  },
   robots: { index: true, follow: true },
 }
 

@@ -28,9 +28,21 @@ import { cn } from '@/lib/utils'
 // turns the type scale up.
 //
 // NOTE for the Phase 3 sweep: `components/marketing/marketing-ui.tsx` exports a near-twin
-// `Stat` (1 importer) pinned to a literal 6xl/7xl pair. This is the canonical primitive;
-// that one is the duplicate to re-point at this file. Not done here — that file is outside
-// this pass.
+// `Stat` (1 importer, `app/page.tsx`) pinned to a literal 6xl/7xl pair. This is the canonical
+// primitive; that one is the duplicate to re-point at this file. Still not done — both files
+// were owned by another agent in the 2026-08-05 sweep.
+//
+// The sweep DID convert the other twin, `LiveStatsBlock` in components/marketing/blocks.tsx,
+// which carried byte-identical markup. That proves the re-point out: the two components are
+// prop-compatible for every existing call site, and the only render deltas are
+//   1. `text-6xl sm:text-7xl` (3.75/4.5rem, fixed) → `text-stat` (clamp(3.5,6vw,4.5rem),
+//      multiplied by --type-scale) — the whole point, and the reason this primitive exists;
+//   2. `tabular-nums` + `leading-none` are added to the numeral;
+//   3. the label class set is otherwise identical, reordered only.
+// The marketing twin's props are NARROWER (`value: number | string`, `label: string`, no
+// `className`), so every marketing-ui caller already type-checks against this file's
+// `ReactNode` signature. Deleting the marketing-ui export and re-exporting this one is a
+// safe, mechanical swap; see the sweep report for the exact recipe.
 //
 // Presentational + server-friendly (no hooks, no client boundary).
 //

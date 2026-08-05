@@ -5,11 +5,12 @@ import Link from 'next/link'
 import { Flame, Check, ChevronDown, Sparkles, Heart, Compass, Map, Users, Route, ArrowRight, Snowflake } from 'lucide-react'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { StandingTiles } from '@/components/gamification/standing-tiles'
-import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 import { STREAK_MILESTONES, streakProgress } from '@/lib/streak'
 import type { Practice, PartialPracticeToday } from '@/lib/practices'
 import type { PillarCount } from '@/lib/pillars'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { RankBadge } from '@/components/ui/rank-badge'
 
 // The graduated home surface. Once a member finishes activation, the streak box
 // "levels up" into this: a multi-purpose journey guide + resource center that takes
@@ -184,13 +185,12 @@ export function JourneyBoard({
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             {rank && (
-              <Link
-                href="/crew"
-                title={`Season rank · ${RANK_LABELS[rank] ?? rank}`}
-                className="rank-badge text-2xs font-bold leading-tight"
-                style={seasonRankStyle(rank)}
-              >
-                {RANK_LABELS[rank] ?? rank}
+              // The chip is a LINK, and the primitive renders a <span>, so the anchor wraps it
+              // rather than being it. `title` stays on the anchor — it is the link's own
+              // description, and moving it inside would detach it from the focusable element.
+              // `dot={false}`: this cluster is a 1.5-gap pair with the collapse button.
+              <Link href="/crew" title={`Season rank · ${RANK_LABELS[rank] ?? rank}`} className="inline-flex">
+                <RankBadge rank={rank} dot={false}>{RANK_LABELS[rank] ?? rank}</RankBadge>
               </Link>
             )}
             <button

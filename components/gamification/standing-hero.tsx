@@ -3,11 +3,11 @@ import { Zap, Gem, Flame, Trophy } from 'lucide-react'
 import {
   SEASON_RANKS,
   RANK_LABELS,
-  seasonRankStyle,
   rankProgress,
   type SeasonRank,
 } from '@/lib/season-ranks'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { RankBadge } from '@/components/ui/rank-badge'
 
 // StandingHero — the member dashboard's centerpiece (the redesign's "wow" band, the
 // member analog of the admin KPI hero). One warm canvas-printed feature band that
@@ -60,7 +60,7 @@ export function StandingHero({
             </p>
             <p className="flex items-center gap-2 text-lead font-bold leading-tight text-text">
               {RANK_LABELS[rank] ?? rank}
-              <span className="rank-badge text-2xs" style={seasonRankStyle(rank)}>{def.label}</span>
+              <RankBadge rank={rank} size="md">{def.label}</RankBadge>
             </p>
           </div>
         </div>

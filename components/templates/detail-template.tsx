@@ -128,6 +128,15 @@ export function DetailTemplate({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
+                {/* THE `display` CHAIN STAYS ON LITERALS, deliberately (ADR-947). It is a
+                    three-step RESPONSIVE ramp — 1.5 / 1.875 / 2.25rem — and no single fixed role
+                    can reproduce a ramp. The nearest fluid role, `display-h3`, is not equivalent:
+                    it floors at 1.75rem, so every Detail page's title would grow ~17% on phones,
+                    and it is an Anton display role while this is bold sans. Retiring this pair
+                    needs a fluid page-title role that does not exist yet.
+                    🔴 MIRRORED at app/(main)/events/[slug]/page.tsx (the inline-edit input for the
+                    event title). The two must move TOGETHER or the editor stops matching the title
+                    it edits — change one and you have a visible jump on entering edit mode. */}
                 <h1
                   className={`${
                     titleScale === 'display' ? 'text-page-title sm:text-3xl lg:text-4xl' : 'text-lead sm:text-page-title'

@@ -8,6 +8,7 @@ import {
   parseRailFold,
   parseRailFolds,
   railFoldControlLabel,
+  railHandleId,
   railFoldsSnapshot,
   readRailFoldCookie,
   resetRailFoldsCache,
@@ -167,6 +168,15 @@ describe('the control names the rail out loud', () => {
     expect(railFoldControlLabel('right', 'open')).toBe('Fold the rail to a strip')
     expect(railFoldControlLabel('right', 'strip')).toBe('Unfold the rail')
   })
+
+  it('and its handle is findable from outside the rail, per side', () => {
+    // DockBar renders from md while the rail column only exists from lg, so it cannot hold a ref
+    // to the control it hands focus to. The id names the SIDE, not the position: the open rail
+    // and the strip render the same handle in branches that are never both in the document.
+    expect(railHandleId('right')).toBe('fq-rail-handle-right')
+    expect(railHandleId('left')).toBe('fq-rail-handle-left')
+    expect(railHandleId('left')).not.toBe(railHandleId('right'))
+  })
 })
 
 // ── Drift guards against the shell ─────────────────────────────────────────────────────────
@@ -195,36 +205,100 @@ describe('the shell actually wires this', () => {
   })
 
   it('the rail can never disappear on desktop — the folded left rail is still a column', () => {
-    expect(code).toContain("'hidden md:flex w-14 shrink-0 flex-col border-r border-chrome-border bg-chrome'")
-    expect(code).toContain("'hidden md:flex w-48 shrink-0 flex-col border-r border-chrome-border bg-chrome'")
+    // No `bg-chrome` in either spelling any more (owner, 2026-08-05: the rails must read as the
+    // same surface as the page). The hairline STAYS in both — with the fill gone it is the only
+    // thing left defining where the track ends, and an ambiguous edge is the bug the fill was
+    // introduced to fix. If a future edit drops the border too, this is what notices.
+    expect(code).toContain("'relative hidden md:flex w-14 shrink-0 flex-col border-r border-chrome-border'")
+    expect(code).toContain("'relative hidden md:flex w-48 shrink-0 flex-col border-r border-chrome-border'")
   })
 
-  it('both foot controls come from the ONE shared control, not a hand-rolled button', () => {
-    expect(code).toContain('<RailFoldControl side="left"')
-    expect(code).toContain('<RailFoldControl side="right"')
-    // The old bespoke chevron buttons are gone (DAWN: never a bordered button, one glyph).
+  it('BOTH rails read as the page, and BOTH keep their hairline — never one and not the other', () => {
+    // The owner's instruction was explicit that the two sides must not diverge. The right rail's
+    // two branches are inline class strings rather than the quoted pair above.
+    expect(code).toContain('relative flex w-14 shrink-0 flex-col items-center border-l border-chrome-border py-6')
+    expect(code).toContain('relative flex w-72 shrink-0 flex-col border-l border-chrome-border py-6')
+    // The fill is gone from every rail <aside>. (`bg-chrome` survives elsewhere in the shell —
+    // the header, the mobile drawer — so this is deliberately scoped to the rail spellings.)
+    expect(code).not.toMatch(/flex-col[^'"]*border-[rl] border-chrome-border bg-chrome/)
+  })
+
+  it('the dock bar hides on the fold, off the SAME resolved value the rail uses', () => {
+    // 🔴 The bug: DockBar is `w-72`, which is the OPEN rail (288px). The rail folds to a 56px
+    // strip on any route, and the bar had no input for it — so it overhung the content column by
+    // ~232px. The owner's decision is that it hides. The prop is what carries it.
+    expect(code).toContain('<DockBar vault={dock} folded={railCollapsed} />')
+  })
+
+  it('the fold has exactly ONE derivation for the right rail, and everything reads it', () => {
+    // The bar must not resolve the ladder a second time. One registry, one read, passed down —
+    // the same rule the menu contract holds its catalog to.
+    expect(code.match(/resolveRailFold\(folds\.right, autoStrip\)/g)?.length).toBe(1)
+    expect(code).toContain('const railCollapsed = showSidebar && resolveRailFold(folds.right, autoStrip)')
+  })
+
+  it('the handle carries the id the bar hands focus to, for whichever rail', () => {
+    // The id moved INTO the shared handle when the control did, so it cannot be dropped from one
+    // rail branch and not the other — which is what a per-branch id invited. If it goes, a
+    // keyboard member who folds while focus is in the bar lands on <body> and restarts their tab
+    // order.
+    const control = readFileSync('components/layout/rail-fold-control.tsx', 'utf8')
+    expect(control).toContain('id={railHandleId(side)}')
+  })
+
+  it('both rails fold from the ONE shared handle, on the edge, and nothing at the foot', () => {
+    // Owner, 2026-08-05: a subtle handle in the vertical middle of the rail's edge, replacing the
+    // glyph at the foot. One component, both rails, both directions.
+    expect(code).toContain('<RailEdgeHandle side="left"')
+    expect(code).toContain('<RailEdgeHandle side="right"')
+    // The foot control is DELETED, not left beside it: two controls for one fold is worse than
+    // either, and the old one is exactly what a half-finished migration would leave behind.
+    expect(code).not.toContain('<RailFoldControl')
+    // The bespoke chevron buttons that predated both are still gone.
     expect(code).not.toContain('ChevronsLeft')
     expect(code).not.toContain('ChevronsRight')
   })
+
+  it('the strip branch shows the handle too — folding is never a one-way door', () => {
+    expect(code).toContain('<RailEdgeHandle side="right" showing="strip"')
+    expect(code).toContain('<RailEdgeHandle side="right" showing="open"')
+  })
 })
 
-describe('the control follows the foot law', () => {
+describe('the handle sits on the edge, centred on the SCREEN', () => {
   const control = readFileSync('components/layout/rail-fold-control.tsx', 'utf8')
 
-  it('is borderless and quiet: subtle warming to muted, no border, no background', () => {
-    expect(control).toContain('text-subtle')
-    expect(control).toContain('hover:text-muted')
-    expect(control).not.toMatch(/className=[^\n]*\bborder\b/)
-    expect(control).not.toMatch(/className=[^\n]*\bbg-/)
+  it('is centred in the viewport, not in the rail', () => {
+    // 🔴 The trap this pins. The rails are flex children of the page row, so their box is as tall
+    // as the whole page — on a long feed, a handle centred in the rail's own box sits screens
+    // below the fold. The sticky viewport-tall box is what makes "vertical middle" mean the
+    // middle of the WINDOW while any part of the rail is on screen.
+    expect(control).toContain('sticky top-0 flex h-screen items-center')
+    expect(control).toContain('absolute inset-y-0')
   })
 
-  it('is 26px via the role radius, not an arbitrary px box', () => {
-    // h-6 = 1.5rem, and this app's density root is 106.25% (1rem = 17px) => 25.5px.
-    expect(control).toContain('h-6 w-6')
-    expect(control).toContain('rounded-control')
+  it('straddles the seam it moves, on the correct side of each rail', () => {
+    expect(control).toContain("side === 'left' ? '-right-2.5' : '-left-2.5'")
+  })
+
+  it('never lays a dead zone over the gutter', () => {
+    // The strip is as tall as the rail. If it took pointer events, it would eat clicks down the
+    // whole edge of the content column.
+    expect(control).toContain('pointer-events-none absolute')
+    expect(control).toContain('pointer-events-auto')
+  })
+
+  it('is subtle but not a dare: the ink is smaller than the target', () => {
+    expect(control).toContain('h-10 w-1 rounded-pill')   // the mark
+    expect(control).toContain('h-16 w-5')                // the pressable box
+  })
+
+  it('is borderless and quiet, and states its destination out loud', () => {
+    expect(control).not.toMatch(/className=[^\n]*\bborder\b/)
+    expect(control).toContain('railFoldControlLabel(side, showing)')
+    expect(control).toContain('aria-label={label}')
     // No arbitrary pixel box: that would add to the `raw-px-arbitrary` ratchet, which may only
-    // shrink. (Matched on the className line, so the reasoning in the comment above the component
-    // is free to name the pattern it is avoiding.)
+    // shrink.
     expect(control).not.toMatch(/className=[^\n]*h-\[\d+px\]/)
   })
 })

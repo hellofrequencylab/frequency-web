@@ -42,18 +42,25 @@ const SHARED_IMAGE = '/images/site/song-circle.jpg'
 const TABLE_IMAGE = '/images/site/community-dinner.jpg'
 const CITY_IMAGE = '/images/site/outdoor-group.jpg'
 
+// Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
+const OG_TITLE = 'How to make friends as an adult · Frequency'
+const OG_DESCRIPTION =
+  'Why friendship gets harder after 30, plus how to meet people in a new city, find like-minded people, and reconnect with old friends. One repeatable move: the same room, more than once.'
+
 export function generateMetadata(): Metadata {
   return {
     title: TITLE,
     description: DESCRIPTION,
     alternates: { canonical: '/friendship-as-an-adult' },
     openGraph: {
-      title: 'How to make friends as an adult · Frequency',
-      description:
-        'Why friendship gets harder after 30, plus how to meet people in a new city, find like-minded people, and reconnect with old friends. One repeatable move: the same room, more than once.',
+      title: OG_TITLE,
+      description: OG_DESCRIPTION,
       url: '/friendship-as-an-adult',
       images: [{ url: HERO_IMAGE }],
     },
+    // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+    // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+    twitter: { card: 'summary_large_image', title: OG_TITLE, description: OG_DESCRIPTION },
   }
 }
 

@@ -12,10 +12,6 @@ import {
   RAIL_STRIP_CLASS,
   SHELL_ROW_CLASS,
   SHELL_CONTENT_WIDTH_CLASS,
-  DOCK_BAR_H_PX,
-  RAIL_FOLD_STICKY_CLASS,
-  RAIL_FOLD_STICKY_PX,
-  railFoldClearsDock,
 } from './shell-metrics'
 
 // ── The claim page must be as wide as the shell's content column ───────────────────────────
@@ -142,38 +138,36 @@ describe('the claim page consumes it instead of restating it', () => {
   })
 })
 
-describe('right rail fold control vs the dock bar', () => {
-  it('clears the bar rather than hiding behind it', () => {
-    // The defect this pins: `sticky bottom-4` (17px) inside a rail whose bottom-right corner is
-    // covered by a `fixed bottom-0` bar ~48px tall. Sticky and fixed resolve against different
-    // containing blocks, so they never stack — the control was simply underneath.
-    expect(railFoldClearsDock()).toBe(true)
-    expect(RAIL_FOLD_STICKY_PX).toBeGreaterThan(DOCK_BAR_H_PX)
+describe('the fold control left the foot, and took its clearance problem with it', () => {
+  const metrics = readFileSync(join(process.cwd(), 'lib/layout/shell-metrics.ts'), 'utf8')
+
+  it('no rail pins a control above the dock bar any more', () => {
+    // 🔴 WHAT THIS REPLACES. The control was `sticky` at the rail's foot and DockBar is `fixed
+    // bottom-0` ~48px tall; sticky offsets do not stack against a fixed sibling, so it shipped
+    // at `bottom-4` — inside the bar, invisible and unclickable — and had to be re-pinned to
+    // `bottom-14` and held there by constants. The owner moved the control to the middle of the
+    // rail's EDGE (2026-08-05), where nothing is under it.
+    expect(shell).not.toContain('sticky bottom-14')
+    expect(shell).not.toContain('sticky bottom-6')
+    // And there is exactly ONE control per rail: the handle. No foot control left beside it.
+    expect(shell).not.toContain('<RailFoldControl')
   })
 
-  it('spells the offset the same way in the shell as in the constant', () => {
-    const shell = readFileSync(
-      join(process.cwd(), 'components/layout/app-shell.tsx'),
-      'utf8',
-    )
-    // A class string, because Tailwind generates utilities by scanning source text. If someone
-    // retunes the constant without retuning the class, the layout silently reverts and only this
-    // assertion notices.
-    expect(shell).toContain(`sticky ${RAIL_FOLD_STICKY_CLASS} mt-2 flex justify-end`)
+  it('the clearance constants are DELETED, not left lying around asserting nothing', () => {
+    // A constant that names a relationship between two things that no longer meet reads as a
+    // live constraint to the next person. These are the four that no longer have a subject.
+    expect(metrics).not.toMatch(/export const DOCK_BAR_H_PX/)
+    expect(metrics).not.toMatch(/export const RAIL_FOLD_STICKY/)
+    expect(metrics).not.toMatch(/export function railFoldClearsDock/)
+    expect(metrics).not.toMatch(/export function railFoldStickyPx/)
   })
 
-  it('puts the rail-end sentinel after the fold control, not before it', () => {
-    const shell = readFileSync(
-      join(process.cwd(), 'components/layout/app-shell.tsx'),
-      'utf8',
+  it('the rail-end sentinel is now simply LAST in the rail', () => {
+    // It used to have to be ordered after the foot control, because the control was rail content
+    // and a sentinel above it told the bar the rail ended one control early. The handle is
+    // absolutely positioned and out of flow, so "last" is the whole rule again.
+    expect(shell).toContain(
+      '<div id={RAIL_END_SENTINEL_ID} aria-hidden className="h-0" />\n                  </aside>',
     )
-    const control = shell.indexOf(`sticky ${RAIL_FOLD_STICKY_CLASS} mt-2 flex justify-end`)
-    const sentinel = shell.indexOf('id={RAIL_END_SENTINEL_ID}')
-    expect(control).toBeGreaterThan(-1)
-    expect(sentinel).toBeGreaterThan(-1)
-    // The control is the last thing IN the rail, so the ruler that marks the rail's end belongs
-    // after it. Above it, the bar is told the rail ends one control early and comes to rest on
-    // top of the affordance it should be resting under.
-    expect(sentinel).toBeGreaterThan(control)
   })
 })

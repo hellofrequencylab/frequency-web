@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useId, useState, useTransition } from 'react'
 import Image from 'next/image'
 import { Pencil, Trash2, Check, X, ShieldCheck, ShieldX } from 'lucide-react'
 import { updateCrewTask, deleteCrewTask, approveVerification, rejectVerification } from '../actions'
@@ -24,12 +24,16 @@ const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-
 const select = input
 const label = 'block text-meta font-medium text-muted mb-1'
 
-function Toggle({ value, onChange, disabled }: { value: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
+// The switch takes its name from the label already sitting beside it (`labelId`), so what a
+// screen reader says and what a sighted operator reads are the same string and cannot drift.
+// `aria-checked` carries the state.
+function Toggle({ value, onChange, disabled, labelId }: { value: boolean; onChange: (v: boolean) => void; disabled?: boolean; labelId: string }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={value}
+      aria-labelledby={labelId}
       onClick={() => onChange(!value)}
       disabled={disabled}
       className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-pill border-2 border-transparent transition-colors disabled:opacity-50 ${value ? 'bg-primary' : 'bg-border-strong'}`}
@@ -50,6 +54,8 @@ function TaskForm({
   onCancel: () => void
   isPending: boolean
 }) {
+  // One form can be open per task, so the label ids have to be unique per instance.
+  const formId = useId()
   const [name,    setName]    = useState(initial?.name ?? '')
   const [type,    setType]    = useState(initial?.task_type ?? 'attendance')
   const [points,  setPoints]  = useState(String(initial?.zaps_value ?? 10))
@@ -106,13 +112,13 @@ function TaskForm({
       </div>
 
       <div className="flex items-center gap-3">
-        <Toggle value={repeat} onChange={setRepeat} disabled={isPending} />
-        <span className="text-body-sm text-text">Repeatable</span>
+        <Toggle value={repeat} onChange={setRepeat} disabled={isPending} labelId={`${formId}-repeatable`} />
+        <span id={`${formId}-repeatable`} className="text-body-sm text-text">Repeatable</span>
       </div>
 
       <div className="flex items-center gap-3">
-        <Toggle value={verify} onChange={setVerify} disabled={isPending} />
-        <span className="text-body-sm text-text">Requires verification</span>
+        <Toggle value={verify} onChange={setVerify} disabled={isPending} labelId={`${formId}-verify`} />
+        <span id={`${formId}-verify`} className="text-body-sm text-text">Requires verification</span>
       </div>
 
       <div className="sm:col-span-2 flex items-center gap-2 pt-1">

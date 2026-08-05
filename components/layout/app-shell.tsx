@@ -31,12 +31,11 @@ import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { ViewAsControl } from '@/components/layout/view-as-control'
 import { ContextSwitcher } from '@/components/layout/context-switcher'
 import { ContextBadge } from '@/components/layout/context-badge'
-import { DockBar, RAIL_END_SENTINEL_ID } from '@/components/layout/dock-bar'
+import { DockBar, DOCK_HEAD_H_CLASS, RAIL_END_SENTINEL_ID } from '@/components/layout/dock-bar'
 import type { AvailableContext, OperatorContext } from '@/lib/context/operator-context'
 import {
   type CommunityRole,
-  ROLE_LABEL,
-  roleBadgeStyle,
+  RoleBadge,
 } from '@/lib/community-roles'
 import { NAV_AREAS, meetsAccess, meetsStaff, type NavAccess, type NavArea } from '@/lib/nav-areas'
 import { calmSpine, canSee, type NavViewer, type SpineTab } from '@/lib/nav/registry'
@@ -73,7 +72,7 @@ import {
   type RailFolds,
   type RailSide,
 } from '@/lib/layout/rail-fold'
-import { RailFoldControl } from '@/components/layout/rail-fold-control'
+import { RailEdgeHandle } from '@/components/layout/rail-fold-control'
 import type { AppOverrides } from '@/lib/apps/overrides'
 import { isJanitor, type WebRole } from '@/lib/core/roles'
 import type { Capability } from '@/lib/core/capabilities'
@@ -469,21 +468,27 @@ function ProfileCard({
 
   return (
     <div>
-      {/* Compact identity bar — matched in height to the right stats bar.
-          Stays on top; the quick actions fill in underneath it. */}
-      <div className="flex items-center gap-2.5 px-3 py-3.5">
+      {/* Compact identity bar — the LEFT tab's head, and now literally the same height as the
+          right one: both wear DOCK_HEAD_H_CLASS (components/layout/dock-bar.tsx).
+          This comment used to claim it was "matched in height to the right stats bar" while the
+          two were 72px and 48px — the owner saw the difference in a screenshot. A shared class
+          is the only version of that claim that cannot go stale, and dock-bar.test.ts fails if
+          either side hardcodes a height instead of importing it.
+          The avatar drops 44px → 38px (`h-9 w-9`, the same square the folded strip shows) so the
+          name and its role badge still have their two lines inside the shorter head. */}
+      <div className={`flex ${DOCK_HEAD_H_CLASS} items-center gap-2.5 px-1.5`}>
         <Link href={profileHref} className="shrink-0" data-tour-anchor="avatar">
           {profile.avatar_url ? (
             <Image
               src={avatarSrc(profile.avatar_url)}
               alt={profile.display_name}
-              width={44}
-              height={44}
+              width={36}
+              height={36}
               style={avatarFocusStyle(profile.avatar_url)}
-              className="w-11 h-11 rounded-pill object-cover"
+              className="w-9 h-9 rounded-pill object-cover"
             />
           ) : (
-            <div className="w-11 h-11 rounded-pill bg-primary text-on-primary text-body-sm font-bold flex items-center justify-center select-none">
+            <div className="w-9 h-9 rounded-pill bg-primary text-on-primary text-body-sm font-bold flex items-center justify-center select-none">
               {getInitials(profile.display_name)}
             </div>
           )}
@@ -502,12 +507,7 @@ function ProfileCard({
             // The real role badge stays; the context badge sits beside it as an ADDITIONAL,
             // clearly-labelled FRAMING signal (operator → the Space brand, admin → an Admin mark).
             <span className="mt-1 flex flex-wrap items-center gap-1">
-              <span
-                className="rank-badge inline-block text-3xs leading-tight"
-                style={roleBadgeStyle(role)}
-              >
-                {ROLE_LABEL[role]}
-              </span>
+              <RoleBadge role={role} />
               <ContextBadge context={context} available={availableContexts} />
             </span>
           )}
@@ -1254,12 +1254,7 @@ function MobileLeftDrawer({
               <p className="text-body-sm font-semibold text-text truncate leading-tight">
                 {profile.display_name}
               </p>
-              <span
-                className="rank-badge mt-0.5 inline-block text-3xs leading-tight"
-                style={roleBadgeStyle(identityRole)}
-              >
-                {ROLE_LABEL[identityRole]}
-              </span>
+              <RoleBadge role={identityRole} className="mt-0.5" />
             </div>
           </Link>
 
@@ -2063,33 +2058,41 @@ export default function AppShell({
                 column scrolls past. A menu taller than the window scrolls
                 INTERNALLY instead of riding the page. */}
             {showLeftRail && (
-              // The rail is FRAME, so it sits on `--color-chrome` — a step DOWN from the canvas.
-              // DAWN's law is that the app frame reads as frame and the white content cards are
-              // the thing that pops; with the rail transparent on canvas, the frame and the page
-              // were the same ground and only the cards' hairlines separated them. The token has
-              // been in globals.css since the 2026-08-03 round with the top bar as its only
-              // adopter.
-              // The frame needs an EDGE, not just a tone. chrome against canvas is 1.083:1 —
-              // above the threshold where a difference is theoretically visible, and well below
-              // where a boundary reads as deliberate, especially with a canvas gutter after it.
-              // The top bar has paired chrome with `border-chrome-border` since it landed; the
-              // rails took the ground without the hairline, so the band had no defined edge and
-              // the rail read as a slightly-off patch of page rather than as frame.
+              // ── NO FILL. The rail is the SAME GROUND as the page ────────────────────────────
+              //
+              // OWNER, 2026-08-05, off a live screenshot of /feed: the rail read as a distinct
+              // cream band beside the content, and he does not want that. So `bg-chrome` comes
+              // off — the rail now takes whatever the page is standing on, in every theme, which
+              // is the one way to be sure no skin is left with a visible band (the fill was the
+              // only thing making one; nothing in globals.css paints a rail).
+              //
+              // WHAT DEFINES THE EDGE NOW: the hairline, and only the hairline. `border-r
+              // border-chrome-border` STAYS — with the tone gone there is nothing else to say
+              // where the frame ends and the page begins, and an ambiguous boundary was the
+              // reported bug the fill was introduced to fix in the first place. One hairline is
+              // the minimum that keeps the rail a track; the fill was the part that made it a
+              // band. BOTH RAILS take the same treatment (the right rail's asides below) so the
+              // two sides of the grid can never read differently.
+              //
               // FOLDED, the rail is a visible STRIP, never a missing track: same column, same
-              // ground, same hairline edge, `w-14` instead of `w-48` — the same class step the
-              // RIGHT rail's folded strip has always used, so both sides of the grid fold to one
-              // measure. Written as two whole class strings rather than an interpolated width,
-              // because Tailwind generates utilities by scanning source text for complete class
-              // names; and the OPEN spelling stays literally `hidden md:flex w-48 shrink-0`,
-              // which is the geometry lib/layout/shell-metrics.ts publishes to the out-of-shell
-              // claim page and reads back out of this file as its drift guard.
+              // hairline edge, `w-14` instead of `w-48` — the same class step the RIGHT rail's
+              // folded strip has always used, so both sides of the grid fold to one measure.
+              // Written as two whole class strings rather than an interpolated width, because
+              // Tailwind generates utilities by scanning source text for complete class names;
+              // and the OPEN spelling stays literally `hidden md:flex w-48 shrink-0`, which is
+              // the geometry lib/layout/shell-metrics.ts publishes to the out-of-shell claim page
+              // and reads back out of this file as its drift guard.
+              //
+              // `relative` is new and load-bearing: the fold HANDLE below is positioned against
+              // this box, straddling the hairline it moves.
               <aside
                 className={
                   leftStrip
-                    ? 'hidden md:flex w-14 shrink-0 flex-col border-r border-chrome-border bg-chrome'
-                    : 'hidden md:flex w-48 shrink-0 flex-col border-r border-chrome-border bg-chrome'
+                    ? 'relative hidden md:flex w-14 shrink-0 flex-col border-r border-chrome-border'
+                    : 'relative hidden md:flex w-48 shrink-0 flex-col border-r border-chrome-border'
                 }
               >
+                <RailEdgeHandle side="left" showing={leftStrip ? 'strip' : 'open'} onPress={toggleLeftRail} />
                 {/* The menu + profile footer live in NORMAL FLOW and scroll WITH the page
                     (no sticky pin, no inner scrollbar): the menu rides up as you scroll and
                     the profile card sits at the bottom of the column, revealed as you reach
@@ -2105,14 +2108,19 @@ export default function AppShell({
                     law): the admin canvas corner-tab skin (rounded top, hairline, canvas-tinted
                     blur), sticky to the column bottom. Mirrors components/admin/
                     admin-profile-card.tsx's wrapper. */}
-                {/* NOT a tab any more. It was a canvas-tinted corner tab because the rail was
-                    canvas and the tint lifted it off; once the rail became chrome, tinting it
-                    chrome made it exactly its own ground — a 1.000:1 "tab" that only its hairline
-                    described, and a backdrop-blur over an opaque same-coloured parent doing
-                    nothing at all. Rather than invent a third tint to keep a shape the rail no
-                    longer needs, the account dock is simply the FOOT of the rail now, separated
-                    the way DAWN separates rail sections: a hairline and space. Group, don't box. */}
-                <div className="sticky bottom-0 z-10 border-t border-chrome-border bg-chrome px-1.5 pt-1">
+                {/* A TAB AGAIN, and the SAME tab as the right side (owner, 2026-08-05: "the
+                    profile box takes the same radius and styles as the right rail tab").
+                    Character for character the DockBar crest — `border-x border-t
+                    border-chrome-border bg-chrome/95 backdrop-blur-sm` on the role radii — with
+                    the corners MIRRORED: DockBar rounds `tl-card` where it meets open canvas and
+                    `tr-control` where it dies against the viewport edge, so the left tab rounds
+                    `tl-control` at the edge and `tr-card` into the canvas.
+                    It reads as a tab again for a reason that only just became true: it stopped
+                    being one when the rail took `bg-chrome`, because a chrome tint on chrome
+                    ground is a 1.000:1 "tab" that nothing but its hairline described. The rail
+                    has no fill now, so the same tint lifts it off the page exactly the way the
+                    right one does. */}
+                <div className="sticky bottom-0 z-10 rounded-tl-control rounded-tr-card border-x border-t border-chrome-border bg-chrome/95 px-2 pt-1 backdrop-blur-sm">
                   {leftStrip ? (
                     // Folded, the account dock keeps its PLACE (the rail's foot is you and what
                     // you run) but not its panel: one avatar that still reaches the profile. The
@@ -2122,7 +2130,10 @@ export default function AppShell({
                       href={profileHref}
                       aria-label={`Your profile, ${profile.display_name}`}
                       title={profile.display_name}
-                      className="mx-auto mb-1 flex h-9 w-9 items-center justify-center"
+                      // Same head height as every other dock head, folded or not: a tab that
+                      // changed height when you folded the menu would make the two bottom
+                      // corners disagree on which line the page ends at.
+                      className={`mx-auto flex ${DOCK_HEAD_H_CLASS} w-9 items-center justify-center`}
                       data-tour-anchor="avatar"
                     >
                       {profile.avatar_url ? (
@@ -2146,14 +2157,10 @@ export default function AppShell({
                       <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} operatorContext={operatorContext} availableContexts={availableContexts} menu={profileMenu} viewerRole={menuViewerRole} staffRole={staffRole} canReceivePayouts={canReceivePayouts} />
                     </>
                   )}
-                  {/* The fold control, at the FOOT and under everything it affects (DAWN § "Rail
-                      controls sit at the foot"): quiet, borderless, warm only on hover, because
-                      folding a menu is rare and the control must not compete with the first real
-                      row. Centred on the strip, trailing when the rail is open — DAWN's own
-                      nav-rail.jsx alignment. */}
-                  <div className={`flex pb-1 ${leftStrip ? 'justify-center' : 'justify-end pr-1'}`}>
-                    <RailFoldControl side="left" showing={leftStrip ? 'strip' : 'open'} onPress={toggleLeftRail} />
-                  </div>
+                  {/* The fold control used to sit HERE, at the foot, under everything it affects.
+                      It is on the rail's edge now (RailEdgeHandle, rendered at the top of this
+                      <aside>) — owner's call, 2026-08-05. Deleted rather than left beside the new
+                      handle: two controls for one fold is worse than either. */}
                 </div>
               </aside>
             )}
@@ -2209,7 +2216,10 @@ export default function AppShell({
                   // Mini rail — the global community rail collapsed to a thin strip. It shows ICONS
                   // for the rail's items (the Quest stats); clicking any reopens the rail. The
                   // collapse/expand TOGGLE sits at the BOTTOM. The rail is never removed.
-                  <aside className="flex w-14 shrink-0 flex-col items-center border-l border-chrome-border bg-chrome py-6">
+                  // No fill, same as the left rail (owner, 2026-08-05): the strip is the page's
+                  // own ground with a hairline for its edge. `relative` carries the edge handle.
+                  <aside className="relative flex w-14 shrink-0 flex-col items-center border-l border-chrome-border py-6">
+                    <RailEdgeHandle side="right" showing="strip" onPress={toggleRail} />
                     <div className="flex flex-col items-center gap-1.5">
                       {([['Quest', Zap], ['Gems', Gem], ['Streak', Flame]] as const).map(([label, Icon]) => (
                         <button
@@ -2224,41 +2234,26 @@ export default function AppShell({
                         </button>
                       ))}
                     </div>
-                    <div className="flex-1" />
-                    <RailFoldControl side="right" showing="strip" onPress={toggleRail} className="sticky bottom-6" />
                   </aside>
                 ) : (
-                  // Mirrors the left rail: chrome plus the hairline that gives the band an edge.
-                  // The collapsed strip already had `border-l border-chrome-border`; the OPEN
-                  // rail did not, so folding the rail was the only way to see where it began.
-                  <aside className="flex w-72 shrink-0 flex-col border-l border-chrome-border bg-chrome py-6">
+                  // Mirrors the left rail exactly: NO fill (owner, 2026-08-05 — the rails must
+                  // read as the same surface as the page), and the hairline that gives the track
+                  // its edge. The collapsed strip already had `border-l border-chrome-border`;
+                  // the OPEN rail did not, so folding it was once the only way to see where it
+                  // began. `relative` carries the edge handle.
+                  <aside className="relative flex w-72 shrink-0 flex-col border-l border-chrome-border py-6">
+                    <RailEdgeHandle side="right" showing="open" onPress={toggleRail} />
                     {sidebar}
-                    {/* The fold TOGGLE at the BOTTOM, sticky so it stays visible as the rail
-                        scrolls. Rail-control law (DAWN 2026-08-03): one affordance at the FOOT,
-                        a small borderless glyph, subtle -> muted on hover — never a bordered
-                        button, which competed with real rows.
-                        Shown on EVERY rail page now, not only the builder surfaces it used to be
-                        gated to: "either rail collapsible by user control" is the law, and a rail
-                        that can only be folded on two routes is not a ladder.
-
-                        `bottom-14` (3.5rem = 59.5px at this app's 17px root), NOT the bottom-4 it
-                        shipped as: DockBar is `fixed bottom-0` and ~48px tall (h-10 head + pt-1 +
-                        border), so a control pinned 17px off the bottom sits INSIDE it — invisible
-                        and unclickable on every rail page, which is every page now that the gate
-                        is gone. Sticky offsets do not stack against fixed siblings; only a literal
-                        clearance works, and railFoldClearsDock() in shell-metrics pins the pair so
-                        a future change to either height fails a test rather than the layout. */}
-                    <div className="sticky bottom-14 mt-2 flex justify-end pr-1">
-                      <RailFoldControl side="right" showing="open" onPress={toggleRail} />
-                    </div>
                     {/* The rail's end. DockBar measures this to know when to stop being pinned to
                         the window and come to rest against the last rail card instead. Zero-height
                         and aria-hidden: it is a ruler, not content.
 
-                        AFTER the fold control, not before it. The control is rail content — the
-                        last thing in the rail — so a sentinel above it tells the bar the rail ends
-                        one control too early, and the bar comes to rest on top of the affordance
-                        it should be resting under. */}
+                        LAST in the rail, with nothing after it. It used to have to sit after the
+                        foot fold-control, which was rail content — a sentinel above it told the
+                        bar the rail ended one control early and the bar came to rest on top of
+                        the affordance it should have been under. The control is on the edge now
+                        (RailEdgeHandle, absolutely positioned and out of flow), so the sentinel
+                        is simply the end of the rail again. */}
                     <div id={RAIL_END_SENTINEL_ID} aria-hidden className="h-0" />
                   </aside>
                 )}
@@ -2310,8 +2305,16 @@ export default function AppShell({
           and this must render from md. `showSidebar` is the arbitration with the operator page
           dock, which occupies these exact coordinates on /admin. Outside the editor-takeover
           guard below because it is not part of the mobile tab bar -- it is hidden md:block, so
-          it never renders at the width the tab bar occupies. */}
-      {showSidebar && !editorTakeover && <DockBar vault={dock} />}
+          it never renders at the width the tab bar occupies.
+
+          `folded` is the SAME `railCollapsed` the rail column above is sized by -- passed down,
+          never re-derived. The bar spans the OPEN rail's 288px, so under a 56px strip it
+          overhung the content column by ~232px; the owner's call is that it hides there rather
+          than shrinking to icons. It hides in CSS at lg+ only, because the md-lg band has no
+          right rail and therefore no fold control to bring it back with -- see the comment above
+          DockBar for the full trade, including what the fold costs (one-tap Vault and Messages).
+          The bar closes whatever was open on the way out, through each segment's own close(). */}
+      {showSidebar && !editorTakeover && <DockBar vault={dock} folded={railCollapsed} />}
 
       {!editorTakeover && (
         <MobileTabBar

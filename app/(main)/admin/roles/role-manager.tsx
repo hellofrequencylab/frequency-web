@@ -6,7 +6,7 @@ import { Search, Zap, ArrowUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { assignRole } from '@/app/(main)/admin/actions'
 import { ROLE_HIERARCHY, type CommunityRole } from '@/lib/core/roles'
-import { ROLE_LABEL, roleBadgeStyle } from '@/lib/community-roles'
+import { ROLE_LABEL, RoleBadge } from '@/lib/community-roles'
 import { nextRole } from '@/lib/roles-meta'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
@@ -97,9 +97,7 @@ export function RoleManager({ members }: { members: RoleMember[] }) {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="truncate text-body-sm font-medium text-text">{m.displayName}</span>
-                  <span className="rank-badge text-meta font-bold leading-tight" style={roleBadgeStyle(m.role)}>
-                    {ROLE_LABEL[m.role]}
-                  </span>
+                  <RoleBadge role={m.role} size="lg" />
                 </div>
                 <div className="flex items-center gap-2 text-meta text-subtle">
                   {m.handle && <span className="truncate">@{m.handle}</span>}

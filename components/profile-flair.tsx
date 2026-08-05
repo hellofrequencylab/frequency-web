@@ -1,5 +1,6 @@
 import { Flame, Award, Gem } from 'lucide-react'
-import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
+import { RankBadge } from '@/components/ui/rank-badge'
 
 interface ProfileFlairProps {
   rank?: SeasonRank | string | null
@@ -26,12 +27,12 @@ export function ProfileFlair({ rank, streak, achievementCount, gems, compact = f
   return (
     <>
       {validRank && (
-        <span
-          className="rank-badge text-3xs font-bold leading-tight"
-          style={seasonRankStyle(validRank)}
-        >
+        // `dot={false}`: flair is a run of tiny inline marks beside a name, and in
+        // `compact` the label is a SINGLE letter — a dot beside it would read as the
+        // bigger mark of the two.
+        <RankBadge rank={validRank} size="sm" dot={false}>
           {compact ? validRank.charAt(0).toUpperCase() : RANK_LABELS[validRank] ?? validRank}
-        </span>
+        </RankBadge>
       )}
       {hasStreak && (
         <span className="text-2xs font-semibold text-primary dark:text-primary flex items-center gap-0.5">

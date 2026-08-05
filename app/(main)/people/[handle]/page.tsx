@@ -9,7 +9,8 @@ import { ProfileFeed } from '@/components/feed/profile-feed'
 import { ProfilePosts } from '@/components/feed/profile-posts'
 import { type ProfileTab } from './profile-tabs'
 import { getInitials } from '@/lib/utils'
-import { isEndorsed, rankProgress, seasonRankStyle, type RankDef, type SeasonRank } from '@/lib/season-ranks'
+import { isEndorsed, rankProgress, type RankDef, type SeasonRank } from '@/lib/season-ranks'
+import { RankBadge } from '@/components/ui/rank-badge'
 import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { FriendButton, type FriendState } from './friend-button'
@@ -312,7 +313,8 @@ export default async function ProfilePage({
       <FoundingBadge founding={profile.is_founding_member} className="text-meta leading-tight" />
       {isSupporter && <SupporterBadge />}
       {rankEndorsed && (
-        <span className="rank-badge text-meta font-medium" style={seasonRankStyle(rank)}>{rankDef.label}</span>
+        // `dot={false}`: this identity band already carries four sibling chips.
+        <RankBadge rank={rank} size="lg" dot={false}>{rankDef.label}</RankBadge>
       )}
       {isDemo && <DemoBadge />}
     </span>
@@ -730,7 +732,7 @@ function ProfileStandingCard({
     <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="flex items-center justify-between gap-2">
         <p className="text-body-sm font-bold tracking-tight text-text">Standing</p>
-        <span className="rank-badge text-2xs font-medium" style={seasonRankStyle(rank)}>{rankDef.label}</span>
+        <RankBadge rank={rank}>{rankDef.label}</RankBadge>
       </div>
 
       {next ? (

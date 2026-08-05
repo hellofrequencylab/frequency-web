@@ -41,7 +41,7 @@ export async function SuppressionList({ spaceId, limit }: { spaceId: string; lim
   if (suppressions.length === 0) {
     return (
       <section aria-labelledby="space-email-suppressions">
-        <SectionHeader title="Opted out" />
+        <SectionHeader id="space-email-suppressions" title="Opted out" />
         <EmptyState
           icon={MailX}
           title="No one has opted out."
@@ -59,7 +59,7 @@ export async function SuppressionList({ spaceId, limit }: { spaceId: string; lim
 
   return (
     <section aria-labelledby="space-email-suppressions">
-      <SectionHeader title="Opted out" count={suppressions.length} />
+      <SectionHeader id="space-email-suppressions" title="Opted out" count={suppressions.length} />
       <p className="mb-3 text-meta text-muted">
         These people asked not to hear from you, or their address bounced. We keep them off every
         send. Global opt-outs apply across all of Frequency.

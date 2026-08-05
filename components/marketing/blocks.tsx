@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
+import { Stat } from '@/components/ui/stat'
 
 // Presentational blocks shared by the Puck config (editor + public render) and
 // the legacy splash fallback. Pure props in, markup out.
@@ -107,10 +108,10 @@ export function LiveStatsBlock({ eyebrow, heading, live, pad, vis = '' }: { eyeb
         {stats ? (
           <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
             {stats.map((s) => (
-              <div key={s.label}>
-                <p className="font-display text-6xl sm:text-7xl text-text">{s.value.toLocaleString()}</p>
-                <p className="text-meta text-subtle mt-3 uppercase tracking-eyebrow font-bold">{s.label}</p>
-              </div>
+              // The kit's Stat, not a hand-rolled twin: same anatomy, same tone pair, and the
+              // numeral takes the `text-stat` ROLE instead of the literal 6xl/7xl pair, so it
+              // keeps responding when a member turns the type scale up.
+              <Stat key={s.label} value={s.value.toLocaleString()} label={s.label} />
             ))}
           </div>
         ) : (

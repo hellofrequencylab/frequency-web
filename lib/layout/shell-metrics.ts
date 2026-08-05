@@ -103,24 +103,19 @@ export const SHELL_CONTENT_WIDTH_CLASS =
 /** The shell row's own box, so a page outside the shell starts from the identical container. */
 export const SHELL_ROW_CLASS = 'mx-auto w-full max-w-[105rem] px-4 sm:px-6 lg:px-8'
 
-/** DockBar's resting height, in PIXELS at this app's 17px root: an `h-10` head (2.5rem = 42.5px)
- *  plus `pt-1` (4.25px) plus the `border-t` hairline. ~48px.
- *
- *  Stated here for one reason: the right rail's fold control is `sticky`, and DockBar is `fixed
- *  bottom-0`. Sticky offsets resolve against the scroll container, fixed ones against the
- *  viewport, so the two do NOT stack — a control pinned less than the bar's height off the
- *  bottom sits underneath it, invisible and unclickable. That shipped as `bottom-4` (1rem =
- *  17px), which put the control fully inside the bar on every rail page. */
-export const DOCK_BAR_H_PX = 48
-
-/** The right rail fold control's sticky offset: `bottom-14` = 3.5rem = 59.5px at a 17px root.
- *  Must clear DOCK_BAR_H_PX with room to breathe. Written as a class string because Tailwind
- *  scans source text; the number is here so a test can check the two against each other rather
- *  than a human re-measuring a screenshot. */
-export const RAIL_FOLD_STICKY_CLASS = 'bottom-14'
-export const RAIL_FOLD_STICKY_PX = 59.5
-
-/** Does the fold control clear the dock bar? The whole point of the two constants above. */
-export function railFoldClearsDock(): boolean {
-  return RAIL_FOLD_STICKY_PX > DOCK_BAR_H_PX
-}
+// ── RETIRED, 2026-08-05: DOCK_BAR_H_PX + RAIL_FOLD_STICKY_* + railFoldClearsDock() ──────────
+//
+// Those existed to keep the rail's fold control from hiding UNDER the dock bar: the control was
+// `sticky` at the rail's foot, DockBar is `fixed bottom-0` and ~48px tall, and sticky offsets do
+// not stack against a fixed sibling — so the control shipped at `bottom-4`, fully inside the bar,
+// on every rail page. The fix was a literal clearance (`bottom-14`) with the two heights pinned
+// against each other here.
+//
+// The owner then moved the control off the foot entirely: it is a handle on the middle of the
+// rail's EDGE now (components/layout/rail-fold-control.tsx). Nothing is under it, so there is no
+// clearance left to hold — and constants asserting a relationship between two things that no
+// longer meet are worse than absent, because the next reader takes them for a live constraint.
+//
+// The one number still worth sharing is the two docks' head height, and it lives WITH the docks
+// as DOCK_HEAD_H_CLASS (components/layout/dock-bar.tsx): it is a class the left and right tabs
+// both wear, not an arithmetic relationship anyone has to reason about.

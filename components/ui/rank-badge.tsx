@@ -22,11 +22,13 @@ import {
 // documented anatomy. Nothing here re-derives a colour, a wash, or a dark-mode rule; a
 // Tailwind reimplementation would be exactly the duplicate this pass exists to retire.
 //
-// WHY IT EARNS ITS KEEP: twenty call sites currently hand-roll
+// WHY IT EARNS ITS KEEP: twenty call sites hand-rolled
 // `<span className="rank-badge text-2xs …" style={seasonRankStyle(r)}>{label}</span>`,
-// and they have already drifted — the size class is one of four different roles, the
-// weight is one of three, and NOT ONE of them renders the `.rank-dot` the CSS primitive
+// and they had already drifted — the size class was one of four different roles, the
+// weight one of three, and NOT ONE of them rendered the `.rank-dot` the CSS primitive
 // documents as half its anatomy. One component, one anatomy, one place to fix.
+// Swept 2026-08-05: every one now composes this file (see SIZE below for what that
+// sweep proved about the size roles).
 //
 // Presentational + server-friendly (no hooks, no client boundary).
 //
@@ -40,13 +42,33 @@ import {
 export type RankBadgeRank = SeasonRank | RankKey
 
 /** `sm` = the chrome chip (rail, flair, app shell) · `md` = the default in-app chip ·
- *  `lg` = a card or hero chip. `.rank-badge` hard-codes 12px, so the size role overrides it. */
+ *  `lg` = a card or hero chip.
+ *
+ *  ⚠️ READ THE CASCADE NOTE ON `SIZE` BELOW: today the size role paints NOTHING. */
 export type RankBadgeSize = 'sm' | 'md' | 'lg'
 
 // Size is the ONE thing the size prop sets, because `.rank-badge` hard-codes 12px and the
 // twenty existing call sites each override it with a different role. Weight is left to the
 // CSS primitive (500) — with one exception: at 10px, 500 reads thin against the tinted wash,
 // so `sm` compensates. That is a legibility fix, not a second opinion about the primitive.
+//
+// ⚠️ CASCADE, MEASURED 2026-08-05 — THE SIZE ROLE DOES NOT PAINT TODAY, AND NEVER DID.
+// The paragraph above says the role "overrides" the primitive's 12px. It does not. Compiling
+// `app/globals.css` the way scripts/check-phantom-classes.mjs does shows Tailwind emits every
+// `text-*` / `font-*` utility inside `@layer utilities`, while `.rank-badge` is UNLAYERED
+// (globals.css §rank spectrum). In the CSS cascade layer order is resolved BEFORE specificity,
+// and unlayered normal declarations outrank every layer — so `.rank-badge`'s `font-size: 12px`
+// and `font-weight: 500` beat `text-3xs`, `text-2xs`, `text-meta`, `text-body-sm` and
+// `font-bold` alike, no matter the emit order within the layer. All twenty hand-rolled chips
+// were therefore already rendering at 12px/500 in four different declared sizes, which is why
+// the sweep onto this component was visually inert on size — a fact worth having, because it
+// means the DRIFT WAS NEVER VISIBLE and could not have been caught by looking.
+//
+// The map is kept, faithful and unchanged, for two reasons: it records which role each site
+// INTENDED, and the moment `.rank-badge`'s `font-size`/`font-weight` move into `@layer
+// components` (or the size lands as an inline var) all three roles start painting with no call
+// site to revisit. Only `!important` reaches through today — `app/(main)/people/[handle]`
+// deliberately uses `!text-3xs !px-1.5 !py-0` on its header chip, and that one is real.
 const SIZE: Record<RankBadgeSize, string> = {
   sm: 'text-3xs font-bold',
   md: 'text-2xs',

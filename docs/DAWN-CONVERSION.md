@@ -142,16 +142,33 @@ line count and unblocks the largest phase in the plan.
 | **UnderlineTabs** | lives in `components/admin/` | promote to `components/ui/`, then retire the 6 rival tab strips |
 | **Meter** / **GateNotice** / **StreakMeter** / **Counter** | 0–1 call sites | wire to their intended callers, not rebuild |
 
-### 🔴 Phase 3 — The mechanical sweeps *(the bulk: ~3,124 sites)*
+### ⏳ Phase 3 — The mechanical sweeps *(the bulk: ~3,124 sites)*
 
-| Sweep | Sites | Size | Ratchet |
-| :--- | ---: | :---: | :--- |
-| `<button>` → `Button` / `IconButton` | 1,887 | L | `raw-button-bg` 528 · `handrolled-icon-button` 37 |
-| `<input>` / `<textarea>` → field primitives | 970 | L | — |
-| `<select>` → `Select` | 267 | M | — |
-| bespoke cards / rows → `EntityCard` / `RowCard` | 37 | M | `bespoke-cards` 23 · `bespoke-rows` 14 |
-| hand-rolled tabs → `UnderlineTabs` | 3 + 6 strips | S | `handrolled-tabs` 3 |
-| hand-rolled bars → `ProgressTrack` | 14 | S | `adhoc-progress` 14 |
+| Sweep | Sites | Size | Ratchet | State |
+| :--- | ---: | :---: | :--- | :--- |
+| `<button>` → `Button` / `IconButton` | 1,887 | L | `raw-button-bg` 528 → **517** · `handrolled-icon-button` 37 → **12** | ⏳ icon buttons largely done |
+| `<input>` / `<textarea>` → field primitives | 970 | L | — | 🔴 |
+| `<select>` → `Select` | 267 | M | — | ⏳ **`components/spaces` + `components/admin`: 83 → 0** |
+| `<input type=checkbox>` → `Checkbox` | 14 | S | — | ✅ **0 remaining in those two trees** |
+| bespoke cards / rows → `EntityCard` / `RowCard` | 37 | M | `bespoke-cards` 24 · `bespoke-rows` 14 | 🔴 |
+| hand-rolled tabs → `UnderlineTabs` | 3 + 6 strips | S | `handrolled-tabs` **0** | ✅ |
+| hand-rolled bars → `ProgressTrack` | 14 | S | `adhoc-progress` 14 → **12** | ⏳ |
+| hand-rolled rank badges → `RankBadge` | 23 | M | `bespoke-cards` | 🔴 **primitive shipped with 0 adopters** |
+
+> **A primitive with no adopters makes the debt worse, not better.** `RankBadge`, `Stat` and
+> `Checkbox` all landed in Phase 2 with **zero importers**, and `rank-badge.tsx`'s own docstring
+> says it exists to retire "twenty call sites [that] currently hand-roll `<span
+> className="rank-badge">`" — 23 of which still exist, so `bespoke-cards` went 23 → 24 when it
+> shipped. Build-then-adopt is the sequencing rule (§3.3); the lesson is that the *adopt* half has
+> to be scheduled, not assumed. Checkbox has since been adopted by the select sweep. The other two
+> are outstanding.
+>
+> **The rank-badge conversion is a contrast fix, not a restyle.** Measured 2026-08-05: white on
+> every rank **core** is 2.46:1–3.88:1, all under AA; **deep** is 6.00:1–8.83:1. Core is a fill or
+> a dot; deep is text on light; bright is text on dark. `lib/season-ranks.ts` carries both `color`
+> (core) and `solid` (deep) for exactly this reason. A badge putting text on a core fill fails AA
+> silently, and `check:contrast` models named pairs with no `white-on-rank` entry, so it is green
+> over all of them.
 
 ⚠️ `raw-button-bg`'s pattern is a 500-char proximity window over arbitrary JSX, not a count of
 buttons — collapsing indentation alone moves it 529 → 564. Replace it with the opening-tag form
@@ -187,17 +204,41 @@ before trusting it to measure this sweep.
 > the role now has one answer instead of three, the `eyebrow` utility reads its own role token
 > rather than borrowing `--text-meta`, and it is **sufficient alone** — no `font-bold` needed
 > beside it, which was the habit quietly rebuilding the hand-rolled eyebrow at every call site.
-| Display literals `text-3xl`…`9xl` → display roles (pass 2b) | 301 | M/L |
+| ⏳ Display literals `text-3xl`…`9xl` → display roles (pass 2b). **`app/**` swept: 300 → 112** | 112 left | M |
+| 🔴 **Three roles the vocabulary is missing** — decided 2026-08-05, see below | 12 sites | S |
 | `tracking-[…]` arbitrary | 72 | S |
 | `text-[…]` arbitrary (incl. 3× `text-[9px]`) | 64 | S |
 | `text-subtle` + 2xs/3xs AA rule + sweep | 24 | S |
+
+> **Three missing roles, approved 2026-08-05 (owner).** The `app/**` display sweep left 12
+> literals rather than guess, and every one of them names the same shape of gap: the ladder is
+> entirely `clamp()`-based and fluid, so there is nothing to reach for when a figure must NOT
+> scale. All three are approved to be added:
+>
+> | Role | Value | Why a literal survived without it |
+> |---|---|---|
+> | **compact stat** | ~1.875rem, **fixed** | `admin/page.tsx:214` is a 4-up KPI strip in a page header. `text-stat` (3.5–4.5rem) breaks the row; nothing else fits. |
+> | **fixed mid-scale numeral** | ~2.25rem, **not fluid** | `upgrade` ×2 and `pricing`'s `sizeFor()`. `display-h3` shrinks the conversion-critical price ~22% on phones. |
+> | **non-viewport display** | fixed, no `vw` | On a print surface viewport units resolve against the **page box**, so the QR wall-poster title sizes unpredictably. |
+>
+> A fourth case is NOT a missing role and must not be treated as one: `pricing`'s `sizeFor()` is a
+> **length-driven fitting algorithm** — four sizes selected by label character count so the display
+> face never wraps mid-figure. Roles have no 4-step ladder in that band, and giving them one to
+> serve one call site would be fitting the vocabulary to a layout bug.
+>
+> Two more that are correctly literals forever: emoji glyphs, avatar initials, and single-letter
+> fallback cover glyphs sized to fill a tile. None is display type.
+>
+> ⚠️ **`events/[slug]:1705` and `detail-template.tsx:133` are a PAIR.** The first is an inline-edit
+> input mirroring the second's `titleScale="display"` chain verbatim. They move together or the
+> editor stops matching the title it edits.
 
 ### 🔴 Phase 5 — Shape and depth
 
 | Item | Sites | Size |
 | :--- | ---: | :---: |
 | `h-[…]` / `w-[…]` arbitrary | 442 | M |
-| `literal-radius` → role tokens | 3,824 | L — **spend inside screen passes, never as its own wave** |
+| `literal-radius` → role tokens | **3,687** (was 3,824) | L — **spend inside screen passes, never as its own wave** |
 | R3: the radius ladder (`sm`…`2xl` in px, `xs`/`3xl`/`4xl` left at Tailwind's rem, so the top rung is a 1.5px step and ignores the density lever) | ~1,319 | S |
 | `rounded-[…]` 20 · `shadow-[…]` 2 · `border-[…]` 1 | 23 | XS |
 
@@ -210,8 +251,10 @@ before trusting it to measure this sweep.
 | ✅ Dead templates | **Done 2026-08-05.** `TwoColumnTemplate` and `HeaderSidebarTemplate` had zero JSX usages while being documented as 2 of the nine shells. Both deleted. The canon is now **eight**: Stream · Index · Detail · Dashboard · Focus · WizardShell · RailGrid · Admin — and `RailGrid` was in §8.1's table but missing from the prose, so the "nine" heading was really counting ten rows | XS |
 | `check:headers` scope gap | it walks `page.tsx` only, so an `<h1>` inside a delegated component is invisible to it — 3 confirmed hand-rolled ones evade it today | S |
 | Rail widths | `288`/`56` hardcoded in three places plus `w-72`/`w-14`/`lg:min-w-72`; DAWN drives both rails from one grid declaration. Introduce `--rail-w-*` | S |
-| The breakpoint | production sheds the left rail at 768px and the right at 1024px; DAWN's law is one 1000px line. Between 768 and 1024 the app is in a state DAWN does not describe | S |
-| Rail ladder | Auto / Open / Strip as a persisted standing instruction; today the fold is binary and `useState`-keyed on pathname, so it resets on navigation | M |
+| 🔴 The breakpoint | production sheds the left rail at 768px and the right at 1024px; DAWN's law is one 1000px line. Between 768 and 1024 the app is in a state DAWN does not describe. **Contained fix:** add `--breakpoint-rail: 62.5rem` to `@theme inline` and swap only the five rail/menu classes in `app-shell.tsx`. Do NOT redefine `--breakpoint-md` — that moves **629** `md:`/`lg:` usages repo-wide to fix five | S |
+| ✅ Rail ladder | **Done 2026-08-05.** Auto / Open / Strip as a persisted standing instruction (`lib/layout/rail-fold.ts`), both rails, one shared 26px foot control, read via `useSyncExternalStore`. Replaced a `useState` keyed on pathname that discarded the choice on every navigation. `NavLinkList`'s `compact` prop turned out to be a complete implementation with no caller | M |
+| ✅ Server-painted fold | **Done 2026-08-05.** A folded rail is different *markup*, not restyled markup, so unlike the theme it cannot be corrected pre-paint by an inline script — by the time any script runs the open rail is already in the HTML. The server is the only actor who can paint it on frame one; `app/(main)/layout.tsx` now seeds `railFold` from the cookie mirror | S |
+| 🔴 **Dock bar at strip width — DECIDED: hide it** | `DockBar` hardcodes `w-72` (288px) with no awareness of the fold, so at the 56px strip it overhangs the content column by ~232px. Pre-existing, but making the fold available on every rail page took it from rare to likely. **Owner decision 2026-08-05: hide the bar when the rail is folded**, rather than narrowing it to two icons. The rail-foot account dock and the top-right system dock still cover navigation; what is genuinely lost is one-tap Vault and Messages, and that is accepted. Hiding must route through the same `close()` path Esc and outside-click use, or an open panel is stranded and focus is dropped on `<body>` | S |
 
 `PAGE-FRAMEWORK.md` §8.2 is also stale: it documents a Focus-`'none'` rail policy that the
 2026-06-20 owner directive replaced (`FOCUS_NONE_PREFIXES` and `SCOPED_PREFIXES` are both empty —
@@ -265,8 +308,18 @@ its own DAWN adoption decision; do not fold its debt into this app's scoreboard.
    > differs. Use the rule in both directions: **if a capture rewrites more files than the run
    > reported failing, the extra ones are the regression.**
    >
-   > **Making `pr-compare` required is the fix.** Until then, budget one recapture cycle per
-   > rendering merge and read a green `pr-compare` as "either nothing changed, or nobody looked."
+   > **Making `pr-compare` required is the fix — APPROVED 2026-08-05 (owner), not yet applied.**
+   > It is a branch-protection setting on `main`, so it needs repo-admin rights: Settings →
+   > Branches → `main` → *Require status checks to pass* → add **`pr-compare`** beside the existing
+   > `checks` and `analyze`. Do NOT remove either of those while adding it.
+   >
+   > Two consequences to accept with it, both real: every rendering PR gains ~11 minutes before it
+   > can merge (preview resolution plus a 5-minute visual pass), and a legitimately-changed surface
+   > now BLOCKS until its baselines are recaptured, rather than merging red. That second one is the
+   > entire point — it converts a silent inheritance into a step someone has to take.
+   >
+   > Until it is applied, budget one recapture cycle per rendering merge and read a green
+   > `pr-compare` as "either nothing changed, or nobody looked."
    >
    > **Recapture procedure** (the trap is in step 3, and it is why this is written down):
    > 1. Dispatch `e2e-manual.yml` with `base_url` = the PR's Vercel preview and
@@ -294,3 +347,74 @@ its own DAWN adoption decision; do not fold its debt into this app's scoreboard.
    version matched a token *mentioned* in a comment 1,000 lines from the real at-rule) in a
    different script. Fix: strip comments before matching, in `scripts/check-adoption.mjs`. Until
    then, a ratchet delta inside ±2 deserves a look at the diff before it is believed.
+
+---
+
+## 4. Phase 9 — The instruments *(added 2026-08-05; unscheduled, and it should not be)*
+
+This phase exists because a full day of conversion work produced one finding larger than any of
+the sweeps: **the design system was never the bottleneck — the things measuring it were.** The
+palette was already 100% correct, all 81 DAWN tokens present value-for-value. What was wrong was
+that five separate gates were **green over the exact defects they existed to catch**:
+
+| Gate | Was green over | Fixed? |
+| :--- | :--- | :--- |
+| `check:adoption` | comments — writing `shadow-lg` inside a `//` raised the count with zero markup involved, so a sweep could bank a phantom win by deleting prose | ✅ `stripComments()`, `CORPUS_BASIS strip-comments@1` |
+| `check:phantom` | everything in `lib/`, every `.ts` file, and every alpha modifier — so the classes a sweep moved OUT of `.tsx` left its coverage entirely | ✅ widened 175 → 255, proven against an injected phantom |
+| `check:contrast` | white on all 10 rank cores at 2.46:1–3.88:1, because it models *named pairs* and has no `white-on-rank` entry | 🔴 **still green over them** |
+| `check:bridge` | a token *mentioned* in a comment 1,000 lines from the real at-rule | ✅ (handoff §3.5) |
+| `select-checkbox.test.tsx` | a `className` string containing `w-auto` while the element rendered `w-full` — asserted under the name "shrinks to its options" | ✅ now asks the compiler |
+
+Plus three blind spots that are scope gaps rather than bugs: `check:headers` walks `page.tsx` only,
+so a delegated `<h1>` is invisible to it (3 hand-rolled ones evade it today); `check:seo` scans
+`app/(marketing)/**` only, so the marketplace routes are unwatched; and **`pr-compare` cannot see
+the app shell at all.**
+
+> **The sharpest instance, and it arrived last: a gate whose blind spot is exactly where the
+> change lands.** #2048 removed the rail fill, moved the fold control to an edge handle, and
+> resized both dock heads. `pr-compare` returned `12 skipped · 64 passed` — **green**. The 12 skips
+> are the whole member shell (`/feed`, the room, `/settings`, the Space console), skipped because
+> `PW_STORAGE_STATE` is unset; the 64 passes are marketing pages that render outside the `(main)`
+> shell and have no rail to photograph.
+>
+> The gate was not wrong. It reported accurately on what it can reach, and what it can reach
+> excludes the product. That is a different failure from the five above — those were instruments
+> mis-measuring their subject, this is an instrument pointed somewhere else entirely — and it is
+> worse, because nothing about the output hints at it. A skip count is not a failure, so a green
+> board and a green board with the app missing from it look identical.
+>
+> It also inverts the sequencing on ADR-948. See its 🔴 amendment: `PW_STORAGE_STATE` first,
+> baselines second, required third. Required-and-blind promotes a known gap to an institutional
+> claim.
+
+**The rule this yields, and the one worth carrying past this conversion:**
+
+> **Prove a guard can fail before trusting it.** Reintroduce the defect, watch the assertion go
+> red, restore, watch it go green. Every guard added on 2026-08-05 was proven this way — the
+> dock-clearance pair by re-applying `sticky bottom-4` and confirming two assertions flipped.
+> A guard that has never been observed failing is not evidence; it is decoration that reads
+> like evidence, which is worse than nothing because it ends the investigation.
+
+The corollary is about *shape*, not diligence. Four of the five failures above share one form: **a
+test that greps the string it was just handed cannot see what the compiler or the cascade does with
+it.** `cn()` in this repo is a plain join, not `tailwind-merge`, so a class passed to a primitive
+does not replace the default — both reach the attribute and emit order settles it. Measured against
+the real compiled sheet: `.w-auto` (8610) precedes `.w-full` (8643), so `w-auto` loses; `.w-max`
+(8676) follows it, so that wins. **No call site can see this.** Any assertion about width, padding,
+or display that does not compile `app/globals.css` is asserting about a string, not a rendering.
+
+### The queue
+
+| Item | Size | Why |
+| :--- | :---: | :--- |
+| `white-on-rank` pairs in `check:contrast` | S | 10 measured AA failures the gate currently calls green. Blocks the `RankBadge` sweep from being verifiable |
+| `raw-button-bg` → opening-tag form | S | It is a 500-char proximity window over arbitrary JSX, not a count of buttons: collapsing indentation alone moves it 529 → 564. It cannot measure the largest sweep in Phase 3 |
+| `check:headers` sees delegated `<h1>` | S | 3 known evaders |
+| `check:seo` covers non-marketing indexable routes | S | `/market`, `/housing`, `/classifieds` are crawlable and unwatched |
+| 🔴 **`PW_STORAGE_STATE`** | S | **Now the top of this queue.** The visual suite skips all four member-shell surfaces without it, so `pr-compare` photographs the marketing site and nothing else. Measured on #2048: rails, fold handle and both dock heads all changed, gate returned `12 skipped · 64 passed` — green, and blind to every one of them |
+| `pr-compare` required | XS | Approved (ADR-948) — but **strictly after** `PW_STORAGE_STATE`. Required-and-blind is worse than advisory-and-blind: it turns a known gap into a merge gate asserting the shell is fine |
+
+**Sequencing note.** Every sweep after this point is measured by these instruments. Fixing them
+first is not overhead — a sweep verified by a gate that cannot see its subject produces a number,
+not a result, and this document already carries seven baselines that had to be rebased rather than
+earned once `check:adoption` learned to ignore comments.

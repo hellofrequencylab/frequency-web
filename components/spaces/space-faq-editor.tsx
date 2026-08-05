@@ -151,7 +151,12 @@ export function SpaceFaqEditor({
 
   return (
     <section aria-labelledby="space-faq-heading">
-      <SectionHeader title="Common questions" count={rows.length} action={readOnly ? undefined : addButton} />
+      <SectionHeader
+        id="space-faq-heading"
+        title="Common questions"
+        count={rows.length}
+        action={readOnly ? undefined : addButton}
+      />
 
       {error && <FormError message={error} />}
 

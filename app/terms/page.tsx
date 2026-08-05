@@ -10,6 +10,13 @@ export const metadata: Metadata = {
     description: 'The terms for using Frequency: your account, acceptable use, messaging consent, and the legal basics.',
     url: '/terms',
   },
+  // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+  // block verbatim, so the X/Slack card served generic site copy. Mirror this page's own.
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Terms of service',
+    description: 'The terms for using Frequency: your account, acceptable use, messaging consent, and the legal basics.',
+  },
   robots: { index: true, follow: true },
 }
 

@@ -13,11 +13,11 @@ import {
   SectionHeading,
   PhotoHero,
   PullQuote,
-  Stat,
   Steps,
   Card,
   Faq,
 } from '@/components/marketing/marketing-ui'
+import { Stat } from '@/components/ui/stat'
 import { Illustration, type IllustrationName } from '@/components/marketing/illustrations'
 import { Reveal, Parallax, CountUp, ScrollCue } from '@/components/marketing/motion'
 import { JsonLd } from '@/components/json-ld'
@@ -95,6 +95,10 @@ export async function generateMetadata(): Promise<Metadata> {
     description,
     alternates: { canonical: '/' },
     openGraph: { title, description, url: '/' },
+    // Metadata merges per TOP-LEVEL KEY, so a page that sets only `openGraph` inherits the ROOT
+    // `twitter` block verbatim — which meant the operator-edited home title/description never
+    // reached the X/Slack card. Mirror the OG values so both cards read the same live copy.
+    twitter: { card: 'summary_large_image', title, description },
   }
 }
 
