@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { Wordmark } from './wordmark'
@@ -64,5 +65,33 @@ describe('Wordmark — the lockup', () => {
     // The inner img and the tagline are both hidden, so the label is not read twice.
     expect(html).toContain('alt=""')
     expect(html).toContain('aria-hidden')
+  })
+})
+
+describe('the lockup tagline owes full text contrast', () => {
+  // 🔴 A REGRESSION THE AXE SUITE CAUGHT ON MAIN. The footer dimmed the whole lockup with
+  // `opacity-50`. That was harmless while the lockup was a single image — but the tagline is TEXT,
+  // and 50% took it to 2.67:1 (fg #999286 on the #f5eee2 footer band) against the 4.5:1 that
+  // 9.5px bold owes. The fix is that the component NAMES its colour, so contrast is a property of
+  // the component rather than of whatever opacity a call site happens to apply.
+  it('names a colour token instead of inheriting whatever the surface hands it', () => {
+    const html = renderToStaticMarkup(<Wordmark tagline mark="2rem" />)
+    expect(html).toContain('text-muted')
+  })
+
+  it('a caller may dim the MARK without dimming the tagline with it', () => {
+    // The footer's `[&>img]:opacity-50` targets the image alone. If someone reverts it to a bare
+    // `opacity-50`, the tagline goes back under the floor — hence the arbitrary variant.
+    const footer = readFileSync('components/layout/marketing-footer.tsx', 'utf8')
+    // `[\s\S]*?` rather than `[^>]*`: the fix itself contains a `>` inside the `[&>img]:`
+    // arbitrary variant, so a `[^>]` scan stops mid-attribute and captures nothing — which made
+    // this guard silently pass on an empty string the first time I wrote it.
+    const call = footer.match(/<Wordmark tagline[\s\S]*?\/>/)?.[0] ?? ''
+    expect(call, 'footer should render the lockup').toContain('tagline')
+    // A BARE `opacity-50` dims everything including the text; `[&>img]:opacity-50` dims only the
+    // mark. The lookbehind is what separates them — without it this guard also rejects the fix.
+    expect(call, 'a bare opacity-* on the lockup dims the tagline text too').not.toMatch(
+      /className="[^"]*(?<!\]:)\bopacity-\d/,
+    )
   })
 })

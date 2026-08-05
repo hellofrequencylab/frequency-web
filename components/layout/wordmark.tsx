@@ -124,7 +124,12 @@ export function Wordmark({ className, priority = false, tagline = false, mark }:
       />
       <span
         aria-hidden
-        className="block w-full text-center font-bold uppercase leading-none"
+        // text-muted, explicitly. The tagline is TEXT at ~28% of the mark — 9.5px at the footer's
+        // 2rem — so it sits under the 18.66px large-text threshold and owes the full 4.5:1. Left to
+        // inherit, it took whatever the surface handed it, and a caller dimming the lockup with
+        // `opacity-50` took it to 2.67:1. Naming the colour here means the contrast is a property of
+        // the component rather than of every call site's opacity.
+        className="block w-full text-center font-bold uppercase leading-none text-muted"
         style={{
           fontSize: `${TAGLINE_SIZE}em`,
           // The gap is expressed in MARK units, so it is converted out of the tagline's own em.
