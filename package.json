@@ -24,6 +24,7 @@
     "check:elements": "node scripts/check-elements.mjs",
     "check:tokens": "node scripts/check-tokens.mjs",
     "check:phantom": "node scripts/check-phantom-classes.mjs",
+    "check:bridge": "node scripts/check-bridge.mjs",
     "check:contrast": "node scripts/check-contrast.mjs",
     "check:adoption": "node scripts/check-adoption.mjs",
     "check:rls": "node scripts/check-rls.mjs",

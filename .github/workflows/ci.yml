@@ -58,6 +58,8 @@ jobs:
 
       - name: Phantom classes (a className that emits no CSS)
         run: pnpm check:phantom
+      - name: Theme bridge (a token declared in :root that Tailwind silently overrules)
+        run: pnpm check:bridge
       - name: Contrast gate (WCAG token pairs, all four render states — Lift 3a)
         run: pnpm check:contrast
       - name: Adoption ratchet (design debt may shrink, never grow — Lift 2a)

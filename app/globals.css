@@ -1253,8 +1253,19 @@
   --leading-snug:    var(--leading-snug);
   --leading-normal:  var(--leading-normal);
   --leading-relaxed: var(--leading-relaxed);
+  /* --tracking-tight and --ease-out are bridged for the reason `check:bridge` exists: BOTH names
+     already belong to Tailwind, so declaring them in :root and stopping there does not override
+     Tailwind — it just leaves the designed value sitting there while Tailwind's paints the page.
+       tracking-tight  DAWN -0.015em  vs  Tailwind -0.025em   — 67% over the intended tightening,
+                       across 57 sites.
+       ease-out        DAWN cubic-bezier(0.22, 1, 0.36, 1)    — the expressive settle
+                       vs  Tailwind cubic-bezier(0, 0, 0.2, 1) — the generic one, across 19 sites.
+     Nothing looked broken in either case, which is exactly why it survived: the utility resolves,
+     so the only symptom is that the product does not look like its own design system. */
+  --tracking-tight:         var(--tracking-tight);
   --tracking-tight-display: var(--tracking-tight-display);
   --tracking-eyebrow:       var(--tracking-eyebrow);
+  --ease-out:               var(--ease-out);
 }
 
 /* Sub-xs type scale — named steps so tiny labels/badges stop using the
