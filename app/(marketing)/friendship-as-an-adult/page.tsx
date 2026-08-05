@@ -206,7 +206,7 @@ export default function FriendshipPage() {
 
       {/* One concept per section. Question H2 in the reader's words, answer first. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Why is it so hard to make friends after 30?
         </h2>
         <Lead>
@@ -247,7 +247,7 @@ export default function FriendshipPage() {
 
       {/* Answer-first how-to, then the concrete steps so the mechanism is actionable. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How do adults actually make friends?
         </h2>
         <Lead>
@@ -282,7 +282,7 @@ export default function FriendshipPage() {
       {/* Absorbed from /find-like-minded-people: the reader who wants their people,
           not just more people. Answer-first, one concept per section. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How do I find like-minded people, not just more people?
         </h2>
         <Lead>
@@ -333,7 +333,7 @@ export default function FriendshipPage() {
 
       {/* Absorbed from /meet-people-new-city: the reader starting over somewhere new. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           What if I moved here and do not know anyone?
         </h2>
         <Lead>
@@ -396,7 +396,7 @@ export default function FriendshipPage() {
       {/* Absorbed from /how-to-reconnect-with-old-friends: the drifted-friend reader,
           with the ordered steps mirrored into the HowTo schema above. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How do I reconnect with old friends who drifted?
         </h2>
         <Lead>
@@ -424,7 +424,7 @@ export default function FriendshipPage() {
 
       {/* One concept per section: the "too shy or too busy" reader. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           What if I am too shy or too busy?
         </h2>
         <Lead>
@@ -472,7 +472,7 @@ export default function FriendshipPage() {
           free to join; pricing intent is low here, so the pricing link is a light
           aside rather than a push. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Where to start
         </h2>
         <Body>
@@ -503,7 +503,7 @@ export default function FriendshipPage() {
 
       {/* FAQ: answer-first pairs, mirrored into the FAQPage schema above. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-7">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-7">
           Common questions
         </h2>
         <FaqList items={FAQ} />

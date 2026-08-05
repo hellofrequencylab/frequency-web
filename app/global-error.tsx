@@ -20,7 +20,7 @@ export default function GlobalError({
     <html lang="en">
       <body className="min-h-screen bg-surface flex items-center justify-center px-4 font-sans">
         <div className="text-center max-w-sm">
-          <p className="text-5xl font-bold text-subtle/60 mb-4">500</p>
+          <p className="text-display-h2 font-bold text-subtle/60 mb-4">500</p>
           <h1 className="text-lead font-semibold text-text mb-2">
             Something went wrong
           </h1>

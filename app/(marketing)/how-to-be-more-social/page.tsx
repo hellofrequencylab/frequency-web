@@ -199,7 +199,7 @@ export default function HowToBeMoreSocialPage() {
 
       {/* One concept per section. Question H2 in the reader's words, answer first. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Why do I want to be social but always stay home?
         </h2>
         <Lead>
@@ -243,7 +243,7 @@ export default function HowToBeMoreSocialPage() {
 
       {/* Answer-first how-to, then the concrete steps. Mirrored into HowTo schema. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How do I actually start?
         </h2>
         <Lead>
@@ -264,7 +264,7 @@ export default function HowToBeMoreSocialPage() {
 
       {/* One concept per section: the introvert reader, named plainly. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How can I be more social as an introvert?
         </h2>
         <Lead>
@@ -287,7 +287,7 @@ export default function HowToBeMoreSocialPage() {
           mechanism as an illustrated beat, then the concrete tactics (hands/eyes,
           alone vs a friend). Relational register, no medical claims. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How do I feel less awkward in groups?
         </h2>
         <Lead>
@@ -332,7 +332,7 @@ export default function HowToBeMoreSocialPage() {
       </ZigZag>
 
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Should I go alone or bring a friend?
         </h2>
         <Lead>
@@ -360,7 +360,7 @@ export default function HowToBeMoreSocialPage() {
           telling friends). No health or recovery framing: where you gather, not
           how you drink. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How do I build a social life without drinking?
         </h2>
         <Lead>
@@ -436,7 +436,7 @@ export default function HowToBeMoreSocialPage() {
       {/* Soft CTA into the product. Two honest doors, plus the sibling pillars so the
           cluster cross-links (hub-and-spoke). */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Where to start
         </h2>
         <Body>
@@ -478,7 +478,7 @@ export default function HowToBeMoreSocialPage() {
 
       {/* FAQ: answer-first pairs, mirrored into the FAQPage schema above. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-7">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-7">
           Common questions
         </h2>
         <FaqList items={FAQ} />

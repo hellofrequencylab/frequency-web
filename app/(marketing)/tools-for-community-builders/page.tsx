@@ -133,7 +133,7 @@ export default function ToolsForCommunityBuildersPage() {
 
       {/* One concept per section. Question H2 in the reader's words, answer first. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           A way in: how do new people find you?
         </h2>
         <Lead>
@@ -150,7 +150,7 @@ export default function ToolsForCommunityBuildersPage() {
       </Section>
 
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           A place to gather: what holds the group together?
         </h2>
         <Lead>
@@ -190,7 +190,7 @@ export default function ToolsForCommunityBuildersPage() {
       </ZigZag>
 
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Recognition: what brings people back?
         </h2>
         <Lead>
@@ -238,7 +238,7 @@ export default function ToolsForCommunityBuildersPage() {
 
       {/* Soft CTA into the product. Two honest doors: get the toolkit, or see the venue. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Where to start
         </h2>
         <Body>
@@ -259,7 +259,7 @@ export default function ToolsForCommunityBuildersPage() {
 
       {/* FAQ: answer-first pairs, mirrored into the FAQPage schema above. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-7">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-7">
           Common questions
         </h2>
         <FaqList items={FAQ} />

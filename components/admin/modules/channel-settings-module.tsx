@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { ArrowRight, Users, Circle as CircleIcon, Radio, Pencil } from 'lucide-react'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { InlineCover } from '@/components/admin/inline/inline-cover'
 import { RailAutosaveForm } from '@/components/admin/rail/rail-autosave-form'
 import { CHANNEL_CATEGORIES, isChannelCategory } from '@/lib/channels/categories'
@@ -135,7 +136,7 @@ export function ChannelSettingsModule() {
             picked from this exact vocabulary (lib/channels/categories.ts). */}
         <label className="block space-y-1.5">
           <span className={fieldLabel}>Category</span>
-          <select name="category" defaultValue={data.category} className={input}>
+          <Select name="category" defaultValue={data.category}>
             {offList && (
               <option value={data.category}>{data.category} (not a standard category)</option>
             )}
@@ -144,21 +145,20 @@ export function ChannelSettingsModule() {
                 {c.label}
               </option>
             ))}
-          </select>
+          </Select>
           <p className="text-2xs text-muted">Sets the icon on the Channel page and its directory card.</p>
         </label>
 
         {/* Pillar — the four active Pillars, read from the pillars table. */}
         <label className="block space-y-1.5">
           <span className={fieldLabel}>Pillar</span>
-          <select name="pillar_id" defaultValue={data.pillar_id ?? ''} className={input}>
-            <option value="">No Pillar</option>
+          <Select name="pillar_id" defaultValue={data.pillar_id ?? ''} emptyLabel="No Pillar">
             {data.pillars.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>
             ))}
-          </select>
+          </Select>
           <p className="text-2xs text-muted">
             The Pillar this Channel groups under in the directory. It also shows as a chip on the
             Channel page.
@@ -183,11 +183,20 @@ export function ChannelSettingsModule() {
             A select, not a checkbox: an unchecked checkbox submits nothing, and the action only writes
             fields it was actually given. */}
         <div className="space-y-1.5 rounded-card border border-border bg-surface-elevated/40 p-3">
-          <span className={fieldLabel}>Visibility</span>
-          <select name="is_active" defaultValue={data.is_active ? 'on' : 'off'} className={input}>
-            <option value="on">Live (listed in the Channels directory)</option>
-            <option value="off">Archived (hidden)</option>
-          </select>
+          {/* A <label htmlFor>, not the bare <span> this used to be: the control sits in a styled
+              box rather than inside a wrapping label, so nothing was naming it. */}
+          <label htmlFor="channel-is-active" className={fieldLabel}>
+            Visibility
+          </label>
+          <Select
+            id="channel-is-active"
+            name="is_active"
+            defaultValue={data.is_active ? 'on' : 'off'}
+            options={[
+              { value: 'on', label: 'Live (listed in the Channels directory)' },
+              { value: 'off', label: 'Archived (hidden)' },
+            ]}
+          />
           <p className="text-2xs text-muted">
             Archived: the Channel page is hidden and it leaves the directory. Circles keep everything
             they have. Set it back to Live to bring it back.

@@ -10,7 +10,7 @@ export default function NotFound() {
             <Radio className="w-8 h-8 text-primary-strong" strokeWidth={2} />
           </div>
         </div>
-        <p className="text-5xl font-bold text-subtle/60 dark:text-text mb-4 tabular-nums">
+        <p className="text-display-h2 font-bold text-subtle/60 dark:text-text mb-4 tabular-nums">
           404
         </p>
         <h1 className="text-lead font-semibold text-text mb-2">

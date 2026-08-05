@@ -335,7 +335,7 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
                   )}
                   <h1
                     className={cn(
-                      'font-section min-w-0 break-words text-page-title font-bold leading-tight sm:text-3xl',
+                      'font-section min-w-0 break-words text-display-h3 font-bold leading-tight',
                       heroOnInk ? 'text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]' : 'text-text',
                     )}
                   >

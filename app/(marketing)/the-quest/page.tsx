@@ -281,7 +281,7 @@ function LegacyTheQuest() {
                   <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-primary-bg/50">
                     <r.icon className="w-5 h-5 text-primary-strong" aria-hidden />
                   </span>
-                  <span className="font-display uppercase text-4xl text-border-strong leading-none">
+                  <span className="font-display uppercase text-display-h3 text-border-strong leading-none">
                     {String(i + 1).padStart(2, '0')}
                   </span>
                 </div>

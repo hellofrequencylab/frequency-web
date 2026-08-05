@@ -8,6 +8,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Sparkles, Wand2, SlidersHorizontal, ChevronUp } from 'lucide-react'
+import { Select } from '@/components/ui/select'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { setConversationTriage } from '@/app/(main)/admin/crm/conversations/actions'
 import { CONVERSATION_STATUSES, CONVERSATION_PRIORITIES, STATUS_LABELS, PRIORITY_LABELS } from '@/lib/comms/labels'
@@ -155,34 +156,34 @@ export function ConversationTriage({
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        <select className={sel} value={status} disabled={pending} onChange={(e) => patch({ status: e.target.value })} aria-label="Status">
+        <Select className="text-meta" value={status} disabled={pending} onChange={(e) => patch({ status: e.target.value })} aria-label="Status">
           {CONVERSATION_STATUSES.map((s) => (
             <option key={s} value={s}>
               {STATUS_LABELS[s]}
             </option>
           ))}
-        </select>
-        <select className={sel} value={priority} disabled={pending} onChange={(e) => patch({ priority: e.target.value })} aria-label="Priority">
+        </Select>
+        <Select className="text-meta" value={priority} disabled={pending} onChange={(e) => patch({ priority: e.target.value })} aria-label="Priority">
           {CONVERSATION_PRIORITIES.map((p) => (
             <option key={p} value={p}>
               {PRIORITY_LABELS[p]}
             </option>
           ))}
-        </select>
-        <select
-          className={sel}
+        </Select>
+        <Select
+          className="text-meta"
           value={tradeTo === undefined ? (assignedTo ?? '') : (tradeTo ?? '')}
           disabled={pending}
           onChange={(e) => setTradeTo(e.target.value || null)}
           aria-label="Assignee"
+          emptyLabel="Unassigned"
         >
-          <option value="">Unassigned</option>
           {agents.map((a) => (
             <option key={a.id} value={a.id}>
               {a.name}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       {stagingTrade && (

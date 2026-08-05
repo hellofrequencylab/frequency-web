@@ -130,7 +130,7 @@ export default function CalmDownFastPage() {
 
       {/* One concept per section. Question H2 in the reader's words, answer first. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Why am I always wired but tired?
         </h2>
         <Lead>
@@ -170,7 +170,7 @@ export default function CalmDownFastPage() {
 
       {/* Answer-first how-to, then the concrete steps. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How do I make calm my baseline?
         </h2>
         <Lead>
@@ -204,7 +204,7 @@ export default function CalmDownFastPage() {
 
       {/* One concept per section: the phone-as-cause reader. Cross-links the feed cluster. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           What if my phone is keeping me wired?
         </h2>
         <Lead>
@@ -252,7 +252,7 @@ export default function CalmDownFastPage() {
 
       {/* Soft CTA into the product. Two honest doors. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Where to start
         </h2>
         <Body>
@@ -272,7 +272,7 @@ export default function CalmDownFastPage() {
 
       {/* FAQ: answer-first pairs, mirrored into the FAQPage schema above. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-7">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-7">
           Common questions
         </h2>
         <FaqList items={FAQ} />

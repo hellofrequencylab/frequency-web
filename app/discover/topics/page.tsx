@@ -102,7 +102,7 @@ export default async function DiscoverTopicsPage() {
               {sections.map((channel) => (
                 <div key={channel.id}>
                   <div className="mb-6">
-                    <h3 className="font-display uppercase text-text text-page-title sm:text-3xl">
+                    <h3 className="font-display uppercase text-text text-display-h3">
                       {channel.name}
                     </h3>
                     {channel.description && (

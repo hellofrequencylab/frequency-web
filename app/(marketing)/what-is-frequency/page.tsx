@@ -223,7 +223,7 @@ export default function WhatIsFrequencyPage() {
       {/* How it works, at a glance. Three steps, then the taxonomy that carries
           them (absorbed from the retired /how-it-works explainer). */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How does Frequency work?
         </h2>
         <Lead>
@@ -255,7 +255,7 @@ export default function WhatIsFrequencyPage() {
 
       {/* One concept per section. Question H2s in the reader's words. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           What is a Circle?
         </h2>
         <Lead>
@@ -274,7 +274,7 @@ export default function WhatIsFrequencyPage() {
 
       {/* How it grows: absorbed from the retired /how-it-works explainer. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How does Frequency grow?
         </h2>
         <Lead>
@@ -293,7 +293,7 @@ export default function WhatIsFrequencyPage() {
       </Section>
 
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           What is The Lab?
         </h2>
         <Lead>
@@ -310,7 +310,7 @@ export default function WhatIsFrequencyPage() {
       </Section>
 
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Is Frequency a social media app?
         </h2>
         <Lead>
@@ -334,7 +334,7 @@ export default function WhatIsFrequencyPage() {
 
       {/* Why it exists — the mission, said plainly, once. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Why does Frequency exist?
         </h2>
         <Lead>
@@ -359,7 +359,7 @@ export default function WhatIsFrequencyPage() {
 
       {/* The Community Collective: who it serves and how the money works. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Who is Frequency for?
         </h2>
         <Lead>
@@ -386,7 +386,7 @@ export default function WhatIsFrequencyPage() {
 
       {/* The tier ladder, scannable, so answer engines can quote the whole shape. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How much does Frequency cost?
         </h2>
         <Lead>
@@ -426,7 +426,7 @@ export default function WhatIsFrequencyPage() {
       {/* Hub-and-spoke: cross-link the three sibling pillars. This page is the
           canonical explainer; the triptych goes deep on each part. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Where can I go deeper?
         </h2>
         <Lead>
@@ -494,7 +494,7 @@ export default function WhatIsFrequencyPage() {
 
       {/* FAQ: answer-first pairs, mirrored into FAQPage schema above. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-7">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-7">
           Common questions
         </h2>
         <FaqList items={FAQ} />

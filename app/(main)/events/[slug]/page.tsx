@@ -1684,7 +1684,7 @@ export default async function EventDetailPage({
           <div className={`relative flex ${heroHeightCls} w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong`}>
             <div className="flex flex-col items-center gap-1 text-center">
               <CalendarDays className="h-7 w-7 opacity-80" />
-              <span className="text-3xl font-bold leading-none sm:text-4xl">
+              <span className="text-display-h3 font-bold leading-none">
                 {new Date(event.starts_at).toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })}
               </span>
               <span className="text-meta font-semibold uppercase tracking-wide text-muted">

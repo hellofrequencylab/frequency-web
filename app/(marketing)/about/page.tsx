@@ -304,7 +304,7 @@ function Ask({ n, title, body }: { n: string; title: string; body: string }) {
   return (
     <Reveal>
       <Card tone="feature" className="lift-2 h-full">
-        <span className="font-display text-4xl leading-none text-primary-strong sm:text-5xl">
+        <span className="font-display text-display-h2 leading-none text-primary-strong">
           {n}
         </span>
         <h3 className="mt-3 text-body-lg font-bold text-text">{title}</h3>

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { ChevronDown, ChevronRight, Trash2 } from 'lucide-react'
+import { Select } from '@/components/ui/select'
 import type { ResolvedRailCard } from '@/lib/menus/types'
 import { updateRailCard, deleteRailCard, type UpdateRailCardPatch } from '@/lib/menus/actions'
 import { LinkTargetField } from './link-target-field'
@@ -127,7 +128,7 @@ export function RailCardEditor({
               <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`cs-${card.id}`}>
                 Side
               </label>
-              <select
+              <Select
                 id={`cs-${card.id}`}
                 value={card.side}
                 disabled={isPending}
@@ -137,11 +138,11 @@ export function RailCardEditor({
                     { side: e.target.value as 'left' | 'right' },
                   )
                 }
-                className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
-              >
-                <option value="left">Left</option>
-                <option value="right">Right</option>
-              </select>
+                options={[
+                  { value: 'left', label: 'Left' },
+                  { value: 'right', label: 'Right' },
+                ]}
+              />
             </div>
           </div>
 

@@ -175,7 +175,7 @@ export default function HowToStartACirclePage() {
 
       {/* One concept per section. Question H2 in the reader's words, answer first. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           How many people do I need to start a group?
         </h2>
         <Lead>
@@ -215,7 +215,7 @@ export default function HowToStartACirclePage() {
 
       {/* Answer-first how-to, then the concrete steps (mirrored into HowTo schema). */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           What are the steps to start a Circle?
         </h2>
         <Lead>
@@ -234,7 +234,7 @@ export default function HowToStartACirclePage() {
 
       {/* One concept per section: why groups fizzle, the failure mode named plainly. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Why do most community groups fizzle out?
         </h2>
         <Lead>
@@ -283,7 +283,7 @@ export default function HowToStartACirclePage() {
       {/* One concept per section: the cost question, answered plainly. Weaves the
           Community Collective positioning + the /pricing spoke where intent is real. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           What does it cost to start a Circle?
         </h2>
         <Lead>
@@ -305,7 +305,7 @@ export default function HowToStartACirclePage() {
 
       {/* Soft CTA into the product. Two honest doors. */}
       <Section tone="canvas">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-5">
           Where to start
         </h2>
         <Body>
@@ -334,7 +334,7 @@ export default function HowToStartACirclePage() {
 
       {/* FAQ: answer-first pairs, mirrored into the FAQPage schema above. */}
       <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-7">
+        <h2 className="font-display uppercase text-text text-display-h3 mb-7">
           Common questions
         </h2>
         <FaqList items={FAQ} />

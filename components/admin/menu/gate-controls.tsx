@@ -1,5 +1,7 @@
 'use client'
 
+import { Field } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import type { MenuAccess } from '@/lib/menus/types'
 import {
   STAFF_DOMAINS,
@@ -43,30 +45,26 @@ export function GateControls({
   disabled?: boolean
   onSave: (patch: GatePatch) => void
 }) {
-  const selClass =
-    'w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50'
-
   return (
     <div className="grid gap-3 rounded-lg border border-border bg-surface/50 p-3 sm:grid-cols-3">
-      <div className="min-w-0">
-        <label className="mb-1 block text-meta font-semibold text-subtle">Minimum access</label>
-        <select
+      {/* Field, not a bare <label> + sibling <select>: the three labels here carried no
+          `htmlFor` and the selects no `id`, so none of them named its control. */}
+      <Field label="Minimum access" className="min-w-0" labelClassName="font-semibold text-subtle">
+        <Select
           value={minAccess ?? 'visitor'}
           disabled={disabled}
           onChange={(e) => onSave({ minAccess: e.target.value as MenuAccess })}
-          className={selClass}
         >
           {ACCESS_ORDER.map((a) => (
             <option key={a} value={a}>
               {ACCESS_LABEL[a]}
             </option>
           ))}
-        </select>
-      </div>
+        </Select>
+      </Field>
 
-      <div className="min-w-0">
-        <label className="mb-1 block text-meta font-semibold text-subtle">Staff domain</label>
-        <select
+      <Field label="Staff domain" className="min-w-0" labelClassName="font-semibold text-subtle">
+        <Select
           value={staffDomain ?? ''}
           disabled={disabled}
           onChange={(e) => {
@@ -75,32 +73,29 @@ export function GateControls({
             if (!next) onSave({ staffDomain: null, staffLevel: null })
             else onSave({ staffDomain: next as StaffDomain, staffLevel: staffLevel ?? 'write' })
           }}
-          className={selClass}
+          emptyLabel="None"
         >
-          <option value="">None</option>
           {STAFF_DOMAINS.map((d) => (
             <option key={d} value={d}>
               {STAFF_DOMAIN_LABEL[d]}
             </option>
           ))}
-        </select>
-      </div>
+        </Select>
+      </Field>
 
-      <div className="min-w-0">
-        <label className="mb-1 block text-meta font-semibold text-subtle">Staff level</label>
-        <select
+      <Field label="Staff level" className="min-w-0" labelClassName="font-semibold text-subtle">
+        <Select
           value={staffLevel ?? 'write'}
           disabled={disabled || !staffDomain}
           onChange={(e) => onSave({ staffLevel: e.target.value as Access })}
-          className={selClass}
         >
           {ACCESS_LEVELS.map((l) => (
             <option key={l} value={l}>
               {STAFF_LEVEL_LABEL[l]}
             </option>
           ))}
-        </select>
-      </div>
+        </Select>
+      </Field>
     </div>
   )
 }
