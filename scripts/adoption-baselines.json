@@ -55,7 +55,7 @@
         "value": 3824,
         "direction": "lowered",
         "basis": "d2a53ce6b015",
-        "reason": "Pass 2a retired the last text-xs/sm/base/lg/xl/2xl literals in app, components and lib: the template-literal classNames pass 1's attribute walker could not reach, the page-editor tree it held out, and text-lg once --text-body-lg existed to receive it. literal-type goes to 0 and the floor moves with it so the sweep cannot silently unwind.",
+        "reason": "Side effect of pass 2a, credited correctly here on 2026-08-05: the type sweep rewrote className strings that also carried literal radii, retiring 9 of them (3833 -> 3824). This entry previously carried literal-type's sentence verbatim ('literal-type goes to 0 and the floor moves with it') because a blanket `--update --reason` stamps one reason onto every entry it moves. The tool now refuses a multi-entry update without --key for exactly that reason.",
         "from": 3833
       },
       "history": [
@@ -118,7 +118,7 @@
         "\\btext-(?:xs|sm|base|lg|xl|2xl)\\b"
       ],
       "include": [
-        "{app,components,lib}/**/*.{ts,tsx}"
+        "{app,components,lib}/**/*.{ts,tsx,mts}"
       ],
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
@@ -128,8 +128,8 @@
         "at": "2026-08-05",
         "value": 0,
         "direction": "rebased",
-        "basis": "32f229dee9ac",
-        "reason": "Close three holes in the literal-type gate that made its own 'cannot silently unwind' claim false: (1) text-lg was missing from the pattern, and it was pass 2a's headline win -- reintroducing it scored 0 and passed; (2) include was {app,components}/**/*.tsx, so lib/ and every .ts file were unwatched, and lib/entity-blocks/block-content.ts is exactly where class strings live in .ts; (3) components/page-editor/** was still excluded, correct while pass 1 held it out but wrong once pass 2a swept it -- the freshly-cleaned tree was the one place the gate was blind. Widened basis, still 0.",
+        "basis": "6e5e01ab30a9",
+        "reason": "Scope parity only, no sweep: include gains .mts to match literal-radius, shadow-literals, white-black-literals and subtle-tiny-type, which all watch {ts,tsx,mts}. literal-type was the only utility-class entry omitting it — inert today (0 .mts files under app/components/lib) but exactly the divergence its own 2026-08-05 rebase claimed to have closed. Count stays 0; only the basis moves.",
         "from": 0
       },
       "history": [
@@ -146,6 +146,13 @@
           "to": 0,
           "direction": "rebased",
           "reason": "Close three holes in the literal-type gate that made its own 'cannot silently unwind' claim false: (1) text-lg was missing from the pattern, and it was pass 2a's headline win -- reintroducing it scored 0 and passed; (2) include was {app,components}/**/*.tsx, so lib/ and every .ts file were unwatched, and lib/entity-blocks/block-content.ts is exactly where class strings live in .ts; (3) components/page-editor/** was still excluded, correct while pass 1 held it out but wrong once pass 2a swept it -- the freshly-cleaned tree was the one place the gate was blind. Widened basis, still 0."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 0,
+          "to": 0,
+          "direction": "rebased",
+          "reason": "Scope parity only, no sweep: include gains .mts to match literal-radius, shadow-literals, white-black-literals and subtle-tiny-type, which all watch {ts,tsx,mts}. literal-type was the only utility-class entry omitting it — inert today (0 .mts files under app/components/lib) but exactly the divergence its own 2026-08-05 rebase claimed to have closed. Count stays 0; only the basis moves."
         }
       ]
     },
@@ -186,7 +193,7 @@
       "description": "Hardcoded monochromes (-white / -black / white\\/NN) that ignore theme generations — the only bug class in the census",
       "mode": "matches",
       "patterns": [
-        "(?:-white\\b|white/\\d+|-black\\b)"
+        "(?:-white\\b|white/\\d+|(?<!font)-black\\b)"
       ],
       "include": [
         "{app,components,lib}/**/*.{ts,tsx,mts}"
@@ -197,14 +204,14 @@
         "app/**/opengraph-image.tsx",
         "app/**/twitter-image.tsx"
       ],
-      "baseline": 297,
+      "baseline": 266,
       "frozen": {
-        "at": "2026-08-04",
-        "value": 297,
+        "at": "2026-08-05",
+        "value": 266,
         "direction": "rebased",
-        "basis": "28c39307be59",
-        "reason": "Part sweep, part scope change, so not comparable to the audit's 382. On the audit's basis the count is 316 today (66 sites genuinely retired); the remaining −19 comes from three exclusion globs the audit did not have (lib/og/**, opengraph-image.tsx, twitter-image.tsx), where a literal monochrome is correct because the surface is a raster.",
-        "from": 382
+        "basis": "014711546b1d",
+        "reason": "Pattern bug, not a sweep: the -black branch matched font-black, a FONT-WEIGHT utility, so 31 of the 297 were never monochrome colours at all and no theme-generation pass could ever retire them. Added a (?<!font) guard; 297 -> 266. The entry's own description called this 'the only bug class in the census' while itself carrying one.",
+        "from": 297
       },
       "history": [
         {
@@ -213,6 +220,13 @@
           "to": 297,
           "direction": "rebased",
           "reason": "Part sweep, part scope change, so not comparable to the audit's 382. On the audit's basis the count is 316 today (66 sites genuinely retired); the remaining −19 comes from three exclusion globs the audit did not have (lib/og/**, opengraph-image.tsx, twitter-image.tsx), where a literal monochrome is correct because the surface is a raster."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 297,
+          "to": 266,
+          "direction": "rebased",
+          "reason": "Pattern bug, not a sweep: the -black branch matched font-black, a FONT-WEIGHT utility, so 31 of the 297 were never monochrome colours at all and no theme-generation pass could ever retire them. Added a (?<!font) guard; 297 -> 266. The entry's own description called this 'the only bug class in the census' while itself carrying one."
         }
       ]
     },
@@ -313,10 +327,10 @@
     },
     {
       "key": "adhoc-progress",
-      "description": "Hand-rolled progress bars (rounded-full track + inline width style) instead of the ProgressTrack primitive",
+      "description": "Hand-rolled progress bars (pill/full track + inline width style) instead of the ProgressTrack primitive. The radius token is an alternation on purpose: this pattern originally keyed on `rounded-full`, which the radius sweep then RETIRED in favour of `rounded-pill` — including inside ProgressTrack itself. The gate went on reporting 0 not because no bar was hand-rolled but because the class it names had ceased to exist. `rounded-full` stays in the alternation so a reintroduction is still caught.",
       "mode": "matches",
       "patterns": [
-        "rounded-full[\\s\\S]{0,240}?style=\\{\\{\\s*width:"
+        "rounded-(?:pill|full)[\\s\\S]{0,240}?style=\\{\\{\\s*width:"
       ],
       "include": [
         "{app,components}/**/*.tsx"
@@ -327,14 +341,14 @@
         "components/ui/meter.tsx",
         "components/ui/streak-meter.tsx"
       ],
-      "baseline": 0,
+      "baseline": 14,
       "frozen": {
-        "at": "2026-08-04",
-        "value": 0,
-        "direction": "lowered",
-        "basis": "2bd84505bf93",
-        "reason": "Radius adoption sweep: rounded-full -> rounded-pill site-wide (value-identical, --radius-pill is 9999px in all five scopes), plus rounded-xl -> rounded-card on lines that PROVE the element is a card (border/bg-surface/lift present, button/input absent). Kit primitives hand-mapped. literal-radius 5413 -> 3851.",
-        "from": 14
+        "at": "2026-08-05",
+        "value": 14,
+        "direction": "rebased",
+        "basis": "256bb80c803c",
+        "reason": "The pattern named a class that no longer exists. It keyed on rounded-full, and the radius sweep then retired rounded-full site-wide in favour of rounded-pill — including inside ProgressTrack itself. The gate went on reporting 0 not because no bar was hand-rolled but because its subject had been renamed out from under it. Widened to rounded-(pill|full); the true count is 14 across 12 files, among them components/gamification/standing-hero.tsx, which is a five-line copy of ProgressTrack's own render. 0 -> 14 is a measurement correction, not a regression.",
+        "from": 0
       },
       "history": [
         {
@@ -350,6 +364,13 @@
           "to": 0,
           "direction": "lowered",
           "reason": "Radius adoption sweep: rounded-full -> rounded-pill site-wide (value-identical, --radius-pill is 9999px in all five scopes), plus rounded-xl -> rounded-card on lines that PROVE the element is a card (border/bg-surface/lift present, button/input absent). Kit primitives hand-mapped. literal-radius 5413 -> 3851."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 0,
+          "to": 14,
+          "direction": "rebased",
+          "reason": "The pattern named a class that no longer exists. It keyed on rounded-full, and the radius sweep then retired rounded-full site-wide in favour of rounded-pill — including inside ProgressTrack itself. The gate went on reporting 0 not because no bar was hand-rolled but because its subject had been renamed out from under it. Widened to rounded-(pill|full); the true count is 14 across 12 files, among them components/gamification/standing-hero.tsx, which is a five-line copy of ProgressTrack's own render. 0 -> 14 is a measurement correction, not a regression."
         }
       ]
     },
@@ -454,7 +475,7 @@
       "description": "Arbitrary px in SIZING/SPACING utilities (h-[18px], w-[22px], min-w-[180px] …) instead of the spacing scale. Ratcheted rather than hard-failed: ~140 sites predate the rule and no sweep owns them, so the gate holds the line while screen passes retire them (check:tokens still hard-fails text-[Npx], which has no legitimate use). Allowlisted: min-h/min-w-[44px] (the WCAG 2.5.5 tap-target floor, a load-bearing exact value), the -9999px offscreen idiom, the icon primitives (glyph optical sizing is their job), and the raster OG/print surfaces where px IS the unit.",
       "mode": "matches",
       "patterns": [
-        "\\b(?!min-[hw]-\\[44px\\]|(?:top|left|right|bottom|inset)-\\[-9999px\\])(?:h|w|size|min-w|min-h|max-w|max-h|basis|gap|gap-x|gap-y|p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|top|right|bottom|left|inset|translate-x|translate-y)-\\[-?\\d+(?:\\.\\d+)?px\\]"
+        "(?<![-\\w])(?!min-[hw]-\\[44px\\]|(?:top|left|right|bottom|inset)-\\[-9999px\\])-?(?:h|w|size|min-w|min-h|max-w|max-h|basis|gap|gap-x|gap-y|p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|top|right|bottom|left|inset|translate-x|translate-y)-\\[-?\\d+(?:\\.\\d+)?px\\]"
       ],
       "include": [
         "{app,components,lib}/**/*.tsx"
@@ -468,14 +489,124 @@
         "components/ui/icon.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 139,
+      "baseline": 127,
       "frozen": {
-        "at": "2026-08-04",
-        "value": 139,
-        "direction": "seed",
-        "basis": "7195d06831ce",
-        "reason": "New class, added by the addendum's gate-corrections pass, which estimated ~150 in-app instances. Seeded at the measured 139 under the icon/OG/print allowlist described above."
-      }
+        "at": "2026-08-05",
+        "value": 127,
+        "direction": "rebased",
+        "basis": "e3bbcb1315c1",
+        "reason": "Allowlist repair: the WCAG 2.5.5 exemption did not work. The lookahead sat at a \\\\b, and min-h-[44px] has a SECOND word boundary at its inner h — where the lookahead sees only h-[44px], fails to match the allowlist, and lets it through. So 12 tap-target floors across 5 files were counted as debt, meaning a PR that ADDED a correct 44px target raised the class and failed CI: the ratchet pushing against accessibility. Anchored at a true token start instead. 139 -> 127, exactly the 12 allowlisted sites.",
+        "from": 139
+      },
+      "history": [
+        {
+          "at": "2026-08-05",
+          "from": 139,
+          "to": 127,
+          "direction": "rebased",
+          "reason": "Allowlist repair: the WCAG 2.5.5 exemption did not work. The lookahead sat at a \\\\b, and min-h-[44px] has a SECOND word boundary at its inner h — where the lookahead sees only h-[44px], fails to match the allowlist, and lets it through. So 12 tap-target floors across 5 files were counted as debt, meaning a PR that ADDED a correct 44px target raised the class and failed CI: the ratchet pushing against accessibility. Anchored at a true token start instead. 139 -> 127, exactly the 12 allowlisted sites."
+        }
+      ]
+    },
+    {
+      "key": "literal-display-type",
+      "description": "Literal DISPLAY sizes (text-3xl … text-9xl) instead of the DAWN display roles (--text-display-hero / h1 / h2 / h3 / card / stat). Deliberately a SEPARATE class from literal-type rather than an extra alternation branch on it: literal-type reached a defended 0, and folding 300 untouched display sites into it would turn a real win into a number nobody could read. Retiring these is pass 2b — a design decision per site (which role is this heading?), not a mechanical rename, which is why it is ratcheted and not swept.",
+      "mode": "matches",
+      "patterns": [
+        "\\btext-(?:3xl|4xl|5xl|6xl|7xl|8xl|9xl)\\b"
+      ],
+      "include": [
+        "{app,components,lib}/**/*.{ts,tsx,mts}"
+      ],
+      "exclude": [
+        "**/*.{test,spec}.{ts,tsx}"
+      ],
+      "baseline": 301,
+      "frozen": {
+        "at": "2026-08-05",
+        "value": 301,
+        "direction": "rebased",
+        "basis": "03e3af05cb7e",
+        "reason": "New class, seeded at the measured 301 across 67 files. Deliberately SEPARATE from literal-type rather than an extra branch on its alternation: literal-type reached a defended 0 and folding 301 untouched display sites into it would convert a real win into a number nobody could read. Retiring these is pass 2b, a per-site design decision (which display role is this heading?) rather than a mechanical rename, so it is ratcheted now and swept later.",
+        "from": 0
+      },
+      "history": [
+        {
+          "at": "2026-08-05",
+          "from": 0,
+          "to": 301,
+          "direction": "rebased",
+          "reason": "New class, seeded at the measured 301 across 67 files. Deliberately SEPARATE from literal-type rather than an extra branch on its alternation: literal-type reached a defended 0 and folding 301 untouched display sites into it would convert a real win into a number nobody could read. Retiring these is pass 2b, a per-site design decision (which display role is this heading?) rather than a mechanical rename, so it is ratcheted now and swept later."
+        }
+      ]
+    },
+    {
+      "key": "raw-palette",
+      "description": "Raw Tailwind palette classes (text-amber-700, bg-gray-50, shadow-violet-900/30 …) instead of DAWN's semantic colour roles. A raw palette class is invisible to every theme generation and every skin, so a surface painted this way silently stops matching the product around it.",
+      "mode": "matches",
+      "patterns": [
+        "\\b(?:text|bg|border|ring|shadow|from|via|to|fill|stroke|divide|outline|decoration|accent|caret|placeholder)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(?:50|100|200|300|400|500|600|700|800|900|950)\\b"
+      ],
+      "include": [
+        "{app,components,lib}/**/*.{ts,tsx,mts}"
+      ],
+      "exclude": [
+        "**/*.{test,spec}.{ts,tsx}",
+        "lib/og/**",
+        "app/**/opengraph-image.tsx",
+        "app/**/twitter-image.tsx"
+      ],
+      "baseline": 48,
+      "frozen": {
+        "at": "2026-08-05",
+        "value": 48,
+        "direction": "rebased",
+        "basis": "eb0a69c6c6e2",
+        "reason": "New class, seeded at the measured 48. Every one is in lib/gamification.ts — I ran the pattern over the whole corpus and that file is the ONLY one in the repo carrying a raw Tailwind palette class. They are the exported TIER_CONFIG and DIFFICULTY_CONFIG records, so the strings propagate into every achievement and challenge surface that consumes them, and none of them respond to a theme generation or a skin. Nothing measured this before: check-tokens.mjs looks for raw hex, text-[Npx] and rgb(), not palette class names.",
+        "from": 0
+      },
+      "history": [
+        {
+          "at": "2026-08-05",
+          "from": 0,
+          "to": 48,
+          "direction": "rebased",
+          "reason": "New class, seeded at the measured 48. Every one is in lib/gamification.ts — I ran the pattern over the whole corpus and that file is the ONLY one in the repo carrying a raw Tailwind palette class. They are the exported TIER_CONFIG and DIFFICULTY_CONFIG records, so the strings propagate into every achievement and challenge surface that consumes them, and none of them respond to a theme generation or a skin. Nothing measured this before: check-tokens.mjs looks for raw hex, text-[Npx] and rgb(), not palette class names."
+        }
+      ]
+    },
+    {
+      "key": "handrolled-icon-button",
+      "description": "Icon-only <button>s sized and rounded by hand instead of composing IconButton. The primitive owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance — every hand-rolled one re-derives those four, and the ones that get it wrong are invisible until someone tries to tap them on a phone (components/events/rsvp-controls.tsx ships a 28px stepper). DELIBERATELY CONSERVATIVE: the shape is `<button …size…rounded…>` then ONE self-closing element then `</button>`, so it counts only unambiguous icon-only buttons and undercounts the `{cond ? <A/> : <B/>}` forms. A first attempt merely looked for an icon SOMEWHERE inside the button and matched text buttons and whole card buttons — a ratchet on a number that means the wrong thing is worse than no ratchet, so this trades recall for precision. `(?:[^>]|=>)` rather than `[^>]` because a JSX attribute list routinely contains `>` inside an arrow function.",
+      "mode": "matches",
+      "patterns": [
+        "<button(?:[^>]|=>)*?(?:\\bh-\\d|\\bw-\\d|\\bsize-\\d)(?:[^>]|=>)*?rounded-(?:sm|md|lg|xl|2xl|3xl|full|pill|card|control)(?:[^>]|=>)*>\\s*<(?:svg|[A-Z][A-Za-z0-9]*)(?:[^>]|=>)*?/>\\s*</button>"
+      ],
+      "include": [
+        "{app,components}/**/*.tsx"
+      ],
+      "exclude": [
+        "**/*.{test,spec}.tsx",
+        "components/ui/icon-button.tsx"
+      ],
+      "baseline": 37,
+      "frozen": {
+        "at": "2026-08-05",
+        "value": 37,
+        "direction": "rebased",
+        "basis": "1cbd44267732",
+        "reason": "New class, seeded at the measured 37 across 27 files. IconButton owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance; each hand-rolled control re-derives all four and some get it wrong (components/events/rsvp-controls.tsx ships a 28px stepper, under both floors). The pattern is deliberately conservative — opening tag, one self-closing element, close — so it undercuts a careful census of 54 by excluding the ternary-icon forms. A first attempt merely required an icon somewhere inside the button and matched text buttons and card buttons at 67; a ratchet on a number that means the wrong thing is worse than none.",
+        "from": 0
+      },
+      "history": [
+        {
+          "at": "2026-08-05",
+          "from": 0,
+          "to": 37,
+          "direction": "rebased",
+          "reason": "New class, seeded at the measured 37 across 27 files. IconButton owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance; each hand-rolled control re-derives all four and some get it wrong (components/events/rsvp-controls.tsx ships a 28px stepper, under both floors). The pattern is deliberately conservative — opening tag, one self-closing element, close — so it undercuts a careful census of 54 by excluding the ternary-icon forms. A first attempt merely required an icon somewhere inside the button and matched text buttons and card buttons at 67; a ratchet on a number that means the wrong thing is worse than none."
+        }
+      ]
     }
   ]
 }
