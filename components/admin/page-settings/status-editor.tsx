@@ -3,7 +3,8 @@
 import { useEffect, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import { Check } from 'lucide-react'
-import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { getPageStatusForEditor, savePageStatus } from '@/lib/page-settings/actions'
 import { VISIBILITY_ROLES } from '@/lib/page-settings/status'
@@ -84,19 +85,18 @@ export function StatusEditor({ spaceId }: { spaceId?: string }) {
       </p>
       <label className="block space-y-1">
         <span className={labelClasses}>Who can reach it</span>
-        <select
+        <Select
           value={visibility}
           onChange={(e) => setVisibility(e.target.value)}
           disabled={pending}
-          className={fieldClasses}
+          emptyLabel="Anyone signed in"
         >
-          <option value="">Anyone signed in</option>
           {VISIBILITY_ROLES.map((r) => (
             <option key={r} value={r}>
               {ROLE_LABEL[r] ?? r}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
       {error && <p className="text-meta text-danger">{error}</p>}
       <div className="flex items-center justify-end gap-2 pt-1">

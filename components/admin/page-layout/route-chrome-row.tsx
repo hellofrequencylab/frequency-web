@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import type { Rail } from '@/lib/layout/page-chrome'
 import { setRouteChrome, clearRouteChrome } from '@/app/(main)/admin/page-layout/actions'
@@ -95,19 +96,15 @@ export function RouteChromeRow({
         <label className="sr-only" htmlFor={`rail-${route}`}>
           Rail for {label}
         </label>
-        <select
+        <Select
           id={`rail-${route}`}
           value={effective}
           disabled={isPending}
           onChange={(e) => pick(e.target.value as Rail)}
-          className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm font-medium text-text disabled:opacity-50"
-        >
-          {RAIL_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+          options={RAIL_OPTIONS}
+          wrapperClassName="inline-block w-max max-w-full"
+          className="font-medium"
+        />
 
         <Button
           type="button"
