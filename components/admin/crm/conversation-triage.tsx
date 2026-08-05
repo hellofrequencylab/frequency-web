@@ -12,6 +12,7 @@ import { Select } from '@/components/ui/select'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { setConversationTriage } from '@/app/(main)/admin/crm/conversations/actions'
 import { CONVERSATION_STATUSES, CONVERSATION_PRIORITIES, STATUS_LABELS, PRIORITY_LABELS } from '@/lib/comms/labels'
+import { Input } from '@/components/ui/field'
 
 export interface TriageAgent {
   id: string
@@ -115,8 +116,6 @@ export function ConversationTriage({
     })
   }
 
-  const sel =
-    'rounded-lg border border-border bg-canvas px-2 py-1 text-meta text-text focus:border-border-strong focus:outline-none'
   const stagingTrade = tradeTo !== undefined && (tradeTo || null) !== assignedTo
 
   // ── Collapsed: a slim one-line summary + a Manage toggle. The default, so the reader stays clean.
@@ -188,11 +187,10 @@ export function ConversationTriage({
 
       {stagingTrade && (
         <div className="flex items-center gap-2">
-          <input
+          <Input
             value={handoff}
             onChange={(e) => setHandoff(e.target.value)}
-            placeholder="Handoff note (optional)"
-            className={`${sel} flex-1`}
+            placeholder="Handoff note (optional)" className="flex-1 !px-2 !py-1 text-meta"
           />
           <button
             type="button"

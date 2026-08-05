@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { StatusChip, Banner, type StatusTone } from '@/components/admin/status'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { updateDeal, moveDeal, deleteDeal, addActivity, toggleTask, deleteActivity } from '../../actions'
@@ -100,19 +101,20 @@ export function DealDetail({
         actions={
           <>
             <div className="flex items-center gap-2">
-              <label className="text-meta text-muted">Stage</label>
-              <select
+              <label className="text-meta text-muted" htmlFor="deal-stage">Stage</label>
+              <Select
+                id="deal-stage"
                 value={deal.stage_id ?? ''}
                 disabled={pending}
                 onChange={(e) => run(() => moveDeal(deal.id, e.target.value))}
-                className={field}
+                wrapperClassName="inline-block w-max max-w-full"
               >
                 {stages.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             {wonStage && deal.stage_id !== wonStage.id && (
               <button
@@ -180,13 +182,13 @@ export function DealDetail({
           </label>
           <label className="flex flex-col gap-1 text-meta text-muted">
             Lane
-            <select value={source} onChange={(e) => setSource(e.target.value as PipelineLane)} className={field}>
+            <Select value={source} onChange={(e) => setSource(e.target.value as PipelineLane)}>
               {PIPELINE_LANES.map((l) => (
                 <option key={l.id} value={l.id}>
                   {l.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
         </div>
 
@@ -216,13 +218,18 @@ export function DealDetail({
         {/* Add */}
         <div className="mt-3 space-y-2 rounded-card border border-border bg-surface-elevated/40 p-3">
           <div className="flex flex-wrap items-center gap-2">
-            <select value={actKind} onChange={(e) => setActKind(e.target.value as CrmActivity['kind'])} className={field}>
+            <Select
+              value={actKind}
+              onChange={(e) => setActKind(e.target.value as CrmActivity['kind'])}
+              aria-label="Activity type"
+              wrapperClassName="inline-block w-max max-w-full"
+            >
               {(['note', 'call', 'email', 'meeting', 'task'] as const).map((k) => (
                 <option key={k} value={k}>
                   {ACTIVITY_META[k].label}
                 </option>
               ))}
-            </select>
+            </Select>
             {actKind === 'task' && (
               <input type="datetime-local" value={actDue} onChange={(e) => setActDue(e.target.value)} className={field} title="Due" />
             )}

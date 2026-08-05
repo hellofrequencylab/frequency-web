@@ -4,6 +4,7 @@ import { useId, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Check, Loader2, ExternalLink } from 'lucide-react'
 import { isError } from '@/lib/action-result'
+import { Select } from '@/components/ui/select'
 import { ELEMENT_ROLES, ELEMENT_ROLE_LABEL, type ElementDef, type ElementRole } from '@/lib/elements/registry'
 import type { ResolvedElement, StoredElementConfig } from '@/lib/elements/config'
 import { ElementPreview } from '@/components/elements/previews'
@@ -29,7 +30,6 @@ export function ElementEditor({ def, resolved }: { def: ElementDef; resolved: Re
       setNote(isError(res) ? res.error : 'Saved. This applies everywhere the element appears.')
     })
 
-  const inputSm = 'rounded-lg border border-border bg-surface px-2 py-1 text-body-sm text-text focus:border-primary focus:outline-none'
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
@@ -70,7 +70,7 @@ export function ElementEditor({ def, resolved }: { def: ElementDef; resolved: Re
                 <span className={`ml-0.5 h-5 w-5 rounded-pill bg-canvas shadow transition-transform ${settings[f.key] === true ? 'translate-x-5' : ''}`} />
               </button>
             ) : (
-              <select
+              <Select
                 // Named by the same feature label the toggle branch uses. Both branches render
                 // into the same row beside the same <p>, so a name on one and not the other left
                 // half these controls announcing as an unnamed combobox depending only on which
@@ -78,26 +78,27 @@ export function ElementEditor({ def, resolved }: { def: ElementDef; resolved: Re
                 aria-labelledby={`${cardId}-${f.key}`}
                 value={String(settings[f.key] ?? '')}
                 onChange={(e) => setSettings((s) => ({ ...s, [f.key]: e.target.value }))}
-                className={inputSm}
+                wrapperClassName="inline-block w-max max-w-full"
               >
                 {f.choices?.map((c) => (
                   <option key={c.value} value={c.value}>{c.label}</option>
                 ))}
-              </select>
+              </Select>
             )}
 
             {/* Role gate */}
             <label className="flex shrink-0 items-center gap-1.5 text-2xs text-muted">
               Who
-              <select
+              <Select
                 value={roles[f.key] ?? f.defaultRole}
                 onChange={(e) => setRoles((r) => ({ ...r, [f.key]: e.target.value as ElementRole }))}
-                className={inputSm}
+                className="text-2xs"
+                wrapperClassName="inline-block w-max max-w-full"
               >
                 {ELEMENT_ROLES.map((r) => (
                   <option key={r} value={r}>{ELEMENT_ROLE_LABEL[r]}</option>
                 ))}
-              </select>
+              </Select>
             </label>
           </li>
         ))}

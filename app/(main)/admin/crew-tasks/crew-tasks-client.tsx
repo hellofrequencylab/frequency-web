@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { Pencil, Trash2, Check, X, ShieldCheck, ShieldX } from 'lucide-react'
 import { updateCrewTask, deleteCrewTask, approveVerification, rejectVerification } from '../actions'
 import { getInitials } from '@/lib/utils'
+import { Select } from '@/components/ui/select'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 const TASK_TYPES = [
@@ -21,7 +22,6 @@ type CrewTask = {
 }
 
 const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
-const select = input
 const label = 'block text-meta font-medium text-muted mb-1'
 
 // The switch takes its name from the label already sitting beside it (`labelId`), so what a
@@ -89,12 +89,12 @@ function TaskForm({
       </div>
 
       <div>
-        <label className={label}>Type</label>
-        <select value={type} onChange={e => setType(e.target.value)} disabled={isPending} className={select}>
+        <label className={label} htmlFor={`${formId}-type`}>Type</label>
+        <Select id={`${formId}-type`} value={type} onChange={e => setType(e.target.value)} disabled={isPending}>
           {TASK_TYPES.map(t => (
             <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div>

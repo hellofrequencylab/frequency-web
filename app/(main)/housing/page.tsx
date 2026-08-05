@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Heart, Home, Plus, Users, DoorOpen, SlidersHorizontal } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Select } from '@/components/ui/select'
 import { getMyProfileId } from '@/lib/auth'
 import { listSavedListingIds, listSavedListings } from '@/lib/listings'
 import { listHousingListings } from '@/lib/listings/housing'
@@ -196,14 +197,13 @@ export default async function HousingPage({
                   <label htmlFor="type" className={FILTER_LABEL}>
                     Property type
                   </label>
-                  <select id="type" name="type" defaultValue={selectedType} className={FIELD}>
-                    <option value="">Any type</option>
+                  <Select id="type" name="type" defaultValue={selectedType} emptyLabel="Any type">
                     {PROPERTY_TYPES.map((p) => (
                       <option key={p.slug} value={p.slug}>
                         {p.label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label htmlFor="min" className={FILTER_LABEL}>

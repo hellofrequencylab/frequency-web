@@ -25,6 +25,7 @@ import {
   cancelAction,
 } from '@/app/(main)/admin/email-studio/send-actions'
 
+import { Input } from '@/components/ui/field'
 export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused' | 'cancelled'
 
 export interface SegmentOption {
@@ -194,11 +195,11 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
           <div className={row ? 'space-y-1' : 'space-y-1 border-t border-border pt-3'}>
             <span className="text-meta font-medium text-subtle">Schedule (optional)</span>
             <div className="flex flex-wrap items-center gap-2">
-              <input
+              <Input
                 type="datetime-local"
                 value={scheduleAt}
                 onChange={(e) => setScheduleAt(e.target.value)}
-                className="rounded-md border border-border bg-canvas px-2 py-1 text-meta text-text"
+                className="!w-auto !px-2 !py-1 text-meta"
                 aria-label="Send date and time"
                 disabled={pending || !canSchedule}
               />

@@ -19,6 +19,7 @@ import { Loader2, Check, X, Pencil, Send, CheckCircle2, Copy, ImagePlus, Star, P
 import { Button } from '@/components/ui/button'
 import { Banner, StatusChip } from '@/components/admin/status'
 import { cn } from '@/lib/utils'
+import { Select } from '@/components/ui/select'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { AMENITIES } from '@/lib/listings/types'
 import type { ListingDetail, ListingSeedKind } from '@/lib/listing-seeder/types'
@@ -398,21 +399,26 @@ function FieldEditor({
   }
   if (field.input === 'select') {
     return (
-      <select className={inputCls} value={text} onChange={(e) => setText(e.target.value)} autoFocus>
-        <option value="">Not set</option>
+      <Select aria-label={field.label} value={text} onChange={(e) => setText(e.target.value)} autoFocus emptyLabel="Not set">
         {(field.options ?? []).map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>
         ))}
-      </select>
+      </Select>
     )
   }
   if (field.input === 'bool') {
     return (
-      <select className={inputCls} value={bool} onChange={(e) => setBool(e.target.value as 'yes' | 'no' | 'unset')} autoFocus>
-        <option value="unset">Not set</option>
-        <option value="yes">Yes</option>
-        <option value="no">No</option>
-      </select>
+      <Select
+        aria-label={field.label}
+        value={bool}
+        onChange={(e) => setBool(e.target.value as 'yes' | 'no' | 'unset')}
+        autoFocus
+        options={[
+          { value: 'unset', label: 'Not set' },
+          { value: 'yes', label: 'Yes' },
+          { value: 'no', label: 'No' },
+        ]}
+      />
     )
   }
   if (field.input === 'amenities') {

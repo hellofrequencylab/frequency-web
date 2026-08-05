@@ -12,7 +12,8 @@
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Plus, X, Send, UserRound, ImageIcon } from 'lucide-react'
-import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
+import { Input, Textarea, Label } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import type {
   EventDetails, LineupItem, ScheduleItem, TicketTier, EventLink, ImageRegion, OtherDetail,
 } from '@/lib/events/types'
@@ -399,16 +400,15 @@ export function DraftEditor({
           </div>
           <label className="block space-y-1">
             <Label>Pillar</Label>
-            <select
+            <Select
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
               disabled={pending}
-              className={fieldClasses}
             >
               {PILLAR_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
-            </select>
+            </Select>
           </label>
         </div>
 
@@ -449,16 +449,17 @@ export function DraftEditor({
                   placeholder="Name"
                   disabled={pending}
                 />
-                <select
+                <Select
+                  aria-label="Role"
                   value={row.role}
                   onChange={(e) => setLineup((p) => p.map((r, x) => (x === i ? { ...r, role: e.target.value as LineupItem['role'] } : r)))}
                   disabled={pending}
-                  className={`${fieldClasses} sm:w-32`}
+                  wrapperClassName="sm:w-32"
                 >
                   {ROLE_OPTIONS.map((r) => (
                     <option key={r} value={r}>{r}</option>
                   ))}
-                </select>
+                </Select>
               </div>
             </Row>
           ))}
@@ -562,16 +563,17 @@ export function DraftEditor({
                   disabled={pending}
                   className="min-w-0"
                 />
-                <select
+                <Select
+                  aria-label="Link type"
                   value={row.kind}
                   onChange={(e) => setLinks((p) => p.map((r, x) => (x === i ? { ...r, kind: e.target.value as EventLink['kind'] } : r)))}
                   disabled={pending}
-                  className={`${fieldClasses} sm:w-28`}
+                  wrapperClassName="sm:w-28"
                 >
                   {LINK_KIND_OPTIONS.map((k) => (
                     <option key={k} value={k}>{k}</option>
                   ))}
-                </select>
+                </Select>
               </div>
             </Row>
           ))}

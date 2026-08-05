@@ -15,7 +15,8 @@ import { FocusTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button, buttonClasses } from '@/components/ui/button'
-import { Field, Input, fieldClasses } from '@/components/ui/field'
+import { Field, Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -198,7 +199,7 @@ export default async function SpaceProgramPage({
                       from the new snapshot.
                     </p>
                     <Field label="Snapshot from" hint="One of your live circles. Its current setup becomes the new blueprint.">
-                      <select name="sourceCircleId" required defaultValue="" className={fieldClasses}>
+                      <Select name="sourceCircleId" required defaultValue="">
                         <option value="" disabled>
                           Pick a circle
                         </option>
@@ -207,7 +208,7 @@ export default async function SpaceProgramPage({
                             {c.name}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </Field>
                     <Button type="submit" variant="secondary">
                       Refresh blueprint
@@ -260,7 +261,7 @@ export default async function SpaceProgramPage({
               <Input name="oneLiner" required maxLength={160} placeholder="A weekly movement session run by locals, anywhere." />
             </Field>
             <Field label="Blueprint circle" hint="Your flagship circle. Its setup becomes the blueprint every Chapter starts from.">
-              <select name="sourceCircleId" required defaultValue="" className={fieldClasses}>
+              <Select name="sourceCircleId" required defaultValue="">
                 <option value="" disabled>
                   Pick a circle
                 </option>
@@ -269,7 +270,7 @@ export default async function SpaceProgramPage({
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
             <Button type="submit">Create Program</Button>
           </form>

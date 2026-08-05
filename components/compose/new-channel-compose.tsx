@@ -5,7 +5,7 @@ import { Plus } from 'lucide-react'
 import { createChannel } from '@/app/(main)/channels/actions'
 import { StudioWindow } from '@/components/studio/studio-window'
 import { StudioFooter } from '@/components/studio/kit/studio-footer'
-import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
+import { Field, Input, Textarea, labelClasses, fieldClasses } from '@/components/ui/field'
 
 interface ScopeOption {
   scope: 'hub' | 'nexus' | 'outpost'
@@ -106,8 +106,7 @@ export function NewChannelCompose({
           }
         >
           <div className="space-y-5">
-            <div className="space-y-1.5">
-              <Label>Channel name</Label>
+            <Field label="Channel name">
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -115,10 +114,12 @@ export function NewChannelCompose({
                 maxLength={80}
                 disabled={isPending}
               />
-            </div>
+            </Field>
 
             <div className="space-y-1.5">
-              <Label>Type</Label>
+              {/* Not a <Label>: this names a group of buttons, and a <label> would bind to the
+                  first labelable descendant rather than to the set. */}
+              <span className={labelClasses}>Type</span>
               <div className="flex gap-2">
                 {(['group', 'event', 'thread'] as const).map((t) => (
                   <button
@@ -140,8 +141,7 @@ export function NewChannelCompose({
             </div>
 
             {scopeOptions.length > 0 && (
-              <div className="space-y-1.5">
-                <Label>Visible to</Label>
+              <Field label="Visible to">
                 <select
                   value={selected}
                   onChange={(e) => setSelected(e.target.value)}
@@ -154,23 +154,21 @@ export function NewChannelCompose({
                     </option>
                   ))}
                 </select>
-              </div>
+              </Field>
             )}
 
             {type === 'event' && (
-              <div className="space-y-1.5">
-                <Label>Event date</Label>
+              <Field label="Event date">
                 <Input
                   type="datetime-local"
                   value={eventDate}
                   onChange={(e) => setEventDate(e.target.value)}
                   disabled={isPending}
                 />
-              </div>
+              </Field>
             )}
 
-            <div className="space-y-1.5">
-              <Label>Description <span className="font-normal text-subtle">(optional)</span></Label>
+            <Field label={<>Description <span className="font-normal text-subtle">(optional)</span></>}>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -180,7 +178,7 @@ export function NewChannelCompose({
                 disabled={isPending}
                 className="resize-y leading-relaxed"
               />
-            </div>
+            </Field>
 
             <div className="flex items-center gap-2 pt-1">
               {/* The text beside the switch reports the STATE, and it flips with the toggle, so

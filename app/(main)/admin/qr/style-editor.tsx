@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, type ReactNode } from 'react'
+import { Select } from '@/components/ui/select'
 import { Palette, ImagePlus, X, RotateCcw, TriangleAlert } from 'lucide-react'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import {
@@ -168,7 +169,7 @@ export function StyleEditor({
       {/* ── Shape ──────────────────────────────────────────────────────────── */}
       <Group label="Shape">
         <div className="flex flex-wrap gap-x-4 gap-y-2">
-          <Select
+          <StyleSelect
             label="Modules"
             value={value.moduleShape}
             options={[
@@ -179,7 +180,7 @@ export function StyleEditor({
             ]}
             onChange={(v) => set('moduleShape', v as ModuleShape)}
           />
-          <Select
+          <StyleSelect
             label="Eyes"
             value={value.eyeShape}
             options={[
@@ -189,7 +190,7 @@ export function StyleEditor({
             ]}
             onChange={(v) => set('eyeShape', v as EyeShape)}
           />
-          <Select
+          <StyleSelect
             label="Pupils"
             value={value.pupilShape}
             options={[
@@ -231,7 +232,7 @@ export function StyleEditor({
 
         {value.logo && (
           <div className="flex flex-wrap gap-x-4 gap-y-2">
-            <Select
+            <StyleSelect
               label="Crop"
               value={value.logoShape}
               options={[
@@ -240,7 +241,7 @@ export function StyleEditor({
               ]}
               onChange={(v) => set('logoShape', v as QrStyle['logoShape'])}
             />
-            <Select
+            <StyleSelect
               label="Color"
               value={value.logoTint}
               options={[
@@ -410,7 +411,10 @@ function Swatch({
   )
 }
 
-function Select({
+/** One labelled style picker. Renamed off `Select` when this file adopted the primitive of that
+ *  name; it is the labelled ROW, not the control. The visible span names the control by wrapping
+ *  it, so no aria-label is minted here. */
+function StyleSelect({
   label,
   value,
   options,
@@ -424,17 +428,12 @@ function Select({
   return (
     <label className="flex items-center gap-1.5">
       {label && <span className="text-subtle">{label}</span>}
-      <select
+      <Select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-md border border-border bg-canvas px-2 py-1 text-text"
-      >
-        {options.map(([v, l]) => (
-          <option key={v} value={v}>
-            {l}
-          </option>
-        ))}
-      </select>
+        options={options.map(([v, l]) => ({ value: v, label: l }))}
+        wrapperClassName="inline-block w-max max-w-full"
+      />
     </label>
   )
 }

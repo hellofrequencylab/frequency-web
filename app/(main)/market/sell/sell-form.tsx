@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { X } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
+import { Select } from '@/components/ui/select'
 import { COMMERCE_CATEGORIES, normalizeTags } from '@/lib/commerce/categories'
 import { createMakerProductAction } from '../../marketplace/commerce-actions'
 
@@ -74,8 +75,7 @@ export function SellForm() {
           <label htmlFor="category" className={LABEL}>
             Category (optional)
           </label>
-          <select id="category" name="category" defaultValue="" className={FIELD}>
-            <option value="">Choose a category</option>
+          <Select id="category" name="category" defaultValue="" emptyLabel="Choose a category">
             {COMMERCE_CATEGORIES.map((c) => (
               <optgroup key={c.value} label={c.label}>
                 <option value={c.value}>{c.label} (general)</option>
@@ -86,7 +86,7 @@ export function SellForm() {
                 ))}
               </optgroup>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 
@@ -96,12 +96,15 @@ export function SellForm() {
         </label>
         {/* R3: individuals may list Used only. New is a Business feature, so it is disabled here and
             rejected server-side (fail-closed) in createMakerProductAction. */}
-        <select id="condition" name="condition" defaultValue="used" className={FIELD}>
-          <option value="used">Used</option>
-          <option value="new" disabled>
-            New (Business accounts only)
-          </option>
-        </select>
+        <Select
+          id="condition"
+          name="condition"
+          defaultValue="used"
+          options={[
+            { value: 'used', label: 'Used' },
+            { value: 'new', label: 'New (Business accounts only)', disabled: true },
+          ]}
+        />
         <p className="mt-1 text-meta text-subtle">
           Individuals list used items.{' '}
           <Link href="/spaces/new" className="font-medium text-primary-strong hover:underline">

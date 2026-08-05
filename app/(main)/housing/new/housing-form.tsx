@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import { buttonClasses } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { ACCESSIBILITY_TAGS, ADDRESS_PRECISIONS, AMENITIES, LAUNDRY_OPTIONS, PARKING_OPTIONS, PROPERTY_TYPES } from '@/lib/listings/types'
 import { createHousingListingAction } from '@/app/(main)/marketplace/actions'
 
@@ -92,26 +93,25 @@ export function HousingForm({
           <label htmlFor="listing_type" className={LABEL}>
             Listing
           </label>
-          <select id="listing_type" name="listing_type" className={FIELD} defaultValue={initial?.listingType ?? 'rental'}>
+          <Select id="listing_type" name="listing_type" defaultValue={initial?.listingType ?? 'rental'}>
             <option value="rental">Rental to offer</option>
             <option value="sublet">Sublet to offer</option>
             <option value="roommate">Room with a roommate</option>
             <option value="roommate_wanted">Looking for a roommate</option>
             <option value="housing_wanted">Looking for a place</option>
-          </select>
+          </Select>
         </div>
         <div>
           <label htmlFor="property_type" className={LABEL}>
             Property type
           </label>
-          <select id="property_type" name="property_type" className={FIELD} defaultValue={initial?.propertyType ?? ''}>
-            <option value="">Not specified</option>
+          <Select id="property_type" name="property_type" defaultValue={initial?.propertyType ?? ''} emptyLabel="Not specified">
             {PROPERTY_TYPES.map((p) => (
               <option key={p.slug} value={p.slug}>
                 {p.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 
@@ -120,12 +120,11 @@ export function HousingForm({
           <label htmlFor="room_type" className={LABEL}>
             Space
           </label>
-          <select id="room_type" name="room_type" className={FIELD} defaultValue={initial?.roomType ?? ''}>
-            <option value="">Not specified</option>
+          <Select id="room_type" name="room_type" defaultValue={initial?.roomType ?? ''} emptyLabel="Not specified">
             <option value="private_room">Private room</option>
             <option value="shared_room">Shared room</option>
             <option value="entire_place">Entire place</option>
-          </select>
+          </Select>
         </div>
         <div>
           <label htmlFor="sqft" className={LABEL}>
@@ -222,27 +221,25 @@ export function HousingForm({
           <label htmlFor="parking" className={LABEL}>
             Parking
           </label>
-          <select id="parking" name="parking" className={FIELD} defaultValue={initial?.parking ?? ''}>
-            <option value="">Not specified</option>
+          <Select id="parking" name="parking" defaultValue={initial?.parking ?? ''} emptyLabel="Not specified">
             {PARKING_OPTIONS.map((p) => (
               <option key={p.slug} value={p.slug}>
                 {p.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <div>
           <label htmlFor="laundry" className={LABEL}>
             Laundry
           </label>
-          <select id="laundry" name="laundry" className={FIELD} defaultValue={initial?.laundry ?? ''}>
-            <option value="">Not specified</option>
+          <Select id="laundry" name="laundry" defaultValue={initial?.laundry ?? ''} emptyLabel="Not specified">
             {LAUNDRY_OPTIONS.map((l) => (
               <option key={l.slug} value={l.slug}>
                 {l.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 

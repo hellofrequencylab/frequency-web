@@ -7,6 +7,7 @@ import { FormSection } from '@/components/admin/form-section'
 import { Banner, StatusChip } from '@/components/admin/status'
 import { Toggle } from '@/components/admin/toggle'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import type { PricingConsoleData, FeatureGateRow } from './load'
 import type { PricingDefaults, PricingFlagKey } from '@/lib/pricing/settings'
@@ -1166,21 +1167,24 @@ function GateRow({ gate }: { gate: FeatureGateRow }) {
         <p className="truncate text-2xs text-muted">{gate.feature}</p>
       </div>
       <span className="text-2xs font-semibold uppercase tracking-wide text-muted">{gate.axis}</span>
-      <select
+      {/* One row per feature, so the name has to carry the feature or every picker on the page
+          announces the same. Matches the pattern the Toggle beside it already uses. */}
+      <Select
+        aria-label={`${prettyFeature(gate.feature)} minimum plan`}
         value={min}
         disabled={pending}
         onChange={(e) => {
           setMin(e.target.value)
           save({ minEntitlement: e.target.value })
         }}
-        className="rounded-md border border-border bg-canvas px-2 py-1 text-body-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+        wrapperClassName="inline-block w-max max-w-full"
       >
         {options.map((o) => (
           <option key={o} value={o}>
             {o}
           </option>
         ))}
-      </select>
+      </Select>
       <div className="flex items-center justify-end gap-2">
         <SaveCue pending={pending} saved={saved} />
         <Toggle

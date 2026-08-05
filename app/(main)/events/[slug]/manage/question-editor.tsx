@@ -4,9 +4,9 @@ import { useState, useTransition } from 'react'
 import { Plus, Pencil, Trash2, GripVertical } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
+import { Input, Textarea, Label } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { EmptyState } from '@/components/ui/empty-state'
-import { cn } from '@/lib/utils'
 import type { EventQuestion, QuestionType } from '@/lib/events/questions'
 import {
   createEventQuestion,
@@ -182,19 +182,19 @@ function QuestionDialog({
 
           <div>
             <Label htmlFor="q-type">Answer type</Label>
-            <select
+            <Select
               id="q-type"
               name="type"
               value={type}
               onChange={(e) => setType(e.target.value as QuestionType)}
-              className={cn(fieldClasses, 'mt-1')}
+              wrapperClassName="mt-1"
             >
               {TYPE_ORDER.map((t) => (
                 <option key={t} value={t}>
                   {TYPE_LABEL[t]}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {CHOICE_TYPES.includes(type) && (

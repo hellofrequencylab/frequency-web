@@ -17,6 +17,7 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import { AdminTemplate, AdminSection } from '@/components/templates'
+import { Select } from '@/components/ui/select'
 import { STEP_REGISTRY, STEP_TYPES } from '@/lib/onboarding/step-registry'
 import type { StepType } from '@/lib/onboarding/step-types'
 import { listPersonas } from '@/lib/onboarding/personas'
@@ -345,17 +346,16 @@ export function SequenceEditor({
                 <div className="grid gap-3 @xl:grid-cols-2">
                   <label className="block">
                     <span className="mb-1.5 block text-body-sm font-medium text-text">Type</span>
-                    <select
+                    <Select
                       value={step.type}
                       onChange={(e) => changeType(index, e.target.value as StepType)}
-                      className={inputBase}
                     >
                       {STEP_TYPES.map((t) => (
                         <option key={t} value={t}>
                           {t}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </label>
                   <label className="block">
                     <span className="mb-1.5 block text-body-sm font-medium text-text">Progress label</span>

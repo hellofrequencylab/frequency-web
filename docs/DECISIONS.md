@@ -17728,6 +17728,28 @@ that measurement must not run against a null ref. ⚠️ `railFoldClearsDock()` 
 no bar to clear, that clearance becomes conditional and the guard must say which case it is
 asserting.
 
+**🔴 Amendment (2026-08-05, owner) — the two segments no longer share a fate.** The owner's later
+instruction, "in the closed state on the right, the chat tab should be present in the bottom,"
+overrides the half of this decision that hid *everything*. The bar is now `lg:w-auto` rather than
+`lg:hidden`: the **Vault segment** goes with the fold, the **chat tab** survives it, shrinking from
+the rail's width to a corner tab.
+
+Two consequences the original text got wrong and this amendment corrects:
+
+- **"What is genuinely lost" is now half of what it said.** One-tap Vault is still surrendered by
+  folding. One-tap **Messages is not** — the tab is right there. The paragraph above should be read
+  as applying to the Vault alone.
+- **`dockDismissalDue` measures the wrong thing if read literally from the original.** With the bar
+  no longer vanishing, "the bar has no width" stopped being the dismissal trigger; the predicate now
+  reads the **Vault segment's** width. A fold still dismisses **both** panels, which is deliberate
+  and not an oversight: the chat *panel* hangs off a bar that just shrank to a corner, so leaving it
+  open would strand it against a column the fold deleted. Closing it costs one press to undo,
+  because the tab it re-opens from never left.
+
+The rest of the decision — that folding means one thing on every route, and that the content column
+is never overlapped — stands unchanged. Option (a) remains the upgrade path if the Vault proves to
+be a surface members reach for constantly while folded.
+
 ---
 
 ## ADR-947 — Three fixed type roles, because the ladder is fluid all the way down

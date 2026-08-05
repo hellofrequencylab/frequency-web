@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Textarea, Input, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { InlineCover } from '@/components/admin/inline/inline-cover'
 import { RailAutosaveForm } from '@/components/admin/rail/rail-autosave-form'
@@ -26,7 +26,6 @@ import { readCircleCoverFocus, readCircleHeroHeight } from '@/lib/circles/hero'
 
 type CircleData = NonNullable<Awaited<ReturnType<typeof getCircleAdminData>>>
 
-const input = fieldClasses
 const fieldLabel = labelClasses
 
 export function CircleSettingsModule() {
@@ -128,12 +127,12 @@ export function CircleSettingsModule() {
       <RailAutosaveForm action={updateCircleSettings.bind(null, data.id, data.slug)}>
         <label className="block space-y-1.5">
           <span className={fieldLabel}>Name</span>
-          <input name="name" defaultValue={data.name} required className={input} />
+          <Input name="name" defaultValue={data.name} required />
         </label>
 
         <label className="block space-y-1.5">
           <span className={fieldLabel}>Description</span>
-          <textarea name="about" defaultValue={data.about ?? ''} rows={3} className={`${input} resize-none`} />
+          <Textarea name="about" defaultValue={data.about ?? ''} rows={3} className="resize-none" />
         </label>
 
         <div className="grid grid-cols-2 gap-3">
@@ -151,7 +150,7 @@ export function CircleSettingsModule() {
 
           <label className="block space-y-1.5">
             <span className={fieldLabel}>Member cap</span>
-            <input name="member_cap" type="number" min={1} max={500} defaultValue={data.member_cap ?? 12} className={input} />
+            <Input name="member_cap" type="number" min={1} max={500} defaultValue={data.member_cap ?? 12} />
           </label>
         </div>
 

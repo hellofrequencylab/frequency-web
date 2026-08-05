@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Select } from '@/components/ui/select'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
 import { buttonClasses } from '@/components/ui/button'
 import { saveSeekerProfileAction } from '@/app/(main)/marketplace/actions'
@@ -102,7 +103,9 @@ const GENDER_PREF = [
   { value: 'same_as_me', label: 'Same as me' },
 ]
 
-function Select({
+/** One labelled lifestyle picker. Renamed off `Select` when this file adopted the primitive of
+ *  that name; it is the labelled BLOCK, not the control. */
+function LifestyleSelect({
   id,
   label,
   options,
@@ -118,13 +121,7 @@ function Select({
       <label htmlFor={id} className={LABEL}>
         {label}
       </label>
-      <select id={id} name={id} defaultValue={defaultValue} className={FIELD}>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+      <Select id={id} name={id} defaultValue={defaultValue} options={options} />
     </div>
   )
 }
@@ -208,16 +205,16 @@ export function SeekerForm({ initial }: { initial: SeekerFormValues }) {
           <label htmlFor="arrangement" className={LABEL}>
             What are you after?
           </label>
-          <select
+          <Select
             id="arrangement"
             name="arrangement"
             value={arrangement}
             onChange={(e) => setArrangement(e.target.value)}
-            className={FIELD}
-          >
-            <option value="shared">A room in a shared home (roommates)</option>
-            <option value="private">A whole place to myself</option>
-          </select>
+            options={[
+              { value: 'shared', label: 'A room in a shared home (roommates)' },
+              { value: 'private', label: 'A whole place to myself' },
+            ]}
+          />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -236,17 +233,17 @@ export function SeekerForm({ initial }: { initial: SeekerFormValues }) {
               className="w-full accent-primary"
             />
           </div>
-          <Select id="social_level" label="Social energy at home" options={SOCIAL_LEVELS} defaultValue={ls.socialLevel} />
-          <Select id="schedule" label="Daily rhythm" options={SCHEDULES} defaultValue={ls.schedule} />
-          <Select id="diet" label="Diet" options={DIETS} defaultValue={ls.diet} />
-          <Select id="pets" label="Pets" options={PETS} defaultValue={ls.pets} />
-          <Select id="smoking" label="Smoking" options={HOUSE_RULE} defaultValue={ls.smoking} />
-          <Select id="cannabis" label="Cannabis" options={HOUSE_RULE} defaultValue={ls.cannabis} />
+          <LifestyleSelect id="social_level" label="Social energy at home" options={SOCIAL_LEVELS} defaultValue={ls.socialLevel} />
+          <LifestyleSelect id="schedule" label="Daily rhythm" options={SCHEDULES} defaultValue={ls.schedule} />
+          <LifestyleSelect id="diet" label="Diet" options={DIETS} defaultValue={ls.diet} />
+          <LifestyleSelect id="pets" label="Pets" options={PETS} defaultValue={ls.pets} />
+          <LifestyleSelect id="smoking" label="Smoking" options={HOUSE_RULE} defaultValue={ls.smoking} />
+          <LifestyleSelect id="cannabis" label="Cannabis" options={HOUSE_RULE} defaultValue={ls.cannabis} />
         </div>
 
         {isSharedLiving && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Select id="gender_pref" label="Roommate gender" options={GENDER_PREF} defaultValue={ls.genderPref} />
+            <LifestyleSelect id="gender_pref" label="Roommate gender" options={GENDER_PREF} defaultValue={ls.genderPref} />
             <div>
               <label htmlFor="age_min" className={LABEL}>
                 Ideal age from

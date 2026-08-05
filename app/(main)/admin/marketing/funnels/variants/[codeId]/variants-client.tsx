@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Trophy } from 'lucide-react'
 import type { DestinationGroup } from '@/lib/entry-points/destinations'
 import type { VariantResult } from '@/lib/entry-points/ab'
+import { Select } from '@/components/ui/select'
 import { addVariant, updateVariant, deleteVariant } from '../actions'
 
 const field = 'w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text'
@@ -14,8 +15,7 @@ const pct = (rate: number) => `${(rate * 100).toFixed(1)}%`
 
 function DestinationSelect({ value, onChange, groups }: { value: string; onChange: (v: string) => void; groups: DestinationGroup[] }) {
   return (
-    <select value={value} onChange={(e) => onChange(e.target.value)} className={field}>
-      <option value="">Pick a destination…</option>
+    <Select aria-label="Destination" value={value} onChange={(e) => onChange(e.target.value)} emptyLabel="Pick a destination…">
       {groups.map((g) => (
         <optgroup key={g.group} label={g.group}>
           {g.items.map((o) => (
@@ -23,7 +23,7 @@ function DestinationSelect({ value, onChange, groups }: { value: string; onChang
           ))}
         </optgroup>
       ))}
-    </select>
+    </Select>
   )
 }
 

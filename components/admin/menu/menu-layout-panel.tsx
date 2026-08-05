@@ -5,6 +5,7 @@ import { Columns3, RotateCcw } from 'lucide-react'
 import type { ResolvedMenu } from '@/lib/menus/types'
 import { ensureMenu, seedMenuFromDefaults, setMenuColumns } from '@/lib/menus/actions'
 import { AdminSection } from '@/components/templates'
+import { Input } from '@/components/ui/field'
 
 // The Layout & defaults panel — the `menu-layout` template block. It edits ONE slice of the active
 // surface: the column count (5) and the Seed/Reset-from-site-defaults action (12). Surface-scoped:
@@ -136,7 +137,7 @@ export function MenuLayoutPanel({
             Columns
           </label>
           <div className="flex items-center gap-2">
-            <input
+            <Input
               id={`cols-${surfaceKey}`}
               type="number"
               min={1}
@@ -149,7 +150,7 @@ export function MenuLayoutPanel({
                 if (Number.isFinite(n) && n !== columns) saveColumns(n)
                 else setColumnsDraft(String(columns))
               }}
-              className="w-24 rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm tabular-nums text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+              className="!w-24 !px-2.5 !py-1.5 tabular-nums"
             />
             <span className="text-meta text-subtle">1 to 12, default 6</span>
           </div>

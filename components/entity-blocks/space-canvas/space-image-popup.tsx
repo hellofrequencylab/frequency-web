@@ -5,6 +5,7 @@ import { ImagePlus, Trash2 } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import type { UploadImage } from '@/components/entity-blocks/block-edit-panel'
+import { Input, Textarea } from '@/components/ui/field'
 
 // THE ON-CANVAS PHOTO POPUP for the WYSIWYG Space page editor (the space analogue of the Email Studio Loom
 // popup). Clicking a photo slot on the live space canvas opens this dialog to manage the slot's photo: UPLOAD
@@ -127,27 +128,26 @@ export function SpaceImagePopup({
           </button>
           <LoomPicker open={loomOpen} onClose={() => setLoomOpen(false)} onSelect={onPickFromLoom} title="Choose a photo" />
 
-          <div>
-            <label className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Image link</label>
-            <input
+          <label className="block">
+            <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Image link</span>
+            <Input
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://"
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
             />
-          </div>
+          </label>
 
-          <div>
-            <label className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Alt text</label>
-            <textarea
+          <label className="block">
+            <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Alt text</span>
+            <Textarea
               value={alt}
               onChange={(e) => setAlt(e.target.value)}
               rows={2}
               placeholder="Describe the photo for screen readers and when images are off."
-              className="w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+              className="resize-none"
             />
-          </div>
+          </label>
 
           {error && (
             <p className="rounded-lg bg-danger-bg px-3 py-2 text-meta font-medium text-danger" role="alert">

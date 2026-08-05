@@ -25,6 +25,7 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Select } from '@/components/ui/select'
 import { filterTimeline, type TimelineEntry } from '@/lib/crm/timeline'
 import type { InteractionChannel } from '@/lib/crm/interactions'
 import { logManualTouch, type ManualTouchKind } from './timeline-actions'
@@ -187,10 +188,10 @@ function LogTouch({ contactId }: { contactId: string }) {
         Record a call, meeting, or note you had with this person so the history stays complete.
       </p>
       <div className="mt-3 flex flex-wrap items-start gap-2">
-        <select
+        <Select
           value={kind}
           onChange={(e) => setKind(e.target.value as ManualTouchKind)}
-          className="rounded-lg border border-border-strong bg-surface px-2 py-2 text-body-sm text-text focus:outline-none"
+          wrapperClassName="inline-block w-max max-w-full"
           aria-label="Touch type"
         >
           {KINDS.map((k) => (
@@ -198,7 +199,7 @@ function LogTouch({ contactId }: { contactId: string }) {
               {k.label}
             </option>
           ))}
-        </select>
+        </Select>
         <input
           value={note}
           onChange={(e) => setNote(e.target.value)}

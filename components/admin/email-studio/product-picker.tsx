@@ -17,6 +17,7 @@ import {
   type ProductOption,
 } from './product-picker-actions'
 
+import { Input } from '@/components/ui/field'
 interface ProductRef {
   id: string
   ownerKind?: 'profile' | 'space' | 'platform'
@@ -156,13 +157,13 @@ export function ProductCardEditor({
           {/* Owner search box. */}
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-subtle" aria-hidden />
-            <input
+            <Input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search a maker or Space"
               aria-label="Search a maker or Space to find their products"
-              className="w-full rounded-lg border border-border bg-surface py-1.5 pl-8 pr-8 text-meta text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+              className="!py-1.5 pl-8 pr-8 text-meta"
             />
             {searching && (
               <Loader2 className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-subtle" aria-hidden />
@@ -266,12 +267,12 @@ export function ProductCardEditor({
       {/* Button label for the card's CTA. */}
       <label className="block space-y-1">
         <span className="text-2xs font-semibold text-muted">Button label</span>
-        <input
+        <Input
           type="text"
           value={ctaLabel}
           onChange={(e) => onField('ctaLabel', e.target.value || undefined)}
           placeholder="View product"
-          className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+          className="!px-2.5 !py-1.5 text-meta"
         />
       </label>
     </div>

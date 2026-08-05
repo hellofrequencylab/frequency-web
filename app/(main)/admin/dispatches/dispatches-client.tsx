@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useId, useState, useTransition } from 'react'
+import { Select } from '@/components/ui/select'
 import Link from 'next/link'
 import { Plus, Pencil, Send, EyeOff, Trash2, Check, X, Clock } from 'lucide-react'
 import {
@@ -72,6 +73,8 @@ function DispatchForm({
   onCancel:  () => void
   isPending: boolean
 }) {
+  // Ids for the label associations below, scoped per open form.
+  const formId = useId()
   const defaultScope = initial?.audience_scope ??
     (role === 'mentor' && nexuses.length > 0 ? 'nexus' :
      role === 'guide'  && hubs.length > 0    ? 'hub'   : 'circle')
@@ -218,50 +221,50 @@ function DispatchForm({
       {/* Scope + Audience */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={lbl}>Send to</label>
-          <select
+          <label className={lbl} htmlFor={`${formId}-scope`}>Send to</label>
+          <Select
+            id={`${formId}-scope`}
             value={scope}
             onChange={e => { setScope(e.target.value as 'circle' | 'hub' | 'nexus'); setAudId('') }}
             disabled={isPending}
-            className={input}
           >
             {circles.length > 0  && <option value="circle">Circle</option>}
             {hubs.length > 0     && <option value="hub">Hub</option>}
             {nexuses.length > 0  && <option value="nexus">Nexus</option>}
-          </select>
+          </Select>
         </div>
         <div>
-          <label className={lbl}>Which {scope}</label>
-          <select
+          <label className={lbl} htmlFor={`${formId}-audience`}>Which {scope}</label>
+          <Select
+            id={`${formId}-audience`}
             value={audId}
             onChange={e => setAudId(e.target.value)}
             required
             disabled={isPending}
-            className={input}
+            emptyLabel="- Select -"
           >
-            <option value="">- Select -</option>
             {audienceOptions.map(a => (
               <option key={a.id} value={a.id}>{a.name}</option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 
       {/* Linked task */}
       {tasks.length > 0 && (
         <div>
-          <label className={lbl}>Link a Challenge <span className="text-subtle font-normal">(optional)</span></label>
-          <select
+          <label className={lbl} htmlFor={`${formId}-task`}>Link a Challenge <span className="text-subtle font-normal">(optional)</span></label>
+          <Select
+            id={`${formId}-task`}
             value={taskId}
             onChange={e => setTaskId(e.target.value)}
             disabled={isPending}
-            className={input}
+            emptyLabel="- None -"
           >
-            <option value="">- None -</option>
             {tasks.map(t => (
               <option key={t.id} value={t.id}>{t.name}</option>
             ))}
-          </select>
+          </Select>
         </div>
       )}
 

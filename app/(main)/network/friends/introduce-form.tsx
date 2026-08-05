@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from 'react'
 import { HeartHandshake, Check } from 'lucide-react'
 import { isError } from '@/lib/action-result'
+import { Select } from '@/components/ui/select'
 import { createIntroduction } from '@/lib/connections/introductions'
 
 export interface FriendOption {
@@ -76,42 +77,40 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
           <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
             First friend
           </span>
-          <select
+          <Select
             value={personA}
             onChange={(e) => {
               setPersonA(e.target.value)
               setDone(false)
             }}
-            className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text focus:border-primary focus:outline-none"
+            emptyLabel="Choose someone…"
           >
-            <option value="">Choose someone…</option>
             {optionsA.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.displayName} (@{f.handle})
               </option>
             ))}
-          </select>
+          </Select>
         </label>
 
         <label className="block">
           <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
             Second friend
           </span>
-          <select
+          <Select
             value={personB}
             onChange={(e) => {
               setPersonB(e.target.value)
               setDone(false)
             }}
-            className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text focus:border-primary focus:outline-none"
+            emptyLabel="Choose someone…"
           >
-            <option value="">Choose someone…</option>
             {optionsB.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.displayName} (@{f.handle})
               </option>
             ))}
-          </select>
+          </Select>
         </label>
       </div>
 

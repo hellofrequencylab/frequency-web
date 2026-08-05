@@ -13,6 +13,7 @@ import {
   type Offering,
 } from '@/lib/commerce/types'
 import { PriceModeEditor } from '@/components/commerce/price-mode-editor'
+import { Select } from '@/components/ui/select'
 import type { SpaceAccessContext } from '@/lib/events/ticket-space-access'
 import {
   hostCreateTicketTier,
@@ -324,21 +325,20 @@ function TierForm({
             <label className={lbl} htmlFor={`audience-${initial?.id ?? 'new'}`}>
               Who can buy
             </label>
-            <select
+            <Select
               id={`audience-${initial?.id ?? 'new'}`}
               value={audience}
               onChange={(e) => setAudience(e.target.value)}
               disabled={disabled}
-              className={input}
+              emptyLabel="Everyone"
             >
-              <option value="">Everyone</option>
               <option value="members">{spaceAccess.spaceName} members (any tier)</option>
               {spaceAccess.membershipTiers.map((mt) => (
                 <option key={mt.id} value={mt.id}>
                   {spaceAccess.spaceName} · {mt.name} members
                 </option>
               ))}
-            </select>
+            </Select>
             {audience !== '' && spaceAccess.membershipTiers.length === 0 && (
               <p className="mt-1 text-meta text-muted">
                 Tip: publish membership tiers on your space page so people have something to join.

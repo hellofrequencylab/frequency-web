@@ -245,7 +245,10 @@ jobs:
           PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
           # Set PW_REQUIRE_SHELL=1 once the credential AND the shell baselines exist: from
           # then on, a run that photographs zero app surfaces fails instead of announcing.
-          PW_REQUIRE_SHELL: ${{ vars.PW_REQUIRE_SHELL }}
+          # Read from EITHER tab. It belongs in Variables (nothing here is sensitive), but a
+          # ratchet that silently stays off because it was typed into the Secrets tab is the
+          # exact failure this flag exists to prevent -- so accept both rather than trust aim.
+          PW_REQUIRE_SHELL: ${{ vars.PW_REQUIRE_SHELL || secrets.PW_REQUIRE_SHELL }}
         run: pnpm test:e2e
 
       # @visual: needs committed baselines captured against a deployment of the SAME kind.
@@ -258,7 +261,7 @@ jobs:
           PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
           PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
           PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
-          PW_REQUIRE_SHELL: ${{ vars.PW_REQUIRE_SHELL }}
+          PW_REQUIRE_SHELL: ${{ vars.PW_REQUIRE_SHELL || secrets.PW_REQUIRE_SHELL }}
         run: pnpm test:e2e:visual
 
       # The synthetic speed gate used to run here as steps 11-13. It is its own parallel

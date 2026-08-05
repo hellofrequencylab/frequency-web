@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useId, useState, useTransition } from 'react'
+import { Select } from '@/components/ui/select'
 import { Pencil, Check, X } from 'lucide-react'
 import { updateHub } from '../actions'
 import { Button } from '@/components/ui/button'
@@ -51,6 +52,8 @@ function HubForm({
   isPending: boolean
   error:     string | null
 }) {
+  // Ids for the label associations below, scoped per open form.
+  const formId = useId()
   const [name,    setName]    = useState(initial?.name ?? '')
   const [nexusId, setNexusId] = useState(initial?.nexus_id ?? '')
   const [guideId, setGuideId] = useState(initial?.guide_id ?? '')
@@ -74,27 +77,25 @@ function HubForm({
       </div>
       {nexuses.length > 0 && (
         <div>
-          <label className={lbl}>Nexus</label>
-          <select value={nexusId} onChange={e => setNexusId(e.target.value)} disabled={isPending} className={input}>
-            <option value="">- No nexus -</option>
+          <label className={lbl} htmlFor={`${formId}-nexus`}>Nexus</label>
+          <Select id={`${formId}-nexus`} value={nexusId} onChange={e => setNexusId(e.target.value)} disabled={isPending} emptyLabel="- No nexus -">
             {nexuses.map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
-          </select>
+          </Select>
         </div>
       )}
       {guides.length > 0 && (
         <div>
-          <label className={lbl}>Guide</label>
-          <select value={guideId} onChange={e => setGuideId(e.target.value)} disabled={isPending} className={input}>
-            <option value="">- Assign later -</option>
+          <label className={lbl} htmlFor={`${formId}-guide`}>Guide</label>
+          <Select id={`${formId}-guide`} value={guideId} onChange={e => setGuideId(e.target.value)} disabled={isPending} emptyLabel="- Assign later -">
             {guides.map(g => <option key={g.id} value={g.id}>{g.display_name}</option>)}
-          </select>
+          </Select>
         </div>
       )}
       <div>
-        <label className={lbl}>Status</label>
-        <select value={status} onChange={e => setStatus(e.target.value)} disabled={isPending} className={input}>
+        <label className={lbl} htmlFor={`${formId}-status`}>Status</label>
+        <Select id={`${formId}-status`} value={status} onChange={e => setStatus(e.target.value)} disabled={isPending}>
           {STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-        </select>
+        </Select>
       </div>
       <div className="flex items-center gap-2 pt-1 sm:col-span-2">
         <Button type="submit" size="sm" disabled={!name.trim() || isPending}>

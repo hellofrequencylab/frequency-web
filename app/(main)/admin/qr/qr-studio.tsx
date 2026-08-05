@@ -9,6 +9,7 @@ import { StyleEditor } from './style-editor'
 import { NfcWriter } from './nfc-writer'
 import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 
 export interface StudioNode {
   id: string
@@ -409,14 +410,13 @@ export function NodeForm({
           />
         </Field>
         <Field label="Type">
-          <select
+          <Select
             value={form.type}
             onChange={(e) => set('type', e.target.value)}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           >
             <option value="qr">QR code</option>
             <option value="nfc">NFC tag</option>
-          </select>
+          </Select>
         </Field>
         <Field label="Zaps on check-in">
           <input
@@ -428,15 +428,14 @@ export function NodeForm({
           />
         </Field>
         <Field label="How often it can be claimed">
-          <select
+          <Select
             value={form.capture_rule}
             onChange={(e) => set('capture_rule', e.target.value)}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           >
             <option value="once_per_user">Once per member</option>
             <option value="repeatable">Repeatable</option>
             <option value="once_global">First scan only</option>
-          </select>
+          </Select>
         </Field>
         <Field label="Expires (optional)">
           <input
@@ -447,10 +446,9 @@ export function NodeForm({
           />
         </Field>
         <Field label="Partner (optional)">
-          <select
+          <Select
             value={form.partner_id ?? ''}
             onChange={(e) => set('partner_id', e.target.value || null)}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           >
             <option value="">Community code (no partner)</option>
             {partners.map((p) => (
@@ -458,7 +456,7 @@ export function NodeForm({
                 {p.name}
               </option>
             ))}
-          </select>
+          </Select>
         </Field>
         <Field label="Limit total claims (optional)">
           <input

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/field'
 
 // Destructive-action gate (ADR-233 §5 destructive tiering, Atlassian danger modal +
 // NN/g). For risky-but-recoverable actions. Rules baked in: the action is NAMED on the
@@ -66,11 +67,11 @@ export function DangerModal({
             <span className="text-meta font-medium text-muted">
               Type <span className="font-bold text-text">{requireTyping}</span> to confirm
             </span>
-            <input
+            <Input
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
               autoComplete="off"
-              className="mt-1 w-full rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text focus:border-danger focus:outline-none focus:ring-2 focus:ring-danger/30"
+              className="mt-1 focus:border-danger focus:ring-danger/30"
             />
           </label>
         )}

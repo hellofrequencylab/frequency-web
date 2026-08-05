@@ -25,6 +25,7 @@ import {
 import { EmptyState } from '@/components/ui/empty-state'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Dialog } from '@/components/ui/dialog'
+import { Select } from '@/components/ui/select'
 import {
   isRecordingPublic,
   RECORDING_VISIBILITIES,
@@ -548,20 +549,21 @@ function EpisodePanel({
                   <div className="flex flex-wrap items-center gap-2 pl-6">
                     <label className="flex items-center gap-1.5">
                       <span className="text-3xs font-semibold uppercase tracking-wide text-muted">Who can see</span>
-                      <select
+                      <Select
                         value={ep.visibility}
                         disabled={pending}
                         onChange={(e) =>
                           onSetVisibility(ep.id, e.target.value as RecordingVisibility, ep.publishedAt)
                         }
-                        className="rounded-lg border border-border bg-surface px-2 py-1 text-3xs text-text outline-none focus:border-primary"
+                        className="text-3xs"
+                        wrapperClassName="inline-block w-max max-w-full"
                       >
                         {RECORDING_VISIBILITIES.map((v) => (
                           <option key={v} value={v}>
                             {VISIBILITY_LABEL[v]}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </label>
                     <label className="flex items-center gap-1.5">
                       <span className="text-3xs font-semibold uppercase tracking-wide text-muted">Publish date</span>
@@ -727,27 +729,26 @@ function ShowFormDialog({
             </label>
             <label className={label}>
               <span className={labelText}>Category</span>
-              <select
+              <Select
                 value={draft.itunesCategory}
                 onChange={(e) => set('itunesCategory', e.target.value)}
-                className={field}
               >
                 {ITUNES_CATEGORIES.map((c) => (
                   <option key={c} value={c}>
                     {c}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label className={label}>
               <span className={labelText}>Language</span>
-              <select value={draft.language} onChange={(e) => set('language', e.target.value)} className={field}>
+              <Select value={draft.language} onChange={(e) => set('language', e.target.value)}>
                 {LANGUAGES.map((l) => (
                   <option key={l.code} value={l.code}>
                     {l.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label className="flex items-end gap-2 pb-2">
               <input

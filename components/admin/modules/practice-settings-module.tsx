@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Wand2, ChevronRight } from 'lucide-react'
-import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Textarea, Input, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { InlineCover } from '@/components/admin/inline/inline-cover'
 import { RailAutosaveForm } from '@/components/admin/rail/rail-autosave-form'
@@ -29,7 +29,6 @@ import { CHANNEL_CATEGORIES, isChannelCategory } from '@/lib/channels/categories
 
 type PracticeData = NonNullable<Awaited<ReturnType<typeof getPracticeAdminData>>>
 
-const input = fieldClasses
 const fieldLabel = labelClasses
 
 export function PracticeSettingsModule() {
@@ -114,23 +113,23 @@ export function PracticeSettingsModule() {
       <RailAutosaveForm action={updatePracticeSettings.bind(null, data.id, data.slug)}>
         <label className="block space-y-1.5">
           <span className={fieldLabel}>Title</span>
-          <input name="title" defaultValue={data.title} required className={input} />
+          <Input name="title" defaultValue={data.title} required />
         </label>
 
         <label className="block space-y-1.5">
           <span className={fieldLabel}>Summary</span>
-          <textarea name="summary" defaultValue={data.summary ?? ''} rows={2} className={`${input} resize-none`} />
+          <Textarea name="summary" defaultValue={data.summary ?? ''} rows={2} className="resize-none" />
         </label>
 
         <label className="block space-y-1.5">
           <span className={fieldLabel}>Description</span>
-          <textarea name="description" defaultValue={data.description ?? ''} rows={3} className={`${input} resize-none`} />
+          <Textarea name="description" defaultValue={data.description ?? ''} rows={3} className="resize-none" />
         </label>
 
         <div className="grid grid-cols-2 gap-3">
           <label className="block space-y-1.5">
             <span className={fieldLabel}>Duration (minutes)</span>
-            <input name="duration_min" type="number" min={1} defaultValue={data.duration_min ?? ''} placeholder="Optional" className={input} />
+            <Input name="duration_min" type="number" min={1} defaultValue={data.duration_min ?? ''} placeholder="Optional" />
           </label>
           <label className="block space-y-1.5">
             <span className={fieldLabel}>Category</span>

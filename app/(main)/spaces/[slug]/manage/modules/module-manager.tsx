@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ChevronUp, ChevronDown, Eye, EyeOff, Lock, Loader2, Sparkles, Plus, Check } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { Dialog } from '@/components/ui/dialog'
+import { Select } from '@/components/ui/select'
 import {
   spaceModuleById,
   SPACE_MODULE_FAMILY_ORDER,
@@ -338,21 +339,22 @@ export function ModuleManager({
                         ) : (
                           <>
                             {/* Lowest role that may use this module (owner tunes team access here). */}
-                            <select
+                            <Select
                               aria-label={`${row.label}: lowest role`}
                               value={minRole[id]}
                               disabled={readOnly || busyId === id || !isOn}
                               onChange={(e) =>
                                 chooseRole(id, row.featureKey as SpaceFunctionKey, e.target.value as SpaceRole)
                               }
-                              className="h-7 rounded-lg border border-border bg-surface px-1.5 text-2xs text-text outline-none focus:border-primary disabled:opacity-40"
+                              className="text-2xs"
+                              wrapperClassName="inline-block w-max max-w-full"
                             >
                               {SPACE_ROLES.map((role) => (
                                 <option key={role} value={role}>
                                   {ROLE_LABEL[role]}
                                 </option>
                               ))}
-                            </select>
+                            </Select>
                             <Switch
                               checked={isOn}
                               aria-label={`${row.label}: turn ${isOn ? 'off' : 'on'}`}

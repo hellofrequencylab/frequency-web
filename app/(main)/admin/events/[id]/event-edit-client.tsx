@@ -12,6 +12,7 @@ import {
   setTicketTierActive,
 } from '../actions'
 import { DangerModal } from '@/components/admin/danger-modal'
+import { Select } from '@/components/ui/select'
 import type { SpaceAccessContext } from '@/lib/events/ticket-space-access'
 
 type EventData = {
@@ -500,20 +501,20 @@ function TierForm({
           <input name="name" type="text" defaultValue={initial?.name ?? ''} required disabled={disabled} className={tInput} placeholder="e.g. General, Supporter" />
         </div>
         <div>
-          <label className={tLbl}>Pricing mode</label>
-          <select
+          <label className={tLbl} htmlFor={`admin-pricing-mode-${initial?.id ?? 'new'}`}>Pricing mode</label>
+          <Select
+            id={`admin-pricing-mode-${initial?.id ?? 'new'}`}
             name="pricing_mode"
             value={mode}
             onChange={(e) => setMode(e.target.value as PricingMode)}
             disabled={disabled}
-            className={tInput}
           >
             {(Object.keys(PRICING_MODE_LABEL) as PricingMode[]).map((m) => (
               <option key={m} value={m}>
                 {PRICING_MODE_LABEL[m]}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 
@@ -566,21 +567,20 @@ function TierForm({
             <label className={tLbl} htmlFor={`admin-audience-${initial?.id ?? 'new'}`}>
               Who can buy
             </label>
-            <select
+            <Select
               id={`admin-audience-${initial?.id ?? 'new'}`}
               value={audience}
               onChange={(e) => setAudience(e.target.value)}
               disabled={disabled}
-              className={tInput}
+              emptyLabel="Everyone"
             >
-              <option value="">Everyone</option>
               <option value="members">{spaceAccess.spaceName} members (any tier)</option>
               {spaceAccess.membershipTiers.map((mt) => (
                 <option key={mt.id} value={mt.id}>
                   {spaceAccess.spaceName} · {mt.name} members
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         ) : (
           <p className="rounded-lg bg-surface px-3 py-2 text-meta text-muted">

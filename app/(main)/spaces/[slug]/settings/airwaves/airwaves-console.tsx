@@ -9,6 +9,7 @@
 import { useRef, useState, useTransition, type ReactNode } from 'react'
 import { Upload, Trash2, Music, Video } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Select } from '@/components/ui/select'
 import { SectionHeader } from '@/components/ui/section-header'
 import { RecordingBlockEmbed } from '@/components/airwaves/recording-block-embed'
 import { RecordingAttachManager } from '@/components/airwaves/recording-attach-manager'
@@ -192,19 +193,20 @@ export function AirwavesConsole({
                       <label className="sr-only" htmlFor={`vis-${r.id}`}>
                         Visibility
                       </label>
-                      <select
+                      <Select
                         id={`vis-${r.id}`}
                         value={r.visibility}
                         disabled={pending}
                         onChange={(e) => setVisibility(r.id, e.target.value as RecordingVisibility)}
-                        className="rounded-lg border border-border bg-surface px-2 py-1 text-2xs text-text outline-none focus:border-primary"
+                        className="text-2xs"
+                        wrapperClassName="inline-block w-max max-w-full"
                       >
                         {RECORDING_VISIBILITIES.map((v) => (
                           <option key={v} value={v}>
                             {VISIBILITY_LABEL[v]}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                       <button
                         type="button"
                         aria-label={`Delete ${r.title}`}

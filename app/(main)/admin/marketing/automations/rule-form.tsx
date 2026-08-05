@@ -8,6 +8,7 @@ import type {
   AutomationConditionOp,
 } from '@/lib/automations'
 import { createRule, editRule, type RuleResult } from './actions'
+import { Select } from '@/components/ui/select'
 
 const CHANNELS: { value: AutomationActionType; label: string }[] = [
   { value: 'email_actor', label: 'Email' },
@@ -119,15 +120,15 @@ export function RuleForm({
 
       <label className="block text-meta text-subtle">
         When this event happens:
-        <select
+        <Select
           value={triggerEvent}
           onChange={(e) => setTriggerEvent(e.target.value)}
-          className={`mt-1 ${inputClass}`}
+          wrapperClassName="mt-1"
         >
           {triggers.map((t) => (
             <option key={t} value={t}>{t}</option>
           ))}
-        </select>
+        </Select>
       </label>
 
       {/* Condition layer: every predicate must hold for the action to fire. */}
@@ -146,15 +147,18 @@ export function RuleForm({
                 placeholder="context field (e.g. source)"
                 className={`${inputClass} flex-1`}
               />
-              <select
+              {/* The old `w-40` here was already dead: it sat beside the `w-full` in `inputClass`
+                  and lost on emit order, so the control was full-width already. Dropped rather
+                  than carried over, which keeps the rendering identical. */}
+              <Select
+                aria-label="Comparison"
                 value={c.op}
                 onChange={(e) => updateCondition(i, { op: e.target.value as AutomationConditionOp })}
-                className={`${inputClass} w-40`}
               >
                 {OPS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
-              </select>
+              </Select>
               {needsValue && (
                 <input
                   value={c.value ?? ''}
@@ -185,15 +189,15 @@ export function RuleForm({
 
       <label className="block text-meta text-subtle">
         Then reach the member by:
-        <select
+        <Select
           value={actionType}
           onChange={(e) => setActionType(e.target.value as AutomationActionType)}
-          className={`mt-1 ${inputClass}`}
+          wrapperClassName="mt-1"
         >
           {CHANNELS.map((ch) => (
             <option key={ch.value} value={ch.value}>{ch.label}</option>
           ))}
-        </select>
+        </Select>
       </label>
 
       {isPush ? (

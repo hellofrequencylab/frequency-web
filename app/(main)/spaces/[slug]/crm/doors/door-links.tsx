@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Select } from '@/components/ui/select'
 import { Copy, Check, HeartHandshake, CalendarClock, Gift, Contact } from 'lucide-react'
 import { createWarmIntroLink, makeEventLink, makeMagnetLink, makeExchangeLink, type LinkResult } from './actions'
 
@@ -199,16 +200,16 @@ function EventMaker({ slug }: { slug: string }) {
             <label htmlFor="event-tier" className="mb-1.5 block text-body-sm font-semibold text-text">
               Attendance
             </label>
-            <select
+            <Select
               id="event-tier"
               value={tier}
               onChange={(e) => setTier(e.target.value)}
-              className="w-full rounded-control border border-border bg-surface px-4 py-2.5 text-body-sm text-text outline-none focus:border-border-strong"
-            >
-              <option value="attended">Attended</option>
-              <option value="rsvp">RSVP</option>
-              <option value="vip">VIP</option>
-            </select>
+              options={[
+                { value: 'attended', label: 'Attended' },
+                { value: 'rsvp', label: 'RSVP' },
+                { value: 'vip', label: 'VIP' },
+              ]}
+            />
           </div>
         </div>
         <MakeButton status={status}>Make the check-in link</MakeButton>

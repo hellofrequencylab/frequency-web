@@ -4,6 +4,7 @@ import { useRef, useState, useTransition, type FormEvent, type KeyboardEvent } f
 import { Sparkles, X } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
+import { Select } from '@/components/ui/select'
 import { COMMERCE_CATEGORIES, normalizeTags } from '@/lib/commerce/categories'
 import type {
   CommerceVariant,
@@ -298,17 +299,17 @@ export function ItemForm({
           <label htmlFor={`kind-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
             Type
           </label>
-          <select
+          <Select
             id={`kind-${mode}-${product?.id ?? 'new'}`}
             name="kind"
-            className={FIELD}
             value={kind}
             onChange={(e) => setKind(e.target.value as FormKind)}
-          >
-            <option value="product">Product</option>
-            <option value="service">Service</option>
-            <option value="ticket">Ticket</option>
-          </select>
+            options={[
+              { value: 'product', label: 'Product' },
+              { value: 'service', label: 'Service' },
+              { value: 'ticket', label: 'Ticket' },
+            ]}
+          />
           <p className="mt-1 text-meta text-subtle">
             Product ships or hands over. Service is a booking on your calendar. Ticket is a spot at one of
             your events.
@@ -346,16 +347,16 @@ export function ItemForm({
             Condition
           </label>
           {/* Business Spaces may list New or Used (R3). */}
-          <select
+          <Select
             id={`condition-${mode}-${product?.id ?? 'new'}`}
             name="condition"
-            className={FIELD}
             value={condition}
             onChange={(e) => setCondition(e.target.value as ProductCondition)}
-          >
-            <option value="new">New</option>
-            <option value="used">Used</option>
-          </select>
+            options={[
+              { value: 'new', label: 'New' },
+              { value: 'used', label: 'Used' },
+            ]}
+          />
         </div>
       )}
 
@@ -419,14 +420,13 @@ export function ItemForm({
           <label htmlFor={`category-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
             Category
           </label>
-          <select
+          <Select
             id={`category-${mode}-${product?.id ?? 'new'}`}
             name="category"
-            className={FIELD}
             value={category}
             onChange={(e) => setCategory(e.target.value)}
+            emptyLabel="Choose a category"
           >
-            <option value="">Choose a category</option>
             {COMMERCE_CATEGORIES.map((c) => (
               <optgroup key={c.value} label={c.label}>
                 <option value={c.value}>{c.label} (general)</option>
@@ -437,7 +437,7 @@ export function ItemForm({
                 ))}
               </optgroup>
             ))}
-          </select>
+          </Select>
         </div>
         <div>
           <label htmlFor={`tag-input-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
@@ -586,10 +586,9 @@ export function ItemForm({
             <label htmlFor={`priceModel-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
               Pricing
             </label>
-            <select
+            <Select
               id={`priceModel-${mode}-${product?.id ?? 'new'}`}
               name="priceModel"
-              className={FIELD}
               value={priceModel}
               onChange={(e) => setPriceModel(e.target.value as ServicePriceModel)}
             >
@@ -598,7 +597,7 @@ export function ItemForm({
                   {PRICE_MODEL_LABEL[m]}
                 </option>
               ))}
-            </select>
+            </Select>
             {showChoose && (
               <p className="mt-1 text-meta text-subtle">
                 Buyers name the amount. Set a suggested amount to anchor them, and an optional floor.

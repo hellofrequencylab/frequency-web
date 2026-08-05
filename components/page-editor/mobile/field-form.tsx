@@ -19,7 +19,7 @@
 
 import { useId } from 'react'
 import { ChevronRight, Plus, Trash2 } from 'lucide-react'
-import { fieldClasses } from '@/components/ui/field'
+import { Textarea, Input, fieldClasses } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
 
@@ -89,10 +89,9 @@ function FieldControl({
     case 'text':
       return (
         <Row label={label} htmlFor={id}>
-          <input
+          <Input
             id={id}
-            type="text"
-            className={`${fieldClasses} min-h-[44px]`}
+            type="text" className="min-h-[44px]"
             value={(value as string) ?? ''}
             onChange={(e) => onChange(e.target.value)}
           />
@@ -102,10 +101,9 @@ function FieldControl({
     case 'textarea':
       return (
         <Row label={label} htmlFor={id}>
-          <textarea
+          <Textarea
             id={id}
             rows={4}
-            className={fieldClasses}
             value={(value as string) ?? ''}
             onChange={(e) => onChange(e.target.value)}
           />
@@ -115,11 +113,10 @@ function FieldControl({
     case 'number':
       return (
         <Row label={label} htmlFor={id}>
-          <input
+          <Input
             id={id}
             type="number"
-            inputMode="decimal"
-            className={`${fieldClasses} min-h-[44px]`}
+            inputMode="decimal" className="min-h-[44px]"
             value={value === undefined || value === null ? '' : (value as number)}
             onChange={(e) => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
           />

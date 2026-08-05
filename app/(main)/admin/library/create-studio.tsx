@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles, Wand2, RotateCcw, Palette, Zap, Loader2 } from 'lucide-react'
 import { sanitizeSvg } from '@/lib/library/svg-sanitize'
+import { Select } from '@/components/ui/select'
 import { generateLoomCard, saveLoomCard, type LoomCardMode } from './vera-actions'
 import { generateWithRecraft, listBrandStyles } from './recraft-actions'
 import type { BrandStyle } from '@/lib/library/styles'
@@ -288,33 +289,28 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
             <>
               <label className="flex items-center gap-1.5 text-body-sm text-muted">
                 Count
-                <select
+                <Select
                   value={count}
                   onChange={(e) => setCount(Number(e.target.value))}
-                  className="rounded-control border border-border bg-surface px-2 py-1 text-body-sm"
-                >
-                  {[1, 2, 3, 4].map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
+                  wrapperClassName="inline-block w-max max-w-full"
+                  options={[1, 2, 3, 4].map((n) => ({ value: n, label: n }))}
+                />
               </label>
               {laneStyles.length > 0 && (
                 <label className="flex items-center gap-1.5 text-body-sm text-muted">
                   <Palette className="h-4 w-4" aria-hidden /> Style
-                  <select
+                  <Select
                     value={styleId}
                     onChange={(e) => setStyleId(e.target.value)}
-                    className="rounded-control border border-border bg-surface px-2 py-1 text-body-sm"
+                    wrapperClassName="inline-block w-max max-w-full"
+                    emptyLabel="Base"
                   >
-                    <option value="">Base</option>
                     {laneStyles.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
               )}
             </>

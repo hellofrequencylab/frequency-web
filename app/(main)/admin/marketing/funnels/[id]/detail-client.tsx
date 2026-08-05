@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { Plus, Pencil, Archive, ArrowLeft, FlaskConical, User } from 'lucide-react'
 import { listEntryTemplates, type EntryTemplate } from '@/lib/entry-points/templates'
 import type { DestinationGroup } from '@/lib/entry-points/destinations'
+import { Select } from '@/components/ui/select'
 import {
   EntryForm,
   EntryRow,
@@ -234,12 +235,14 @@ function OwnerControl({
     <span className="inline-flex flex-col gap-1">
       <span className="inline-flex items-center gap-1">
         <User className="h-3 w-3 text-subtle" />
-        <select
+        <Select
           autoFocus
+          aria-label="Owner"
           defaultValue={owner?.ownerId ?? ''}
           onChange={(e) => reassign(e.target.value)}
           disabled={pending}
-          className="rounded-md border border-border bg-canvas px-1.5 py-0.5 text-2xs text-text"
+          className="text-2xs"
+          wrapperClassName="inline-block w-max max-w-full"
         >
           <option value="" disabled>Assign to…</option>
           {members.map((m) => (
@@ -247,7 +250,7 @@ function OwnerControl({
               {m.name}{m.role !== 'crew' ? ` · ${m.role}` : ''}
             </option>
           ))}
-        </select>
+        </Select>
         <button onClick={() => setOpen(false)} className="text-2xs text-muted hover:text-text">×</button>
       </span>
       {error && <span role="alert" className="text-2xs text-danger">{error}</span>}

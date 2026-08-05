@@ -11,6 +11,7 @@ import {
   type TouchStatus,
 } from '@/lib/messaging/control-panel'
 
+import { Input } from '@/components/ui/field'
 // The Messaging control panel body (CRM Phase 5, ask #10 — "who got what"). ONE read-only ledger of
 // every outbound touch: Space campaign sends (outreach_sends) and broadcast Dispatch fan-outs
 // (dispatch_recipients), engagement-upgraded from email_events, with the in-flight async lane
@@ -109,12 +110,12 @@ export function MessagingControlPanel({ data }: { data: ControlPanelData }) {
         </label>
         <label className="flex flex-col gap-1 text-2xs font-bold uppercase tracking-wide text-muted">
           Person
-          <input
+          <Input
             type="search"
             name="q"
             defaultValue={filters.q ?? ''}
             placeholder="name or email"
-            className="min-w-[10rem] rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-body-sm font-normal normal-case text-text"
+            className="min-w-[10rem] bg-surface-elevated !px-2.5 !py-1.5 font-normal normal-case"
           />
         </label>
         <label className="flex flex-col gap-1 text-2xs font-bold uppercase tracking-wide text-muted">

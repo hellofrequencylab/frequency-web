@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Check, X, CalendarPlus } from 'lucide-react'
 import { isError, type ActionResult } from '@/lib/action-result'
+import { Select } from '@/components/ui/select'
 import {
   requestVenueHold,
   acceptVenueHold,
@@ -153,17 +154,17 @@ export function VenueHoldsPanel({
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="text-meta font-semibold text-text">
               Venue
-              <select
+              <Select
                 value={venueId}
                 onChange={(e) => setVenueId(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text"
+                wrapperClassName="mt-1"
               >
                 {collaborators.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label className="text-meta font-semibold text-text">
               What for

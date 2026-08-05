@@ -12,6 +12,7 @@ import {
   type FunnelDestination,
 } from '@/lib/onboarding/beta-sequences'
 import { FUNNEL_ICON_NAMES } from '@/lib/onboarding/funnel-icons'
+import { Select } from '@/components/ui/select'
 import type { SequenceOverride } from '@/lib/onboarding/sequence-overrides'
 import BetaInduction from '@/app/onboarding/beta/induction'
 import { saveDefaultBetaCopy, resetDefaultBetaCopy } from './actions'
@@ -473,17 +474,16 @@ export function SplashCopyEditor({
                   </div>
                   <div>
                     <label className={LABEL} htmlFor={`slide2-icon-${i}`}>Icon</label>
-                    <select
+                    <Select
                       id={`slide2-icon-${i}`}
-                      className={FIELD}
                       value={row.icon}
                       onChange={(e) => setSlide2Field(i, 'icon', e.target.value)}
+                      emptyLabel="Default icon"
                     >
-                      <option value="">Default icon</option>
                       {FUNNEL_ICON_NAMES.map((name) => (
                         <option key={name} value={name}>{name}</option>
                       ))}
-                    </select>
+                    </Select>
                   </div>
                 </div>
               ))}
@@ -522,9 +522,8 @@ export function SplashCopyEditor({
                     </div>
                     <div>
                       <label className={LABEL} htmlFor={`slide3-art-${i}`}>Art</label>
-                      <select
+                      <Select
                         id={`slide3-art-${i}`}
-                        className={FIELD}
                         value={artValue}
                         onChange={(e) => setSlide3Art(i, e.target.value)}
                       >
@@ -532,7 +531,7 @@ export function SplashCopyEditor({
                           <option key={kind} value={kind}>{kind}</option>
                         ))}
                         <option value="image">Image URL</option>
-                      </select>
+                      </Select>
                     </div>
                     {row.art.kind === 'image' && (
                       <div>

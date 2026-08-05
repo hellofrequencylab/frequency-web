@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useId, useState, useTransition } from 'react'
+import { Select } from '@/components/ui/select'
 import { Pencil, Check, X } from 'lucide-react'
 import { updateNexus } from '../actions'
 import { Button } from '@/components/ui/button'
@@ -40,6 +41,8 @@ function NexusForm({ initial, mentors, onSave, onCancel, isPending, error }: {
   isPending: boolean
   error:     string | null
 }) {
+  // Ids for the label associations below, scoped per open form.
+  const formId = useId()
   const [name,     setName]     = useState(initial?.name ?? '')
   const [cap,      setCap]      = useState(String(initial?.member_cap ?? 100))
   const [mentorId, setMentorId] = useState(initial?.mentor_id ?? '')
@@ -66,18 +69,17 @@ function NexusForm({ initial, mentors, onSave, onCancel, isPending, error }: {
         <input type="number" min="1" max="9999" value={cap} onChange={e => setCap(e.target.value)} disabled={isPending} className={input} />
       </div>
       <div>
-        <label className={lbl}>Status</label>
-        <select value={status} onChange={e => setStatus(e.target.value)} disabled={isPending} className={input}>
+        <label className={lbl} htmlFor={`${formId}-status`}>Status</label>
+        <Select id={`${formId}-status`} value={status} onChange={e => setStatus(e.target.value)} disabled={isPending}>
           {STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-        </select>
+        </Select>
       </div>
       {mentors.length > 0 && (
         <div>
-          <label className={lbl}>Mentor</label>
-          <select value={mentorId} onChange={e => setMentorId(e.target.value)} disabled={isPending} className={input}>
-            <option value="">- Assign later -</option>
+          <label className={lbl} htmlFor={`${formId}-mentor`}>Mentor</label>
+          <Select id={`${formId}-mentor`} value={mentorId} onChange={e => setMentorId(e.target.value)} disabled={isPending} emptyLabel="- Assign later -">
             {mentors.map(m => <option key={m.id} value={m.id}>{m.display_name}</option>)}
-          </select>
+          </Select>
         </div>
       )}
       <div className="flex items-center gap-2 pt-1 sm:col-span-2">

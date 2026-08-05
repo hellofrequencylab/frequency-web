@@ -74,7 +74,7 @@ function GalleryImagesField({
                 <X className="h-3.5 w-3.5" aria-hidden />
               </button>
               <GripVertical
-                className="absolute left-1 top-1 h-3.5 w-3.5 text-white/80 opacity-0 drop-shadow group-hover:opacity-100"
+                className="absolute left-1 top-1 h-3.5 w-3.5 text-on-media/80 opacity-0 drop-shadow group-hover:opacity-100"
                 aria-hidden
               />
             </li>

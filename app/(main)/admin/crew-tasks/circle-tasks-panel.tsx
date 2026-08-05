@@ -5,12 +5,13 @@
 // remove a task. Server actions re-check circle.assignTask on every write —
 // this panel is affordance only.
 
-import { useState, useTransition } from 'react'
+import { useId, useState, useTransition } from 'react'
 import Image from 'next/image'
 import { Check, Hand, Plus, Trash2, Undo2, X } from 'lucide-react'
 import { createCircleTask, deleteCircleTask, releaseCircleTask } from '../../crew/circle-task-actions'
 import type { CircleTask } from '@/lib/crew/circle-tasks'
 import { getInitials } from '@/lib/utils'
+import { Select } from '@/components/ui/select'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 const TASK_TYPES = [
@@ -39,6 +40,8 @@ function NewCircleTaskForm({
   const [zaps, setZaps]     = useState('10')
   const [verify, setVerify] = useState(false)
   const [error, setError]   = useState<string | null>(null)
+  // One panel per circle can be open at a time, but the ids still have to be instance-scoped.
+  const formId = useId()
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -71,12 +74,12 @@ function NewCircleTaskForm({
       </div>
 
       <div>
-        <label className={label}>Type</label>
-        <select value={type} onChange={(e) => setType(e.target.value)} disabled={isPending} className={input}>
+        <label className={label} htmlFor={`${formId}-type`}>Type</label>
+        <Select id={`${formId}-type`} value={type} onChange={(e) => setType(e.target.value)} disabled={isPending}>
           {TASK_TYPES.map((t) => (
             <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div>

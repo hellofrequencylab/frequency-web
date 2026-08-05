@@ -5,6 +5,8 @@ import { Plus, Zap } from 'lucide-react'
 import { createCrewTask } from '@/app/(main)/admin/actions'
 import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
 import { TIER_ORDER, TIER_ZAPS, TIER_LABELS } from '@/lib/practices/tiers'
+import { Field, Input } from '@/components/ui/field'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const TASK_TYPES = ['attendance', 'hosting', 'volunteering', 'content', 'referral', 'other'] as const
 type TaskType = typeof TASK_TYPES[number]
@@ -61,18 +63,16 @@ export function NewTaskCompose({
         submitLabel="Create Task" pendingLabel="Creating…"
         submitDisabled={!name.trim()} isPending={isPending} error={error}
       >
-        <div>
-          <label className={cmLabel}>Task name *</label>
-          <input type="text" value={name} onChange={e => setName(e.target.value)}
-            placeholder="e.g. Attend a circle event" required disabled={isPending} className={cmInput} />
-        </div>
-        <div>
-          <label className={cmLabel}>Type</label>
+        <Field label="Task name *">
+          <Input type="text" value={name} onChange={e => setName(e.target.value)}
+            placeholder="e.g. Attend a circle event" required disabled={isPending} />
+        </Field>
+        <Field label="Type">
           <select value={taskType} onChange={e => setTaskType(e.target.value as TaskType)}
             disabled={isPending} className={cmInput}>
             {TASK_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
           </select>
-        </div>
+        </Field>
         <div>
           {/* Effort tier (ADR-442): a constrained Light/Standard/Heavy range, never a free
               number, so a task can't be set to an unlimited reward. */}
@@ -103,16 +103,10 @@ export function NewTaskCompose({
           </div>
         </div>
         <div className="flex items-center gap-4 pt-2">
-          <label className="flex items-center gap-2 text-meta text-muted cursor-pointer">
-            <input type="checkbox" checked={isRepeatable} onChange={e => setIsRepeatable(e.target.checked)}
-              disabled={isPending} className="rounded border-border-strong" />
-            Repeatable
-          </label>
-          <label className="flex items-center gap-2 text-meta text-muted cursor-pointer">
-            <input type="checkbox" checked={requiresVerification} onChange={e => setRequiresVerification(e.target.checked)}
-              disabled={isPending} className="rounded border-border-strong" />
-            Requires verification
-          </label>
+          <Checkbox checked={isRepeatable} onChange={e => setIsRepeatable(e.target.checked)}
+            disabled={isPending} label="Repeatable" />
+          <Checkbox checked={requiresVerification} onChange={e => setRequiresVerification(e.target.checked)}
+            disabled={isPending} label="Requires verification" />
         </div>
       </CreateModal>
     </>

@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { MessageSquare, Check } from 'lucide-react'
 import { isError } from '@/lib/action-result'
+import { Select } from '@/components/ui/select'
 import { sendSmsCode, verifySmsCode, saveSmsPreferences, type SmsPreferences } from './sms-actions'
 
 // The SMS section of the notifications settings (ADR-256). Two stages:
@@ -225,11 +226,13 @@ export function SmsForm({
               </p>
               <div className="mt-2 flex items-center gap-2 text-body-sm text-text">
                 <HourSelect
+                  label="Quiet hours start"
                   value={prefs.sms_quiet_start_hour}
                   onChange={(v) => setQuietHour('sms_quiet_start_hour', v)}
                 />
                 <span className="text-muted">to</span>
                 <HourSelect
+                  label="Quiet hours end"
                   value={prefs.sms_quiet_end_hour}
                   onChange={(v) => setQuietHour('sms_quiet_end_hour', v)}
                 />
@@ -250,19 +253,30 @@ export function SmsForm({
   )
 }
 
-function HourSelect({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+// `label` is required: the two pickers sit either side of the word "to" with no <label> of
+// their own, so without it both announce as an unnamed combobox.
+function HourSelect({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: number
+  onChange: (v: number) => void
+}) {
   return (
-    <select
+    <Select
+      aria-label={label}
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
+      wrapperClassName="inline-block w-max max-w-full"
     >
       {Array.from({ length: 24 }, (_, h) => (
         <option key={h} value={h}>
           {formatHour(h)}
         </option>
       ))}
-    </select>
+    </Select>
   )
 }
 

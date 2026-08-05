@@ -11,6 +11,7 @@ import {
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import {
   assignRole, deactivateMember, reactivateMember,
   sendMagicLink, updateMemberProfile, deleteUserAccount,
@@ -84,14 +85,15 @@ export function MemberAdmin({
             className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-surface text-body-sm focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30"
           />
         </div>
-        <select
+        <Select
+          aria-label="Filter by role"
           value={roleFilter}
           onChange={e => setRoleFilter(e.target.value)}
-          className="rounded-lg border border-border bg-surface px-3 py-2 text-body-sm"
+          wrapperClassName="inline-block w-max max-w-full"
         >
           <option value="all">All roles</option>
           {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-        </select>
+        </Select>
         <label className="flex items-center gap-1.5 text-meta text-muted cursor-pointer">
           <input
             type="checkbox"
@@ -273,15 +275,18 @@ function MemberRow({
               </div>
             </div>
             <div>
+              {/* A <p> is not a label. The role picker takes its name from the member it acts on,
+                  which is also what makes the name unique in a list of expanded members. */}
               <p className="text-body-sm font-bold text-text mb-1">Role</p>
-              <select
+              <Select
+                aria-label={`Role for ${m.display_name}`}
                 value={m.community_role}
                 onChange={e => handleRoleChange(e.target.value)}
                 disabled={isPending}
-                className="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-meta disabled:opacity-50"
+                className="text-meta"
               >
                 {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
+              </Select>
             </div>
           </div>
 

@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { Plus, Archive, ChevronRight } from 'lucide-react'
 import { listEntryTemplates } from '@/lib/entry-points/templates'
 import type { Campaign } from '@/lib/entry-points/campaigns'
+import { Select } from '@/components/ui/select'
 import { createCampaign, archiveCampaign } from './actions'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { DangerModal } from '@/components/admin/danger-modal'
@@ -148,12 +149,11 @@ function CampaignForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
         </label>
         <label className="block">
           <span className="mb-1 block text-meta font-medium text-subtle">Default goal (optional)</span>
-          <select value={goal} onChange={(e) => setGoal(e.target.value)} className={field}>
-            <option value="">None</option>
+          <Select value={goal} onChange={(e) => setGoal(e.target.value)} emptyLabel="None">
             {listEntryTemplates().map((t) => (
               <option key={t.id} value={t.id}>{t.label}</option>
             ))}
-          </select>
+          </Select>
         </label>
       </div>
       {error && <p className="text-meta text-danger">{error}</p>}

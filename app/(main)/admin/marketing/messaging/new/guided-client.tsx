@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Sparkles, PencilRuler, Lightbulb, Megaphone, Activity, Check, Loader2 } from 'lucide-react'
 import { WizardProgress } from '@/components/templates'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { Banner } from '@/components/admin/status'
 import { cn } from '@/lib/utils'
 import { isError } from '@/lib/action-result'
@@ -190,13 +191,13 @@ function QuestionsStep({
             <label className="block text-meta font-semibold text-text" htmlFor="msg-audience">
               Who is it for?
             </label>
-            <select id="msg-audience" value={audience} onChange={(e) => setAudience(e.target.value)} className={fieldCls}>
+            <Select id="msg-audience" value={audience} onChange={(e) => setAudience(e.target.value)}>
               {segments.map((s) => (
                 <option key={s.key} value={s.key}>
                   {s.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         )}
 
@@ -211,13 +212,13 @@ function QuestionsStep({
           <label className="block text-meta font-semibold text-text" htmlFor="msg-tone">
             Tone
           </label>
-          <select id="msg-tone" value={tone} onChange={(e) => setTone(e.target.value)} className={fieldCls}>
+          <Select id="msg-tone" value={tone} onChange={(e) => setTone(e.target.value)}>
             {MESSAGING_TONES.map((t) => (
               <option key={t.key} value={t.key}>
                 {t.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div>

@@ -10,6 +10,7 @@ import { isError } from '@/lib/action-result'
 import { LISTING_KINDS, type ListingKind } from '@/lib/marketplace'
 import { getBrowserPosition } from '@/lib/geo-browser'
 import { createListingAction } from '@/app/(main)/classifieds/actions'
+import { Input, Textarea } from '@/components/ui/field'
 
 const FIELD = 'rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
@@ -104,13 +105,13 @@ export function NewListingButton({ className }: { className?: string }) {
           </select>
         </StudioField>
         <StudioField label="Price / terms (free text)">
-          <input value={priceNote} onChange={(e) => setPriceNote(e.target.value)} maxLength={80} placeholder="e.g. $20, or a trade, or free" className={FIELD} />
+          <Input value={priceNote} onChange={(e) => setPriceNote(e.target.value)} maxLength={80} placeholder="e.g. $20, or a trade, or free" />
         </StudioField>
         <StudioField label="Neighborhood">
-          <input value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} maxLength={80} placeholder="optional" className={FIELD} />
+          <Input value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} maxLength={80} placeholder="optional" />
         </StudioField>
         <StudioField label="City">
-          <input value={city} onChange={(e) => setCity(e.target.value)} maxLength={80} placeholder="optional" className={FIELD} />
+          <Input value={city} onChange={(e) => setCity(e.target.value)} maxLength={80} placeholder="optional" />
         </StudioField>
       </div>
 
@@ -130,13 +131,13 @@ export function NewListingButton({ className }: { className?: string }) {
 
       <div className="mt-4">
         <StudioField label="Image URLs (one per line)">
-          <textarea value={images} onChange={(e) => setImages(e.target.value)} rows={2} placeholder="https://…  (optional)" className={FIELD} />
+          <Textarea value={images} onChange={(e) => setImages(e.target.value)} rows={2} placeholder="https://…  (optional)" />
         </StudioField>
       </div>
 
       <div className="mt-4">
         <StudioField label="Details">
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} maxLength={2000} placeholder="Condition, size, when/where to pick up, anything useful…" className={FIELD} />
+          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} maxLength={2000} placeholder="Condition, size, when/where to pick up, anything useful…" />
         </StudioField>
       </div>
 

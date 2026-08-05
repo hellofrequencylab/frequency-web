@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { UserX } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
+import { Select } from '@/components/ui/select'
 import { assignRole, deactivateMember } from './actions'
 import type { SeasonRank } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
@@ -207,18 +208,22 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
                 {/* Controls. Janitor-only (the actions are staff-gated), visible on hover */}
                 {canManage && (
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
-                    <select
+                    {/* Named after the member the row belongs to: a bare "Role" would repeat once
+                        per member and name none of them. */}
+                    <Select
+                      aria-label={`Role for ${m.displayName}`}
                       defaultValue={m.role}
                       disabled={isPending}
                       onChange={(e) => handleRoleChange(m.profileId, e.target.value)}
-                      className="rounded-md border border-border bg-surface px-2 py-1 text-meta text-text focus:border-border-strong focus:outline-none cursor-pointer disabled:opacity-50"
+                      className="text-meta"
+                      wrapperClassName="inline-block w-max max-w-full"
                     >
                       {ROLES.map((r) => (
                         <option key={r} value={r}>
                           {ROLE_LABEL[r]}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                     <button
                       onClick={() => setConfirmId(m.profileId)}
                       title="Deactivate member"

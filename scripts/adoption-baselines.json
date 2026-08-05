@@ -4,26 +4,26 @@
     "A count may HOLD or SHRINK; a rise fails CI. Re-freeze after a sweep with",
     "`node scripts/check-adoption.mjs --update --reason \"<which sweep retired them>\"`, so this file reads",
     "as the scoreboard of what the sweeps bought.",
-    "Each entry: key \u00b7 description \u00b7 patterns (ripgrep-class, JS RegExp source, matched with the `g` flag) \u00b7",
-    "optional `absent` patterns that disqualify a file \u00b7 include/exclude globs over the POSIX repo-relative",
-    "path \u00b7 mode (`matches` counts occurrences, `files` counts qualifying files) \u00b7 baseline \u00b7 `frozen`.",
+    "Each entry: key · description · patterns (ripgrep-class, JS RegExp source, matched with the `g` flag) ·",
+    "optional `absent` patterns that disqualify a file · include/exclude globs over the POSIX repo-relative",
+    "path · mode (`matches` counts occurrences, `files` counts qualifying files) · baseline · `frozen`.",
     "",
     "PROVENANCE (`frozen` + `history`, added 2026-08-04). `baseline vs current` cannot tell you whether the",
     "baseline itself was ever justified, and the first `--update` proved it: run blind at the END of the",
-    "wave, it wrote every measured number down \u2014 the sweeps' wins AND a 494 \u2192 529 raise on raw-button-bg \u2014",
+    "wave, it wrote every measured number down — the sweeps' wins AND a 494 → 529 raise on raw-button-bg —",
     "and every class then reported green. (The earlier note here claimed these numbers were seeded at the",
     "START of the wave; they were not. Every class read exactly `held`, which only happens when the freeze",
     "and the measurement are the same run.) So each baseline now says where it came from:",
-    "  \u00b7 frozen.at        \u2014 the date this number was frozen",
-    "  \u00b7 frozen.value     \u2014 must equal `baseline`; a hand edit without a reason now FAILS the gate",
-    "  \u00b7 frozen.from      \u2014 the number it replaced",
-    "  \u00b7 frozen.direction \u2014 seed | lowered (a sweep retired sites) | raised (debt grew, and the ratchet",
+    "  · frozen.at        — the date this number was frozen",
+    "  · frozen.value     — must equal `baseline`; a hand edit without a reason now FAILS the gate",
+    "  · frozen.from      — the number it replaced",
+    "  · frozen.direction — seed | lowered (a sweep retired sites) | raised (debt grew, and the ratchet",
     "                       stopped guarding it) | rebased (the measurement basis changed, so the old",
     "                       number was answering a different question and no credit is owed)",
-    "  \u00b7 frozen.basis     \u2014 fingerprint of mode + patterns + absent + include + exclude. Change any of",
+    "  · frozen.basis     — fingerprint of mode + patterns + absent + include + exclude. Change any of",
     "                       them and the gate FAILS rather than compare across incomparable numbers.",
-    "  \u00b7 frozen.reason    \u2014 one sentence, printed on every run",
-    "`raised` and `rebased` are flagged \u26a0\ufe0f on every run until a sweep brings the number back down."
+    "  · frozen.reason    — one sentence, printed on every run",
+    "`raised` and `rebased` are flagged ⚠️ on every run until a sweep brings the number back down."
   ],
   "roots": [
     "app",
@@ -49,14 +49,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 3673,
+      "baseline": 3005,
       "frozen": {
         "at": "2026-08-05",
-        "value": 3673,
+        "value": 3005,
         "direction": "lowered",
         "basis": "6a00b952da5c",
-        "reason": "EARNED FALL, 3706 -> 3673, booking a sweep that already shipped and was never re-frozen behind. Measured per revision: 3743 at 98daa81ed, 3681 after 6056d0a82 (#2046, the monochrome/Phase-2 close), 3673 after b9e7fbaad (#2047, the post-merge audit fixes), and 3673 unchanged through #2048 and the two gate commits since. The freeze at 3706 was taken mid-#2046, so the remaining -33 is the tail of that sweep plus #2047 - real retired radius literals in committed code, not an instrument move. Distinct from the raw-button-bg entry re-frozen in the same pass, which changed a PATTERN and is recorded as rebased: nothing about this class was measured differently, only less of it exists.",
-        "from": 3706
+        "reason": "The rounded-* sweep across app/** and components/**, retiring literal radii onto the rounded-lg/2xl/pill scale: 3673 -> 3005. CORRECTION TO THE RECORD: three commit messages already pushed on this branch cite this floor at 3533 and 3220. Neither was ever true of a settled tree -- I committed in batches while the sweep agents were still writing, so each message froze a reading its own working tree had already moved past. 3005 is the first number measured with every agent stopped and tsc/eslint/vitest green over the result. Those commits are pushed and are not being rewritten; this reason is where the corrected number lives.",
+        "from": 3673
       },
       "history": [
         {
@@ -64,7 +64,7 @@
           "from": 5543,
           "to": 5468,
           "direction": "lowered",
-          "reason": "Sweep, same basis as the addendum audit. The step half of the census reproduces the audit exactly (rounded-(sm|md|lg|xl|2xl|3xl) = 4,474, unchanged); the entire \u221275 is rounded-full (1,069 \u2192 994), retired by the ProgressTrack sweep and the card passes."
+          "reason": "Sweep, same basis as the addendum audit. The step half of the census reproduces the audit exactly (rounded-(sm|md|lg|xl|2xl|3xl) = 4,474, unchanged); the entire −75 is rounded-full (1,069 → 994), retired by the ProgressTrack sweep and the card passes."
         },
         {
           "at": "2026-08-04",
@@ -142,6 +142,13 @@
           "to": 3673,
           "direction": "lowered",
           "reason": "EARNED FALL, 3706 -> 3673, booking a sweep that already shipped and was never re-frozen behind. Measured per revision: 3743 at 98daa81ed, 3681 after 6056d0a82 (#2046, the monochrome/Phase-2 close), 3673 after b9e7fbaad (#2047, the post-merge audit fixes), and 3673 unchanged through #2048 and the two gate commits since. The freeze at 3706 was taken mid-#2046, so the remaining -33 is the tail of that sweep plus #2047 - real retired radius literals in committed code, not an instrument move. Distinct from the raw-button-bg entry re-frozen in the same pass, which changed a PATTERN and is recorded as rebased: nothing about this class was measured differently, only less of it exists."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 3673,
+          "to": 3005,
+          "direction": "lowered",
+          "reason": "The rounded-* sweep across app/** and components/**, retiring literal radii onto the rounded-lg/2xl/pill scale: 3673 -> 3005. CORRECTION TO THE RECORD: three commit messages already pushed on this branch cite this floor at 3533 and 3220. Neither was ever true of a settled tree -- I committed in batches while the sweep agents were still writing, so each message froze a reading its own working tree had already moved past. 3005 is the first number measured with every agent stopped and tsc/eslint/vitest green over the result. Those commits are pushed and are not being rewritten; this reason is where the corrected number lives."
         }
       ]
     },
@@ -187,7 +194,7 @@
           "from": 0,
           "to": 0,
           "direction": "rebased",
-          "reason": "Scope parity only, no sweep: include gains .mts to match literal-radius, shadow-literals, white-black-literals and subtle-tiny-type, which all watch {ts,tsx,mts}. literal-type was the only utility-class entry omitting it \u2014 inert today (0 .mts files under app/components/lib) but exactly the divergence its own 2026-08-05 rebase claimed to have closed. Count stays 0; only the basis moves."
+          "reason": "Scope parity only, no sweep: include gains .mts to match literal-radius, shadow-literals, white-black-literals and subtle-tiny-type, which all watch {ts,tsx,mts}. literal-type was the only utility-class entry omitting it — inert today (0 .mts files under app/components/lib) but exactly the divergence its own 2026-08-05 rebase claimed to have closed. Count stays 0; only the basis moves."
         },
         {
           "at": "2026-08-05",
@@ -226,7 +233,7 @@
           "from": 684,
           "to": 54,
           "direction": "lowered",
-          "reason": "Sweep, same basis as the addendum audit. The shadow\u2192lift codemod landed: literal shadow-* fell 684 \u2192 54 while lift-* adopters rose 33 \u2192 657, so the \u2212630 is matched by +624 adoptions."
+          "reason": "Sweep, same basis as the addendum audit. The shadow→lift codemod landed: literal shadow-* fell 684 → 54 while lift-* adopters rose 33 → 657, so the −630 is matched by +624 adoptions."
         },
         {
           "at": "2026-08-05",
@@ -253,7 +260,7 @@
     },
     {
       "key": "white-black-literals",
-      "description": "Hardcoded monochromes (-white / -black / white\\/NN) that ignore theme generations \u2014 the only bug class in the census",
+      "description": "Hardcoded monochromes (-white / -black / white\\/NN) that ignore theme generations — the only bug class in the census",
       "mode": "matches",
       "patterns": [
         "(?:-white\\b|white/\\d+|(?<!font)-black\\b)"
@@ -267,14 +274,14 @@
         "app/**/opengraph-image.tsx",
         "app/**/twitter-image.tsx"
       ],
-      "baseline": 54,
+      "baseline": 53,
       "frozen": {
         "at": "2026-08-05",
-        "value": 54,
+        "value": 53,
         "direction": "lowered",
         "basis": "564513ba9761",
-        "reason": "EARNED FALL, 61 -> 54, the tail of a sweep that already shipped. Measured per revision this class ran 214 -> 54 inside 6056d0a82 (#2046, \"Retire the monochromes that ignored every theme\"), and has held at 54 through #2047, #2048 and the two gate commits since. The 61 freeze was taken mid-sweep, so these last 7 are hardcoded monochromes that #2046 genuinely retired and nobody wrote down - the ratchets own description calls this the only BUG class in the census, so leaving its floor 7 above reality left room for seven of them to come back green. Real code, not a measurement change: the pattern and scope are untouched, which is why this is lowered and not rebased.",
-        "from": 61
+        "reason": "54 -> 53. One literal, incidental to the rounded-* sweep rather than the target of it: a site whose radius was being retired was also carrying a bare white/black and took the semantic token in the same edit. No sweep is claimed for this class -- it moved by one because one file happened to be in the path.",
+        "from": 54
       },
       "history": [
         {
@@ -282,7 +289,7 @@
           "from": 382,
           "to": 297,
           "direction": "rebased",
-          "reason": "Part sweep, part scope change, so not comparable to the audit's 382. On the audit's basis the count is 316 today (66 sites genuinely retired); the remaining \u221219 comes from three exclusion globs the audit did not have (lib/og/**, opengraph-image.tsx, twitter-image.tsx), where a literal monochrome is correct because the surface is a raster."
+          "reason": "Part sweep, part scope change, so not comparable to the audit's 382. On the audit's basis the count is 316 today (66 sites genuinely retired); the remaining −19 comes from three exclusion globs the audit did not have (lib/og/**, opengraph-image.tsx, twitter-image.tsx), where a literal monochrome is correct because the surface is a raster."
         },
         {
           "at": "2026-08-05",
@@ -311,12 +318,19 @@
           "to": 54,
           "direction": "lowered",
           "reason": "EARNED FALL, 61 -> 54, the tail of a sweep that already shipped. Measured per revision this class ran 214 -> 54 inside 6056d0a82 (#2046, \"Retire the monochromes that ignored every theme\"), and has held at 54 through #2047, #2048 and the two gate commits since. The 61 freeze was taken mid-sweep, so these last 7 are hardcoded monochromes that #2046 genuinely retired and nobody wrote down - the ratchets own description calls this the only BUG class in the census, so leaving its floor 7 above reality left room for seven of them to come back green. Real code, not a measurement change: the pattern and scope are untouched, which is why this is lowered and not rebased."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 54,
+          "to": 53,
+          "direction": "lowered",
+          "reason": "54 -> 53. One literal, incidental to the rounded-* sweep rather than the target of it: a site whose radius was being retired was also carrying a bare white/black and took the semantic token in the same edit. No sweep is claimed for this class -- it moved by one because one file happened to be in the path."
         }
       ]
     },
     {
       "key": "subtle-tiny-type",
-      "description": "text-subtle paired with text-2xs/text-3xs on the same element \u2014 sub-AA by construction (Lift 3)",
+      "description": "text-subtle paired with text-2xs/text-3xs on the same element — sub-AA by construction (Lift 3)",
       "mode": "matches",
       "patterns": [
         "text-subtle[^\\n]{0,80}?text-(?:2xs|3xs)\\b",
@@ -343,7 +357,7 @@
           "from": 832,
           "to": 23,
           "direction": "rebased",
-          "reason": "Basis change, NOT a sweep \u2014 the AA pairing pass is still queued (addendum sweep #3). The audit's 832 is not reproducible from its own stated basis: text-subtle within 80 chars of text-2xs/3xs yields 23 same-line element pairings (43 if the window may cross newlines). 832 sits with the file-level co-occurrence populations (1,318 tiny-type occurrences in files that also use text-subtle), so it counted files' worth of tiny type, not element pairings. No credit is owed for the 809-site 'shrink'."
+          "reason": "Basis change, NOT a sweep — the AA pairing pass is still queued (addendum sweep #3). The audit's 832 is not reproducible from its own stated basis: text-subtle within 80 chars of text-2xs/3xs yields 23 same-line element pairings (43 if the window may cross newlines). 832 sits with the file-level co-occurrence populations (1,318 tiny-type occurrences in files that also use text-subtle), so it counted files' worth of tiny type, not element pairings. No credit is owed for the 809-site 'shrink'."
         },
         {
           "at": "2026-08-04",
@@ -391,7 +405,7 @@
           "from": 494,
           "to": 529,
           "direction": "raised",
-          "reason": "RAISE, and an instrument artifact rather than 35 new buttons \u2014 recorded rather than hidden. The addendum's stated basis reproduces at 529 today under BOTH ripgrep (-U --multiline-dotall) and this harness, and 494 is not reachable by any tried variation of scope, window, engine or match semantics (it corresponds to a 413-character window, not 500). The corpus is demonstrably the one the audit measured: 8 of 10 primitive adopter counts and the rounded-(sm..3xl) census (4,474) reproduce exactly. This metric is a 500-char proximity window over arbitrary JSX, so it reads formatting as much as buttons \u2014 collapsing indentation alone moves it 529 \u2192 564. Held at 529 until a basis that counts buttons replaces it (bg-primary inside the opening tag: 249)."
+          "reason": "RAISE, and an instrument artifact rather than 35 new buttons — recorded rather than hidden. The addendum's stated basis reproduces at 529 today under BOTH ripgrep (-U --multiline-dotall) and this harness, and 494 is not reachable by any tried variation of scope, window, engine or match semantics (it corresponds to a 413-character window, not 500). The corpus is demonstrably the one the audit measured: 8 of 10 primitive adopter counts and the rounded-(sm..3xl) census (4,474) reproduce exactly. This metric is a 500-char proximity window over arbitrary JSX, so it reads formatting as much as buttons — collapsing indentation alone moves it 529 → 564. Held at 529 until a basis that counts buttons replaces it (bg-primary inside the opening tag: 249)."
         },
         {
           "at": "2026-08-04",
@@ -439,7 +453,7 @@
     },
     {
       "key": "adhoc-progress",
-      "description": "Hand-rolled progress bars (pill/full track + inline width style) instead of the ProgressTrack primitive. The radius token is an alternation on purpose: this pattern originally keyed on `rounded-full`, which the radius sweep then RETIRED in favour of `rounded-pill` \u2014 including inside ProgressTrack itself. The gate went on reporting 0 not because no bar was hand-rolled but because the class it names had ceased to exist. `rounded-full` stays in the alternation so a reintroduction is still caught.",
+      "description": "Hand-rolled progress bars (pill/full track + inline width style) instead of the ProgressTrack primitive. The radius token is an alternation on purpose: this pattern originally keyed on `rounded-full`, which the radius sweep then RETIRED in favour of `rounded-pill` — including inside ProgressTrack itself. The gate went on reporting 0 not because no bar was hand-rolled but because the class it names had ceased to exist. `rounded-full` stays in the alternation so a reintroduction is still caught.",
       "mode": "matches",
       "patterns": [
         "rounded-(?:pill|full)[\\s\\S]{0,240}?style=\\{\\{\\s*width:"
@@ -468,7 +482,7 @@
           "from": 52,
           "to": 14,
           "direction": "lowered",
-          "reason": "Sweep, same basis as the addendum audit. ProgressTrack went from 0 adopters to 36 importers and 38 hand-rolled bars retired (52 \u2192 14)."
+          "reason": "Sweep, same basis as the addendum audit. ProgressTrack went from 0 adopters to 36 importers and 38 hand-rolled bars retired (52 → 14)."
         },
         {
           "at": "2026-08-04",
@@ -482,7 +496,7 @@
           "from": 0,
           "to": 14,
           "direction": "rebased",
-          "reason": "The pattern named a class that no longer exists. It keyed on rounded-full, and the radius sweep then retired rounded-full site-wide in favour of rounded-pill \u2014 including inside ProgressTrack itself. The gate went on reporting 0 not because no bar was hand-rolled but because its subject had been renamed out from under it. Widened to rounded-(pill|full); the true count is 14 across 12 files, among them components/gamification/standing-hero.tsx, which is a five-line copy of ProgressTrack's own render. 0 -> 14 is a measurement correction, not a regression."
+          "reason": "The pattern named a class that no longer exists. It keyed on rounded-full, and the radius sweep then retired rounded-full site-wide in favour of rounded-pill — including inside ProgressTrack itself. The gate went on reporting 0 not because no bar was hand-rolled but because its subject had been renamed out from under it. Widened to rounded-(pill|full); the true count is 14 across 12 files, among them components/gamification/standing-hero.tsx, which is a five-line copy of ProgressTrack's own render. 0 -> 14 is a measurement correction, not a regression."
         },
         {
           "at": "2026-08-05",
@@ -495,7 +509,7 @@
     },
     {
       "key": "bespoke-cards",
-      "description": "Files named *-card.tsx that render markup and do not compose EntityCard/PersonCard/StatCard/RowCard \u2014 browse cards owed to the kit",
+      "description": "Files named *-card.tsx that render markup and do not compose EntityCard/PersonCard/StatCard/RowCard — browse cards owed to the kit",
       "mode": "files",
       "patterns": [
         "className="
@@ -526,7 +540,7 @@
           "from": 35,
           "to": 23,
           "direction": "rebased",
-          "reason": "Mostly sweep, but the basis widened, so treat the \u221212 as \u221211 earned. 11 files adopted the kit; 1 more left the population because this entry excludes components/ui/*.tsx, and the `absent` set widened from EntityCard/RowCard to four primitives (inert today, wider than the audit's basis from here on)."
+          "reason": "Mostly sweep, but the basis widened, so treat the −12 as −11 earned. 11 files adopted the kit; 1 more left the population because this entry excludes components/ui/*.tsx, and the `absent` set widened from EntityCard/RowCard to four primitives (inert today, wider than the audit's basis from here on)."
         },
         {
           "at": "2026-08-05",
@@ -539,7 +553,7 @@
     },
     {
       "key": "bespoke-rows",
-      "description": "Files named *row*.tsx that render markup and do not compose RowCard \u2014 list rows owed to the kit",
+      "description": "Files named *row*.tsx that render markup and do not compose RowCard — list rows owed to the kit",
       "mode": "files",
       "patterns": [
         "className="
@@ -569,7 +583,7 @@
           "from": 15,
           "to": 14,
           "direction": "lowered",
-          "reason": "One file left the population (15 \u2192 14). RowCard importers are unchanged at 3, matching the audit exactly, so this was not an adoption \u2014 it is a file that no longer renders bespoke markup. The added components/cards/*.tsx exclusion is currently inert (0 files)."
+          "reason": "One file left the population (15 → 14). RowCard importers are unchanged at 3, matching the audit exactly, so this was not an adoption — it is a file that no longer renders bespoke markup. The added components/cards/*.tsx exclusion is currently inert (0 files)."
         },
         {
           "at": "2026-08-05",
@@ -600,7 +614,7 @@
         "value": 0,
         "direction": "lowered",
         "basis": "0a2d583d1e76",
-        "reason": "Swept to ZERO \u2014 the first movement since this class was seeded. The three hand-rolled strips (admin page-layout, the messaging console, and the member housing category nav) now compose UnderlineTabs, which DAWN names as the one tab vocabulary. UnderlineTabs gained a menu disclosure for a long tail and an aria-label prop, both additive: the item type is a union and the label defaults to the previously hardcoded string, so all existing call sites are untouched.",
+        "reason": "Swept to ZERO — the first movement since this class was seeded. The three hand-rolled strips (admin page-layout, the messaging console, and the member housing category nav) now compose UnderlineTabs, which DAWN names as the one tab vocabulary. UnderlineTabs gained a menu disclosure for a long tail and an aria-label prop, both additive: the item type is a union and the label defaults to the previously hardcoded string, so all existing call sites are untouched.",
         "from": 3
       },
       "history": [
@@ -616,13 +630,13 @@
           "from": 3,
           "to": 0,
           "direction": "lowered",
-          "reason": "Swept to ZERO \u2014 the first movement since this class was seeded. The three hand-rolled strips (admin page-layout, the messaging console, and the member housing category nav) now compose UnderlineTabs, which DAWN names as the one tab vocabulary. UnderlineTabs gained a menu disclosure for a long tail and an aria-label prop, both additive: the item type is a union and the label defaults to the previously hardcoded string, so all existing call sites are untouched."
+          "reason": "Swept to ZERO — the first movement since this class was seeded. The three hand-rolled strips (admin page-layout, the messaging console, and the member housing category nav) now compose UnderlineTabs, which DAWN names as the one tab vocabulary. UnderlineTabs gained a menu disclosure for a long tail and an aria-label prop, both additive: the item type is a union and the label defaults to the previously hardcoded string, so all existing call sites are untouched."
         }
       ]
     },
     {
       "key": "raw-px-arbitrary",
-      "description": "Arbitrary px in SIZING/SPACING utilities (h-[18px], w-[22px], min-w-[180px] \u2026) instead of the spacing scale. Ratcheted rather than hard-failed: ~140 sites predate the rule and no sweep owns them, so the gate holds the line while screen passes retire them (check:tokens still hard-fails text-[Npx], which has no legitimate use). Allowlisted: min-h/min-w-[44px] (the WCAG 2.5.5 tap-target floor, a load-bearing exact value), the -9999px offscreen idiom, the icon primitives (glyph optical sizing is their job), and the raster OG/print surfaces where px IS the unit.",
+      "description": "Arbitrary px in SIZING/SPACING utilities (h-[18px], w-[22px], min-w-[180px] …) instead of the spacing scale. Ratcheted rather than hard-failed: ~140 sites predate the rule and no sweep owns them, so the gate holds the line while screen passes retire them (check:tokens still hard-fails text-[Npx], which has no legitimate use). Allowlisted: min-h/min-w-[44px] (the WCAG 2.5.5 tap-target floor, a load-bearing exact value), the -9999px offscreen idiom, the icon primitives (glyph optical sizing is their job), and the raster OG/print surfaces where px IS the unit.",
       "mode": "matches",
       "patterns": [
         "(?<![-\\w])(?!min-[hw]-\\[44px\\]|(?:top|left|right|bottom|inset)-\\[-9999px\\])-?(?:h|w|size|min-w|min-h|max-w|max-h|basis|gap|gap-x|gap-y|p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|top|right|bottom|left|inset|translate-x|translate-y)-\\[-?\\d+(?:\\.\\d+)?px\\]"
@@ -654,7 +668,7 @@
           "from": 139,
           "to": 127,
           "direction": "rebased",
-          "reason": "Allowlist repair: the WCAG 2.5.5 exemption did not work. The lookahead sat at a \\\\b, and min-h-[44px] has a SECOND word boundary at its inner h \u2014 where the lookahead sees only h-[44px], fails to match the allowlist, and lets it through. So 12 tap-target floors across 5 files were counted as debt, meaning a PR that ADDED a correct 44px target raised the class and failed CI: the ratchet pushing against accessibility. Anchored at a true token start instead. 139 -> 127, exactly the 12 allowlisted sites."
+          "reason": "Allowlist repair: the WCAG 2.5.5 exemption did not work. The lookahead sat at a \\\\b, and min-h-[44px] has a SECOND word boundary at its inner h — where the lookahead sees only h-[44px], fails to match the allowlist, and lets it through. So 12 tap-target floors across 5 files were counted as debt, meaning a PR that ADDED a correct 44px target raised the class and failed CI: the ratchet pushing against accessibility. Anchored at a true token start instead. 139 -> 127, exactly the 12 allowlisted sites."
         },
         {
           "at": "2026-08-05",
@@ -674,7 +688,7 @@
     },
     {
       "key": "literal-display-type",
-      "description": "Literal DISPLAY sizes (text-3xl \u2026 text-9xl) instead of the DAWN display roles (--text-display-hero / h1 / h2 / h3 / card / stat). Deliberately a SEPARATE class from literal-type rather than an extra alternation branch on it: literal-type reached a defended 0, and folding 300 untouched display sites into it would turn a real win into a number nobody could read. Retiring these is pass 2b \u2014 a design decision per site (which role is this heading?), not a mechanical rename, which is why it is ratcheted and not swept.",
+      "description": "Literal DISPLAY sizes (text-3xl … text-9xl) instead of the DAWN display roles (--text-display-hero / h1 / h2 / h3 / card / stat). Deliberately a SEPARATE class from literal-type rather than an extra alternation branch on it: literal-type reached a defended 0, and folding 300 untouched display sites into it would turn a real win into a number nobody could read. Retiring these is pass 2b — a design decision per site (which role is this heading?), not a mechanical rename, which is why it is ratcheted and not swept.",
       "mode": "matches",
       "patterns": [
         "\\btext-(?:3xl|4xl|5xl|6xl|7xl|8xl|9xl)\\b"
@@ -720,7 +734,7 @@
     },
     {
       "key": "raw-palette",
-      "description": "Raw Tailwind palette classes (text-amber-700, bg-gray-50, shadow-violet-900/30 \u2026) instead of DAWN's semantic colour roles. A raw palette class is invisible to every theme generation and every skin, so a surface painted this way silently stops matching the product around it.",
+      "description": "Raw Tailwind palette classes (text-amber-700, bg-gray-50, shadow-violet-900/30 …) instead of DAWN's semantic colour roles. A raw palette class is invisible to every theme generation and every skin, so a surface painted this way silently stops matching the product around it.",
       "mode": "matches",
       "patterns": [
         "\\b(?:text|bg|border|ring|shadow|from|via|to|fill|stroke|divide|outline|decoration|accent|caret|placeholder)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(?:50|100|200|300|400|500|600|700|800|900|950)\\b"
@@ -749,7 +763,7 @@
           "from": 0,
           "to": 48,
           "direction": "rebased",
-          "reason": "New class, seeded at the measured 48. Every one is in lib/gamification.ts \u2014 I ran the pattern over the whole corpus and that file is the ONLY one in the repo carrying a raw Tailwind palette class. They are the exported TIER_CONFIG and DIFFICULTY_CONFIG records, so the strings propagate into every achievement and challenge surface that consumes them, and none of them respond to a theme generation or a skin. Nothing measured this before: check-tokens.mjs looks for raw hex, text-[Npx] and rgb(), not palette class names."
+          "reason": "New class, seeded at the measured 48. Every one is in lib/gamification.ts — I ran the pattern over the whole corpus and that file is the ONLY one in the repo carrying a raw Tailwind palette class. They are the exported TIER_CONFIG and DIFFICULTY_CONFIG records, so the strings propagate into every achievement and challenge surface that consumes them, and none of them respond to a theme generation or a skin. Nothing measured this before: check-tokens.mjs looks for raw hex, text-[Npx] and rgb(), not palette class names."
         },
         {
           "at": "2026-08-05",
@@ -769,7 +783,7 @@
     },
     {
       "key": "handrolled-icon-button",
-      "description": "Icon-only <button>s sized and rounded by hand instead of composing IconButton. The primitive owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance \u2014 every hand-rolled one re-derives those four, and the ones that get it wrong are invisible until someone tries to tap them on a phone (components/events/rsvp-controls.tsx ships a 28px stepper). DELIBERATELY CONSERVATIVE: the shape is `<button \u2026size\u2026rounded\u2026>` then ONE self-closing element then `</button>`, so it counts only unambiguous icon-only buttons and undercounts the `{cond ? <A/> : <B/>}` forms. A first attempt merely looked for an icon SOMEWHERE inside the button and matched text buttons and whole card buttons \u2014 a ratchet on a number that means the wrong thing is worse than no ratchet, so this trades recall for precision. `(?:[^>]|=>)` rather than `[^>]` because a JSX attribute list routinely contains `>` inside an arrow function.",
+      "description": "Icon-only <button>s sized and rounded by hand instead of composing IconButton. The primitive owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance — every hand-rolled one re-derives those four, and the ones that get it wrong are invisible until someone tries to tap them on a phone (components/events/rsvp-controls.tsx ships a 28px stepper). DELIBERATELY CONSERVATIVE: the shape is `<button …size…rounded…>` then ONE self-closing element then `</button>`, so it counts only unambiguous icon-only buttons and undercounts the `{cond ? <A/> : <B/>}` forms. A first attempt merely looked for an icon SOMEWHERE inside the button and matched text buttons and whole card buttons — a ratchet on a number that means the wrong thing is worse than no ratchet, so this trades recall for precision. `(?:[^>]|=>)` rather than `[^>]` because a JSX attribute list routinely contains `>` inside an arrow function.",
       "mode": "matches",
       "patterns": [
         "<button(?:[^>]|=>)*?(?:\\bh-\\d|\\bw-\\d|\\bsize-\\d)(?:[^>]|=>)*?rounded-(?:sm|md|lg|xl|2xl|3xl|full|pill|card|control)(?:[^>]|=>)*>\\s*<(?:svg|[A-Z][A-Za-z0-9]*)(?:[^>]|=>)*?/>\\s*</button>"
@@ -796,7 +810,7 @@
           "from": 0,
           "to": 37,
           "direction": "rebased",
-          "reason": "New class, seeded at the measured 37 across 27 files. IconButton owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance; each hand-rolled control re-derives all four and some get it wrong (components/events/rsvp-controls.tsx ships a 28px stepper, under both floors). The pattern is deliberately conservative \u2014 opening tag, one self-closing element, close \u2014 so it undercuts a careful census of 54 by excluding the ternary-icon forms. A first attempt merely required an icon somewhere inside the button and matched text buttons and card buttons at 67; a ratchet on a number that means the wrong thing is worse than none."
+          "reason": "New class, seeded at the measured 37 across 27 files. IconButton owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance; each hand-rolled control re-derives all four and some get it wrong (components/events/rsvp-controls.tsx ships a 28px stepper, under both floors). The pattern is deliberately conservative — opening tag, one self-closing element, close — so it undercuts a careful census of 54 by excluding the ternary-icon forms. A first attempt merely required an icon somewhere inside the button and matched text buttons and card buttons at 67; a ratchet on a number that means the wrong thing is worse than none."
         },
         {
           "at": "2026-08-05",
@@ -835,7 +849,7 @@
         "**/*.{test,spec}.tsx",
         "components/ui/select.tsx"
       ],
-      "baseline": 180,
+      "baseline": 51,
       "history": [
         {
           "at": "2026-08-05",
@@ -843,14 +857,22 @@
           "to": 180,
           "direction": "seed",
           "reason": "Seeded at the measured value for a class that was PREVIOUSLY UNGUARDED: adoption-baselines.json carried 14 entries and not one of them counted a raw <select>, so DAWN Phase 3 printed an em dash in the Ratchet column for the second-largest population in the conversion. Select was built in Phase 2 specifically to be swept onto and components/spaces + components/admin were cleared 83 -> 0, and nothing stopped the remaining sites regrowing or new ones landing. Not a sweep and not a fall: this number is the first measurement of the class, and it is a floor from here. The pattern is an OPENING-TAG form, not a proximity window - the defect being fixed in raw-button-bg in the same pass - so it has no window distance to preserve under the comment-blanked corpus (CORPUS_BASIS strip-comments@1), and prose about a <select> is blanked before it can be counted as one. components/ui/select.tsx is excluded because the primitive has to render the real DOM element; counting the fix as the bug is how a class becomes unreachable."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 180,
+          "to": 51,
+          "direction": "lowered",
+          "reason": "The select sweep: 180 -> 51. Raw <select> elements across app/** and components/** replaced by the Select primitive, which carries the chevron, the focus ring and the disabled treatment that each site was previously re-deriving by hand. The sweep also closed an accessibility gap it surfaced rather than caused -- several converted sites had no accessible name at all, announcing as an unnamed combobox, and now carry aria-label or aria-labelledby pointing at the label already on screen."
         }
       ],
       "frozen": {
         "at": "2026-08-05",
-        "value": 180,
-        "direction": "seed",
+        "value": 51,
+        "direction": "lowered",
         "basis": "08ace42d7483",
-        "reason": "Seeded at the measured value for a class that was PREVIOUSLY UNGUARDED: adoption-baselines.json carried 14 entries and not one of them counted a raw <select>, so DAWN Phase 3 printed an em dash in the Ratchet column for the second-largest population in the conversion. Select was built in Phase 2 specifically to be swept onto and components/spaces + components/admin were cleared 83 -> 0, and nothing stopped the remaining sites regrowing or new ones landing. Not a sweep and not a fall: this number is the first measurement of the class, and it is a floor from here. The pattern is an OPENING-TAG form, not a proximity window - the defect being fixed in raw-button-bg in the same pass - so it has no window distance to preserve under the comment-blanked corpus (CORPUS_BASIS strip-comments@1), and prose about a <select> is blanked before it can be counted as one. components/ui/select.tsx is excluded because the primitive has to render the real DOM element; counting the fix as the bug is how a class becomes unreachable."
+        "reason": "The select sweep: 180 -> 51. Raw <select> elements across app/** and components/** replaced by the Select primitive, which carries the chevron, the focus ring and the disabled treatment that each site was previously re-deriving by hand. The sweep also closed an accessibility gap it surfaced rather than caused -- several converted sites had no accessible name at all, announcing as an unnamed combobox, and now carry aria-label or aria-labelledby pointing at the label already on screen.",
+        "from": 180
       }
     },
     {
@@ -868,7 +890,7 @@
         "components/ui/field.tsx",
         "components/ui/checkbox.tsx"
       ],
-      "baseline": 740,
+      "baseline": 605,
       "history": [
         {
           "at": "2026-08-05",
@@ -876,14 +898,22 @@
           "to": 740,
           "direction": "seed",
           "reason": "Seeded at the measured value for a class that was PREVIOUSLY UNGUARDED. The 970-site <input>/<textarea> row in DAWN Phase 3 had no ratchet at all: components/ui/field.tsx exists with 80 importers, and nothing measured the sites that had not adopted it, so the largest field population in the product could grow without failing CI. Not a sweep and not a fall - this is the first measurement of the class and a floor from here. The pattern is an OPENING-TAG form rather than a proximity window (the raw-button-bg defect being corrected in the same pass), so nothing about it depends on distance and the length-preserving comment blanking (CORPUS_BASIS strip-comments@1) only removes prose that was never markup. type=\"hidden\" is excluded by a lookahead bounded to the tag own attributes: 49 of the 789 raw inputs are hidden fields, which are form serialisation rather than controls, so no field primitive can receive them and counting them would put zero permanently out of reach. components/ui/field.tsx and components/ui/checkbox.tsx are excluded because a primitive must render the real DOM element."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 740,
+          "to": 605,
+          "direction": "lowered",
+          "reason": "The input sweep: 740 -> 605. Raw <input> elements retired onto Field/Input, so the label association, the focus ring and the invalid state come from one place instead of being restated per form. Partial by design -- the sweep took the sites where Field's label+control pairing was a straight substitution and left the ones whose layout does not decompose that way, rather than reshaping forms under cover of a primitives sweep."
         }
       ],
       "frozen": {
         "at": "2026-08-05",
-        "value": 740,
-        "direction": "seed",
+        "value": 605,
+        "direction": "lowered",
         "basis": "8de521171b36",
-        "reason": "Seeded at the measured value for a class that was PREVIOUSLY UNGUARDED. The 970-site <input>/<textarea> row in DAWN Phase 3 had no ratchet at all: components/ui/field.tsx exists with 80 importers, and nothing measured the sites that had not adopted it, so the largest field population in the product could grow without failing CI. Not a sweep and not a fall - this is the first measurement of the class and a floor from here. The pattern is an OPENING-TAG form rather than a proximity window (the raw-button-bg defect being corrected in the same pass), so nothing about it depends on distance and the length-preserving comment blanking (CORPUS_BASIS strip-comments@1) only removes prose that was never markup. type=\"hidden\" is excluded by a lookahead bounded to the tag own attributes: 49 of the 789 raw inputs are hidden fields, which are form serialisation rather than controls, so no field primitive can receive them and counting them would put zero permanently out of reach. components/ui/field.tsx and components/ui/checkbox.tsx are excluded because a primitive must render the real DOM element."
+        "reason": "The input sweep: 740 -> 605. Raw <input> elements retired onto Field/Input, so the label association, the focus ring and the invalid state come from one place instead of being restated per form. Partial by design -- the sweep took the sites where Field's label+control pairing was a straight substitution and left the ones whose layout does not decompose that way, rather than reshaping forms under cover of a primitives sweep.",
+        "from": 740
       }
     },
     {
@@ -900,7 +930,7 @@
         "**/*.{test,spec}.tsx",
         "components/ui/field.tsx"
       ],
-      "baseline": 160,
+      "baseline": 120,
       "history": [
         {
           "at": "2026-08-05",
@@ -908,14 +938,22 @@
           "to": 160,
           "direction": "seed",
           "reason": "Seeded at the measured value for a class that was PREVIOUSLY UNGUARDED - the other half of the 970-site input/textarea row in DAWN Phase 3, which printed an em dash in its Ratchet column because no entry counted a raw <textarea>. components/ui/field.tsx has existed with 80 importers the whole time; what was missing was anything that noticed a surface skipping it. Not a sweep and not a fall: first measurement of the class, and a floor from here. Kept as its own entry rather than folded into raw-input because they are separately sweepable and the census counts them separately (808 / 162). The pattern is an OPENING-TAG form, not a proximity window, so it carries no window distance for the comment-blanked corpus (CORPUS_BASIS strip-comments@1) to disturb. components/ui/field.tsx is excluded because the primitive has to render the real element."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 160,
+          "to": 120,
+          "direction": "lowered",
+          "reason": "The textarea sweep: 160 -> 120. Raw <textarea> elements retired onto the Textarea primitive alongside the input sweep, same substitution and same stopping rule: straight swaps taken, layout-entangled sites left for a pass that can look at the form as a whole."
         }
       ],
       "frozen": {
         "at": "2026-08-05",
-        "value": 160,
-        "direction": "seed",
+        "value": 120,
+        "direction": "lowered",
         "basis": "42a90640e4e9",
-        "reason": "Seeded at the measured value for a class that was PREVIOUSLY UNGUARDED - the other half of the 970-site input/textarea row in DAWN Phase 3, which printed an em dash in its Ratchet column because no entry counted a raw <textarea>. components/ui/field.tsx has existed with 80 importers the whole time; what was missing was anything that noticed a surface skipping it. Not a sweep and not a fall: first measurement of the class, and a floor from here. Kept as its own entry rather than folded into raw-input because they are separately sweepable and the census counts them separately (808 / 162). The pattern is an OPENING-TAG form, not a proximity window, so it carries no window distance for the comment-blanked corpus (CORPUS_BASIS strip-comments@1) to disturb. components/ui/field.tsx is excluded because the primitive has to render the real element."
+        "reason": "The textarea sweep: 160 -> 120. Raw <textarea> elements retired onto the Textarea primitive alongside the input sweep, same substitution and same stopping rule: straight swaps taken, layout-entangled sites left for a pass that can look at the form as a whole.",
+        "from": 160
       }
     }
   ]

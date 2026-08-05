@@ -19,6 +19,7 @@ import { deleteEmailDraft } from '@/app/(main)/admin/email-studio/actions'
 import { isError } from '@/lib/action-result'
 import type { MessagingCampaignItem, MessagingFunnelItem } from '@/lib/messaging/console'
 import type { SegmentOption } from '@/components/admin/email-studio/send-panel'
+import { Input } from '@/components/ui/field'
 
 export function MarketingWorkspace({
   campaigns: initialCampaigns,
@@ -120,13 +121,13 @@ export function MarketingWorkspace({
       <div className="flex flex-wrap items-center gap-2">
         <label className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
-          <input
+          <Input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search campaigns and funnels..."
             aria-label="Search campaigns and funnels"
-            className="w-full rounded-lg border border-border bg-canvas py-2 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary"
+            className="pl-9 pr-3"
           />
         </label>
         {/* Guided generator front door — always reachable, not just from an empty state. Routes to the

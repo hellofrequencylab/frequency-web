@@ -1498,8 +1498,33 @@
 .mk-cont-soft { padding-block: calc(var(--space-section) / 2) var(--space-section); }
 /* And the same correction, automatically. Tag a section .mk-cream or .mk-ink and
    two of the SAME tone in a row halve the gap between them, while a tone CHANGE
-   keeps the full beat — which is what makes a tone change read as a change. */
-.mk-cream + .mk-cream, .mk-ink + .mk-ink { padding-top: calc(var(--space-section) / 2); }
+   keeps the full beat — which is what makes a tone change read as a change.
+
+   THE :where() GUARD IS LOAD-BEARING — do not "simplify" it away. This rule is an
+   INFERENCE (we guessed the tone repeated, so we shrink the gap); .mk-cont, .mk-arc
+   and .mk-cont-soft are DECLARATIONS (an author stated this section's top padding).
+   A declaration must beat an inference, and without the guard it does not: bare
+   `.mk-cream + .mk-cream` is (0,2,0) and outranks all three at (0,1,0), so the
+   automatic correction silently overwrites the deliberate one. The collision is
+   structural, not incidental — .mk-cont is *defined* as "continues at the same
+   tone", so it is the same-tone case by construction and this rule would fire on
+   100% of them, replacing its deliberate 0 with half a beat. .mk-arc has the same
+   problem the moment an arc rises out of cream rather than ink (the-lab's
+   Statement→arc pair is exactly that), and there the shoulder clearance is what
+   keeps the heading out of the curve.
+
+   Nobody has seen this because the rule has never fired: .mk-cream / .mk-ink have
+   zero adopters today, so the defect is latent and lands with the tone sweep, not
+   before it. Guard first, then adopt.
+
+   :where() and NOT :not() at full weight: :where() contributes ZERO specificity, so
+   the selector stays exactly (0,2,0) — unchanged from before the guard. That matters
+   in both directions. Plain `.mk-cream + .mk-cream:not(…)` would be (0,3,0) and would
+   start beating `.mk-hero-dock + .mk-band` below, stealing the fact dock's overhang
+   clearance the first time a dark hero is tagged .mk-ink (which is what DAWN's own
+   kit does). The guard must remove this rule from two fights without entering a third. */
+.mk-cream + .mk-cream:where(:not(.mk-cont, .mk-cont-soft, .mk-arc)),
+.mk-ink   + .mk-ink:where(:not(.mk-cont, .mk-cont-soft, .mk-arc)) { padding-top: calc(var(--space-section) / 2); }
 /* And the double-count correction. Two stacked sections EACH pay for the gap between
    them, so a padding that reads right at the end of a page reads as a hole in the
    middle of one. A section that is followed by another gives up a third of its

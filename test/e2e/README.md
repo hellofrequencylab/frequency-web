@@ -227,8 +227,10 @@ The order matters; see ADR-948's amendment and ADR-950.
    `capture_shell ✔` + `update_a11y ✔`. A surface with no entry in
    `a11y-baselines.json` is held to zero serious+ violations, so seeding first
    stops the first PR run failing on debt that predates it.
-5. **Set `PW_REQUIRE_SHELL=1`** as a repo variable. From here, a run that
-   photographs zero app surfaces fails instead of announcing.
+5. **Set `PW_REQUIRE_SHELL=1`.** From here, a run that photographs zero app
+   surfaces fails instead of announcing. Put it in **Variables** — the workflow
+   also reads the Secrets tab so a mis-aimed entry still arms the ratchet, but a
+   one-character *secret* risks GitHub redacting every `1` in the run log.
 6. **Only now** make `pr-compare` a required check (ADR-948).
 
 ## CI

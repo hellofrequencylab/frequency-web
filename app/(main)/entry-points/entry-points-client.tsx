@@ -8,6 +8,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Pencil, Trash2, Download, Copy, Check, ArrowLeft } from 'lucide-react'
 import { shortLinkUrl } from '@/lib/qr/links'
+import { Select } from '@/components/ui/select'
 import { STYLE_PRESETS, DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
 import { buildEntryFlyerSvg, type FlyerSlots } from '@/lib/entry-points/flyer'
 import {
@@ -226,7 +227,7 @@ export function EntryForm({
         </label>
         <label className="block">
           <span className={labelCls}>Where it points</span>
-          <select value={form.destination} onChange={(e) => set('destination', e.target.value)} className={field}>
+          <Select value={form.destination} onChange={(e) => set('destination', e.target.value)}>
             {destinationGroups.map((g) => (
               <optgroup key={g.group} label={g.group}>
                 {g.items.map((i) => (
@@ -234,7 +235,7 @@ export function EntryForm({
                 ))}
               </optgroup>
             ))}
-          </select>
+          </Select>
         </label>
         <label className="block">
           <span className={labelCls}>Headline</span>

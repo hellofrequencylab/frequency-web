@@ -6,6 +6,7 @@ import { Trophy, Plus, Trash2, Zap, CheckCircle2, Pencil } from 'lucide-react'
 import { createCampaign, updateCampaign, deleteCampaign, type CampaignInput } from './campaign-actions'
 import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 
 export interface CampaignCard {
   id: string
@@ -245,14 +246,13 @@ function CampaignForm({
           />
         </Field>
         <Field label="Goal">
-          <select
+          <Select
             value={form.mode}
             onChange={(e) => setForm((f) => ({ ...f, mode: e.target.value as CampaignInput['mode'] }))}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           >
             <option value="collect_all">Scan all selected codes</option>
             <option value="collect_n">Scan any N of them</option>
-          </select>
+          </Select>
         </Field>
         {form.mode === 'collect_n' && (
           <Field label="How many (N)">

@@ -8,6 +8,7 @@ import { completeOnboarding } from './actions'
 import { getInitials } from '@/lib/utils'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { WizardShell } from '@/components/templates'
+import { Select } from '@/components/ui/select'
 
 type Region = { id: string; name: string }
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
@@ -413,19 +414,18 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                       No regions available yet. Check back soon.
                     </p>
                   ) : (
-                    <select
+                    <Select
                       id="region"
                       value={regionId}
                       onChange={(e) => setRegionId(e.target.value)}
-                      className={inputBase}
+                      emptyLabel="Select a region…"
                     >
-                      <option value="">Select a region…</option>
                       {regions.map((r) => (
                         <option key={r.id} value={r.id}>
                           {r.name}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   )}
                 </div>
       )}
