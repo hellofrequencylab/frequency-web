@@ -76,12 +76,15 @@ export function PageHeading({
         }
       >
         <div className="min-w-0">
-          {eyebrow && (
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-primary-strong">
-              {eyebrow}
-            </p>
-          )}
-          <h1 className="mb-1 text-balance text-xl font-bold text-text sm:text-2xl">{title}</h1>
+          {/* `eyebrow` is the kit utility now, not four hand-rolled Tailwind classes.
+              Same rendered size; the change is tracking, 0.1em -> DAWN's 0.18em. */}
+          {eyebrow && <p className="eyebrow mb-1.5 text-primary-strong">{eyebrow}</p>}
+          {/* THE page title role. Was `text-xl sm:text-2xl` — 1.25rem on mobile, where
+              DAWN's page title is 1.5rem at every width, so small screens got a heading
+              a fifth smaller than the design and headings stepped at an arbitrary
+              breakpoint instead of holding one role. `--text-page-title` rides
+              --type-scale, so the generation axis reaches h1 for the first time. */}
+          <h1 className="mb-1 text-balance text-page-title font-bold text-text">{title}</h1>
           {description && (
             <p className="max-w-2xl text-sm leading-relaxed text-muted">{description}</p>
           )}
