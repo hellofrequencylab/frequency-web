@@ -13,8 +13,16 @@ import { cn } from '@/lib/utils'
 // never drift apart: set `aria-invalid` when the value is bad and the danger border follows. ~9
 // call sites already set it and got nothing back visually; they light up from this one string.
 // DISABLED also takes `cursor-not-allowed`, so the state reads before a click, not after.
-export const fieldClasses =
-  'w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none transition-colors focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 aria-[invalid=true]:border-danger aria-[invalid=true]:focus:border-danger aria-[invalid=true]:focus:ring-danger/30 disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-subtle'
+// `fieldChromeClasses` is the field LOOK with no padding of its own — border, surface, type,
+// the calm focus halo, the aria-invalid error and the disabled fade. It exists so a control that
+// must own its own padding can wear the same chrome WITHOUT fighting `px-3`: `Select` reserves a
+// right-hand gutter for its chevron, and `pr-9` layered over `px-3` is a logical-vs-physical
+// padding collision whose winner depends on Tailwind's emit order, not on the class list. Split
+// once here, and the two strings can never drift.
+export const fieldChromeClasses =
+  'w-full rounded-control border border-border bg-surface text-body-sm text-text outline-none transition-colors focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 aria-[invalid=true]:border-danger aria-[invalid=true]:focus:border-danger aria-[invalid=true]:focus:ring-danger/30 disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-subtle'
+
+export const fieldClasses = `${fieldChromeClasses} px-3 py-2`
 
 export const labelClasses = 'text-meta font-medium text-muted'
 

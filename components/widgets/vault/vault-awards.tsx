@@ -119,8 +119,15 @@ function AwardsCollection({
                   return (
                     <div
                       key={a.id}
-                      className={`rounded-2xl px-4 py-3 transition-all ${
-                        a.earned ? `${tier.bg} ${tier.glow ? `lift-1 ${tier.glow}` : ''}` : 'bg-surface-elevated/60 opacity-70'
+                      // An earned tile carries its tier's tint AND its tier's hairline. It used to
+                      // pair `lift-1` with the tier's `glow`, but `.lift-1` sets `box-shadow`
+                      // outright, so a Tailwind shadow-COLOUR utility beside it resolved to
+                      // nothing: the shadow→lift codemod traded away the sized utility the colour
+                      // needed to compose with, and the glow has been inert ever since. The tier
+                      // glow is a ring now, which composes with anything, so the toast keeps its
+                      // halo and this tile gets an honest border instead.
+                      className={`rounded-card px-4 py-3 transition-all ${
+                        a.earned ? `${tier.bg} border ${tier.border} lift-1` : 'bg-surface-elevated/60 opacity-70'
                       }`}
                     >
                       <div className="flex items-start gap-3">

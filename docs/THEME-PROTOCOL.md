@@ -70,7 +70,7 @@ and sets the **Copy** cascade as the next build (§7).
 
 ## 4. Structure — one header band, one shell kit
 
-- **Parent:** the nine shells in `components/templates/*`, all composing one `PageHeading` grammar; and
+- **Parent:** the eight shells in `components/templates/*`, all composing one `PageHeading` grammar; and
   the one **`PageHero`** (`components/templates/page-hero.tsx`) — the canonical overlay-on-cover header
   band (the Business Spaces / Circles look) that **every hero-bearing surface renders**. `IndexTemplate`'s
   overlay hero and the commerce `MarketHero` both delegate to `PageHero`, so the header look is a **single

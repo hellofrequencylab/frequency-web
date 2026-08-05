@@ -86,33 +86,34 @@ Context header band + context tabs + body + **scope-aware** right rail.
   Index* (a Circle's "Posts" tab = Stream; its "Events" tab = Index). Templates
   **nest**: that's the fractal, and it means you reuse, never rebuild.
 
-### Template D: **Header / Page / Sidebar** (`HeaderSidebarTemplate`)
-Title band over a wide main column beside a narrower **in-body sidebar** (filters,
-a summary card, related links, a table of contents).
-- **Use:** a page with one primary flow AND a persistent secondary panel that
-  belongs in-body (not in the shell rail).
-- **Slots:** `sidebar` (+ `sidebarSide` left/right), the main `children`.
-- **Rail note:** a page with its own in-body sidebar should usually register as
-  `'scoped'` in `page-chrome.ts` so the global rail is suppressed (no double-rail).
-  **Exception — the events DETAIL page (`/events/<slug>`) ALWAYS keeps the global
-  `'global'` rail.** Never set it to `'none'`/`'scoped'`. If the page's own interior
-  feels like a doubled column, the fix is to make that interior templated/movable
-  (PageModules blocks), NOT to remove the rail. (A past change dropped it; reverted.)
-
-### Template E: **Header / 2 Column** (`TwoColumnTemplate`)
-Title band over **two equal columns** of comparable weight (e.g. "yours" vs "the
-community", a form beside a live preview, two related lists).
-- **Use:** two peer areas where neither column is subordinate (unlike Template D).
-- **Slots:** `left`, `right` (stack on mobile, split evenly from `md`).
+> **In-body sidebar (was "Template D", `HeaderSidebarTemplate`) — retired 2026-08-05.**
+> A wide main column beside a narrower in-body panel (filters, a summary card, related
+> links) is now a **slot on Detail**, not a shell of its own: `DetailTemplate`'s optional
+> `sidebar` slot renders that exact geometry (content first on mobile, `lg:w-80` beside it
+> above that). `HeaderSidebarTemplate` and its peer `TwoColumnTemplate` (two equal columns)
+> shipped as kit shells but were never once composed by a page; both were deleted rather
+> than left as a canon nobody could point at. Need two peer columns? Use a grid inside
+> whichever shell the content actually is — an in-body layout is not a page archetype.
+>
+> ⚠️ **The in-body sidebar does NOT change the rail.** An earlier version of this section
+> said a page with its own sidebar "should usually register as `'scoped'`". That is no
+> longer true and it is not what the code does: **nothing is `'scoped'` today** and the
+> global community rail shows on every member page (owner directive 2026-06-20, reaffirmed
+> 2026-07-28 — see §8.2). The Channel detail page proves the pattern: its activity/upcoming
+> column renders IN-BODY through `DetailTemplate`'s `sidebar`, *beside* the shell rail. The
+> two coexist because they are different things — one is the page's own facts, the other is
+> the site's chrome. If an interior feels like a doubled column, the fix is to make that
+> interior templated/movable (blocks or `PageModules`), **never** to remove the rail. That
+> holds hardest on the events DETAIL page (`/events/<slug>`), which ALWAYS keeps `'global'`;
+> a past change dropped it and was reverted.
 
 > **Update (§8, ADR-090):** Focus and Dashboard are now **real templates** too:
-> `FocusTemplate` (the no-rail compose/edit/settings surface, formerly just "the
-> shell hiding the rail") and `DashboardTemplate` (the metric-led operator
-> workspace). With **`HeaderSidebarTemplate`** (Header/Page/Sidebar),
-> **`TwoColumnTemplate`** (Header/2 Column), **`WizardShell`** (the multi-step
-> flow shell), and **`AdminTemplate`** (the `/admin/*` workspace), the kit is now
-> **nine shells**, all sharing one `PageHeading`. See §8 for the full kit + the
-> declarative rail map (`lib/layout/page-chrome.ts`).
+> `FocusTemplate` (a centered, single-task compose/edit/settings surface) and
+> `DashboardTemplate` (the metric-led operator workspace). With **`WizardShell`** (the
+> multi-step flow shell), **`RailGrid`** (a filter rail beside a fluid card grid), and
+> **`AdminTemplate`** (the `/admin/*` workspace), the kit is now **eight shells**, all
+> sharing one `PageHeading`. See §8 for the full kit + the declarative rail map
+> (`lib/layout/page-chrome.ts`).
 
 ### How templates map to Next.js
 - A **Detail** page = a route-segment **`layout.tsx`** (e.g.
@@ -296,15 +297,15 @@ Sources: [RSC streaming performance (SitePoint)](https://www.sitepoint.com/react
 |---|---|---|
 | `/feed` | Stream | getting-started, dispatches, upcoming-events, members, leaderboard |
 | `/broadcast` | Stream | announcements, dispatches |
-| `/circles` | Index | filters (multi-topic + mode), my-circles, pulse |
+| `/circles` | **Editable index** (`MarketHero` + `BlockRender`, §8.5) | filters (multi-topic + mode), my-circles, pulse |
 | `/circles/[slug]` | **Detail** | header(join/admin) · tabs(Posts/Events/Members/About) · rail: program, this-circle events, members, dispatches |
-| `/channels` → Topics | Index | filters (category), tuned-in, pulse |
+| `/channels` → Topics | **Editable index** (`MarketHero` + `PageModules`, §8.5) | filters (category), tuned-in, pulse |
 | `/channels/[id]` → Topic | **Detail** | header(start-a-circle) · tabs(About/Discussion/Circles/Program) · rail: program, circles-in-topic, events |
-| `/events` | Index | filters (in-person/virtual, date), upcoming |
+| `/events` | **Editable index** (`MarketHero`, §8.5) | filters (in-person/virtual, date), upcoming |
 | `/events/[slug]` | **Detail** | header(RSVP/ICS) · rail: attendees, location, host |
 | `/people` | Index | filters (circle/rank/online), online-now |
 | `/people/[handle]` → Profile | **Detail** | header · tabs · rail: achievements, streaks, circles |
-| `/messages`, `/settings`, compose | Focus | (no rail) |
+| `/messages`, `/settings`, compose | Focus | centered body, **and the global rail stays** (§8.2) |
 | `/crew/*` | Stream/Index | gamification widgets |
 | `/admin/*` | Index/Detail | admin sub-nav (own pattern): *being absorbed into the per-page **admin dock** (ADR-128, Phase 1) → capability-driven modules + in-place editing (ADR-133 / EMBEDDED-ADMIN.md, Phase 2)* |
 
@@ -339,38 +340,40 @@ forces a big-bang rewrite.
 
 ---
 
-## 8. The kit today: nine shells + one chrome map (build a page)
+## 8. The kit today: eight shells + one chrome map (build a page)
 
 > **Update 2026-06-05 (ADR-090):** the template kit is now complete and the
 > shell's rail treatment is **declarative**. "Focus" and "Dashboard" are no longer
 > informal: they're real templates next to Stream / Index / Detail. A page is now
 > *two lines of decision*: pick a template, register a rail.
 >
-> **Reconciliation (Phase 0.5.11):** earlier prose in this doc said "three", then
-> "eight". The canonical count today is **nine page shells**, all exported from
+> **Reconciliation (2026-08-05):** earlier prose in this doc said "three", then "eight",
+> then "nine". The canonical count today is **eight page shells**, all exported from
 > [`@/components/templates`](../components/templates/index.ts) and all on the one
 > `PageHeading` grammar: **Stream · Index · Detail · Dashboard · Focus · WizardShell ·
-> HeaderSidebar · TwoColumn · Admin**. (`WizardShell` is the multi-step provisioning/
-> onboarding flow shell, e.g. `app/onboarding/form.tsx`, and was the one missing from
-> the canon; it is now listed below.) `PageHeading` itself is the shared header grammar,
-> not a shell, so it is not counted.
+> RailGrid · Admin**. Two of the old nine — `HeaderSidebarTemplate` and
+> `TwoColumnTemplate` — were **deleted**: neither was ever composed by a single page in
+> `app/` or `components/`, so they were a documented canon with no referent. Their shapes
+> survive where they are actually used: the in-body sidebar is `DetailTemplate`'s `sidebar`
+> slot, and two peer columns are a grid inside whichever shell the content is (§3).
+> `RailGrid` had shipped in the table but was missing from the prose count; it is counted
+> now. `PageHeading` and `PageHero` are shared header grammar, not shells, so neither is
+> counted; nor are the entity **compositions** in §8.1.1.
 
-### 8.1 The nine shells: `@/components/templates`
+### 8.1 The eight shells: `@/components/templates`
 
 | Shell | Import | Use it for | Header / slots |
 |---|---|---|---|
 | **Stream** | `StreamTemplate` | a flow of items: Feed, Broadcast, a circle discussion | `eyebrow·title·description·action·composer` |
-| **Index** | `IndexTemplate` | a collection to browse: Circles, Channels, Events, People, Search | `title·description·action·toolbar` |
+| **Index** | `IndexTemplate` | a collection to browse whose sections are FIXED: Practices, Journeys, Library, Search, Messages, a Space's tabs, Help. (A browse surface whose body an operator rearranges is the **editable index** instead, §8.5) | `title·description·action·toolbar` |
 | **Detail** | `DetailTemplate` | one entity: a Circle, Event, Profile, Hub, Program | context band (`badges·actions`) + `tabs` |
 | **Dashboard** | `DashboardTemplate` | a metric-led operator/steward workspace: Marketing, CRM, Crew home | `eyebrow·title·description·actions·stats` + sections |
-| **Focus** | `FocusTemplate` | a centered, no-rail surface: compose/edit forms, Settings, single-conversion + scan-confirm | `eyebrow·title·description·actions·back·width` |
-| **WizardShell** | `WizardShell` | a centered, no-rail **multi-step flow**: onboarding, Space provisioning (`app/onboarding/form.tsx`) | step progress (`WizardProgress`) + body + footer actions |
-| **HeaderSidebar** | `HeaderSidebarTemplate` | one primary flow beside a persistent in-body secondary panel (§3 Template D) | `sidebar` (+ `sidebarSide`) + `children` |
-| **TwoColumn** | `TwoColumnTemplate` | two peer columns of comparable weight (§3 Template E) | `left` · `right` |
+| **Focus** | `FocusTemplate` | a centered, single-task surface: compose/edit forms, Settings, single-conversion + scan-confirm. **Centered body, rail still on** (§8.2) | `eyebrow·title·description·actions·back·width` |
+| **WizardShell** | `WizardShell` | a centered **multi-step flow**: onboarding, Space provisioning (`app/onboarding/form.tsx`) | step progress (`WizardProgress`) + body + footer actions |
 | **RailGrid** | `RailGrid` | a browse surface pairing a narrow filter/folder rail with a fluid card grid (Loom Studio) — **mobile-first**: the rail is a mini menu on phones (always beside the grid, never stacked above it) and widens on larger screens | `menu` · `children` |
 | **Admin** | `AdminTemplate` | the rail-less `/admin/*` workspace under its own two-layer nav | `AdminSection`s |
 
-All nine share **one header grammar** (`PageHeading`): the same type scale, eyebrow,
+All eight share **one header grammar** (`PageHeading`): the same type scale, eyebrow,
 description, and action slot, so titles read identically everywhere. Detail keeps a
 richer context band (identity + badges + tab row) but on the same scale. `AdminTemplate`
 is the admin equivalent of Dashboard (a rail-less sibling under `/admin/*`'s own
@@ -384,7 +387,7 @@ cards), `StatCard` (KPI tile with delta/drill-down), `SectionHeader`, `EmptyStat
 
 Some entities have a *shape* worth standardising, not just a shell. An entity composition
 **wraps** a shell — it never re-declares a header, an `<h1>`, or a divider — and adds the parts the
-shell has no opinion about. It is **not** a tenth shell; the count above stays nine.
+shell has no opinion about. It is **not** a ninth shell; the count above stays eight.
 
 | Composition | Import | Wraps | Locks |
 |---|---|---|---|
@@ -416,27 +419,90 @@ skeleton composes the template, so it cannot drift from the destination's shape 
 
 ### 8.2 The chrome map: `lib/layout/page-chrome.ts`
 
-Which rail frames a page is **one pure function**, `railFor(pathname)`, returning:
+Which rail frames a page is **one pure function**, `railFor(pathname)`.
 
-- `'global'`: the community right rail (browse / stream / dashboard default).
-- `'scoped'`: global rail suppressed; the **Detail** page renders its own scope
-  rail in-body (no double-rail trap). Sections: `/circles/*`, `/channels/*`.
-- `'none'`: **Focus**: no rail. Compose/edit (`/events/new`,
-  `/practices/*/edit`, `/connections/*`), settings, message threads, and the
-  operator/steward workspaces (`/marketing`, `/crm`, `/outreach`, `/codes`,
-  `/upgrade`, `/g/*`, `/n/*`).
+> 🔴 **The rule, and it is short: THE RIGHT RAIL SHOWS ON EVERY MEMBER PAGE.**
+> Owner directive 2026-06-20, reaffirmed 2026-07-28. `'global'` is not "the browse
+> default" — it is the answer for every surface a member, host, or owner touches,
+> **including** compose/edit forms, Settings, message threads, entity owner consoles
+> (`/{entity}/[id]/manage`), the Space directory and Space settings, and the Leader
+> surface (`/lead/*`). Do not reach for `'none'`/`'scoped'` to fix a crowded page.
+> The fix for a doubled-column feeling is to make the page's own interior
+> templated/movable, never to remove the site's chrome.
 
-`app-shell.tsx` shows the global rail iff `railFor(pathname) === 'global'`. **To
-reframe a route, edit `page-chrome.ts`, never the shell.** Locked by
-`page-chrome.test.ts`.
+`railFor` returns one of three values:
+
+| Return | Meaning | Where it actually applies today |
+|---|---|---|
+| `'global'` | the community right rail | **everything not listed below** — the default and the overwhelming majority |
+| `'scoped'` | global rail suppressed because an entity-DETAIL subtree renders its **own** scope rail in-body | **nothing.** `SCOPED_PREFIXES` and `SCOPED_PATTERNS` are both empty (see below) |
+| `'none'` | no right rail at all | the four full-viewport takeovers, `/admin/*`, and the full-width editors |
+
+**The routes that really are non-`'global'`,** in the order `railFor` tests them:
+
+| # | List in `page-chrome.ts` | Routes | Why |
+|---|---|---|---|
+| 1 | `DASHBOARD_NONE_PATTERNS` | `/spaces/<slug>/edit-page`, `/spaces/<slug>/marketing`, `/edit/<slug>` | **full-width editors.** Both rails + the page gutters drop so the builder fills the width, but the site header STAYS (owner directive 2026-07: "full page with the main header still showing"). The header-keeping half is `isFullWidthEditor`; this list is only the right-rail half |
+| 2 | `/admin` + `/admin/*` (inline branch) | the operator workspace | it mounts its **own** operator info rail on the right, so the member rail is suppressed to avoid double-railing. The global LEFT menu stays |
+| 3 | `FULL_TAKEOVER_PREFIXES` | `/on-air`, `/scan`, `/sign-in`, `/print` | genuine **zero-chrome takeovers**: the practice timer, the camera scanner, the auth gate, the print sheet. Not merely "narrow forms" |
+| 4 | `FOCUS_NONE_PREFIXES` | *(empty)* | see below |
+| 5 | `SCOPED_PREFIXES` / `SCOPED_PATTERNS` | *(both empty)* | see below |
+
+**The two empty lists are a decision, not an oversight.** Leave them empty unless an owner
+directive says otherwise:
+
+- **`FOCUS_NONE_PREFIXES` is empty** by the **2026-06-20** directive. A `FocusTemplate`
+  page renders a centered, no-side-content **body** — and keeps the global rail beside it.
+  "Focus" is a body shape, not a chrome exemption. The list's last entries (the retired
+  Growth OS `/apply`, `/apply/<track>`, `/waitlist` flows) are gone; the empty array is
+  kept because **the mechanism is the contract** — the next genuine Focus takeover adds
+  one prefix here instead of editing the shell.
+- **`SCOPED_PATTERNS` is empty** by the **2026-07-28** reversal, and the history is the
+  point. The Channel redesign (ADR-885) briefly listed `/channels/<slug>` here, reading
+  "give it a right column" as *replacing* the member rail with the Channel's own. The
+  owner saw it deployed and corrected course the same night: *"You dropped the right rail
+  of the website. Fix that."* The Channel's activity/upcoming/Circles column did not go
+  away — it renders **in-body** through `DetailTemplate`'s `sidebar` slot, beside the
+  shell rail. Re-add a pattern here only with an explicit owner decision that names the
+  route **and** acknowledges it hides the member rail there.
+- **`SCOPED_PREFIXES` is empty** for the same reason at subtree scale. `/spaces/*` was
+  removed (a Space profile reads as a normal Detail page beside the site's rail; its
+  context band is a hero CARD in the content column, so there is no double-rail trap), and
+  `/journeys/*` was removed after the v2 rebuild (ADR-252) made the syllabus an in-content
+  pane rather than a shell rail. Prefix vs pattern: a prefix matches the route **and
+  everything beneath it**, so it only fits when a whole subtree renders an in-body rail —
+  which is why the Channel case could never have been a prefix (its `/manage` and `/edit`
+  siblings have no rail of their own).
+
+**Two related axes that are NOT the rail** (they never suppress it):
+
+- `railStartsCollapsed` (`MINI_RAIL_PATTERNS`) — the Journey builder/guide/launch surfaces
+  keep `'global'` but the rail **starts collapsed** to a thin strip with an expand toggle.
+  Collapse is reversible; the rail is always mounted.
+- `leftRailFor` — the global member LEFT menu frames every in-app page, `/admin/*`
+  included. `LEFT_WORKSPACE_PREFIXES` is empty.
+
+**Operator overrides.** On top of the code map, an operator can reframe a route from
+`/admin/page-layout` (`public.page_chrome_overrides`). `(main)/layout.tsx` loads the map once
+per request and `app-shell.tsx` resolves `mergeChrome(railFor(pathname), overrides, pathname)`;
+`resolvePageChrome` is the async server-side twin. Fail-safe throughout: no override, or a
+missing table, falls back to the code default. `MANAGED_ROUTES` is the curated catalog of
+surfaces the editor lists.
+
+`app-shell.tsx` shows the global rail iff the resolved rail is `'global'`. **To reframe a
+route, edit `page-chrome.ts`, never the shell.** Locked by `lib/layout/page-chrome.test.ts`,
+which asserts in so many words that compose/edit/settings/thread surfaces, the Channel detail
+page, every `/spaces/*` route, every `/events/*` route, and the entity owner consoles all
+return `'global'`.
 
 ### 8.3 Build a page: the decision tree
 
 1. **What is the content?** → pick the template from the table above.
-2. **Does it read best full-width (a form, a workspace, a single decision)?** →
-   add its route to a Focus list in `page-chrome.ts` and use `FocusTemplate`.
-   Otherwise it keeps the global rail (or is `'scoped'` if it's a circle/channel
-   detail that renders its own rail).
+2. **Is it a form, a single decision, a settings surface?** → use `FocusTemplate` for the
+   centered body. **Do not touch `page-chrome.ts`** — it keeps the global rail like every
+   other member page (§8.2). The only routes that drop the rail are the four zero-chrome
+   takeovers, `/admin/*`, and the full-width Puck editors, and adding one needs an owner
+   decision.
 3. **Fill slots with kit primitives.** No hand-rolled `<h1>` headers, no bespoke
    cards, no `text-[10/11px]`, no hardcoded hex.
 4. **Don't block the shell.** Server-fetch in the page; push slow/independent
@@ -465,8 +531,9 @@ The repeatable way to move a hand-rolled page onto the framework. Two parts: ado
 2. **Replace the hand-rolled header** with the template's `PageHeading` slots
    (`title` · `description` · `eyebrow` · `actions` · `back`). Delete every bespoke
    `<h1>`, back-link, and metadata band — there is exactly one page `<h1>`, from the kit.
-3. **Register the rail** in `lib/layout/page-chrome.ts` (`'global'`/`'scoped'`/`'none'`).
-   Never toggle the rail from the page or the shell.
+3. **Leave the rail alone** unless the page is one of §8.2's genuine exceptions. `railFor`
+   already answers `'global'` for every member surface; a new page normally needs **no**
+   edit to `lib/layout/page-chrome.ts`. Never toggle the rail from the page or the shell.
 
    *Two pages migrated this way in Batch 1:* `connections/[id]` (inline back-link + card
    header → `DetailTemplate` `back` slot) and `admin/events/[id]` (inline `<h1>` + metadata
@@ -565,20 +632,77 @@ half-wired module fails there.
 | `heroOverlay` | `boolean` | the **overlay Hero Header** (the Business Spaces grammar, #1639): the eyebrow / title / description / action render ON the `heroImage` over an ink legibility scrim, instead of the banner-above-heading lockup. Only applies when `heroImage` is set; the admin-bar rule still draws below. |
 
 A standard index is therefore `trail={[...]}` + `heroImage={url}` + `title`, no hand-built
-banner. Exemplars (all migrated): [`circles/page.tsx`](<../app/(main)/circles/page.tsx>),
-[`events/page.tsx`](<../app/(main)/events/page.tsx>),
+banner. Exemplars **that really compose `IndexTemplate` today** (verified 2026-08-05):
 [`practices/page.tsx`](<../app/(main)/practices/page.tsx>),
-[`journeys/page.tsx`](<../app/(main)/journeys/page.tsx>).
+[`journeys/page.tsx`](<../app/(main)/journeys/page.tsx>),
+[`library/page.tsx`](<../app/(main)/library/page.tsx>),
+[`events/calendar/page.tsx`](<../app/(main)/events/calendar/page.tsx>).
+*(Circles and Events used to head this list. They no longer import `IndexTemplate` at all —
+they moved to the **editable index** below. Same hero, different body.)*
 
 **Overlay Hero Header (`heroOverlay`):** the uniform Business-Spaces hero band — a cover image
 with the title, subtitle, and the page's own action buttons overlaid on an ink scrim. Adopters:
-[`spaces/directory/page.tsx`](<../app/(main)/spaces/directory/page.tsx>) (Business Spaces),
 [`practices/page.tsx`](<../app/(main)/practices/page.tsx>),
 [`library/page.tsx`](<../app/(main)/library/page.tsx>),
-[`journeys/page.tsx`](<../app/(main)/journeys/page.tsx>). Each keeps its own title/description +
+[`journeys/page.tsx`](<../app/(main)/journeys/page.tsx>) (`journeys/mine` and `network` also
+pass `heroOverlay`, without a hero image). Each keeps its own title/description +
 buttons; a section default image (under `public/images/site/`) keeps the band present when the
 operator has set none. Secondary buttons that ride the scrim use on-ink styling
 (`border-white/30 bg-white/10 text-on-ink`); primary create buttons stay `bg-primary`.
+Under the hood `heroOverlay` renders the canonical
+[`PageHero`](../components/templates/page-hero.tsx) — the same component the editable index
+reaches for directly, which is why the two compositions look identical in the band.
+
+### The editable index: `MarketHero` + an operator-rearrangeable body
+
+> **Sanctioned composition (owner decision, documented 2026-08-05).** This is **not** drift and
+> it is **not** a ninth shell. It is the browse-page answer for a surface whose **body** an
+> operator must be able to rearrange — something `IndexTemplate`'s fixed slots
+> (`toolbar` → `children`) structurally cannot offer.
+
+Eight major browse surfaces were deliberately migrated **off** `IndexTemplate` onto it
+(verified against the code, 2026-08-05):
+
+| Route | Header | Body |
+|---|---|---|
+| `/circles` | `MarketHero` | `BlockRender` — the published Puck doc for `circles`, falling back to the coded template, fed live data via `metadata={{ circlesIndex }}` |
+| `/channels` | `MarketHero` | `PageModules route="/channels"` — the module engine (§4) |
+| `/events` | `MarketHero` (via `components/marketplace/events-surface.tsx`) | the shared events surface + facets |
+| `/spaces/directory` | `MarketHero` | the shared directory body (`components/spaces/directory-view`) |
+| `/classifieds` | `MarketHero` | faceted marketplace grid |
+| `/housing` | `MarketHero` | faceted marketplace grid |
+| `/market` | `MarketHero` | faceted marketplace grid |
+| `/store` | `MarketHero` | faceted marketplace grid |
+
+Two things make this a **body-composition choice and nothing more**:
+
+1. **The header is the same canonical component.**
+   [`MarketHero`](../components/marketplace/market-hero.tsx) is a *thin wrapper over*
+   [`PageHero`](../components/templates/page-hero.tsx) — its own file comment says so. It
+   forwards `coverImage` / `eyebrow` / `title` / `subtitle` / `search` / `actions` / `variant`
+   / `size` / `overlay` and adds nothing else. `IndexTemplate`'s `heroOverlay` branch renders
+   that **same** `PageHero`. So both paths emit one `<h1>` from the kit, both are
+   token-clean and theme correctly, and `scripts/check-headers.mjs` is satisfied by both.
+2. **The rail is untouched.** Every route above returns `'global'` from `railFor` (§8.2).
+   Moving off `IndexTemplate` bought an editable body; it bought **no** chrome exemption and
+   **no** theming exemption.
+
+**Which one do I reach for?**
+
+| Reach for… | When |
+|---|---|
+| **`IndexTemplate`** | the page's sections are FIXED and code-owned: a facet grid keyed on `searchParams`, a Space tab, a search results page, an operator list. Default choice — it is fewer moving parts |
+| **The editable index** | an operator must be able to reorder / hide / add sections of the body without a deploy, and the surface is important enough to hand them (a top-level community or commerce index) |
+
+Both carry the operator **Settings** affordance: `IndexTemplate` draws `PageAdminBar`
+itself, and an editable-index page re-adds it explicitly as `<PageAdminBar asDivider />`
+under the hero — that is exactly what the "the on-page operator Settings affordance
+`IndexTemplate` used to draw" comments in those pages are for. Losing it is a bug, not a
+style choice.
+
+Both also resolve their header the same operator-tunable way: `resolveHeaderElement`
+(ADR-793) supplies `layout` / `height` / `scrim`, so an operator retunes the band without a
+code change on either path.
 
 > **Where the hero comes from:** the page resolves its hero URL from the Settings header
 > image (`getPageHeaderImage`, [`lib/page-settings/store.ts`](../lib/page-settings/store.ts))
@@ -671,10 +795,18 @@ how a published draft shadows a coded experience, or an in-app page loses its ch
 
 ## Decisions captured
 
-- **One shell, NINE page shells (Stream / Index / Detail / Dashboard / Focus /
-  WizardShell / HeaderSidebar / TwoColumn / Admin)**, all on one `PageHeading`
-  grammar; the rail is a declarative `page-chrome.ts` map, not shell-baked
-  conditionals (ADR-090). See §8.1 for the full canon + the count reconciliation.
+- **One shell, EIGHT page shells (Stream / Index / Detail / Dashboard / Focus /
+  WizardShell / RailGrid / Admin)**, all on one `PageHeading` grammar; the rail is a
+  declarative `page-chrome.ts` map, not shell-baked conditionals (ADR-090). See §8.1
+  for the full canon + the count reconciliation (`HeaderSidebarTemplate` and
+  `TwoColumnTemplate` were deleted 2026-08-05 with zero usages).
+- **The right rail shows on EVERY member page** (owner directive 2026-06-20,
+  reaffirmed 2026-07-28). `FOCUS_NONE_PREFIXES`, `SCOPED_PREFIXES`, and
+  `SCOPED_PATTERNS` are deliberately empty; only the zero-chrome takeovers,
+  `/admin/*`, and the full-width editors drop it (§8.2).
+- **The editable index is a sanctioned composition** (`MarketHero` + `BlockRender` /
+  `PageModules`) for a browse surface whose body an operator rearranges. Same
+  canonical `PageHero`, same global rail — a body choice, not an exemption (§8.5).
 - **Features are widgets**: self-fetching Server Components, scope-aware,
   gate-aware, returning null when empty, wrapped in a uniform `WidgetCard`.
 - **Assignment is one declarative config**; pages only render `<WidgetSlot>`.

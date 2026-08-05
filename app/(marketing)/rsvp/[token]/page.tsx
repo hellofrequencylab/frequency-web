@@ -109,7 +109,7 @@ async function RsvpInvite({ params }: { params: Promise<{ token: string }> }) {
       <div className="mx-auto max-w-md">
         <div className="mb-8">
           {invite.inviterName && (
-            <p className="mb-3 text-body-sm font-bold uppercase tracking-wide text-primary-strong">
+            <p className="mb-3 text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong">
               {invite.inviterName} invited you
             </p>
           )}

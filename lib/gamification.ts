@@ -122,6 +122,17 @@ export type ChallengeDifficulty = 'easy' | 'normal' | 'hard' | 'legendary'
 // Tier display config
 // ---------------------------------------------------------------------------
 
+// These two records were the ONLY place in the repo carrying raw Tailwind palette
+// classes (amber-700, gray-500, violet-600 …), and because they are exported and
+// consumed by every achievement, award and challenge surface, those strings
+// propagated everywhere while answering to nothing: not a skin, not an occasion, not
+// a feel generation, not even DAWN's own dark mode — they carried Tailwind's `dark:`
+// palette instead. A member on the Midnight skin saw Tailwind violet.
+//
+// They now draw from the DAWN rank spectrum, which exists for exactly this ("the rest
+// serve Amplitude tiers, Pillars and Space accents"). The contract per rank is
+// core = fill · deep = text on light · bright = text on dark, so a text field pairs
+// `-deep` with a `dark:` `-bright`, and tints are alpha over the core.
 export const TIER_CONFIG: Record<AchievementTier, {
   label: string
   color: string
@@ -129,33 +140,36 @@ export const TIER_CONFIG: Record<AchievementTier, {
   border: string
   glow: string
 }> = {
+  // bronze→clay, silver→stone, gold→gold, platinum→indigo. Earthy metals map onto the
+  // spectrum's own earthy primitives; platinum takes the one cool jewel step, so the
+  // ladder still climbs in perceived value without leaving the palette.
   bronze: {
     label: 'Bronze',
-    color: 'text-amber-700 dark:text-amber-400',
-    bg: 'bg-amber-50 dark:bg-amber-950/40',
-    border: 'border-amber-200 dark:border-amber-800',
+    color: 'text-rank-clay-deep dark:text-rank-clay-bright',
+    bg: 'bg-rank-clay/10 dark:bg-rank-clay/15',
+    border: 'border-rank-clay/30 dark:border-rank-clay/40',
     glow: '',
   },
   silver: {
     label: 'Silver',
-    color: 'text-gray-500 dark:text-gray-300',
-    bg: 'bg-gray-50 dark:bg-gray-800/60',
-    border: 'border-gray-300 dark:border-gray-600',
+    color: 'text-rank-stone-deep dark:text-rank-stone-bright',
+    bg: 'bg-rank-stone/10 dark:bg-rank-stone/15',
+    border: 'border-rank-stone/30 dark:border-rank-stone/40',
     glow: '',
   },
   gold: {
     label: 'Gold',
-    color: 'text-yellow-600 dark:text-yellow-400',
-    bg: 'bg-yellow-50 dark:bg-yellow-950/40',
-    border: 'border-yellow-300 dark:border-yellow-700',
-    glow: 'shadow-yellow-200/40 dark:shadow-yellow-900/30',
+    color: 'text-rank-gold-deep dark:text-rank-gold-bright',
+    bg: 'bg-rank-gold/10 dark:bg-rank-gold/15',
+    border: 'border-rank-gold/35 dark:border-rank-gold/45',
+    glow: 'ring-1 ring-rank-gold/45',
   },
   platinum: {
     label: 'Platinum',
-    color: 'text-violet-600 dark:text-violet-400',
-    bg: 'bg-violet-50 dark:bg-violet-950/40',
-    border: 'border-violet-300 dark:border-violet-700',
-    glow: 'shadow-violet-200/50 dark:shadow-violet-900/30',
+    color: 'text-rank-indigo-deep dark:text-rank-indigo-bright',
+    bg: 'bg-rank-indigo/10 dark:bg-rank-indigo/15',
+    border: 'border-rank-indigo/35 dark:border-rank-indigo/45',
+    glow: 'ring-1 ring-rank-indigo/45',
   },
 }
 
@@ -178,10 +192,14 @@ export const DIFFICULTY_CONFIG: Record<ChallengeDifficulty, {
   bg: string
   bar: string
 }> = {
-  easy:      { label: 'Easy',      color: 'text-green-600 dark:text-green-400',  bg: 'bg-green-50 dark:bg-green-950/40',  bar: 'bg-green-500' },
-  normal:    { label: 'Normal',    color: 'text-blue-600 dark:text-blue-400',    bg: 'bg-blue-50 dark:bg-blue-950/40',    bar: 'bg-blue-500' },
-  hard:      { label: 'Hard',      color: 'text-orange-600 dark:text-orange-400',bg: 'bg-orange-50 dark:bg-orange-950/40',bar: 'bg-orange-500' },
-  legendary: { label: 'Legendary', color: 'text-violet-600 dark:text-violet-400',bg: 'bg-violet-50 dark:bg-violet-950/40',bar: 'bg-violet-500' },
+  // easy→jade, normal→slate, hard→clay, legendary→plum. Note easy is a JADE and not a
+  // green: DAWN's success tone is a teal so that "done" reads cohesive with Signal, and
+  // a true green would be the one hue the system deliberately does not own. The bar is
+  // the rank CORE (a fill), the label its `-deep`/`-bright` pair (text).
+  easy:      { label: 'Easy',      color: 'text-rank-jade-deep dark:text-rank-jade-bright',     bg: 'bg-rank-jade/10 dark:bg-rank-jade/15',     bar: 'bg-rank-jade' },
+  normal:    { label: 'Normal',    color: 'text-rank-slate-deep dark:text-rank-slate-bright',   bg: 'bg-rank-slate/10 dark:bg-rank-slate/15',   bar: 'bg-rank-slate' },
+  hard:      { label: 'Hard',      color: 'text-rank-clay-deep dark:text-rank-clay-bright',     bg: 'bg-rank-clay/10 dark:bg-rank-clay/15',     bar: 'bg-rank-clay' },
+  legendary: { label: 'Legendary', color: 'text-rank-plum-deep dark:text-rank-plum-bright',     bg: 'bg-rank-plum/10 dark:bg-rank-plum/15',     bar: 'bg-rank-plum' },
 }
 
 // ---------------------------------------------------------------------------

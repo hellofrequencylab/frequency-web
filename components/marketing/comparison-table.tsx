@@ -161,7 +161,7 @@ export function ComparisonTable({
                 <th
                   scope="colgroup"
                   colSpan={columns.length + 1}
-                  className="px-5 py-2 text-2xs font-black uppercase tracking-wider text-muted"
+                  className="px-5 py-2 text-2xs font-black uppercase tracking-eyebrow text-muted"
                 >
                   {group.label}
                 </th>
@@ -247,7 +247,7 @@ function MobileByColumn({
           <div className="border-t border-border px-5 pb-5 pt-2">
             {groups.map((group) => (
               <div key={group.key} className="mt-4 first:mt-2">
-                <h4 className="mb-2 text-2xs font-black uppercase tracking-wider text-muted">
+                <h4 className="mb-2 text-2xs font-black uppercase tracking-eyebrow text-muted">
                   {group.label}
                 </h4>
                 <dl className="space-y-2">
@@ -312,7 +312,7 @@ function MobileByRow({
           <dl className="mt-4 space-y-3">
             {footer.cells.map((cell, i) => (
               <div key={columns[i]!.id}>
-                <dt className="text-2xs font-black uppercase tracking-wider text-muted">
+                <dt className="text-2xs font-black uppercase tracking-eyebrow text-muted">
                   {columns[i]!.label}
                 </dt>
                 <dd className="mt-1">

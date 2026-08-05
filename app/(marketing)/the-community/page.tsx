@@ -605,7 +605,7 @@ function DayBeat({
           <span className="font-display uppercase text-text text-lead leading-none">
             {title}
           </span>
-          <span className="text-meta font-bold uppercase tracking-widest text-primary-strong">
+          <span className="text-meta font-bold uppercase tracking-eyebrow text-primary-strong">
             {time}
           </span>
         </div>

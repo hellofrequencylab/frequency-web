@@ -601,8 +601,18 @@ function AccountDropdown({
     function handleOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
+    // Esc closes it. The docks law is that all three share one dismissal contract (Esc OR an
+    // outside click); the Vault dock already honoured both and this one only had the click, so
+    // a keyboard user who opened the system menu had no way back out of it.
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
     document.addEventListener('mousedown', handleOutside)
-    return () => document.removeEventListener('mousedown', handleOutside)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleOutside)
+      document.removeEventListener('keydown', handleKey)
+    }
   }, [])
 
   const resolvedMenu = menu ?? defaultMenu('profile')
@@ -645,7 +655,14 @@ function AccountDropdown({
         // The SYSTEM dock's popover (three-docks law): opens from the top-right corner
         // toward the interior. rounded-control + shadow-menu (downward-only depth, so it
         // reads as sliding out from under the chrome band, not floating over it).
-        <div className="absolute right-0 top-full mt-2 w-60 rounded-card border border-border bg-surface shadow-menu py-1 z-50 max-h-[80vh] overflow-y-auto">
+        // The shared dock popover shell: `.glass` + `.lift-3`, arriving on the cue-pop beat.
+        // All three docks are supposed to look like one another; this one was flat `bg-surface`
+        // with the `shadow-menu` literal, so the system dock read as a different language from
+        // the Vault dock it sits diagonally across from.
+        // `.glass` is unlayered, so it beats a Tailwind border/background utility outright —
+        // it owns both here, and adding them back would be dead text of exactly the kind
+        // check:bridge exists to catch.
+        <div className="glass lift-3 animate-cue-pop absolute right-0 top-full mt-2 w-60 rounded-card py-1 z-50 max-h-[80vh] overflow-y-auto">
 
           {/* Header */}
           <div className="px-3 py-2.5 border-b border-border">
@@ -834,17 +851,26 @@ function NavLinkList({
   // edge column has no room for a hierarchy, and the tooltip already names the destination).
   const nestClass = (depth?: number) => (depth ? 'ml-3 border-l border-border ' : '')
 
+  // The row. `rounded-control` (not a literal step) so a skin retunes the rail with the rest
+  // of the controls — Midnight sharpens it, the kids generations round it right off.
+  // The WEIGHT LADDER is DAWN's (ui_kits/app/nav-rail.jsx NavRow): a resting row is 600 and the
+  // active row is 800, because the active row is meant to be "the one amber moment" in the rail
+  // and colour alone was carrying it. The home anchor keeps its own 700 brand treatment.
   const itemClass = (active: boolean, emphasize = false, depth = 0) =>
-    `${nestClass(depth)}flex items-center gap-2.5 px-3 py-2 rounded-lg text-body-sm transition-colors ${
+    `${nestClass(depth)}flex items-center gap-2.5 px-3 py-2 rounded-control text-body-sm transition-colors ${
       emphasize
         ? `font-bold text-[var(--brand-mark)] ${active ? 'bg-primary-bg' : 'hover:bg-surface-elevated'}`
         : active
-          ? 'bg-primary-bg text-primary-strong font-semibold'
-          : 'text-muted font-medium hover:bg-surface-elevated hover:text-text'
+          ? 'bg-primary-bg text-primary-strong font-extrabold'
+          : 'text-muted font-semibold hover:bg-surface-elevated hover:text-text'
     }`
 
+  // The group label is an EYEBROW, and eyebrows are tracked at 0.18em (`--tracking-eyebrow`).
+  // `tracking-wider` is 0.05em — 3.6× tighter than the token on the one element whose whole job
+  // is to look deliberately spaced. Size stays `text-2xs` (DAWN's rail overrides the eyebrow
+  // utility's own size the same way), so this moves tracking only and cannot reflow the rail.
   const sectionLabelClass =
-    'px-3 pt-1 pb-1 text-2xs font-semibold uppercase tracking-wider text-muted'
+    'px-3 pt-1 pb-1 text-2xs font-semibold uppercase tracking-eyebrow text-muted'
 
   return (
     <>
@@ -1152,7 +1178,10 @@ function MobileLeftDrawer({
       <aside
         role="dialog"
         aria-label="Navigation"
-        className={`absolute inset-y-0 left-0 w-64 max-w-[82vw] bg-surface shadow-2xl flex flex-col transform transition-transform duration-200 ease-out ${
+        // The overlay drawer IS the menu, so it carries the menu's chrome ground like the
+        // desktop rail — and `lift-3` instead of the raw `shadow-2xl` literal, which is a
+        // Tailwind default rather than a step on the system's own warm elevation scale.
+        className={`absolute inset-y-0 left-0 w-64 max-w-[82vw] bg-chrome lift-3 flex flex-col transform transition-transform duration-200 ease-out ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -1958,7 +1987,13 @@ export default function AppShell({
                 column scrolls past. A menu taller than the window scrolls
                 INTERNALLY instead of riding the page. */}
             {showLeftRail && (
-              <aside className="hidden md:flex w-48 shrink-0 flex-col">
+              // The rail is FRAME, so it sits on `--color-chrome` — a step DOWN from the canvas.
+              // DAWN's law is that the app frame reads as frame and the white content cards are
+              // the thing that pops; with the rail transparent on canvas, the frame and the page
+              // were the same ground and only the cards' hairlines separated them. The token has
+              // been in globals.css since the 2026-08-03 round with the top bar as its only
+              // adopter.
+              <aside className="hidden md:flex w-48 shrink-0 flex-col bg-chrome">
                 {/* The menu + profile footer live in NORMAL FLOW and scroll WITH the page
                     (no sticky pin, no inner scrollbar): the menu rides up as you scroll and
                     the profile card sits at the bottom of the column, revealed as you reach
@@ -1973,7 +2008,11 @@ export default function AppShell({
                     law): the admin canvas corner-tab skin (rounded top, hairline, canvas-tinted
                     blur), sticky to the column bottom. Mirrors components/admin/
                     admin-profile-card.tsx's wrapper. */}
-                <div className="sticky bottom-0 z-10 rounded-t-2xl border-x border-t border-border/70 bg-[var(--color-canvas)]/95 px-1.5 pt-1 backdrop-blur-sm">
+                {/* The tab tint follows the rail it sits in: now that the rail is chrome, a
+                    canvas-tinted tab read LIGHTER than its own ground and inverted the corner-tab
+                    effect. `rounded-t-card` for the same reason the rows took `rounded-control` —
+                    a skin should be able to retune it. */}
+                <div className="sticky bottom-0 z-10 rounded-t-card border-x border-t border-chrome-border bg-chrome/95 px-1.5 pt-1 backdrop-blur-sm">
                   {!hideAppNav && role === 'member' && <UpgradeCrew />}
                   <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} operatorContext={operatorContext} availableContexts={availableContexts} menu={profileMenu} viewerRole={menuViewerRole} staffRole={staffRole} canReceivePayouts={canReceivePayouts} />
                 </div>
@@ -2031,7 +2070,7 @@ export default function AppShell({
                   // Mini rail — the global community rail collapsed to a thin strip. It shows ICONS
                   // for the rail's items (the Quest stats); clicking any reopens the rail. The
                   // collapse/expand TOGGLE sits at the BOTTOM. The rail is never removed.
-                  <aside className="flex w-14 shrink-0 flex-col items-center border-l border-border/60 py-6">
+                  <aside className="flex w-14 shrink-0 flex-col items-center border-l border-chrome-border bg-chrome py-6">
                     <div className="flex flex-col items-center gap-1.5">
                       {([['Quest', Zap], ['Gems', Gem], ['Streak', Flame]] as const).map(([label, Icon]) => (
                         <button
@@ -2058,7 +2097,7 @@ export default function AppShell({
                     </button>
                   </aside>
                 ) : (
-                  <aside className="flex w-72 shrink-0 flex-col py-6">
+                  <aside className="flex w-72 shrink-0 flex-col bg-chrome py-6">
                     {sidebar}
                     {/* The rail's end. DockBar measures this to know when to stop being pinned to
                         the window and come to rest against the last rail card instead. Zero-height

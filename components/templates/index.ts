@@ -19,7 +19,9 @@ export { FocusTemplate } from './focus-template'
 export { WizardShell, wizardPrimaryClass, wizardSecondaryClass } from './wizard-shell'
 export { WizardProgress } from './wizard-progress'
 export { DashboardTemplate } from './dashboard-template'
-export { HeaderSidebarTemplate } from './header-sidebar-template'
-export { TwoColumnTemplate } from './two-column-template'
+// (Removed 2026-08-05: HeaderSidebarTemplate + TwoColumnTemplate. Both shipped as kit shells
+// and were never composed by a single page. The in-body sidebar geometry lives on as
+// DetailTemplate's `sidebar` slot; two peer columns are a grid inside whichever shell the
+// content actually is. See docs/PAGE-FRAMEWORK.md §3 + §8.1.)
 export { RailGrid } from './rail-grid'
 export { AdminTemplate, AdminSection } from './admin-template'

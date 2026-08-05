@@ -90,7 +90,7 @@ export function PhotoHero({
       >
         {eyebrow && (
           <p
-            className={`font-bold uppercase tracking-[0.25em] text-primary ${
+            className={`font-bold uppercase tracking-eyebrow text-primary ${
               isScreen ? 'text-body-sm sm:text-body mb-4' : 'text-body-sm mb-5'
             }`}
           >
@@ -123,7 +123,7 @@ export function PhotoHero({
               <div className="font-display text-page-title leading-none text-primary sm:text-3xl">
                 {value}
               </div>
-              <div className="mt-1.5 text-3xs font-bold uppercase tracking-widest text-on-ink-muted">
+              <div className="mt-1.5 text-3xs font-bold uppercase tracking-eyebrow text-on-ink-muted">
                 {label}
               </div>
             </div>
@@ -156,7 +156,7 @@ export function PageHero({
     <section className={`px-6 ${pad ?? 'pt-20 pb-12 sm:pt-32 sm:pb-20'} ${vis}`}>
       <div className="max-w-3xl mx-auto text-center">
         {eyebrow && (
-          <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-5">
+          <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-5">
             {eyebrow}
           </p>
         )}
@@ -237,7 +237,7 @@ export function SectionHeading({
     <div className={`mb-9 ${centered ? 'text-center' : ''}`}>
       {eyebrow && (
         <p
-          className={`text-body-sm font-bold uppercase tracking-[0.25em] mb-4 ${
+          className={`text-body-sm font-bold uppercase tracking-eyebrow mb-4 ${
             isInk ? 'text-primary' : 'text-primary-strong'
           }`}
         >
@@ -302,7 +302,7 @@ export function PullQuote({
         </blockquote>
         {cite && (
           <figcaption
-            className={`mt-7 text-body-sm font-bold uppercase tracking-[0.25em] ${
+            className={`mt-7 text-body-sm font-bold uppercase tracking-eyebrow ${
               isInk ? 'text-on-ink-subtle' : 'text-subtle'
             }`}
           >
@@ -331,7 +331,7 @@ export function Stat({
         {value}
       </p>
       <p
-        className={`text-meta uppercase tracking-widest font-bold mt-3 ${
+        className={`text-meta uppercase tracking-eyebrow font-bold mt-3 ${
           isInk ? 'text-on-ink-subtle' : 'text-subtle'
         }`}
       >
@@ -650,7 +650,7 @@ export function PhotoBeat({
       />
       <div className="relative z-10 mx-auto max-w-4xl text-center">
         {eyebrow && (
-          <p className="text-body-sm font-bold uppercase tracking-[0.25em] text-primary">{eyebrow}</p>
+          <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary">{eyebrow}</p>
         )}
         <p className="mt-4 font-display uppercase text-on-ink text-balance text-[clamp(2rem,4.6vw,3.5rem)] leading-[1.05]">
           {line}
@@ -770,7 +770,7 @@ export function ZigZag({
         <div className="max-w-prose">
           {eyebrow && (
             <p
-              className={`text-body-sm font-bold uppercase tracking-[0.25em] mb-4 ${
+              className={`text-body-sm font-bold uppercase tracking-eyebrow mb-4 ${
                 isInk ? 'text-primary' : 'text-primary-strong'
               }`}
             >
@@ -855,7 +855,7 @@ export function PillarNav({
     <section className={`${bg} px-6 py-16 sm:py-20`}>
       <div className="max-w-5xl mx-auto">
         <p
-          className={`text-center text-body-sm font-bold uppercase tracking-[0.25em] mb-8 ${
+          className={`text-center text-body-sm font-bold uppercase tracking-eyebrow mb-8 ${
             isInk ? 'text-primary' : 'text-primary-strong'
           }`}
         >
@@ -921,7 +921,7 @@ function PillarFace({
       </span>
       <div>
         <p className={`font-display uppercase text-page-title leading-none ${head}`}>{label}</p>
-        <p className={`mt-1.5 text-meta font-bold uppercase tracking-widest ${active ? accent : sub}`}>
+        <p className={`mt-1.5 text-meta font-bold uppercase tracking-eyebrow ${active ? accent : sub}`}>
           {active ? 'You are here' : tag}
         </p>
       </div>

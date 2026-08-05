@@ -338,3 +338,42 @@ rhythm degrades to slightly generous gaps, never a broken layout, so it is safe 
 progressive enhancement; and **`color-mix()`**, which has no graceful fallback. If the
 repo's floor is below Safari 16.2, the derived tones need resolving to static values at
 build time. Everything else is comfortably inside a 2023 baseline.
+
+
+## Repo → DAWN · 2026-08-05 (outbound, for the next round)
+
+Five things production found while adopting DAWN. `SYNC.md` §"Going the other way" asks for
+these; each is a place DAWN should change, not the repo.
+
+**1. DAWN contradicts itself on eyebrow tracking, and it is load-bearing.** `readme.md` §4 says
+"Eyebrow tracking is locked at **0.25em**, uppercase, bold." `tokens/typography.css` declares
+`--tracking-eyebrow: 0.18em`, and DAWN's own `.eyebrow` class reads the token — so every DAWN
+component has always rendered 0.18em while the spec prose said 0.25em. Production had BOTH in the
+wild (27 sites at `tracking-[0.25em]`, matching the prose). We resolved to **0.18em**, the token,
+per the rule that machine-readable state beats prose. **Please fix the readme sentence** — this is
+the exact value the R7 sweep is converging ~698 sites onto.
+
+**2. Four tokens where production is ahead** (contrast fixes DAWN has not picked up):
+
+| Token | DAWN | Production | Why |
+|---|---|---|---|
+| `--color-focus-ring` | `#E2912F` | `#B86A15` | 1.75:1 → 3.87:1 |
+| `--color-text-on-primary` | `#FFFFFF` | `#1A1206` | white on amber fails AA |
+| `--color-text-on-broadcast` | `#FFFFFF` | `#1A1206` | same, on the broadcast cyan |
+| `--color-text-subtle` | `#8F8675` | `#6E6558` | the contrast sweep darkened it |
+
+**3. The Vault row's glyph.** `ui_kits/app/nav-rail.jsx` still names `gem` for `vault`. Production
+moved the Vault to the literal vault-door glyph in the 2026-08-03 round and kept Gem as the
+currency mark. DAWN's rail reference is stale against its own round.
+
+**4. `Badge.prompt.md`'s solid variant is wrong on light.** It sets the label to
+`color: var(--color-surface)`, which on a light `primary-strong` fill renders dark-on-dark.
+Production pairs each fill with its own `--color-text-on-*` token instead. Suggest DAWN adopt the
+pairing tokens.
+
+**5. The rank spectrum needed `deep`/`bright` as utilities, not just CSS vars.** DAWN documents
+core = fill · deep = text on light · bright = text on dark, but only `.rank-badge` could reach the
+last two, so anything needing rank-coloured TEXT reached for a raw palette class instead. That is
+the whole reason `lib/gamification.ts` carried the repo's last 48 raw Tailwind palette classes.
+Production has bridged all three steps now. Worth saying in the spec that the ladder is meant to be
+reachable by callers, not only by the badge primitive.

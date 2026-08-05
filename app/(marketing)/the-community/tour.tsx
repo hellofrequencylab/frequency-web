@@ -368,7 +368,7 @@ function ZapsPanel() {
       <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
         <div className="flex items-center gap-2 mb-3">
           <Zap className="w-4 h-4 text-signal-strong" aria-hidden />
-          <span className="text-2xs font-bold uppercase tracking-widest text-muted">
+          <span className="text-2xs font-bold uppercase tracking-eyebrow text-muted">
             How a Zap works
           </span>
         </div>

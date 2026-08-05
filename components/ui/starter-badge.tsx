@@ -1,4 +1,5 @@
 import { Sparkles } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 
 // One small pill that marks a card or map pin as a Starter Circle — a staff-made
 // blueprint surfaced near the viewer that anyone can claim and make their own. The
@@ -6,14 +7,19 @@ import { Sparkles } from 'lucide-react'
 // warning-gold Demo badge and the signal-teal Featured badge, so a Starter reads as
 // "a good place to begin" without shouting. Presentational + server-friendly (no
 // hooks), so it drops into the EntityCard `badge` slot in Server Components.
+//
+// Composes the shared Badge primitive (components/ui/badge.tsx): this file owns the
+// MEANING — which tone, which glyph, what the tooltip says — and never the pill's metrics.
 export function StarterBadge({ className = '' }: { className?: string }) {
   return (
-    <span
+    <Badge
+      tone="primary"
+      size="sm"
+      icon={<Sparkles aria-hidden />}
       title="A Starter Circle. Claim it to make it your own."
-      className={`inline-flex shrink-0 items-center gap-1 rounded-pill border border-primary/30 bg-primary-bg/60 px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-primary-strong ${className}`}
+      className={className}
     >
-      <Sparkles className="h-2.5 w-2.5 text-primary-strong" aria-hidden />
       Starter
-    </span>
+    </Badge>
   )
 }

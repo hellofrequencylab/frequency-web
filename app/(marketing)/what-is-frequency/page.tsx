@@ -409,7 +409,7 @@ export default function WhatIsFrequencyPage() {
               </div>
               <div className="mt-2 sm:mt-0 min-w-0">
                 <p className="text-body text-muted leading-relaxed">{t.who}</p>
-                <p className="mt-1 text-meta font-bold uppercase tracking-widest text-subtle">
+                <p className="mt-1 text-meta font-bold uppercase tracking-eyebrow text-subtle">
                   {t.take}
                 </p>
               </div>

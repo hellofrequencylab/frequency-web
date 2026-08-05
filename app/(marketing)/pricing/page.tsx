@@ -672,7 +672,7 @@ function PlanPrice({
                 {anchor}/mo
               </span>
               <span
-                className={`text-3xs font-black uppercase tracking-wider ${
+                className={`text-3xs font-black uppercase tracking-eyebrow ${
                   ink ? 'text-primary' : 'text-primary-strong'
                 }`}
               >
