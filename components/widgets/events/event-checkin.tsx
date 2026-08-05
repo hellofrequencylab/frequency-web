@@ -14,7 +14,7 @@ export const EventCheckin = async () => {
   if (!ctx.isPast || ctx.hasEnded) return null
 
   return (
-    <div className="@container rounded-2xl border border-primary-border bg-primary-bg p-4">
+    <div className="@container rounded-2xl border border-primary/30 bg-primary-bg p-4">
       <h3 className="mb-1.5 flex items-center gap-2 text-sm font-bold text-text">
         <QrCode className="h-4 w-4 shrink-0 text-primary-strong" />
         Check-in is open
