@@ -37,7 +37,12 @@ export function MarketingFooter({ menu }: { menu?: ResolvedMenu }) {
             {/* The footer is the one surface with room for the full lockup: a 2rem mark puts the
                 tagline at ~9.5px, where small caps are still legible. Headers take the mark
                 alone — see the note in wordmark.tsx. */}
-            <Wordmark tagline mark="2rem" className="opacity-50 mb-3" />
+            {/* `[&>img]:opacity-50`, NOT `opacity-50` on the lockup. The tagline is real text now,
+                and dimming the whole lockup dimmed it to 2.67:1 against the footer band — the axe
+                suite caught it as a serious color-contrast violation on /pricing. Opacity on the
+                MARK keeps the intended softness; the tagline takes --color-muted, which clears
+                4.5:1 in every skin (5.21 DAWN light · 6.37 DAWN dark · 6.41 Midnight light). */}
+            <Wordmark tagline mark="2rem" className="[&>img]:opacity-50 mb-3" />
             <p className="text-body-sm text-muted leading-relaxed">
               Frequency is a Community Collective for real-world connection. Find local Circles and Events
               near you, keep a private book of the Contacts you meet, and stay in touch. Not home,
