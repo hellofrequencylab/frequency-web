@@ -112,7 +112,7 @@ export function MarketingHeader({
 
       {/* Logo — into the app when signed in, to the splash when not. */}
       <Link href={authed ? '/feed' : '/'} className="shrink-0">
-        <Wordmark tagline className={`h-9 w-auto ${light ? 'dark:invert' : 'invert drop-shadow-md'}`} priority />
+        <Wordmark className={`h-7 w-auto ${light ? 'dark:invert' : 'invert drop-shadow-md'}`} priority />
       </Link>
 
       {/* Header mega-menu (Discover + Explore dropdowns, from the `header` surface) */}

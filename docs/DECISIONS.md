@@ -17561,3 +17561,56 @@ source-level class assertion in `hero-contrast.test.ts` and two golden-markup sn
 attribute or content changed — before accepting it, because a blind `-u` on a golden snapshot
 is how a real regression gets laundered. ⚠️ Visual baselines should NOT move; if `pr-compare`
 reports a diff on this PR, that is a genuine mistake to investigate, not an expected cost.
+
+---
+
+## ADR-944 — The lockup is text over the mark, and it goes where there is room (2026-08-05)
+
+**Status:** Accepted · corroborated by `components/layout/wordmark.tsx`,
+`components/layout/marketing-footer.tsx`, `lib/comms/email-template.ts`, `lib/site.ts`
+
+**Context.** The wordmark asset had the retired tagline *"A place to be human"* baked into its
+pixels, and it shipped on every page for months for exactly that reason: `scripts/check-canon.mjs`
+bans the string, scans `.md`/`.ts`/`.tsx`, and is structurally incapable of reading a raster. The
+one place the retired tagline lived was the one place the gate could never look. ADR-943's sibling
+change cropped the asset to the mark alone; this ADR settles what replaces the tagline.
+
+**Decision.**
+
+1. **The tagline is TEXT, never pixels.** Baking "Community Collective" back into the PNG would
+   rebuild the identical trap with a different string in it. As text it is scannable by the canon
+   gate, it inherits the theme instead of needing `dark:invert`, it stays crisp at any DPR, and it
+   survives in email, where images are routinely blocked and a raster tagline simply vanishes.
+
+2. **The lockup is sized by ONE number — the mark's height — and everything else is an `em` of it.**
+   The lockup span sets `font-size: <mark height>`, so `0.28em` genuinely means "28% of the mark".
+
+3. **The lockup goes where there is room: the footer, email, and large surfaces. Headers take the
+   mark alone.** The tagline is 28% of the mark, so a header-sized mark (28px) puts it at ~8px and
+   the Discover mark (20px) at ~6px. More decisively, stacking a tagline under a mark that already
+   owned the full header height grows *every header on the site* by ~15px. Owner ruling, 2026-08-05.
+
+4. **`SITE_TAGLINE` drops its article: "Community Collective".** NAMING.md §ADR-811 already makes
+   *"Community Collective"* the canonical descriptor for the platform, and the artwork sets it that
+   way, so the old value was off-canon. One constant feeds the lockup, the OG card, the `<title>`,
+   `llms.txt` and the email footer, so they cannot disagree. **This is not the tier ladder.**
+   "The Community Collective" as a *billing ladder* heading (ADR-811) is a different name and keeps
+   its article; the two senses are called out in `lib/site.ts` so nobody collapses them.
+
+**The mistake this records.** The first revision sized the lockup with the caller's `h-9` and set
+the tagline to `text-[0.19em]`, on the assumption that `em` there meant "a fraction of the lockup's
+height". It does not — for `font-size`, `em` resolves against the **parent's font-size**, and
+nothing set one. The tagline inherited the surrounding header (~17px), computed to ~3.2px, and
+rendered at **6px** only because Blink floors font-size there; a browser with a different floor
+would have rendered it differently again. Percentages resolve against height and `em` does not, so
+a lockup mixing the two is two sizing systems wearing one coat.
+
+`pr-compare` caught it as a uniform **+13px** on all 56 marketing captures — the growth item 3
+above now avoids entirely. The failure is worth recording because the code *looked* correct and
+the accompanying comment asserted the behaviour it did not have.
+
+**Consequences.** ✅ Headers are byte-identical to before, so the visual baselines stay valid. ✅ The
+footer brand block grows from a 24px mark to a 49px lockup — an intended, reviewed change. ✅ Email
+carries the tagline as a second line in the header band, in inline styles. ⚠️ `mark` is a CSS length
+string rather than a Tailwind class, because the component does arithmetic on it and a class name is
+not a number; the type makes it required exactly when `tagline` is set.

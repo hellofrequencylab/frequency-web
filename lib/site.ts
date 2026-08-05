@@ -8,7 +8,12 @@ export const SITE_URL =
   "https://frequencylocal.com";
 
 export const SITE_NAME = "Frequency";
-export const SITE_TAGLINE = "The Community Collective";
+// The brand tagline, and the exact words under the mark in the logo lockup. No leading "The":
+// NAMING.md §ADR-811 makes "Community Collective" the canonical descriptor for the platform, and
+// the artwork sets it that way, so the lockup, the OG card, the <title> and llms.txt all agree.
+// NOT to be confused with "The Community Collective" the TIER LADDER (also ADR-811) — that is a
+// billing surface heading, a different name that keeps its article.
+export const SITE_TAGLINE = "Community Collective";
 export const SITE_DESCRIPTION =
   "Frequency is a Community Collective. Everything a community needs, in one place: start a Circle, host Events near you, and grow a Space. You keep 100% of your own bookings; we earn only a small, shrinking network-only take-rate on what the network sends you.";
 

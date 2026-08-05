@@ -37,7 +37,7 @@ const POSTAL_ADDRESS = '802 Caminito Azul, Carlsbad, CA 92011'
 
 /** The default brand tagline / one-line sender description. Mirrors lib/site.ts SITE_TAGLINE (ADR-811);
  *  kept LOCAL so the email shell stays framework-free (see ORG_LEGAL_NAME). A Space send can override it. */
-const DEFAULT_TAGLINE = 'The community collective'
+const DEFAULT_TAGLINE = 'Community collective'
 
 /** The brand + unsubscribe inputs shared by the full shell and the standalone footer builder, so the on-canvas
  *  editor and the sent email read from ONE footer source of truth. */

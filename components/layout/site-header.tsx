@@ -130,11 +130,11 @@ export async function SiteHeader({ profile: profileProp, variant = 'light', auth
       {/* Logo */}
       {clientAuth ? (
         <ViewerLink anonHref="/" authHref="/feed" className="shrink-0">
-          <Wordmark tagline className={`h-9 w-auto ${isDark ? 'invert' : 'dark:invert'}`} priority />
+          <Wordmark className={`h-7 w-auto ${isDark ? 'invert' : 'dark:invert'}`} priority />
         </ViewerLink>
       ) : (
         <Link href={isAuth ? '/feed' : '/'} className="shrink-0">
-          <Wordmark tagline className={`h-9 w-auto ${isDark ? 'invert' : 'dark:invert'}`} priority />
+          <Wordmark className={`h-7 w-auto ${isDark ? 'invert' : 'dark:invert'}`} priority />
         </Link>
       )}
 
