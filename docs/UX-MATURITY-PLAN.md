@@ -104,10 +104,10 @@ them back down, so an unearned baseline can never read plain green again.
 |---|---|---|
 | Radius roles (P3 of the retheme) | 4,722 literal `rounded-*` → `rounded-card/control/pill` by role; codemod + hand-review of the ambiguous tail | `literal-radius` |
 | ProgressTrack | ~30 `rounded-full` + inline-width bars → the primitive | `adhoc-progress` |
-| UnderlineTabs (owner-ruled 2026-08-03) | 4 pill consoles (via `activeHref`) + 3 hand-rolled strips → the one tab vocabulary; move the component `components/admin/` → `components/ui/` | `tab-vocabulary` |
+| UnderlineTabs (owner-ruled 2026-08-03) | 4 pill consoles (via `activeHref`) + 3 hand-rolled strips → the one tab vocabulary; move the component `components/admin/` → `components/ui/` | `handrolled-tabs` |
 | RowCard | ~15 bespoke `*-row*` → RowCard slots | `bespoke-rows` |
 | EntityCard/PersonCard | bespoke cards → kit, where the card is genuinely an entity browse card (bespoke-by-design cards get an allowlist entry, not a rewrite) | `bespoke-cards` |
-| text-subtle at small sizes | Lift 3's contrast sweep feeds this baseline | `subtle-small-text` |
+| text-subtle at small sizes | Lift 3's contrast sweep feeds this baseline | `subtle-tiny-type` |
 
 **2c. Cadence.** One sweep per wave alongside screen passes — a sweep is mechanical
 review-friendly work that pairs well with a visually-loud screen PR.
@@ -164,7 +164,7 @@ the advisors have flagged since June — not a11y, but it rides every "turn the 
 conversation and keeps being deferred.
 
 **Metric:** axe violation count (target and hold: 0 serious+), contrast pairs all green
-×4 states, `subtle-small-text` baseline shrinking (Lift 2).
+×4 states, `subtle-tiny-type` baseline shrinking (Lift 2).
 
 ---
 
@@ -379,11 +379,20 @@ The lifts are not a new track; they mount onto the waves already running.
 
 | When | Ships | From lifts |
 |---|---|---|
-| **Now** (current wave, PR #2014 era) | Block parity + library restyle (⏳) · ratchet harness + contrast script + research protocol doc + budgets file + state contract doc (all S, no dependencies) | 5a · 2a · 3a · 1b-doc · 7a · 8a |
-| **Wave +1** | Template regeneration (about → lab → quest → spaces) · radius codemod sweep · axe in e2e · visual suite states ×4 · vitals readout panel · mobile brief to DAWN | 5b · 2b · 3b · 6b · 7b · 4a |
-| **Wave +2** | Coded-body retirement + `check:render-path` · UnderlineTabs + ProgressTrack sweeps · visual suite auto-compare on PRs · kit state sweep · first moderated test round (🔴 recruiting) | 5c · 2b · 6c · 8b · 1b |
-| **Wave +3** | Seeker articles (HowTo block) · home + pricing-partial conversion · RowCard/EntityCard sweeps · mobile implementation wave (gated on DAWN's mobile round) · focus/reduced-motion audit | 5d · 2b · 4c · 3c/3d |
+| ✅ **Shipped** (was "Now", PR #2014 era) | Block parity + library restyle · ratchet harness + contrast script + research protocol doc + budgets file + state contract doc | 5a · 2a · 3a · 1b-doc · 7a · 8a |
+| ✅ **Shipped** (was Wave +1) | Template regeneration · **radius codemod sweep** (`ecd8f52`) · **axe in e2e** (`test/e2e/a11y-baselines.json`, `pnpm test:e2e:a11y`) · **visual suite ×4 states** (`test/e2e/surfaces.ts` `RENDER_STATES`) · vitals readout panel · **mobile brief to DAWN** (`design_handoff/BRIEF-07-MOBILE-GRAMMAR.md`) | 5b · 2b · 3b · 6b · 7b · 4a |
+| ✅ **Shipped, unplanned** — the whole type-role program | **ADR-941/942/943 + pass 2a**: 7,578 type literals onto the roles, paired display line-heights, `literal-type` to 0. This was three of six consecutive merges and appeared in NO row of this table until now. | (new) |
+| ✅ **Shipped, unplanned** — gate correctness | **ADR-944** the lockup · **ADR-945** Engine 3 retired · four gates corrected + three added (`literal-display-type`, `raw-palette`, `handrolled-icon-button`) · `check:bridge` · the focus ring at full strength | (new) |
+| **Now** | Recapture the visual baselines main has drifted from (six rendering merges since the last capture — `pr-compare` has been red on drift, not on changes) · pass 2b, the 301 display literals | 6c · 2b |
+| **Next** | Coded-body retirement + `check:render-path` (no such script yet) · UnderlineTabs `components/admin/` → `components/ui/` (not yet moved) · kit state sweep · first moderated test round (🔴 recruiting) | 5c · 2b · 8b · 1b |
+| **After** | Seeker articles (HowTo block) · home + pricing-partial conversion · RowCard/EntityCard sweeps · mobile implementation wave (gated on DAWN's mobile round) · focus/reduced-motion audit | 5d · 2b · 4c · 3c/3d |
 | **Standing, every DAWN round** | Vitals table + research findings in the outbound handoff; mobile behavior stated per screen pass; ratchet counts only shrink | 7c · 1c · 4-rule · 2 |
+
+> **This table was 17 PRs behind.** Its "Now" row was labelled *"current wave, PR #2014 era"* while
+> main sat at #2035, and six things filed under "Wave +1" had already shipped. Most tellingly, the
+> entire type-role program — the single largest body of work in that stretch — appeared nowhere in
+> this document: no lift, no sweep row, no baseline row. A plan that does not absorb what shipped
+> stops being a plan and becomes a second, competing history.
 
 **Owner actions collected (the full 🔴 list):** recruit 5 test users/quarter (1b) ·
 create the seeded beta test account + CI secret for app-state snapshots (6a) · flip
@@ -412,17 +421,27 @@ held by a gate rather than a memory.
 > provenance in the JSON (`frozen: { at, value, from, direction, basis, reason }`), and the gate
 > prints it on every run. **Verdicts below are what the numbers can support, not what we hoped.**
 
-| Baseline key | Audit | Live baseline | Verdict | Pattern basis |
-|---|---|---|---|---|
-| `literal-radius` | 5,543 | **5,468** | ✅ swept (−75) | `rounded-(sm|md|lg|xl|2xl|3xl|full)\b` |
-| `shadow-literals` | 684 | **54** | ✅ swept (−630) | `\bshadow-(sm|md|lg|xl|2xl)\b` |
-| `white-black-literals` | 382 | **297** | ⚠️ −66 swept, −19 scope carve-out | `-white\b|white/\d+|-black\b`, minus `lib/og/**` + OG/Twitter images |
-| `subtle-tiny-type` | 832 | **23** | 🔴 basis change, no sweep shipped | `text-subtle` within 80 chars of `text-(2xs|3xs)`, **same line** |
-| `raw-button-bg` | 494 | **529** | ⚠️ raise recorded; artifact, not 35 new buttons | `<button` + `bg-primary` within 500 chars |
-| `adhoc-progress` | 52 | **14** | ✅ swept (−38) | `rounded-full…style={{ width:` |
-| `bespoke-cards` / `bespoke-rows` | 35 / 15 | **23** / **14** | ✅ −11 / −1 swept, −1 card is scope | `*-card.tsx` / `*row*.tsx` |
-| `handrolled-tabs` | 3 | **3** | ✅ reproduces exactly | `border-b-2` selected-tab |
-| `raw-px-arbitrary` | ~150 (est.) | **139** | ✅ new class, seeded from measurement | sizing/spacing `-[Npx]`, icon/OG/print allowlisted |
+| Baseline key | Live baseline | Frozen | How it got there |
+|---|---|---|---|
+| `literal-radius` | **3,824** | 2026-08-05 | lowered — the radius sweep, then a pass-2a side effect |
+| `literal-type` | **0** | 2026-08-05 | rebased — swept to 0 by pass 2a; scope later widened to `.mts` |
+| `shadow-literals` | **54** | 2026-08-04 | lowered (−630) |
+| `white-black-literals` | **266** | 2026-08-05 | rebased — 31 of the old 297 were `font-black`, a font WEIGHT |
+| `subtle-tiny-type` | **24** | 2026-08-04 | ⚠️ raised — instrument artifact, not new debt |
+| `raw-button-bg` | **528** | 2026-08-05 | lowered |
+| `adhoc-progress` | **14** | 2026-08-05 | ⚠️ rebased — the pattern named `rounded-full`, which the radius sweep RETIRED, so its 0 meant "my subject no longer exists" |
+| `bespoke-cards` / `bespoke-rows` | **23** / **14** | 2026-08-04 | rebased / lowered |
+| `handrolled-tabs` | **3** | 2026-08-04 | seed — reproduces the audit exactly |
+| `raw-px-arbitrary` | **127** | 2026-08-05 | rebased — the WCAG 44px allowlist never worked, so 12 tap-target floors were counted as debt |
+| `literal-display-type` | **301** | 2026-08-05 | seed — `text-3xl`…`9xl`, the pass-2b population. Nothing measured it before |
+| `raw-palette` | **48** | 2026-08-05 | seed — raw Tailwind palette classes, all in `lib/gamification.ts`, the only file in the repo with any |
+| `handrolled-icon-button` | **37** | 2026-08-05 | seed — icon-only buttons not composing `IconButton` |
+
+> **This table is generated from `scripts/adoption-baselines.json`, not maintained by hand.** The
+> version before this one was wrong on five of nine rows and had no row for `literal-type` at all —
+> it claimed `literal-radius` 5,468 (live: 3,824) and `adhoc-progress` 14 remaining when the sweep
+> had taken it to 0, then a pattern correction put it back at 14 for an unrelated reason. Prose
+> drifts; the JSON is the scoreboard. Re-derive rather than edit: `node -e "…loadConfig()…"`.
 
 **Why the corpus is the same corpus.** Three independent controls reproduce the audit to the
 unit, which is what rules out "the app grew": the step half of the radius census (`rounded-sm`
@@ -465,11 +484,12 @@ never real and no credit is claimed for it.
 4. ✅ **ProgressTrack adoption** (S) — **shipped.** 52 → 14 bars; the primitive went from 0
    adopters to 36 importers.
 5. ⏳ **Radius roles** (L): biggest number, worst ratio (per-site role judgment, few-px deltas) —
-   ratchet-and-hold at **5,468**, spend adoption inside screen passes rather than as its own wave.
+   ratchet-and-hold at ~~**5,468**~~ **3,824** (the sweep shipped as its own wave in `ecd8f52`, against this line's advice), spend adoption inside screen passes rather than as its own wave.
 
 ### Gate corrections (found by the round, all cheap)
 
-- **`check:tokens` scope hole**: `ROOTS = ['app','components']` — `lib/` is entirely ungoverned
+- ~~**`check:tokens` scope hole**: `ROOTS = ['app','components']` — `lib/` is entirely ungoverned~~
+  ✅ **Fixed.** `scripts/check-tokens.mjs` now reads `const ROOTS = ['app', 'components', 'lib']`, with the lib allowlist documented in its header.
   and holds the largest hex concentration (95). Add `lib` to ROOTS with a reasoned allowlist
   (email templates, spotlight/theme-studio token sources are legitimate).
 - **Raw-px gap** (the one real finding from DAWN's adherence config): the guard bans `text-[Npx]`
@@ -494,5 +514,5 @@ DB-authored page-doc references — verify against published Puck docs before de
 ### Primitive adoption scoreboard (the round's truth of "implemented globally")
 
 Landed at scale: EmptyState 244 · SectionHeader 141 · StatCard 114 · EntityCard 42.
-Shipped-but-idle: ProgressTrack 0 · StreakMeter 0 · Meter 1 · Counter 2 · GateNotice 3 —
+Shipped-but-idle (STALE — ProgressTrack has 34 importers and `adhoc-progress` was swept to 0 before a pattern correction reset it to 14; StreakMeter is rendered in components/sidebar/game-stats-dock.tsx): ProgressTrack 0 · StreakMeter 0 · Meter 1 · Counter 2 · GateNotice 3 —
 the fabric phase's first targets, now with exact counts to ratchet against.

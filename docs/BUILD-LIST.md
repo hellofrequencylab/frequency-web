@@ -52,8 +52,10 @@ shrinks. Remaining before the phases resume: run the pgTAP suite green in `db-te
 
 Finish the parent/child theme so any look change (color · radius · font · header · card · copy) is a
 **single parent edit that reaches every surface, with no drift**. Color + headers + layout + menu are
-already single-source; the gaps are radius (**4,722** literal `rounded-*`, 0 token usage), type/weight
-(raw values in base CSS), control/card consolidation (~18 raw buttons), hero coverage (24 of 31 browse
+already single-source; the gaps are radius (~~**4,722** literal `rounded-*`, 0 token usage~~ **3,824** literal,
+**1,719** role usages as of 2026-08-05), type/weight (~~raw values in base CSS~~ shipped, ADR-941/942/943),
+control/card consolidation (~~~18 raw buttons~~ the census corrected that by 27×; the live `raw-button-bg`
+baseline is **528**), hero coverage (24 of 31 browse
 pages still plain), the copy cascade (`page_content` is header-only), and per-Space theming depth.
 Enforced by CI gates so new drift fails a PR. **Sequence: tokens (P1–P3) → headers (P4–P5) → copy (P6)
 → operator theming + safety net (P7–P8).** Lift: S ≈ 1 day · M ≈ 2–4 days · L ≈ 1–2 weeks.
@@ -74,14 +76,14 @@ to `components/ui/` during the sweep.
 | # | Scope | Lift | Status |
 |---|---|---|---|
 | P0 | **Headers + enforcement.** One `PageHero` for browse/commerce; `check:tokens` + `check:headers` hard gates; the protocol doc. | — | ✅ ADR-781 (PR #1805) |
-| P1 | **Radius tokens.** Codemod 4,722 `rounded-2xl/xl/lg` + 1,000 `rounded-full` → `rounded-card/control/pill` by role; extend `check:tokens` to flag literal `rounded-*`. The single biggest unifier. | L | 📋 |
-| P2 | **Type + weight contract.** Tokenize the raw heading weight/line-height/letter-spacing; lock the named type scale as the contract. | M | 📋 |
+| P1 | **Radius tokens.** ✅ The codemod shipped (`ecd8f52`): `rounded-full` → `rounded-pill` site-wide plus role adoption, `literal-radius` 5,543 → **3,824**, **1,719** role usages, tokens at `app/globals.css` + per-skin scopes. ⏳ The second half is genuinely outstanding — `check:tokens` still has zero occurrences of `rounded`; the `literal-radius` ratchet holds the line instead. | L | ⏳ |
+| P2 | **Type + weight contract.** ✅ Shipped across ADR-941/942/943 + pass 2a: named roles, paired line-heights (a Tailwind v4 trap — `text-*` emits BOTH size and `line-height`, so the companion must live in `@theme`), `literal-type` at **0**. Display sizes (`text-3xl`…`9xl`) are the remaining 301, now ratcheted as `literal-display-type`. | M | ✅ |
 | P3 | **Control + card consolidation.** ~18 raw `<button bg-primary>` → `Button`; hand-rolled cards → `EntityCard`/`ModuleCard`; unify badges/empties; lint flags raw styled buttons/cards. | M | 📋 |
 | P4 | **Universal browse hero.** The 24 plain `IndexTemplate` pages adopt `heroOverlay` (section-default covers) so the hero is everywhere. | M | 📋 |
 | P5 | **Entity headers → `PageHero`.** Fold the 43 `DetailTemplate` band pages onto the one `PageHero` grammar (entity + index = one component). | M–L | 📋 |
 | P6 | **Copy cascade.** Generalize `page_content` into `site → section → page` inherit-cascade; widen editable fields to body copy + images; extend `check:canon` to `.tsx`. | L | 📋 |
 | P7 | **Per-Space / white-label depth.** Widen the child-theme override surface (surfaces + type), operator theme controls, a theme-contract compile check. | L | 📋 |
-| P8 | **Dark-mode + a11y + visual regression.** Contrast/dark audit; visual-regression snapshots so a parent edit can't silently break a surface. | M–L | 📋 |
+| P8 | **Dark-mode + a11y + visual regression.** ✅ Substantially shipped: `check:contrast` (blocking, five render states incl. the light-lock, and it now models use-site alpha), the axe ratchet `test/e2e/a11y-baselines.json`, and `test/e2e/visual.spec.ts` × four render states. ⚠️ The visual gate is only as good as its baselines — see the recapture note in UX-MATURITY-PLAN §Sequencing. | M–L | ⏳ |
 | P9 | **Marketing ↔ in-app reconciliation** (optional). Align the marketing brand system with the app tokens where they diverge. | M | 📋 |
 
 ## 🧭 Practice library at scale — 2026-06-28 ([ADR-438](DECISIONS.md), full spec [PRACTICE-LIBRARY.md](PRACTICE-LIBRARY.md), economy detail [REWARDS-ECONOMY §3a](REWARDS-ECONOMY.md))
