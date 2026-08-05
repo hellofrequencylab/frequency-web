@@ -77,20 +77,29 @@ const compiler = await compile(css, {
 const candidates = [...seen.keys()].sort()
 const out = compiler.build(candidates)
 
+/** Escape EVERY regex metacharacter, backslash included, for embedding in a pattern.
+ *  One helper for both call sites: the two had drifted, and the self-check below escaped
+ *  only `-` — which CodeQL flagged (js/incomplete-sanitization) and was right to. A hyphen
+ *  needs no escape outside a character class; a backslash always does. The inputs here are
+ *  class names we scraped, so this is hygiene rather than a live injection, but a half-
+ *  escaped pattern in the SELF-CHECK is the worst place for it: a control that silently
+ *  fails to match turns the whole gate into a rubber stamp. */
+const rx = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+/** A rule for class `c` exists in the compiled sheet. */
+const emitsCss = (css, c) => new RegExp(`\\.${rx(c)}[\\s,:{]`).test(css)
+
 // SELF-CHECK. A broken extractor and a clean repo produce the same "0 problems", so prove the
 // instrument works before trusting its silence: a known-good class must be found emitting CSS.
 const control = 'rounded-card'
-const controlOk = new RegExp(`\\.${control.replace(/-/g, '\\-')}[\\s,:{]`).test(compiler.build([control]))
+const controlOk = emitsCss(compiler.build([control]), control)
 if (!controlOk) {
   console.error(`✗ Phantom-class gate is BROKEN: the control class \`${control}\` emitted no CSS.`)
   console.error('  The scan cannot be trusted; a green result here would be meaningless.')
   process.exit(1)
 }
 
-const phantom = candidates.filter((c) => {
-  const esc = c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/-/g, '\\-')
-  return !new RegExp(`\\.${esc}[\\s,:{]`).test(out)
-})
+const phantom = candidates.filter((c) => !emitsCss(out, c))
 
 if (phantom.length > 0) {
   console.error(`✗ Phantom classes: ${phantom.length} class(es) are written but emit NO CSS.\n`)
