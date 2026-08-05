@@ -35,6 +35,7 @@ import { getViewerHats } from '@/lib/core/viewer-hats'
 import { accessTo, type AccessLevel, type Hats, type Surface } from '@/lib/core/access-matrix'
 import { NAV_AREAS } from '@/lib/nav-areas'
 import { AchievementToastContainer } from '@/components/achievement-toast'
+import { ToastLane } from '@/components/toast-lane'
 import { ZapToastContainer } from '@/components/zap-toast'
 import { PresenceHeartbeat } from '@/components/presence/heartbeat'
 import { PushRegistration } from '@/components/push/registration'
@@ -623,8 +624,13 @@ export default async function MainLayout({
         <BetaCountdownBanner />
       </Suspense>
       {children}
-      <AchievementToastContainer />
-      <ZapToastContainer />
+      {/* ONE bottom-right toast lane. Both stacks used to declare their own identical `fixed`
+          box at z-50, so they claimed the same rect and both sat under the Vera panel — a reward
+          toast fired with Vera open was never seen. components/toast-lane.tsx owns the geometry. */}
+      <ToastLane>
+        <AchievementToastContainer />
+        <ZapToastContainer />
+      </ToastLane>
       <PresenceHeartbeat />
       <PushRegistration />
       {/* One-time browser→home_timezone sync so the practice "day" resolves in the
