@@ -45,8 +45,22 @@ export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
    *  than `placeholder` because an unselectable prompt is not what it renders. */
   emptyLabel?: ReactNode
   /** Classes for the positioning wrapper that holds the chevron. The wrapper is `block w-full`
-   *  by default (a select in a form fills its field); pass `"inline-block w-auto"` for a
-   *  toolbar filter that should shrink to its widest option. */
+   *  by default (a select in a form fills its field); pass `"inline-block w-max max-w-full"`
+   *  for a toolbar filter that should shrink to its widest option.
+   *
+   *  🔴 NOT `w-auto`, which this docstring recommended until it was measured. `cn()` in this
+   *  repo is a plain join, not tailwind-merge, so a class passed here does not REPLACE the
+   *  default — both land in the attribute and the cascade settles it by emit order in the
+   *  compiled sheet, which no call site can see. Measured against the real compiled
+   *  `app/globals.css`: `.w-auto` at 8610 precedes `.w-full` at 8643, so `w-full` wins and the
+   *  select stays full width. `.w-max` at 8676 FOLLOWS `w-full`, so it wins, and for a select
+   *  `width: max-content` is what "shrink to the widest option" actually means. `max-w-full`
+   *  keeps a long option from pushing out of its container. `inline-block` was always fine —
+   *  `.block` at 8526 precedes `.inline-block` at 8561.
+   *
+   *  The same trap applies to any width, padding, or display class routed through here: check
+   *  the emit order before assuming your override wins. Type roles DO override (`text-body-sm`
+   *  < `text-meta` < `text-2xs`), which is why compact toolbar selects can pass `text-meta`. */
   wrapperClassName?: string
 }
 
