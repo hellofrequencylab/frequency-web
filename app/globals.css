@@ -297,8 +297,10 @@
 
   /* Sans (Nunito) — body, in-app headings, UI. */
   --text-page-title:   calc(1.5rem * var(--type-scale, 1));
-  /* THE FLUID PAGE TITLE (ADR-949), and the only role in this file that exists to retire a
-     RESPONSIVE RAMP rather than a single literal. Two sites — DetailTemplate's
+  /* THE FLUID PAGE TITLE — ADR-947's "fourth decision", named there and not yet written up, so
+     this cites the parent rather than reserve a number (949 is already taken, by an unrelated
+     decision). It is the only role in this file that exists to retire a RESPONSIVE RAMP rather
+     than a single literal. Two sites — DetailTemplate's
      `titleScale="display"` h1 and the event page's inline-edit input that mirrors it — carried
      `text-page-title sm:text-3xl lg:text-4xl`: 1.5 → 1.875 → 2.25rem in two jumps. Nothing in the
      vocabulary could take it. Every FIXED role is one size by definition, and the nearest fluid

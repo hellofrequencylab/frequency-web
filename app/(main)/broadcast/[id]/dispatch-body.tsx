@@ -8,6 +8,9 @@ export function DispatchBody({ body }: { body: string }) {
       <ReactMarkdown
         components={{
           h1: ({ children }) => (
+            // header-ok: the markdown renderer's h1 MAPPING, not the page header — it styles a heading
+            // the dispatch AUTHOR typed in the body, while the page's own header is composed upstream in
+            // page.tsx. PageHeading cannot serve this slot: it takes a title prop, not markdown children.
             <h1 className="text-page-title font-black text-text mt-8 mb-3 leading-tight">{children}</h1>
           ),
           h2: ({ children }) => (

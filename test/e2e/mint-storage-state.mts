@@ -49,12 +49,12 @@
 // sign-in page under the shell's name.
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
 interface JarCookie {
   name: string
   value: string
-  options?: Record<string, unknown>
+  options?: CookieOptions
 }
 
 interface PlaywrightCookie {
@@ -188,7 +188,7 @@ const cookies: PlaywrightCookie[] = [...jar.values()].map(({ name, value, option
     value,
     // Host-only, matching how the browser would have stored it during a real sign-in.
     domain: baseUrl.hostname,
-    path: typeof options?.path === 'string' ? options.path : '/',
+    path: options?.path ?? '/',
     expires: maxAge > 0 ? now + maxAge : -1,
     // Left exactly as @supabase/ssr set it (httpOnly is false by default, because the
     // browser client reads the same cookie). Do not "harden" this: the app would break.

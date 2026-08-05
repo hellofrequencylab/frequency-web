@@ -15,7 +15,7 @@
 // (COMPARISONS / personaSlugs / the pillar array / help content / discover DB reads):
 // those are generated from a source of truth, so they cannot silently drift.
 //
-// It runs TWO scans:
+// It runs THREE scans:
 //   A. COVERAGE — every STATIC (non-[param]) app/(marketing)/<slug>/page.tsx (+ the
 //      homepage app/page.tsx) must be advertised: its route appears in sitemap.ts as a
 //      literal `${SITE_URL}/…` entry, OR it is in INTENTIONALLY_EXCLUDED below with a
@@ -23,22 +23,52 @@
 //   B. RESOLUTION — every literal `${SITE_URL}/<path>` static entry in sitemap.ts must
 //      resolve to a real page.tsx / route.ts under app/ (resolving through route groups
 //      like (marketing)/(main)/(help)). No backing file → the entry is dead.
+//   C. DECLARATION — every static page OUTSIDE (marketing) that a crawler can actually
+//      reach must SAY what it wants: advertised in the sitemap, or carrying its own
+//      `robots: { index: false }`. Silence is the bug (see below).
+//
+// ---------------------------------------------------------------------------------------
+// SCAN C — added 2026-08-05 (Phase 9, docs/DAWN-CONVERSION.md §4).
+// ---------------------------------------------------------------------------------------
+// A and B both look only at app/(marketing), which quietly assumes every indexable page
+// lives there. It does not. /market, /housing and /classifieds are real, crawlable routes
+// under app/(main) — deliberately left OUT of the robots.ts DISALLOW list so crawlers walk
+// through them to the indexable /<vertical>/<id> detail pages — and this gate had never
+// looked at one of them. Whether they were indexed, noindexed, or silent was not something
+// it could report either way.
+//
+// The rule Scan C applies is INTENT, not indexing: a crawlable page must declare itself.
+// Being advertised is a declaration; `robots: { index: false }` is a declaration; saying
+// nothing leaves the decision to the crawler, and that is the failure mode.
+//
+// "Correctly private" pages are skipped rather than nagged, and the skip is derived from
+// the code that actually makes them private rather than from a hand-kept list here:
+//   * app/robots.ts `DISALLOW` — the crawler is told not to fetch them at all.
+//   * proxy.ts `PROTECTED_PATHS` — an anonymous request is redirected to /sign-in.
+//   * an in-page auth guard (requireAdmin / requireLeadFloor / getMyProfileId / …) or a
+//     redirect stub — the surfaces whose wall is the page's own first statement.
+// Both lists are PARSED, so when a path is added to either, this gate follows on its own.
+// A page's own layout chain is read too: app/(main)/pages/layout.tsx noindexes its whole
+// subtree, and a per-page-only reader would have called those pages undeclared.
 //
 // LOW-FALSE-POSITIVE by construction. It hard-fails ONLY on (a) a static marketing page
-// neither advertised nor allowlisted, or (b) a literal static sitemap route with no
-// backing file. Anything it cannot resolve with confidence is a WARNING, never a failure,
-// so it will not break CI on a legitimate page. The allowlist is curated by actually
-// reading each excluded page (redirect / noindex), never to silence the check.
+// neither advertised nor allowlisted, (b) a literal static sitemap route with no backing
+// file, or (c) a crawler-reachable page that declares nothing (or contradicts itself by
+// being noindex AND advertised). Anything it cannot resolve with confidence is a WARNING,
+// never a failure, so it will not break CI on a legitimate page. The allowlist is curated
+// by actually reading each excluded page (redirect / noindex), never to silence the check.
 //
 // Usage: `node scripts/check-seo.mjs` (or `pnpm check:seo`). Exits non-zero on a real gap.
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
-import { join, relative, sep } from 'node:path'
+import { join, relative, sep, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const APP_DIR = 'app'
 const MARKETING_DIR = join(APP_DIR, '(marketing)')
 const SITEMAP_FILE = join(APP_DIR, 'sitemap.ts')
+const ROBOTS_FILE = join(APP_DIR, 'robots.ts')
+const PROXY_FILE = 'proxy.ts'
 
 // Static forward-facing pages that are DELIBERATELY not advertised in the sitemap. Each
 // entry carries the real, verified reason (grep the page: redirect / noindex). Do NOT add
@@ -147,6 +177,71 @@ function sitemapLiteralRoutes() {
   return routes
 }
 
+// ── Scan C helpers: who is private, who declared themselves ────────────────────
+
+/** Blank comment bodies so PROSE about noindex (or a path) is never read as a declaration.
+ *  The same defect check:adoption's stripComments fixed: app/robots.ts's own comment quotes
+ *  `"/spaces"` while arguing AGAINST a blanket /spaces rule, and a naive parser adopted it. */
+export function stripComments(src) {
+  return src.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' ')).replace(/(^|\n)([ \t]*\/\/[^\n]*)/g, (_m, lead, body) => lead + body.replace(/[^\n]/g, ' '))
+}
+
+/** Read a `const <NAME> = [ '…', '…' ]` string array out of a source file. Throws rather than
+ *  returning empty: a silent [] would turn every private surface into a reported gap (noise) or,
+ *  worse, be read as "nothing is private". A gate that cannot find its input must say so. */
+export function parsePathList(file, name) {
+  const src = stripComments(readFileSync(file, 'utf8'))
+  const m = src.match(new RegExp(`const\\s+${name}\\s*=\\s*\\[([\\s\\S]*?)\\n\\s*\\]`))
+  if (!m) throw new Error(`check-seo: could not find \`const ${name} = [...]\` in ${file}. It is the source of truth for which routes are private; fix this parser rather than dropping the scan.`)
+  return [...m[1].matchAll(/['"]([^'"]+)['"]/g)].map((x) => x[1])
+}
+
+/** Does route `r` fall under one of the private prefixes? A trailing `/` prefix (e.g. `/join/`)
+ *  walls the subtree only; a bare one walls the route and its subtree. */
+export function isPrivateRoute(r, prefixes) {
+  return prefixes.some((p) => (p.endsWith('/') ? `${r}/`.startsWith(p) : r === p || r.startsWith(`${p}/`)))
+}
+
+// The page's own wall: `require*` (lib/admin/guard — these throw or redirect by contract), and the
+// `redirect(` / `permanentRedirect(` / `notFound()` that a redirect stub or a `if (!profileId)
+// redirect('/sign-in')` gate ends an anonymous request with. A page carrying one of these does not
+// render for a crawler, so it is correctly private and not a gap.
+//
+// `getMyProfileId()` is deliberately NOT on this list, and that omission is the whole point. It is
+// how a page reads the VIEWER, not how it walls itself: /market calls it to personalise a page it
+// serves to everyone. Treating it as a guard made this scan green over /market — the exact route it
+// was written to watch — on the first fail-proof run. The signal has to be the stop, not the lookup.
+const PAGE_GUARD =
+  /\brequire(?:Admin|LeadFloor|Host|Auth|User|Member|Staff|Janitor)\s*\(|\bnotFound\s*\(\)|\bredirect\s*\(|\bpermanentRedirect\s*\(/
+
+/** The `robots: { index: …, follow: … }` a page (or one of its layouts) declares, or null. */
+export function robotsDirective(src) {
+  const m = stripComments(src).match(/robots\s*:\s*\{([^}]*)\}/)
+  if (!m) return null
+  const read = (k) => {
+    const v = m[1].match(new RegExp(`${k}\\s*:\\s*(true|false)`))
+    return v ? v[1] === 'true' : null
+  }
+  return { index: read('index'), follow: read('follow') }
+}
+
+/** Every layout.tsx from app/ down to the page's own directory, nearest last. A layout's metadata
+ *  is inherited, so a subtree noindexed at the top (app/(main)/pages/layout.tsx) is declared. */
+export function layoutChain(file, exists = existsSync) {
+  const out = []
+  let dir = dirname(file)
+  while (dir && dir !== '.' && dir.startsWith(APP_DIR)) {
+    for (const name of ['layout.tsx', 'layout.ts']) {
+      const p = join(dir, name)
+      if (exists(p)) out.push(p)
+    }
+    const next = dirname(dir)
+    if (next === dir) break
+    dir = next
+  }
+  return out.reverse()
+}
+
 // ── Scans ───────────────────────────────────────────────────────────────────
 
 function run() {
@@ -214,16 +309,60 @@ function run() {
     })
   }
 
-  return { failures, warnings, coverageChecked, resolutionChecked }
+  // ── Scan C: DECLARATION — every crawler-reachable page outside (marketing) says what it wants. ──
+  const privatePrefixes = [...new Set([...parsePathList(ROBOTS_FILE, 'DISALLOW'), ...parsePathList(PROXY_FILE, 'PROTECTED_PATHS')])]
+  const declarationChecked = []
+  const noindexed = []
+  let skippedPrivate = 0
+  for (const file of allFiles) {
+    if (!/[/\\]page\.(tsx?|jsx?)$/.test(file)) continue
+    if (file.startsWith(MARKETING_DIR + sep) || file.startsWith(MARKETING_DIR + '/')) continue // Scan A owns these
+    const route = normalize(routeForFile(file))
+    if (isDynamic(route) || route === '/') continue // dynamic pages are registry/DB-driven; '/' is Scan A
+
+    const src = readFileSync(file, 'utf8')
+    // A page's declaration can live on the page OR on any layout above it (metadata is inherited).
+    const directive =
+      robotsDirective(src) ?? layoutChain(file).map((l) => robotsDirective(readFileSync(l, 'utf8'))).filter(Boolean).pop() ?? null
+    const noindex = directive?.index === false
+    const isAdvertised = advertised.has(route)
+
+    if (noindex && isAdvertised) {
+      failures.push({
+        kind: 'CONTRADICTION',
+        detail: `${relative('.', file)} → ${route} declares robots.index=false but sitemap.ts advertises it — we are submitting a URL we tell crawlers not to index`,
+      })
+      continue
+    }
+    if (isAdvertised) { declarationChecked.push(route); continue }
+    if (noindex) {
+      declarationChecked.push(route)
+      noindexed.push(`${route} (noindex, ${directive.follow === false ? 'nofollow' : 'follow'})`)
+      continue
+    }
+    if (isPrivateRoute(route, privatePrefixes) || PAGE_GUARD.test(stripComments(src))) { skippedPrivate += 1; continue }
+
+    failures.push({
+      kind: 'UNDECLARED ROUTE',
+      detail: `${relative('.', file)} → ${route} is crawler-reachable (not robots-disallowed, not proxy-protected, no auth guard) but is neither advertised in sitemap.ts nor noindexed — the crawler decides`,
+    })
+  }
+
+  return { failures, warnings, coverageChecked, resolutionChecked, declarationChecked, noindexed, skippedPrivate }
 }
 
 function main() {
-  const { failures, warnings, coverageChecked, resolutionChecked } = run()
+  const { failures, warnings, coverageChecked, resolutionChecked, declarationChecked, noindexed, skippedPrivate } = run()
 
   console.log(
-    `SEO/sitemap coherence — checked ${coverageChecked.length} forward-facing page(s) for coverage ` +
-      `and ${resolutionChecked.length} literal sitemap route(s) for resolution.`,
+    `SEO/sitemap coherence — checked ${coverageChecked.length} forward-facing page(s) for coverage, ` +
+      `${resolutionChecked.length} literal sitemap route(s) for resolution, and ${declarationChecked.length} ` +
+      `crawler-reachable page(s) outside (marketing) for a declaration (${skippedPrivate} correctly-private page(s) skipped).`,
   )
+  if (noindexed.length > 0) {
+    console.log(`  ${noindexed.length} reachable page(s) consciously kept OUT of the index:`)
+    for (const n of noindexed.sort()) console.log(`      ${n}`)
+  }
 
   for (const w of warnings) console.warn(`  ⚠ ${w}`)
 
@@ -241,7 +380,8 @@ function main() {
 
   console.log(
     '✓ SEO/sitemap coherence — every static marketing page is advertised or consciously excluded,\n' +
-      '  and every literal sitemap route resolves to a real page.',
+      '  every literal sitemap route resolves to a real page, and every crawler-reachable page\n' +
+      '  outside (marketing) declares its intent (advertised, or noindex).',
   )
 }
 

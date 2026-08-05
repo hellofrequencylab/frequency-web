@@ -57,6 +57,11 @@ supabase/backups/*.json
 .fuse_hidden*
 test-results/
 
+# Playwright member SESSIONS (PW_STORAGE_STATE). Real auth cookies for the e2e member
+# account: minted on demand by `pnpm e2e:session`, valid against one host, and never
+# committed. If one ever needs to be shared, mint a fresh one instead.
+test/e2e/.auth/
+
 # a11y ratchet CAPTURE file. Written only under PW_A11Y_UPDATE=1, consumed and
 # deleted by scripts/a11y-baselines.mjs. The merged result (a11y-baselines.json)
 # IS tracked — the raw per-worker capture is not.

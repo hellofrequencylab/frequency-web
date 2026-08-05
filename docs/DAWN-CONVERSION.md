@@ -386,6 +386,21 @@ the app shell at all.**
 > It also inverts the sequencing on ADR-948. See its 🔴 amendment: `PW_STORAGE_STATE` first,
 > baselines second, required third. Required-and-blind promotes a known gap to an institutional
 > claim.
+>
+> **Fixed 2026-08-05, and the fix is worth generalising (ADR-950).** The instrument could not be
+> pointed at the app without a credential only the owner can create — but *saying that it was not
+> pointed at the app* needed no credential at all, and that half shipped first. Every run now
+> counts its `@shell` tests and, when none of them execute, prints a **PARTIAL** banner into
+> `$GITHUB_STEP_SUMMARY` naming `/feed`, the room, `/settings` and the Space console as
+> unphotographed, with the cause and the one command that fixes it. The exit code is untouched:
+> an absent owner-held secret is not a pull request's fault, and a red X meaning "nobody has made
+> a credential yet" is how a check gets ignored. `PW_REQUIRE_SHELL=1` converts the same situation
+> to a failure once the credential exists.
+>
+> **The transferable rule.** When a gate cannot reach its subject, the reachable fix is not always
+> the gate — it is the REPORT. A blind spot that announces itself on every run is a different
+> object from one that has to be remembered, and it costs nothing to build. Of the six items in
+> this queue, this was the only one whose fix could ship before its blocker.
 
 **The rule this yields, and the one worth carrying past this conversion:**
 
@@ -411,8 +426,10 @@ or display that does not compile `app/globals.css` is asserting about a string, 
 | `raw-button-bg` → opening-tag form | S | It is a 500-char proximity window over arbitrary JSX, not a count of buttons: collapsing indentation alone moves it 529 → 564. It cannot measure the largest sweep in Phase 3 |
 | `check:headers` sees delegated `<h1>` | S | 3 known evaders |
 | `check:seo` covers non-marketing indexable routes | S | `/market`, `/housing`, `/classifieds` are crawlable and unwatched |
-| 🔴 **`PW_STORAGE_STATE`** | S | **Now the top of this queue.** The visual suite skips all four member-shell surfaces without it, so `pr-compare` photographs the marketing site and nothing else. Measured on #2048: rails, fold handle and both dock heads all changed, gate returned `12 skipped · 64 passed` — green, and blind to every one of them |
-| `pr-compare` required | XS | Approved (ADR-948) — but **strictly after** `PW_STORAGE_STATE`. Required-and-blind is worse than advisory-and-blind: it turns a known gap into a merge gate asserting the shell is fine |
+| ✅ **`PW_STORAGE_STATE`** | S | **Built 2026-08-05 (ADR-950).** Was the top of this queue. Two halves: the harness now ANNOUNCES an unphotographed shell (no credential needed — see below), and `pnpm e2e:session` mints a member session per run from the service-role key, the same `generateLink` + `verifyOtp` pair `impersonate-actions.ts` uses. 🔴 Owner action remaining: create the e2e member account and add three repo secrets |
+| 🔴 First member-shell baselines | S | The four shell surfaces have **never had a PNG**. `e2e-manual.yml` gained `capture_shell` (default OFF) so the first capture is chosen, not sprung: `capture_shell + update_baselines` writes 12 new files (16 with `PW_SPACE_SLUG`), then `capture_shell + update_a11y` seeds their a11y counts before a PR run meets `$defaultMax: 0` |
+| `PW_REQUIRE_SHELL=1` | XS | The ratchet. Before the credential, a zero-app-surface run announces; after it, the same run fails, so an expiring credential cannot silently re-open the blind spot |
+| `pr-compare` required | XS | Approved (ADR-948) — but **strictly after** the four rows above. Required-and-blind is worse than advisory-and-blind: it turns a known gap into a merge gate asserting the shell is fine |
 
 **Sequencing note.** Every sweep after this point is measured by these instruments. Fixing them
 first is not overhead — a sweep verified by a gate that cannot see its subject produces a number,

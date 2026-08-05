@@ -17795,6 +17795,13 @@ responsive ramp (1.5 / 1.875 / 2.25rem), no fixed role reproduces a ramp, and th
 (`display-h3`) floors at 1.75rem — it would grow every Detail title ~17% on phones and swap bold
 sans for Anton. Retiring it needs a fluid *page-title* role, which is a fourth decision.
 
+> **⚠️ SUPERSEDED, same day.** The fourth decision was taken and shipped hours after this section
+> was written: **ADR-951** adds `--text-page-title-lg`, and `77bb066e5` converted **both** halves of
+> the pair onto it. The paragraph above is preserved because it is the reasoning that *produced*
+> ADR-951 — but read as current status it is false, and a repo-wide audit caught it in that state.
+> An ADR's Resolved section is a snapshot, not a subscription; when the thing it resolved moves,
+> the amendment is the work.
+
 ---
 
 ## ADR-948 — `pr-compare` becomes a required check
@@ -17866,15 +17873,29 @@ ADR-949 was written about, promoted to a branch-protection rule.
 
 **Therefore:**
 
-1. **First** — create the beta member account, save its Playwright storage state, expose the file
-   to CI as `PW_STORAGE_STATE`. `test/e2e/surfaces.ts:225` already carries this as a 🔴 owner
-   action; it is now blocking rather than aspirational.
-2. **Then** — capture baselines for the four member-shell surfaces, which have never had any.
+1. **First** — create the e2e member account and expose it to CI so a session can be minted.
+   `test/e2e/surfaces.ts` carried this as a 🔴 owner action; it is now blocking rather than
+   aspirational.
+2. **Then** — capture baselines for the four member-shell surfaces, which have never had any,
+   and seed their a11y counts.
 3. **Only then** — add `pr-compare` to the required checks on `main`.
 
 Until step 1 lands, every rendering change to the app shell is verified by types, tests and the
 token gates, and looked at by nobody. The honest mitigation in the meantime is a human opening the
 Vercel preview, and saying so in the PR rather than pointing at a green tick.
+
+**Amendment update, 2026-08-05 (later the same day).** Steps 1-3 are now BUILT, and the shape of
+step 1 changed on contact with the facts — see **ADR-950**. The credential is not a saved file
+handed to CI; it is a session **minted per run** from the service-role key, because a saved
+storage state is defeated twice over (auth cookies are host-scoped and every PR gets a new preview
+hostname; refresh tokens rotate on first use). What the owner must produce is therefore an
+ACCOUNT and three repo secrets, not a file to keep rotating.
+
+The waiting is now instrumented rather than silent: while the account does not exist, every
+`pr-compare` run prints a **PARTIAL** banner naming `/feed`, the room, `/settings` and the Space
+console as unphotographed. The exact run this ADR was written about would no longer read as a
+pass. The ordered checklist is `test/e2e/README.md` § *Owner runbook*; step 5 of it
+(`PW_REQUIRE_SHELL=1`) is what makes step 3 here safe to apply.
 
 ---
 
@@ -17912,3 +17933,122 @@ guard and cannot be skipped when the guard is the reason a sweep is believed. �
 `adoption-baselines.json` entries carry rebase provenance rather than earned falls, because they
 were measured under a question the instrument was asking wrong — those are debt the ratchet stopped
 guarding, and they stay named until a sweep brings them down.
+
+---
+
+## ADR-950 — The e2e member session is minted per run, and a run that photographs no app surface says so
+
+**Date.** 2026-08-05 · **Status.** Accepted · **Scope.** `test/e2e/**`, `.github/workflows/e2e*.yml`
+· **Follows** ADR-948's 🔴 amendment (`PW_STORAGE_STATE` is a hard prerequisite) and ADR-949
+(prove a guard can fail).
+
+**Context.** `pr-compare` cannot see the app. The four member-shell surfaces — `/feed`, the room,
+`/settings`, the Space console — are the only captured surfaces with a rail, a dock or a fold
+control, and they skip whenever `PW_STORAGE_STATE` is unset. On #2048 that produced `12 skipped ·
+64 passed`, green, over a PR that changed all three of those things. Sign-in is magic-link only, so
+the suite cannot authenticate itself.
+
+Two separate problems hide in that sentence, and they have different fixes: the suite has no
+credential, and **nothing in its output says that the credential's absence emptied the run of the
+product.**
+
+**Decision 1 — make the silence loud, with no credential at all.** A Playwright reporter
+(`test/e2e/shell-reporter.ts`) counts every `@shell`-tagged test. When they are collected and none
+execute, the run prints a **PARTIAL** banner to `$GITHUB_STEP_SUMMARY` and the terminal that names
+each unphotographed surface, the cause (unset variable / missing file / present-but-inert, told
+apart rather than guessed at), and the command that fixes it, plus a `::warning` annotation. It
+also says when `PW_SPACE_SLUG` is unset, because that surface is not skipped — it is never
+created, which is quieter still.
+
+**It does not fail the run.** A red X meaning "the owner has not made a credential yet" is how a
+check gets ignored, and that is e2e.yml's own founding argument. The exit code stays as it was;
+the words change. The single opt-in exception is `PW_REQUIRE_SHELL=1`, set as a repo variable
+AFTER the credential and the baselines exist: from then on a zero-app-surface run fails, so a
+credential that later expires cannot re-open the blind spot the same silent way. The rendering
+logic is pure and unit-tested, including the negative control that a covered run cannot print the
+partial banner (ADR-949: observed red, then green).
+
+**Decision 2 — mint the session per run; never store one.** `pnpm e2e:session`
+(`test/e2e/mint-storage-state.mts`) calls `admin.auth.admin.generateLink({ type: 'magiclink' })`,
+which sends no email, then `verifyOtp` — the same two calls `app/(main)/impersonate-actions.ts`
+already makes in production. The cookies are written by handing `@supabase/ssr` a jar of our own,
+so the cookie name, base64url encoding and >3180-byte chunking come from the installed library
+rather than a second implementation of a private format.
+
+A **saved** storage state was the obvious alternative and it fails twice, independently:
+
+| | Why a stored credential dies |
+| :--- | :--- |
+| Cookie domain | Supabase auth cookies are host-scoped, and every PR gets a NEW `*.vercel.app` preview hostname. A file exported against production is simply never sent to the deployment under test. |
+| Refresh rotation | Refresh tokens rotate on use, so the first run that refreshes invalidates the stored copy. |
+
+Both land the suite on `/sign-in` — indistinguishable from having no credential, which is exactly
+the failure this ADR is closing. So the owner produces an ACCOUNT and three repo secrets
+(`PW_MEMBER_EMAIL`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL`; the latter two already
+exist for `help-index.yml`), and nothing needs rotating. The script **verifies before it writes**:
+it replays the minted cookies against `PW_BASE_URL/feed` and refuses to emit a file that lands on
+`/sign-in`. `assertMemberSession()` in `surfaces.ts` throws for the same case at test time, because
+photographing the sign-in page under `/feed`'s name would be worse than skipping it.
+
+**Decision 3 — the first shell capture is opt-in.** `e2e-manual.yml` gains `capture_shell`,
+defaulting OFF. The four shell surfaces have never had baselines, so their first capture writes 12
+new PNGs (16 with a Space slug) and their first a11y run measures debt against a `$defaultMax` of
+zero. Neither should be discovered by someone dispatching a routine baseline refresh.
+
+**Consequences.** ✅ A green `pr-compare` with the app missing from it now reads as PARTIAL, in
+words, before the credential exists — which is the whole gap ADR-948's amendment describes, closed
+from the side that needed no owner action. ✅ CI holds no long-lived member credential. ⚠️ It does
+hold the service-role key, which `help-index.yml` already required; it is used only to mint and is
+never written to disk. ⚠️ The ordering in ADR-948 stands and gains two steps: account + secrets,
+`capture_shell` baselines, `capture_shell` a11y seed, `PW_REQUIRE_SHELL=1`, and only then required.
+The runbook is `test/e2e/README.md` § *Owner runbook*.
+
+---
+
+## ADR-951 — A fluid page-title role, because a ramp is a decision the ladder could not express
+
+**Date.** 2026-08-05 · **Status.** Accepted (owner decision) · **Scope.** `app/globals.css`,
+`components/templates/detail-template.tsx`, `app/(main)/events/[slug]/page.tsx`
+· **Completes** the "fourth decision" ADR-947 named and deferred.
+
+**Context.** ADR-947 added three **fixed** roles because the type ladder was `clamp()`-based all
+the way down and nothing could express "this figure must not scale." It then hit a case that is the
+exact inverse and correctly refused to guess at it: `detail-template.tsx` and `events/[slug]` both
+carried `text-page-title sm:text-3xl lg:text-4xl` — a **three-step responsive ramp**, 1.5 → 1.875 →
+2.25rem. No fixed role reproduces a ramp, and the nearest fluid role is not a substitute:
+`display-h3` floors at 1.75rem, so every Detail title would grow ~17% on phones, and it is an Anton
+display face against this surface's bold sans.
+
+Two things made this worth its own decision rather than a sweep's judgment call:
+
+1. **It is the opposite call to ADR-947's.** That ADR replaced fixed literals with fixed roles. This
+   one replaces a *stepped* literal chain with a *fluid* role. Both are correct, and a reader who
+   sees only one will generalise it wrongly — hence a separate record rather than a footnote.
+2. **The two sites are one decision, not two.** `events/[slug]` is an **inline-edit input mirroring
+   the template's rendered title verbatim**. Converting either alone desyncs the editor from the
+   thing it edits — the member types into a box that no longer looks like the heading it produces.
+   They were marked `🔴 MIRRORED` at both ends for exactly this reason.
+
+**Decision.** Add `--text-page-title-lg: clamp(1.5rem, 4vw, 2.25rem)`, scaled by `--type-scale` so
+it stays on the generation axis, with a paired `--*--line-height`, declared in `:root` and bridged
+into `@theme inline`. Convert both halves of the mirrored pair together.
+
+Floor and ceiling are **unchanged** from the ramp they replace, so nothing resizes at either end.
+What changes is that the title interpolates instead of jumping at 640px and 1024px.
+
+**Consequences.** ✅ A ramp is now expressible, and the editor still matches its own output.
+⚠️ Registered in `check-phantom-classes`' `DECLARED` list, not only the consumer scan: a role born
+declared-but-unbridged with zero consumers is invisible to a scan that starts from call sites, and
+that is precisely the state a new role passes through. ⚠️ The `🔴 MIRRORED` markers **stay** — the
+coupling is a property of the two files, not of the literals they happened to share, and the next
+sweep must still move them together. ⚠️ ADR-947's Resolved section said this pair was "left on
+literals, together"; that is now superseded and annotated in place rather than rewritten, because
+the reasoning there is what produced this ADR.
+
+**How this was found, which is the transferable part.** Not by a gate — by a **repo-wide
+reconciliation** run specifically to find decisions the code had outgrown. It compared the phase
+plan's status markers, the ADR ledger, every commit message containing "left alone" / "follow-up" /
+"needs a design call", in-code `🔴` markers, and the ratchet's rebased entries against each other.
+The shipped-role-with-no-ADR was its top finding. Four ADRs were written in one day here, and a
+decision record that describes behaviour the product does not have is worse than no record — so
+that reconciliation is worth repeating after any burst of decisions, not just this one.

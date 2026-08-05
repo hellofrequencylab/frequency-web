@@ -73,6 +73,7 @@ export default class ShellCoverageReporter implements Reporter {
       surfaces: appSurfaces().map((s) => s.path),
       observations: [...this.seen.values()],
       specs: [...this.specs].sort(),
+      spaceSlug: process.env.PW_SPACE_SLUG,
     })
 
     const report = renderShellCoverage(coverage)

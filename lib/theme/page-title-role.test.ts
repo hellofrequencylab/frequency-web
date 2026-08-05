@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-// THE FLUID PAGE-TITLE ROLE, GUARDED (ADR-949).
+// THE FLUID PAGE-TITLE ROLE, GUARDED (ADR-947's "fourth decision").
 //
 // `--text-page-title-lg` is the only role in the vocabulary that exists to retire a RESPONSIVE
 // RAMP rather than a single literal. Two sites carried `text-page-title sm:text-3xl lg:text-4xl`
@@ -118,7 +118,7 @@ describe('the mirrored pair moved together', () => {
   })
 
   it('the event page’s inline-edit input names the SAME role', () => {
-    // 🔴 The coupling is smaller after ADR-949 (one token instead of three classes across two
+    // 🔴 The coupling is smaller now (one token instead of three classes across two
     // breakpoints) but it is NOT gone, and this is the assertion that holds it: an <input> gets
     // the browser's own form-control font and cannot inherit the h1 it sits in.
     expect(EVENT).toContain('text-page-title-lg font-bold text-text')

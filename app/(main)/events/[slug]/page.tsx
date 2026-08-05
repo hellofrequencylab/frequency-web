@@ -1702,7 +1702,7 @@ export default async function EventDetailPage({
           /* 🔴 The size here MIRRORS DetailTemplate's `titleScale="display"` h1, so the input
              matches the title it replaces. Change one and you must change both — an input gets
              the browser's own form-control font, so it cannot simply inherit the h1 it sits in.
-             Converted with that h1 to the single fluid role (ADR-949): the mirrored thing is now
+             Converted with that h1 to the single fluid role (ADR-947's "fourth decision"): the mirror is now
              one token rather than a three-step ramp across two breakpoints, which is a smaller
              coupling but the same one. See the note at components/templates/detail-template.tsx. */
           <InlineText

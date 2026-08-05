@@ -31,9 +31,15 @@ import { spaceTypeLabel } from '@/components/spaces/space-type'
 // so the gate is simply "signed in". FRAMING note: this hub reads the operator set from real
 // authority, never from the context cookie.
 
+// Found by check:seo Scan C on the run that first looked outside app/(marketing) (2026-08-05).
+// The gate here is "signed in", which this page applies by SCOPING rather than by redirecting, so
+// an anonymous crawler gets a real 200 with an empty operator hub on it. It is not robots-disallowed
+// (a blanket /spaces rule would deindex the public Space profiles), so the declaration has to live
+// here: noindex so the empty shell never enters the index, follow so the links out still count.
 export const metadata = {
   title: 'Spaces you run',
   description: 'Open the management console for any Space you own or help run.',
+  robots: { index: false, follow: true },
 }
 
 // A dimension-matched skeleton grid — same shape/spacing as the real card grid, so the streamed

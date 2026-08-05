@@ -230,6 +230,28 @@ describe('check-adoption — provenance: a raised floor stays visible', () => {
     expect(notes).toContain('measured on a different corpus')
   })
 
+  it('does NOT flag a rebased floor of ZERO — there is no debt standing on it', () => {
+    // The warning means "debt the ratchet stopped guarding". At baseline 0 it guards everything:
+    // the next site added fails CI. literal-type and raw-palette were both flagged forever for a
+    // fingerprint change alone, padding the block that literal-display-type's 204-site gap was
+    // hiding inside. A warning listing classes with no debt in them is how the real one gets missed.
+    const zero = {
+      ...entry,
+      baseline: 0,
+      patterns: ['\\bnothing-matches-this\\b'],
+      frozen: frozen(0, { direction: 'rebased', from: 0, reason: 'the corpus basis moved; the count was already 0' }),
+    }
+    zero.frozen.basis = basisFingerprint(zero)
+    const rows = evaluate([zero], corpus(['components/a.tsx', 'rounded-lg']))
+    expect(rows[0].current).toBe(0)
+    expect(rows[0].unearned).toBe(false)
+    expect(formatProvenanceNotes(rows)).toBe('')
+    // …but one site of real debt under the same rebase IS named.
+    const nonZero = { ...zero, baseline: 1, patterns: ['\\brounded-lg\\b'] }
+    nonZero.frozen = { ...zero.frozen, value: 1, basis: basisFingerprint(nonZero) }
+    expect(evaluate([nonZero], corpus(['components/a.tsx', 'rounded-lg']))[0].unearned).toBe(true)
+  })
+
   it('says nothing when every baseline was bought by a sweep', () => {
     const swept = { ...entry, frozen: frozen(2, { direction: 'lowered', from: 9, basis: basisFingerprint(entry) }) }
     expect(formatProvenanceNotes(evaluate([swept], corpus(['components/a.tsx', 'rounded-lg rounded-full'])))).toBe('')
@@ -306,6 +328,48 @@ describe('check-adoption — the corrected patterns measure what they name', () 
     }
   })
 
+  // 🔴 THE BUG (Phase 9, docs/DAWN-CONVERSION.md §4). raw-button-bg was
+  // `<button[\s\S]{0,500}?bg-primary` — a 500-character PROXIMITY WINDOW over arbitrary JSX, not a
+  // count of buttons. It bound a `<button>` to any bg-primary that happened to fall within 500
+  // characters, including one on a child element, and it read whitespace: over this repo's corpus
+  // collapsing indentation alone moved it 517 → 558 with no code changed. The ratchet for the
+  // largest sweep in the conversion (1,887 raw <button> sites) could not count buttons.
+  const buttons = (src: string) => (src.match(pattern('raw-button-bg')) ?? []).length
+
+  it('raw-button-bg counts the OPENING TAG, reading past an onClick arrow', () => {
+    // `=>` is why a plain `[^>]*` cannot be used: `onClick={() => …}` ends the scan at the arrow,
+    // and most raw buttons carry a handler BEFORE their className. That mis-fix under-counts, which
+    // is the direction a ratchet must never be wrong in.
+    expect(buttons('<button type="button" onClick={() => go()} className="rounded-pill bg-primary">Go</button>')).toBe(1)
+    expect(buttons('<button onClick={() => { setOpen(true) }} className={cn(active && "bg-primary")}>Go</button>')).toBe(1)
+    // One match per BUTTON, not per token: two primary classes in one tag are still one site.
+    expect(buttons('<button className="bg-primary hover:bg-primary-hover">Go</button>')).toBe(1)
+  })
+
+  it('raw-button-bg does NOT attribute a CHILD element’s fill to the button above it', () => {
+    // The whole defect in one fixture: the button is unstyled, the badge inside it carries the
+    // fill. The 500-char window called this a raw primary button; the opening-tag form does not.
+    expect(buttons('<button type="button"><span className="bg-primary">3</span></button>')).toBe(0)
+    // …and a sibling further down the file is not "near enough" to count either.
+    expect(buttons('<button type="button">Go</button>\n<div className="bg-primary" />')).toBe(0)
+  })
+
+  it('raw-button-bg does not move when the code is reformatted', () => {
+    // The property the old pattern lacked. Same markup, different whitespace: same number.
+    const indented = [
+      '<button',
+      '  type="button"',
+      '  onClick={() => submit()}',
+      '  disabled={pending || rating < 1}',
+      '  className="rounded-lg bg-primary px-4"',
+      '>',
+      '  Send',
+      '</button>',
+    ].join('\n')
+    expect(buttons(indented)).toBe(1)
+    expect(buttons(indented.replace(/\n\s*/g, ' '))).toBe(1)
+  })
+
   it('white-black-literals does not count font-black, which is a font WEIGHT', () => {
     const re = pattern('white-black-literals')
     expect('font-black'.match(re)).toBeNull()
@@ -329,6 +393,39 @@ describe('check-adoption — the corrected patterns measure what they name', () 
     const withText = '<button type="button" onClick={() => go()} className="flex h-8 rounded-lg"><X className="h-4 w-4" />Delete</button>'
     expect(iconOnly.match(re), 'icon-only button should count').not.toBeNull()
     expect(withText.match(re), 'a text button is not an icon button').toBeNull()
+  })
+
+  // The three Phase 3 field ratchets, seeded 2026-08-05. Same opening-tag discipline as
+  // raw-button-bg: what makes them work is that JSX components are CAPITALISED, so adopting the
+  // primitive is the only way to stop matching. A pattern that also matched <Select> would be a
+  // ratchet nobody could ever satisfy.
+  it('raw-select counts a raw <select> and never the Select primitive', () => {
+    const re = pattern('raw-select')
+    expect('<select className="border" onChange={(e) => set(e)}>'.match(re)).toHaveLength(1)
+    expect('<Select value={v} onChange={set} />'.match(re)).toBeNull()
+    expect('</select>'.match(re)).toBeNull()
+    expect('<selection />'.match(re), 'the \\b keeps a longer tag name out').toBeNull()
+  })
+
+  it('raw-textarea counts a raw <textarea> and never the Field primitive', () => {
+    const re = pattern('raw-textarea')
+    expect('<textarea rows={2} className="resize-y" />'.match(re)).toHaveLength(1)
+    expect('<Field as="textarea" />'.match(re)).toBeNull()
+  })
+
+  it('raw-input counts real controls but NOT type="hidden", which no primitive can receive', () => {
+    const re = pattern('raw-input')
+    for (const s of ['<input name="q" />', '<input type="text" className="w-full" />', '<input type="checkbox" />']) {
+      expect(s.match(re), `${s} is a raw control`).toHaveLength(1)
+    }
+    // A hidden input is form serialisation, not a control. Counting it would put 0 out of reach
+    // and fail CI on a legitimate hidden field — a ratchet that punishes correct code.
+    expect('<input type="hidden" name="csrf" value={t} />'.match(re)).toBeNull()
+    expect("<input type='hidden' name='csrf' />".match(re)).toBeNull()
+    // …and the lookahead is bounded to the tag's OWN attributes: a hidden input LATER in the file
+    // must not excuse the visible control above it.
+    expect('<input name="q" />\n<input type="hidden" name="csrf" />'.match(re)).toHaveLength(1)
+    expect('<Field name="q" />'.match(re)).toBeNull()
   })
 
   it('raw-palette catches a raw Tailwind palette class and not a semantic role', () => {

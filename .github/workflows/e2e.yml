@@ -156,13 +156,96 @@ jobs:
         if: steps.preview.outputs.ready == 'true'
         run: pnpm exec playwright install --with-deps chromium
 
+      # ── The member session (ADR-950) ────────────────────────────────────────────────────
+      #
+      # WITHOUT THIS STEP THE GATE PHOTOGRAPHS THE MARKETING SITE AND NOTHING ELSE. Every
+      # surface that HAS a rail, a dock or a fold control lives inside the `(main)` shell
+      # behind auth; `appSurfaces()` covers four of them and they all skip when
+      # PW_STORAGE_STATE is unset. Measured on #2048: `12 skipped · 64 passed`, green, over a
+      # PR that changed the rail fill, the fold control and both dock heads.
+      #
+      # Sign-in is magic-link only, so there is no password to script. The session is MINTED
+      # instead, exactly the way app/(main)/impersonate-actions.ts does in the product:
+      # `generateLink` (which sends no email) then `verifyOtp`. Minted per run rather than
+      # stored as a secret, because a stored one is wrong twice over — auth cookies are
+      # domain-scoped and every PR gets a new preview hostname, and refresh tokens rotate on
+      # first use. Both failures look exactly like "no credential", which is the silence this
+      # whole gate is trying to stop producing.
+      #
+      # FAIL-SAFE: this step never fails the job. An absent secret is not this PR's fault,
+      # and a red X meaning "the owner has not created a credential yet" trains people to
+      # ignore the check (e2e.yml's founding argument). It says so loudly instead, here and
+      # again in the reporter's PARTIAL banner, which names each unphotographed surface.
+      - name: Mint the member session
+        id: session
+        if: steps.preview.outputs.ready == 'true'
+        env:
+          PW_BASE_URL: ${{ steps.preview.outputs.url }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PW_MEMBER_EMAIL: ${{ secrets.PW_MEMBER_EMAIL }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          # The script writes to PW_STORAGE_STATE when no --out is given, so the path is
+          # declared once, here, and echoed as this step's output below.
+          PW_STORAGE_STATE: ${{ github.workspace }}/test/e2e/.auth/member.json
+        # NOT `set -e`: a mint failure must degrade to a loud PARTIAL, never a red gate.
+        run: |
+          set -uo pipefail
+          missing=""
+          [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ] && missing="${missing} SUPABASE_SERVICE_ROLE_KEY"
+          [ -z "${NEXT_PUBLIC_SUPABASE_URL:-}" ] && missing="${missing} NEXT_PUBLIC_SUPABASE_URL"
+          [ -z "${PW_MEMBER_EMAIL:-}" ] && missing="${missing} PW_MEMBER_EMAIL"
+          if [ -n "${missing}" ]; then
+            echo "path=" >> "$GITHUB_OUTPUT"
+            echo "::warning title=No member session::Missing secret(s):${missing}. The app shell will not be photographed by this run; see the PARTIAL banner in the job summary."
+            {
+              echo "### ⚠️ No member session for this run"
+              echo
+              echo "Missing repository secret(s): \`${missing# }\`."
+              echo
+              echo "The four member-shell surfaces (\`/feed\`, the room, \`/settings\`, the Space"
+              echo "console) are the only captured surfaces with a rail, a dock or a fold control,"
+              echo "and they cannot be reached without a session. Everything below this line is the"
+              echo "marketing site."
+              echo
+              echo "**To enable:** see \`test/e2e/README.md\` § The member shell. One account, three"
+              echo "secrets, no credential file to rotate."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if pnpm e2e:session; then
+            echo "path=${PW_STORAGE_STATE}" >> "$GITHUB_OUTPUT"
+          else
+            echo "path=" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Member session could not be minted::The secrets are configured and minting still failed (see this step's log). The app shell will not be photographed by this run."
+            {
+              echo "### 🔴 The member session is configured and did not work"
+              echo
+              echo "\`pnpm e2e:session\` failed even though every secret is present, so this run"
+              echo "photographs the marketing site only. This is a credential problem, not a problem"
+              echo "with this pull request — read the *Mint the member session* step's log."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       # Smoke + @a11y: no baseline dependency, so this half of the gate is trustworthy the
       # moment the bypass secret exists.
+      #
+      # PW_STORAGE_STATE is empty when the mint step above did not produce one; `surfaces.ts`
+      # treats empty/missing as "no session" and the shell tests skip, loudly.
       - name: Smoke + a11y suite
         if: steps.preview.outputs.ready == 'true'
         env:
           PW_BASE_URL: ${{ steps.preview.outputs.url }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
+          # Repo VARIABLES, not secrets: neither is sensitive, and both change the matrix.
+          # PW_SPACE_SLUG is what adds /spaces/<slug>/manage at all.
+          PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
+          PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
+          # Set PW_REQUIRE_SHELL=1 once the credential AND the shell baselines exist: from
+          # then on, a run that photographs zero app surfaces fails instead of announcing.
+          PW_REQUIRE_SHELL: ${{ vars.PW_REQUIRE_SHELL }}
         run: pnpm test:e2e
 
       # @visual: needs committed baselines captured against a deployment of the SAME kind.
@@ -172,6 +255,10 @@ jobs:
         env:
           PW_BASE_URL: ${{ steps.preview.outputs.url }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
+          PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
+          PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
+          PW_REQUIRE_SHELL: ${{ vars.PW_REQUIRE_SHELL }}
         run: pnpm test:e2e:visual
 
       # The synthetic speed gate used to run here as steps 11-13. It is its own parallel

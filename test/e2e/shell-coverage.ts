@@ -53,6 +53,9 @@ export interface ShellCoverageInput {
   observations: readonly ShellObservation[]
   /** Which suites contributed, e.g. `['visual.spec.ts']`. Used in the heading only. */
   specs?: readonly string[]
+  /** `PW_SPACE_SLUG`. Without it the Space console is not in the matrix AT ALL — a second,
+   *  quieter absence than a skip, because there is no test row to notice missing. */
+  spaceSlug?: string
 }
 
 /**
@@ -73,6 +76,8 @@ export interface ShellCoverage {
   unphotographed: readonly string[]
   /** Titles that failed because a baseline has never been captured. */
   missingBaselines: readonly string[]
+  /** True when the Space console is missing from the matrix because no slug is configured. */
+  spaceConsoleAbsent: boolean
   /** One sentence naming the cause, derived from the env rather than guessed. */
   reason: string
   /** The fix, as an instruction rather than a hint. */
@@ -127,6 +132,7 @@ export function summarizeShellCoverage(input: ShellCoverageInput): ShellCoverage
     skipped: skipped.length,
     photographed,
     unphotographed,
+    spaceConsoleAbsent: !input.spaceSlug,
     missingBaselines: observations.filter((o) => o.missingBaseline).map((o) => o.title),
     reason,
     remedy,
@@ -210,6 +216,17 @@ export function renderShellCoverage(coverage: ShellCoverage): ShellReport {
           `${coverage.unphotographed.join(', ')} did not run. ${coverage.reason}`,
       )
     }
+  }
+
+  if (coverage.spaceConsoleAbsent) {
+    // Not a skip: with no slug, `appSurfaces()` never creates the row, so nothing in the run
+    // output would hint that an operator console exists and is uncovered.
+    lines.push(
+      '',
+      '⚠️ The Space console is **not in this matrix at all** — `PW_SPACE_SLUG` is unset, so ' +
+        '`appSurfaces()` never creates the row. Set it to a Space the e2e member can manage to ' +
+        'add `/spaces/<slug>/manage`.',
+    )
   }
 
   if (coverage.missingBaselines.length > 0) {

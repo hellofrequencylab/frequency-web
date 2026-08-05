@@ -49,14 +49,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 3706,
+      "baseline": 3673,
       "frozen": {
         "at": "2026-08-05",
-        "value": 3706,
+        "value": 3673,
         "direction": "lowered",
         "basis": "6a00b952da5c",
-        "reason": "Side effect of the icon-button sweep and the dock geometry fix: literal radius steps moved onto role tokens while the surrounding markup was already being rewritten.",
-        "from": 3738
+        "reason": "EARNED FALL, 3706 -> 3673, booking a sweep that already shipped and was never re-frozen behind. Measured per revision: 3743 at 98daa81ed, 3681 after 6056d0a82 (#2046, the monochrome/Phase-2 close), 3673 after b9e7fbaad (#2047, the post-merge audit fixes), and 3673 unchanged through #2048 and the two gate commits since. The freeze at 3706 was taken mid-#2046, so the remaining -33 is the tail of that sweep plus #2047 - real retired radius literals in committed code, not an instrument move. Distinct from the raw-button-bg entry re-frozen in the same pass, which changed a PATTERN and is recorded as rebased: nothing about this class was measured differently, only less of it exists.",
+        "from": 3706
       },
       "history": [
         {
@@ -135,6 +135,13 @@
           "to": 3706,
           "direction": "lowered",
           "reason": "Side effect of the icon-button sweep and the dock geometry fix: literal radius steps moved onto role tokens while the surrounding markup was already being rewritten."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 3706,
+          "to": 3673,
+          "direction": "lowered",
+          "reason": "EARNED FALL, 3706 -> 3673, booking a sweep that already shipped and was never re-frozen behind. Measured per revision: 3743 at 98daa81ed, 3681 after 6056d0a82 (#2046, the monochrome/Phase-2 close), 3673 after b9e7fbaad (#2047, the post-merge audit fixes), and 3673 unchanged through #2048 and the two gate commits since. The freeze at 3706 was taken mid-#2046, so the remaining -33 is the tail of that sweep plus #2047 - real retired radius literals in committed code, not an instrument move. Distinct from the raw-button-bg entry re-frozen in the same pass, which changed a PATTERN and is recorded as rebased: nothing about this class was measured differently, only less of it exists."
         }
       ]
     },
@@ -204,14 +211,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 50,
+      "baseline": 49,
       "frozen": {
         "at": "2026-08-05",
-        "value": 50,
+        "value": 49,
         "direction": "lowered",
         "basis": "50ae235138cf",
-        "reason": "Side effect of the monochrome sweep: two shadow literals sat on elements whose fill was being retokenised and moved to the .lift-* scale in the same edit. Small, real, and not worth a separate pass.",
-        "from": 52
+        "reason": "EARNED FALL, 50 -> 49. One literal, and it is worth the line: this class ran 52 -> 49 inside 6056d0a82 (#2046) and has held at 49 through every commit since, while the freeze was taken at 50 mid-sweep. A one-site gap is exactly the size of gap that never gets closed, and it still means one shadow-* could return and read green. The depth language (.lift-*) received it; no pattern, scope or corpus rule changed, so this is a fall bought by code and recorded as lowered.",
+        "from": 50
       },
       "history": [
         {
@@ -234,6 +241,13 @@
           "to": 50,
           "direction": "lowered",
           "reason": "Side effect of the monochrome sweep: two shadow literals sat on elements whose fill was being retokenised and moved to the .lift-* scale in the same edit. Small, real, and not worth a separate pass."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 50,
+          "to": 49,
+          "direction": "lowered",
+          "reason": "EARNED FALL, 50 -> 49. One literal, and it is worth the line: this class ran 52 -> 49 inside 6056d0a82 (#2046) and has held at 49 through every commit since, while the freeze was taken at 50 mid-sweep. A one-site gap is exactly the size of gap that never gets closed, and it still means one shadow-* could return and read green. The depth language (.lift-*) received it; no pattern, scope or corpus rule changed, so this is a fall bought by code and recorded as lowered."
         }
       ]
     },
@@ -253,14 +267,14 @@
         "app/**/opengraph-image.tsx",
         "app/**/twitter-image.tsx"
       ],
-      "baseline": 61,
+      "baseline": 54,
       "frozen": {
         "at": "2026-08-05",
-        "value": 61,
+        "value": 54,
         "direction": "lowered",
         "basis": "564513ba9761",
-        "reason": "The bug-class sweep, earned not measured: 153 hardcoded monochromes mapped onto the semantic pair each one actually meant - white-as-surface to bg-surface, white-as-text-on-a-fill to the on-* token belonging to that fill, black-as-scrim to the ink tokens. These ignored every theme axis, so on a light generation the product was painting white text onto a light surface. check-contrast was run as the guard, since a colour sweep's failure mode is a wrong PAIR rather than a wrong token. 214 -> 61; the remainder is raster, print, email, canvas and map-marker surfaces where a literal is correct because there is no theme to follow.",
-        "from": 214
+        "reason": "EARNED FALL, 61 -> 54, the tail of a sweep that already shipped. Measured per revision this class ran 214 -> 54 inside 6056d0a82 (#2046, \"Retire the monochromes that ignored every theme\"), and has held at 54 through #2047, #2048 and the two gate commits since. The 61 freeze was taken mid-sweep, so these last 7 are hardcoded monochromes that #2046 genuinely retired and nobody wrote down - the ratchets own description calls this the only BUG class in the census, so leaving its floor 7 above reality left room for seven of them to come back green. Real code, not a measurement change: the pattern and scope are untouched, which is why this is lowered and not rebased.",
+        "from": 61
       },
       "history": [
         {
@@ -290,6 +304,13 @@
           "to": 61,
           "direction": "lowered",
           "reason": "The bug-class sweep, earned not measured: 153 hardcoded monochromes mapped onto the semantic pair each one actually meant - white-as-surface to bg-surface, white-as-text-on-a-fill to the on-* token belonging to that fill, black-as-scrim to the ink tokens. These ignored every theme axis, so on a light generation the product was painting white text onto a light surface. check-contrast was run as the guard, since a colour sweep's failure mode is a wrong PAIR rather than a wrong token. 214 -> 61; the remainder is raster, print, email, canvas and map-marker surfaces where a literal is correct because there is no theme to follow."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 61,
+          "to": 54,
+          "direction": "lowered",
+          "reason": "EARNED FALL, 61 -> 54, the tail of a sweep that already shipped. Measured per revision this class ran 214 -> 54 inside 6056d0a82 (#2046, \"Retire the monochromes that ignored every theme\"), and has held at 54 through #2047, #2048 and the two gate commits since. The 61 freeze was taken mid-sweep, so these last 7 are hardcoded monochromes that #2046 genuinely retired and nobody wrote down - the ratchets own description calls this the only BUG class in the census, so leaving its floor 7 above reality left room for seven of them to come back green. Real code, not a measurement change: the pattern and scope are untouched, which is why this is lowered and not rebased."
         }
       ]
     },
@@ -355,14 +376,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 521,
+      "baseline": 530,
       "frozen": {
         "at": "2026-08-05",
-        "value": 521,
-        "direction": "lowered",
-        "basis": "ceca96ead2f3",
-        "reason": "Earned, and checked by hand rather than trusted, because this pattern is a 500-character proximity window that moves by ~35 on reformatting alone. The sites are named: the post send button went from a solid bg-primary h-11 square to DAWN's 34px bg-primary-bg tinted pill, and the streak strips plus the Invite card dropped their bg-primary-bg fills for a neutral surface-elevated. Real removals of amber fills, not the window twitching.",
-        "from": 527
+        "value": 530,
+        "direction": "rebased",
+        "basis": "b608cf8230c7",
+        "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. The old pattern was <button followed by bg-primary anywhere within 500 characters of arbitrary JSX, so it read formatting as much as buttons - collapsing indentation alone moved it 529 -> 564 - and it could bind a button to a bg-primary sitting on a CHILD element several tags away. The new form is an OPENING-TAG form: it stops at the tag own closing angle bracket, with the => alternative there so an onClick arrow handler does not truncate the scan (the same idiom handrolled-icon-button already uses). It therefore counts opening tags carrying the fill, and nothing else. Validated against a brace- and quote-aware mini-parser run over the identical comment-blanked corpus: 530 sites, zero missed, zero extra. The new form needs NO proximity window at all, so the length-preserving comment blanking (CORPUS_BASIS strip-comments@1) is respected trivially - there is no window distance left to preserve. 521 -> 530 is the old instruments error being removed, not nine new buttons, and NO sweep is credited for it.",
+        "from": 521
       },
       "history": [
         {
@@ -406,6 +427,13 @@
           "to": 521,
           "direction": "lowered",
           "reason": "Earned, and checked by hand rather than trusted, because this pattern is a 500-character proximity window that moves by ~35 on reformatting alone. The sites are named: the post send button went from a solid bg-primary h-11 square to DAWN's 34px bg-primary-bg tinted pill, and the streak strips plus the Invite card dropped their bg-primary-bg fills for a neutral surface-elevated. Real removals of amber fills, not the window twitching."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 521,
+          "to": 530,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. The old pattern was <button followed by bg-primary anywhere within 500 characters of arbitrary JSX, so it read formatting as much as buttons - collapsing indentation alone moved it 529 -> 564 - and it could bind a button to a bg-primary sitting on a CHILD element several tags away. The new form is an OPENING-TAG form: it stops at the tag own closing angle bracket, with the => alternative there so an onClick arrow handler does not truncate the scan (the same idiom handrolled-icon-button already uses). It therefore counts opening tags carrying the fill, and nothing else. Validated against a brace- and quote-aware mini-parser run over the identical comment-blanked corpus: 530 sites, zero missed, zero extra. The new form needs NO proximity window at all, so the length-preserving comment blanking (CORPUS_BASIS strip-comments@1) is respected trivially - there is no window distance left to preserve. 521 -> 530 is the old instruments error being removed, not nine new buttons, and NO sweep is credited for it."
         }
       ]
     },
@@ -657,14 +685,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 300,
+      "baseline": 96,
       "frozen": {
         "at": "2026-08-05",
-        "value": 300,
-        "direction": "rebased",
+        "value": 96,
+        "direction": "lowered",
         "basis": "8cd8fa7502b5",
-        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
-        "from": 301
+        "reason": "EARNED FALL, 300 -> 96, and overdue: the display sweep bought these 204 sites across three shipped commits and the ratchet was never re-frozen behind any of them. Measured per revision: 300 -> 112 in 6056d0a82 (#2046), 112 -> 104 in 959ddb678 (#2048), 104 -> 96 in 77bb066e5 (\"Give the page title a fluid role\"), and 96 ever since. The script printed \"A sweep landed. Re-freeze so the new floor holds\" on every run across all three and it was read as decoration. A floor 204 above reality is not a ratchet: anyone could have put 204 display literals back and CI would have stayed green, which is the same green-over-its-own-subject failure Phase 9 exists to end. Distinct in kind from the raw-button-bg entry re-frozen in this same pass - that one changed a PATTERN with no code behind it and is recorded as rebased; this is code that was actually swept, so it is lowered and the credit belongs to the sweep.",
+        "from": 300
       },
       "history": [
         {
@@ -680,6 +708,13 @@
           "to": 300,
           "direction": "rebased",
           "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 300,
+          "to": 96,
+          "direction": "lowered",
+          "reason": "EARNED FALL, 300 -> 96, and overdue: the display sweep bought these 204 sites across three shipped commits and the ratchet was never re-frozen behind any of them. Measured per revision: 300 -> 112 in 6056d0a82 (#2046), 112 -> 104 in 959ddb678 (#2048), 104 -> 96 in 77bb066e5 (\"Give the page title a fluid role\"), and 96 ever since. The script printed \"A sweep landed. Re-freeze so the new floor holds\" on every run across all three and it was read as decoration. A floor 204 above reality is not a ratchet: anyone could have put 204 display literals back and CI would have stayed green, which is the same green-over-its-own-subject failure Phase 9 exists to end. Distinct in kind from the raw-button-bg entry re-frozen in this same pass - that one changed a PATTERN with no code behind it and is recorded as rebased; this is code that was actually swept, so it is lowered and the credit belongs to the sweep."
         }
       ]
     },
@@ -746,14 +781,14 @@
         "**/*.{test,spec}.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 12,
+      "baseline": 10,
       "frozen": {
         "at": "2026-08-05",
-        "value": 12,
+        "value": 10,
         "direction": "lowered",
         "basis": "3b1142ddb186",
-        "reason": "Phase 3's first slice, unblocked by the primitives landing: 25 icon-only controls moved onto components/ui/icon-button.tsx, which owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance. Each hand-rolled control had been re-deriving all four and some got it wrong - rsvp-controls shipped a 28px stepper, under BOTH floors. 37 -> 12.",
-        "from": 37
+        "reason": "EARNED FALL, 12 -> 10, and cleanly attributable to one commit: this class held at 12 through #2046 and #2047 and dropped to 10 in 959ddb678 (#2048, \"Rails read as the page, the fold moves to an edge handle\"), which replaced two hand-rolled icon-only buttons with IconButton as part of moving the fold control. It has held at 10 since. Two real adoptions of the primitive, not a pattern change - handrolled-icon-buttons opening-tag pattern is untouched by this pass, so the number is comparable to the one it replaces and the direction is lowered.",
+        "from": 12
       },
       "history": [
         {
@@ -776,8 +811,112 @@
           "to": 12,
           "direction": "lowered",
           "reason": "Phase 3's first slice, unblocked by the primitives landing: 25 icon-only controls moved onto components/ui/icon-button.tsx, which owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance. Each hand-rolled control had been re-deriving all four and some got it wrong - rsvp-controls shipped a 28px stepper, under BOTH floors. 37 -> 12."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 12,
+          "to": 10,
+          "direction": "lowered",
+          "reason": "EARNED FALL, 12 -> 10, and cleanly attributable to one commit: this class held at 12 through #2046 and #2047 and dropped to 10 in 959ddb678 (#2048, \"Rails read as the page, the fold moves to an edge handle\"), which replaced two hand-rolled icon-only buttons with IconButton as part of moving the fold control. It has held at 10 since. Two real adoptions of the primitive, not a pattern change - handrolled-icon-buttons opening-tag pattern is untouched by this pass, so the number is comparable to the one it replaces and the direction is lowered."
         }
       ]
+    },
+    {
+      "key": "raw-select",
+      "description": "Raw <select> elements instead of the Select primitive (components/ui/select.tsx). Counts OPENING TAGS: JSX components are capitalised, so a lowercase <select> is by construction a site that has not adopted the primitive, and <Select> never matches. Phase 3's second-largest population and, until now, the largest one in the plan with no ratchet at all - Select was built in Phase 2 to be swept onto and two trees were cleared to zero with nothing stopping the rest regrowing.",
+      "mode": "matches",
+      "patterns": [
+        "<select\\b"
+      ],
+      "include": [
+        "{app,components,lib}/**/*.tsx"
+      ],
+      "exclude": [
+        "**/*.{test,spec}.tsx",
+        "components/ui/select.tsx"
+      ],
+      "baseline": 180,
+      "history": [
+        {
+          "at": "2026-08-05",
+          "from": 0,
+          "to": 180,
+          "direction": "seed",
+          "reason": "Seeded at the measured value for a class that was PREVIOUSLY UNGUARDED: adoption-baselines.json carried 14 entries and not one of them counted a raw <select>, so DAWN Phase 3 printed an em dash in the Ratchet column for the second-largest population in the conversion. Select was built in Phase 2 specifically to be swept onto and components/spaces + components/admin were cleared 83 -> 0, and nothing stopped the remaining sites regrowing or new ones landing. Not a sweep and not a fall: this number is the first measurement of the class, and it is a floor from here. The pattern is an OPENING-TAG form, not a proximity window - the defect being fixed in raw-button-bg in the same pass - so it has no window distance to preserve under the comment-blanked corpus (CORPUS_BASIS strip-comments@1), and prose about a <select> is blanked before it can be counted as one. components/ui/select.tsx is excluded because the primitive has to render the real DOM element; counting the fix as the bug is how a class becomes unreachable."
+        }
+      ],
+      "frozen": {
+        "at": "2026-08-05",
+        "value": 180,
+        "direction": "seed",
+        "basis": "08ace42d7483",
+        "reason": "Seeded at the measured value for a class that was PREVIOUSLY UNGUARDED: adoption-baselines.json carried 14 entries and not one of them counted a raw <select>, so DAWN Phase 3 printed an em dash in the Ratchet column for the second-largest population in the conversion. Select was built in Phase 2 specifically to be swept onto and components/spaces + components/admin were cleared 83 -> 0, and nothing stopped the remaining sites regrowing or new ones landing. Not a sweep and not a fall: this number is the first measurement of the class, and it is a floor from here. The pattern is an OPENING-TAG form, not a proximity window - the defect being fixed in raw-button-bg in the same pass - so it has no window distance to preserve under the comment-blanked corpus (CORPUS_BASIS strip-comments@1), and prose about a <select> is blanked before it can be counted as one. components/ui/select.tsx is excluded because the primitive has to render the real DOM element; counting the fix as the bug is how a class becomes unreachable."
+      }
+    },
+    {
+      "key": "raw-input",
+      "description": "Raw <input> elements instead of the field primitives (components/ui/field.tsx, components/ui/checkbox.tsx). Counts OPENING TAGS; <Field>/<Checkbox> never match because JSX components are capitalised. type=\"hidden\" is excluded by a lookahead over the tag's own attributes: a hidden input is form serialisation, not a control, so no primitive can receive it and counting it would put zero out of reach and fail CI on a legitimate hidden field.",
+      "mode": "matches",
+      "patterns": [
+        "<input\\b(?!(?:[^>]|=>)*?type=[\"']hidden)"
+      ],
+      "include": [
+        "{app,components,lib}/**/*.tsx"
+      ],
+      "exclude": [
+        "**/*.{test,spec}.tsx",
+        "components/ui/field.tsx",
+        "components/ui/checkbox.tsx"
+      ],
+      "baseline": 740,
+      "history": [
+        {
+          "at": "2026-08-05",
+          "from": 0,
+          "to": 740,
+          "direction": "seed",
+          "reason": "Seeded at the measured value for a class that was PREVIOUSLY UNGUARDED. The 970-site <input>/<textarea> row in DAWN Phase 3 had no ratchet at all: components/ui/field.tsx exists with 80 importers, and nothing measured the sites that had not adopted it, so the largest field population in the product could grow without failing CI. Not a sweep and not a fall - this is the first measurement of the class and a floor from here. The pattern is an OPENING-TAG form rather than a proximity window (the raw-button-bg defect being corrected in the same pass), so nothing about it depends on distance and the length-preserving comment blanking (CORPUS_BASIS strip-comments@1) only removes prose that was never markup. type=\"hidden\" is excluded by a lookahead bounded to the tag own attributes: 49 of the 789 raw inputs are hidden fields, which are form serialisation rather than controls, so no field primitive can receive them and counting them would put zero permanently out of reach. components/ui/field.tsx and components/ui/checkbox.tsx are excluded because a primitive must render the real DOM element."
+        }
+      ],
+      "frozen": {
+        "at": "2026-08-05",
+        "value": 740,
+        "direction": "seed",
+        "basis": "8de521171b36",
+        "reason": "Seeded at the measured value for a class that was PREVIOUSLY UNGUARDED. The 970-site <input>/<textarea> row in DAWN Phase 3 had no ratchet at all: components/ui/field.tsx exists with 80 importers, and nothing measured the sites that had not adopted it, so the largest field population in the product could grow without failing CI. Not a sweep and not a fall - this is the first measurement of the class and a floor from here. The pattern is an OPENING-TAG form rather than a proximity window (the raw-button-bg defect being corrected in the same pass), so nothing about it depends on distance and the length-preserving comment blanking (CORPUS_BASIS strip-comments@1) only removes prose that was never markup. type=\"hidden\" is excluded by a lookahead bounded to the tag own attributes: 49 of the 789 raw inputs are hidden fields, which are form serialisation rather than controls, so no field primitive can receive them and counting them would put zero permanently out of reach. components/ui/field.tsx and components/ui/checkbox.tsx are excluded because a primitive must render the real DOM element."
+      }
+    },
+    {
+      "key": "raw-textarea",
+      "description": "Raw <textarea> elements instead of the field primitive (components/ui/field.tsx). Counts OPENING TAGS; <Field> never matches because JSX components are capitalised. The other half of the 970-site input/textarea row in DAWN Phase 3, which printed an em dash in its Ratchet column until this entry existed.",
+      "mode": "matches",
+      "patterns": [
+        "<textarea\\b"
+      ],
+      "include": [
+        "{app,components,lib}/**/*.tsx"
+      ],
+      "exclude": [
+        "**/*.{test,spec}.tsx",
+        "components/ui/field.tsx"
+      ],
+      "baseline": 160,
+      "history": [
+        {
+          "at": "2026-08-05",
+          "from": 0,
+          "to": 160,
+          "direction": "seed",
+          "reason": "Seeded at the measured value for a class that was PREVIOUSLY UNGUARDED - the other half of the 970-site input/textarea row in DAWN Phase 3, which printed an em dash in its Ratchet column because no entry counted a raw <textarea>. components/ui/field.tsx has existed with 80 importers the whole time; what was missing was anything that noticed a surface skipping it. Not a sweep and not a fall: first measurement of the class, and a floor from here. Kept as its own entry rather than folded into raw-input because they are separately sweepable and the census counts them separately (808 / 162). The pattern is an OPENING-TAG form, not a proximity window, so it carries no window distance for the comment-blanked corpus (CORPUS_BASIS strip-comments@1) to disturb. components/ui/field.tsx is excluded because the primitive has to render the real element."
+        }
+      ],
+      "frozen": {
+        "at": "2026-08-05",
+        "value": 160,
+        "direction": "seed",
+        "basis": "42a90640e4e9",
+        "reason": "Seeded at the measured value for a class that was PREVIOUSLY UNGUARDED - the other half of the 970-site input/textarea row in DAWN Phase 3, which printed an em dash in its Ratchet column because no entry counted a raw <textarea>. components/ui/field.tsx has existed with 80 importers the whole time; what was missing was anything that noticed a surface skipping it. Not a sweep and not a fall: first measurement of the class, and a floor from here. Kept as its own entry rather than folded into raw-input because they are separately sweepable and the census counts them separately (808 / 162). The pattern is an OPENING-TAG form, not a proximity window, so it carries no window distance for the comment-blanked corpus (CORPUS_BASIS strip-comments@1) to disturb. components/ui/field.tsx is excluded because the primitive has to render the real element."
+      }
     }
   ]
 }

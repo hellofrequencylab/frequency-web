@@ -97,11 +97,11 @@ export function resolveRailFold(position: RailFold, autoStrip: boolean): RailSta
 }
 
 /**
- * What one press of the rail's foot glyph does.
+ * What one press of the rail's fold tick does.
  *
- * The control is ONE quiet glyph (DAWN § "Rail controls sit at the foot"), so it cannot be a
- * three-way switch — but it still has to be able to reach all three positions, and it must
- * never strand a member in a standing instruction they cannot tell apart from Auto.
+ * The control is ONE quiet mark on the corner of the rail's tab, so it cannot be a three-way
+ * switch — but it still has to be able to reach all three positions, and it must never strand a
+ * member in a standing instruction they cannot tell apart from Auto.
  *
  * The rule: press = "do the opposite of what I see". If Auto would already give that, hand
  * control BACK to Auto rather than pinning a redundant standing instruction.
@@ -254,20 +254,21 @@ export function railFoldControlLabel(side: RailSide, showing: RailState): string
 }
 
 /**
- * DOM id of the box holding one rail's fold HANDLE — the subtle mark on the rail's edge, centred
- * on the screen (owner, 2026-08-05; it replaced a glyph at the rail's foot). The open rail and
- * the strip render the same handle in exclusive branches, so the id names the SIDE, not the
- * position: exactly one of them is in the document at a time.
+ * DOM id of one rail's fold TICK — the micro mark on the corner of that rail's bottom tab (owner,
+ * 2026-08-05; it replaced the mid-edge handle, which itself replaced a glyph at the rail's foot).
+ * The id names the SIDE, not the position: each rail has exactly one tick in the document at a
+ * time, wherever that rail's tab currently is.
  *
- * It exists for one caller, and only because that caller is OUTSIDE the rail. DockBar is a shell
- * sibling (it renders from md, the rail column only exists from lg), so it cannot hold a ref to
- * the handle. When folding the rail takes the bar off the screen with focus still inside it, the
- * bar hands focus here rather than letting the browser drop a keyboard member onto <body> and
- * restart their tab order — the same duty `close()` performs in components/vera/vera-launcher.tsx.
+ * It exists for one caller, and only because that caller cannot hold a ref to it. DockBar renders
+ * the RIGHT rail's tick but from md, while the rail column only exists from lg — and the LEFT
+ * tick lives in the shell's own tree. When folding takes the Vault segment, and whatever focus was
+ * sitting in it, off the screen, the bar hands focus here rather than letting the browser drop a
+ * keyboard member onto <body> and restart their tab order — the same duty `close()` performs in
+ * components/vera/vera-launcher.tsx.
  *
- * The id is on the BOX, not on the button: RailFoldControl takes placement classes, not an id,
- * and widening its props to serve one focus hand-off would be a heavier change than asking the
- * box for its one button.
+ * The id is on the BUTTON itself. It used to be on a wrapper box, because back then the wrapper
+ * was the positioned strip and the button was inside it; the tick IS the positioned element, so
+ * the lookup no longer has to go hunting for a child to focus.
  */
 export function railHandleId(side: RailSide): string {
   return `fq-rail-handle-${side}`
