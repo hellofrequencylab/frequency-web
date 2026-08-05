@@ -163,7 +163,12 @@ function ReplyComposer({
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) onSubmit(e)
         }}
-        className="flex-1 resize-none rounded-pill border border-border bg-surface px-3.5 py-2 text-meta leading-relaxed text-text placeholder-subtle focus:border-border-strong focus:outline-none disabled:opacity-50"
+        // `rounded-card`, not `rounded-pill`. DAWN's comment box is a single-line <input>, so a
+        // pill is exactly right there; ours is a textarea that grows to 140px, and a pill radius
+        // on a tall box turns the ends into large ovals. At one line the box is ~36px tall and
+        // rounded-card's 17px is within a pixel of a true pill, so this matches the reference at
+        // rest AND degrades properly once someone writes a paragraph.
+        className="flex-1 resize-none rounded-card border border-border bg-surface px-3.5 py-2 text-meta leading-relaxed text-text placeholder-subtle focus:border-border-strong focus:outline-none disabled:opacity-50"
       />
       <button
         type="submit"
