@@ -2,10 +2,15 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Zap } from 'lucide-react'
+import { Toast } from '@/components/ui/toast'
 
 // Lightweight "you earned zaps" toast. Mirrors the achievement-toast pattern: a
 // global container listens for a window CustomEvent; showZapToast() dispatches it.
 // Used for realtime reward feedback on verified practice / captures (Phase 3).
+//
+// The CARD is components/ui/toast.tsx now — this file keeps only what is actually
+// zap-specific: the event name, the reward shape, the copy, and the 4s dwell. The
+// shell, the slide-up, the timer and the `role="status"` announcement are the kit's.
 
 export interface ZapReward {
   amount: number
@@ -15,21 +20,16 @@ export interface ZapReward {
 const EVENT = 'zaps-earned'
 
 function ZapToastCard({ reward, onDismiss }: { reward: ZapReward; onDismiss: () => void }) {
-  useEffect(() => {
-    const t = setTimeout(onDismiss, 4000)
-    return () => clearTimeout(t)
-  }, [onDismiss])
-
   return (
-    <div className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-primary-bg bg-surface lift-3 px-4 py-3 animate-[slideUp_0.4s_ease-out]">
-      <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary-bg text-primary-strong shrink-0">
-        <Zap className="w-5 h-5" strokeWidth={2.5} />
-      </div>
-      <div className="min-w-0">
-        <p className="text-body-sm font-bold text-text leading-none">+{reward.amount} Zaps</p>
-        <p className="text-meta text-muted mt-1">{reward.label ?? 'Verified practice'}</p>
-      </div>
-    </div>
+    <Toast
+      icon={<Zap className="h-5 w-5" strokeWidth={2.5} />}
+      title={`+${reward.amount} Zaps`}
+      tone="primary"
+      duration={4000}
+      onDismiss={onDismiss}
+    >
+      {reward.label ?? 'Verified practice'}
+    </Toast>
   )
 }
 

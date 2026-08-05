@@ -1,36 +1,29 @@
 import Link from 'next/link'
-import Image from 'next/image'
-import { getInitials } from '@/lib/utils'
-import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
+import { Avatar } from '@/components/ui/avatar'
 
-// Small round avatar anchor for the compact pulse rows — links to the person's
+// Small round avatar ANCHOR for the compact pulse rows — links to the person's
 // profile. Plain presentational (no hooks), so it's usable from both the server
 // pulse rows and the client welcome row.
+//
+// The disc itself is the one kit Avatar (components/ui/avatar.tsx) at its `sm` step; the
+// only thing left here is the link, which is genuinely this component's job and is not
+// something DAWN's Avatar does. `online` is forwarded rather than reimplemented, so a pulse
+// row can show presence the day it has it — the thing neither old avatar could do.
 export function PulseAvatar({
   href,
   displayName,
   avatarUrl,
+  online,
 }: {
   href: string
   displayName: string
   avatarUrl: string | null
+  /** Presence, when the row has it. Omit and no dot is rendered. */
+  online?: boolean
 }) {
   return (
     <Link href={href} className="shrink-0">
-      {avatarUrl ? (
-        <Image
-          src={avatarSrc(avatarUrl)}
-          alt={displayName}
-          width={36}
-          height={36}
-          style={avatarFocusStyle(avatarUrl)}
-          className="h-9 w-9 rounded-pill object-cover"
-        />
-      ) : (
-        <div className="flex h-9 w-9 items-center justify-center rounded-pill bg-primary-bg text-2xs font-semibold text-primary-strong select-none">
-          {getInitials(displayName)}
-        </div>
-      )}
+      <Avatar src={avatarUrl} name={displayName} size="sm" online={online} />
     </Link>
   )
 }

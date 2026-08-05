@@ -117,6 +117,7 @@ export function SpaceShareButton({
               </p>
               <div
                 aria-label={`QR code for ${brandName}`}
+                // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
                 className="mx-auto aspect-square w-40 rounded-card border border-border bg-white p-2 lift-1 [&>svg]:h-full [&>svg]:w-full"
                 dangerouslySetInnerHTML={{ __html: svg }}
               />

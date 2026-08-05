@@ -89,12 +89,12 @@ export function WalkthroughLightbox({
             type="button"
             onClick={back}
             disabled={index === 0}
-            className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-body-sm font-semibold text-white/80 transition-colors hover:text-white disabled:opacity-0"
+            className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-body-sm font-semibold text-on-ink/80 transition-colors hover:text-on-ink disabled:opacity-0"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden /> Back
           </button>
 
-          <span className="text-meta font-medium text-white/70">
+          <span className="text-meta font-medium text-on-ink/70">
             {index + 1} of {steps.length}
           </span>
 

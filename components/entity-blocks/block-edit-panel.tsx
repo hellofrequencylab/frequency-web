@@ -604,13 +604,13 @@ function ImagesEditor({
               {/* Unoptimized: gallery images come from Supabase Storage, not the configured next/image domains. */}
               <Image src={url} alt="" width={160} height={160} unoptimized className="pointer-events-none h-full w-full object-cover" />
               {i === 0 && (
-                <span className="absolute left-1 top-1 rounded bg-black/60 px-1 py-0.5 text-2xs font-semibold text-white">First</span>
+                <span className="absolute left-1 top-1 rounded bg-ink/60 px-1 py-0.5 text-2xs font-semibold text-on-ink">First</span>
               )}
               <button
                 type="button"
                 onClick={() => removeAt(i)}
                 aria-label="Remove image"
-                className="absolute right-1 top-1 rounded-pill bg-black/60 p-0.5 text-white opacity-0 transition-opacity hover:bg-black/80 focus:opacity-100 group-hover:opacity-100"
+                className="absolute right-1 top-1 rounded-pill bg-ink/60 p-0.5 text-on-ink opacity-0 transition-opacity hover:bg-ink/80 focus:opacity-100 group-hover:opacity-100"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -620,7 +620,7 @@ function ImagesEditor({
                   onClick={() => move(i, -1)}
                   disabled={i === 0}
                   aria-label="Move earlier"
-                  className="rounded bg-black/60 p-0.5 text-white hover:bg-black/80 disabled:opacity-30"
+                  className="rounded bg-ink/60 p-0.5 text-on-ink hover:bg-ink/80 disabled:opacity-30"
                 >
                   <ChevronUp className="h-3.5 w-3.5" />
                 </button>
@@ -629,7 +629,7 @@ function ImagesEditor({
                   onClick={() => move(i, 1)}
                   disabled={i === urls.length - 1}
                   aria-label="Move later"
-                  className="rounded bg-black/60 p-0.5 text-white hover:bg-black/80 disabled:opacity-30"
+                  className="rounded bg-ink/60 p-0.5 text-on-ink hover:bg-ink/80 disabled:opacity-30"
                 >
                   <ChevronDown className="h-3.5 w-3.5" />
                 </button>

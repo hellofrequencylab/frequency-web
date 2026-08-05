@@ -1175,7 +1175,7 @@ function MobileLeftDrawer({
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${
+        className={`absolute inset-0 bg-ink/40 transition-opacity duration-200 ${
           open ? 'opacity-100' : 'opacity-0'
         }`}
       />

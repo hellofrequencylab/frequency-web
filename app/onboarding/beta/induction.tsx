@@ -527,9 +527,9 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       )}
 
       {/* Preview end-state. */}
-      {/* KEEP bg-black/40 below: a modal backdrop scrim over whatever is behind it, the same value components/ui/dialog.tsx uses. */}
+      {/* The modal backdrop scrim is the INK tone at low alpha, not raw black, so the dim follows the skin. */}
       {preview && previewDone && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-6">
           <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-7 text-center lift-3">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-pill bg-primary-bg text-page-title text-primary-strong">✓</div>
             <h2 className="mt-4 text-lead font-bold text-text">Welcome in.</h2>

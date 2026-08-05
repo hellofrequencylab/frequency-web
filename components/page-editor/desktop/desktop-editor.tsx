@@ -514,7 +514,7 @@ function PalettePopover({
 }) {
   return (
     <div
-      className="absolute inset-0 z-50 flex bg-black/30"
+      className="absolute inset-0 z-50 flex bg-ink/30"
       onClick={onClose}
       role="presentation"
     >

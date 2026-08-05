@@ -383,8 +383,7 @@ function RemovePanel({
           type="button"
           onClick={handleRemove}
           disabled={pending || !reason.trim()}
-          // KEEP text-white on a status fill: no --color-on-danger/--color-on-success token exists yet, and components/ui/button.tsx encodes the same pair.
-          className="shrink-0 rounded-lg bg-danger px-3 py-1.5 text-meta font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-50"
+          className="shrink-0 rounded-lg bg-danger px-3 py-1.5 text-meta font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50"
         >
           {pending ? 'Removing…' : 'Remove event'}
         </button>

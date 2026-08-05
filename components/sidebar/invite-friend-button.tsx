@@ -110,6 +110,7 @@ export function InviteFriendButton({
 
               {/* The branded QR (avatar in the middle), pre-rendered server-side. */}
               <div
+                // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
                 className="mt-4 h-44 w-44 overflow-hidden rounded-card border border-border bg-white p-2 [&>svg]:h-full [&>svg]:w-full"
                 dangerouslySetInnerHTML={{ __html: svg }}
               />

@@ -141,7 +141,7 @@ export function CoverBlock({
         <>
           {/* A soft scrim keeps overlaid text legible on any photo (no hardcoded hex; a
               neutral black/40 overlay is the one exception the kit already uses on heroes). */}
-          <div className="absolute inset-0 bg-black/35" aria-hidden />
+          <div className="absolute inset-0 bg-ink/35" aria-hidden />
           <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
             {eyebrow && (
               <p className="text-body-sm font-bold uppercase tracking-eyebrow text-on-ink/80 mb-3">{eyebrow}</p>

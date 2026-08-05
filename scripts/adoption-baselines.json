@@ -49,14 +49,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 3743,
+      "baseline": 3738,
       "frozen": {
         "at": "2026-08-05",
-        "value": 3743,
+        "value": 3738,
         "direction": "lowered",
         "basis": "6a00b952da5c",
-        "reason": "Real sweep, -40. Retiring the pill-tab tracks and their rounded-lg/md markup across the feed sort row, the capture-box and composer mode rows and the activity chart, plus the streak strips and the Invite card moving from rounded-xl/2xl onto rounded-card, and the post media frame onto rounded-control. Every one is a literal step replaced by a role token, not a re-measure.",
-        "from": 3783
+        "reason": "Side effect of the monochrome sweep and the Avatar/Toast consolidation: five literal radius steps moved onto role tokens while their surrounding markup was already being edited.",
+        "from": 3743
       },
       "history": [
         {
@@ -121,6 +121,13 @@
           "to": 3743,
           "direction": "lowered",
           "reason": "Real sweep, -40. Retiring the pill-tab tracks and their rounded-lg/md markup across the feed sort row, the capture-box and composer mode rows and the activity chart, plus the streak strips and the Invite card moving from rounded-xl/2xl onto rounded-card, and the post media frame onto rounded-control. Every one is a literal step replaced by a role token, not a re-measure."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 3743,
+          "to": 3738,
+          "direction": "lowered",
+          "reason": "Side effect of the monochrome sweep and the Avatar/Toast consolidation: five literal radius steps moved onto role tokens while their surrounding markup was already being edited."
         }
       ]
     },
@@ -190,14 +197,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 52,
+      "baseline": 50,
       "frozen": {
         "at": "2026-08-05",
-        "value": 52,
-        "direction": "rebased",
+        "value": 50,
+        "direction": "lowered",
         "basis": "50ae235138cf",
-        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
-        "from": 54
+        "reason": "Side effect of the monochrome sweep: two shadow literals sat on elements whose fill was being retokenised and moved to the .lift-* scale in the same edit. Small, real, and not worth a separate pass.",
+        "from": 52
       },
       "history": [
         {
@@ -213,6 +220,13 @@
           "to": 52,
           "direction": "rebased",
           "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 52,
+          "to": 50,
+          "direction": "lowered",
+          "reason": "Side effect of the monochrome sweep: two shadow literals sat on elements whose fill was being retokenised and moved to the .lift-* scale in the same edit. Small, real, and not worth a separate pass."
         }
       ]
     },
@@ -232,14 +246,14 @@
         "app/**/opengraph-image.tsx",
         "app/**/twitter-image.tsx"
       ],
-      "baseline": 214,
+      "baseline": 61,
       "frozen": {
         "at": "2026-08-05",
-        "value": 214,
-        "direction": "rebased",
+        "value": 61,
+        "direction": "lowered",
         "basis": "564513ba9761",
-        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
-        "from": 266
+        "reason": "The bug-class sweep, earned not measured: 153 hardcoded monochromes mapped onto the semantic pair each one actually meant - white-as-surface to bg-surface, white-as-text-on-a-fill to the on-* token belonging to that fill, black-as-scrim to the ink tokens. These ignored every theme axis, so on a light generation the product was painting white text onto a light surface. check-contrast was run as the guard, since a colour sweep's failure mode is a wrong PAIR rather than a wrong token. 214 -> 61; the remainder is raster, print, email, canvas and map-marker surfaces where a literal is correct because there is no theme to follow.",
+        "from": 214
       },
       "history": [
         {
@@ -262,6 +276,13 @@
           "to": 214,
           "direction": "rebased",
           "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 214,
+          "to": 61,
+          "direction": "lowered",
+          "reason": "The bug-class sweep, earned not measured: 153 hardcoded monochromes mapped onto the semantic pair each one actually meant - white-as-surface to bg-surface, white-as-text-on-a-fill to the on-* token belonging to that fill, black-as-scrim to the ink tokens. These ignored every theme axis, so on a light generation the product was painting white text onto a light surface. check-contrast was run as the guard, since a colour sweep's failure mode is a wrong PAIR rather than a wrong token. 214 -> 61; the remainder is raster, print, email, canvas and map-marker surfaces where a literal is correct because there is no theme to follow."
         }
       ]
     },

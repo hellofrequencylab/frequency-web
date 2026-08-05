@@ -477,6 +477,7 @@ export function LearnPlayer({
                 </div>
               )}
 
+              {/* KEEP bg-black: the letterbox behind a video frame, which is black on every generation. */}
               {video && (
                 <div className="mt-4 aspect-video overflow-hidden rounded-card bg-black">
                   {video.provider === 'file' ? (

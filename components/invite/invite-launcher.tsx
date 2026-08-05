@@ -66,7 +66,7 @@ export function InviteLauncher() {
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-stretch justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:p-4"
+      className="fixed inset-0 z-[80] flex items-stretch justify-center bg-ink/60 backdrop-blur-sm sm:items-center sm:p-4"
       onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false) }}
     >
       <div
@@ -103,6 +103,7 @@ export function InviteLauncher() {
           <>
             {/* QR for in-person */}
             <div className="mt-4 flex justify-center">
+              {/* KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface. */}
               <div className="h-44 w-44 overflow-hidden rounded-2xl border border-border bg-white p-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={`/api/qr?code=${encodeURIComponent(data.codeId)}&format=png&size=512`} alt="Your invite QR code" className="h-full w-full" />

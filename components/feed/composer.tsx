@@ -545,7 +545,7 @@ export function Composer({
           <button
             type="button"
             onClick={removeImage}
-            className="absolute right-1.5 top-1.5 rounded-pill bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
+            className="absolute right-1.5 top-1.5 rounded-pill bg-ink/60 p-1 text-on-ink transition-colors hover:bg-ink/80"
             aria-label="Remove image"
           >
             <X className="h-3.5 w-3.5" />
@@ -563,7 +563,7 @@ export function Composer({
           library. A bottom sheet on phones, a centered card on larger touch screens. */}
       {photoSheetOpen && (
         <div
-          className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center"
+          className="fixed inset-0 z-[80] flex items-end justify-center bg-ink/40 backdrop-blur-sm sm:items-center"
           onClick={() => setPhotoSheetOpen(false)}
           role="dialog"
           aria-modal="true"
