@@ -22,15 +22,25 @@
   --color-marketing-canvas:  #F5EEE2;
   --color-surface:           #FFFFFF;
   --color-surface-elevated:  #F5F2EC;
-  /* Feed post-card surface — a soft warm off-white that sits a step darker than the
-     pure-white composer, so a post reads as a card. Warm, but short of the yellow cream cast.
-     The second half of this note used to read "and the comment field reads as a bright input
-     on top of it". That was the intent and the owner has reversed it (2026-08-06): a white
-     field inside a warm card is the brightest thing in the post, which puts the loudest
-     surface on the row you are least often using. Comment and dispatch fields now take THIS
-     value via `<Textarea surface="post">`, so they sit level with the post and are read by
-     their border. */
-  --color-surface-post:      #F7F5F0;
+  /* Feed post-card surface. IT IS THE SURFACE (owner, 2026-08-06: "make the post and
+     announcement boxes the same shade white as the post box site wide").
+
+     🔴 THE TOKEN STAYS, THE STEP GOES. This was #F7F5F0 — a warm off-white a step darker
+     than the pure-white composer, so a post read as a card and the composer read as a bright
+     input above it. That was DAWN's intent and the owner has now retired it twice over: first
+     the comment FIELD came down to the card, and now the card itself comes up to white. What
+     was left was a three-value ladder (canvas / post / surface) doing work nobody had asked
+     for, on the surface a member looks at most.
+
+     Written as `var(--color-surface)` rather than a second `#FFFFFF`, and that is the whole
+     reason the token survives instead of being deleted at its call sites. Two literals are two
+     things to keep in sync across FIVE skins; a reference cannot drift, and it keeps one named
+     hook to re-separate the two later without hunting down `bg-surface` in the feed.
+
+     Posts still read as cards. The fill was never what said "card" — the hairline border and
+     `lift-1` are, and both are untouched. Every skin gets this, including the two dark ones,
+     because a decision that holds in light and not in dark is not a decision, it is a mode. */
+  --color-surface-post:      var(--color-surface);
   /* Chrome — the tinted frame band (top bar / dock hairlines), a step off the
      canvas so the frame reads as frame, not as another white card. DAWN round
      2026-08-03; currently only adopted where the shell opts in. */
@@ -451,7 +461,8 @@
   --color-marketing-canvas:  #F5EEE2;
   --color-surface:           #FFFFFF;
   --color-surface-elevated:  #F5F2EC;
-  --color-surface-post:      #F7F5F0;
+  /* Tracks the surface — see the note in :root. */
+  --color-surface-post:      var(--color-surface);
   --color-chrome:            #F2EFE8;
   --color-chrome-border:     #E5E0D6;
   /* The lock mirrors :root. */
@@ -551,8 +562,9 @@
   --color-marketing-canvas:  #E3E8F1;
   --color-surface:           #FFFFFF;
   --color-surface-elevated:  #F4F6FB;
-  /* Cool-neutral counterpart of the DAWN post surface (a step darker than white). */
-  --color-surface-post:      #F0F2F6;
+  /* Tracks the surface — see the note in :root. Midnight's own step (#F0F2F6, a cool slate)
+     goes for the same reason DAWN's warm one did: the skin changes the hue, not the ladder. */
+  --color-surface-post:      var(--color-surface);
   /* Chrome band, cool side. */
   --color-chrome:            #E8ECF3;
   --color-chrome-border:     #D2D8E4;
@@ -595,8 +607,9 @@
   --color-marketing-canvas: #120E07;
   --color-surface:          #211A10;
   --color-surface-elevated: #2B2415;
-  /* Post cards keep the elevated timber surface in dark mode. */
-  --color-surface-post:     #2B2415;
+  /* Tracks the surface — see the note in :root. The timber step (#2B2415) goes with the
+     light one: a post is a card because of its border and lift, in either mode. */
+  --color-surface-post:     var(--color-surface);
   /* Chrome band, dark timber side. */
   --color-chrome:           #1C1710;
   --color-chrome-border:    #33291A;
@@ -685,7 +698,8 @@
   --color-marketing-canvas: #080B12;
   --color-surface:          #161C28;
   --color-surface-elevated: #1F2736;
-  --color-surface-post:     #1F2736;
+  /* Tracks the surface — see the note in :root. */
+  --color-surface-post:     var(--color-surface);
   /* Chrome band, deep cool side. */
   --color-chrome:           #111721;
   --color-chrome-border:    #232D3D;

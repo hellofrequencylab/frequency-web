@@ -193,11 +193,20 @@ export function PostCard({
     : 'border-border'
 
   return (
-    // `bg-surface-post`, not `bg-surface`: DAWN gives feed posts their own surface a step
+    // `bg-surface-post` is still the RIGHT NAME here and no longer a different COLOUR: the
+    // token now resolves to `var(--color-surface)` in every skin (owner, 2026-08-06: "make the
+    // post and announcement boxes the same shade white as the post box site wide").
+    //
+    // This comment used to argue the opposite — "DAWN gives feed posts their own surface a step
     // warmer than the white composer above them, so a post reads as a card and the composer
-    // reads as a bright input on top of it. The token has existed in globals.css since the
-    // 2026-08-03 round with zero call sites, which is why every post was the same pure white
-    // as the box that writes them.
+    // reads as a bright input on top of it" — and that step is what has been retired. Kept as a
+    // record rather than deleted, because the next person to see two names for one colour will
+    // reasonably want to collapse them, and the answer is in globals.css: the name is the hook
+    // for re-separating the two, and it costs nothing while they agree.
+    //
+    // Announcements and pinned posts are unaffected: they tint the HAIRLINE (see `cardBorder`
+    // above), never the fill, so they follow the fill wherever it goes and stay in the same
+    // visual family as an ordinary post.
     <article
       className={`rounded-card border bg-surface-post lift-1 ${cardBorder}`}
     >
