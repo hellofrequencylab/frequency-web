@@ -18306,3 +18306,37 @@ word-bounded, and `canon.test.ts` pins the case that matters most — "Market" m
 "Marketplace" rule, or the canon-correct name would be unenterable, which is the worst possible
 failure for a guard whose whole job is naming. ⏳ Only menu labels are covered; other operator-editable
 copy fields are a later pass.
+
+---
+
+## ADR-958
+
+**`/profile` exists, and it is the only href that can mean "my profile"**
+
+**Date:** 2026-08-06 · **Status:** Accepted · **Owner ask:** *"the menu editor doesn't let me
+select /profile and the menu link is going to /profile/settings"*
+
+**The problem.** A member's profile lives at `/people/<handle>`. A menu row is **static data** —
+one href stored once and served to everybody — so there has never been a value an operator could
+put in the Menu Manager that resolves to the viewer's own profile. The closest available answer
+was `/settings/profile`, which is the profile **editor**. So the rail's Profile row opened a
+settings form, and `lib/menus/defaults.ts` carried the note admitting it: *"/profile has never
+existed as a route and there is no redirect for it, so this pin 404'd for every member who clicked
+it."* That note correctly identified the gap and then worked around it instead of closing it.
+
+**Decision.** Close it. `app/(main)/profile/page.tsx` is a redirect-only route that resolves per
+session: signed in with a handle → `/people/<handle>`; signed in without one → `/settings/profile`,
+the one screen that can fix the reason the first branch failed; signed out →
+`/sign-in?next=/profile`. It renders no UI of its own — everything a profile page shows already
+lives at `/people/[handle]`, and a second implementation would be a fork that drifts.
+
+**Consequences.** ✅ `/profile` is now a real destination the Menu Manager, ⌘K, and a typed URL can
+all point at. ✅ `KNOWN_ROUTES` offers it as "My profile", directly above `/settings/profile`, now
+relabelled "Settings: Profile (editor)" — picking the wrong one was the easy mistake and the list
+now says which is which. ✅ The code default and the seeded row moved together
+(`20270214000000_profile_menu_points_at_profile.sql`), because the `left` surface is seeded and a
+code-only change would not have moved what members see — the same lesson as ADR-953's migration.
+⚠️ The redirect costs one extra hop and one `profiles` row read per visit; it is a nav destination,
+not a hot path. ⏳ The Menu Manager still shows two Profile rows in its editor — the runtime-injected
+pin plus the seeded row. Only the seeded one renders in the live rail, so this is an editor
+artifact rather than a duplicate link, and it is left for the Menu Manager pass.

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect, useCallback, type ReactNode } from 'react'
+import { useState, useTransition, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Loader2, Send } from 'lucide-react'
@@ -117,9 +117,19 @@ function CommentRow({
   )
 }
 
+/** How tall the comment box is allowed to grow before it starts scrolling itself. Roughly
+ *  six lines at `text-meta` — enough for a real paragraph, short of a box that swallows the
+ *  post it belongs to. */
+const COMPOSER_MAX_H = 140
+
 // A small inline composer reused for both the post-level and per-comment replies.
-// `onReact` (when provided) renders the inline emoji picker that shares the
-// composer row — only the post-level composer reacts to the POST.
+//
+// 🔴 THE FIELD OWNS THE WHOLE ROW (owner, 2026-08-06: "make sure comment field goes full width
+// and expands as lines are added"). This row used to open with a `reactSlot` holding five
+// always-visible quick-reaction emojis, and that slot is `shrink-0` while the field is `flex-1`
+// — so on a narrow card the emojis kept every pixel and the textarea gave up all of them. The
+// reactions moved to the action line above (where the counts and the comment count already
+// live); nothing shares this row now but the field and Send.
 function ReplyComposer({
   value,
   onChange,
@@ -127,7 +137,6 @@ function ReplyComposer({
   disabled,
   placeholder,
   autoFocus = false,
-  reactSlot,
   divided = false,
 }: {
   value: string
@@ -136,28 +145,37 @@ function ReplyComposer({
   disabled: boolean
   placeholder: string
   autoFocus?: boolean
-  /** The post's reaction bar (counts + picker), rendered inline at the left of the
-   *  composer row so reacting and commenting share ONE row. Post-level only. */
-  reactSlot?: ReactNode
   /** Rule the row off from the counts line above it. Post-level only: a nested
    *  reply composer sits inside a thread and needs no second divider. */
   divided?: boolean
 }) {
+  const boxRef = useRef<HTMLTextAreaElement>(null)
+
+  // AUTO-GROW, driven by the VALUE rather than by the keystroke. The old version resized
+  // inside `onChange`, which grows fine but can never shrink on its own: sending a comment
+  // clears the text through `setBody('')` without an onChange ever firing, so a box that had
+  // grown to six lines stayed six lines tall over an empty field until the next keypress.
+  // Watching `value` covers typing, sending, a restored draft after a failed write, and the
+  // reply composer being re-aimed at a different comment — every way the text can change.
+  useEffect(() => {
+    const el = boxRef.current
+    if (!el) return
+    el.style.height = 'auto' // measure the natural height before reading scrollHeight
+    el.style.height = `${Math.min(el.scrollHeight, COMPOSER_MAX_H)}px`
+  }, [value])
+
   return (
     <form
       onSubmit={onSubmit}
-      className={`mt-2.5 flex items-end gap-1.5 ${divided ? 'border-t border-border pt-2.5' : ''}`}
+      // `items-end`, so Send stays on the last line as the box grows downward rather than
+      // drifting to the middle of a paragraph.
+      className={`mt-2.5 flex items-end gap-2 ${divided ? 'border-t border-border pt-2.5' : ''}`}
     >
-      {/* The post's reaction bar shares the composer row (post-level only). */}
-      {reactSlot && <div className="shrink-0 self-center">{reactSlot}</div>}
       <Textarea
+        ref={boxRef}
         value={value}
         autoFocus={autoFocus}
-        onChange={(e) => {
-          onChange(e.target.value)
-          e.target.style.height = 'auto'
-          e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`
-        }}
+        onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={1}
         disabled={disabled}
@@ -169,7 +187,12 @@ function ReplyComposer({
         // on a tall box turns the ends into large ovals. At one line the box is ~36px tall and
         // rounded-card's 17px is within a pixel of a true pill, so this matches the reference at
         // rest AND degrades properly once someone writes a paragraph.
-        className="flex-1 resize-none rounded-card px-3.5 text-meta leading-relaxed"
+        //
+        // `min-w-0` matters more than it looks: a flex item's default `min-width:auto` refuses to
+        // shrink below its content, which is how a `flex-1` field ends up overflowing its card
+        // instead of wrapping. With the emoji strip gone this row has room, but the guard costs
+        // nothing and keeps a long unbroken paste inside the card.
+        className="min-w-0 flex-1 resize-none overflow-y-auto rounded-card px-3.5 text-meta leading-relaxed"
       />
       <button
         type="submit"
@@ -306,10 +329,12 @@ export function PostReplies({
 
   return (
     <div>
-      {/* One tight action line: the "View all / show fewer" comment control on the
-          LEFT, and the reaction COUNTS beside the comment count on the RIGHT — so the
-          reacts, the comment count, and the view-all link all share a single row. The
-          emoji PICKER lives down on the composer row (below), not here. */}
+      {/* ONE ACTION LINE, and it now holds all three (owner, 2026-08-06: "put emoji picker
+          on same line as reacts and comments icons"). Left: the "View all / show fewer"
+          control. Right, as one cluster: the reaction COUNTS, the react TRIGGER, the comment
+          count. These are the three chrome affordances on a post and they belong together —
+          the trigger was the odd one out, parked down on the composer row where it and its
+          five quick emojis were crushing the comment field. */}
       <div className="mt-2.5 flex items-center justify-between gap-2">
         <div className="min-w-0">
           {showExpander ? (
@@ -335,6 +360,9 @@ export function PostReplies({
               reacted), so they sit at the --text-meta content floor. The 11px
               `compact` pill stays for the per-comment bar, which is chrome-tight. */}
           <ReactionCounts {...reactionState} />
+          {/* `align="end"`: this sits at the right edge of the card, so the popover has to
+              hang from its right or it opens past the viewport on a phone. */}
+          <ReactionInlinePicker {...reactionState} align="end" />
           <button
             onClick={() => setOpen((o) => !o)}
             aria-label={open ? 'Hide comments' : 'Show comments'}
@@ -372,16 +400,15 @@ export function PostReplies({
         </div>
       )}
 
-      {/* Reply composer — ALWAYS under every post. The inline emoji react strip (a
-          string of quick emojis + a picker), the growing textarea, and send all share
-          ONE row; ⌘/Ctrl+Enter or the button sends. Submitting opens the thread. */}
+      {/* Reply composer — ALWAYS under every post. The field spans the row and grows with
+          the text; only Send shares it. Enter sends, Shift+Enter breaks the line, and
+          submitting opens the thread so the new comment is seen. */}
       <ReplyComposer
         value={body}
         onChange={setBody}
         onSubmit={handleSubmit}
         disabled={isPending}
         placeholder="Add a comment…"
-        reactSlot={<ReactionInlinePicker {...reactionState} />}
         divided
       />
       {replyError && <p className="mt-1 px-1 text-2xs text-danger">{replyError}</p>}

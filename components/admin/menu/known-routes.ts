@@ -30,6 +30,12 @@ export const MENU_SURFACE_LABELS: Record<MenuSurfaceKey, string> = {
 // (the common destinations an operator points a menu at), not every route in the app.
 export const KNOWN_ROUTES: { href: string; label: string }[] = [
   { href: '/feed', label: 'Feed' },
+  // The two profile destinations, listed together because picking the wrong one is the
+  // easy mistake: /profile is the member's own PROFILE (a per-session redirect to
+  // /people/<handle>, app/(main)/profile/page.tsx), while /settings/profile further down
+  // is the EDITOR. A menu row is one static href for everybody, so /profile is the only
+  // spelling that can mean "mine" — which is why it has to be offered here.
+  { href: '/profile', label: 'My profile' },
   { href: '/circles', label: 'Circles' },
   { href: '/events', label: 'Events' },
   { href: '/channels', label: 'Channels' },
@@ -51,7 +57,7 @@ export const KNOWN_ROUTES: { href: string; label: string }[] = [
   { href: '/search', label: 'Search' },
   { href: '/support', label: 'Support' },
   { href: '/settings', label: 'Settings' },
-  { href: '/settings/profile', label: 'Settings: Profile' },
+  { href: '/settings/profile', label: 'Settings: Profile (editor)' },
   { href: '/settings#plan', label: 'Settings: Plan and billing' },
   { href: '/settings#notifications', label: 'Settings: Notifications' },
   { href: '/upgrade', label: 'Upgrade' },

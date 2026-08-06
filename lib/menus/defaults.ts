@@ -61,9 +61,13 @@ function pinnedProfileItem(position: number): ResolvedItem {
   return {
     id: PINNED_PROFILE_ID,
     label: 'Profile',
-    // /profile has never existed as a route and there is no redirect for it, so this pin
-    // 404'd for every member who clicked it. The profile editor lives under Settings.
-    href: '/settings/profile',
+    // /profile now EXISTS (app/(main)/profile/page.tsx) and resolves per session to
+    // /people/<the member's handle>. The note that used to sit here said this pin pointed at
+    // the settings form because "/profile has never existed as a route and there is no
+    // redirect for it" — that was true, and the fix was the route, not the destination. A pin
+    // called Profile that opened an edit form was answering a different question than the one
+    // it was asked; the editor is still one tap away from the profile it edits.
+    href: '/profile',
     position,
     colSpan: 1,
     mode: 'active',

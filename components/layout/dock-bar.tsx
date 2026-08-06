@@ -240,6 +240,38 @@ export function railEndOpenDue(wasAtEnd: boolean, atEnd: boolean): boolean {
   return atEnd && !wasAtEnd
 }
 
+/**
+ * How far the bar rises off the window's bottom edge to meet the end of the rail.
+ *
+ * 🔴 A SHORT RAIL GETS NO RIDE-UP, and that is the whole fix (owner, 2026-08-06: "the Page Admin
+ * tab keeps popping up like this", with the tab floating in the middle of the page over the
+ * roster). The lift used to be `window.innerHeight - railEndBottom` unconditionally. Read that
+ * against a rail SHORTER than the window — say a 620px rail in a 900px viewport, which is every
+ * /admin page with a light info rail — and it evaluates to ~280px of lift. The bar dutifully
+ * climbed 280px and came to rest in open canvas, a third of the way up the screen, on top of
+ * whatever was there.
+ *
+ * The irony is that this is the exact failure the ride-up was written to prevent. Its own note
+ * says fixed-to-the-bottom is "wrong once you reach the rail's end -- the bar then floats in empty
+ * space, detached from the content it belongs to". That reasoning holds only for a rail you can
+ * SCROLL: reaching the end of a long rail means the cards above the bar stopped, and following
+ * them up keeps the bar attached. A rail that never scrolls has no "end you reach" — it simply
+ * stops high on the page, and the gap under it is the page, not a trail of vacated rail. Riding
+ * up into that gap is how a docked corner tab becomes a floating one.
+ *
+ * So the ride-up is gated on the rail actually overflowing the viewport, which is the SAME test
+ * `atRailEnd` was already making separately. One rule in one place now: if this returns zero the
+ * bar is pinned to the corner, and `atRailEnd` is false because there is no end to have reached.
+ *
+ * `Math.max(0, …)` still guards the other direction — a rail whose end is BELOW the window bottom
+ * (you have not scrolled down to it yet) would otherwise produce a negative lift and push the bar
+ * off the bottom of the screen.
+ */
+export function dockLift(railHeight: number, railEndBottom: number, viewportHeight: number): number {
+  if (railHeight <= viewportHeight) return 0
+  return Math.max(0, Math.round(viewportHeight - railEndBottom))
+}
+
 // ── The bar's measurement, published once ─────────────────────────────────────
 //
 // The bar already measures the rail on every frame that needs it (see `measure` below). The chat
@@ -451,14 +483,14 @@ export function DockBar({
       return
     }
 
-    // How far the rail's end sits ABOVE the bar's resting line (the window's bottom edge).
-    // Positive means the rail has ended on screen and the bar should climb by that much — which
-    // is the ride-up: on a long page the bar stays pinned to the window while the rail is taller
-    // than the viewport, then rises to meet the rail's end as you reach it, and returns as you
-    // scroll back. It is scroll-linked on purpose (no transition), so it tracks rather than
-    // chases.
+    // How far the rail's end sits ABOVE the bar's resting line (the window's bottom edge), on a
+    // rail long enough for that to mean anything — see `dockLift`. On a long page the bar stays
+    // pinned to the window while the rail is taller than the viewport, then rises to meet the
+    // rail's end as you reach it, and returns as you scroll back. Scroll-linked on purpose (no
+    // transition), so it tracks rather than chases. A rail shorter than the window gets zero and
+    // the bar stays in the corner.
     const railBottom = sentinel.getBoundingClientRect().bottom
-    const lift = Math.max(0, Math.round(window.innerHeight - railBottom))
+    const lift = dockLift(rect.height, railBottom, window.innerHeight)
     setLift(lift)
 
     const span = { left: Math.round(rect.left), width: Math.round(rect.width) }
@@ -475,8 +507,10 @@ export function DockBar({
         window.innerHeight - HEADER_HEADROOM,
       ),
       // "You scrolled to the end of the rail", not "the rail happens to end on screen". A rail
-      // shorter than the window is at its end from the first paint, and nobody scrolled.
-      atRailEnd: lift > 0 && rect.height > window.innerHeight,
+      // shorter than the window is at its end from the first paint, and nobody scrolled — which
+      // `dockLift` now encodes, so this reads the lift rather than re-testing the height. The two
+      // used to state the overflow rule separately and were free to disagree; they cannot now.
+      atRailEnd: lift > 0,
     })
   }, [])
 
