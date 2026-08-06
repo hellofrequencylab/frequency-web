@@ -48,7 +48,7 @@ export function StandingHero({
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 pt-6 sm:px-7">
         <div className="flex items-center gap-3.5">
           <span
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-on-primary lift-1"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-on-rank lift-1"
             style={{ background: `var(--rank-${def.rankKey})` }}
             aria-hidden
           >

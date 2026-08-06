@@ -167,7 +167,7 @@ export function SeasonMap({
           style={seasonRankStyle(rank)}
         >
           <span
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control text-on-primary lift-1"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control text-on-rank lift-1"
             style={{ background: `var(--rank-${RANK_TO_KEY[rank]})` }}
             aria-hidden
           >

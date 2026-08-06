@@ -18,18 +18,18 @@ type ButtonVariant =
 type ButtonSize = 'sm' | 'md'
 
 const VARIANT: Record<ButtonVariant, string> = {
-  primary: 'bg-primary text-on-primary hover:bg-primary-hover',
+  primary: 'bg-primary text-on-primary chisel hover:bg-primary-hover',
   // The MUTED amber: present, but not shouting until it matters. The token pair the system
   // already carries for exactly this (`bg-primary-bg` + `text-primary-strong`, ~250 sites), on
   // the primitive so a control can go quiet at rest without hand-rolling a fill string. Hover
   // steps up to the full amber, which is the "this is the same button, louder" cue. First
   // consumer: the dock's chat tab, muted until there is an unread.
-  primarySoft: 'bg-primary-bg text-primary-strong hover:bg-primary-hover hover:text-on-primary',
+  primarySoft: 'bg-primary-bg text-primary-strong hover:bg-primary-hover hover:text-on-primary hover:chisel',
   secondary: 'border border-border bg-surface text-text hover:border-border-strong hover:bg-surface-elevated',
   ghost: 'text-muted hover:bg-surface-elevated hover:text-text',
-  danger: 'bg-danger text-on-danger hover:opacity-90',
+  danger: 'bg-danger text-on-danger chisel hover:opacity-90',
   // Solid caution action (moderation Hide/Warn) — the danger shape in the warning tone.
-  warning: 'bg-warning text-on-warning hover:opacity-90',
+  warning: 'bg-warning text-on-warning chisel hover:opacity-90',
   // Outlined state-change actions (Delete account / Deactivate / Reactivate):
   // quieter than the solid fills, tinting on hover. One scale, three tones.
   dangerOutline: 'border border-danger text-danger hover:bg-danger-bg',

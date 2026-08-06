@@ -86,7 +86,9 @@ export const RANK_KEYS = ['stone', 'clay', 'gold', 'olive', 'jade', 'teal', 'sla
 /**
  * The rank sub-families, three per primitive.
  *
- *  A. text-on-primary (the dark ink) on the CORE — role `edge`.
+ *  A. text-on-rank (the dark ink) on the CORE — role `edge`. NOT text-on-primary: that is the
+ *     BUTTON LABEL and became white when the amber darkened, which would put a white glyph on the
+ *     lightest core in the spectrum. Different job, different token.
  *     ROLE CALL, stated rather than assumed: every live site that paints on a rank core paints an
  *     `aria-hidden` GLYPH (the Trophy crest in standing-hero / season-map / hero-moment, the
  *     Expression check pip in journey-progress-card), not a label. A glyph that identifies state
@@ -115,7 +117,7 @@ export const RANK_KEYS = ['stone', 'clay', 'gold', 'olive', 'jade', 'teal', 'sla
  *     it printed in every run and stops gold drifting lighter still.
  */
 const RANK_PAIRS = RANK_KEYS.flatMap((r) => [
-  { fg: '--color-text-on-primary', bg: `--rank-${r}`, role: 'edge', note: `dark glyph on the ${r} core (crest/pip — 1.4.11, not a label)` },
+  { fg: '--color-text-on-rank', bg: `--rank-${r}`, role: 'edge', note: `dark glyph on the ${r} core (crest/pip — 1.4.11, not a label)` },
   { fg: '--color-on-ink', bg: `--rank-${r}-deep`, role: 'body', note: `label on the ${r} deep step — the spectrum's text-bearing ground` },
   { fg: '#FFFFFF', bg: `--rank-${r}`, role: 'edge', note: `white glyph on the ${r} core — the pairing to avoid` },
 ])
