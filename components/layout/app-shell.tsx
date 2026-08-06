@@ -1151,6 +1151,10 @@ function NavLinkList({
 
 // ── Mobile left drawer ───────────────────────────────────────────────────────
 
+/** The Vault region revealed inside the drawer's identity card. Named once so the chevron's
+ *  `aria-controls` and the region it points at can never drift apart. */
+const DRAWER_VAULT_ID = 'fq-drawer-vault'
+
 function MobileLeftDrawer({
   open,
   onClose,
@@ -1198,6 +1202,11 @@ function MobileLeftDrawer({
    *  the score; from md it is the bottom-right Vault tab (`dock`). Exactly one per viewport. */
   mobileStats?: React.ReactNode
 }) {
+  // The Vault's disclosure inside the identity card. Collapsed on every open rather than
+  // remembered: the drawer is a NAVIGATION surface, and a member who opened the menu to go
+  // somewhere should meet the destination list, not last session's score pushing it down.
+  const [vaultOpen, setVaultOpen] = useState(false)
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
@@ -1205,6 +1214,20 @@ function MobileLeftDrawer({
     if (open) window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
+
+  // Reset when the drawer leaves, not when it arrives — collapsing on open would run a
+  // `1fr → 0fr` transition in front of the member as the panel slides in.
+  //
+  // Adjusted DURING RENDER rather than in an effect. This is React's documented shape for
+  // "reset state when a prop changes", and it is not a style preference here: this repo's lint
+  // (`react-hooks/set-state-in-effect`) rejects the effect spelling by name, and it is right to —
+  // an effect would render the stale value once, commit it, then re-render. Setting state during
+  // render of the SAME component short-circuits before anything is committed.
+  const [drawerWas, setDrawerWas] = useState(open)
+  if (drawerWas !== open) {
+    setDrawerWas(open)
+    if (!open) setVaultOpen(false)
+  }
 
   // 🔴 LOCK THE PAGE BEHIND IT. This was the ONE overlay in the repo that did not — Dialog,
   // SearchOverlay, CaptureLauncher, Mindless, ChoresOverlay and ReportDialog all lock. Without
@@ -1267,14 +1290,20 @@ function MobileLeftDrawer({
           </Link>
         </div>
 
-        {/* Identity — tap the card for your profile. Operators can switch hats here (View-as
-            + context switcher, both self-gating). The game stats live at the BOTTOM of the
-            drawer (the < lg home of the Vault dock's numbers), never up here. */}
+        {/* Identity — tap the card for your profile, tap the chevron for your Vault.
+            (owner, 2026-08-06: "on mobile, put the vault in the profile box pop up").
+            The score used to sit in the drawer's BOTTOM cluster, below the whole nav list, so
+            reaching it was: open the menu, scroll past every destination, and read it inside a
+            40dvh box that the desktop panel had just grown ~4x. Here it is one tap from the
+            member's own card, which is where the desktop rail's account dock already puts it.
+            The chevron is a SEPARATE control from the card's link: making the whole card a
+            toggle would cost one-tap profile, which is what the card is for. */}
         <div className="shrink-0 border-b border-border px-3 py-3">
+          <div className="flex items-center gap-2.5">
           <Link
             href={profileHref}
             onClick={onClose}
-            className="flex items-center gap-2.5 rounded-lg p-1 -m-1 hover:bg-chrome-hover transition-colors"
+            className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg p-1 -m-1 hover:bg-chrome-hover transition-colors"
           >
             {profile.avatar_url ? (
               <Image
@@ -1297,6 +1326,47 @@ function MobileLeftDrawer({
               <RoleBadge role={identityRole} className="mt-0.5" />
             </div>
           </Link>
+            {mobileStats && (
+              <button
+                type="button"
+                onClick={() => setVaultOpen((v) => !v)}
+                aria-expanded={vaultOpen}
+                aria-controls={DRAWER_VAULT_ID}
+                aria-label={vaultOpen ? 'Hide your Vault' : 'Show your Vault'}
+                className="tap-target -mr-1 flex shrink-0 items-center justify-center rounded-control px-1 text-subtle transition-colors hover:bg-chrome-hover hover:text-text"
+              >
+                <ChevronUp
+                  className={`h-4 w-4 transition-transform duration-[var(--motion-base)] motion-reduce:transition-none ${vaultOpen ? '' : 'rotate-180'}`}
+                  aria-hidden
+                />
+              </button>
+            )}
+          </div>
+
+          {/* The Vault, revealed from inside the card — the same `grid-rows-[0fr] → [1fr]` row
+              the three desktop docks use, so nothing lifts off and the motion honours
+              `--motion-base` (globals.css zeroes it under reduced motion rather than disabling
+              transitions, which is why a literal duration would opt the member out).
+              `overscroll-contain` is here because the drawer nests scrollers: without it a flick
+              that reaches the end of this box chains into the nav and then into the page. */}
+          {mobileStats && (
+            <div
+              className={`grid overflow-hidden transition-[grid-template-rows] duration-[var(--motion-base)] ease-[var(--ease-out)] motion-reduce:transition-none ${
+                vaultOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+              }`}
+            >
+              <div className="min-h-0">
+                <div
+                  id={DRAWER_VAULT_ID}
+                  role="region"
+                  aria-label="The Vault"
+                  className="max-h-[50dvh] overflow-y-auto overscroll-contain pt-3"
+                >
+                  {mobileStats}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Space switcher only (owner: no View-as-role, no streak up here by the identity
               card — the score lives in the bottom cluster). Self-gates to null for members
@@ -1310,16 +1380,14 @@ function MobileLeftDrawer({
           <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} operatesSpaces={operatesSpaces} sections={sections} menuDriven={menuDriven} />
         </nav>
 
-        {/* Bottom cluster — the game stats (the drawer is the < lg home of the Vault dock's
-            numbers; docks law, DAWN 2026-08-03), then About/legal, then a thumb-zone Close. */}
+        {/* Bottom cluster — About/legal, then a thumb-zone Close.
+            THE SCORE IS NOT HERE ANY MORE. It moved into the identity card above (owner,
+            2026-08-06). Worth stating rather than just deleting: the cap that used to live here
+            was on the WRONG BOX. It capped the stats at 40dvh while the nav was `flex-1`, whose
+            min-height resolves to 0 — so on a 568px screen the fixed siblings (head, identity,
+            40dvh of stats, links, Close) left the entire site nav about 58px, two rows. Moving
+            the score into a collapsed-by-default disclosure gives the nav its height back. */}
         <div className="shrink-0 border-t border-border pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          {/* Your score — Zaps · Gems · streak + the progress body (MobileGameStats). Capped
-              and internally scrollable so it can never crush the nav on a short screen. */}
-          {mobileStats && (
-            <div className="max-h-[40dvh] overflow-y-auto border-b border-border px-3 py-3">
-              {mobileStats}
-            </div>
-          )}
           {/* About / What is Frequency / Terms / Privacy — the site pages that were desktop
               mega-menu only, so nothing is desktop-reachable-only. */}
           <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 pt-3 text-2xs text-muted">
