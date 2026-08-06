@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Zap, Gem, Trash2, Plus, Check, X } from 'lucide-react'
 import { updateRewardConfig, createRewardConfig, deleteRewardConfig } from './reward-actions'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
 
 // Local copy of the union — the server action's module ('use server') exports
@@ -54,7 +56,7 @@ export function RewardConfig({ zaps, gems }: { zaps: RewardRow[]; gems: RewardRo
   )
 }
 
-const numInput = 'rounded-md border border-border bg-canvas px-2 py-1 text-meta text-text text-right'
+const numInput = 'px-2 py-1 text-meta text-right'
 
 function RewardTable({
   kind,
@@ -142,7 +144,7 @@ function RewardTable({
             </div>
             <label className="flex items-center gap-1" title="Amount">
               <span className="text-meta text-subtle">amt</span>
-              <input
+              <Input
                 type="number"
                 min={0}
                 value={row.amount}
@@ -152,7 +154,7 @@ function RewardTable({
             </label>
             <label className="flex items-center gap-1" title="Daily cap (blank = none)">
               <span className="text-meta text-subtle">cap</span>
-              <input
+              <Input
                 type="number"
                 min={0}
                 value={row.daily_cap ?? ''}
@@ -161,15 +163,13 @@ function RewardTable({
                 className={`w-14 ${numInput}`}
               />
             </label>
-            <label className="flex items-center gap-1" title="Active">
-              <input
-                type="checkbox"
-                checked={row.is_active}
-                onChange={(e) => update(i, { is_active: e.target.checked })}
-                className="accent-primary"
-              />
-              <span className="text-meta text-subtle">on</span>
-            </label>
+            <Checkbox
+              wrapperClassName="gap-1"
+              title="Active"
+              label={<span className="text-meta text-subtle">on</span>}
+              checked={row.is_active}
+              onChange={(e) => update(i, { is_active: e.target.checked })}
+            />
             {confirmKey === row.action_type ? (
               <span className="flex items-center gap-1">
                 <button
@@ -209,23 +209,25 @@ function RewardTable({
       {/* Add a new action. */}
       {adding ? (
         <div className="mt-3 space-y-2 rounded-card border border-dashed border-border bg-canvas/50 p-3">
-          <input
+          <Input
             autoFocus
+            aria-label="Action name"
             value={draft.action_type}
             onChange={(e) => { setDraft((d) => ({ ...d, action_type: e.target.value })); setStatus('idle') }}
             placeholder="action_name (e.g. circle_visit)"
-            className="w-full rounded-md border border-border bg-canvas px-2 py-1 text-meta text-text"
+            className="px-2 py-1 text-meta"
           />
-          <input
+          <Input
+            aria-label="What earns it"
             value={draft.description ?? ''}
             onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
             placeholder="What earns it (optional)"
-            className="w-full rounded-md border border-border bg-canvas px-2 py-1 text-meta text-text"
+            className="px-2 py-1 text-meta"
           />
           <div className="flex items-center gap-2">
             <label className="flex items-center gap-1" title="Amount">
               <span className="text-meta text-subtle">amt</span>
-              <input
+              <Input
                 type="number"
                 min={0}
                 value={draft.amount}
@@ -235,7 +237,7 @@ function RewardTable({
             </label>
             <label className="flex items-center gap-1" title="Daily cap (blank = none)">
               <span className="text-meta text-subtle">cap</span>
-              <input
+              <Input
                 type="number"
                 min={0}
                 value={draft.daily_cap ?? ''}
@@ -244,15 +246,13 @@ function RewardTable({
                 className={`w-14 ${numInput}`}
               />
             </label>
-            <label className="flex items-center gap-1" title="Active">
-              <input
-                type="checkbox"
-                checked={draft.is_active}
-                onChange={(e) => setDraft((d) => ({ ...d, is_active: e.target.checked }))}
-                className="accent-primary"
-              />
-              <span className="text-meta text-subtle">on</span>
-            </label>
+            <Checkbox
+              wrapperClassName="gap-1"
+              title="Active"
+              label={<span className="text-meta text-subtle">on</span>}
+              checked={draft.is_active}
+              onChange={(e) => setDraft((d) => ({ ...d, is_active: e.target.checked }))}
+            />
             <div className="ml-auto flex items-center gap-1.5">
               <button
                 type="button"

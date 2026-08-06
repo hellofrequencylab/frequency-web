@@ -8,6 +8,7 @@ import { FlagToggle } from './flag-toggle'
 import { setNextStepsEnabled, setAutoPopupsEnabled, setReferralsEnabled, setReferralLanding } from './actions'
 import { SITE_URL } from '@/lib/site'
 import type { getOnboardingControlsData, OnboardingSwitchEvent } from './load'
+import { Input } from '@/components/ui/field'
 
 const siteHost = SITE_URL.replace(/^https?:\/\//, '')
 
@@ -119,12 +120,13 @@ export function OnboardingControlsView({ data }: { data: Data }) {
       >
         <form action={setReferralLanding} className="flex flex-wrap items-center gap-2">
           <span className="text-body-sm font-medium text-subtle">{siteHost}</span>
-          <input
+          <Input
             name="path"
+            aria-label="Referral landing path"
             defaultValue={landing}
             spellCheck={false}
             placeholder="/"
-            className="w-40 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none"
+            className="w-40 px-2.5 py-1.5"
           />
           <button
             type="submit"

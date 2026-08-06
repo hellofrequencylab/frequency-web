@@ -18,6 +18,7 @@ import {
 } from '@/app/(main)/entry-points/entry-points-client'
 import { updateCampaign, archiveCampaign, reassignEntryPoint } from '../actions'
 import type { CampaignStatus } from '@/lib/entry-points/campaigns'
+import { Input } from '@/components/ui/field'
 
 export interface AssignableMember {
   id: string
@@ -77,10 +78,11 @@ export function CampaignDetail({
       <section className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface p-4 lift-1">
         {renaming ? (
           <>
-            <input
+            <Input
+              aria-label="Campaign name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
+              className="px-2.5 py-1.5"
             />
             <button
               onClick={saveName}

@@ -10,6 +10,7 @@ import { assignRole, deactivateMember } from './actions'
 import type { SeasonRank } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
+import { Input } from '@/components/ui/field'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
@@ -85,12 +86,12 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
     <div>
       {/* Search */}
       <div className="mb-3">
-        <input
+        <Input
           type="text"
+          aria-label="Search members"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or handle..."
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30 dark:border-border-strong dark:bg-surface-elevated dark:text-subtle/60 dark:placeholder:text-muted"
         />
       </div>
 

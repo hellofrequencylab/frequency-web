@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Trophy, Plus, Trash2, Zap, CheckCircle2, Pencil } from 'lucide-react'
 import { createCampaign, updateCampaign, deleteCampaign, type CampaignInput } from './campaign-actions'
 import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 
@@ -229,20 +231,18 @@ function CampaignForm({
     <div className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Campaign name">
-          <input
+          <Input
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             placeholder="e.g. Downtown Scavenger Hunt"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="Reward (zaps)">
-          <input
+          <Input
             type="number"
             min={0}
             value={form.rewardZaps}
             onChange={(e) => setForm((f) => ({ ...f, rewardZaps: Number(e.target.value) }))}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="Goal">
@@ -256,40 +256,36 @@ function CampaignForm({
         </Field>
         {form.mode === 'collect_n' && (
           <Field label="How many (N)">
-            <input
+            <Input
               type="number"
               min={1}
               max={form.codeIds.length || undefined}
               value={form.target}
               onChange={(e) => setForm((f) => ({ ...f, target: Number(e.target.value) }))}
-              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
             />
           </Field>
         )}
         <Field label="Starts (optional)">
-          <input
+          <Input
             type="datetime-local"
             value={toLocalInput(form.validFrom)}
             onChange={(e) => setForm((f) => ({ ...f, validFrom: fromLocalInput(e.target.value) }))}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="Ends (optional)">
-          <input
+          <Input
             type="datetime-local"
             value={toLocalInput(form.validUntil)}
             onChange={(e) => setForm((f) => ({ ...f, validUntil: fromLocalInput(e.target.value) }))}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
       </div>
 
       <Field label="Description (optional)">
-        <input
+        <Input
           value={form.description}
           onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
           placeholder="What is the hunt about?"
-          className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
         />
       </Field>
 
@@ -299,15 +295,13 @@ function CampaignForm({
         </span>
         <div className="max-h-48 overflow-y-auto rounded-md border border-border divide-y divide-border">
           {codes.map((c) => (
-            <label key={c.id} className="flex items-center gap-2 px-2.5 py-1.5 text-body-sm hover:bg-surface-elevated cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.codeIds.includes(c.id)}
-                onChange={() => toggleCode(c.id)}
-                className="accent-primary"
-              />
-              <span className="text-text truncate">{c.label}</span>
-            </label>
+            <Checkbox
+              key={c.id}
+              wrapperClassName="flex w-full px-2.5 py-1.5 text-body-sm hover:bg-surface-elevated"
+              label={<span className="truncate">{c.label}</span>}
+              checked={form.codeIds.includes(c.id)}
+              onChange={() => toggleCode(c.id)}
+            />
           ))}
         </div>
       </div>

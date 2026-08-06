@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { Plus, Trash2, ChevronDown, ChevronRight, Clock, LayoutTemplate } from 'lucide-react'
 import { createSequence, toggleSequence, addStep, updateStep, deleteStep } from './actions'
 import { StatusChip } from '@/components/admin/status'
+import { Input, Textarea } from '@/components/ui/field'
 import { starterRows, type EntityLayout } from '@/lib/entity-blocks/layout'
 import { StepBlockEditor } from './step-block-editor'
 
@@ -29,7 +30,6 @@ export interface PersonaRow {
   sequence: { id: string; enabled: boolean; active: number; completed: number; steps: StepRowData[] } | null
 }
 
-const field = 'w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text'
 
 function humanDelay(hours: number): string {
   if (hours <= 0) return 'immediately'
@@ -177,12 +177,12 @@ function StepEditor({ step, index }: { step: StepRowData; index: number }) {
     return (
       <div className="space-y-2 rounded-card border border-border bg-canvas/40 p-3">
         <div className="flex items-center gap-2">
-          <label className="text-meta text-subtle">Wait</label>
-          <input value={delay} onChange={(e) => setDelay(e.target.value)} inputMode="numeric" className="w-20 rounded-md border border-border bg-canvas px-2 py-1 text-body-sm text-text" />
+          <label className="text-meta text-subtle" htmlFor={`nurture-wait-${step.id}`}>Wait</label>
+          <Input id={`nurture-wait-${step.id}`} value={delay} onChange={(e) => setDelay(e.target.value)} inputMode="numeric" className="w-20 px-2 py-1" />
           <span className="text-meta text-subtle">hours, then send:</span>
         </div>
-        <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className={field} />
-        <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} placeholder="Email body" className={`${field} resize-y`} />
+        <Input aria-label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" />
+        <Textarea aria-label="Email body" value={body} onChange={(e) => setBody(e.target.value)} rows={4} placeholder="Email body" className="resize-y" />
         {error && <p className="text-meta text-danger">{error}</p>}
         <div className="flex items-center gap-2">
           <button onClick={save} disabled={pending} className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">Save</button>
@@ -260,12 +260,12 @@ function AddStep({ sequenceId }: { sequenceId: string }) {
   return (
     <div className="space-y-2 rounded-card border border-border bg-canvas/40 p-3">
       <div className="flex items-center gap-2">
-        <label className="text-meta text-subtle">Wait</label>
-        <input value={delay} onChange={(e) => setDelay(e.target.value)} inputMode="numeric" className="w-20 rounded-md border border-border bg-canvas px-2 py-1 text-body-sm text-text" />
+        <label className="text-meta text-subtle" htmlFor="nurture-new-wait">Wait</label>
+        <Input id="nurture-new-wait" value={delay} onChange={(e) => setDelay(e.target.value)} inputMode="numeric" className="w-20 px-2 py-1" />
         <span className="text-meta text-subtle">hours after the previous step, then send:</span>
       </div>
-      <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className={field} />
-      <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} placeholder="Email body" className={`${field} resize-y`} />
+      <Input aria-label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" />
+      <Textarea aria-label="Email body" value={body} onChange={(e) => setBody(e.target.value)} rows={4} placeholder="Email body" className="resize-y" />
       {error && <p className="text-meta text-danger">{error}</p>}
       <div className="flex items-center gap-2">
         <button onClick={submit} disabled={pending} className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">Add step</button>

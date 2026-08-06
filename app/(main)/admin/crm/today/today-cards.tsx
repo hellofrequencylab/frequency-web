@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { Check, Loader2, Pencil, X } from 'lucide-react'
+import { Input, Textarea } from '@/components/ui/field'
 import type { TodayCard } from '@/lib/ai/vera/today'
 import { runPlaybookAction, dismissPlaybookCard } from './actions'
 
@@ -85,19 +86,19 @@ function CardRow({ card, onDone }: { card: TodayCard; onDone: (contactId: string
 
       {tweaking && isOutbound && (
         <div className="mt-3 space-y-2">
-          <input
+          <Input
             type="text"
+            aria-label="Subject"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder="Subject"
-            className="w-full rounded-control border border-border bg-canvas px-3 py-2 text-body-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
           />
-          <textarea
+          <Textarea
+            aria-label="Message"
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Write the note in your own words. You approve before it sends."
             rows={4}
-            className="w-full rounded-control border border-border bg-canvas px-3 py-2 text-body-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
           />
         </div>
       )}

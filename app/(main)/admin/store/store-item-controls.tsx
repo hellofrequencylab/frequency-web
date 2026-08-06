@@ -10,6 +10,8 @@ import {
 } from './actions'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
+import { Field, Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import type { Database } from '@/lib/database.types'
 
 type StoreCategory = Database['public']['Enums']['store_category']
@@ -22,6 +24,10 @@ const CATEGORIES: { value: StoreCategory; label: string }[] = [
   { value: 'title', label: 'Title' },
   { value: 'collectible', label: 'Collectible' },
 ]
+
+// The label look these forms already wore: an uppercase eyebrow over each control. Passed to
+// `Field` so the association (and the focus/invalid chrome under it) comes from the primitive.
+const LABEL_CLASS = 'uppercase tracking-wider font-semibold'
 
 // ── Active toggle ──────────────────────────────────────────────────────────────
 
@@ -75,128 +81,49 @@ function ItemForm({
   return (
     <form action={onSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-meta font-semibold text-muted uppercase tracking-wider mb-1">
-            Name
-          </label>
-          <input
-            name="name"
-            defaultValue={item?.name ?? ''}
-            required
-            placeholder="Neon Halo"
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-        </div>
-        <div>
-          <label className="block text-meta font-semibold text-muted uppercase tracking-wider mb-1">
-            Slug
-          </label>
-          <input
-            name="slug"
-            defaultValue={item?.slug ?? ''}
-            required
-            placeholder="neon-halo"
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-        </div>
+        <Field label="Name" labelClassName={LABEL_CLASS}>
+          <Input name="name" defaultValue={item?.name ?? ''} required placeholder="Neon Halo" />
+        </Field>
+        <Field label="Slug" labelClassName={LABEL_CLASS}>
+          <Input name="slug" defaultValue={item?.slug ?? ''} required placeholder="neon-halo" />
+        </Field>
       </div>
 
-      <div>
-        <label className="block text-meta font-semibold text-muted uppercase tracking-wider mb-1">
-          Description
-        </label>
-        <textarea
+      <Field label="Description" labelClassName={LABEL_CLASS}>
+        <Textarea
           name="description"
           defaultValue={item?.description ?? ''}
           required
           rows={2}
           placeholder="A brief description shown in the store."
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+          className="resize-none"
         />
-      </div>
+      </Field>
 
       <div className="grid grid-cols-3 gap-3">
-        <div>
-          <label className="block text-meta font-semibold text-muted uppercase tracking-wider mb-1">
-            Category
-          </label>
-          <select
-            name="category"
-            defaultValue={item?.category ?? 'cosmetic'}
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/30"
-          >
-            {CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-meta font-semibold text-muted uppercase tracking-wider mb-1">
-            Gem cost
-          </label>
-          <input
-            name="gem_cost"
-            type="number"
-            min={0}
-            defaultValue={item?.gem_cost ?? 0}
-            required
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-        </div>
-        <div>
-          <label className="block text-meta font-semibold text-muted uppercase tracking-wider mb-1">
-            Stock (blank = ∞)
-          </label>
-          <input
-            name="stock"
-            type="number"
-            min={0}
-            defaultValue={item?.stock ?? ''}
-            placeholder="∞"
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-        </div>
+        <Field label="Category" labelClassName={LABEL_CLASS}>
+          <Select name="category" defaultValue={item?.category ?? 'cosmetic'} options={CATEGORIES} />
+        </Field>
+        <Field label="Gem cost" labelClassName={LABEL_CLASS}>
+          <Input name="gem_cost" type="number" min={0} defaultValue={item?.gem_cost ?? 0} required />
+        </Field>
+        <Field label="Stock (blank = ∞)" labelClassName={LABEL_CLASS}>
+          <Input name="stock" type="number" min={0} defaultValue={item?.stock ?? ''} placeholder="∞" />
+        </Field>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-meta font-semibold text-muted uppercase tracking-wider mb-1">
-            Icon (emoji or slug)
-          </label>
-          <input
-            name="icon"
-            defaultValue={item?.icon ?? ''}
-            placeholder="💎"
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-        </div>
-        <div>
-          <label className="block text-meta font-semibold text-muted uppercase tracking-wider mb-1">
-            Sort order
-          </label>
-          <input
-            name="sort_order"
-            type="number"
-            defaultValue={item?.sort_order ?? 0}
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-        </div>
+        <Field label="Icon (emoji or slug)" labelClassName={LABEL_CLASS}>
+          <Input name="icon" defaultValue={item?.icon ?? ''} placeholder="💎" />
+        </Field>
+        <Field label="Sort order" labelClassName={LABEL_CLASS}>
+          <Input name="sort_order" type="number" defaultValue={item?.sort_order ?? 0} />
+        </Field>
       </div>
 
-      <div>
-        <label className="block text-meta font-semibold text-muted uppercase tracking-wider mb-1">
-          Preview URL (optional)
-        </label>
-        <input
-          name="preview"
-          type="url"
-          defaultValue={item?.preview ?? ''}
-          placeholder="https://..."
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/30"
-        />
-      </div>
+      <Field label="Preview URL (optional)" labelClassName={LABEL_CLASS}>
+        <Input name="preview" type="url" defaultValue={item?.preview ?? ''} placeholder="https://..." />
+      </Field>
 
       <div className="flex items-center gap-2 pt-1">
         <Button type="submit" disabled={pending} className="flex-1">

@@ -1,6 +1,8 @@
 'use client'
 
 import { useMemo, useState, type ReactNode } from 'react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { Palette, ImagePlus, X, RotateCcw, TriangleAlert } from 'lucide-react'
 import { LoomPicker } from '@/components/loom/loom-picker'
@@ -103,40 +105,37 @@ export function StyleEditor({
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <Swatch label="Modules" value={value.fg} onChange={(c) => set('fg', c)} />
           <Swatch label="Background" value={value.bg} onChange={(c) => set('bg', c)} />
+          {/* A <div>, not a <label>: two controls (the toggle and the colour well) cannot share
+              one label, and the well used to sit inside the checkbox's label naming neither. */}
           {!compact && (
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
+            <div className="flex items-center gap-1.5">
+              <Checkbox
+                label={<span className="text-subtle">Eye color</span>}
                 checked={!!value.eyeColor}
                 onChange={(e) => set('eyeColor', e.target.checked ? value.fg : null)}
-                className="accent-primary"
               />
-              <span className="text-subtle">Eye color</span>
               {value.eyeColor && (
                 <input
                   type="color"
+                  aria-label="Eye colour"
                   value={value.eyeColor}
                   onChange={(e) => set('eyeColor', e.target.value)}
-                  className="h-5 w-6 rounded border border-border bg-transparent p-0"
+                  className="h-5 w-6 rounded-control border border-border bg-transparent p-0"
                 />
               )}
-            </label>
+            </div>
           )}
         </div>
 
         {!compact && (
           <div>
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={!!value.gradient}
-                onChange={(e) =>
-                  set('gradient', e.target.checked ? { from: value.fg, to: '#db2777', angle: 45 } : null)
-                }
-                className="accent-primary"
-              />
-              <span className="text-subtle">Gradient fill</span>
-            </label>
+            <Checkbox
+              label={<span className="text-subtle">Gradient fill</span>}
+              checked={!!value.gradient}
+              onChange={(e) =>
+                set('gradient', e.target.checked ? { from: value.fg, to: '#db2777', angle: 45 } : null)
+              }
+            />
             {value.gradient && (
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 pl-5">
                 <Swatch
@@ -259,12 +258,11 @@ export function StyleEditor({
       <Group label="Frame">
         <label className="block">
           <span className="mb-1 block text-subtle">Card label (optional, adds a “scan me” frame)</span>
-          <input
+          <Input
             value={value.frameLabel ?? ''}
             onChange={(e) => set('frameLabel', e.target.value || null)}
             placeholder="e.g. Scan me"
             maxLength={28}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-text"
           />
         </label>
       </Group>
@@ -405,7 +403,7 @@ function Swatch({
         type="color"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-6 w-8 rounded border border-border bg-transparent p-0"
+        className="h-6 w-8 rounded-control border border-border bg-transparent p-0"
       />
     </label>
   )

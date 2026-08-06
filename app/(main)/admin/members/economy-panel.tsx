@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Gem, Zap, PlusCircle, MinusCircle, Loader2 } from 'lucide-react'
 import { grantGems, revokeGems, grantZaps, revokeZaps } from './economy-actions'
+import { Input } from '@/components/ui/field'
 
 type Currency = 'gems' | 'zaps'
 type Op = 'grant' | 'revoke'
@@ -93,8 +94,9 @@ export function EconomyPanel({ profileId, displayName }: Props) {
 
         {/* Amount + reason */}
         <div className="flex gap-2">
-          <input
+          <Input
             type="number"
+            aria-label="Amount"
             min={1}
             max={100000}
             step={1}
@@ -102,16 +104,17 @@ export function EconomyPanel({ profileId, displayName }: Props) {
             onChange={e => { setAmount(e.target.value); setStatus(null) }}
             placeholder="Amount"
             required
-            className="w-24 rounded-lg border border-border bg-surface px-2 py-1.5 text-meta focus:outline-none focus:ring-1 focus:ring-border-strong/30"
+            className="w-24 px-2 py-1.5 text-meta"
           />
-          <input
+          <Input
             type="text"
+            aria-label="Reason"
             value={reason}
             onChange={e => { setReason(e.target.value); setStatus(null) }}
             placeholder="Reason (required)"
             required
             maxLength={200}
-            className="flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-meta focus:outline-none focus:ring-1 focus:ring-border-strong/30"
+            className="flex-1 px-2 py-1.5 text-meta"
           />
         </div>
 

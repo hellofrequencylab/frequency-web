@@ -19,6 +19,7 @@ import { Loader2, Check, X, Pencil, Send, CheckCircle2, Copy, ImagePlus, Star, P
 import { Button } from '@/components/ui/button'
 import { Banner, StatusChip } from '@/components/admin/status'
 import { cn } from '@/lib/utils'
+import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { AMENITIES } from '@/lib/listings/types'
@@ -363,8 +364,6 @@ function FieldRow({
 
 // ── The per-type editor ──────────────────────────────────────────────────────────────
 
-const inputCls =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none'
 
 function FieldEditor({
   field,
@@ -392,10 +391,10 @@ function FieldEditor({
   setDetails: (v: ListingDetail[]) => void
 }) {
   if (field.input === 'textarea') {
-    return <textarea className={cn(inputCls, 'min-h-24 resize-y')} value={text} onChange={(e) => setText(e.target.value)} autoFocus />
+    return <Textarea aria-label={field.label} className="min-h-24 resize-y" value={text} onChange={(e) => setText(e.target.value)} autoFocus />
   }
   if (field.input === 'number') {
-    return <input type="number" inputMode="decimal" className={inputCls} value={num} onChange={(e) => setNum(e.target.value)} autoFocus />
+    return <Input type="number" aria-label={field.label} inputMode="decimal" value={num} onChange={(e) => setNum(e.target.value)} autoFocus />
   }
   if (field.input === 'select') {
     return (
@@ -449,7 +448,7 @@ function FieldEditor({
   if (field.input === 'details') {
     return <DetailsEditor details={details} setDetails={setDetails} />
   }
-  return <input className={inputCls} value={text} onChange={(e) => setText(e.target.value)} autoFocus />
+  return <Input aria-label={field.label} value={text} onChange={(e) => setText(e.target.value)} autoFocus />
 }
 
 // ── The item-detail chips editor (a repeater of {label, value} rows) ───────────────────
@@ -469,19 +468,18 @@ function DetailsEditor({
     <div className="space-y-1.5">
       {details.map((d, i) => (
         <div key={i} className="flex items-center gap-1.5">
-          <input
+          <Input
             value={d.label}
             placeholder="Label"
             aria-label={`Detail ${i + 1} label`}
             onChange={(e) => update(i, { label: e.target.value })}
-            className={cn(inputCls, 'w-32 shrink-0')}
+            className="w-32 shrink-0"
           />
-          <input
+          <Input
             value={d.value}
             placeholder="Value"
             aria-label={`Detail ${i + 1} value`}
             onChange={(e) => update(i, { value: e.target.value })}
-            className={inputCls}
           />
           <button
             type="button"

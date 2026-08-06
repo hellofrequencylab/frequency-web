@@ -11,6 +11,8 @@ import { Check, Hand, Plus, Trash2, Undo2, X } from 'lucide-react'
 import { createCircleTask, deleteCircleTask, releaseCircleTask } from '../../crew/circle-task-actions'
 import type { CircleTask } from '@/lib/crew/circle-tasks'
 import { getInitials } from '@/lib/utils'
+import { Field, Input } from '@/components/ui/field'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Select } from '@/components/ui/select'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
@@ -24,7 +26,6 @@ export interface HostedCircleTasks {
   tasks: CircleTask[]
 }
 
-const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
 const label = 'block text-meta font-medium text-muted mb-1'
 
 function NewCircleTaskForm({
@@ -60,18 +61,16 @@ function NewCircleTaskForm({
 
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg lift-1">
-      <div className="sm:col-span-2">
-        <label className={label}>Task name *</label>
-        <input
+      <Field className="sm:col-span-2" label="Task name *">
+        <Input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g. Bring the speaker to Saturday's ride"
           required
           disabled={isPending}
-          className={input}
         />
-      </div>
+      </Field>
 
       <div>
         <label className={label} htmlFor={`${formId}-type`}>Type</label>
@@ -82,9 +81,8 @@ function NewCircleTaskForm({
         </Select>
       </div>
 
-      <div>
-        <label className={label}>Zaps</label>
-        <input
+      <Field label="Zaps">
+        <Input
           type="number"
           min="1"
           max="9999"
@@ -92,20 +90,15 @@ function NewCircleTaskForm({
           onChange={(e) => setZaps(e.target.value)}
           required
           disabled={isPending}
-          className={input}
         />
-      </div>
+      </Field>
 
-      <label className="flex items-center gap-2 text-body-sm text-text">
-        <input
-          type="checkbox"
-          checked={verify}
-          onChange={(e) => setVerify(e.target.checked)}
-          disabled={isPending}
-          className="h-4 w-4 rounded border-border accent-current"
-        />
-        Requires verification
-      </label>
+      <Checkbox
+        label="Requires verification"
+        checked={verify}
+        onChange={(e) => setVerify(e.target.checked)}
+        disabled={isPending}
+      />
 
       <div className="sm:col-span-2 flex items-center gap-2 pt-1">
         <button

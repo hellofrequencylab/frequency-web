@@ -10,12 +10,12 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Rocket, Compass } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input, Textarea } from '@/components/ui/field'
 import { Banner } from '@/components/admin/status'
 import { startBusinessImport } from './actions'
 import { Select } from '@/components/ui/select'
 
-const field =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 const labelCls = 'flex flex-col gap-1 text-meta font-medium text-muted'
 
 export function StartImportForm() {
@@ -82,8 +82,7 @@ export function StartImportForm() {
       <div className="grid gap-4 lg:grid-cols-2">
         <label className={labelCls}>
           Website
-          <input
-            className={field}
+          <Input
             type="url"
             inputMode="url"
             placeholder="acme-yoga.com"
@@ -93,8 +92,7 @@ export function StartImportForm() {
         </label>
         <label className={labelCls}>
           Name hint
-          <input
-            className={field}
+          <Input
             placeholder="Acme Yoga Studio"
             value={nameHint}
             onChange={(e) => setNameHint(e.target.value)}
@@ -102,8 +100,7 @@ export function StartImportForm() {
         </label>
         <label className={labelCls}>
           City
-          <input
-            className={field}
+          <Input
             placeholder="Encinitas"
             value={cityHint}
             onChange={(e) => setCityHint(e.target.value)}
@@ -111,8 +108,7 @@ export function StartImportForm() {
         </label>
         <label className={labelCls}>
           Category
-          <input
-            className={field}
+          <Input
             placeholder="Yoga studio"
             value={categoryHint}
             onChange={(e) => setCategoryHint(e.target.value)}
@@ -131,8 +127,7 @@ export function StartImportForm() {
         </label>
         <label className={labelCls}>
           Instagram handle
-          <input
-            className={field}
+          <Input
             placeholder="@acmeyoga"
             value={instagram}
             onChange={(e) => setInstagram(e.target.value)}
@@ -140,11 +135,11 @@ export function StartImportForm() {
         </label>
         <label className={labelCls}>
           Facebook
-          <input className={field} placeholder="acmeyoga" value={facebook} onChange={(e) => setFacebook(e.target.value)} />
+          <Input placeholder="acmeyoga" value={facebook} onChange={(e) => setFacebook(e.target.value)} />
         </label>
         <label className={labelCls}>
           LinkedIn
-          <input className={field} placeholder="company/acme-yoga" value={linkedin} onChange={(e) => setLinkedin(e.target.value)} />
+          <Input placeholder="company/acme-yoga" value={linkedin} onChange={(e) => setLinkedin(e.target.value)} />
         </label>
       </div>
 
@@ -154,8 +149,8 @@ export function StartImportForm() {
         <span className="inline-flex items-center gap-1.5 text-primary-strong">
           <Compass className="h-3.5 w-3.5" aria-hidden /> Directions (steer the seed)
         </span>
-        <textarea
-          className={`${field} min-h-16 resize-y`}
+        <Textarea
+          className="min-h-16 resize-y"
           placeholder="Tell the seeder how to approach this. e.g. 'Lead with the retreat angle, keep it calm and grounded, emphasize the sound baths.'"
           value={directions}
           onChange={(e) => setDirections(e.target.value)}
@@ -171,8 +166,8 @@ export function StartImportForm() {
       <div className="grid gap-4 lg:grid-cols-2">
         <label className={labelCls}>
           Overview
-          <textarea
-            className={`${field} min-h-24 resize-y`}
+          <Textarea
+            className="min-h-24 resize-y"
             placeholder="What is this business, in plain terms? Who is it for, what do they do?"
             value={overview}
             onChange={(e) => setOverview(e.target.value)}
@@ -180,8 +175,8 @@ export function StartImportForm() {
         </label>
         <label className={labelCls}>
           Website content
-          <textarea
-            className={`${field} min-h-24 resize-y`}
+          <Textarea
+            className="min-h-24 resize-y"
             placeholder="Paste the About / Home / Services page copy, bios, mission."
             value={webContent}
             onChange={(e) => setWebContent(e.target.value)}
@@ -189,8 +184,8 @@ export function StartImportForm() {
         </label>
         <label className={labelCls}>
           Booking and schedule
-          <textarea
-            className={`${field} min-h-24 resize-y`}
+          <Textarea
+            className="min-h-24 resize-y"
             placeholder="Hours, session lengths, prices, how to book, availability."
             value={bookingSchedule}
             onChange={(e) => setBookingSchedule(e.target.value)}
@@ -198,8 +193,8 @@ export function StartImportForm() {
         </label>
         <label className={labelCls}>
           What makes them different
-          <textarea
-            className={`${field} min-h-24 resize-y`}
+          <Textarea
+            className="min-h-24 resize-y"
             placeholder="The angle, the specialty, the vibe, the proof: anything that sets them apart."
             value={differentiators}
             onChange={(e) => setDifferentiators(e.target.value)}
@@ -209,8 +204,8 @@ export function StartImportForm() {
 
       <label className={`${labelCls} mt-4`}>
         Anything else
-        <textarea
-          className={`${field} min-h-20 resize-y`}
+        <Textarea
+          className="min-h-20 resize-y"
           placeholder="Reviews, menus, testimonials, or any other raw text you scraped."
           value={pastedContent}
           onChange={(e) => setPastedContent(e.target.value)}
@@ -218,15 +213,11 @@ export function StartImportForm() {
       </label>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <label className="flex items-center gap-2 text-meta text-muted">
-          <input
-            type="checkbox"
-            checked={runInline}
-            onChange={(e) => setRunInline(e.target.checked)}
-            className="h-4 w-4 rounded border-border accent-primary"
-          />
-          Run research now (faster; the durable queue is the safety net)
-        </label>
+        <Checkbox
+          label="Run research now (faster; the durable queue is the safety net)"
+          checked={runInline}
+          onChange={(e) => setRunInline(e.target.checked)}
+        />
         <Button onClick={submit} disabled={pending}>
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
           {pending ? 'Starting…' : 'Start import'}

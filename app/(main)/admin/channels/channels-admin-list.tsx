@@ -8,6 +8,7 @@ import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { ChannelRow } from './load-channels'
+import { Input, Textarea } from '@/components/ui/field'
 
 // Channel list shared by the /admin/channels page and the in-place Spaces·Channels module
 // (ADR-138). Each public channel now edits in place (name + description) and can be hidden;
@@ -19,8 +20,6 @@ const TYPE_TONE: Record<string, StatusTone> = {
   thread: 'neutral',
 }
 
-const inputCls =
-  'w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
 
 function ChannelItem({ ch }: { ch: ChannelRow }) {
   const [editing, setEditing] = useState(false)
@@ -64,8 +63,8 @@ function ChannelItem({ ch }: { ch: ChannelRow }) {
   if (editing) {
     return (
       <div className="space-y-2 rounded-2xl border border-primary-bg bg-surface-elevated/60 p-3">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Channel name" disabled={pending} className={inputCls} />
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Description (optional)" disabled={pending} className={`${inputCls} resize-none`} />
+        <Input aria-label="Channel name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Channel name" disabled={pending} className="px-2.5 py-1.5" />
+        <Textarea aria-label="Channel description" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Description (optional)" disabled={pending} className="px-2.5 py-1.5 resize-none" />
         <div className="flex items-center gap-2">
           <button type="button" onClick={save} disabled={pending || !name.trim()} className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50">
             <Check className="h-3.5 w-3.5" /> {pending ? 'Saving…' : 'Save'}

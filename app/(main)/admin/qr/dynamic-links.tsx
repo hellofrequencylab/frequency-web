@@ -11,6 +11,7 @@ import { NfcWriter } from './nfc-writer'
 import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
 import { shortLinkUrl } from '@/lib/qr/links'
 import type { PartnerOption } from './qr-studio'
+import { Input } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 
@@ -478,17 +479,17 @@ export function LinkForm({
     <div className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Title">
-          <input
+          <Input
             value={form.title}
             onChange={(e) => set('title', e.target.value)}
             placeholder="e.g. Spring flyer → signup"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="Custom link (optional)">
           <div className="flex items-center rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm">
             <span className="text-subtle">/q/</span>
             <input
+              aria-label="Custom link slug"
               value={form.slug ?? ''}
               onChange={(e) => set('slug', e.target.value || null)}
               placeholder="auto"
@@ -581,11 +582,10 @@ export function LinkForm({
           </Field>
         )}
         <Field label="Expires (optional)">
-          <input
+          <Input
             type="datetime-local"
             value={toLocalInput(form.valid_until)}
             onChange={(e) => set('valid_until', fromLocalInput(e.target.value))}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="Partner (optional)">
@@ -602,22 +602,20 @@ export function LinkForm({
           </Select>
         </Field>
         <Field label="Source tag (optional)">
-          <input
+          <Input
             value={form.source_tag ?? ''}
             onChange={(e) => set('source_tag', e.target.value || null)}
             placeholder="e.g. downtown-poster-a"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
       </div>
 
       {form.destination_type === 'url' && urlMode === 'custom' && (
         <Field label="Custom URL">
-          <input
+          <Input
             value={form.target_url ?? ''}
             onChange={(e) => set('target_url', e.target.value)}
             placeholder="https://… or /path"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
       )}
@@ -628,19 +626,17 @@ export function LinkForm({
           <p className="mt-0.5 text-meta text-muted">Switch the same printed code to a new destination at a set time.</p>
           <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Switch at">
-              <input
+              <Input
                 type="datetime-local"
                 value={toLocalInput(form.switch_at)}
                 onChange={(e) => set('switch_at', fromLocalInput(e.target.value))}
-                className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
               />
             </Field>
             <Field label="…then point to">
-              <input
+              <Input
                 value={form.alt_target_url ?? ''}
                 onChange={(e) => set('alt_target_url', e.target.value)}
                 placeholder="https://… or /path"
-                className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
               />
             </Field>
           </div>

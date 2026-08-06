@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
 import { Button } from '@/components/ui/button'
+import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { StatusChip, Banner, type StatusTone } from '@/components/admin/status'
 import { DangerModal } from '@/components/admin/danger-modal'
@@ -78,7 +79,7 @@ export function DealDetail({
     close !== (deal.expected_close_date ?? '') ||
     source !== (laneMeta(deal.source)?.id ?? PIPELINE_LANES[0]!.id)
 
-  const field = 'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text focus:border-border-strong focus:outline-none'
+  const field = 'px-2.5 py-1.5'
   const statusTone: StatusTone = deal.status === 'won' ? 'success' : deal.status === 'lost' ? 'danger' : 'info'
 
   return (
@@ -165,7 +166,7 @@ export function DealDetail({
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-meta text-muted">
             Contact
-            <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Who" className={field} />
+            <Input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Who" className={field} />
             {deal.member && (
               <Link href={`/people/${deal.member.handle}`} className="text-meta text-primary-strong hover:underline">
                 Linked member · @{deal.member.handle}
@@ -174,11 +175,11 @@ export function DealDetail({
           </label>
           <label className="flex flex-col gap-1 text-meta text-muted">
             Value ($)
-            <input type="number" min={0} value={value} onChange={(e) => setValue(e.target.value)} className={field} />
+            <Input type="number" min={0} value={value} onChange={(e) => setValue(e.target.value)} className={field} />
           </label>
           <label className="flex flex-col gap-1 text-meta text-muted">
             Expected close
-            <input type="date" value={close} onChange={(e) => setClose(e.target.value)} className={field} />
+            <Input type="date" value={close} onChange={(e) => setClose(e.target.value)} className={field} />
           </label>
           <label className="flex flex-col gap-1 text-meta text-muted">
             Lane
@@ -231,15 +232,16 @@ export function DealDetail({
               ))}
             </Select>
             {actKind === 'task' && (
-              <input type="datetime-local" value={actDue} onChange={(e) => setActDue(e.target.value)} className={field} title="Due" />
+              <Input type="datetime-local" aria-label="Due" value={actDue} onChange={(e) => setActDue(e.target.value)} className={field} title="Due" />
             )}
           </div>
-          <textarea
+          <Textarea
+            aria-label={actKind === 'task' ? 'What needs doing' : 'Activity note'}
             value={actBody}
             onChange={(e) => setActBody(e.target.value)}
             rows={2}
             placeholder={actKind === 'task' ? 'What needs doing?' : 'Log a note, call, email, or meeting…'}
-            className={`w-full ${field}`}
+            className={field}
           />
           <div className="flex justify-end">
             <Button

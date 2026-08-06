@@ -8,8 +8,10 @@ import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
 import { StyleEditor } from './style-editor'
 import { NfcWriter } from './nfc-writer'
 import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
+import { Input } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 
 export interface StudioNode {
   id: string
@@ -394,19 +396,17 @@ export function NodeForm({
     <div className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Label">
-          <input
+          <Input
             value={form.label}
             onChange={(e) => set('label', e.target.value)}
             placeholder="e.g. Tuesday meditation check-in"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="City">
-          <input
+          <Input
             value={form.city ?? ''}
             onChange={(e) => set('city', e.target.value || null)}
             placeholder="e.g. Encinitas"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="Type">
@@ -419,12 +419,11 @@ export function NodeForm({
           </Select>
         </Field>
         <Field label="Zaps on check-in">
-          <input
+          <Input
             type="number"
             min={0}
             value={form.zaps_value}
             onChange={(e) => set('zaps_value', Number(e.target.value))}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="How often it can be claimed">
@@ -438,11 +437,10 @@ export function NodeForm({
           </Select>
         </Field>
         <Field label="Expires (optional)">
-          <input
+          <Input
             type="datetime-local"
             value={toLocalInput(form.valid_until)}
             onChange={(e) => set('valid_until', fromLocalInput(e.target.value))}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
         <Field label="Partner (optional)">
@@ -459,13 +457,12 @@ export function NodeForm({
           </Select>
         </Field>
         <Field label="Limit total claims (optional)">
-          <input
+          <Input
             type="number"
             min={1}
             value={form.maxClaims ?? ''}
             onChange={(e) => set('maxClaims', e.target.value === '' ? null : Number(e.target.value))}
             placeholder="Unlimited (e.g. 50 for first-50-win)"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </Field>
       </div>
@@ -479,41 +476,43 @@ export function NodeForm({
 
       {/* Location-aware earning — gate the claim to within a radius of a point. */}
       <div className="rounded-lg border border-border bg-canvas/50 p-3">
-        <label className="flex items-center gap-2 text-meta font-medium text-subtle">
-          <input type="checkbox" checked={geoOn} onChange={(e) => toggleGeo(e.target.checked)} className="accent-primary" />
-          <MapPin className="h-3.5 w-3.5 text-primary-strong" /> Location-aware (must be here to earn)
-        </label>
+        <Checkbox
+          checked={geoOn}
+          onChange={(e) => toggleGeo(e.target.checked)}
+          label={
+            <span className="inline-flex items-center gap-2 text-meta font-medium text-subtle">
+              <MapPin className="h-3.5 w-3.5 text-primary-strong" /> Location-aware (must be here to earn)
+            </span>
+          }
+        />
         {geoOn && (
           <div className="mt-2 space-y-2">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Field label="Latitude">
-                <input
+                <Input
                   type="number"
                   step="any"
                   value={form.lat ?? ''}
                   onChange={(e) => set('lat', e.target.value === '' ? null : Number(e.target.value))}
                   placeholder="33.0000"
-                  className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
                 />
               </Field>
               <Field label="Longitude">
-                <input
+                <Input
                   type="number"
                   step="any"
                   value={form.lng ?? ''}
                   onChange={(e) => set('lng', e.target.value === '' ? null : Number(e.target.value))}
                   placeholder="-117.0000"
-                  className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
                 />
               </Field>
               <Field label="Radius (metres)">
-                <input
+                <Input
                   type="number"
                   min={5}
                   max={5000}
                   value={form.proximityM ?? 100}
                   onChange={(e) => set('proximityM', Number(e.target.value))}
-                  className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
                 />
               </Field>
             </div>
@@ -529,15 +528,12 @@ export function NodeForm({
       </div>
 
       {/* Signed payload — the code carries a secret so a forged /n/<id> can't claim. */}
-      <label className="flex items-center gap-2 rounded-lg border border-border bg-canvas/50 p-3 text-meta font-medium text-subtle">
-        <input
-          type="checkbox"
-          checked={form.requireSignature}
-          onChange={(e) => set('requireSignature', e.target.checked)}
-          className="accent-primary"
-        />
-        Require a signed code (anti-spoof). Only the printed/written code can claim
-      </label>
+      <Checkbox
+        wrapperClassName="flex rounded-lg border border-border bg-canvas/50 p-3"
+        label={<span className="text-meta font-medium text-subtle">Require a signed code (anti-spoof). Only the printed/written code can claim</span>}
+        checked={form.requireSignature}
+        onChange={(e) => set('requireSignature', e.target.checked)}
+      />
 
       {!hideEditor && (
         <StyleEditor

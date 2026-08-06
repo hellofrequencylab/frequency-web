@@ -8,6 +8,7 @@ import type {
   AutomationConditionOp,
 } from '@/lib/automations'
 import { createRule, editRule, type RuleResult } from './actions'
+import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 
 const CHANNELS: { value: AutomationActionType; label: string }[] = [
@@ -41,8 +42,6 @@ export interface EditableRule {
   conditions: AutomationCondition[]
 }
 
-const inputClass =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
 export function RuleForm({
   triggers,
@@ -111,11 +110,11 @@ export function RuleForm({
     <div className="rounded-2xl border border-border bg-surface lift-1 p-4 max-w-2xl space-y-3">
       <h2 className="text-body-sm font-semibold text-text">{editing ? 'Edit automation' : 'New automation'}</h2>
 
-      <input
+      <Input
+        aria-label="Rule name"
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Rule name (e.g. Congratulate first practice)"
-        className={inputClass}
       />
 
       <label className="block text-meta text-subtle">
@@ -141,11 +140,12 @@ export function RuleForm({
           const needsValue = opNeedsValue(c.op)
           return (
             <div key={i} className="flex items-center gap-2">
-              <input
+              <Input
+                aria-label="Context field"
                 value={c.field}
                 onChange={(e) => updateCondition(i, { field: e.target.value })}
                 placeholder="context field (e.g. source)"
-                className={`${inputClass} flex-1`}
+                className="flex-1"
               />
               {/* The old `w-40` here was already dead: it sat beside the `w-full` in `inputClass`
                   and lost on emit order, so the control was full-width already. Dropped rather
@@ -160,11 +160,12 @@ export function RuleForm({
                 ))}
               </Select>
               {needsValue && (
-                <input
+                <Input
+                  aria-label="Comparison value"
                   value={c.value ?? ''}
                   onChange={(e) => updateCondition(i, { value: e.target.value })}
                   placeholder="value"
-                  className={`${inputClass} w-40`}
+                  className="w-40"
                 />
               )}
               <button
@@ -202,14 +203,14 @@ export function RuleForm({
 
       {isPush ? (
         <>
-          <input value={pushTitle} onChange={(e) => setPushTitle(e.target.value)} placeholder="Push title" className={inputClass} />
-          <textarea value={pushBody} onChange={(e) => setPushBody(e.target.value)} placeholder="Push body" rows={3} className={`${inputClass} resize-y`} />
-          <input value={pushUrl} onChange={(e) => setPushUrl(e.target.value)} placeholder="Link path (optional, e.g. /crew)" className={inputClass} />
+          <Input aria-label="Push title" value={pushTitle} onChange={(e) => setPushTitle(e.target.value)} placeholder="Push title" />
+          <Textarea aria-label="Push body" value={pushBody} onChange={(e) => setPushBody(e.target.value)} placeholder="Push body" rows={3} className="resize-y" />
+          <Input aria-label="Link path" value={pushUrl} onChange={(e) => setPushUrl(e.target.value)} placeholder="Link path (optional, e.g. /crew)" />
         </>
       ) : (
         <>
-          <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Email subject" className={inputClass} />
-          <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Email body" rows={4} className={`${inputClass} resize-y`} />
+          <Input aria-label="Email subject" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Email subject" />
+          <Textarea aria-label="Email body" value={body} onChange={(e) => setBody(e.target.value)} placeholder="Email body" rows={4} className="resize-y" />
         </>
       )}
 

@@ -11,6 +11,8 @@ import {
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Field, Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import {
   assignRole, deactivateMember, reactivateMember,
@@ -20,6 +22,10 @@ import { EconomyPanel } from './economy-panel'
 import { toggleSpotlightEnabled, resetSpotlightToDefault, forceUnpublishSpotlight } from './spotlight-actions'
 
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
+
+// The bolder label these profile fields already wore, handed to `Field` so the association
+// (which the bare <label> never had - no htmlFor, no wrapping) comes from the primitive.
+const PROFILE_LABEL = 'text-body-sm font-bold text-text'
 
 const ROLES: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor', 'janitor']
 
@@ -77,12 +83,13 @@ export function MemberAdmin({
       <div className="flex items-center gap-3 mb-4 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle" />
-          <input
+          <Input
             type="text"
+            aria-label="Search members"
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Search by name, handle, or email..."
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-surface text-body-sm focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30"
+            className="pl-9"
           />
         </div>
         <Select
@@ -94,15 +101,12 @@ export function MemberAdmin({
           <option value="all">All roles</option>
           {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
         </Select>
-        <label className="flex items-center gap-1.5 text-meta text-muted cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showInactive}
-            onChange={e => setShowInactive(e.target.checked)}
-            className="rounded border-border-strong"
-          />
-          Show inactive
-        </label>
+        <Checkbox
+          wrapperClassName="gap-1.5"
+          label="Show inactive"
+          checked={showInactive}
+          onChange={e => setShowInactive(e.target.checked)}
+        />
       </div>
 
       {/* Member list */}
@@ -293,22 +297,18 @@ function MemberRow({
           {/* Edit profile form */}
           {editMode ? (
             <form action={handleProfileSave} className="space-y-3 mb-4 rounded-card border border-border p-3 bg-surface">
-              <div>
-                <label className="text-body-sm font-bold text-text">Display name</label>
-                <input name="display_name" defaultValue={m.display_name} className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta" />
-              </div>
-              <div>
-                <label className="text-body-sm font-bold text-text">Handle</label>
-                <input name="handle" defaultValue={m.handle} className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta" />
-              </div>
-              <div>
-                <label className="text-body-sm font-bold text-text">Bio</label>
-                <textarea name="bio" defaultValue={m.bio ?? ''} rows={2} className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta resize-none" />
-              </div>
-              <div>
-                <label className="text-body-sm font-bold text-text">Avatar URL</label>
-                <input name="avatar_url" type="url" defaultValue={m.avatar_url ?? ''} placeholder="https://…" className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta" />
-              </div>
+              <Field label="Display name" labelClassName={PROFILE_LABEL}>
+                <Input name="display_name" defaultValue={m.display_name} className="py-1.5 text-meta" />
+              </Field>
+              <Field label="Handle" labelClassName={PROFILE_LABEL}>
+                <Input name="handle" defaultValue={m.handle} className="py-1.5 text-meta" />
+              </Field>
+              <Field label="Bio" labelClassName={PROFILE_LABEL}>
+                <Textarea name="bio" defaultValue={m.bio ?? ''} rows={2} className="py-1.5 text-meta resize-none" />
+              </Field>
+              <Field label="Avatar URL" labelClassName={PROFILE_LABEL}>
+                <Input name="avatar_url" type="url" defaultValue={m.avatar_url ?? ''} placeholder="https://…" className="py-1.5 text-meta" />
+              </Field>
               <div className="flex items-center gap-2">
                 <Button type="submit" size="sm" disabled={isPending}>
                   Save changes

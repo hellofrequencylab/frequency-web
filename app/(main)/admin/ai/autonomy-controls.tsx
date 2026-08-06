@@ -8,6 +8,7 @@ import { Banner, StatusChip } from '@/components/admin/status'
 import { Toggle } from '@/components/admin/toggle'
 import type { AutonomyControlsData } from './load-autonomy'
 import type { AutonomyCategory } from '@/lib/ai/vera/autonomy-config'
+import { Input } from '@/components/ui/field'
 import {
   setVeraAutonomyEnabled,
   setVeraAutonomyCategory,
@@ -47,7 +48,7 @@ function NumberField({
     <label className="block text-meta text-muted">
       <span className="mb-1 block">{label}</span>
       <span className="flex items-center gap-1.5">
-        <input
+        <Input
           type="number"
           value={value}
           min={min}
@@ -55,7 +56,7 @@ function NumberField({
           step={step}
           disabled={disabled}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="w-24 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm tabular-nums text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-50"
+          className="w-24 px-2.5 py-1.5 tabular-nums"
         />
         {suffix && <span className="text-subtle">{suffix}</span>}
       </span>

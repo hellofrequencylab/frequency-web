@@ -1,6 +1,7 @@
 'use client'
 
 import { useId, useState, useTransition } from 'react'
+import { Field, Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { Pencil, Check, X } from 'lucide-react'
 import { updateNexus } from '../actions'
@@ -22,7 +23,6 @@ type NexusRow = {
 type MentorOption = { id: string; display_name: string }
 
 const STATUSES = ['forming', 'active', 'paused', 'archived'] as const
-const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
 const lbl   = 'block text-meta font-medium text-muted mb-1'
 
 // The one status vocabulary (retired the local STATUS_COLOR dict, ADR-233 §4).
@@ -60,14 +60,12 @@ function NexusForm({ initial, mentors, onSave, onCancel, isPending, error }: {
 
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <div className="sm:col-span-2">
-        <label className={lbl}>Nexus name *</label>
-        <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. San Diego Nexus" required disabled={isPending} className={input} />
-      </div>
-      <div>
-        <label className={lbl}>Member cap</label>
-        <input type="number" min="1" max="9999" value={cap} onChange={e => setCap(e.target.value)} disabled={isPending} className={input} />
-      </div>
+      <Field className="sm:col-span-2" label="Nexus name *">
+        <Input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. San Diego Nexus" required disabled={isPending} />
+      </Field>
+      <Field label="Member cap">
+        <Input type="number" min="1" max="9999" value={cap} onChange={e => setCap(e.target.value)} disabled={isPending} />
+      </Field>
       <div>
         <label className={lbl} htmlFor={`${formId}-status`}>Status</label>
         <Select id={`${formId}-status`} value={status} onChange={e => setStatus(e.target.value)} disabled={isPending}>

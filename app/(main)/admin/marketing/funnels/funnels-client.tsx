@@ -13,6 +13,7 @@ import { createCampaign, archiveCampaign } from './actions'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Input } from '@/components/ui/field'
 
 const STATUS_TONE: Record<string, StatusTone> = {
   active: 'success',
@@ -139,13 +140,13 @@ function CampaignForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
     })
   }
 
-  const field = 'w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text'
+  const field = 'px-2.5 py-1.5'
   return (
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
           <span className="mb-1 block text-meta font-medium text-subtle">Campaign name</span>
-          <input value={name} onChange={(e) => { setName(e.target.value); setError(null) }} placeholder="e.g. Spring street team" className={field} />
+          <Input value={name} onChange={(e) => { setName(e.target.value); setError(null) }} placeholder="e.g. Spring street team" className={field} />
         </label>
         <label className="block">
           <span className="mb-1 block text-meta font-medium text-subtle">Default goal (optional)</span>

@@ -13,6 +13,8 @@ import {
 } from '../actions'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { Select } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Field, Input, Textarea } from '@/components/ui/field'
 import type { SpaceAccessContext } from '@/lib/events/ticket-space-access'
 
 type EventData = {
@@ -60,7 +62,6 @@ const PRICING_MODE_LABEL: Record<PricingMode, string> = {
 
 const centsToDollars = (c: number | null | undefined) => (c != null ? (c / 100).toFixed(2) : '')
 
-const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
 const lbl   = 'block text-meta font-medium text-muted mb-1'
 
 // ISO → the `YYYY-MM-DDTHH:mm` a <input type="datetime-local"> expects, in local time.
@@ -135,72 +136,66 @@ export function EventEditClient({
       <form onSubmit={handleSubmit} className="rounded-2xl border border-border bg-surface p-5 space-y-4">
         <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Event details</p>
 
-        <div>
-          <label className={lbl}>Title *</label>
-          <input
+        <Field label="Title *">
+          <Input
             name="title"
             type="text"
             defaultValue={event.title}
             required
             disabled={isPending}
-            className={input}
           />
-        </div>
+        </Field>
 
-        <div>
-          <label className={lbl}>Description <span className="font-normal text-subtle">(optional)</span></label>
-          <textarea
+        <Field label={<>Description <span className="font-normal text-subtle">(optional)</span></>}>
+          <Textarea
             name="description"
             defaultValue={event.description ?? ''}
             rows={4}
             disabled={isPending}
-            className={`${input} resize-y leading-relaxed`}
+            className="resize-y leading-relaxed"
           />
-        </div>
+        </Field>
 
-        <div>
-          <label className={lbl}>Location <span className="font-normal text-subtle">(optional)</span></label>
-          <input
+        <Field label={<>Location <span className="font-normal text-subtle">(optional)</span></>}>
+          <Input
             name="location"
             type="text"
             defaultValue={event.location ?? ''}
             placeholder="e.g. Balboa Park, San Diego"
             disabled={isPending}
-            className={input}
           />
-        </div>
+        </Field>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className={lbl}>Starts at *</label>
-            <input
+          <Field label="Starts at *">
+            <Input
               name="starts_at"
               type="datetime-local"
               defaultValue={toLocalInput(event.starts_at)}
               required
               disabled={isPending}
-              className={input}
             />
-          </div>
-          <div>
-            <label className={lbl}>Ends at <span className="font-normal text-subtle">(optional)</span></label>
-            <input
+          </Field>
+          <Field label={<>Ends at <span className="font-normal text-subtle">(optional)</span></>}>
+            <Input
               name="ends_at"
               type="datetime-local"
               defaultValue={toLocalInput(event.ends_at)}
               disabled={isPending}
-              className={input}
             />
-          </div>
+          </Field>
         </div>
 
         <div>
-          <label className={lbl}>
+          {/* Not a `Field`: the control sits beside a "$" prefix inside its own row, and implicit
+              association wants the label to wrap ONE control. Explicit htmlFor/id instead. */}
+          <label className={lbl} htmlFor="event-price">
             Ticket price <span className="font-normal text-subtle">(USD, leave blank for a free event)</span>
           </label>
           <div className="flex items-center gap-1.5">
-            <span className="text-body-sm text-subtle">$</span>
-            <input
+            <span className="text-body-sm text-subtle" aria-hidden>$</span>
+            <Input
+              id="event-price"
               name="price"
               type="number"
               min="0"
@@ -208,7 +203,6 @@ export function EventEditClient({
               defaultValue={event.price_cents ? (event.price_cents / 100).toFixed(2) : ''}
               placeholder="0.00"
               disabled={isPending}
-              className={input}
             />
           </div>
           <p className="mt-1 text-meta text-subtle">
@@ -290,8 +284,6 @@ export function EventEditClient({
 // `Ticket price` field above remains the implicit single fixed tier when no tiers
 // exist (backward compat); adding a tier takes over pricing for the event.
 
-const tInput =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
 const tLbl = 'block text-meta font-medium text-muted mb-1'
 
 function modeSummary(t: TierEditRow): string {
@@ -496,10 +488,9 @@ function TierForm({
   return (
     <form onSubmit={handle} className="rounded-card border border-border-strong bg-surface-elevated p-4 space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label className={tLbl}>Tier name *</label>
-          <input name="name" type="text" defaultValue={initial?.name ?? ''} required disabled={disabled} className={tInput} placeholder="e.g. General, Supporter" />
-        </div>
+        <Field label="Tier name *">
+          <Input name="name" type="text" defaultValue={initial?.name ?? ''} required disabled={disabled} placeholder="e.g. General, Supporter" />
+        </Field>
         <div>
           <label className={tLbl} htmlFor={`admin-pricing-mode-${initial?.id ?? 'new'}`}>Pricing mode</label>
           <Select
@@ -518,46 +509,42 @@ function TierForm({
         </div>
       </div>
 
-      <div>
-        <label className={tLbl}>Description <span className="font-normal text-subtle">(optional)</span></label>
-        <input name="description" type="text" defaultValue={initial?.description ?? ''} disabled={disabled} className={tInput} placeholder="What this tier includes" />
-      </div>
+      <Field label={<>Description <span className="font-normal text-subtle">(optional)</span></>}>
+        <Input name="description" type="text" defaultValue={initial?.description ?? ''} disabled={disabled} placeholder="What this tier includes" />
+      </Field>
 
       {/* Pricing fields depend on the mode. */}
       {mode === 'fixed' && (
-        <div>
-          <label className={tLbl}>Price (USD) *</label>
-          <input name="price" type="number" min="0" step="0.01" defaultValue={centsToDollars(initial?.price_cents)} disabled={disabled} className={tInput} placeholder="0.00" />
-        </div>
+        <Field label="Price (USD) *">
+          <Input name="price" type="number" min="0" step="0.01" defaultValue={centsToDollars(initial?.price_cents)} disabled={disabled} placeholder="0.00" />
+        </Field>
       )}
       {buyerChosen && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className={tLbl}>Minimum (USD) <span className="font-normal text-subtle">(floor)</span></label>
-            <input name="min" type="number" min="0" step="0.01" defaultValue={centsToDollars(initial?.min_cents)} disabled={disabled} className={tInput} placeholder="0.00" />
-          </div>
-          <div>
-            <label className={tLbl}>Suggested (USD) <span className="font-normal text-subtle">(prefilled)</span></label>
-            <input name="suggested" type="number" min="0" step="0.01" defaultValue={centsToDollars(initial?.suggested_cents)} disabled={disabled} className={tInput} placeholder="0.00" />
-          </div>
+          <Field label={<>Minimum (USD) <span className="font-normal text-subtle">(floor)</span></>}>
+            <Input name="min" type="number" min="0" step="0.01" defaultValue={centsToDollars(initial?.min_cents)} disabled={disabled} placeholder="0.00" />
+          </Field>
+          <Field label={<>Suggested (USD) <span className="font-normal text-subtle">(prefilled)</span></>}>
+            <Input name="suggested" type="number" min="0" step="0.01" defaultValue={centsToDollars(initial?.suggested_cents)} disabled={disabled} placeholder="0.00" />
+          </Field>
         </div>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label className={tLbl}>Quantity <span className="font-normal text-subtle">(blank = unlimited)</span></label>
-          <input name="quantity" type="number" min="0" step="1" defaultValue={initial?.quantity ?? ''} disabled={disabled} className={tInput} placeholder="Unlimited" />
-        </div>
-        <div>
-          <label className={tLbl}>Sort order</label>
-          <input name="sort_order" type="number" step="1" defaultValue={initial?.sort_order ?? 0} disabled={disabled} className={tInput} />
-        </div>
+        <Field label={<>Quantity <span className="font-normal text-subtle">(blank = unlimited)</span></>}>
+          <Input name="quantity" type="number" min="0" step="1" defaultValue={initial?.quantity ?? ''} disabled={disabled} placeholder="Unlimited" />
+        </Field>
+        <Field label="Sort order">
+          <Input name="sort_order" type="number" step="1" defaultValue={initial?.sort_order ?? 0} disabled={disabled} />
+        </Field>
       </div>
 
-      <label className="flex items-center gap-2 text-body-sm text-text">
-        <input name="member_only" type="checkbox" defaultChecked={initial?.member_only ?? false} disabled={disabled} className="h-4 w-4 rounded border-border" />
-        Members only (Crew+)
-      </label>
+      <Checkbox
+        name="member_only"
+        label="Members only (Crew+)"
+        defaultChecked={initial?.member_only ?? false}
+        disabled={disabled}
+      />
 
       {/* Who can buy (ADR-823): parity with the host Manage panel. Space-hosted events only; the
           shared writers validate the gate (hosting space + Collective floor + tier ownership). */}

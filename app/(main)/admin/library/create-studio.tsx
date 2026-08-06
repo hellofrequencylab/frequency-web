@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/select'
 import { generateLoomCard, saveLoomCard, type LoomCardMode } from './vera-actions'
 import { generateWithRecraft, listBrandStyles } from './recraft-actions'
 import type { BrandStyle } from '@/lib/library/styles'
+import { Input, Textarea } from '@/components/ui/field'
 
 // One smart "Create" surface for the whole Loom. You pick WHAT you're making; the studio picks the
 // engine: Vera draws quick house-style line marks (icons / spot art) as inline SVG, and the Image
@@ -83,7 +84,6 @@ const TYPES: Record<CreateType, TypeCfg> = {
 }
 
 const ORDER: CreateType[] = ['icon', 'spot', 'illustration', 'trophy', 'card', 'texture']
-const inputCls = 'w-full rounded-2xl border border-border bg-surface px-3 py-2 text-body-sm'
 
 export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
   const router = useRouter()
@@ -226,8 +226,8 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
           })}
         </div>
 
-        <textarea
-          className={inputCls}
+        <Textarea
+          aria-label="What to draw"
           rows={2}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
@@ -352,7 +352,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
             />
             <label className="flex-1">
               <span className="mb-1 block text-meta font-semibold uppercase tracking-wide text-subtle">Title</span>
-              <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} />
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
             </label>
             <button
               type="button"

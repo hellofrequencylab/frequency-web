@@ -5,6 +5,7 @@ import { Loader2, Ban, MailCheck, StickyNote, Pencil, Check } from 'lucide-react
 import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/field'
 import { setContactConsent, addContactNote, updateContactFields } from '../actions'
+import { Textarea } from '@/components/ui/field'
 
 // Staff command controls on the admin person page (CRM admin suite). Both call the staff-gated
 // server actions in ../actions.ts. Optimistic-ish local state keeps the button label honest between
@@ -159,12 +160,13 @@ export function AddNote({ contactId }: { contactId: string }) {
   }
   return (
     <div className="mt-3 rounded-2xl border border-border bg-surface p-3">
-      <textarea
+      <Textarea
+        aria-label="Staff note"
         value={body}
         onChange={(e) => setBody(e.target.value)}
         rows={2}
         placeholder="Add a staff note about this person…"
-        className="w-full resize-y rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30"
+        className="resize-y border-border-strong"
       />
       <div className="mt-2 flex items-center gap-2">
         <Button type="button" onClick={submit} disabled={pending || !body.trim()}>

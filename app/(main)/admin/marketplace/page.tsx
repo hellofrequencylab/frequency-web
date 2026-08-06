@@ -10,6 +10,7 @@ import { orderStatusCounts } from '@/lib/commerce/orders'
 import { reportStatusCounts } from '@/lib/commerce/reports'
 import { disputeStatusCounts } from '@/lib/commerce/disputes'
 import { reviewStatusCounts } from '@/lib/commerce/reviews'
+import { Input, Textarea } from '@/components/ui/field'
 import { marketplaceVisibility, MARKET_AREAS, AREA_LABEL } from '@/lib/marketplace/visibility'
 import type { CommerceProduct } from '@/lib/commerce/types'
 import {
@@ -22,8 +23,6 @@ import {
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Marketplace · Admin' }
 
-const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
 
 function usd(cents: number, currency = 'usd') {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100)
@@ -150,12 +149,12 @@ export default async function MarketplaceAdminPage() {
       <AdminSection title="Add a Shop product" description="First-party merch, passes, or retreats. Saved as a draft; publish to go live.">
         <form action={createShopProductAction} className="space-y-3">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <input name="title" required maxLength={200} className={FIELD} placeholder="Title" aria-label="Title" />
-            <input name="category" maxLength={60} className={FIELD} placeholder="Category (optional)" aria-label="Category" />
-            <input name="price" type="number" min="0" step="0.01" required className={FIELD} placeholder="Price (USD)" aria-label="Price" />
-            <input name="stock" type="number" min="0" step="1" className={FIELD} placeholder="Stock (blank = unlimited)" aria-label="Stock" />
+            <Input name="title" required maxLength={200} placeholder="Title" aria-label="Title" />
+            <Input name="category" maxLength={60} placeholder="Category (optional)" aria-label="Category" />
+            <Input name="price" type="number" min="0" step="0.01" required placeholder="Price (USD)" aria-label="Price" />
+            <Input name="stock" type="number" min="0" step="1" placeholder="Stock (blank = unlimited)" aria-label="Stock" />
           </div>
-          <textarea name="description" rows={2} maxLength={2000} className={FIELD} placeholder="Description (optional)" aria-label="Description" />
+          <Textarea name="description" rows={2} maxLength={2000} placeholder="Description (optional)" aria-label="Description" />
           <div className="flex justify-end">
             <button type="submit" className={buttonClasses('primary', 'md')}>
               <Plus className="h-4 w-4" aria-hidden /> Add product
