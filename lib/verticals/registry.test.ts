@@ -16,9 +16,17 @@ describe('vertical registry (ADR-250 step 3/4)', () => {
 
   it('composes declared nav into NAV_AREAS at the anchored position', () => {
     const keys = NAV_AREAS.map((a) => a.key)
-    // The commerce umbrella row is contributed by the descriptor, anchored after 'events'.
+    // The commerce umbrella row is contributed by the descriptor. Its anchor moved from
+    // 'events' to 'my-spaces' in the 2026-08-06 regroup, when commerce left the 11-row
+    // Community group for its own **Market** group. The anchor is what keeps the three
+    // commerce rows CONTIGUOUS: the shell groups by label but lib/menus/defaults groups by
+    // consecutive RUN, so a Market row sitting mid-Community would fork a second Community
+    // header in the code-default rail and not in the shell's. The two must agree.
     expect(keys).toContain('market')
-    expect(keys.indexOf('market')).toBe(keys.indexOf('events') + 1)
+    expect(keys.indexOf('market')).toBe(keys.indexOf('my-spaces') + 1)
+    // Contiguous, in order: market -> housing -> shop, so both groupers see one run.
+    expect(keys.indexOf('housing')).toBe(keys.indexOf('market') + 1)
+    expect(keys.indexOf('shop')).toBe(keys.indexOf('housing') + 1)
     // And it carries through with its declared shape: since ADR-868 the id-`market` row IS
     // the commerce umbrella (menu row + /marketplace landing redirect only — the surfaces
     // keep their own names, Classifieds included). ADR-868 labelled it "Marketplace";
@@ -28,7 +36,9 @@ describe('vertical registry (ADR-250 step 3/4)', () => {
     const market = NAV_AREAS.find((a) => a.key === 'market')
     expect(market?.label).toBe('Market')
     expect(market?.href).toBe('/marketplace')
-    expect(market?.section).toBe('Community')
+    // Its own group since the 2026-08-06 regroup (was 'Community', an 11-row bucket holding
+    // places, commerce and people at once).
+    expect(market?.section).toBe('Market')
     expect(verticalNavAreas().some((a) => a.key === 'market')).toBe(true)
   })
 

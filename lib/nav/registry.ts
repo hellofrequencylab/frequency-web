@@ -35,7 +35,9 @@ function nodeFromArea(area: NavArea): NavNode {
     mode: 'calm',
     // Member rail areas are the desktop rail / mobile bar spine, and every visible
     // destination is reachable from ⌘K — so calm spine nodes project onto both.
-    surfaces: ['spine', 'palette'],
+    // A `railHidden` area (lib/nav-areas) drops 'spine' and keeps 'palette': it is still a
+    // real destination with a real gate, it just is not a row in the rail.
+    surfaces: area.railHidden ? ['palette'] : ['spine', 'palette'],
     // `defaultAccess` is NavAccess ('visitor' | CommunityRole) which is structurally the
     // MenuAccess enum; staffLevel is omitted so canSee defaults to 'read' (== meetsStaff).
     gate: {

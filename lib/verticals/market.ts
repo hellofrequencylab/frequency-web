@@ -20,12 +20,12 @@ export const market: Vertical = {
   entity: 'labs',
   nav: [
     {
-      after: 'events',
+      after: 'my-spaces',
       area: {
         key: 'market',
         href: '/marketplace',
         label: 'Market',
-        section: 'Community',
+        section: 'Market',
         defaultAccess: 'visitor',
         surface: 'market',
       },

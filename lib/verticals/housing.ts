@@ -18,7 +18,7 @@ export const housing: Vertical = {
         key: 'housing',
         href: '/housing',
         label: 'Housing',
-        section: 'Community',
+        section: 'Market',
         defaultAccess: 'member',
         surface: 'housing',
       },

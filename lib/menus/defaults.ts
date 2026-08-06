@@ -200,6 +200,10 @@ function leftMenu(): ResolvedMenu {
   let currentSection: string | null | undefined = undefined
 
   NAV_AREAS.forEach((area, ai) => {
+    // `railHidden` areas are declared but are not rail ROWS (lib/nav-areas). Skipped here so the
+    // code default and the shell's own buildSections produce the SAME rail — they are two
+    // implementations of one list, and a rule honored by only one of them is how they drift.
+    if (area.railHidden) return
     const access = toAccess(area.defaultAccess)
     if (area.section == null) {
       rootItems.push(

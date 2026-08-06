@@ -10,6 +10,7 @@
 
 import { menuDb } from './db'
 import { defaultMenu, DEFAULT_MENU_SETTINGS } from './defaults'
+import { applyRegistryGates } from './gates'
 import { STAFF_DOMAINS, ACCESS_LEVELS, type StaffDomain, type Access } from '@/lib/core/staff-roles'
 import type {
   MenuMode,
@@ -299,7 +300,11 @@ export async function getMenu(
     ) {
       return defaultMenu(surfaceKey)
     }
-    return resolved
+    // THE GATE CONTRACT (lib/menus/gates.ts, owner decision 2026-08-06). Permissions are
+    // re-derived from the canonical registry here, at the ONE seam every surface reads
+    // through — so no renderer has to remember, and a stored gate can never disagree with
+    // the code again. Order, grouping, labels, icons and on/off stay the operator's.
+    return applyRegistryGates(resolved)
   } catch (err) {
     console.error('[menus] getMenu threw, falling back to defaults', surfaceKey, err)
     return defaultMenu(surfaceKey)

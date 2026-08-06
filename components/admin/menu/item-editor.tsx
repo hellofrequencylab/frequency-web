@@ -295,6 +295,7 @@ export function ItemEditor({
           <div>
             <p className="mb-1.5 text-meta font-semibold text-subtle">Who can see this</p>
             <GateControls
+              href={item.href}
               minAccess={item.minAccess}
               staffDomain={item.staffDomain}
               staffLevel={item.staffLevel}
