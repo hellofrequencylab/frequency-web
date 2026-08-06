@@ -22,9 +22,14 @@
   --color-marketing-canvas:  #F5EEE2;
   --color-surface:           #FFFFFF;
   --color-surface-elevated:  #F5F2EC;
-  /* Feed post-card surface — a soft warm off-white that sits a step darker than
-     the pure-white composer so a post reads as a card and the comment field reads
-     as a bright input on top of it. Warm, but short of the yellow cream cast. */
+  /* Feed post-card surface — a soft warm off-white that sits a step darker than the
+     pure-white composer, so a post reads as a card. Warm, but short of the yellow cream cast.
+     The second half of this note used to read "and the comment field reads as a bright input
+     on top of it". That was the intent and the owner has reversed it (2026-08-06): a white
+     field inside a warm card is the brightest thing in the post, which puts the loudest
+     surface on the row you are least often using. Comment and dispatch fields now take THIS
+     value via `<Textarea surface="post">`, so they sit level with the post and are read by
+     their border. */
   --color-surface-post:      #F7F5F0;
   /* Chrome — the tinted frame band (top bar / dock hairlines), a step off the
      canvas so the frame reads as frame, not as another white card. DAWN round

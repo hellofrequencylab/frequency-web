@@ -19,24 +19,56 @@ import { cn } from '@/lib/utils'
 // right-hand gutter for its chevron, and `pr-9` layered over `px-3` is a logical-vs-physical
 // padding collision whose winner depends on Tailwind's emit order, not on the class list. Split
 // once here, and the two strings can never drift.
-export const fieldChromeClasses =
-  'w-full rounded-control border border-border bg-surface text-body-sm text-text outline-none transition-colors focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 aria-[invalid=true]:border-danger aria-[invalid=true]:focus:border-danger aria-[invalid=true]:focus:ring-danger/30 disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-subtle'
+// The chrome with NO fill of its own. Split out so a field can wear a different surface without
+// two `bg-*` utilities landing in one class string — see `FieldSurface` below for why that split
+// has to exist rather than being solved at the call site.
+const fieldChromeNoFill =
+  'w-full rounded-control border border-border text-body-sm text-text outline-none transition-colors focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 aria-[invalid=true]:border-danger aria-[invalid=true]:focus:border-danger aria-[invalid=true]:focus:ring-danger/30 disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-subtle'
+
+export const fieldChromeClasses = `${fieldChromeNoFill} bg-surface`
 
 export const fieldClasses = `${fieldChromeClasses} px-3 py-2`
 
+/**
+ * Which surface a field's fill sits on.
+ *
+ *   default  `bg-surface` — pure white. A field on the canvas or on a white card.
+ *   post     `bg-surface-post` — the feed post-card surface. A field INSIDE a post.
+ *
+ * 🔴 WHY THIS IS A PROP AND NOT A CLASSNAME (owner, 2026-08-06: "make all comment and dispatch box
+ * backgrounds the same as the post box in every feed"). `cn` is a plain join, so passing
+ * `className="bg-surface-post"` to a control whose base string already says `bg-surface` emits BOTH
+ * utilities and lets Tailwind's stylesheet order decide the winner — not the call site. That is the
+ * same trap `IconButton` documents for its `h-8 w-8`, and it is worse here because the two classes
+ * differ by eight units of grey: the bug would be invisible in review and visible on screen.
+ * Choosing the fill INSIDE the component keeps exactly one `bg-*` in the string.
+ */
+export type FieldSurface = 'default' | 'post'
+
+const FIELD_FILL: Record<FieldSurface, string> = {
+  default: 'bg-surface',
+  post: 'bg-surface-post',
+}
+
+function fieldWithSurface(surface: FieldSurface): string {
+  return `${fieldChromeNoFill} ${FIELD_FILL[surface]} px-3 py-2`
+}
+
 export const labelClasses = 'text-meta font-medium text-muted'
 
-export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
-  function Input({ className, ...props }, ref) {
-    return <input ref={ref} className={cn(fieldClasses, className)} {...props} />
-  },
-)
+export const Input = forwardRef<
+  HTMLInputElement,
+  InputHTMLAttributes<HTMLInputElement> & { surface?: FieldSurface }
+>(function Input({ className, surface = 'default', ...props }, ref) {
+  return <input ref={ref} className={cn(fieldWithSurface(surface), className)} {...props} />
+})
 
-export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(
-  function Textarea({ className, ...props }, ref) {
-    return <textarea ref={ref} className={cn(fieldClasses, className)} {...props} />
-  },
-)
+export const Textarea = forwardRef<
+  HTMLTextAreaElement,
+  TextareaHTMLAttributes<HTMLTextAreaElement> & { surface?: FieldSurface }
+>(function Textarea({ className, surface = 'default', ...props }, ref) {
+  return <textarea ref={ref} className={cn(fieldWithSurface(surface), className)} {...props} />
+})
 
 export function Label({ className, ...props }: LabelHTMLAttributes<HTMLLabelElement>) {
   return <label className={cn(labelClasses, className)} {...props} />
