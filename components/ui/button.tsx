@@ -48,9 +48,25 @@ const SIZE: Record<ButtonSize, string> = {
 // The transition names the properties the state changes actually touch — `transform` has to be
 // in the list or `.press` snaps instead of easing. `motion-reduce:transition-none` is the guard
 // (`.press` itself is already collapsed under prefers-reduced-motion in globals.css).
+// 🔴 `tap-target` is on the BASE, not on a size, and it is the fix for the most widespread touch
+// defect in the product. The SIZE strings above set padding and type and nothing else, so a
+// button's height was whatever its line-box happened to add up to:
+//
+//   sm  →  py-1.5 (12.75px) + text-meta's 17px box     = 29.75px
+//   md  →  py-2   (17px)    + text-body-sm's 21.25px   = 38.25px
+//
+// Both are under the 44px touch floor, and this primitive is the most-used interactive element
+// in the app — so every <Button> and every buttonClasses()-styled <Link> was undersized on a
+// phone. The repo already had the tool: `--tap-min` is 32px and rises to 44px under
+// `@media (pointer: coarse)` (globals.css), and `@utility tap-target` consumes it. It simply was
+// never composed here.
+//
+// `min-block-size` does not fight an explicit `h-*` from a caller — a minimum only ever raises,
+// so shape overrides like the dock trigger's `h-full w-11` keep their geometry. On a mouse the
+// change is 29.75 → 32px for `sm` and nothing for `md`.
 const BASE =
   // DAWN: controls take the ROLE radius (skinnable), not a literal step (dawn/tokens/spacing.css).
-  'inline-flex items-center justify-center gap-1.5 rounded-control font-semibold press transition-[color,background-color,border-color,box-shadow,transform] motion-reduce:transition-none disabled:opacity-50 disabled:cursor-not-allowed'
+  'inline-flex items-center justify-center gap-1.5 rounded-control font-semibold tap-target press transition-[color,background-color,border-color,box-shadow,transform] motion-reduce:transition-none disabled:opacity-50 disabled:cursor-not-allowed'
 
 /** The exact button token string for a variant × size — so a styled `<Link>` (or
  *  any non-`<button>` element) shares the SAME tokens as `<Button>` without a

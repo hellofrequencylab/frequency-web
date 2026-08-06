@@ -1206,10 +1206,35 @@ function MobileLeftDrawer({
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
+  // 🔴 LOCK THE PAGE BEHIND IT. This was the ONE overlay in the repo that did not — Dialog,
+  // SearchOverlay, CaptureLauncher, Mindless, ChoresOverlay and ReportDialog all lock. Without
+  // it, dragging anywhere on the backdrop scrolls the feed underneath, and because neither the
+  // drawer's <nav> nor its stats box declares `overscroll-contain`, a flick that reaches the end
+  // of the nav chains straight through to the page. Three nested scrollers, no containment.
+  //
+  // The previous value is captured and restored rather than cleared to '': clearing is what
+  // drops a lock held by an overlay ALREADY open underneath this one.
+  useEffect(() => {
+    if (!open) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = previous }
+  }, [open])
+
   return (
     <div
       className={`md:hidden fixed inset-0 z-50 ${open ? 'pointer-events-auto' : 'pointer-events-none'}`}
       aria-hidden={!open}
+      // 🔴 `inert`, not just `aria-hidden` + `pointer-events-none`. Closed, the panel is only
+      // translated off-screen, so every link in the nav, the four legal links and the Close
+      // button stayed IN THE TAB ORDER — inside an `aria-hidden="true"` subtree, which is a
+      // direct ARIA violation (focus must never land in an aria-hidden region) and in practice
+      // walked a keyboard or switch user through the entire invisible menu before they reached
+      // the page. `pointer-events-none` only ever handled the mouse.
+      //
+      // `|| undefined` because `inert={false}` still serialises the attribute, and a present
+      // `inert` is true regardless of its value. Same spelling the Vera sheet already uses.
+      inert={!open || undefined}
     >
       {/* Backdrop */}
       <div
