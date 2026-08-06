@@ -8,6 +8,7 @@ import { VERTICALS } from '@/lib/verticals'
 import AppShell from '@/components/layout/app-shell'
 import { ImpersonationBanner } from '@/components/layout/impersonation-banner'
 import { BetaCountdownBanner } from '@/components/layout/beta-countdown-banner'
+import { BannerMeasure } from '@/components/layout/banner-measure'
 import { SiteAlertBar } from '@/components/layout/site-alert-bar'
 import type { Metadata } from 'next'
 import { loadChromeOverrides, isSafeRoute, adminScopeFor } from '@/lib/layout/page-chrome'
@@ -637,7 +638,12 @@ export default async function MainLayout({
       {/* Beta countdown (platform_settings.beta_ends_at) — renders nothing until an operator sets a
           date; its one cached read sits behind Suspense so it never blocks the shell. */}
       <Suspense fallback={null}>
-        <BetaCountdownBanner />
+        {/* BannerMeasure holds it to the page BODY's width on the operator consoles, whose info
+            rail is a column inside the page rather than a shell rail — without it the alert ran
+            the full width and painted across LIVE / NEEDS ATTENTION. */}
+        <BannerMeasure>
+          <BetaCountdownBanner />
+        </BannerMeasure>
       </Suspense>
       {children}
       {/* ONE bottom-right toast lane. Both stacks used to declare their own identical `fixed`

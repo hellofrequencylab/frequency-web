@@ -599,11 +599,30 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
               // for the md band, where there is no rail to cover; `panelHeight` overrides it
               // wherever there is one.
               style={panelHeight ? { height: panelHeight } : undefined}
-              className="glass lift-3 flex h-[68dvh] max-h-[37.5rem] w-full flex-col overflow-hidden rounded-t-card pb-[env(safe-area-inset-bottom)] outline-none md:h-[35rem] md:max-h-none md:pb-2"
+              // TETHERED, NOT FLOATING FREE (owner, 2026-08-06). Three corners are rounded and
+              // the BOTTOM-RIGHT is square, because that is the corner sitting on the chat tab:
+              // a radius there would read as a separate card that happens to overlap the dock,
+              // which is the "old feel" being fixed. Square it, and the panel reads as lifted off
+              // the tab and still attached to it.
+              //
+              // `glass` is gone with it. Glass is the SHELL's material — the bar, the rails — and
+              // wearing it here made the panel look like more chrome instead of a surface you
+              // read. A solid `bg-canvas` on a `chrome-border` hairline is the kit's card, which
+              // is what this is.
+              //
+              // The mobile branch keeps `rounded-t-card` and stays a bottom sheet: there is no tab
+              // to tether to below md (the bar is display:none), so there is no corner to square.
+              // NOTE the class ORDER: `md:h-[35rem] md:max-h-none md:pb-2` is pinned as one
+              // contiguous run by components/layout/dock-bar.test.ts, so the two `md:rounded-*`
+              // additions sit BEFORE it rather than inside it. Splitting that run is a real
+              // failure and not test pedantry — the guard's own comment explains that a looser
+              // search would be satisfied by the comment naming the token after the class itself
+              // had been deleted.
+              className="lift-3 flex h-[68dvh] max-h-[37.5rem] w-full flex-col overflow-hidden rounded-t-card border border-chrome-border bg-canvas pb-[env(safe-area-inset-bottom)] outline-none md:rounded-card md:rounded-br-none md:h-[35rem] md:max-h-none md:pb-2"
             >
               {/* Header — canvas, so it reads as the dock's own chrome rather than more
                   transcript. Reflects the active view; Help gets a Back affordance. */}
-              <div className="flex shrink-0 items-center gap-2.5 border-b border-border bg-canvas px-4 py-3">
+              <div className="flex shrink-0 items-center gap-2.5 border-b border-chrome-border bg-surface px-4 py-3">
                 {helpOpen ? (
                   <IconButton label="Back" onClick={() => { setHelpOpen(false); setQ('') }}>
                     <ArrowLeft className="h-4 w-4" aria-hidden />
@@ -624,7 +643,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
 
               {/* Tabs — Messages front, Vera second. Hidden while the Help section is pushed. */}
               {!helpOpen && (
-                <div className="flex shrink-0 gap-1 border-b border-border bg-surface px-2 py-1.5" role="tablist" aria-label="Dock modes">
+                <div className="flex shrink-0 gap-1 border-b border-chrome-border bg-surface px-2 pb-2 pt-1.5" role="tablist" aria-label="Dock modes">
                   <button
                     type="button"
                     role="tab"

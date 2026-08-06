@@ -237,12 +237,20 @@ describe('the shell actually wires this', () => {
   })
 
   it('the rail can never disappear on desktop — the folded left rail is still a column', () => {
-    // No `bg-chrome` in either spelling any more (owner, 2026-08-05: the rails must read as the
-    // same surface as the page). The hairline STAYS in both — with the fill gone it is the only
-    // thing left defining where the track ends, and an ambiguous edge is the bug the fill was
-    // introduced to fix. If a future edit drops the border too, this is what notices.
-    expect(code).toContain("'hidden md:flex w-14 shrink-0 flex-col border-r border-chrome-border'")
-    expect(code).toContain("'hidden md:flex w-48 shrink-0 flex-col border-r border-chrome-border'")
+    // No `bg-chrome` in either spelling (owner, 2026-08-05: the rails must read as the same
+    // surface as the page), and as of 2026-08-06 NO HAIRLINE EITHER (owner, from a screenshot:
+    // "vertical rule needs to go away").
+    //
+    // This assertion previously pinned `border-r border-chrome-border` on both branches, on the
+    // reasoning that with the fill gone the hairline was the only thing left defining where the
+    // track ends. That reasoning was sound and the owner overruled it: the rail and the content
+    // share the page's ground, and the nav's own `px-3` inset is what separates them. The guard
+    // is INVERTED rather than deleted, because the thing actually worth protecting was never the
+    // border — it was that both branches agree. A strip with a rule and an open rail without one
+    // is the same edge contradicting itself depending on a fold, and that is still what fails here.
+    expect(code).toContain("'hidden md:flex w-14 shrink-0 flex-col'")
+    expect(code).toContain("'hidden md:flex w-48 shrink-0 flex-col'")
+    expect(code).not.toContain("shrink-0 flex-col border-r border-chrome-border")
   })
 
   it('BOTH rails read as the page, and BOTH keep their hairline — never one and not the other', () => {
