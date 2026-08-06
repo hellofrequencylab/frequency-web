@@ -253,11 +253,16 @@ describe('the shell actually wires this', () => {
     expect(code).not.toContain("shrink-0 flex-col border-r border-chrome-border")
   })
 
-  it('BOTH rails read as the page, and BOTH keep their hairline — never one and not the other', () => {
-    // The owner's instruction was explicit that the two sides must not diverge. The right rail's
-    // two branches are inline class strings rather than the quoted pair above.
-    expect(code).toContain('flex w-14 shrink-0 flex-col items-center border-l border-chrome-border py-6')
-    expect(code).toContain('flex w-72 shrink-0 flex-col border-l border-chrome-border py-6')
+  it('BOTH rails read as the page, and NEITHER draws a hairline — never one and not the other', () => {
+    // The owner's instruction was explicit that the two sides must not diverge, and as of
+    // 2026-08-06 the direction flipped: "remove the vertical line on the right of the feed. There
+    // are no vertical rail lines involved." What this guards is unchanged — that the two sides
+    // AGREE — so it is inverted rather than deleted, same as the left pair above. The right
+    // rail's two branches are inline class strings rather than the quoted pair.
+    expect(code).toContain('flex w-14 shrink-0 flex-col items-center py-6')
+    expect(code).toContain('flex w-72 shrink-0 flex-col py-6')
+    expect(code).not.toContain('flex-col items-center border-l border-chrome-border')
+    expect(code).not.toContain('flex w-72 shrink-0 flex-col border-l border-chrome-border')
     // The fill is gone from every rail <aside>. (`bg-chrome` survives elsewhere in the shell —
     // the header, the mobile drawer — so this is deliberately scoped to the rail spellings.)
     expect(code).not.toMatch(/flex-col[^'"]*border-[rl] border-chrome-border bg-chrome/)

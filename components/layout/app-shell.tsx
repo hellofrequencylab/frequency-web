@@ -878,12 +878,12 @@ function NavLinkList({
   // active row is 800, because the active row is meant to be "the one amber moment" in the rail
   // and colour alone was carrying it. The home anchor keeps its own 700 brand treatment.
   const itemClass = (active: boolean, emphasize = false, depth = 0) =>
-    `${nestClass(depth)}flex items-center gap-2.5 px-3 py-2 rounded-control text-body-sm transition-colors ${
+    `${nestClass(depth)}flex items-center gap-2.5 px-3 py-[0.42rem] rounded-control text-body-sm transition-colors ${
       emphasize
-        ? `font-bold text-[var(--brand-mark)] ${active ? 'bg-primary-bg' : 'hover:bg-chrome-hover'}`
+        ? `font-bold text-[var(--brand-mark)] ${active ? 'bg-primary-bg' : 'hover:bg-surface'}`
         : active
           ? 'bg-primary-bg text-primary-strong font-extrabold'
-          : 'text-muted font-semibold hover:bg-chrome-hover hover:text-text'
+          : 'text-muted font-semibold hover:bg-surface hover:text-text'
     }`
 
   // The group label is an EYEBROW, and eyebrows are tracked at 0.18em (`--tracking-eyebrow`).
@@ -989,7 +989,7 @@ function NavLinkList({
                     ariaLabel={label}
                     className={`${nest}flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm font-medium text-subtle`}
                   >
-                    <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden />
+                    <Icon className="h-[17px] w-[17px] shrink-0" strokeWidth={2} aria-hidden />
                     {label}
                   </GhostLink>
                 )
@@ -1012,10 +1012,7 @@ function NavLinkList({
               }
               return (
                 <Link key={item.key} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active, false, item.depth)}>
-                  <Icon
-                    className="w-[18px] h-[18px] shrink-0"
-                    strokeWidth={active ? 2.5 : 2}
-                  />
+                  <Icon className="w-[17px] h-[17px] shrink-0" strokeWidth={2} />
                   {label}
                 </Link>
               )
@@ -1083,7 +1080,7 @@ function NavLinkList({
                     active ? 'bg-chrome-hover text-muted' : 'text-subtle hover:bg-chrome-hover hover:text-muted'
                   }`}
                 >
-                  <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+                  <Icon className="h-[17px] w-[17px] shrink-0" strokeWidth={2} />
                   {label}
                 </Link>
               )
@@ -1097,7 +1094,7 @@ function NavLinkList({
                   title="You don't have access to this yet"
                   className={`${nest}flex items-center gap-2.5 px-3 py-2 rounded-lg text-body-sm font-medium text-subtle opacity-50 cursor-not-allowed select-none`}
                 >
-                  <Icon className="w-[18px] h-[18px] shrink-0" strokeWidth={2} />
+                  <Icon className="w-[17px] h-[17px] shrink-0" strokeWidth={2} />
                   {label}
                 </div>
               )
@@ -1105,10 +1102,7 @@ function NavLinkList({
             const active = isActive(href)
             return (
               <Link key={href} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active, false, item.depth)}>
-                <Icon
-                  className="w-[18px] h-[18px] shrink-0"
-                  strokeWidth={active ? 2.5 : 2}
-                />
+                <Icon className="w-[17px] h-[17px] shrink-0" strokeWidth={2} />
                 {label}
               </Link>
             )
@@ -1143,10 +1137,7 @@ function NavLinkList({
             }
             return (
               <Link key={href} href={href} onClick={onNavigate} className={itemClass(active)}>
-                <Icon
-                  className="w-[18px] h-[18px] shrink-0"
-                  strokeWidth={active ? 2.5 : 2}
-                />
+                <Icon className="w-[17px] h-[17px] shrink-0" strokeWidth={2} />
                 {label}
               </Link>
             )
@@ -1159,6 +1150,10 @@ function NavLinkList({
 }
 
 // ── Mobile left drawer ───────────────────────────────────────────────────────
+
+/** The Vault region revealed inside the drawer's identity card. Named once so the chevron's
+ *  `aria-controls` and the region it points at can never drift apart. */
+const DRAWER_VAULT_ID = 'fq-drawer-vault'
 
 function MobileLeftDrawer({
   open,
@@ -1207,6 +1202,11 @@ function MobileLeftDrawer({
    *  the score; from md it is the bottom-right Vault tab (`dock`). Exactly one per viewport. */
   mobileStats?: React.ReactNode
 }) {
+  // The Vault's disclosure inside the identity card. Collapsed on every open rather than
+  // remembered: the drawer is a NAVIGATION surface, and a member who opened the menu to go
+  // somewhere should meet the destination list, not last session's score pushing it down.
+  const [vaultOpen, setVaultOpen] = useState(false)
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
@@ -1215,10 +1215,49 @@ function MobileLeftDrawer({
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
+  // Reset when the drawer leaves, not when it arrives — collapsing on open would run a
+  // `1fr → 0fr` transition in front of the member as the panel slides in.
+  //
+  // Adjusted DURING RENDER rather than in an effect. This is React's documented shape for
+  // "reset state when a prop changes", and it is not a style preference here: this repo's lint
+  // (`react-hooks/set-state-in-effect`) rejects the effect spelling by name, and it is right to —
+  // an effect would render the stale value once, commit it, then re-render. Setting state during
+  // render of the SAME component short-circuits before anything is committed.
+  const [drawerWas, setDrawerWas] = useState(open)
+  if (drawerWas !== open) {
+    setDrawerWas(open)
+    if (!open) setVaultOpen(false)
+  }
+
+  // 🔴 LOCK THE PAGE BEHIND IT. This was the ONE overlay in the repo that did not — Dialog,
+  // SearchOverlay, CaptureLauncher, Mindless, ChoresOverlay and ReportDialog all lock. Without
+  // it, dragging anywhere on the backdrop scrolls the feed underneath, and because neither the
+  // drawer's <nav> nor its stats box declares `overscroll-contain`, a flick that reaches the end
+  // of the nav chains straight through to the page. Three nested scrollers, no containment.
+  //
+  // The previous value is captured and restored rather than cleared to '': clearing is what
+  // drops a lock held by an overlay ALREADY open underneath this one.
+  useEffect(() => {
+    if (!open) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = previous }
+  }, [open])
+
   return (
     <div
       className={`md:hidden fixed inset-0 z-50 ${open ? 'pointer-events-auto' : 'pointer-events-none'}`}
       aria-hidden={!open}
+      // 🔴 `inert`, not just `aria-hidden` + `pointer-events-none`. Closed, the panel is only
+      // translated off-screen, so every link in the nav, the four legal links and the Close
+      // button stayed IN THE TAB ORDER — inside an `aria-hidden="true"` subtree, which is a
+      // direct ARIA violation (focus must never land in an aria-hidden region) and in practice
+      // walked a keyboard or switch user through the entire invisible menu before they reached
+      // the page. `pointer-events-none` only ever handled the mouse.
+      //
+      // `|| undefined` because `inert={false}` still serialises the attribute, and a present
+      // `inert` is true regardless of its value. Same spelling the Vera sheet already uses.
+      inert={!open || undefined}
     >
       {/* Backdrop */}
       <div
@@ -1251,14 +1290,20 @@ function MobileLeftDrawer({
           </Link>
         </div>
 
-        {/* Identity — tap the card for your profile. Operators can switch hats here (View-as
-            + context switcher, both self-gating). The game stats live at the BOTTOM of the
-            drawer (the < lg home of the Vault dock's numbers), never up here. */}
+        {/* Identity — tap the card for your profile, tap the chevron for your Vault.
+            (owner, 2026-08-06: "on mobile, put the vault in the profile box pop up").
+            The score used to sit in the drawer's BOTTOM cluster, below the whole nav list, so
+            reaching it was: open the menu, scroll past every destination, and read it inside a
+            40dvh box that the desktop panel had just grown ~4x. Here it is one tap from the
+            member's own card, which is where the desktop rail's account dock already puts it.
+            The chevron is a SEPARATE control from the card's link: making the whole card a
+            toggle would cost one-tap profile, which is what the card is for. */}
         <div className="shrink-0 border-b border-border px-3 py-3">
+          <div className="flex items-center gap-2.5">
           <Link
             href={profileHref}
             onClick={onClose}
-            className="flex items-center gap-2.5 rounded-lg p-1 -m-1 hover:bg-chrome-hover transition-colors"
+            className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg p-1 -m-1 hover:bg-chrome-hover transition-colors"
           >
             {profile.avatar_url ? (
               <Image
@@ -1281,6 +1326,47 @@ function MobileLeftDrawer({
               <RoleBadge role={identityRole} className="mt-0.5" />
             </div>
           </Link>
+            {mobileStats && (
+              <button
+                type="button"
+                onClick={() => setVaultOpen((v) => !v)}
+                aria-expanded={vaultOpen}
+                aria-controls={DRAWER_VAULT_ID}
+                aria-label={vaultOpen ? 'Hide your Vault' : 'Show your Vault'}
+                className="tap-target -mr-1 flex shrink-0 items-center justify-center rounded-control px-1 text-subtle transition-colors hover:bg-chrome-hover hover:text-text"
+              >
+                <ChevronUp
+                  className={`h-4 w-4 transition-transform duration-[var(--motion-base)] motion-reduce:transition-none ${vaultOpen ? '' : 'rotate-180'}`}
+                  aria-hidden
+                />
+              </button>
+            )}
+          </div>
+
+          {/* The Vault, revealed from inside the card — the same `grid-rows-[0fr] → [1fr]` row
+              the three desktop docks use, so nothing lifts off and the motion honours
+              `--motion-base` (globals.css zeroes it under reduced motion rather than disabling
+              transitions, which is why a literal duration would opt the member out).
+              `overscroll-contain` is here because the drawer nests scrollers: without it a flick
+              that reaches the end of this box chains into the nav and then into the page. */}
+          {mobileStats && (
+            <div
+              className={`grid overflow-hidden transition-[grid-template-rows] duration-[var(--motion-base)] ease-[var(--ease-out)] motion-reduce:transition-none ${
+                vaultOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+              }`}
+            >
+              <div className="min-h-0">
+                <div
+                  id={DRAWER_VAULT_ID}
+                  role="region"
+                  aria-label="The Vault"
+                  className="max-h-[50dvh] overflow-y-auto overscroll-contain pt-3"
+                >
+                  {mobileStats}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Space switcher only (owner: no View-as-role, no streak up here by the identity
               card — the score lives in the bottom cluster). Self-gates to null for members
@@ -1294,16 +1380,14 @@ function MobileLeftDrawer({
           <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} operatesSpaces={operatesSpaces} sections={sections} menuDriven={menuDriven} />
         </nav>
 
-        {/* Bottom cluster — the game stats (the drawer is the < lg home of the Vault dock's
-            numbers; docks law, DAWN 2026-08-03), then About/legal, then a thumb-zone Close. */}
+        {/* Bottom cluster — About/legal, then a thumb-zone Close.
+            THE SCORE IS NOT HERE ANY MORE. It moved into the identity card above (owner,
+            2026-08-06). Worth stating rather than just deleting: the cap that used to live here
+            was on the WRONG BOX. It capped the stats at 40dvh while the nav was `flex-1`, whose
+            min-height resolves to 0 — so on a 568px screen the fixed siblings (head, identity,
+            40dvh of stats, links, Close) left the entire site nav about 58px, two rows. Moving
+            the score into a collapsed-by-default disclosure gives the nav its height back. */}
         <div className="shrink-0 border-t border-border pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          {/* Your score — Zaps · Gems · streak + the progress body (MobileGameStats). Capped
-              and internally scrollable so it can never crush the nav on a short screen. */}
-          {mobileStats && (
-            <div className="max-h-[40dvh] overflow-y-auto border-b border-border px-3 py-3">
-              {mobileStats}
-            </div>
-          )}
           {/* About / What is Frequency / Terms / Privacy — the site pages that were desktop
               mega-menu only, so nothing is desktop-reachable-only. */}
           <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 pt-3 text-2xs text-muted">
@@ -2271,7 +2355,12 @@ export default function AppShell({
                   // tab in the bottom corner (components/layout/dock-bar.tsx) — so putting a
                   // second one on the strip would be two controls for one fold. The three icons
                   // below already reopen the rail on click, as they always have.
-                  <aside className="flex w-14 shrink-0 flex-col items-center border-l border-chrome-border py-6">
+                  //
+                  // NO RULE (owner, 2026-08-06: "there are no vertical rail lines involved").
+                  // Removed on both right-rail branches together for the same reason the left
+                  // pair was: an edge that exists in the strip and not in the open rail is the
+                  // same edge disagreeing with itself depending on a fold.
+                  <aside className="flex w-14 shrink-0 flex-col items-center py-6">
                     <div className="flex flex-col items-center gap-1.5">
                       {([['Quest', Zap], ['Gems', Gem], ['Streak', Flame]] as const).map(([label, Icon]) => (
                         <button
@@ -2289,12 +2378,12 @@ export default function AppShell({
                   </aside>
                 ) : (
                   // Mirrors the left rail exactly: NO fill (owner, 2026-08-05 — the rails must
-                  // read as the same surface as the page), and the hairline that gives the track
-                  // its edge. The collapsed strip already had `border-l border-chrome-border`;
-                  // the OPEN rail did not, so folding it was once the only way to see where it
-                  // began. (`relative` came off with the mid-edge handle it existed for; the fold
+                  // read as the same surface as the page) and, since 2026-08-06, NO HAIRLINE
+                  // either (owner: "there are no vertical rail lines involved"). Both rails, both
+                  // branches, one rule — the content column's own gutter is what separates them
+                  // now. (`relative` came off with the mid-edge handle it existed for; the fold
                   // tick lives on the dock tab at the foot of this column instead.)
-                  <aside className="flex w-72 shrink-0 flex-col border-l border-chrome-border py-6">
+                  <aside className="flex w-72 shrink-0 flex-col py-6">
                     {sidebar}
                     {/* The rail's end. DockBar measures this to know when to stop being pinned to
                         the window and come to rest against the last rail card instead. Zero-height

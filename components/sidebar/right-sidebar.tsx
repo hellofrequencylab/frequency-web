@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, cache } from 'react'
 import { headers } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SEASON_RANKS, rankForCompletion, journeysFinishedThisSeason } from '@/lib/season-ranks'
@@ -73,7 +73,17 @@ export async function MobileGameStats({ profileId }: { profileId: string }) {
 
 // Assemble the player's "progress cockpit" — best-effort; any one source failing
 // degrades to an empty/teaser state. Shared by the desktop dock + the mobile menu.
-export async function loadGameStats(profileId: string): Promise<DockData> {
+//
+// 🔴 `cache()` IS LOAD-BEARING, not an optimisation. Two callers await this on EVERY member page
+// and neither is conditional: MobileGameStats (the drawer's Vault, mounted from the layout) and
+// VaultDockSlot (the desktop dock, same layout). "The score renders once per viewport" is a CSS
+// statement — `md:hidden` on one and `hidden md:flex` on the other — and CSS does not stop a
+// server component from running. Both rendered, so both fetched, and each call is a six-way
+// Promise.all: twelve queries for one score, on every page load, at every viewport.
+//
+// React's `cache()` dedupes per REQUEST, which is exactly the scope of the double-render. Do not
+// replace it with a module-level map: that would leak one member's score to the next request.
+export const loadGameStats = cache(async function loadGameStats(profileId: string): Promise<DockData> {
   const admin = createAdminClient()
 
   // All sources fetch in ONE parallel batch (no serial waterfall): the profile row, today's
@@ -143,7 +153,7 @@ export async function loadGameStats(profileId: string): Promise<DockData> {
   }
 
   return { zaps, gems, streak, rank, todaysMove, last7, rankProgress, arc, vaultGems: gems }
-}
+})
 
 // The viewer's practice activity — the Insight-Timer-style bar chart (Days / Weeks / Months),
 // pinned right under the Season Standing block on every rail. Renders nothing until there's

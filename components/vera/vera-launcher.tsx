@@ -297,9 +297,27 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
     // its existence is external state React cannot tell us about. Synchronous on purpose —
     // deferring it would blink the fallback pill onto surfaces that do have a dock. Re-run on
     // navigation because the bar mounts and unmounts with the rail (there is none on /admin).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSlot(document.getElementById(DOCK_CHAT_SLOT_ID))
-    setSlotChecked(true)
+    //
+    // 🔴 EXISTS IS NOT THE QUESTION — RENDERED IS. DockBar is `hidden … md:flex`, so below md it
+    // is in the DOM and merely display:none. `getElementById` returns it anyway, so this used to
+    // find a slot on every phone, take the portal branch, and mount the chat trigger INSIDE a
+    // display:none container. The EdgePill fallback never fired because it keys off `!slot`.
+    // Net effect: no visible way to reach Messages, Vera or help on a phone at all, on every
+    // route with a rail — reachable only by deep link or an in-page "Ask Vera" button.
+    //
+    // `getClientRects().length` is the test, NOT `offsetParent`. offsetParent is null for
+    // position:fixed elements and the dock bar IS fixed, so it would report every DESKTOP dock as
+    // absent and swing the bug the other way.
+    const read = () => {
+      const el = document.getElementById(DOCK_CHAT_SLOT_ID)
+      setSlot(el && el.getClientRects().length > 0 ? el : null)
+      setSlotChecked(true)
+    }
+    read()
+    // Crossing the md breakpoint changes the slot's visibility WITHOUT a navigation, so pathname
+    // alone would strand a desktop portal on a resized-down window.
+    window.addEventListener('resize', read)
+    return () => window.removeEventListener('resize', read)
   }, [pathname])
 
   // Unread message count for the badge (best-effort; refreshes each time the panel toggles).
