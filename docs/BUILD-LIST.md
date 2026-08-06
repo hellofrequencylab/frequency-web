@@ -867,3 +867,59 @@ edits, every upload ingests, a usage index for safe delete + global swap.
 | D6 | **Privacy system** (full build, later). `library-private` bucket, signed URLs, storage RLS, download gating + audit, EXIF strip enforced, optional watermark/proofing. Hooks (`is_protected` / `download_policy` / `expires_at`) already in the schema. | 📋 |
 | D7 | **Semantic + AI.** Populate `embedding`, hybrid FTS+vector ranking (RRF), AI auto-tag + color extraction, background removal / upscale. Later: the Weave generative composer. | 📋 |
 | D3a | **File export + Vera "draw a card" wizard** ([ADR-481](DECISIONS.md)). Client-side SVG/PNG export for code-drawn cards (inline computed colors) + blob download for photos; a janitor + budget-gated Vera wizard that draws a new card as inline SVG in the house style, with a fail-closed allowlist sanitizer (`lib/library/svg-sanitize.ts`). Generated cards save as `kind='element'` with the SVG in `config.svg`. | ✅ shipped |
+
+---
+
+## DAWN conversion — what is left after the four-territory sweep (2026-08-06)
+
+Four agents swept `app/(main)/admin/**`, `app/(main)/**`, `components/**` and
+`app/(marketing)/** + lib/**` on disjoint territory. **-1178 sites retired**, nothing risen, all
+floors re-frozen against a settled tree. What follows is the residue, with the reason each item was
+left rather than a to-do list of things nobody got to.
+
+### 🔴 Owed to the owner (nothing else can proceed past these)
+
+| Item | Size | Why |
+| :--- | :---: | :--- |
+| Delete `PW_REQUIRE_SHELL` from the **Secrets** tab | XS | The Variables copy is set and the workflow reads either, so the ratchet is armed. But a one-character *secret* makes GitHub redact that character everywhere in the run log — with `1` as a secret, every height, test count and line number came back as `***`. The stale copy is what keeps logs unreadable |
+| Recapture the marketing pixel baselines | S | Phase 7 **intentionally** tightened marketing rhythm. A mid-page `Statement` loses ~22px at 390 and ~77px at 1280 (`py-14 sm:py-24` → `.mk-tight`, plus the double-count correction it can now participate in). The committed baselines are genuinely stale. `e2e-manual.yml` → `update_baselines`. Read the diffs first: recapturing before reading is how a real regression gets frozen into the reference and stops being catchable |
+| Seed the shell a11y baselines | S | `/feed` and `/settings` are held to zero serious+ violations against debt that predates the gate, because their baselines were never captured. `e2e-manual.yml` → `capture_shell` + `update_a11y`. Named as a prerequisite in ADR-948's sequencing |
+| `/the-lab` (200 chars) and `/spaces` (186) meta descriptions | XS | Both over the ~155 snippet window this repo caps at elsewhere. Neither has a clean sentence boundary under the cap, so shortening is a **copy decision**, not a trim. `/about` was fixed (326 → 149) because its trailing sentence subtracted cleanly |
+
+### ⏳ Sweepable, deliberately stopped
+
+| Item | Size | Why it stopped where it did |
+| :--- | :---: | :--- |
+| `raw-input` 184 | M | ~30 are structurally un-primitivable (range, file, radio, colour, honeypot). Most of the rest is a long tail of 1–2 per file across ~70 files, heavily weighted to bare search inputs **inside a composed box** — `Input` would draw a border inside a border. Needs a borderless variant on the primitive, not call-site swaps |
+| `raw-select` 6 · `raw-textarea` 6 | S | Same shape. The selects are chip filters whose ACTIVE state is a border/fill swap; the textareas are borderless auto-growing composers inside a card. `cn()` is a plain join, not `tailwind-merge`, so a tint or a height passed to the primitive lands *beside* its default and emit order decides — converting could silently kill the affordance. Both need a `tone`/borderless variant |
+| `literal-radius` 2450 | L | Only value-identical conversions were taken (`rounded-2xl`→`rounded-card` at 1rem, `rounded-lg`→`rounded-control` at 0.5rem). The rest are genuine resizes: `rounded-2xl`→`rounded-card` is 24px→16px elsewhere, `rounded-xl`/`3xl`/`md` have no 0.75/1.5rem role at all. DAWN §Phase 5 says spend this inside screen passes, never as its own wave |
+| `handrolled-icon-button` 6 | S | Two are `app-shell` (MENU-CONTRACT territory, snapshot-sensitive). Four need a **tinted/selected** variant (`bg-primary-bg + ring`), not the `filled` variant just added. Stopped rather than add a second speculative variant mid-flight |
+| `adhoc-progress` 7 | S | **4 are false positives** — `rounded-pill object-cover` avatars the pattern cannot distinguish from bars. The 3 real ones each need something `ProgressTrack` lacks: a dual-layer buffered+played scrubber, confetti dots, and a runtime hex with no `ProgressTone` |
+
+### ⚠️ Needs a triage pass BEFORE anyone sweeps it
+
+**`bespoke-cards` (24) and `bespoke-rows` (14) — zero retired, and the reason matters more than the
+number.** The ratchet is a filename heuristic and a large fraction of its population are not browse
+cards or list rows at all: `row-controls`, `practice-row-actions`, `member-row-actions`,
+`route-chrome-row` are action clusters; `space-credit-row` is a logo-tile credit line. Of the ones
+that genuinely are cards, the two read carry docstrings saying they are **deliberate** variants —
+`ContactCard` calls itself the portrait counterpart to `PersonCard`, and `GroupCard` is byte-matched
+on purpose to the ChaptersNearMe card so the two can never drift. Converting either is a design
+ruling, not a substitution, and `upcoming-event-rows` has a dimension-matched `h-16` skeleton a
+`RowCard` swap would desynchronise.
+
+**Separate "owed to the kit" from "filename collision" first.** Sweeping this as-is guarantees
+forced conversions to move a number, which is the failure mode the ratchets exist to prevent.
+
+### Instrument gaps (Phase 9 queue, recorded not fixed)
+
+Both found independently by two agents, which is what makes them findings rather than opinions.
+`raw-input`'s lookahead excludes `type="hidden"` and nothing else, so ~18 `type="file"` triggers
+behind `hidden`/`sr-only` are permanently un-retirable debt inside a ratchet.
+`white-black-literals` does not exclude `app/print/**` though §1 of DAWN-CONVERSION names it a
+carve-out, so its floor is permanently 2. Full detail in `docs/DAWN-CONVERSION.md` §4.
+
+**Not fixed on the spot deliberately:** editing a ratchet moves every count under an agent measuring
+against it. That is how three commit messages on this branch came to cite a `literal-radius` floor
+that was already stale when written. An instrument correction changes the *question*, so it lands on
+a settled tree with its own re-freeze and its own reason.

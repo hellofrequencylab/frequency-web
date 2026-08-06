@@ -4,12 +4,11 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, Label, fieldClasses } from '@/components/ui/field'
+import { Input, Label } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { setSpaceAvailability } from '@/lib/spaces/booking-actions'
 import type { AvailabilityWindow } from '@/lib/spaces/booking'
-import { cn } from '@/lib/utils'
 import { IconButton } from '@/components/ui/icon-button'
 
 // OWNER AVAILABILITY EDITOR (client). The Practitioner sets one or more weekly windows (weekday,
@@ -187,20 +186,20 @@ export function BookingAvailabilityForm({
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-meta font-medium text-muted">Start</span>
-              <input
+              <Input
                 type="time"
                 value={r.start}
                 onChange={(e) => update(i, { start: e.target.value })}
-                className={cn(fieldClasses, 'w-32')}
+                className="w-32"
               />
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-meta font-medium text-muted">End</span>
-              <input
+              <Input
                 type="time"
                 value={r.end}
                 onChange={(e) => update(i, { end: e.target.value })}
-                className={cn(fieldClasses, 'w-32')}
+                className="w-32"
               />
             </label>
             <label className="flex flex-col gap-1">

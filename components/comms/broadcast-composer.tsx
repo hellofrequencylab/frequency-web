@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Mail, MessageSquare, Radio, Smartphone, Megaphone, CheckCircle2, AlertCircle, CalendarPlus } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import type { ActionResult } from '@/lib/action-result'
 import type {
   BroadcastChannelKey,
@@ -215,12 +216,13 @@ export function BroadcastComposer({
               <label htmlFor="reinvite-target" className="sr-only">
                 Invite this list to
               </label>
-              <select
+              <Select
                 id="reinvite-target"
                 value={reinviteTarget}
                 onChange={(e) => setReinviteTarget(e.target.value)}
                 disabled={pending}
-                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta text-text"
+                className="text-meta"
+                wrapperClassName="min-w-0 flex-1"
               >
                 {targets.map((t) => {
                   const when = targetDateLabel(t.startsAt)
@@ -231,7 +233,7 @@ export function BroadcastComposer({
                     </option>
                   )
                 })}
-              </select>
+              </Select>
               <button
                 type="button"
                 onClick={submitReinvite}

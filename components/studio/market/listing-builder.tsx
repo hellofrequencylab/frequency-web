@@ -11,12 +11,12 @@ import { getBrowserPosition } from '@/lib/geo-browser'
 import { LISTING_KINDS, type ListingDetailField, type ListingKind, type ListingPatch, type ListingStatus } from '@/lib/marketplace'
 import { updateListingAction } from '@/app/(main)/classifieds/actions'
 import { Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import { ListingOwnerControls } from '@/components/market/listing-owner-controls'
 import { ListingShareButton } from '@/components/marketplace/listing-share-button'
 
-const FIELD = 'rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
 // Best-practice detail fields a seller can add with one tap. A field with `options` edits its value
 // through a select; the rest are free text. Every preset still persists through the same
@@ -130,9 +130,9 @@ export function ListingBuilder(props: ListingBuilderProps) {
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <StudioField label="Type">
-          <select value={kind} onChange={(e) => { const v = e.target.value as ListingKind; setKind(v); queueSave({ kind: v }) }} className={FIELD}>
+          <Select value={kind} onChange={(e) => { const v = e.target.value as ListingKind; setKind(v); queueSave({ kind: v }) }}>
             {LISTING_KINDS.map((k) => <option key={k.key} value={k.key}>{k.label}</option>)}
-          </select>
+          </Select>
         </StudioField>
         <StudioField label="Price / terms (free text)">
           <Input value={priceNote} onChange={(e) => { setPriceNote(e.target.value); queueSave({ priceNote: e.target.value || null }) }} maxLength={80} placeholder="e.g. $20, or a trade, or free" />
@@ -207,14 +207,14 @@ export function ListingBuilder(props: ListingBuilderProps) {
                     className="!w-1/3"
                   />
                   {preset?.options ? (
-                    <select
+                    <Select
                       value={d.value}
                       onChange={(e) => setDetail(i, { value: e.target.value })}
-                      className={`${FIELD} flex-1`}
-                    >
-                      <option value="">Choose one</option>
-                      {preset.options.map((o) => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                      aria-label={d.label ? `${d.label} value` : `Detail ${i + 1} value`}
+                      wrapperClassName="flex-1"
+                      emptyLabel="Choose one"
+                      options={preset.options}
+                    />
                   ) : (
                     <Input
                       value={d.value}

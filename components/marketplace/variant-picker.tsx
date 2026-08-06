@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { effectiveVariantPriceCents, effectiveVariantStock } from '@/lib/commerce/types'
 import type { CommerceVariant } from '@/lib/commerce/types'
 import { BuyButton } from '@/app/(main)/marketplace/buy-button'
+import { Select } from '@/components/ui/select'
 
 // Buyer-facing variant picker (Etsy-Grade Phase 2). When a product has active variants, the buyer
 // chooses one; the selection sets the price shown + the quantity available and passes its variantId
@@ -46,11 +47,10 @@ export function VariantPicker({
         <label htmlFor={`variant-${productId}`} className="mb-1 block text-body-sm font-medium text-text">
           Options
         </label>
-        <select
+        <Select
           id={`variant-${productId}`}
           value={selectedId ?? ''}
           onChange={(e) => setSelectedId(e.target.value || null)}
-          className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary"
         >
           {variants.map((v) => {
             const stock = effectiveVariantStock(v)
@@ -62,7 +62,7 @@ export function VariantPicker({
               </option>
             )
           })}
-        </select>
+        </Select>
       </div>
 
       <p className="text-body-sm font-semibold text-text">{usd(selectedPrice, currency)}</p>

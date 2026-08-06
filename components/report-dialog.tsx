@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { reportContent } from '@/app/(main)/feed/report-actions'
 import { isError } from '@/lib/action-result'
 import { Dialog } from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/field'
 
 type ReportDialogProps = {
   targetType: 'post' | 'dispatch' | 'comment' | 'member' | 'event'
@@ -112,12 +113,13 @@ export function ContentReportDialog({ targetType, targetId, open, onClose }: Rep
             </div>
 
             {/* Details textarea */}
-            <textarea
+            <Textarea
               value={details}
               onChange={(e) => setDetails(e.target.value)}
+              aria-label="Additional details"
               placeholder="Additional details (optional)"
               rows={3}
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text dark:text-subtle/60 placeholder:text-subtle dark:placeholder:text-muted focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 resize-none mb-4"
+              className="resize-none mb-4"
             />
 
             {/* Error message */}

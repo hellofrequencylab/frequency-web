@@ -49,14 +49,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 3005,
+      "baseline": 2450,
       "frozen": {
-        "at": "2026-08-05",
-        "value": 3005,
+        "at": "2026-08-06",
+        "value": 2450,
         "direction": "lowered",
         "basis": "6a00b952da5c",
-        "reason": "The rounded-* sweep across app/** and components/**, retiring literal radii onto the rounded-lg/2xl/pill scale: 3673 -> 3005. CORRECTION TO THE RECORD: three commit messages already pushed on this branch cite this floor at 3533 and 3220. Neither was ever true of a settled tree -- I committed in batches while the sweep agents were still writing, so each message froze a reading its own working tree had already moved past. 3005 is the first number measured with every agent stopped and tsc/eslint/vitest green over the result. Those commits are pushed and are not being rewritten; this reason is where the corrected number lives.",
-        "from": 3673
+        "reason": "The components/** sweep finishing the four-territory pass: 3005 -> 2450. Value-identical conversions only -- rounded-2xl -> rounded-card is 1rem, rounded-lg -> rounded-control is 0.5rem at the baseline generation -- so this is a theming fix with no rendering delta on the default skin. Frozen once against a settled tree with tsc rc=0 and vitest 698/8797 green over the result.",
+        "from": 3005
       },
       "history": [
         {
@@ -149,6 +149,13 @@
           "to": 3005,
           "direction": "lowered",
           "reason": "The rounded-* sweep across app/** and components/**, retiring literal radii onto the rounded-lg/2xl/pill scale: 3673 -> 3005. CORRECTION TO THE RECORD: three commit messages already pushed on this branch cite this floor at 3533 and 3220. Neither was ever true of a settled tree -- I committed in batches while the sweep agents were still writing, so each message froze a reading its own working tree had already moved past. 3005 is the first number measured with every agent stopped and tsc/eslint/vitest green over the result. Those commits are pushed and are not being rewritten; this reason is where the corrected number lives."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 3005,
+          "to": 2450,
+          "direction": "lowered",
+          "reason": "The components/** sweep finishing the four-territory pass: 3005 -> 2450. Value-identical conversions only -- rounded-2xl -> rounded-card is 1rem, rounded-lg -> rounded-control is 0.5rem at the baseline generation -- so this is a theming fix with no rendering delta on the default skin. Frozen once against a settled tree with tsc rc=0 and vitest 698/8797 green over the result."
         }
       ]
     },
@@ -274,14 +281,14 @@
         "app/**/opengraph-image.tsx",
         "app/**/twitter-image.tsx"
       ],
-      "baseline": 53,
+      "baseline": 27,
       "frozen": {
-        "at": "2026-08-05",
-        "value": 53,
+        "at": "2026-08-06",
+        "value": 27,
         "direction": "lowered",
         "basis": "564513ba9761",
-        "reason": "54 -> 53. One literal, incidental to the rounded-* sweep rather than the target of it: a site whose radius was being retired was also carrying a bare white/black and took the semantic token in the same edit. No sweep is claimed for this class -- it moved by one because one file happened to be in the path.",
-        "from": 54
+        "reason": "53 -> 27 as components/** retired bare white/black onto semantic tokens. The residue is carve-outs, not debt: QR quiet zones that a scanner needs true white for, and a video letterbox, each already carrying a KEEP comment. Note the class cannot reach zero as instrumented -- app/print/** is not excluded though DAWN §1 names it a carve-out; recorded in the Phase 9 queue rather than fixed here.",
+        "from": 53
       },
       "history": [
         {
@@ -325,6 +332,13 @@
           "to": 53,
           "direction": "lowered",
           "reason": "54 -> 53. One literal, incidental to the rounded-* sweep rather than the target of it: a site whose radius was being retired was also carrying a bare white/black and took the semantic token in the same edit. No sweep is claimed for this class -- it moved by one because one file happened to be in the path."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 53,
+          "to": 27,
+          "direction": "lowered",
+          "reason": "53 -> 27 as components/** retired bare white/black onto semantic tokens. The residue is carve-outs, not debt: QR quiet zones that a scanner needs true white for, and a video letterbox, each already carrying a KEEP comment. Note the class cannot reach zero as instrumented -- app/print/** is not excluded though DAWN §1 names it a carve-out; recorded in the Phase 9 queue rather than fixed here."
         }
       ]
     },
@@ -390,14 +404,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 530,
+      "baseline": 526,
       "frozen": {
-        "at": "2026-08-05",
-        "value": 530,
-        "direction": "rebased",
+        "at": "2026-08-06",
+        "value": 526,
+        "direction": "lowered",
         "basis": "b608cf8230c7",
-        "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. The old pattern was <button followed by bg-primary anywhere within 500 characters of arbitrary JSX, so it read formatting as much as buttons - collapsing indentation alone moved it 529 -> 564 - and it could bind a button to a bg-primary sitting on a CHILD element several tags away. The new form is an OPENING-TAG form: it stops at the tag own closing angle bracket, with the => alternative there so an onClick arrow handler does not truncate the scan (the same idiom handrolled-icon-button already uses). It therefore counts opening tags carrying the fill, and nothing else. Validated against a brace- and quote-aware mini-parser run over the identical comment-blanked corpus: 530 sites, zero missed, zero extra. The new form needs NO proximity window at all, so the length-preserving comment blanking (CORPUS_BASIS strip-comments@1) is respected trivially - there is no window distance left to preserve. 521 -> 530 is the old instruments error being removed, not nine new buttons, and NO sweep is credited for it.",
-        "from": 521
+        "reason": "530 -> 526. Four hand-rolled buttons carrying the fill on their opening tag composed the Button primitive instead. Incidental to the components sweep rather than the target of it.",
+        "from": 530
       },
       "history": [
         {
@@ -448,6 +462,13 @@
           "to": 530,
           "direction": "rebased",
           "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. The old pattern was <button followed by bg-primary anywhere within 500 characters of arbitrary JSX, so it read formatting as much as buttons - collapsing indentation alone moved it 529 -> 564 - and it could bind a button to a bg-primary sitting on a CHILD element several tags away. The new form is an OPENING-TAG form: it stops at the tag own closing angle bracket, with the => alternative there so an onClick arrow handler does not truncate the scan (the same idiom handrolled-icon-button already uses). It therefore counts opening tags carrying the fill, and nothing else. Validated against a brace- and quote-aware mini-parser run over the identical comment-blanked corpus: 530 sites, zero missed, zero extra. The new form needs NO proximity window at all, so the length-preserving comment blanking (CORPUS_BASIS strip-comments@1) is respected trivially - there is no window distance left to preserve. 521 -> 530 is the old instruments error being removed, not nine new buttons, and NO sweep is credited for it."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 530,
+          "to": 526,
+          "direction": "lowered",
+          "reason": "530 -> 526. Four hand-rolled buttons carrying the fill on their opening tag composed the Button primitive instead. Incidental to the components sweep rather than the target of it."
         }
       ]
     },
@@ -467,14 +488,14 @@
         "components/ui/meter.tsx",
         "components/ui/streak-meter.tsx"
       ],
-      "baseline": 12,
+      "baseline": 8,
       "frozen": {
-        "at": "2026-08-05",
-        "value": 12,
-        "direction": "rebased",
+        "at": "2026-08-06",
+        "value": 8,
+        "direction": "lowered",
         "basis": "d2bda376c3f2",
-        "reason": "Two causes in one number, stated so neither is mistaken for the other. (1) A REAL sweep: standing-hero.tsx replaced a five-line copy of ProgressTrack's own render with the primitive, and challenges-season.tsx did the same for its per-challenge bar - two bars genuinely retired. (2) The corpus basis moved to comment-blanking (strip-comments@1) in the same pass. The sweep is what moved this count; the basis change is recorded because the fingerprint moved with it and a floor measured under a different question is not a floor.",
-        "from": 14
+        "reason": "12 -> 8. Four more hand-rolled progress bars replaced by ProgressTrack, continuing the pass that retired the standing-hero and challenges-season copies.",
+        "from": 12
       },
       "history": [
         {
@@ -504,6 +525,13 @@
           "to": 12,
           "direction": "rebased",
           "reason": "Two causes in one number, stated so neither is mistaken for the other. (1) A REAL sweep: standing-hero.tsx replaced a five-line copy of ProgressTrack's own render with the primitive, and challenges-season.tsx did the same for its per-challenge bar - two bars genuinely retired. (2) The corpus basis moved to comment-blanking (strip-comments@1) in the same pass. The sweep is what moved this count; the basis change is recorded because the fingerprint moved with it and a floor measured under a different question is not a floor."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 12,
+          "to": 8,
+          "direction": "lowered",
+          "reason": "12 -> 8. Four more hand-rolled progress bars replaced by ProgressTrack, continuing the pass that retired the standing-hero and challenges-season copies."
         }
       ]
     },
@@ -653,14 +681,14 @@
         "components/ui/icon.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 122,
+      "baseline": 117,
       "frozen": {
-        "at": "2026-08-05",
-        "value": 122,
+        "at": "2026-08-06",
+        "value": 117,
         "direction": "lowered",
         "basis": "085cd5ead614",
-        "reason": "Sweep side effect: hand-sized controls in the retired tab tracks and the post send button gave up their arbitrary px sizing for scale utilities and role tokens.",
-        "from": 124
+        "reason": "122 -> 117. Arbitrary pixel values retired onto the spacing scale inside the components sweep. Not a wave of its own -- these are the ones that were already in hand while their file was open.",
+        "from": 122
       },
       "history": [
         {
@@ -683,6 +711,13 @@
           "to": 122,
           "direction": "lowered",
           "reason": "Sweep side effect: hand-sized controls in the retired tab tracks and the post send button gave up their arbitrary px sizing for scale utilities and role tokens."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 122,
+          "to": 117,
+          "direction": "lowered",
+          "reason": "122 -> 117. Arbitrary pixel values retired onto the spacing scale inside the components sweep. Not a wave of its own -- these are the ones that were already in hand while their file was open."
         }
       ]
     },
@@ -795,14 +830,14 @@
         "**/*.{test,spec}.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 10,
+      "baseline": 6,
       "frozen": {
-        "at": "2026-08-05",
-        "value": 10,
+        "at": "2026-08-06",
+        "value": 6,
         "direction": "lowered",
         "basis": "3b1142ddb186",
-        "reason": "EARNED FALL, 12 -> 10, and cleanly attributable to one commit: this class held at 12 through #2046 and #2047 and dropped to 10 in 959ddb678 (#2048, \"Rails read as the page, the fold moves to an edge handle\"), which replaced two hand-rolled icon-only buttons with IconButton as part of moving the fold control. It has held at 10 since. Two real adoptions of the primitive, not a pattern change - handrolled-icon-buttons opening-tag pattern is untouched by this pass, so the number is comparable to the one it replaces and the direction is lowered.",
-        "from": 12
+        "reason": "10 -> 6. Four hand-rolled icon buttons composed the icon-button primitive during the components sweep.",
+        "from": 10
       },
       "history": [
         {
@@ -832,6 +867,13 @@
           "to": 10,
           "direction": "lowered",
           "reason": "EARNED FALL, 12 -> 10, and cleanly attributable to one commit: this class held at 12 through #2046 and #2047 and dropped to 10 in 959ddb678 (#2048, \"Rails read as the page, the fold moves to an edge handle\"), which replaced two hand-rolled icon-only buttons with IconButton as part of moving the fold control. It has held at 10 since. Two real adoptions of the primitive, not a pattern change - handrolled-icon-buttons opening-tag pattern is untouched by this pass, so the number is comparable to the one it replaces and the direction is lowered."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 10,
+          "to": 6,
+          "direction": "lowered",
+          "reason": "10 -> 6. Four hand-rolled icon buttons composed the icon-button primitive during the components sweep."
         }
       ]
     },
@@ -849,7 +891,7 @@
         "**/*.{test,spec}.tsx",
         "components/ui/select.tsx"
       ],
-      "baseline": 51,
+      "baseline": 6,
       "history": [
         {
           "at": "2026-08-05",
@@ -864,15 +906,22 @@
           "to": 51,
           "direction": "lowered",
           "reason": "The select sweep: 180 -> 51. Raw <select> elements across app/** and components/** replaced by the Select primitive, which carries the chevron, the focus ring and the disabled treatment that each site was previously re-deriving by hand. The sweep also closed an accessibility gap it surfaced rather than caused -- several converted sites had no accessible name at all, announcing as an unnamed combobox, and now carry aria-label or aria-labelledby pointing at the label already on screen."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 51,
+          "to": 6,
+          "direction": "lowered",
+          "reason": "51 -> 6. The last raw <select> elements outside two chip-filter sites moved onto the Select primitive. The 6 that remain are deliberate: chip filters whose ACTIVE state is a border/bg swap, and cn() is a plain join rather than tailwind-merge, so a tint passed to Select would land beside the primitive's own border-border and emit order would decide the winner. They need a tone prop on Select, not a call-site hack."
         }
       ],
       "frozen": {
-        "at": "2026-08-05",
-        "value": 51,
+        "at": "2026-08-06",
+        "value": 6,
         "direction": "lowered",
         "basis": "08ace42d7483",
-        "reason": "The select sweep: 180 -> 51. Raw <select> elements across app/** and components/** replaced by the Select primitive, which carries the chevron, the focus ring and the disabled treatment that each site was previously re-deriving by hand. The sweep also closed an accessibility gap it surfaced rather than caused -- several converted sites had no accessible name at all, announcing as an unnamed combobox, and now carry aria-label or aria-labelledby pointing at the label already on screen.",
-        "from": 180
+        "reason": "51 -> 6. The last raw <select> elements outside two chip-filter sites moved onto the Select primitive. The 6 that remain are deliberate: chip filters whose ACTIVE state is a border/bg swap, and cn() is a plain join rather than tailwind-merge, so a tint passed to Select would land beside the primitive's own border-border and emit order would decide the winner. They need a tone prop on Select, not a call-site hack.",
+        "from": 51
       }
     },
     {
@@ -890,7 +939,7 @@
         "components/ui/field.tsx",
         "components/ui/checkbox.tsx"
       ],
-      "baseline": 605,
+      "baseline": 184,
       "history": [
         {
           "at": "2026-08-05",
@@ -905,15 +954,22 @@
           "to": 605,
           "direction": "lowered",
           "reason": "The input sweep: 740 -> 605. Raw <input> elements retired onto Field/Input, so the label association, the focus ring and the invalid state come from one place instead of being restated per form. Partial by design -- the sweep took the sites where Field's label+control pairing was a straight substitution and left the ones whose layout does not decompose that way, rather than reshaping forms under cover of a primitives sweep."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 605,
+          "to": 184,
+          "direction": "lowered",
+          "reason": "605 -> 184. components/** retired raw inputs onto Field/Input. Of the remainder, a named subset can never be retired as instrumented: ~18 are type=file held behind hidden/sr-only and fired by a sibling button, which no text-field primitive can receive. The lookahead only excludes type=hidden; recorded in the Phase 9 queue."
         }
       ],
       "frozen": {
-        "at": "2026-08-05",
-        "value": 605,
+        "at": "2026-08-06",
+        "value": 184,
         "direction": "lowered",
         "basis": "8de521171b36",
-        "reason": "The input sweep: 740 -> 605. Raw <input> elements retired onto Field/Input, so the label association, the focus ring and the invalid state come from one place instead of being restated per form. Partial by design -- the sweep took the sites where Field's label+control pairing was a straight substitution and left the ones whose layout does not decompose that way, rather than reshaping forms under cover of a primitives sweep.",
-        "from": 740
+        "reason": "605 -> 184. components/** retired raw inputs onto Field/Input. Of the remainder, a named subset can never be retired as instrumented: ~18 are type=file held behind hidden/sr-only and fired by a sibling button, which no text-field primitive can receive. The lookahead only excludes type=hidden; recorded in the Phase 9 queue.",
+        "from": 605
       }
     },
     {
@@ -930,7 +986,7 @@
         "**/*.{test,spec}.tsx",
         "components/ui/field.tsx"
       ],
-      "baseline": 120,
+      "baseline": 6,
       "history": [
         {
           "at": "2026-08-05",
@@ -945,15 +1001,22 @@
           "to": 120,
           "direction": "lowered",
           "reason": "The textarea sweep: 160 -> 120. Raw <textarea> elements retired onto the Textarea primitive alongside the input sweep, same substitution and same stopping rule: straight swaps taken, layout-entangled sites left for a pass that can look at the form as a whole."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 120,
+          "to": 6,
+          "direction": "lowered",
+          "reason": "120 -> 6. Raw <textarea> is now effectively retired across the product; the 6 remaining sit inside already-bordered containers where the box owns the field chrome and Textarea would draw a border inside a border."
         }
       ],
       "frozen": {
-        "at": "2026-08-05",
-        "value": 120,
+        "at": "2026-08-06",
+        "value": 6,
         "direction": "lowered",
         "basis": "42a90640e4e9",
-        "reason": "The textarea sweep: 160 -> 120. Raw <textarea> elements retired onto the Textarea primitive alongside the input sweep, same substitution and same stopping rule: straight swaps taken, layout-entangled sites left for a pass that can look at the form as a whole.",
-        "from": 160
+        "reason": "120 -> 6. Raw <textarea> is now effectively retired across the product; the 6 remaining sit inside already-bordered containers where the box owns the field chrome and Textarea would draw a border inside a border.",
+        "from": 120
       }
     }
   ]

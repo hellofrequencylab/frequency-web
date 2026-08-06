@@ -155,7 +155,7 @@ export function Dialog({
         // the opaque sheet while still scroll-locking the body and trapping focus off-screen — so uploading
         // or editing a Space image from mobile looked completely dead. Lightboxes (z-[100]), drawers
         // (z-[150]/[160]) and the impersonation banner (z-[200]) still sit above it, as intended.
-        'fixed inset-0 z-[80] flex justify-center overflow-y-auto bg-black/60 backdrop-blur-sm',
+        'fixed inset-0 z-[80] flex justify-center overflow-y-auto bg-ink/60 backdrop-blur-sm',
         // `sheet` goes edge-to-edge on mobile (panel fills the viewport), then a centered card at sm+.
         //
         // SAFE AREAS BELONG HERE, not in each caller. This primitive padded by a flat 16px (and

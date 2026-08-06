@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Zap, Sparkles, Loader2, X } from 'lucide-react'
 import { claimCircle } from '@/app/(main)/circles/[slug]/claim-actions'
 import { Dialog } from '@/components/ui/dialog'
+import { Select } from '@/components/ui/select'
+import { Input, Textarea } from '@/components/ui/field'
 
 type Practice = { id: string; title: string }
 
@@ -43,9 +45,6 @@ export function ClaimCircle({
       }
     })
   }
-
-  const field =
-    'w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none'
 
   return (
     <>
@@ -86,11 +85,11 @@ export function ClaimCircle({
             <div className="space-y-4">
               <label className="block">
                 <span className="text-body-sm font-medium text-text">If this were your circle, what would it be about?</span>
-                <textarea
+                <Textarea
                   value={theAbout}
                   onChange={(e) => setTheAbout(e.target.value)}
                   rows={3}
-                  className={`mt-1 ${field}`}
+                  className="mt-1"
                   placeholder="The thing you actually do, and who it's for."
                 />
               </label>
@@ -98,20 +97,24 @@ export function ClaimCircle({
               {practices.length > 0 && (
                 <label className="block">
                   <span className="text-body-sm font-medium text-text">Which practice would you start with?</span>
-                  <select value={practiceId} onChange={(e) => setPracticeId(e.target.value)} className={`mt-1 ${field}`}>
-                    <option value="">Decide later</option>
+                  <Select
+                    value={practiceId}
+                    onChange={(e) => setPracticeId(e.target.value)}
+                    wrapperClassName="mt-1"
+                    emptyLabel="Decide later"
+                  >
                     {practices.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.title}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
               )}
 
               <label className="block">
                 <span className="text-body-sm font-medium text-text">What should we call it?</span>
-                <input value={theName} onChange={(e) => setTheName(e.target.value)} className={`mt-1 ${field}`} />
+                <Input value={theName} onChange={(e) => setTheName(e.target.value)} className="mt-1" />
               </label>
             </div>
 

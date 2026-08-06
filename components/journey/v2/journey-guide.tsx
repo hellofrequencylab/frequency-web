@@ -46,6 +46,7 @@ import {
 } from '@/lib/journeys/wizard'
 import type { PlanVisibility } from '@/lib/journey-plans'
 import type { JourneyTemplateMeta } from './journey-spark'
+import { Input } from '@/components/ui/field'
 
 /** One phase of the block tree, flattened for display (module children fold into steps). */
 export interface GuidePhaseNode {
@@ -76,9 +77,6 @@ export interface GuideAccess {
   dripAllowed: boolean
   publishCap: number | null
 }
-
-const FIELD =
-  'rounded-card border border-border bg-surface px-3 py-2.5 text-body-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
 const STEP_TYPE_LABELS: Record<string, string> = {
   practice: 'Practice',
@@ -357,23 +355,21 @@ export function JourneyGuide({
                 <div className="flex flex-wrap items-end gap-3">
                   <label className="flex flex-col gap-1">
                     <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Opens</span>
-                    <input
+                    <Input
                       type="date"
                       value={windowStart}
                       max={windowEnd || undefined}
                       onChange={(e) => setWindowStart(e.target.value)}
-                      className={FIELD}
                     />
                   </label>
                   <label className="flex flex-col gap-1">
                     <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Closes</span>
-                    <input
+                    <Input
                       type="date"
                       value={windowEnd}
                       min={windowStart || undefined}
-                      onChange={(e) => setWindowEnd(e.target.value)}
                       aria-invalid={windowInvalid}
-                      className={`${FIELD} ${windowInvalid ? '!border-danger' : ''}`}
+                      onChange={(e) => setWindowEnd(e.target.value)}
                     />
                   </label>
                 </div>
@@ -406,13 +402,14 @@ export function JourneyGuide({
                     ))}
                     <label className="inline-flex items-center gap-1.5 text-meta text-muted">
                       or every
-                      <input
+                      <Input
                         type="number"
                         min={1}
                         max={30}
                         value={drip}
+                        aria-label="Days between phases"
                         onChange={(e) => setDrip(Math.min(30, Math.max(1, Number(e.target.value) || 1)))}
-                        className={`${FIELD} w-16 !px-2 !py-1.5`}
+                        className="w-16 !px-2 !py-1.5"
                       />
                       days
                     </label>

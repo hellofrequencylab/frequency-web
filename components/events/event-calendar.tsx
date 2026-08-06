@@ -151,36 +151,27 @@ export function EventCalendar({
               </IconButton>
             </div>
           )}
-          {/* Grid / list view toggle. Deliberately NOT IconButton: the selected half carries a
-              bg-primary fill and IconButton has no filled variant, and `cn` is a plain join, so a
-              className fill would be settled by stylesheet order rather than by the call site.
-              What was wrong was the SIZE -- 28px, under both the 32px density floor and the 44px
-              coarse-pointer target -- so both halves take the same `tap-target` the kit uses. */}
+          {/* Grid / list view toggle. This composed IconButton once the kit gained a `filled`
+              variant (2026-08-05) — the selected half IS that variant, so the fill now comes from
+              the primitive instead of a className the cascade would settle. It also picks up the
+              32px density floor and the 44px coarse-pointer target the hand-rolled 28px missed. */}
           <div className="inline-flex items-center rounded-control border border-border p-0.5" role="group" aria-label="Calendar view">
-            <button
-              type="button"
+            <IconButton
+              label="Grid view"
+              variant={view === 'grid' ? 'filled' : 'plain'}
               onClick={() => setView('grid')}
               aria-pressed={view === 'grid'}
-              aria-label="Grid view"
-              className={cn(
-                'tap-target inline-flex h-7 w-7 items-center justify-center rounded-control transition-colors',
-                view === 'grid' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated hover:text-text',
-              )}
             >
               <LayoutGrid className="h-4 w-4" aria-hidden />
-            </button>
-            <button
-              type="button"
+            </IconButton>
+            <IconButton
+              label="List view"
+              variant={view === 'list' ? 'filled' : 'plain'}
               onClick={() => setView('list')}
               aria-pressed={view === 'list'}
-              aria-label="List view"
-              className={cn(
-                'tap-target inline-flex h-7 w-7 items-center justify-center rounded-control transition-colors',
-                view === 'list' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated hover:text-text',
-              )}
             >
               <List className="h-4 w-4" aria-hidden />
-            </button>
+            </IconButton>
           </div>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Send } from 'lucide-react'
 import { replyToTicket } from '@/app/(main)/support/actions'
+import { Textarea } from '@/components/ui/field'
 
 // Member reply box on their own ticket. ⌘/Ctrl+Enter or the button sends.
 export function TicketReply({ ticketId, disabled = false }: { ticketId: string; disabled?: boolean }) {
@@ -27,13 +28,14 @@ export function TicketReply({ ticketId, disabled = false }: { ticketId: string; 
   return (
     <div className="space-y-1.5">
       <div className="flex items-end gap-2">
-        <textarea
+        <Textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) send() }}
           rows={2}
+          aria-label="Add a reply"
           placeholder={disabled ? 'This ticket is closed. Reopen it by replying.' : 'Add a reply…'}
-          className="flex-1 resize-none rounded-control border border-border bg-surface px-3 py-2 text-body-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+          className="flex-1 resize-none leading-relaxed"
         />
         <button
           type="button"

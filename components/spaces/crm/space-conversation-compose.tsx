@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { Loader2, PenLine, Send } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { isError, type ActionResult } from '@/lib/action-result'
+import { Textarea } from '@/components/ui/field'
 
 type StartAction = (input: { email: string; subject: string; body: string }) => Promise<ActionResult<{ ref: string }>>
 
@@ -91,13 +92,13 @@ export function SpaceConversationCompose({
             <>
               <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Recipient email" aria-label="Recipient email" className={field} />
               <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" aria-label="Subject" className={field} />
-              <textarea
+              <Textarea
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Write your message..."
                 aria-label="Message"
                 rows={6}
-                className={`${field} resize-none leading-relaxed`}
+                className="resize-none leading-relaxed"
               />
               {error && (
                 <p role="alert" className="text-meta text-danger">

@@ -7,14 +7,12 @@ import { submitProductReviewAction } from '@/app/(main)/marketplace/review-actio
 import { hideProductReviewAction } from '@/app/(main)/admin/marketplace/actions'
 import { isError } from '@/lib/action-result'
 import type { ProductReviewsData } from '@/lib/commerce/reviews'
+import { Textarea } from '@/components/ui/field'
 
 // The reviews block on a Market listing / Space Shop item (Phase 8). Public read: the rating summary
 // + the review wall. A signed-in member (not the seller) leaves ONE review they can revise
 // (submitProductReviewAction upserts). An operator may hide a review (reversible). Semantic DAWN
 // tokens only, voice canon (no em dashes).
-
-const inputCls =
-  'w-full rounded-card border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary'
 
 /** A read-only row of 5 stars filled to `value` (rounded). */
 export function Stars({ value, className = 'h-4 w-4' }: { value: number; className?: string }) {
@@ -157,13 +155,13 @@ function ReviewForm({ productId, initial }: { productId: string; initial: { rati
           </button>
         ))}
       </div>
-      <textarea
+      <Textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
+        aria-label="Share what the product or service was like"
         placeholder="Share what the product or service was like (optional)"
         rows={3}
         maxLength={2000}
-        className={inputCls}
       />
       {error && <p className="text-meta text-danger">{error}</p>}
       {note && (

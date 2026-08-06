@@ -5,7 +5,8 @@ import { Plus } from 'lucide-react'
 import { createChannel } from '@/app/(main)/channels/actions'
 import { StudioWindow } from '@/components/studio/studio-window'
 import { StudioFooter } from '@/components/studio/kit/studio-footer'
-import { Field, Input, Textarea, labelClasses, fieldClasses } from '@/components/ui/field'
+import { Field, Input, Textarea, labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 
 interface ScopeOption {
   scope: 'hub' | 'nexus' | 'outpost'
@@ -142,18 +143,17 @@ export function NewChannelCompose({
 
             {scopeOptions.length > 0 && (
               <Field label="Visible to">
-                <select
+                <Select
                   value={selected}
                   onChange={(e) => setSelected(e.target.value)}
                   disabled={isPending}
-                  className={fieldClasses}
                 >
                   {scopeOptions.map((opt) => (
                     <option key={`${opt.scope}|${opt.scopeId}`} value={`${opt.scope}|${opt.scopeId}`}>
                       {opt.label}
                     </option>
                   ))}
-                </select>
+                </Select>
               </Field>
             )}
 

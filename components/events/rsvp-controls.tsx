@@ -11,6 +11,8 @@ import {
 } from '@/app/(main)/events/[slug]/manage/questionnaire-actions'
 import type { EventQuestion } from '@/lib/events/questions'
 import { IconButton } from '@/components/ui/icon-button'
+import { Select } from '@/components/ui/select'
+import { Input, Textarea } from '@/components/ui/field'
 
 // Detail-page RSVP controls (event Detail template). Three warm states a member
 // can move between — Going · Interested (maybe) · (Join waitlist when full) —
@@ -401,7 +403,7 @@ function RsvpNote({
       <label htmlFor={`rsvp-note-${eventId}`} className="block text-meta font-medium text-muted">
         Say something to the group (optional)
       </label>
-      <textarea
+      <Textarea
         id={`rsvp-note-${eventId}`}
         value={note}
         onChange={(e) => {
@@ -411,7 +413,7 @@ function RsvpNote({
         rows={2}
         placeholder="Bringing snacks, running a little late, can’t wait…"
         disabled={pending}
-        className="w-full resize-none rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
+        className="resize-none"
       />
       <div className="flex items-center gap-2">
         <button
@@ -478,22 +480,20 @@ function EventQuestionnaire({
             </label>
 
             {q.type === 'long_text' ? (
-              <textarea
+              <Textarea
                 id={labelId}
                 value={value}
                 onChange={(e) => setLocal(q.id, e.target.value)}
                 onBlur={(e) => save(q.id, e.target.value)}
                 rows={3}
-                className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
               />
             ) : q.type === 'number' ? (
-              <input
+              <Input
                 id={labelId}
                 type="number"
                 value={value}
                 onChange={(e) => setLocal(q.id, e.target.value)}
                 onBlur={(e) => save(q.id, e.target.value)}
-                className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
               />
             ) : q.type === 'boolean' ? (
               <div className="inline-flex items-center gap-1 rounded-card border border-border bg-surface p-1">
@@ -520,22 +520,16 @@ function EventQuestionnaire({
                 })}
               </div>
             ) : q.type === 'dropdown' ? (
-              <select
+              <Select
                 id={labelId}
                 value={value}
                 onChange={(e) => {
                   setLocal(q.id, e.target.value)
                   save(q.id, e.target.value)
                 }}
-                className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none transition-colors focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
-              >
-                <option value="">Choose one</option>
-                {q.options.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
+                emptyLabel="Choose one"
+                options={q.options}
+              />
             ) : q.type === 'multi_select' ? (
               <MultiSelectAnswer
                 options={q.options}
@@ -546,13 +540,12 @@ function EventQuestionnaire({
                 }}
               />
             ) : (
-              <input
+              <Input
                 id={labelId}
                 type="text"
                 value={value}
                 onChange={(e) => setLocal(q.id, e.target.value)}
                 onBlur={(e) => save(q.id, e.target.value)}
-                className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
               />
             )}
 
@@ -654,14 +647,15 @@ function PlusOneNames({
       <p className="text-meta font-medium text-muted">Who are you bringing? The host needs names.</p>
       {names.map((name, i) => (
         <div key={ids[i] ?? i} className="flex items-center gap-2">
-          <input
+          <Input
             type="text"
             value={name}
             onChange={(e) => update(i, e.target.value)}
             onBlur={() => onSave(names)}
             placeholder={`Guest ${i + 1}`}
+            aria-label={`Guest ${i + 1}`}
             disabled={pending}
-            className="min-w-0 flex-1 rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
+            className="min-w-0 flex-1 py-1.5"
           />
           <IconButton
             label="Remove guest"

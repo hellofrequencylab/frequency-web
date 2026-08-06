@@ -19,8 +19,9 @@
 
 import { useId } from 'react'
 import { ChevronRight, Plus, Trash2 } from 'lucide-react'
-import { Textarea, Input, fieldClasses } from '@/components/ui/field'
+import { Textarea, Input } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { IconButton } from '@/components/ui/icon-button'
 
 // ── Puck field shapes (structural; we only read what we render) ───────────────
@@ -126,9 +127,9 @@ function FieldControl({
     case 'select':
       return (
         <Row label={label} htmlFor={id}>
-          <select
+          <Select
             id={id}
-            className={`${fieldClasses} min-h-[44px]`}
+            className="min-h-[44px]"
             value={String(value ?? '')}
             onChange={(e) => {
               const opt = field.options?.find((o) => String(o.value) === e.target.value)
@@ -140,7 +141,7 @@ function FieldControl({
                 {o.label}
               </option>
             ))}
-          </select>
+          </Select>
         </Row>
       )
 

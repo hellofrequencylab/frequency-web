@@ -14,6 +14,7 @@ import {
 import { transferEventHost } from '@/app/(main)/events/[slug]/social-actions'
 import { isError } from '@/lib/action-result'
 import { labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import type { PlacementView, PlacementTargetType } from '@/lib/events/placement'
@@ -181,11 +182,12 @@ function HostEntityControl({ eventId, slug }: { eventId: string; slug: string })
           : 'You host this personally. Pick a space to run it through the space instead.'}
       </p>
       {options.length > 0 ? (
-        <select
+        <Select
           value={hostSpace?.id ?? 'personal'}
           onChange={(e) => choose(e.target.value)}
           disabled={pending}
-          className="mt-1.5 w-full rounded-control border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-border-strong disabled:opacity-60"
+          aria-label="Who hosts this event"
+          wrapperClassName="mt-1.5"
         >
           <option value="personal">You (personal event)</option>
           {options.map((s) => (
@@ -196,7 +198,7 @@ function HostEntityControl({ eventId, slug }: { eventId: string; slug: string })
           {hostSpace && !options.some((s) => s.id === hostSpace.id) && (
             <option value={hostSpace.id}>{hostSpace.name}</option>
           )}
-        </select>
+        </Select>
       ) : hostSpace ? (
         <p className="mt-1 text-2xs text-muted">Only someone who helps run {hostSpace.name} can change this.</p>
       ) : null}

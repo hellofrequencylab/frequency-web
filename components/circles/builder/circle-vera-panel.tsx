@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Sparkles, Wand2, ChevronDown } from 'lucide-react'
 import type { CircleComposeSection } from '@/lib/ai/circle-compose'
+import { Textarea } from '@/components/ui/field'
 
 // The Vera panel in the Circle builder, mirroring the Journey composer (ADR-302):
 // a collapsible section with two moves. "Fill this section" buttons ask Vera to
@@ -99,13 +100,14 @@ export function CircleVeraPanel({
           </div>
 
           <p className="mt-4 text-2xs font-semibold uppercase tracking-wide text-muted">Tell Vera what to change</p>
-          <textarea
+          <Textarea
             value={change}
             disabled={pending}
             onChange={(e) => setChange(e.target.value)}
             rows={2}
+            aria-label="Tell Vera what to change"
             placeholder="e.g. Make the Meetup biweekly. Or: more beginner-friendly. Or: shorten the about."
-            className="mt-2 w-full resize-y rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary"
+            className="mt-2 resize-y"
           />
           <div className="mt-2">
             <button

@@ -12,6 +12,7 @@ import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { safeImageSrc, safeUploadPreviewSrc } from '@/lib/safe-image-src'
+import { Input } from '@/components/ui/field'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB (post-prep; HEIC is converted and big photos shrink first)
 
@@ -270,13 +271,14 @@ export function EventActivity({
         <div className="mb-4 rounded-card border border-border bg-surface p-3">
           {/* Title — only for a Dispatch (an announcement may carry a headline). */}
           {canDispatch && asDispatch && (
-            <input
+            <Input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Title (optional)"
+              aria-label="Dispatch title"
               disabled={pending}
-              className="mb-2 w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
+              className="mb-2"
             />
           )}
 

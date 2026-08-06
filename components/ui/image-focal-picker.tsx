@@ -228,7 +228,7 @@ export function ImageFocalPicker({
             the sliders below give precise, accessible control. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-pill border-2 border-white bg-primary/80 lift-1 ring-2 ring-black/30"
+          className="pointer-events-none absolute h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-pill border-2 border-on-ink bg-primary/80 lift-1 ring-2 ring-ink/30"
           style={{ left: `${x}%`, top: `${y}%` }}
         />
       </div>

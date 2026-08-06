@@ -250,7 +250,7 @@ function LegacyAbout() {
       </Section>
 
       {/* ── What we hand you — the rebuild, said as three plain things ─────────── */}
-      <Section tone="canvas" width="wide" pad="mk-cont-soft">
+      <Section tone="canvas" width="wide" role="cont-soft">
         <SectionHeading
           align="center"
           eyebrow="Why the rebuild is deliberate"

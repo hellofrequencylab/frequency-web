@@ -10,6 +10,7 @@ import { Send } from 'lucide-react'
 import { useSupportChat } from '@/components/chat/use-support-chat'
 import { sendOperatorChatReplyAction, loadOperatorChatHistoryAction } from '@/app/support-chat/operator-actions'
 import { Textarea } from '@/components/ui/field'
+import { IconButton } from '@/components/ui/icon-button'
 
 export function LiveChatBridge({ chatRef, token }: { chatRef: string; token: string }) {
   const [viewerId] = useState(() => `op-${crypto.randomUUID()}`)
@@ -80,14 +81,9 @@ export function LiveChatBridge({ chatRef, token }: { chatRef: string; token: str
           placeholder="Reply live…"
           className="max-h-24 flex-1 resize-none"
         />
-        <button
-          type="button"
-          onClick={onSend}
-          aria-label="Send"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-on-primary transition-colors hover:bg-primary-hover"
-        >
-          <Send className="h-4 w-4" />
-        </button>
+        <IconButton label="Send" variant="filled" onClick={onSend} className="shrink-0">
+          <Send className="h-4 w-4" aria-hidden />
+        </IconButton>
       </div>
     </div>
   )

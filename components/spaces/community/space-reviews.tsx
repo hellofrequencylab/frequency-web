@@ -12,6 +12,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { SpaceReviewsData, SpaceReviewItem, SpaceReviewResponse } from '@/lib/spaces/content-data'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { Textarea } from '@/components/ui/field'
 
 // THE REVIEWS TAB body (redesign). A best-in-class review experience: a rating summary with a per-star
 // distribution, a sortable review wall where each member card carries a Member badge + relative date,
@@ -19,9 +20,6 @@ import { ProgressTrack } from '@/components/ui/progress-track'
 // member who is NOT the owner leaves ONE review they can revise (submitSpaceReview upserts); an operator
 // may hide a review (hideSpaceReview) and reply to it (respondToSpaceReview). Semantic DAWN tokens only,
 // voice canon (no em or en dashes).
-
-const inputCls =
-  'w-full rounded-card border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary'
 
 type SortKey = 'recent' | 'highest' | 'lowest'
 
@@ -395,13 +393,13 @@ function ResponseBlock({
       {canRespond && editing && (
         <div className="space-y-2 rounded-card border border-border bg-surface-elevated/60 p-3">
           <p className="text-meta font-semibold text-text">Response from {spaceName}</p>
-          <textarea
+          <Textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
+            aria-label="Reply as the space"
             placeholder="Reply as the space. Thank them, or answer what they raised."
             rows={3}
             maxLength={2000}
-            className={inputCls}
           />
           {error && <p className="text-meta text-danger">{error}</p>}
           <div className="flex items-center justify-end gap-2">
@@ -473,13 +471,13 @@ function ReviewForm({ slug, initial }: { slug: string; initial: { rating: number
           </button>
         ))}
       </div>
-      <textarea
+      <Textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
+        aria-label="Share what your visit was like"
         placeholder="Share what your visit was like (optional)"
         rows={3}
         maxLength={2000}
-        className={inputCls}
       />
       {error && <p className="text-meta text-danger">{error}</p>}
       {note && <p className="text-meta text-success" role="status">{note}</p>}

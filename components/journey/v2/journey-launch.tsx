@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { LAUNCH_NEEDS_SPACE_MESSAGE } from '@/lib/journeys/launch-surface'
+import { Input, Textarea } from '@/components/ui/field'
 import {
   scheduleLaunchSendAction,
   scheduleLaunchSeriesAction,
@@ -55,9 +56,6 @@ export interface LaunchAccessView {
   /** The one quiet upsell sentence, when something is held back. */
   upsell: string | null
 }
-
-const FIELD =
-  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-body-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
 /** "Tue, Aug 4 at 9:00 AM" in the reader's own zone. Falls back to the raw value if unparseable. */
 function sendAtLabel(iso: string): string {
@@ -236,36 +234,35 @@ export function JourneyLaunch({
                   <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
                     Subject
                   </span>
-                  <input
+                  <Input
                     type="text"
                     value={edit?.subject ?? ''}
                     onChange={(e) => patch(d.key, { subject: e.target.value })}
                     disabled={done || pending}
-                    className={FIELD}
                   />
                 </label>
                 <label className="block">
                   <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
                     Message
                   </span>
-                  <textarea
+                  <Textarea
                     rows={7}
                     value={edit?.body ?? ''}
                     onChange={(e) => patch(d.key, { body: e.target.value })}
                     disabled={done || pending}
-                    className={`${FIELD} resize-y leading-relaxed`}
+                    className="resize-y leading-relaxed"
                   />
                 </label>
                 <label className="block">
                   <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
                     Sends
                   </span>
-                  <input
+                  <Input
                     type="datetime-local"
                     value={toLocalInput(edit?.sendAt ?? d.sendAt)}
                     onChange={(e) => patch(d.key, { sendAt: fromLocalInput(e.target.value) })}
                     disabled={done || pending}
-                    className={`${FIELD} sm:w-64`}
+                    className="sm:w-64"
                   />
                 </label>
 

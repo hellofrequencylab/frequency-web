@@ -20,6 +20,7 @@ import { Dialog } from '@/components/ui/dialog'
 import { submitListingContact, type OfferTargetKind } from '@/lib/marketplace/listing-offers'
 import { openDockThread } from '@/lib/messages/dock-open'
 import { cn } from '@/lib/utils'
+import { Textarea } from '@/components/ui/field'
 
 /** Cents to a plain USD label, e.g. 29900 -> "$299", 29950 -> "$299.50". Whole dollars drop the cents. */
 function formatCents(cents: number): string {
@@ -178,14 +179,14 @@ export function ListingContactDialog({
                 <label htmlFor="listing-contact-message" className="block text-2xs font-semibold uppercase tracking-wide text-muted">
                   Message
                 </label>
-                <textarea
+                <Textarea
                   id="listing-contact-message"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   rows={4}
                   autoFocus
                   placeholder={`Ask ${sellerName} a question or say you are interested.`}
-                  className="w-full resize-y rounded-control border border-border bg-surface-elevated/50 px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+                  className="resize-y"
                 />
               </div>
 

@@ -429,7 +429,8 @@ export function BuildTimelineBlock({
       tone={t}
       width="wide"
       className={chrome}
-      pad={pad ?? (flow === 'soft' ? 'mk-cont-soft' : undefined)}
+      pad={pad}
+      role={flow === 'soft' ? 'cont-soft' : undefined}
       vis={vis}
     >
       <div className="relative z-10">

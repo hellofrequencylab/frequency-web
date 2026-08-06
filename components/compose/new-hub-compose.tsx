@@ -3,8 +3,9 @@
 import { useState, useTransition } from 'react'
 import { Plus, Building2 } from 'lucide-react'
 import { createHub } from '@/app/(main)/admin/actions'
-import { CreateModal, cmInput } from '@/components/create-modal'
+import { CreateModal } from '@/components/create-modal'
 import { Field, Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 
 interface NexusOption { id: string; name: string }
 
@@ -63,11 +64,10 @@ export function NewHubCompose({
         </Field>
         {nexuses.length > 0 && (
           <Field label={<>Nexus <span className="text-subtle font-normal">(optional)</span></>}>
-            <select value={nexusId} onChange={e => setNexusId(e.target.value)}
-              disabled={isPending} className={cmInput}>
-              <option value="">- None -</option>
+            <Select value={nexusId} onChange={e => setNexusId(e.target.value)}
+              disabled={isPending} emptyLabel="- None -">
               {nexuses.map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
-            </select>
+            </Select>
           </Field>
         )}
       </CreateModal>

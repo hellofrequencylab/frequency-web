@@ -13,6 +13,8 @@ import { isError } from '@/lib/action-result'
 import { loadJourneyOfficialContext, setJourneyOfficial, setJourneyPageConfig, setJourneyWindow } from '@/app/(main)/journeys/actions'
 import { editorPageConfig, WIDGET_META, REQUIRED_WIDGETS } from '@/lib/journey-page-config'
 import type { PageWidgetConfig } from '@/lib/journey-plans'
+import { Select } from '@/components/ui/select'
+import { Input } from '@/components/ui/field'
 
 interface Props {
   planId: string
@@ -179,16 +181,17 @@ export function JourneyAdvanced({
                 <Sparkles className="h-4 w-4" /> {official ? 'Official' : 'Make official'}
               </button>
               {official && (
-                <select
+                <Select
                   value={questId ?? ''}
                   onChange={(e) => saveOfficial({ official: true, questId: e.target.value || null })}
-                  className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
+                  aria-label="Season this Journey belongs to"
+                  wrapperClassName="inline-block w-max max-w-full"
+                  emptyLabel="No Season"
                 >
-                  <option value="">No Season</option>
                   {quests.map((q) => (
                     <option key={q.id} value={q.id}>{q.emoji ? `${q.emoji} ` : ''}{q.name}</option>
                   ))}
-                </select>
+                </Select>
               )}
             </div>
 
@@ -201,25 +204,23 @@ export function JourneyAdvanced({
               <div className="mt-2 flex flex-wrap items-end gap-3">
                 <label className="flex flex-col gap-1">
                   <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Opens</span>
-                  <input
+                  <Input
                     type="date"
                     value={windowStart}
                     max={windowEnd || undefined}
                     onChange={(e) => saveWindowStart(e.target.value)}
-                    className="min-h-11 rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
+                    className="min-h-11 px-2.5 py-1.5"
                   />
                 </label>
                 <label className="flex flex-col gap-1">
                   <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Closes</span>
-                  <input
+                  <Input
                     type="date"
                     value={windowEnd}
                     min={windowStart || undefined}
                     onChange={(e) => saveWindowEnd(e.target.value)}
                     aria-invalid={windowInvalid}
-                    className={`min-h-11 rounded-lg border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary ${
-                      windowInvalid ? 'border-danger' : 'border-border'
-                    }`}
+                    className="min-h-11 px-2.5 py-1.5"
                   />
                 </label>
               </div>

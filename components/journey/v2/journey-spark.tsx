@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Sparkles, ArrowLeft, Loader2, Upload, Video, MapPin, Users, Compass, LayoutTemplate, PenLine } from 'lucide-react'
 import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
 import { InfoTip } from '@/components/ui/info-tip'
+import { Input, Textarea } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
 import { sparkJourneyAction, createJourneyFromSparkAction, extractOverviewFilesAction, createMasterFrameworkAction, createJourneyFromTemplateAction } from '@/app/(main)/journeys/create-actions'
 import type { JourneyPace, ArcWeek, SparkSettings, SparkMeeting } from '@/lib/ai/journey-spark'
@@ -25,9 +26,6 @@ const EMPTY_MEETING: SparkMeeting = { format: null, schedule: null, timezone: nu
 // Either way Vera drafts the identity + weekly arc for review, then committing creates the Journey
 // (+ one Phase per week, opening week's practices) and drops into the editor. Nothing persists until
 // that commit. "Build it myself" hands off to the manual draft editor.
-
-const FIELD =
-  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-body-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
 const WEEK_CHOICES = [2, 4, 6, 8] as const
 
@@ -266,12 +264,12 @@ export function JourneySpark({
           {/* OVERVIEW path */}
           {!picking && usingOverview && !onReview && (
             <div className="space-y-3">
-              <textarea
+              <Textarea
                 autoFocus
                 value={sourceText}
                 onChange={(e) => setSourceText(e.target.value)}
                 rows={8}
-                className={FIELD}
+                aria-label="Your course overview, outline, or notes"
                 placeholder="Paste your course overview, outline, or notes here…"
               />
               <div className="flex flex-wrap items-center gap-3">
@@ -290,10 +288,11 @@ export function JourneySpark({
                     label="Select your outline and every supporting document together. Vera reads PDF, Word, and plain text and weaves them into one Journey. A zip or an image is accepted but not read yet, so unzip first for now."
                   />
                 </span>
-                <input
+                <Input
                   ref={fileRef}
                   type="file"
                   multiple
+                  aria-label="Course documents"
                   accept=".txt,.md,.pdf,.docx,.doc,.rtf,.pages,.zip,application/pdf,text/plain,application/zip"
                   className="hidden"
                   onChange={(e) => { onFiles(e.target.files); e.target.value = '' }}
@@ -326,7 +325,7 @@ export function JourneySpark({
           {/* QUESTIONS path — step 1 landing: the "about" box + the two other ways in. */}
           {!picking && !usingOverview && step === 1 && (
             <>
-              <textarea autoFocus value={who} onChange={(e) => setWho(e.target.value)} rows={4} className={FIELD} placeholder="e.g. Busy parents who feel wired and tired. By the end they keep a ten minute evening wind down and get their evenings back." />
+              <Textarea autoFocus value={who} onChange={(e) => setWho(e.target.value)} rows={4} aria-label={heading.title} placeholder="e.g. Busy parents who feel wired and tired. By the end they keep a ten minute evening wind down and get their evenings back." />
 
               <p className="mt-5 mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Or start another way</p>
 
@@ -363,10 +362,10 @@ export function JourneySpark({
             </>
           )}
           {!usingOverview && step === 2 && (
-            <textarea autoFocus value={topic} onChange={(e) => setTopic(e.target.value)} rows={3} className={FIELD} placeholder="e.g. Sleep and screen habits. Or: general wellbeing." />
+            <Textarea autoFocus value={topic} onChange={(e) => setTopic(e.target.value)} rows={3} aria-label={heading.title} placeholder="e.g. Sleep and screen habits. Or: general wellbeing." />
           )}
           {!usingOverview && step === 3 && (
-            <textarea autoFocus value={outcome} onChange={(e) => setOutcome(e.target.value)} rows={3} className={FIELD} placeholder="e.g. Fall asleep easier and wake up clearer, most days." />
+            <Textarea autoFocus value={outcome} onChange={(e) => setOutcome(e.target.value)} rows={3} aria-label={heading.title} placeholder="e.g. Fall asleep easier and wake up clearer, most days." />
           )}
           {!usingOverview && step === 4 && (
             <div className="space-y-5">
@@ -407,15 +406,15 @@ export function JourneySpark({
                 <>
                   <label className="block">
                     <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Title</span>
-                    <input value={title} onChange={(e) => setTitle(e.target.value)} className={`${FIELD} font-semibold`} placeholder="Name your Journey" />
+                    <Input value={title} onChange={(e) => setTitle(e.target.value)} className="font-semibold" placeholder="Name your Journey" />
                   </label>
                   <label className="block">
                     <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">One-line promise</span>
-                    <input value={promise} onChange={(e) => setPromise(e.target.value)} className={FIELD} placeholder="What they'll walk away with" />
+                    <Input value={promise} onChange={(e) => setPromise(e.target.value)} placeholder="What they'll walk away with" />
                   </label>
                   <label className="block">
                     <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Overview</span>
-                    <textarea value={overview} onChange={(e) => setOverview(e.target.value)} rows={4} className={FIELD} placeholder="What this is and who it's for." />
+                    <Textarea value={overview} onChange={(e) => setOverview(e.target.value)} rows={4} placeholder="What this is and who it's for." />
                   </label>
                   {arc.length > 0 && (
                     <div>
@@ -451,39 +450,42 @@ export function JourneySpark({
                     </div>
 
                     <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                      <input
+                      <Input
                         value={meeting.schedule ?? ''}
                         onChange={(e) => patchMeeting({ schedule: e.target.value || null })}
                         maxLength={120}
                         placeholder="When, e.g. Sundays 7pm"
-                        className={`${FIELD} sm:col-span-2`}
+                        aria-label="When you meet"
+                        className="sm:col-span-2"
                       />
-                      <input
+                      <Input
                         value={meeting.timezone ?? ''}
                         onChange={(e) => patchMeeting({ timezone: e.target.value || null })}
                         maxLength={40}
                         placeholder="Timezone, e.g. ET"
-                        className={FIELD}
+                        aria-label="Timezone"
                       />
                     </div>
 
                     {(meeting.format === 'in_person' || meeting.format === 'hybrid') && (
-                      <input
+                      <Input
                         value={meeting.location ?? ''}
                         onChange={(e) => patchMeeting({ location: e.target.value || null })}
                         maxLength={200}
                         placeholder="Where you meet, e.g. The community hall"
-                        className={`${FIELD} mt-2`}
+                        aria-label="Where you meet"
+                        className="mt-2"
                       />
                     )}
                     {(meeting.format === 'virtual' || meeting.format === 'hybrid') && (
-                      <input
+                      <Input
                         type="url"
                         value={meeting.link ?? ''}
                         onChange={(e) => patchMeeting({ link: e.target.value || null })}
                         maxLength={500}
                         placeholder="Join link, https://"
-                        className={`${FIELD} mt-2`}
+                        aria-label="Join link"
+                        className="mt-2"
                       />
                     )}
 

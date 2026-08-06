@@ -11,8 +11,8 @@ import { LISTING_KINDS, type ListingKind } from '@/lib/marketplace'
 import { getBrowserPosition } from '@/lib/geo-browser'
 import { createListingAction } from '@/app/(main)/classifieds/actions'
 import { Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 
-const FIELD = 'rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
 // Post a marketplace listing via the Studio window. No payment — it just connects
 // neighbors; contact happens over DMs from the listing. (ADR-148)
@@ -100,9 +100,9 @@ export function NewListingButton({ className }: { className?: string }) {
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <StudioField label="Type">
-          <select value={kind} onChange={(e) => setKind(e.target.value as ListingKind)} className={FIELD}>
+          <Select value={kind} onChange={(e) => setKind(e.target.value as ListingKind)}>
             {LISTING_KINDS.map((k) => <option key={k.key} value={k.key}>{k.label}</option>)}
-          </select>
+          </Select>
         </StudioField>
         <StudioField label="Price / terms (free text)">
           <Input value={priceNote} onChange={(e) => setPriceNote(e.target.value)} maxLength={80} placeholder="e.g. $20, or a trade, or free" />

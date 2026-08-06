@@ -9,6 +9,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { UploadCloud, Sparkles, Loader2, Check, ArrowRight, ArrowLeft, FileSpreadsheet, FileText, AlertTriangle, ClipboardType, Undo2 } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Select } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/field'
 import { sourceFromContacts, mergeSources, parseFileLocally } from '@/lib/crm/import/parse'
 import { customFieldKey } from '@/lib/crm/import/map'
 import {
@@ -442,11 +444,11 @@ export function ImportWizard({
               {lockedSpace ? (
                 <p className="rounded-lg border border-border bg-surface-elevated/40 px-3 py-2 text-body-sm font-medium text-text">{lockedSpace.name}</p>
               ) : spaces.length ? (
-                <select className={input} value={spaceId} onChange={(e) => setSpaceId(e.target.value)}>
+                <Select aria-label="Import into" value={spaceId} onChange={(e) => setSpaceId(e.target.value)}>
                   {spaces.map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
-                </select>
+                </Select>
               ) : (
                 <p className="text-body-sm text-muted">You do not manage a Space with a contact list yet.</p>
               )}
@@ -553,12 +555,13 @@ export function ImportWizard({
             </button>
             {showPaste && (
               <div className="mt-3 space-y-2">
-                <textarea
+                <Textarea
                   value={pasted}
                   onChange={(e) => setPasted(e.target.value)}
                   rows={5}
+                  aria-label="Paste a list of people"
                   placeholder={'Paste names, emails, phone numbers, or a few signature blocks. Vera pulls the contacts out.'}
-                  className={`${input} resize-y`}
+                  className="resize-y"
                 />
                 <button
                   type="button"
@@ -619,8 +622,9 @@ export function ImportWizard({
                       <td className="px-3 py-2 font-medium text-text">{m.header}</td>
                       <td className="max-w-[10rem] truncate px-3 py-2 text-subtle" title={sample}>{sample || '—'}</td>
                       <td className="px-3 py-2">
-                        <select
-                          className={`${input} py-1`}
+                        <Select
+                          className="py-1"
+                          aria-label={`Import “${m.header}” as`}
                           value={m.target}
                           onChange={(e) => setColumnTarget(m.header, e.target.value as MappingChoice)}
                         >
@@ -629,7 +633,7 @@ export function ImportWizard({
                           ))}
                           <option value="custom">{FIELD_LABEL.custom}</option>
                           <option value="ignore">{FIELD_LABEL.ignore}</option>
-                        </select>
+                        </Select>
                         {m.target === 'custom' && (
                           <div className="mt-1.5">
                             <input

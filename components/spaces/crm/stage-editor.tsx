@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { isError } from '@/lib/action-result'
 import type { StageKind } from '@/lib/crm/pipeline'
+import { Input } from '@/components/ui/field'
 import {
   createStage,
   renameStage,
@@ -249,7 +250,7 @@ export function StageEditor({
                 </button>
               </div>
 
-              <input
+              <Input
                 type="text"
                 defaultValue={stage.name}
                 aria-label={`Stage name for ${stage.name}`}
@@ -261,7 +262,7 @@ export function StageEditor({
                     ;(e.target as HTMLInputElement).blur()
                   }
                 }}
-                className="min-w-0 flex-1 rounded-control border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
+                className="min-w-0 flex-1 px-2.5 py-1.5"
               />
 
               <label className="sr-only" htmlFor={`kind-${stage.id}`}>

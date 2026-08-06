@@ -4,12 +4,11 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, Label, fieldClasses } from '@/components/ui/field'
+import { Input, Label } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { setSpaceSchedule } from '@/lib/spaces/booking-actions'
 import type { ScheduleSettings, SlotOverride } from '@/lib/spaces/booking'
-import { cn } from '@/lib/utils'
 import { IconButton } from '@/components/ui/icon-button'
 
 // OWNER SCHEDULING RULES EDITOR (client, P2, ADR-605). Buffers before / after a booking, a minimum
@@ -264,20 +263,20 @@ export function BookingScheduleForm({
               <>
                 <label className="flex flex-col gap-1">
                   <span className="text-meta font-medium text-muted">Start</span>
-                  <input
+                  <Input
                     type="time"
                     value={o.start}
                     onChange={(e) => updateOverride(i, { start: e.target.value })}
-                    className={cn(fieldClasses, 'w-32')}
+                    className="w-32"
                   />
                 </label>
                 <label className="flex flex-col gap-1">
                   <span className="text-meta font-medium text-muted">End</span>
-                  <input
+                  <Input
                     type="time"
                     value={o.end}
                     onChange={(e) => updateOverride(i, { end: e.target.value })}
-                    className={cn(fieldClasses, 'w-32')}
+                    className="w-32"
                   />
                 </label>
               </>

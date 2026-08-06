@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Check, Loader2, Pencil, Sparkles, X } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { runSpacePlaybookAction, dismissSpacePlaybook } from '@/app/(main)/spaces/[slug]/crm/playbook-actions'
+import { Textarea } from '@/components/ui/field'
 
 // THE NEXT-BEST-ACTION PLAYBOOK PICKER on the Space contact detail (Resonance Engine · ADR-382 ·
 // docs/NEXT-GEN-CRM.md Altitude 3 "Action: next-best-action playbook picker"). The one-tap move for
@@ -110,12 +111,12 @@ export function SpacePlaybookPicker({
               placeholder="Subject"
               className="w-full rounded-control border border-border bg-canvas px-3 py-2 text-body-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             />
-            <textarea
+            <Textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
+              aria-label="Note"
               placeholder="Write the note in your own words. You approve before it sends."
               rows={4}
-              className="w-full rounded-control border border-border bg-canvas px-3 py-2 text-body-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             />
           </div>
         )}

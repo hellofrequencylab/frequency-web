@@ -13,6 +13,7 @@ import { useStudioDraft } from '../kit/use-studio-draft'
 import { StudioField, StudioNote } from '../kit/studio-field'
 import { SaveStatus, StudioFooter } from '../kit/studio-footer'
 import { Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { DangerModal } from '@/components/admin/danger-modal'
@@ -74,7 +75,6 @@ const WEIGHT_OPTIONS: { value: WeightClass; label: string; zaps: number }[] = [
   { value: 'heavy', label: 'Heavy', zaps: 15 },
 ]
 
-const FIELD = 'rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
 export interface PracticeBuilderProps {
   id: string
@@ -455,10 +455,9 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
       {/* Taxonomy + cadence */}
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <StudioField label="Cadence">
-          <select value={cadence} onChange={(e) => { setCadence(e.target.value); queueSave({ cadence: e.target.value }) }} className={FIELD}>
-            <option value="">No set cadence</option>
+          <Select value={cadence} onChange={(e) => { setCadence(e.target.value); queueSave({ cadence: e.target.value }) }} emptyLabel="No set cadence">
             {CADENCES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
+          </Select>
         </StudioField>
         <StudioField label="Time (minutes)">
           <Input
@@ -497,26 +496,24 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           />
         )}
         <StudioField label="Category">
-          <select value={category} onChange={(e) => { setCategory(e.target.value); queueSave({ category: e.target.value || null }) }} className={FIELD}>
-            <option value="">None</option>
+          <Select value={category} onChange={(e) => { setCategory(e.target.value); queueSave({ category: e.target.value || null }) }} emptyLabel="None">
             {/* An off-list stored value (e.g. the retired `human-relating`) stays selectable and
                 MARKED, never silently rewritten or shown as "None" (the ADR-879 rule). */}
             {category !== '' && !isChannelCategory(category) && (
               <option value={category}>{category} (not a standard category)</option>
             )}
             {CHANNEL_CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
-          </select>
+          </Select>
         </StudioField>
         <StudioField label="Sub Focus">
-          <select
+          <Select
             value={effectiveSubId}
             onChange={(e) => { setSubcategoryId(e.target.value); queueSave({ subcategory_id: e.target.value || null }) }}
             disabled={!domainId}
-            className={`${FIELD} disabled:opacity-50`}
+            emptyLabel={domainId ? 'None' : 'Pick a Focus first'}
           >
-            <option value="">{domainId ? 'None' : 'Pick a Focus first'}</option>
             {subOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
+          </Select>
         </StudioField>
       </div>
 

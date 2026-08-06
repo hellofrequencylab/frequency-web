@@ -29,6 +29,7 @@ import { isError, type ActionResult } from '@/lib/action-result'
 import { WARMUP_MESSAGE_MAX } from '@/lib/on-air'
 import type { CheckConfig } from '@/lib/journeys/store'
 import { PillarChip } from './pillar-chip'
+import { Input, Textarea } from '@/components/ui/field'
 
 export interface EditorBlock {
   id: string
@@ -71,11 +72,10 @@ const isAnchor = (b: EditorBlock): boolean =>
 function CheckEditor({ initial, disabled, onSave }: { initial: CheckConfig | null; disabled: boolean; onSave: (c: CheckConfig) => void }) {
   const [cfg, setCfg] = useState<CheckConfig>(() => initial ?? { question: '', options: ['', ''], answer: 0, explanation: '' })
   const commit = (next: CheckConfig) => { setCfg(next); onSave(next) }
-  const inputCls = 'w-full rounded-md border border-border bg-surface px-2 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none'
   return (
     <div className="mt-2 space-y-2 rounded-lg border border-border bg-surface p-2.5">
       <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Knowledge check</p>
-      <input value={cfg.question} disabled={disabled} onChange={(e) => setCfg({ ...cfg, question: e.target.value })} onBlur={() => onSave(cfg)} placeholder="Question" className={inputCls} />
+      <Input value={cfg.question} disabled={disabled} onChange={(e) => setCfg({ ...cfg, question: e.target.value })} onBlur={() => onSave(cfg)} aria-label="Question" placeholder="Question" />
       <div className="space-y-1.5">
         {cfg.options.map((opt, i) => (
           <div key={i} className="flex items-center gap-2">
@@ -89,7 +89,7 @@ function CheckEditor({ initial, disabled, onSave }: { initial: CheckConfig | nul
             >
               {cfg.answer === i ? <Check className="h-3.5 w-3.5" /> : String.fromCharCode(65 + i)}
             </button>
-            <input value={opt} disabled={disabled} onChange={(e) => { const o = [...cfg.options]; o[i] = e.target.value; setCfg({ ...cfg, options: o }) }} onBlur={() => onSave(cfg)} placeholder={`Option ${i + 1}`} className={inputCls} />
+            <Input value={opt} disabled={disabled} onChange={(e) => { const o = [...cfg.options]; o[i] = e.target.value; setCfg({ ...cfg, options: o }) }} onBlur={() => onSave(cfg)} aria-label={`Option ${i + 1}`} placeholder={`Option ${i + 1}`} />
             {cfg.options.length > 2 && (
               <button type="button" disabled={disabled} onClick={() => { const o = cfg.options.filter((_, j) => j !== i); commit({ ...cfg, options: o, answer: Math.min(cfg.answer, o.length - 1) }) }} aria-label="Remove option" className="flex h-8 w-8 shrink-0 items-center justify-center rounded text-subtle hover:text-danger">
                 <X className="h-3.5 w-3.5" />
@@ -103,7 +103,7 @@ function CheckEditor({ initial, disabled, onSave }: { initial: CheckConfig | nul
           <Plus className="h-3.5 w-3.5" /> Add option
         </button>
       )}
-      <input value={cfg.explanation ?? ''} disabled={disabled} onChange={(e) => setCfg({ ...cfg, explanation: e.target.value })} onBlur={() => onSave(cfg)} placeholder="Why (shown after they answer)" className={inputCls} />
+      <Input value={cfg.explanation ?? ''} disabled={disabled} onChange={(e) => setCfg({ ...cfg, explanation: e.target.value })} onBlur={() => onSave(cfg)} aria-label="Why this answer is right" placeholder="Why (shown after they answer)" />
       <p className="text-2xs text-muted">Tap the circle to mark the correct option. Members get instant feedback and can retry.</p>
     </div>
   )
@@ -176,27 +176,29 @@ function SlotCoaching({
           <Sparkles className="h-3.5 w-3.5" /> {busy ? 'Drafting…' : value ? 'Redraft' : 'Draft with Vera'}
         </button>
       </div>
-      <textarea
+      <Textarea
         value={value}
         disabled={disabled || busy}
         onChange={(e) => setValue(e.target.value)}
         onBlur={() => updateBlockAction(slug, itemId, { coachingPrompt: value })}
         rows={2}
+        aria-label="Vera's coaching prompt for this step"
         placeholder="What Vera nudges them with when they reach this practice. Draft it with Vera or write your own."
-        className="mt-1.5 w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none"
+        className="mt-1.5 resize-y"
       />
       {/* Per-step warm-up override (ADR-592, P5): shown in the timer pre-roll for this step, over
           the practice's own warm-up message. Blank = the practice's message (or a silent pre-roll). */}
       <label className="mt-2 block text-2xs font-semibold uppercase tracking-wide text-muted">Warm-up message for this step</label>
-      <textarea
+      <Textarea
         value={warmup}
         disabled={disabled}
         onChange={(e) => setWarmup(e.target.value)}
         onBlur={() => setLeafWarmupMessageAction(slug, itemId, warmup)}
         rows={2}
         maxLength={WARMUP_MESSAGE_MAX}
+        aria-label="Warm-up message for this step"
         placeholder="Shown as the timer counts in, just for this Journey step. Leave blank to use the practice's own."
-        className="mt-1 w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none"
+        className="mt-1 resize-y"
       />
       {error && <p className="mt-1 text-2xs text-danger">{error}</p>}
     </div>
@@ -297,11 +299,12 @@ export function JourneyEditor({
     <div key={m.id} className="rounded-card border border-border bg-canvas p-3">
       <div className="flex flex-wrap items-center gap-2">
         <span className="shrink-0 text-2xs font-semibold uppercase tracking-wide text-muted">Module</span>
-        <input
+        <Input
           defaultValue={m.title}
           onBlur={(e) => run(() => updateBlockAction(slug, m.id, { title: e.target.value }))}
+          aria-label="Module title"
           placeholder="Module title"
-          className="min-w-[8rem] flex-1 rounded-md border border-border bg-canvas px-1.5 py-1.5 text-body-sm font-semibold text-text hover:border-border focus:border-primary focus:outline-none"
+          className="min-w-[8rem] flex-1 px-1.5 py-1.5 font-semibold"
         />
         <span className="ml-auto flex shrink-0 items-center gap-0.5">
           <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, m.id, 'up'))} className="flex h-9 w-9 items-center justify-center rounded text-subtle hover:text-text" aria-label="Move up"><ChevronUp className="h-3.5 w-3.5" /></button>
@@ -468,22 +471,23 @@ export function JourneyEditor({
               <Anchor className="h-3.5 w-3.5" /> Anchor
             </span>
           )}
-          <input
+          <Input
             defaultValue={l.title}
             onBlur={(e) => run(() => updateBlockAction(slug, l.id, { title: e.target.value }))}
-            className="min-w-[8rem] flex-1 rounded-md border border-border bg-canvas px-1.5 py-1.5 text-body-sm text-text hover:border-border focus:border-primary focus:outline-none"
+            className="min-w-[8rem] flex-1 px-1.5 py-1.5"
+            aria-label={isExtra ? 'Challenge name' : isPractice ? 'Practice step' : 'Lesson title'}
             placeholder={isExtra ? 'Challenge name' : isPractice ? 'Practice step' : 'Lesson title'}
           />
           {isExtra && (
             <label className="flex shrink-0 items-center gap-1 text-meta text-muted" title="Bonus Zaps paid on completion">
               <Zap className="h-3.5 w-3.5 text-signal-strong" aria-hidden />
-              <input
+              <Input
                 type="number"
                 min={0}
                 max={500}
                 defaultValue={l.bonusZaps}
                 onBlur={(e) => run(() => updateBlockAction(slug, l.id, { bonusZaps: Number(e.target.value) }))}
-                className="w-14 rounded-md border border-border bg-surface px-1.5 py-1 text-meta text-text focus:border-primary focus:outline-none"
+                className="w-14 px-1.5 py-1 text-meta"
                 aria-label="Bonus Zaps"
               />
               Zaps
@@ -510,12 +514,13 @@ export function JourneyEditor({
         </div>
         {open && (
           <>
-            <textarea
+            <Textarea
               defaultValue={l.body}
               onBlur={(e) => run(() => updateBlockAction(slug, l.id, { body: e.target.value }))}
               rows={2}
+              aria-label={isExtra ? 'Challenge details' : isPractice ? 'Note for this practice step' : 'Lesson content'}
               placeholder={isExtra ? 'What is the challenge, and what counts as done?' : isPractice ? 'A note for this practice step (optional).' : 'Lesson content (markdown). Paste a YouTube/Vimeo/video link to embed it.'}
-              className="mt-2 w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-body-sm text-text focus:border-primary focus:outline-none"
+              className="mt-2 resize-y"
             />
             {!isExtra && l.blockType === 'check' && (
               <CheckEditor
@@ -718,10 +723,11 @@ export function JourneyEditor({
               {phaseOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             </button>
             <Layers className="h-4 w-4 shrink-0 text-subtle" />
-            <input
+            <Input
               defaultValue={p.title}
               onBlur={(e) => run(() => updateBlockAction(slug, p.id, { title: e.target.value }))}
-              className="min-w-[8rem] flex-1 rounded-lg border border-border bg-canvas px-1.5 py-1.5 text-body font-semibold text-text hover:border-border focus:border-primary focus:outline-none"
+              className="min-w-[8rem] flex-1 px-1.5 py-1.5 text-body font-semibold"
+              aria-label="Phase title"
               placeholder="Phase title"
             />
             <span className="ml-auto flex shrink-0 items-center gap-0.5">
@@ -735,12 +741,13 @@ export function JourneyEditor({
           {phaseOpen && (
             <>
               {/* The week's focus (the arc) — Vera fills it from onboarding; editable here. */}
-              <textarea
+              <Textarea
                 defaultValue={p.body}
                 onBlur={(e) => run(() => updateBlockAction(slug, p.id, { body: e.target.value }))}
                 rows={2}
+                aria-label="What this week is about"
                 placeholder="What this week is about (its focus). Optional."
-                className="mt-3 w-full resize-y rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-muted focus:border-primary focus:outline-none"
+                className="mt-3 resize-y text-muted"
               />
               {stepCount === 0 && (
                 // An unfilled week: let Vera read the outline + earlier weeks and fill this one. She

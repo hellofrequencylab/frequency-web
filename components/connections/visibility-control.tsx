@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Globe, Lock, Users } from 'lucide-react'
 import { setVisibility } from '@/app/(main)/connections/actions'
 import type { Visibility } from '@/lib/connections/types'
+import { Select } from '@/components/ui/select'
 
 // The owner-only visibility control for one capture (ADR-132/154/778). Up to three tiers:
 //   • Private — only you.
@@ -90,18 +91,18 @@ export function VisibilityControl({
       {visibility === 'shared' && canShare && (
         <label className="flex flex-col gap-1 text-body-sm">
           <span className="text-meta font-medium text-muted">Share with the team at</span>
-          <select
+          <Select
             value={spaceId}
             disabled={pending}
             onChange={(e) => apply('shared', e.target.value)}
-            className="w-full max-w-xs rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50"
+            wrapperClassName="max-w-xs"
           >
             {operatedSpaces.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
       )}
 

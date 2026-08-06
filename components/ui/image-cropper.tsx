@@ -334,22 +334,22 @@ export function ImageCropper({
               {/* Dimmed mask outside the crop — four bands around the selection so the crop reads clearly. */}
               <div
                 aria-hidden
-                className="pointer-events-none absolute inset-x-0 top-0 bg-black/50"
+                className="pointer-events-none absolute inset-x-0 top-0 bg-ink/50"
                 style={{ height: rect.y }}
               />
               <div
                 aria-hidden
-                className="pointer-events-none absolute inset-x-0 bottom-0 bg-black/50"
+                className="pointer-events-none absolute inset-x-0 bottom-0 bg-ink/50"
                 style={{ height: display.h - (rect.y + rect.h) }}
               />
               <div
                 aria-hidden
-                className="pointer-events-none absolute left-0 bg-black/50"
+                className="pointer-events-none absolute left-0 bg-ink/50"
                 style={{ top: rect.y, height: rect.h, width: rect.x }}
               />
               <div
                 aria-hidden
-                className="pointer-events-none absolute right-0 bg-black/50"
+                className="pointer-events-none absolute right-0 bg-ink/50"
                 style={{ top: rect.y, height: rect.h, width: display.w - (rect.x + rect.w) }}
               />
 
@@ -358,7 +358,7 @@ export function ImageCropper({
                 role="group"
                 aria-label="Crop selection. Drag to move, drag a corner to resize."
                 onPointerDown={(e) => beginDrag(e, { kind: 'move' })}
-                className="absolute cursor-move border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,0.4)]"
+                className="absolute cursor-move border-2 border-on-ink shadow-[0_0_0_1px_rgba(0,0,0,0.4)]"
                 style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
               >
                 {HANDLES.map((handle) => {
@@ -373,7 +373,7 @@ export function ImageCropper({
                       key={handle}
                       onPointerDown={(e) => beginDrag(e, { kind: 'resize', handle })}
                       className={cn(
-                        'absolute h-3 w-3 rounded-pill border-2 border-white bg-primary shadow ring-1 ring-black/30',
+                        'absolute h-3 w-3 rounded-pill border-2 border-on-ink bg-primary shadow ring-1 ring-ink/30',
                         pos[handle],
                       )}
                     />

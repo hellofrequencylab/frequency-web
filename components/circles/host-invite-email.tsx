@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Mail, Check } from 'lucide-react'
 import { inviteByEmail } from '@/app/(main)/circles/actions'
+import { Input } from '@/components/ui/field'
 
 // Invite by email from Host Tools. Sends through the durable email queue.
 export function HostInviteEmail({ circleId }: { circleId: string }) {
@@ -28,12 +29,13 @@ export function HostInviteEmail({ circleId }: { circleId: string }) {
 
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-      <input
+      <Input
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Invite by email"
-        className="w-full min-w-0 rounded-control border border-border bg-surface px-2.5 py-2 text-meta text-text placeholder:text-subtle focus:border-border-strong focus:outline-none sm:w-auto sm:py-1.5"
+        aria-label="Invite by email"
+        className="min-w-0 px-2.5 text-meta sm:w-auto sm:py-1.5"
       />
       <button
         onClick={submit}

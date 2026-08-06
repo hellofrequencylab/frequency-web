@@ -21,13 +21,11 @@ import { PostBody } from '@/components/feed/post-body'
 import { ToggleRow } from '@/components/entity-blocks/controls/field-controls'
 import { isError } from '@/lib/action-result'
 import type { SpaceCommunityPost, SpaceUpdateComment, SpaceUpdateReactions } from '@/lib/spaces/content-data'
+import { Input, Textarea } from '@/components/ui/field'
 
 // THE COMMUNITY FEED (business Community tab). Facebook/Yelp-style: the business posts Updates, FOLLOWERS
 // may also post (when the business allows it), and members react + comment. PUBLIC read; only followers (or
 // the operator) may interact, enforced server-side. Semantic DAWN tokens only, voice canon (no em dashes).
-
-const inputCls =
-  'w-full rounded-card border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary'
 
 /** Push a chosen file through the Space's follower-gated community-image action and hand the shared
  *  Composer back the public URL (or null on failure, which the Composer surfaces). */
@@ -132,12 +130,12 @@ function BrandComposer({ slug, spaceId }: { slug: string; spaceId: string }) {
       submitLabel="Post"
       onUploadImage={(file) => uploadSpaceImage(slug, file)}
       topSlot={
-        <input
+        <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          aria-label="Title"
           placeholder="Add a title (optional)"
           maxLength={200}
-          className={inputCls}
         />
       }
       onSubmit={async ({ body, imageUrl }) => {
@@ -366,13 +364,13 @@ function PostCard({
       {/* Comment box (followers / operator only) */}
       {canInteract && anchorId && (
         <div className="flex items-start gap-2 pt-1">
-          <textarea
+          <Textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
+            aria-label="Write a comment"
             placeholder="Write a comment"
             rows={1}
             maxLength={5000}
-            className={inputCls}
           />
           <button
             type="button"

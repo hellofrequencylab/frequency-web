@@ -12,6 +12,8 @@
 
 import { Plus, X } from 'lucide-react'
 import { hasAnyDetails } from '@/lib/connections/normalize'
+import { Select } from '@/components/ui/select'
+import { Input } from '@/components/ui/field'
 import type {
   ContactDetails,
   ContactPhone,
@@ -19,9 +21,6 @@ import type {
   ContactLink,
   ContactOtherDetail,
 } from '@/lib/connections/types'
-
-const input =
-  'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30'
 
 type SectionKey = 'phones' | 'emails' | 'addresses' | 'services' | 'certifications' | 'hours' | 'links' | 'other'
 
@@ -120,15 +119,14 @@ export function DetailsEditor({
         <SectionShell label="Phones">
           {(d.phones ?? []).map((p, i) => (
             <div key={i} className="flex gap-2">
-              <input
-                className={`${input} max-w-[7.5rem]`}
+              <Input
+                className="max-w-[7.5rem]"
                 value={p.label}
                 onChange={(e) => set({ phones: editRow(d.phones!, i, { label: e.target.value }) })}
                 placeholder="mobile"
                 aria-label={`Phone ${i + 1} label`}
               />
-              <input
-                className={input}
+              <Input
                 type="tel"
                 value={p.number}
                 onChange={(e) => set({ phones: editRow(d.phones!, i, { number: e.target.value }) })}
@@ -153,15 +151,14 @@ export function DetailsEditor({
         <SectionShell label="Emails">
           {(d.emails ?? []).map((p, i) => (
             <div key={i} className="flex gap-2">
-              <input
-                className={`${input} max-w-[7.5rem]`}
+              <Input
+                className="max-w-[7.5rem]"
                 value={p.label}
                 onChange={(e) => set({ emails: editRow(d.emails!, i, { label: e.target.value }) })}
                 placeholder="work"
                 aria-label={`Email ${i + 1} label`}
               />
-              <input
-                className={input}
+              <Input
                 type="email"
                 value={p.address}
                 onChange={(e) => set({ emails: editRow(d.emails!, i, { address: e.target.value }) })}
@@ -218,8 +215,7 @@ export function DetailsEditor({
       {d.hours !== undefined && (
         <SectionShell label="Hours">
           <div className="flex gap-2">
-            <input
-              className={input}
+            <Input
               value={d.hours}
               onChange={(e) => set({ hours: e.target.value })}
               placeholder="Mon to Fri, 9 to 5"
@@ -234,8 +230,8 @@ export function DetailsEditor({
         <SectionShell label="Links">
           {(d.links ?? []).map((l, i) => (
             <div key={i} className="flex gap-2">
-              <select
-                className={`${input} max-w-[7.5rem]`}
+              <Select
+                wrapperClassName="max-w-[7.5rem]"
                 value={l.kind}
                 onChange={(e) => set({ links: editRow(d.links!, i, { kind: e.target.value as ContactLink['kind'] }) })}
                 aria-label={`Link ${i + 1} kind`}
@@ -244,9 +240,8 @@ export function DetailsEditor({
                 <option value="booking">Booking</option>
                 <option value="portfolio">Portfolio</option>
                 <option value="other">Other</option>
-              </select>
-              <input
-                className={input}
+              </Select>
+              <Input
                 value={l.url}
                 onChange={(e) => set({ links: editRow(d.links!, i, { url: e.target.value, label: e.target.value }) })}
                 placeholder="studio.com/book"
@@ -270,15 +265,14 @@ export function DetailsEditor({
         <SectionShell label="Other">
           {(d.other ?? []).map((o, i) => (
             <div key={i} className="flex gap-2">
-              <input
-                className={`${input} max-w-[7.5rem]`}
+              <Input
+                className="max-w-[7.5rem]"
                 value={o.label}
                 onChange={(e) => set({ other: editRow(d.other!, i, { label: e.target.value }) })}
                 placeholder="tagline"
                 aria-label={`Other ${i + 1} label`}
               />
-              <input
-                className={input}
+              <Input
                 value={o.value}
                 onChange={(e) => set({ other: editRow(d.other!, i, { value: e.target.value }) })}
                 placeholder="Healing through sound"
@@ -340,8 +334,7 @@ function StringListSection({
     <SectionShell label={label}>
       {rows.map((v, i) => (
         <div key={i} className="flex gap-2">
-          <input
-            className={input}
+          <Input
             value={v}
             onChange={(e) => onRows(rows.map((r, idx) => (idx === i ? e.target.value : r)))}
             placeholder={placeholder}

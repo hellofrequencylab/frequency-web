@@ -290,6 +290,9 @@ export function AccentPicker({
                 )}
                 style={{ backgroundColor: s.hex }}
               >
+                {/* KEEP text-white: the tick sits on the operator's own chosen hex, which is a
+                    literal colour and not a themed surface, so there is no token that resolves
+                    against it. The drop-shadow is what carries it over a pale swatch. */}
                 {active && <Check className="h-4 w-4 text-white [filter:drop-shadow(0_1px_1px_rgb(0_0_0/0.5))]" aria-hidden />}
               </button>
             )

@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { Plus, Star, X } from 'lucide-react'
-import { fieldClasses } from '@/components/ui/field'
+import { Input, Textarea } from '@/components/ui/field'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Select } from '@/components/ui/select'
 import {
   MAX_PACKAGE_OPTIONS,
   MIN_PACKAGE_OPTIONS,
@@ -81,7 +83,7 @@ function DollarField({
       <label htmlFor={id} className={LABEL}>
         {label}
       </label>
-      <input
+      <Input
         id={id}
         type="number"
         min="0"
@@ -90,7 +92,6 @@ function DollarField({
         value={text}
         disabled={disabled}
         placeholder={placeholder ?? '0.00'}
-        className={fieldClasses}
         onChange={(e) => {
           setText(e.target.value)
           onCents(dollarsToCents(e.target.value))
@@ -119,13 +120,12 @@ function PickAmountsField({
       <label htmlFor={id} className={LABEL}>
         Quick-pick amounts (one per line)
       </label>
-      <textarea
+      <Textarea
         id={id}
         rows={3}
         value={text}
         disabled={disabled}
         placeholder={'25\n50\n100'}
-        className={fieldClasses}
         onChange={(e) => {
           setText(e.target.value)
           const out: number[] = []
@@ -194,11 +194,10 @@ function PriceControl({
           <label htmlFor={`${idPrefix}-mode`} className={LABEL}>
             Pricing
           </label>
-          <select
+          <Select
             id={`${idPrefix}-mode`}
             value={mode}
             disabled={disabled}
-            className={fieldClasses}
             onChange={(e) => setMode(e.target.value as PriceMode)}
           >
             {modes.map((m) => (
@@ -206,7 +205,7 @@ function PriceControl({
                 {MODE_LABEL[m]}
               </option>
             ))}
-          </select>
+          </Select>
           <p className={HINT}>{MODE_HINT[mode]}</p>
         </div>
       )}
@@ -254,18 +253,15 @@ function PriceControl({
           />
 
           {!lockDonation && (
-            <label className="flex items-center gap-2 text-body-sm text-text">
-              <input
-                type="checkbox"
-                checked={donation}
-                disabled={disabled}
-                className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
-                onChange={(e) =>
-                  onChange({ ...value, mode: 'choose', donation: e.target.checked || undefined })
-                }
-              />
-              Donation based
-            </label>
+            <Checkbox
+              checked={donation}
+              disabled={disabled}
+              label="Donation based"
+              wrapperClassName="text-body-sm text-text"
+              onChange={(e) =>
+                onChange({ ...value, mode: 'choose', donation: e.target.checked || undefined })
+              }
+            />
           )}
           {!lockDonation && (
             <p className={HINT}>Frame this as a gift and show a range of quick-pick amounts.</p>
@@ -279,15 +275,14 @@ function PriceControl({
                     <label htmlFor={`${idPrefix}-fund`} className={LABEL}>
                       Fund label
                     </label>
-                    <input
+                    <Input
                       id={`${idPrefix}-fund`}
                       type="text"
                       maxLength={80}
                       value={fund.label}
                       disabled={disabled}
                       placeholder="General fund"
-                      className={fieldClasses}
-                      onChange={(e) => fund.onLabelChange(e.target.value)}
+                                    onChange={(e) => fund.onLabelChange(e.target.value)}
                     />
                     <p className={HINT}>Name the fund. Buyers see where their gift goes.</p>
                   </div>
@@ -296,15 +291,14 @@ function PriceControl({
                       <label htmlFor={`${idPrefix}-fund-desc`} className={LABEL}>
                         Where gifts go <span className="font-normal text-subtle">(optional)</span>
                       </label>
-                      <textarea
+                      <Textarea
                         id={`${idPrefix}-fund-desc`}
                         rows={2}
                         maxLength={500}
                         value={fund.description ?? ''}
                         disabled={disabled}
                         placeholder="Where gifts go, in a line or two."
-                        className={fieldClasses}
-                        onChange={(e) => fund.onDescriptionChange?.(e.target.value)}
+                                        onChange={(e) => fund.onDescriptionChange?.(e.target.value)}
                       />
                     </div>
                   )}
@@ -434,15 +428,14 @@ export function PriceModeEditor({
             className="space-y-3 rounded-card border border-border-strong bg-surface-elevated p-4"
           >
             <div className="flex items-center gap-2">
-              <input
+              <Input
                 type="text"
                 value={opt.name}
                 disabled={disabled}
                 maxLength={60}
                 placeholder="Option name"
                 aria-label={`Option ${idx + 1} name`}
-                className={fieldClasses}
-                onChange={(e) => updateOption(idx, { name: e.target.value })}
+                        onChange={(e) => updateOption(idx, { name: e.target.value })}
               />
               {options.length > MIN_PACKAGE_OPTIONS && (
                 <button

@@ -3,8 +3,9 @@
 import { useState, useTransition } from 'react'
 import { Plus, Network } from 'lucide-react'
 import { createNexus } from '@/app/(main)/admin/actions'
-import { CreateModal, cmInput } from '@/components/create-modal'
+import { CreateModal } from '@/components/create-modal'
 import { Field, Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 
 export function NewNexusCompose({
   outposts,
@@ -62,13 +63,13 @@ export function NewNexusCompose({
             placeholder="e.g. San Diego" required disabled={isPending} />
         </Field>
         <Field label="Outpost *">
-          <select value={outpostId} onChange={e => setOutpostId(e.target.value)}
-            required disabled={isPending} className={cmInput}>
+          <Select value={outpostId} onChange={e => setOutpostId(e.target.value)}
+            required disabled={isPending}>
             <option value="" disabled>Select an outpost…</option>
             {outposts.map(o => (
               <option key={o.id} value={o.id}>{o.name}</option>
             ))}
-          </select>
+          </Select>
         </Field>
         <Field label="Member cap">
           <Input type="number" min={100} max={10000} value={memberCap}
