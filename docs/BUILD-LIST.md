@@ -923,3 +923,73 @@ carve-out, so its floor is permanently 2. Full detail in `docs/DAWN-CONVERSION.m
 against it. That is how three commit messages on this branch came to cite a `literal-radius` floor
 that was already stale when written. An instrument correction changes the *question*, so it lands on
 a settled tree with its own re-freeze and its own reason.
+
+---
+
+## Post-merge sweep (2026-08-06, after #2049)
+
+Verified on merged `main` (`5d15a1efa`): `tsc` rc=0, and `check:adoption`, `check:seo`,
+`check:headers`, `check:contrast`, `check:menu` all exit 0.
+
+### 🔴 The migration ledger is 8 rows behind the repo, and the schema is NOT the problem
+
+**Every migration in the repo is applied to the database.** All eight files above the ledger head
+were verified against the live schema rather than trusted from a filename:
+
+| Migration | How it was verified |
+| :--- | :--- |
+| `tenancy_walls_space_crm_quads` · `app_instances_phase2_policies` | 4 policies present on `app_instances` |
+| `insights_journey_and_vitals_rpcs` | `public.journey_funnel` and `public.vitals_p75` both exist |
+| `page_settings_tenancy_wall` | policy present on `page_settings` |
+| `pages_space_slug_unique` | `pages_space_id_slug_key` unique constraint present |
+| `invite_token_and_space_scoped_reads` | `space_invites.token` column present |
+| `retire_beta_waitlist` | table is gone |
+| `retire_growth_engine3_intakes` | tables are gone |
+
+**The problem is the numbering.** These eight ran under CLI-minted timestamps
+(`20260803205359` … `20260805054201`) and were later renumbered in the repo to
+`20270206000000` … `20270212000000`. `supabase_migrations.schema_migrations` has **zero rows at or
+above `20270206000000`**, so the ledger does not know the repo's versions ever ran. Several other
+migrations — `event_host_transfers`, `pricing_gate_overrides_reset`, `event_ticket_fee_receipt`,
+`seed_take_rate_vector` — appear **twice** in the ledger, once under each numbering, which is the
+same renumbering caught earlier and repaired by re-running.
+
+**⚠️ The trap: do NOT run `supabase db push` before repairing.** It would re-run all eight against a
+schema that already has them — `create policy` and `alter table … add constraint` are not idempotent,
+so it fails partway and leaves the ledger in a third state. Repair the ledger instead, which touches
+no schema:
+
+```
+supabase migration repair --status applied \
+  20270206000000 20270206000100 20270207000000 20270208000000 \
+  20270209000000 20270210000000 20270211000000 20270212000000
+```
+
+Not done here because it mutates a production ledger and the schema is already correct, so nothing
+is broken until someone pushes. It should be done before the next migration lands.
+
+**Worth fixing at the root:** migrations are being renumbered after they are applied. That is what
+produces both the duplicate rows and this gap. Either stop renumbering applied migrations, or make
+the repair part of whatever does the renumbering.
+
+### ⏳ CodeQL — 4 high alerts on #2049, all documented false positives
+
+`components/feed/composer.tsx:544`, `components/support/report-dialog.tsx:240`,
+`components/ui/image-focal-picker.tsx:219`, `lib/onboarding/step-registry.tsx:102` — all
+`js/xss-through-dom`, "DOM text reinterpreted as HTML".
+
+**None were introduced by that PR.** The `<img>` lines and their guards were untouched; the only
+changes in those four files were class-name swaps (`rounded-2xl` → `rounded-card`,
+`bg-black/60` → `bg-ink/60`), one of them a single line. CodeQL attributed pre-existing alerts to the
+diff because it was 615 files, exactly as its own note warns.
+
+`lib/safe-image-src.ts` already documents these under a **KNOWN CODEQL FALSE POSITIVES** heading with
+the reasoning: the taint path is `<input type="file">` → `createObjectURL(file)` → `<img src>`, and
+`createObjectURL` returns a browser-minted `blob:<origin>/<uuid>` — the filename, bytes and MIME type
+never appear in the string, so there is no attacker-controlled character to escape. The taint label
+belongs to the File, not to the URL identifying it.
+
+**Action: dismiss the four in the Security tab.** That file also records that inline
+`// codeql[js/xss-through-dom]` suppressions were already tried on all nine sites and moved the count
+by zero (an LGTM legacy feature GitHub code scanning does not honour), and that excluding the query
+repo-wide would blind us to a genuine `innerHTML` finding. Dismiss, and leave the query armed.
