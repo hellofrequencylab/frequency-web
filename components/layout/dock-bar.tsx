@@ -20,11 +20,30 @@ export const RAIL_END_SENTINEL_ID = 'fq-rail-end'
  * claim in prose is exactly how two numbers drift; this is the class both sides import, and
  * dock-bar.test.ts fails if either hardcodes a height instead.
  *
- * `h-11` (46.75px at this app's 17px root) rather than the old `h-10`: it is the smallest step
- * that still fits the left tab's two lines (name + role badge) beside a 38px avatar without
- * crushing them, and the right tab's three counters only gain room.
+ * `h-12` (51px at this app's 17px root). The ladder here has moved twice and both moves were the
+ * same mistake in opposite directions, so the reasoning is worth keeping: `h-10` was too short for
+ * the left tab and `h-11` was chosen as "the smallest step that still fits" its two lines beside a
+ * 38px avatar. Smallest-that-fits is the wrong target for a crest — it fits by leaving no room, and
+ * the owner read the result as a tab that looked cut off (2026-08-06: "bottom left tab is too
+ * short"). 38px of avatar in 46.75px of head is ~4px of air top and bottom.
+ *
+ * 51px gives ~6.5px, which is the first step where the avatar and the name/badge stack both sit in
+ * the head rather than against its edges. The right tab's counters only gain room, and the two
+ * stay equal because this is still the one class both sides import.
  */
-export const DOCK_HEAD_H_CLASS = 'h-11'
+export const DOCK_HEAD_H_CLASS = 'h-12'
+
+/**
+ * How far the page must actually scroll before an open dock panel collapses (owner, 2026-08-06:
+ * "the bottom right menu needs to collapse on scroll down").
+ *
+ * A dock panel is anchored to a corner while the page moves underneath it, so it goes stale the
+ * moment the reader leaves the position they opened it from. The DEADBAND is why this is a
+ * threshold and not a plain scroll listener: trackpad inertia and a mobile address bar collapsing
+ * both fire scroll events the reader did not ask for, and dismissing on those reads as the panel
+ * closing itself at random. 24px is past both and under any deliberate flick.
+ */
+export const DOCK_SCROLL_DISMISS_PX = 24
 
 // ── ONE bar, two segments, ONE open panel ─────────────────────────────────────
 //

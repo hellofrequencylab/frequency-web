@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import {
   DOCK_HEAD_H_CLASS,
+  DOCK_SCROLL_DISMISS_PX,
   announceDockSegmentOpen,
   onOtherDockSegmentOpen,
   setDockPanelOpen,
@@ -52,6 +54,7 @@ export function DockSegment({
 }) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
+  const pathname = usePathname()
 
   // Esc, an outside click, or ANY other segment announcing itself. The third is what the admin
   // dock never had: the chat tab portals into the bar's other segment, so clicking it is already
@@ -67,17 +70,36 @@ export function DockSegment({
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') setOpen(false)
     }
+    // SCROLL DISMISSAL, with a deadband (owner, 2026-08-06). The panel is pinned to the corner
+    // while the page moves underneath it, so it is stale the moment the reader scrolls away from
+    // where they opened it. The threshold is what keeps trackpad inertia and a collapsing mobile
+    // address bar from reading as the panel shutting itself for no reason.
+    const openedAt = window.scrollY
+    function onScroll() {
+      if (Math.abs(window.scrollY - openedAt) > DOCK_SCROLL_DISMISS_PX) setOpen(false)
+    }
     document.addEventListener('mousedown', onDoc)
     document.addEventListener('keydown', onKey)
+    window.addEventListener('scroll', onScroll, { passive: true })
     // Also covers a case that is not another panel: folding the rail takes the whole bar off
     // screen and DockBar announces that on this same channel.
     const offOther = onOtherDockSegmentOpen('vault', () => setOpen(false))
     return () => {
       document.removeEventListener('mousedown', onDoc)
       document.removeEventListener('keydown', onKey)
+      window.removeEventListener('scroll', onScroll)
       offOther()
     }
   }, [open])
+
+  // A link inside the panel routes away and the panel stayed open over the new page, still
+  // showing the previous page's admin. Closing on the path change covers every exit — the links
+  // here, a deep link from inside, the browser's own back button — where an onClick on each row
+  // would only cover the ones someone remembered to wire.
+  useEffect(() => {
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    setOpen(false)
+  }, [pathname])
 
   // The standing FACT, not the edge. The announcement channel only ever says "I just opened", so
   // a neighbour listening to it alone would latch on the first open and never learn this went

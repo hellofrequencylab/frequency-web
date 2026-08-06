@@ -477,16 +477,21 @@ describe('the chat panel is sized to its CONTENT, and grows left out of the tab'
     // ABOVE md and must not start applying below it.
     expect(launcher).toContain('const panelBox = anchor')
     expect(launcher).toContain('fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md')
-    // The exact class run, not a bare `md:max-h-none`: the comment above it names the token, so a
-    // loose search would be satisfied by the prose after the class had been deleted.
-    expect(launcher).toContain('md:h-[35rem] md:max-h-none md:pb-2')
+    // The exact class run, not a bare token: the comment above it names these, so a loose search
+    // would be satisfied by the prose after the class itself had been deleted.
+    //
+    // `md:h-auto md:max-h-[35rem]` since 2026-08-06, was `md:h-[35rem] md:max-h-none`. The old
+    // pair fixed the panel's SIZE, so a short conversation list rendered against a band of empty
+    // canvas. Content sizes it now and the max is the ceiling; where a rail exists the inline
+    // maxHeight (the rail's top) is the real ceiling and beats this class.
+    expect(launcher).toContain('md:h-auto md:max-h-[35rem] md:pb-2')
   })
 })
 
 describe('both bottom tabs are one height (owner: "both tabs the same height")', () => {
   it('is a shared class, not a claim in a comment', () => {
     // 🔴 They were 72px (left) and 48px (right) under a comment asserting they matched.
-    expect(DOCK_HEAD_H_CLASS).toBe('h-11')
+    expect(DOCK_HEAD_H_CLASS).toBe('h-12')
     expect(vaultSegment).toContain('${DOCK_HEAD_H_CLASS}')
     expect(shell).toContain('${DOCK_HEAD_H_CLASS}')
   })
