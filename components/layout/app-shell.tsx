@@ -2271,7 +2271,12 @@ export default function AppShell({
                   // tab in the bottom corner (components/layout/dock-bar.tsx) — so putting a
                   // second one on the strip would be two controls for one fold. The three icons
                   // below already reopen the rail on click, as they always have.
-                  <aside className="flex w-14 shrink-0 flex-col items-center border-l border-chrome-border py-6">
+                  //
+                  // NO RULE (owner, 2026-08-06: "there are no vertical rail lines involved").
+                  // Removed on both right-rail branches together for the same reason the left
+                  // pair was: an edge that exists in the strip and not in the open rail is the
+                  // same edge disagreeing with itself depending on a fold.
+                  <aside className="flex w-14 shrink-0 flex-col items-center py-6">
                     <div className="flex flex-col items-center gap-1.5">
                       {([['Quest', Zap], ['Gems', Gem], ['Streak', Flame]] as const).map(([label, Icon]) => (
                         <button
@@ -2289,12 +2294,12 @@ export default function AppShell({
                   </aside>
                 ) : (
                   // Mirrors the left rail exactly: NO fill (owner, 2026-08-05 — the rails must
-                  // read as the same surface as the page), and the hairline that gives the track
-                  // its edge. The collapsed strip already had `border-l border-chrome-border`;
-                  // the OPEN rail did not, so folding it was once the only way to see where it
-                  // began. (`relative` came off with the mid-edge handle it existed for; the fold
+                  // read as the same surface as the page) and, since 2026-08-06, NO HAIRLINE
+                  // either (owner: "there are no vertical rail lines involved"). Both rails, both
+                  // branches, one rule — the content column's own gutter is what separates them
+                  // now. (`relative` came off with the mid-edge handle it existed for; the fold
                   // tick lives on the dock tab at the foot of this column instead.)
-                  <aside className="flex w-72 shrink-0 flex-col border-l border-chrome-border py-6">
+                  <aside className="flex w-72 shrink-0 flex-col py-6">
                     {sidebar}
                     {/* The rail's end. DockBar measures this to know when to stop being pinned to
                         the window and come to rest against the last rail card instead. Zero-height
