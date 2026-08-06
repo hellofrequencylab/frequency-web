@@ -1,12 +1,14 @@
 # Menu system audit — 2026-08-06
 
 **Status:** ✅ Audit + the redesign it produced. The audit stands as written below (it is the
-record of what was wrong); ADR-953 to ADR-956 are the answers, shipped in this same PR. Findings
-resolved: §2.1, §2.2, §3 #1, §3 #3, §4.2, §4.3, §4.4 #1-#2, §4.5 #1-#3. Still open and listed
-in §6: mobile header sub-links (§2.3 #6), the panel's scroll-dismiss and focus return (§2.3
-#1-#2), `rail-panels.ts` `/people` → `/network` (§1). Findings verified against the code on
-`claude/frequency-menu-audit-33skn4` and against the LIVE `Frequency Community` database
-(`menus` / `menu_categories` / `menu_items`), read-only.
+record of what was wrong); **ADR-953 to ADR-957** are the answers, shipped in the same PR.
+
+**Everything in §6 is closed except one item:** mobile header sub-links (§2.3 #6) — `PrimaryNav`
+is `hidden md:block` and the marketing sheet renders trigger labels only, so 22 links including
+the six `/for/*` pages have no path from a phone header. Deliberately deferred as its own pass.
+
+Findings verified against the code on `claude/frequency-menu-audit-33skn4` and against the LIVE
+`Frequency Community` database (`menus` / `menu_categories` / `menu_items`), read-only.
 
 **Legend:** ✅ correct / ⏳ works but weak / ⚠️ needs an owner call / 🔴 broken today.
 
