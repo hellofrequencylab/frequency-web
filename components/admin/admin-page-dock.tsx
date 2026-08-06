@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronUp, GripVertical, RotateCcw, SlidersHorizontal } from 'lucide-react'
+import { DockSegment } from '@/components/layout/dock-segment'
 import { visibleLinks } from '@/app/(main)/admin/sections'
 import {
   DASH_SCOPES,
@@ -42,7 +43,6 @@ export function AdminPageDock({
   webRole?: WebRole
   staffRole?: StaffRole | null
 }) {
-  const [open, setOpen] = useState(false)
   const pathname = usePathname()
   const scope = scopeForPath(pathname)
   const links = visibleLinks(role, webRole, staffRole)
@@ -51,56 +51,41 @@ export function AdminPageDock({
   )
 
   return (
-    <div>
-      {/* The panel — revealed above the tab's pinned bottom edge. */}
-      <div
-        className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
-          open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-        }`}
-      >
-        <div className="overflow-hidden">
-          <div className="px-1 pt-2">
-            <p className="px-2 pb-1 text-meta font-semibold uppercase tracking-wide text-muted">
-              Page settings
-            </p>
-            <div className="space-y-0.5">
-              {settingLinks.map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
-                >
-                  <l.Icon className="h-4 w-4 shrink-0 text-muted" />
-                  {l.label}
-                </Link>
-              ))}
-            </div>
-
-            {scope && <SectionSorter scope={scope} />}
-          </div>
-        </div>
+    <DockSegment
+      regionLabel="Page admin"
+      head={({ open }) => (
+        <>
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-muted">
+            <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1 text-left">
+            <span className="block truncate text-body-sm font-semibold leading-tight text-text">Page admin</span>
+          </span>
+          <ChevronUp
+            className={`h-4 w-4 shrink-0 text-subtle transition-transform duration-[var(--motion-base)] motion-reduce:transition-none ${open ? 'rotate-180' : ''}`}
+            aria-hidden
+          />
+        </>
+      )}
+    >
+      <p className="px-2 pb-1 text-meta font-semibold uppercase tracking-wide text-muted">
+        Page settings
+      </p>
+      <div className="space-y-0.5">
+        {settingLinks.map((l) => (
+          <Link
+            key={l.href}
+            href={l.href}
+            className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+          >
+            <l.Icon className="h-4 w-4 shrink-0 text-muted" />
+            {l.label}
+          </Link>
+        ))}
       </div>
 
-      {/* The tab. */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="flex w-full items-center gap-2.5 rounded-lg px-2 py-3 text-left transition-colors hover:bg-surface-elevated"
-      >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-muted">
-          <SlidersHorizontal className="h-[18px] w-[18px]" aria-hidden />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-body-sm font-semibold leading-tight text-text">Page admin</span>
-          <span className="mt-0.5 block text-meta text-subtle">Settings &amp; sort</span>
-        </span>
-        <ChevronUp
-          className={`h-4 w-4 shrink-0 text-subtle transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
-          aria-hidden
-        />
-      </button>
-    </div>
+      {scope && <SectionSorter scope={scope} />}
+    </DockSegment>
   )
 }
 
