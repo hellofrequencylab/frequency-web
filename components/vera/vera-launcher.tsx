@@ -117,7 +117,14 @@ const MIN_PANEL_HEIGHT = 320
  *  top corners leave two notches of canvas showing under the panel; with it the panel simply
  *  disappears behind the crest, which is the "slides up from behind the tab" reading. The panel
  *  pays it back as bottom padding (`md:pb-2`), so no content ever sits under the bar. */
-const PANEL_TUCK = 8
+// The gap between the chat tab's TOP edge and the panel's bottom edge (owner, 2026-08-06:
+// "chat window should sit slightly above the tab").
+//
+// This replaces PANEL_TUCK, which was the same number with the opposite sign: the panel used to be
+// pulled 8px DOWN so its bottom edge hid behind the tab's crest. That reads as one object when the
+// panel is the full height of the rail, and as a panel snagged on the tab when it is not — and the
+// tab has a rounded top, so the overlap clipped the panel's own bottom corners against it.
+const PANEL_GAP = 8
 /** Long enough to outlast the slowest `--motion-base` on the feel scale (340ms), so the body is
  *  still mounted while the row collapses and the panel does not blink out mid-slide. */
 const PANEL_COLLAPSE_MS = 400
@@ -194,7 +201,7 @@ function useDockAnchor(slot: HTMLElement | null): { right: number; bottom: numbe
       }
       setAnchor({
         right: Math.round(window.innerWidth - rect.right),
-        bottom: Math.round(window.innerHeight - rect.top - PANEL_TUCK),
+        bottom: Math.round(window.innerHeight - rect.top + PANEL_GAP),
       })
     }
     const schedule = () => {
@@ -567,7 +574,12 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
           waiting={pulse || unread > 0}
           unread={unread}
           yielding={panelOwner === 'vault'}
-          onOpen={openPanel}
+          // TOGGLE, not open (owner, 2026-08-06: "chat window needs a click to close"). The tab
+          // was wired to `openPanel` alone, so pressing it while the panel was open re-ran the
+          // open path and nothing visibly happened — the one control that looks like it should
+          // shut the panel was the one control that could not. Esc and an outside click both
+          // worked, which is why this survived: the panel was closable, just not by its own tab.
+          onOpen={() => (open ? close() : openPanel())}
         />
       )}
 
@@ -616,7 +628,11 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
               // sheet would stop it two thirds of the way up. `md:h-[35rem]` stays as the height
               // for the md band, where there is no rail to cover; `panelHeight` overrides it
               // wherever there is one.
-              style={panelHeight ? { height: panelHeight } : undefined}
+              // maxHeight, NOT height. As a fixed height the panel always filled the rail top to
+              // bottom, so three conversations rendered against a header at the top and a footer
+              // pinned at the very bottom with a band of empty canvas between them. The rail's top
+              // is the CEILING the panel must not pass, not the size it must be.
+              style={panelHeight ? { maxHeight: panelHeight } : undefined}
               // TETHERED, NOT FLOATING FREE (owner, 2026-08-06). Three corners are rounded and
               // the BOTTOM-RIGHT is square, because that is the corner sitting on the chat tab:
               // a radius there would read as a separate card that happens to overlap the dock,
@@ -630,13 +646,18 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
               //
               // The mobile branch keeps `rounded-t-card` and stays a bottom sheet: there is no tab
               // to tether to below md (the bar is display:none), so there is no corner to square.
-              // NOTE the class ORDER: `md:h-[35rem] md:max-h-none md:pb-2` is pinned as one
-              // contiguous run by components/layout/dock-bar.test.ts, so the two `md:rounded-*`
-              // additions sit BEFORE it rather than inside it. Splitting that run is a real
-              // failure and not test pedantry — the guard's own comment explains that a looser
-              // search would be satisfied by the comment naming the token after the class itself
-              // had been deleted.
-              className="lift-3 flex h-[68dvh] max-h-[37.5rem] w-full flex-col overflow-hidden rounded-t-card border border-chrome-border bg-canvas pb-[env(safe-area-inset-bottom)] outline-none md:rounded-card md:rounded-br-none md:h-[35rem] md:max-h-none md:pb-2"
+              // 🔴 `md:h-auto md:max-h-[35rem]`, WAS `md:h-[35rem] md:max-h-none`. The old pair
+              // said "at md this panel is exactly 35rem tall, with no ceiling" — a fixed SIZE. So
+              // three conversations rendered with the header at the top, the footer pinned at the
+              // bottom, and a band of empty canvas between them (owner, 2026-08-06: "the chat
+              // window doesn't fit"). The panel should be as tall as its contents and no taller.
+              //
+              // `h-auto` sizes to content; the max is the ceiling. Where a rail exists, the inline
+              // `maxHeight` above is the real ceiling (the rail's top) and beats this class, which
+              // is why the class cap can be a plain default rather than a second measurement. The
+              // pair is still pinned as one contiguous run by dock-bar.test.ts, for the reason its
+              // comment gives: a loose search would be satisfied by prose naming a deleted class.
+              className="lift-3 flex h-[68dvh] max-h-[37.5rem] w-full flex-col overflow-hidden rounded-t-card border border-chrome-border bg-canvas pb-[env(safe-area-inset-bottom)] outline-none md:rounded-card md:rounded-br-none md:h-auto md:max-h-[35rem] md:pb-2"
             >
               {/* Header — canvas, so it reads as the dock's own chrome rather than more
                   transcript. Reflects the active view; Help gets a Back affordance. */}

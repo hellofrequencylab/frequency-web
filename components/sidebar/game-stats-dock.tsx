@@ -14,6 +14,7 @@ import { StandingTiles } from '@/components/gamification/standing-tiles'
 import {
   DOCK_HEAD_H_CLASS,
   RAIL_END_OPENS,
+  DOCK_SCROLL_DISMISS_PX,
   announceDockSegmentOpen,
   getDockGeometry,
   onOtherDockSegmentOpen,
@@ -123,12 +124,20 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') setOpen(false)
     }
+    // Scroll dismissal with the shared deadband — the same rule the admin segment takes, from
+    // the same constant, so the two bottom docks cannot drift on it.
+    const openedAt = window.scrollY
+    function onScroll() {
+      if (Math.abs(window.scrollY - openedAt) > DOCK_SCROLL_DISMISS_PX) setOpen(false)
+    }
     document.addEventListener('mousedown', onDoc)
     document.addEventListener('keydown', onKey)
+    window.addEventListener('scroll', onScroll, { passive: true })
     const offOther = onOtherDockSegmentOpen('vault', () => setOpen(false))
     return () => {
       document.removeEventListener('mousedown', onDoc)
       document.removeEventListener('keydown', onKey)
+      window.removeEventListener('scroll', onScroll)
       offOther()
     }
   }, [open])

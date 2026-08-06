@@ -68,7 +68,13 @@ export function AdminPageDock({
         </>
       )}
     >
-      <p className="px-2 pb-1 text-meta font-semibold uppercase tracking-wide text-muted">
+      {/* ── ONE VERTICAL STEP THROUGH THE PANEL (owner, 2026-08-06: "vertical spacing is off") ──
+          This had three. The eyebrow sat on `pb-1`, the rows on `py-1.5`, and the sorter opened on
+          `mt-3 pt-2.5` — so the gap above "Page settings", the gap between its links, and the gap
+          before "Sort sections" were all different, and none of them matched the head above them.
+          The panel now steps on 2 (0.5rem) between blocks and 1.5 inside a row, which is the same
+          rhythm the rail's own groups use. */}
+      <p className="px-2 pb-2 text-meta font-semibold uppercase tracking-wide text-muted">
         Page settings
       </p>
       <div className="space-y-0.5">
@@ -122,8 +128,8 @@ function SectionSorter({ scope }: { scope: DashScope }) {
   }
 
   return (
-    <div className="mt-3 border-t border-border/60 px-0 pt-2.5">
-      <div className="flex items-baseline justify-between px-2 pb-1.5">
+    <div className="mt-4 border-t border-border/60 px-0 pt-3">
+      <div className="flex items-baseline justify-between px-2 pb-2">
         <p className="text-meta font-semibold uppercase tracking-wide text-muted">Sort sections</p>
         <span className="text-meta text-subtle">{isPending ? 'Saving…' : 'Drag to reorder'}</span>
       </div>
@@ -158,7 +164,7 @@ function SectionSorter({ scope }: { scope: DashScope }) {
           setOrder(next)
           save(next)
         }}
-        className="mt-1.5 flex items-center gap-2 rounded-lg px-2 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+        className="mt-2 flex items-center gap-2 rounded-lg px-2 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
       >
         <RotateCcw className="h-3.5 w-3.5 shrink-0" aria-hidden />
         Reset to default order
