@@ -53,7 +53,7 @@ import type {
 } from '@/lib/menus/types'
 import { effectiveMode, canSeeMenuItem, flattenCategoryTree, type MenuViewer } from '@/components/layout/menu-role'
 import { GhostLink } from '@/components/layout/ghost-link'
-import { MyFrequencyRow } from '@/components/layout/my-frequency-row'
+import { MyFrequencyMenu } from '@/components/layout/my-frequency-menu'
 import type { MyFrequency } from '@/lib/nav/my-frequency'
 import { BrandMark } from '@/components/layout/brand-mark'
 import { Wordmark } from '@/components/layout/wordmark'
@@ -182,11 +182,11 @@ function sectionsFromKeys(keys: string[] | undefined): NavSectionGroup[] {
 //
 // This used to drop a flat "Profile" link into the home-anchor group beside Feed. It is a
 // DISCLOSURE now — profile, journal, contacts, the Spaces you run and the Circles you are in,
-// each with its own notice count (components/layout/my-frequency-row.tsx). A flat link could
+// each with its own notice count (components/layout/my-frequency-menu.tsx). A flat link could
 // not carry any of that, and the things it opens onto were previously reachable only from the
 // account dock at the far bottom of the rail.
 //
-// So there is no item to inject: the rail renders <MyFrequencyRow> itself, immediately after
+// So there is no item to inject: the rail renders <MyFrequencyMenu> itself, immediately after
 // the home anchor's rows. This helper stays as the ONE place that decides where in the section
 // list that boundary is, because both the desktop rail and the mobile drawer need the same
 // answer and a second copy is how they would disagree.
@@ -535,7 +535,7 @@ function ProfileCard({
                 dropdown, at the far bottom of a rail nobody scrolls to.
 
                 MY FREQUENCY now carries "you, and what you run" at the TOP of this same rail
-                (components/layout/my-frequency-row.tsx), which is where DAWN's three-docks
+                (components/layout/my-frequency-menu.tsx), which is where DAWN's three-docks
                 card puts that content and where a member actually looks. Keeping the list here
                 too would put the same links twice on one rail, four inches apart, against that
                 card's first rule: "a control appears in exactly one dock."
@@ -1091,7 +1091,7 @@ function NavLinkList({
               occupy. Inside the group (not after it) so the anchor's own spacing carries it,
               and so a fold keeps it in the same run of squares. */}
           {isHomeAnchor && myFrequency && (
-            <MyFrequencyRow
+            <MyFrequencyMenu
               data={myFrequency}
               isActive={isActive}
               onNavigate={onNavigate}

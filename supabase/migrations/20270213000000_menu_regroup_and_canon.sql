@@ -85,7 +85,7 @@ update public.menu_items i
 -- My Contacts is a TAB of the Members hub and was rendered as its sibling — and because
 -- routeActive prefix-matches, standing on /network/contacts lit BOTH rows at once. Journal is
 -- filed under "You" by DAWN's three-docks card, not under the game. Both now render inside the
--- My Frequency disclosure (components/layout/my-frequency-row.tsx), and both are still in ⌘K.
+-- My Frequency disclosure (components/layout/my-frequency-menu.tsx), and both are still in ⌘K.
 --
 -- SWITCHED OFF, NOT DELETED. `mode = 'hidden'` is the same switch the Menu Manager's on/off
 -- toggle writes, so this is reversible in the UI in one click if the owner wants either row

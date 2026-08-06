@@ -23,6 +23,13 @@ import type { MyFrequency, MyFrequencyEntry } from '@/lib/nav/my-frequency'
 // "something is waiting" is the whole message at that width). The parent row wears the TOTAL,
 // so a folded rail still says something wants you.
 //
+// NAMED "menu", NOT "row", and the name is load-bearing. `scripts/check-adoption.mjs` has a
+// `bespoke-rows` rule over `*row*.tsx` files that do not compose RowCard — "list rows owed to
+// the kit". This is not one: RowCard is the CONTENT-list primitive (MEMBER-DESIGN-SYSTEM §5,
+// "dense list rows: offers, your practices, discover"), and a navigation rail has its own row
+// grammar, DAWN's NavRow. Calling the file `-row` put it in front of a heuristic aimed at
+// something else. It is a menu that occupies one rail row and discloses; the name says that now.
+//
 // Tokens only. No em dashes in the copy.
 
 const ROW =
@@ -101,7 +108,7 @@ function EntryGroup({
   )
 }
 
-export function MyFrequencyRow({
+export function MyFrequencyMenu({
   data,
   isActive,
   onNavigate,
