@@ -38,7 +38,6 @@ import {
 } from '@/lib/community-roles'
 import { NAV_AREAS, meetsAccess, meetsStaff, type NavAccess, type NavArea } from '@/lib/nav-areas'
 import { calmSpine, canSee, type NavViewer, type SpineTab } from '@/lib/nav/registry'
-import { nestAdminRows } from '@/lib/nav/admin-nesting'
 import type { AccessLevel } from '@/lib/core/access-matrix'
 import type { StaffRole, StaffDomain } from '@/lib/staff'
 import type { ProfileIdentity } from '@/lib/types/profile'
@@ -116,10 +115,6 @@ type MainNavItem = {
   ghostTier?: string
   /** Optional override copy for the ghost upgrade lightbox. */
   ghostMessage?: string
-  /** Nesting level in the rail (ADR-848). 0 = a top-level row / box; 1 = a tool drawn under its
-   *  box. Stamped by `nestAdminRows` at render time from the world its StudioLeaf declares, never
-   *  stored on a catalog row or a DB menu row. */
-  depth?: number
 }
 
 type NavSectionGroup = { label: string | null; items: MainNavItem[] }
@@ -844,7 +839,8 @@ function NavLinkList({
   // A nested Admin tool (ADR-848): indented under its box and hung off a hairline, the same
   // treatment the Space rail uses for its twelve boxes. Never applied in `compact` (the icon-only
   // edge column has no room for a hierarchy, and the tooltip already names the destination).
-  const nestClass = (depth?: number) => (depth ? 'ml-3 border-l border-chrome-border ' : '')
+  // (The `nestClass` indent went with the nesting pass — see the note in the section map below.
+  //  Every rail row is depth 0 now, so an indent helper would only ever return the empty string.)
 
   // The row. `rounded-control` (not a literal step) so a skin retunes the rail with the rest
   // of the controls — Midnight sharpens it, the kids generations round it right off.
@@ -857,8 +853,8 @@ function NavLinkList({
   // The WEIGHT LADDER is DAWN's (ui_kits/app/nav-rail.jsx NavRow): a resting row is 600 and the
   // active row is 800, because the active row is meant to be "the one amber moment" in the rail
   // and colour alone was carrying it. The home anchor keeps its own 700 brand treatment.
-  const itemClass = (active: boolean, emphasize = false, depth = 0) =>
-    `${nestClass(depth)}flex items-center gap-2.5 px-3 py-[0.42rem] rounded-control text-body-sm transition-colors ${
+  const itemClass = (active: boolean, emphasize = false) =>
+    `flex items-center gap-2.5 px-3 py-[0.42rem] rounded-control text-body-sm transition-colors ${
       emphasize
         ? `font-bold text-[var(--brand-mark)] ${active ? 'bg-primary-bg' : 'hover:bg-surface'}`
         : active
@@ -889,14 +885,26 @@ function NavLinkList({
         const gatedItems = adminSection
           ? section.items.filter((it) => itemAccess(it, role, staffRole, permissions, navAccess, operatesSpaces) === 'full')
           : section.items
-        // Draw the operator Admin section as BOXES with their tools nested under them (ADR-848).
-        // The parent of each row is the `world` its own StudioLeaf already declares, joined by href
-        // — the one identifier the code catalog and a DB `menu_items` row share, so this nests the
-        // DB-driven rail too without a reseed. Applied to EVERY section because it is a no-op
-        // anywhere else: a member-world href declares no world, so it resolves to depth 0 and the
-        // list comes back in its original order. Runs AFTER the telescope filter on purpose — a
-        // child whose box was gated away keeps its own place at depth 0 rather than vanishing.
-        const visibleItems = nestAdminRows(gatedItems)
+        // ── THE RAIL RENDERS THE MENU'S OWN ORDER, FLAT (owner, 2026-08-06) ──────────────────
+        //
+        // 🔴 THIS USED TO CALL `nestAdminRows` (ADR-848), and that pass is RETIRED here. It did
+        // two things to the Admin section at render time: it INDENTED tools under their Studio
+        // world, and — the part that actually bit — it RE-SORTED, hoisting each child up to sit
+        // directly beneath its box.
+        //
+        // So the rail could not agree with the Menu Manager. An operator saw a flat, ordered list
+        // in the editor (Dashboard, Leadership, Programs, Growth, Community, Resonance CRM,
+        // Market admin, Manage Spaces, ...) and the live rail showed Loom Studio hoisted under
+        // Programs, CRM and QR Studio under Growth, four tools under Operations. Dragging a row
+        // in the editor moved it in the database and then the renderer put it back. That is not a
+        // menu an operator can lay out, which is the whole point of the Manager.
+        //
+        // The nesting was derived and defensible; it was also a SECOND source of order competing
+        // with the one the operator controls. The menu is now the only source: what the Manager
+        // shows is what the rail draws. `lib/nav/admin-nesting.ts` survives because
+        // `lib/nav/admin-rail.ts` still uses its href helpers for the operator App rail, which is
+        // a different surface with its own contract.
+        const visibleItems = gatedItems
         if (visibleItems.length === 0) return null
         return (
         <div
@@ -939,8 +947,6 @@ function NavLinkList({
           {!compact && section.label && <p className={sectionLabelClass}>{section.label}</p>}
           {visibleItems.map((item) => {
             const { href, label, Icon } = item
-            // Depth comes from nestAdminRows above; `compact` suppresses it (see nestClass).
-            const nest = compact ? '' : nestClass(item.depth)
 
             // DB-driven rail (lib/menus): the item's mode was already resolved for the viewer
             // by effectiveMode (hidden dropped upstream). 'ghost' → a muted GhostLink that opens
@@ -967,7 +973,7 @@ function NavLinkList({
                     ghostTier={item.ghostTier}
                     ghostMessage={item.ghostMessage}
                     ariaLabel={label}
-                    className={`${nest}flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm font-medium text-subtle`}
+                    className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm font-medium text-subtle`}
                   >
                     <Icon className="h-[17px] w-[17px] shrink-0" strokeWidth={2} aria-hidden />
                     {label}
@@ -991,7 +997,7 @@ function NavLinkList({
                 )
               }
               return (
-                <Link key={item.key} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active, false, item.depth)}>
+                <Link key={item.key} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active)}>
                   <Icon className="w-[17px] h-[17px] shrink-0" strokeWidth={2} />
                   {label}
                 </Link>
@@ -1054,7 +1060,7 @@ function NavLinkList({
                   href={href}
                   onClick={onNavigate}
                   title="Preview. Sign in or upgrade to engage"
-                  className={`${nest}flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm font-medium transition-colors ${
+                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm font-medium transition-colors ${
                     // The ACTIVE ghost row is a background on chrome, so it has the same problem
                     // its hover did: `surface-elevated` is 3/255 off the rail's own ground.
                     active ? 'bg-chrome-hover text-muted' : 'text-subtle hover:bg-chrome-hover hover:text-muted'
@@ -1072,7 +1078,7 @@ function NavLinkList({
                   key={href}
                   aria-disabled="true"
                   title="You don't have access to this yet"
-                  className={`${nest}flex items-center gap-2.5 px-3 py-2 rounded-lg text-body-sm font-medium text-subtle opacity-50 cursor-not-allowed select-none`}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-body-sm font-medium text-subtle opacity-50 cursor-not-allowed select-none`}
                 >
                   <Icon className="w-[17px] h-[17px] shrink-0" strokeWidth={2} />
                   {label}
@@ -1081,7 +1087,7 @@ function NavLinkList({
             }
             const active = isActive(href)
             return (
-              <Link key={href} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active, false, item.depth)}>
+              <Link key={href} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active)}>
                 <Icon className="w-[17px] h-[17px] shrink-0" strokeWidth={2} />
                 {label}
               </Link>
