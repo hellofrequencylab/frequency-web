@@ -7,6 +7,7 @@ import {
   announceDockDismissed,
   announceDockSegmentOpen,
   dockDismissalDue,
+  dockLift,
   getDockPanelOwner,
   getServerDockGeometry,
   getServerDockPanelOwner,
@@ -307,6 +308,42 @@ describe('the sentinel-driven store still says "no bar" honestly', () => {
     expect(server.atRailEnd).toBe(false)
   })
 
+})
+
+// ── The ride-up belongs to a rail you can SCROLL (owner, 2026-08-06) ───────────────────────
+//
+// 🔴 THE DEFECT: "the Page Admin tab keeps popping up like this", with the tab floating a third of
+// the way up the page, over the roster. The lift was `viewportHeight - railEndBottom` with no
+// condition on it, so a rail SHORTER than the window — every /admin page with a light info rail —
+// produced hundreds of pixels of lift and launched a corner-docked tab into open canvas. The
+// ride-up was written to stop the bar floating in empty space and was, unconditioned, the thing
+// putting it there.
+
+describe('dockLift — a short rail gets no ride-up', () => {
+  it('🔴 stays pinned when the rail is shorter than the viewport', () => {
+    // THE REPORTED CASE. A 620px rail in a 900px window ends at y=620, so the old unconditioned
+    // maths returned 280px of lift and the tab came to rest a third of the way up the page.
+    expect(dockLift(620, 620, 900)).toBe(0)
+  })
+
+  it('stays pinned even when a short rail ends very high', () => {
+    expect(dockLift(300, 300, 900)).toBe(0)
+  })
+
+  it('rides up once the rail actually overflows and you reach its end', () => {
+    // A 1400px rail scrolled far enough that its end sits 120px above the window bottom.
+    expect(dockLift(1400, 780, 900)).toBe(120)
+  })
+
+  it('does not lift while a long rail still runs past the bottom edge', () => {
+    // You have not scrolled to the end yet: the rail's end is BELOW the window, which would be a
+    // negative lift and would push the bar off the bottom of the screen.
+    expect(dockLift(1400, 1500, 900)).toBe(0)
+  })
+
+  it('treats exactly-viewport-height as short, so equality never floats the bar', () => {
+    expect(dockLift(900, 900, 900)).toBe(0)
+  })
 })
 
 // ── The rail's end OPENS the Vault (owner, 2026-08-05) ─────────────────────────────────────

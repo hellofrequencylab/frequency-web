@@ -131,11 +131,29 @@ export function ReactionCounts({ base, toggle, failed, compact = false }: Reacti
   )
 }
 
-/** The inline emoji react control: a string of the first `quickCount` reaction emojis
- *  as quick-tap buttons, plus a picker (SmilePlus) for the full set. Render inline with
- *  the comment composer so reacting and commenting share one row. `quickCount={0}` shows
- *  ONLY the picker (used on comments, which stay tight: counts + one add button). */
-export function ReactionInlinePicker({ base, toggle, pending, quickCount = 5 }: ReactionState & { quickCount?: number }) {
+/** The emoji react control: ONE small, neutral trigger that opens the full set in a
+ *  popover. Render it on the ACTION LINE beside the reaction counts and the comment
+ *  count — the three read as one cluster of chrome, and the comment composer below
+ *  gets the whole row to itself.
+ *
+ * 🔴 THE QUICK STRIP IS GONE, and it was a layout bug rather than a taste call (owner,
+ * 2026-08-06: "make sure comment field goes full width"). This used to render the first
+ * five emojis as always-visible quick-tap buttons INSIDE the composer row. Five 28px
+ * glyphs plus this trigger is ~200px of fixed, non-shrinking width; on a 390px phone
+ * that left the `flex-1` textarea about 40px wide — one visible character — with the
+ * send button pushed off the card edge. The strip cost the composer more than the tap
+ * it saved, so the full set moved into the popover and the row it was squatting on went
+ * back to the comment field.
+ *
+ * `align` decides which edge the popover hangs from. On the action line the trigger sits
+ * at the RIGHT edge of the card, so a left-anchored menu would open off-screen; on a
+ * comment row it sits at the left. Nothing auto-detects this, so the call site says which. */
+export function ReactionInlinePicker({
+  base,
+  toggle,
+  pending,
+  align = 'start',
+}: ReactionState & { align?: 'start' | 'end' }) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
 
@@ -155,64 +173,61 @@ export function ReactionInlinePicker({ base, toggle, pending, quickCount = 5 }: 
     }
   }, [pickerOpen])
 
-  const quick = REACTIONS.slice(0, quickCount)
-  // Emoji GLYPH toggles, not icon buttons -- the reaction itself is the content and `mine`
-  // tints the fill, so IconButton's icon colour pair is the wrong word for them. What they
-  // were missing is the floor: 28px shipped under both the 32px density minimum and the 44px
-  // coarse-pointer target, which `tap-target` (the same utility IconButton composes) fixes.
+  // Emoji GLYPH toggles, not icon buttons -- the reaction itself is the content, so
+  // IconButton's icon colour pair is the wrong word for them. What they were missing is the
+  // floor: 28px shipped under both the 32px density minimum and the 44px coarse-pointer
+  // target, which `tap-target` (the same utility IconButton composes) fixes.
+  //
+  // NEUTRAL SELECTED STATE (owner: "neutral color in the selector"). `mine` used to paint
+  // `bg-primary-bg/60` — a warm amber disc behind the glyph. Inside a popover that is itself
+  // a neutral surface, that amber is the loudest thing in the menu, and it competes with the
+  // emoji, which is the only thing in here that is SUPPOSED to carry colour. A quiet surface
+  // step plus a hairline says "you picked this" just as clearly and lets the six glyphs read
+  // as a set. The warm tint still means "mine" out on the COUNT pills, where it is one badge
+  // among plain text rather than one of six coloured tiles.
   const emojiBtn = (mine: boolean | undefined) =>
     `tap-target flex h-7 w-7 items-center justify-center rounded-pill text-body transition-transform hover:scale-110 hover:bg-surface-elevated ${
-      mine ? 'bg-primary-bg/60' : ''
+      mine ? 'bg-surface ring-1 ring-border' : ''
     }`
 
   return (
-    <div className="flex shrink-0 items-center gap-0.5">
-      {quick.map((r) => (
-        <button
-          key={r.key}
-          type="button"
-          onClick={() => toggle(r.key)}
-          aria-label={r.label}
-          title={r.label}
-          className={emojiBtn(base.get(r.key)?.mine)}
+    <div className="relative shrink-0" ref={pickerRef}>
+      <IconButton
+        label="Add a reaction"
+        onClick={() => setPickerOpen((o) => !o)}
+        aria-expanded={pickerOpen}
+        disabled={pending}
+      >
+        {/* 3.5, not 4 — the same glyph size as the comment-count bubble it now sits beside.
+            Two icons of the same weight on one line read as a pair; a 16px icon next to a
+            14px one reads as one of them being more important. */}
+        <SmilePlus className="h-3.5 w-3.5" />
+      </IconButton>
+      {pickerOpen && (
+        <div
+          role="menu"
+          className={`absolute bottom-full z-20 mb-1.5 flex gap-0.5 rounded-card bg-surface-elevated p-1.5 lift-3 ring-1 ring-border/40 ${
+            align === 'end' ? 'right-0' : 'left-0'
+          }`}
         >
-          <span aria-hidden>{r.key}</span>
-        </button>
-      ))}
-      {/* Picker for the full set (the sixth emoji + a discoverable menu). */}
-      <div className="relative" ref={pickerRef}>
-        <IconButton
-          label="More reactions"
-          onClick={() => setPickerOpen((o) => !o)}
-          aria-expanded={pickerOpen}
-          disabled={pending}
-        >
-          <SmilePlus className="h-4 w-4" />
-        </IconButton>
-        {pickerOpen && (
-          <div
-            role="menu"
-            className="absolute bottom-full left-0 z-20 mb-1.5 flex gap-0.5 rounded-card bg-surface-elevated p-1.5 lift-3 ring-1 ring-border/40"
-          >
-            {REACTIONS.map((r) => (
-              <button
-                key={r.key}
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  setPickerOpen(false)
-                  toggle(r.key)
-                }}
-                aria-label={r.label}
-                title={r.label}
-                className={emojiBtn(base.get(r.key)?.mine)}
-              >
-                <span aria-hidden>{r.key}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+          {REACTIONS.map((r) => (
+            <button
+              key={r.key}
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setPickerOpen(false)
+                toggle(r.key)
+              }}
+              aria-label={r.label}
+              title={r.label}
+              className={emojiBtn(base.get(r.key)?.mine)}
+            >
+              <span aria-hidden>{r.key}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -235,7 +250,7 @@ export function ReactionBar({
   return (
     <div className="flex flex-wrap items-center gap-1">
       <ReactionCounts {...state} compact={compact} />
-      <ReactionInlinePicker {...state} quickCount={0} />
+      <ReactionInlinePicker {...state} />
     </div>
   )
 }
