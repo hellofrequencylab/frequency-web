@@ -103,6 +103,33 @@ export const SHELL_CONTENT_WIDTH_CLASS =
 /** The shell row's own box, so a page outside the shell starts from the identical container. */
 export const SHELL_ROW_CLASS = 'mx-auto w-full max-w-[105rem] px-4 sm:px-6 lg:px-8'
 
+// ── THE ROW'S CLASS SPELLINGS, for anything that has to REPRODUCE the row ─────────────────────
+//
+// The numbers above answer "how wide is the content column"; a second kind of consumer needs
+// "what does the row itself look like" — it lays out the same [rail | gap | content | gap | rail]
+// shape and has to land on the same seams. The header mega-menu panel is one: it drops from under
+// the top bar across the full viewport, and the visible card has to line up with the page content
+// between the rails.
+//
+// 🔴 IT USED TO COPY THESE BY HAND, and had already drifted — `gap-8` where the shell says
+// `gap-8 lg:gap-10`, a fixed `w-48` that ignored the fold, a `w-72` that ignored the right rail's
+// collapse. Measured misalignment: 8.5px at rest, 136px with the left rail folded, 229px with the
+// right one collapsed (docs/MENU-AUDIT-2026-08-06.md §2.2). That is precisely the failure mode
+// this file was created for, in a second place, outside its guard. So the spellings move here and
+// shell-metrics.test.ts pins them against app-shell.tsx like everything else.
+//
+// Whole class strings, never interpolated, for the Tailwind-scanner reason documented above.
+
+/** The left rail column, open. */
+export const LEFT_RAIL_CLASS = 'w-48'
+/** The right rail column at rest. (Its live width is an inline style that also carries the
+ *  settings-drawer width; this is the resting spelling a spacer should reserve.) */
+export const RIGHT_RAIL_CLASS = 'w-72'
+/** The row gap, both breakpoints, exactly as the shell writes it. */
+export const SHELL_ROW_GAP_CLASS = 'gap-8 lg:gap-10'
+/** The extra left margin on the right rail column (ADR-404), so the two gutters read even. */
+export const RIGHT_RAIL_ML_CLASS = 'lg:ml-3'
+
 // ── RETIRED, 2026-08-05: DOCK_BAR_H_PX + RAIL_FOLD_STICKY_* + railFoldClearsDock() ──────────
 //
 // Those existed to keep the rail's fold control from hiding UNDER the dock bar: the control was

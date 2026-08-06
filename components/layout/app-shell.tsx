@@ -13,7 +13,6 @@ import {
   Zap,
   Search,
   Users,
-  UserRound,
   X,
   Gem,
   Monitor,
@@ -54,6 +53,8 @@ import type {
 } from '@/lib/menus/types'
 import { effectiveMode, canSeeMenuItem, flattenCategoryTree, type MenuViewer } from '@/components/layout/menu-role'
 import { GhostLink } from '@/components/layout/ghost-link'
+import { MyFrequencyRow } from '@/components/layout/my-frequency-row'
+import type { MyFrequency } from '@/lib/nav/my-frequency'
 import { BrandMark } from '@/components/layout/brand-mark'
 import { Wordmark } from '@/components/layout/wordmark'
 import { MemberFooter } from '@/components/layout/member-footer'
@@ -133,6 +134,10 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
   // header. Order follows each section's FIRST appearance, so the default rail is unchanged.
   const byLabel = new Map<string | null, NavSectionGroup>()
   for (const area of areas) {
+    // Declared, but not a rail row (lib/nav-areas `railHidden`): My Contacts is a tab of the
+    // Members hub, Journal belongs to My Frequency. They keep their permission row, their
+    // matrix surface and their palette entry; they just are not rows here.
+    if (area.railHidden) continue
     const item: MainNavItem = {
       key: area.key,
       href: area.href,
@@ -173,24 +178,23 @@ function sectionsFromKeys(keys: string[] | undefined): NavSectionGroup[] {
   return areas.length > 0 ? buildSections(areas) : NAV_SECTIONS
 }
 
-// Drop the member's Profile into the headerless home group beside Feed (it can't be a
-// static NAV_AREA — its href is the viewer's own /people/<handle>). Result: the rail opens
-// with Feed · Profile pinned above the worlds. If Feed's leading null group is missing
-// (e.g. an operator menu order without it), Profile still leads in its own home group.
-function withHomeProfile(sections: NavSectionGroup[], profileHref: string): NavSectionGroup[] {
-  const profileItem: MainNavItem = {
-    key: 'profile',
-    href: profileHref,
-    label: 'Profile',
-    Icon: UserRound,
-    defaultAccess: 'member',
-  }
-  const [first, ...rest] = sections
-  if (first && first.label === null) {
-    return [{ label: null, items: [...first.items, profileItem] }, ...rest]
-  }
-  return [{ label: null, items: [profileItem] }, ...sections]
-}
+// ── The Profile pin is now MY FREQUENCY (owner directive, 2026-08-06) ─────────────────
+//
+// This used to drop a flat "Profile" link into the home-anchor group beside Feed. It is a
+// DISCLOSURE now — profile, journal, contacts, the Spaces you run and the Circles you are in,
+// each with its own notice count (components/layout/my-frequency-row.tsx). A flat link could
+// not carry any of that, and the things it opens onto were previously reachable only from the
+// account dock at the far bottom of the rail.
+//
+// So there is no item to inject: the rail renders <MyFrequencyRow> itself, immediately after
+// the home anchor's rows. This helper stays as the ONE place that decides where in the section
+// list that boundary is, because both the desktop rail and the mobile drawer need the same
+// answer and a second copy is how they would disagree.
+//
+// The seam is the home anchor itself, which NavLinkList already identifies as it maps
+// (`isHomeAnchor` below): the row renders at the END of that group, exactly where the flat
+// Profile link used to sit. A menu order with no leading null group has no anchor, and the
+// row leads the rail instead.
 
 // Build the rail's sections from a DB-backed menu (lib/menus, getMenu('left_rail')).
 // effectiveMode resolves each item for the viewer: 'hidden' is DROPPED here, 'ghost'
@@ -391,12 +395,19 @@ function useTheme() {
 }
 
 // ── Profile card (the rail's foot — the account dock) ─────────────────────────
-// Public-facing identity: avatar · name · role badge → profile + member settings
-// This is the engagement anchor. Badges, rank, etc. will live here as we grow.
-// Three-docks law (DAWN 2026-08-03): the rail's foot is YOU and what you run —
-// profile, standing, journal, prefs, then the things you operate. System acts
-// (appearance, sign out) live in the top-right account menu instead, and score
-// lives in the Vault dock, bottom right — nothing is offered twice.
+// Public-facing identity: avatar · name · role badge, the view-as control, and the
+// operator-context switcher.
+//
+// Three-docks law (DAWN 2026-08-03): the rail's foot is YOU and what you run. Since
+// 2026-08-06 (ADR-954) the "what you run" half lives in MY FREQUENCY at the top of this
+// same rail, where a member actually looks — so this card no longer re-renders the
+// `profile` menu's link list. That was the same set of links as the top-right account
+// dropdown, at the bottom of a rail nobody scrolls to, and the card's own first rule is
+// that a control appears in exactly one dock.
+//
+// What is left is what only this dock can say: who you are, and which hat you are wearing.
+// System acts (appearance, sign out) live in the top-right account menu; score lives in the
+// Vault dock, bottom right. Nothing is offered twice.
 
 function ProfileCard({
   profile,
@@ -406,10 +417,6 @@ function ProfileCard({
   previewVisitor = false,
   operatorContext,
   availableContexts = [],
-  menu,
-  viewerRole = 'visitor',
-  staffRole = null,
-  canReceivePayouts = false,
 }: {
   profile: Profile
   role: CommunityRole
@@ -423,42 +430,14 @@ function ProfileCard({
   operatorContext?: OperatorContext
   /** The contexts the caller may switch into (server-derived from real authority). */
   availableContexts?: AvailableContext[]
-  /** The resolved `profile` menu — the SAME source the top-right AccountDropdown reads, so
-   *  the two account surfaces can never drift. Falls back to the code default. */
-  menu?: ResolvedMenu
-  /** Viewer token for gating each account link. */
-  viewerRole?: MenuAccess
-  /** Fine-grained staff role — the second axis canSeeMenuItem unions in. */
-  staffRole?: StaffRole | null
-  /** Real payouts eligibility (host+ OR live partner persona) — gates the "Receive payments"
-   *  account link on the true capability instead of the host-tier proxy. */
-  canReceivePayouts?: boolean
 }) {
   // The effective context for the chip's framing — personal when none was resolved.
   const context: OperatorContext = operatorContext ?? { kind: 'personal' }
-  // The account links, from the SAME resolved `profile` menu as the top-right dropdown —
-  // grouped into labeled sections; leftover ungrouped rootItems render too (safety).
-  const profileResolved = menu ?? defaultMenu('profile')
-  const profileViewer: MenuViewer = { viewerRole, staffRole }
-  // Child categories flatten into their section (flattenCategoryTree) so sub-group links
-  // still render in this one-level list.
-  const profileSectionsResolved = profileResolved.categories
-    .map((cat) => ({ label: cat.label, items: flattenCategoryTree(cat, (it) => canSeeAccountItem(it, profileViewer, canReceivePayouts)) }))
-    .filter((s) => s.items.length > 0)
-  const profileLooseLinks = profileResolved.rootItems.filter((it) => canSeeAccountItem(it, profileViewer, canReceivePayouts))
-  const renderCardLink = (it: ResolvedItem) => {
-    const Icon = railIconFor(it.icon)
-    return (
-      <Link
-        key={it.id}
-        href={it.href}
-        className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-body-sm font-medium text-text hover:bg-chrome-hover transition-colors"
-      >
-        <Icon className="w-4 h-4 text-muted shrink-0" />
-        {it.label}
-      </Link>
-    )
-  }
+  // The `profile` menu's link list used to be re-rendered HERE as well as in the top-right
+  // account dropdown. It is not any more: My Frequency carries "you, and what you run" at the
+  // top of this same rail, and DAWN's three-docks card says a control appears in exactly one
+  // dock. The resolver + gate imports that fed the duplicate list went with it; the top-right
+  // AccountDropdown still owns them, which is the point — one renderer, one place.
   // Pinned at the bottom of the (non-scrolling) left rail, so it stays put on a
   // long scroll. The quick-actions panel opens ONLY on tapping the chevron — it
   // never rises on scroll or hover (that was disorienting); it stays put until the
@@ -550,25 +529,22 @@ function ProfileCard({
               <User className="w-4 h-4 text-muted shrink-0" />
               View profile
             </Link>
-            {/* The editable `profile` menu — the SAME source as the top-right dropdown, so
-                the account links never drift. Grouped into labeled sections; scrolls if long. */}
-            <div className="max-h-64 overflow-y-auto">
-              {profileLooseLinks.map(renderCardLink)}
-              {profileSectionsResolved.map((s) => (
-                <div key={s.label ?? 'section'} className="pt-1">
-                  {s.label ? (
-                    <p className="px-2 pt-1 pb-0.5 text-2xs font-semibold uppercase tracking-wider text-muted">
-                      {s.label}
-                    </p>
-                  ) : null}
-                  {s.items.map(renderCardLink)}
-                </div>
-              ))}
-            </div>
-            {/* No Sign out here (three-docks law): signing out is a SYSTEM act and
-                lives in the account menu, top right — nothing is offered twice. */}
+            {/* ── THE LINK LIST IS GONE, AND THAT IS THE POINT ────────────────────────────
+                This used to re-render the whole `profile` menu here: You / Membership /
+                Commerce / Community / Support, the same links as the top-right account
+                dropdown, at the far bottom of a rail nobody scrolls to.
+
+                MY FREQUENCY now carries "you, and what you run" at the TOP of this same rail
+                (components/layout/my-frequency-row.tsx), which is where DAWN's three-docks
+                card puts that content and where a member actually looks. Keeping the list here
+                too would put the same links twice on one rail, four inches apart, against that
+                card's first rule: "a control appears in exactly one dock."
+
+                What stays is what only this dock can say: who you are, your standing, and the
+                view-as / operator-context controls that belong to the person, not the page. */}
             <p className="px-2 pt-1.5 pb-1 text-2xs leading-relaxed text-muted">
-              Appearance and sign out live in the account menu, top right.
+              Your Spaces and Circles are in My Frequency, top of the menu. Appearance and sign
+              out are in the account menu, top right.
             </p>
           </div>
         </div>
@@ -835,6 +811,7 @@ function NavLinkList({
   sections = NAV_SECTIONS,
   compact = false,
   menuDriven = false,
+  myFrequency = null,
 }: {
   isActive: (href: string) => boolean
   /** Gating role; null = visitor (the janitor's "view as visitor" preview). */
@@ -858,6 +835,9 @@ function NavLinkList({
    *  already-resolved `mode` (active / ghost; hidden was dropped upstream), so render
    *  by mode and SKIP the legacy itemAccess + telescope gating (no double-gate). */
   menuDriven?: boolean
+  /** The member's own things (lib/nav/my-frequency). Rendered as the disclosure directly under
+   *  the home anchor. Omitted (a visitor preview, or a failed read) simply drops the row. */
+  myFrequency?: MyFrequency | null
 }) {
   // `emphasize` = the home anchor (Feed): always the brand's dark brown and bold,
   // active or not, so it reads as the rail's permanent "home".
@@ -1107,6 +1087,17 @@ function NavLinkList({
               </Link>
             )
           })}
+          {/* MY FREQUENCY closes the home anchor — the seam the flat Profile link used to
+              occupy. Inside the group (not after it) so the anchor's own spacing carries it,
+              and so a fold keeps it in the same run of squares. */}
+          {isHomeAnchor && myFrequency && (
+            <MyFrequencyRow
+              data={myFrequency}
+              isActive={isActive}
+              onNavigate={onNavigate}
+              compact={compact}
+            />
+          )}
         </div>
         )
       })}
@@ -1173,6 +1164,7 @@ function MobileLeftDrawer({
   operatesSpaces = false,
   sections = NAV_SECTIONS,
   menuDriven = false,
+  myFrequency = null,
   mobileStats,
 }: {
   open: boolean
@@ -1196,6 +1188,9 @@ function MobileLeftDrawer({
   operatesSpaces?: boolean
   /** The rail sections (DB-backed left_rail menu, else the legacy/code fallback). */
   sections?: NavSectionGroup[]
+  /** The member's own things for the My Frequency disclosure; forwarded to NavLinkList so
+   *  the drawer and the desktop rail render the SAME menu. */
+  myFrequency?: MyFrequency | null
   /** Sections are DB-driven (mode-per-item); forwarded to NavLinkList. */
   menuDriven?: boolean
   /** The game-stats block (MobileGameStats). The drawer's bottom cluster is the < 768 home of
@@ -1377,7 +1372,7 @@ function MobileLeftDrawer({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} operatesSpaces={operatesSpaces} sections={sections} menuDriven={menuDriven} />
+          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} operatesSpaces={operatesSpaces} sections={sections} menuDriven={menuDriven} myFrequency={myFrequency} />
         </nav>
 
         {/* Bottom cluster — About/legal, then a thumb-zone Close.
@@ -1612,6 +1607,7 @@ export default function AppShell({
   menuViewerRole = 'visitor',
   menuTimings,
   railFold,
+  myFrequency = null,
 }: {
   profile: Profile
   /** True DB role, ignoring any view-as override. Defaults to the (effective)
@@ -1735,6 +1731,10 @@ export default function AppShell({
    *  is outside this pass's domain, so the prop ships unwired and OPTIONAL. Omitted, both sides
    *  start on Auto (today's exact first paint) and the stored instruction is applied at hydration. */
   railFold?: Partial<RailFolds>
+  /** The member's own things for the rail's My Frequency disclosure (lib/nav/my-frequency),
+   *  resolved server-side once per request. Omitted ⇒ the row simply does not render, so a
+   *  failed read costs the rail one row and never the whole menu. */
+  myFrequency?: MyFrequency | null
 }) {
   const pathname = usePathname()
   const profileHref = `/people/${profile.handle}`
@@ -1756,8 +1756,8 @@ export default function AppShell({
       : []
   const menuDriven = dbRailSections.length > 0
   const navSections = menuDriven
-    ? withHomeProfile(dbRailSections, profileHref)
-    : withHomeProfile(sectionsFromKeys(menuAreaKeys), profileHref)
+    ? dbRailSections
+    : sectionsFromKeys(menuAreaKeys)
   const role = (profile.community_role ?? 'member') as CommunityRole
   const effectiveRealRole = realRole ?? role
   // Nav gating role: a visitor preview gates as a logged-out visitor (null).
@@ -1995,6 +1995,8 @@ export default function AppShell({
               variant="light"
               panelAlign="content"
               rightRail={showSidebar}
+              leftFolded={leftStrip}
+              rightFolded={railCollapsed}
               headerMenu={headerMenu}
               viewerRole={menuViewerRole}
               timings={menuTimings}
@@ -2216,7 +2218,7 @@ export default function AppShell({
                     the same on both sides. Folded, the rows are centred 44px squares, so the
                     column takes a small symmetric inset instead. */}
                 <nav className={leftStrip ? 'flex-1 px-1.5 py-3' : 'flex-1 py-3 space-y-1'}>
-                  <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} operatesSpaces={operatesSpaces} sections={navSections} menuDriven={menuDriven} compact={leftStrip} />
+                  <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} operatesSpaces={operatesSpaces} sections={navSections} menuDriven={menuDriven} myFrequency={myFrequency} compact={leftStrip} />
                 </nav>
                 {/* Bottom-left profile card — the account dock at the rail's FOOT (three-docks
                     law): the admin canvas corner-tab skin (rounded top, hairline, canvas-tinted
@@ -2284,7 +2286,7 @@ export default function AppShell({
                   ) : (
                     <>
                       {!hideAppNav && role === 'member' && <UpgradeCrew />}
-                      <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} operatorContext={operatorContext} availableContexts={availableContexts} menu={profileMenu} viewerRole={menuViewerRole} staffRole={staffRole} canReceivePayouts={canReceivePayouts} />
+                      <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} operatorContext={operatorContext} availableContexts={availableContexts} />
                     </>
                   )}
                   {/* The fold control used to sit HERE as a row IN this tab, at the foot, under
@@ -2497,6 +2499,7 @@ export default function AppShell({
           operatesSpaces={operatesSpaces}
           sections={navSections}
           menuDriven={menuDriven}
+          myFrequency={myFrequency}
           mobileStats={mobileStats}
         />
       )}

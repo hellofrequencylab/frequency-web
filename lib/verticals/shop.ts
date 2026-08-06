@@ -26,7 +26,7 @@ export const shop: Vertical = {
         key: 'shop',
         href: '/store',
         label: 'Frequency Store',
-        section: 'Community',
+        section: 'Market',
         defaultAccess: 'visitor',
         surface: 'shop',
       },

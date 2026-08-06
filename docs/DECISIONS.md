@@ -18158,3 +18158,123 @@ watching the same 900px jump. That is a real follow-up and this ADR is not a sub
 those baselines were never seeded, so both surfaces are being held to zero serious+ violations
 against debt that predates the gate. Seeding them is `e2e-manual.yml` with `capture_shell` +
 `update_a11y`, and it is a different decision from this one.
+
+---
+
+## ADR-953 — The menu's permissions leave the database
+
+**Date:** 2026-08-06 · **Status:** Accepted · **Owner-decided**
+
+**Context.** `docs/MENU-AUDIT-2026-08-06.md` found six live gate defects on the seeded `left`
+menu. Every one was the same shape: a `menu_items` row is allowed to state its own permissions,
+and nothing except the renderer ever reads that statement. `Admin > Market` sat at
+`min_access: 'visitor'`, so every logged-in member saw an Admin group. Six admin rows had their
+`staff_domain` deleted, silently disabling one half of the ADR-390 union gate — a staff-only
+operator stopped seeing their own domains. `Journal` was seeded open to visitors. All of it
+shipped green, because no test reads production data.
+
+**Options.** (a) A drift guard comparing seeded gates to the code defaults. (b) Fix the rows and
+move on. (c) Stop storing gates.
+
+**Decision. (c).** `lib/menus/gates.ts` re-derives `minAccess` / `staffDomain` / `staffLevel` /
+`requiresOperatedSpaces` from `lib/nav/registry.ts` by href, inside `getMenu` — the one seam every
+surface reads through. The database keeps everything an operator should actually control: order,
+grouping, label, icon, subheading, grid placement, and the on/off mode.
+
+(a) was the obvious answer and it is not enough. A guard turns a wrong gate into a red build,
+which is better than silence, but the gate is still settable and therefore still gets set. (b)
+fixes six rows and leaves the seventh to a future operator with a dropdown in front of them.
+
+**Consequences.** ✅ All six defects are fixed everywhere at once, in code, with no data
+migration. ✅ A category's floor is now DERIVED as the lowest floor among its rows, so a group
+header can never advertise itself to someone who cannot reach a single row inside it — which is
+what made the Admin leak visible. ✅ The Menu Manager stops lying: for a page the registry knows,
+`GateControls` renders the inherited gate read-only and says where it comes from; for an
+operator-added page it keeps the real editors, because there the stored gate genuinely is the
+gate. ⚠️ Operators lose per-row re-gating for registry pages. That knob produced six defects and
+zero intended outcomes, and the per-role mode matrix still covers presentation. 🔴 An undeclared
+href under `/admin/` is floored at `admin` regardless of what it was seeded as — the escape hatch
+must not be the hole that opens an operator surface to the public.
+
+---
+
+## ADR-954 — My Frequency, and the dock that stopped being two docks
+
+**Date:** 2026-08-06 · **Status:** Accepted · **Owner-decided**
+
+**Context.** The rail's home anchor carried a flat "Profile" link. The Spaces a member runs and
+the Circles they are in were reachable only from the account dock at the far bottom of the rail,
+as an undifferentiated link list, with no indication that anything inside wanted them.
+
+**Decision.** The Profile row becomes **My Frequency**: a disclosure listing profile, journal,
+contacts, the Spaces you run and the Circles you are in, each carrying its unread notice count,
+with the total on the parent row. Counts come from one grouped read of `notifications`
+(`reference_type` + `reference_id` + `read_at` already exist; nothing new is stored).
+
+**And the account dock's link list is deleted in the same pass.** DAWN's three-docks card files
+this exact content under "You, and what you run" and opens with "a control appears in exactly one
+dock." Shipping My Frequency additively would have put the same links twice on one rail, four
+inches apart. The dock keeps what only it can say: identity, standing, view-as, operator context.
+
+**Why it discloses in place rather than popping over.** The rail is a scroller, so a floating
+panel has to escape it with `position: fixed` and re-anchor on scroll — DAWN's own `AccountDock`
+carries that workaround. Rows that push their neighbours down need none of it, keep one tab
+order, and survive a fold by reusing the flyout the folded strip already has.
+
+**Consequences.** ✅ A member sees from a folded rail that something wants them (DAWN's `NavRow`
+badge: a count open, a 6px dot folded). ✅ One You surface. ⚠️ The read is suppressed under a
+view-as downgrade, like `operatesSpaces` and `staffRole`, so a steward previewing as a member does
+not keep their own Spaces in the menu. ⚠️ Capped at 8 entries per group: a disclosure that needs
+its own scrollbar is a page.
+
+---
+
+## ADR-955 — The rail regroups, and two rows leave it
+
+**Date:** 2026-08-06 · **Status:** Accepted · **Owner-decided**
+
+**Decision.** Community was eleven rows holding three unrelated things — places to gather,
+commerce, and people. Commerce (Market · Housing · Frequency Store) becomes its own **Market**
+group. `My Contacts` and `Journal` leave the rail via a new `railHidden` flag on `NavArea`.
+
+**Why a flag and not a deletion.** Both areas still need their `/admin/roles` permission row,
+their access-matrix surface, and their palette entry. `railHidden` drops `'spine'` from the
+registry projection and keeps `'palette'` — the same statement in the registry's own vocabulary.
+
+🔴 **It is deliberately NOT `section: null`.** A null section pins an area to the headerless home
+anchor beside Feed, which is the opposite of removing it. The two were one edit apart.
+
+**Why My Contacts specifically.** It is a TAB of the Members hub rendered as that hub's sibling,
+and because `routeActive` prefix-matches, standing on `/network/contacts` lit BOTH rows at once —
+the rail naming two locations for one page. Journal moves because DAWN files the journal under
+"You", not under the game.
+
+**Consequences.** ✅ 17 rows to 13, four groups, two levels. ⚠️ The seeded database owns the live
+grouping, so the code change alone moves nothing: `20270213000000_menu_regroup_and_canon.sql`
+applies the same shape to the seeded rows, and switches the two departing rows OFF (`mode =
+'hidden'`, the same switch the Menu Manager's toggle writes) rather than deleting them, so either
+can be put back from the UI in one click while the owner tests layouts.
+
+---
+
+## ADR-956 — The mega-menu panel stops guessing the shell's geometry
+
+**Date:** 2026-08-06 · **Status:** Accepted
+
+**Context.** Two faults, both from the audit. Every header dropdown rendered as one ~170px column
+inside a ~1,139px band: `triggerLevel='category'` puts a trigger's children in `categories` and
+its own links in `rootItems`, the header tree is one level deep, so `categories` was always empty
+and every dropdown took the single-`div` branch. On top of that, `cardGutters` reserved two of six
+grid columns for rail cards unconditionally — and there is not one rail card in the database on
+any surface. And the panel hand-copied the shell's rail widths and gaps, drifting 8.5px at rest,
+136px with the left rail folded, 229px with the right one collapsed.
+
+**Decision.** Loose items chunk into 1-3 columns by count (explicit chunks, not CSS `columns`,
+because these rows are label + subheading and multi-column would break one across a boundary). A
+gutter is reserved only when that side actually has a card. And the row's class spellings move
+into `lib/layout/shell-metrics.ts` — the file that exists for exactly this failure — with the
+rails' live fold state threaded through `PrimaryNav`.
+
+**Consequences.** ✅ The panel is inside the guard that `shell-metrics.test.ts` already runs
+against `app-shell.tsx`. ⚠️ Dropdowns of 5+ links now read across as well as down; the four-link
+ones are unchanged.

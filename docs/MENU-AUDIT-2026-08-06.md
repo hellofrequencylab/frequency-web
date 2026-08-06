@@ -1,6 +1,10 @@
 # Menu system audit — 2026-08-06
 
-**Status:** Audit only. No code or data changed. Findings verified against the code on
+**Status:** ✅ Audit + the redesign it produced. The audit stands as written below (it is the
+record of what was wrong); ADR-953 to ADR-956 are the answers, shipped in this same PR. Findings
+resolved: §2.1, §2.2, §3 #1, §3 #3, §4.2, §4.3, §4.4 #1-#2, §4.5 #1-#3. Still open and listed
+in §6: mobile header sub-links (§2.3 #6), the panel's scroll-dismiss and focus return (§2.3
+#1-#2), `rail-panels.ts` `/people` → `/network` (§1). Findings verified against the code on
 `claude/frequency-menu-audit-33skn4` and against the LIVE `Frequency Community` database
 (`menus` / `menu_categories` / `menu_items`), read-only.
 

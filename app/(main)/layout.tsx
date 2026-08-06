@@ -78,6 +78,7 @@ import {
 } from '@/lib/marketplace/visibility'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import { isAnonPublicDetail } from '@/lib/nav/public-detail-routes'
+import { getMyFrequency } from '@/lib/nav/my-frequency'
 import { viewerRoleFor } from '@/components/layout/menu-role'
 import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
@@ -360,6 +361,12 @@ export default async function MainLayout({
   // ceiling and the raw value already reflects this person's true eligibility).
   const canReceivePayoutsGate = previewingDown ? false : payoutsEligibleRaw
 
+  // MY FREQUENCY — the rail's disclosure (you, and what you run). One React-cached read, itself
+  // fail-safe (any error resolves to a profile-only menu), so the rail can never block or throw on
+  // it. Suppressed under a view-as downgrade / visitor preview for the same reason operatesSpaces
+  // and staffRole are: a steward previewing as a member must not keep their own Spaces in the menu.
+  const myFrequency = previewingDown ? null : await getMyFrequency(profile.id, profile.handle)
+
   // Staff web_role axis (ADR-208) — gates the staff-only on-page "Page" settings group
   // (admin+, the EMBEDDED-ADMIN inline layer). Suppressed under a downgrade preview so a
   // steward's "view as" faithfully hides operator chrome, matching staffRole above.
@@ -631,6 +638,7 @@ export default async function MainLayout({
       adminHeaderMenu={adminHeaderMenu}
       menuViewerRole={menuViewerRole}
       menuTimings={menuTimings}
+      myFrequency={myFrequency}
     >
       <GaConsentGate disabled={!analyticsConsent || gaStaffExcluded} />
       {gaStaffExcluded && <GaStaffOptOut />}

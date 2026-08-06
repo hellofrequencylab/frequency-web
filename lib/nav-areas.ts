@@ -51,6 +51,18 @@ export type NavArea = {
    *  hasOperatedSpaces) and threads it in; the gate honors it on top of the role/staff axes. Used
    *  by the "My Spaces" operator entry so it appears only for people who actually run a Space. */
   requiresOperatedSpaces?: boolean
+  /** DECLARED, but not a RAIL ROW (2026-08-06 regroup). The area still exists for everything
+   *  keyed off it — the /admin/roles permission grid, `area_permissions`, the access matrix, the
+   *  ⌘K palette, and any saved menu order that names it — but it does not render as a row in the
+   *  left rail, because it is reachable somewhere better.
+   *
+   *  🔴 THIS IS NOT `section: null`. A null section pins an area to the headerless HOME ANCHOR
+   *  beside Feed, which is the opposite of removing it. The two were one edit apart and the
+   *  distinction is load-bearing, so it gets its own field rather than a convention.
+   *
+   *  In the registry projection this drops `'spine'` from the node's surfaces (it keeps
+   *  `'palette'`), which is the same statement said in the registry's own vocabulary. */
+  railHidden?: boolean
 }
 
 // Order here IS the render order down the rail. FIVE worlds (IA plan, 2026-06-06):
@@ -89,15 +101,17 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   // The member directory. Labeled "Members" (ADR-868; was "Community", which collided with
   // the section header right above it and read as a place, not the people in it).
   { key: 'people',        href: '/network',   label: 'Members',      section: 'Community', defaultAccess: 'member',  surface: 'people' },
-  // Re-homed orphan (E.1): the contacts list lives in the Network hub as My Contacts (ADR-172) —
-  // /connections redirects there. Surfaced here so members reach their connections from the rail.
-  { key: 'connections',   href: '/network/contacts', label: 'My Contacts', section: 'Community', defaultAccess: 'member', surface: 'people' },
+  // My Contacts LEFT THE RAIL (2026-08-06 regroup) but stays declared — `railHidden`, so the
+  // permission grid, the access matrix and ⌘K all keep it. It is a TAB of the Members hub and was
+  // rendered as that hub's sibling. Two real costs: it read as a peer of a place it lives inside,
+  // and `routeActive` prefix-matches, so standing on /network/contacts lit BOTH rows at once —
+  // the rail naming two locations for one page. One click from Members, and reachable from ⌘K.
+  { key: 'connections',   href: '/network/contacts', label: 'My Contacts', section: 'Community', defaultAccess: 'member', surface: 'people', railHidden: true },
   // Business Spaces — the member-facing public DIRECTORY of every networked Space (practitioners,
   // businesses, organizations, coaching academies, event spaces). The primary browse index at
-  // /spaces/directory, with type pills, search, a Following toggle, and a sort control. Sits under
-  // My Contacts so a member's people + the Spaces they can join live together in Community. Distinct
-  // from the Spaces a leader RUNS (now surfaced in Leadership, /lead) and "Manage Spaces" (the
-  // platform board, /admin/spaces). Key kept `my-spaces` for menu-override / test stability.
+  // /spaces/directory, with type pills, search, a Following toggle, and a sort control. Distinct
+  // from the Spaces a leader RUNS (those are in My Frequency) and "Manage Spaces" (the platform
+  // board, /admin/spaces). Key kept `my-spaces` for menu-override / test stability.
   { key: 'my-spaces',     href: '/spaces/directory', label: 'Business Spaces', section: 'Community', defaultAccess: 'member', surface: 'people' },
 
   // ── The Quest → everyone plays; only the Vault (cash-in) is paid-gated ────────
@@ -110,7 +124,10 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   { key: 'library',    href: '/library',         label: 'Library',    section: 'The Quest', defaultAccess: 'member', surface: 'library' },
   // Journal is a member-only PERSONAL log (no matrix surface of its own); ride the `people` row
   // ({ member: 'full' }, visitor hidden) so it gates exactly like the other member-only surfaces.
-  { key: 'journal',    href: '/journal',         label: 'Journal',    section: 'The Quest', defaultAccess: 'member', surface: 'people' },
+  // `railHidden` since the 2026-08-06 regroup: DAWN files the journal under "You" (the account
+  // dock's first group, design_handoff/dawn/guidelines/chrome-docks.card.html), not under the
+  // game. It renders in My Frequency now. The Quest keeps the five rows that ARE the game.
+  { key: 'journal',    href: '/journal',         label: 'Journal',    section: 'The Quest', defaultAccess: 'member', surface: 'people', railHidden: true },
   { key: 'vault',      href: '/crew/store',      label: 'The Vault',  section: 'The Quest', defaultAccess: 'member', previewBelowAccess: true, surface: 'vault' },
 
   // ── Admin → the operator world. Telescopes: only the items a role/staff axis can
