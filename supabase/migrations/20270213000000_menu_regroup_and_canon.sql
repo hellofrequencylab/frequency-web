@@ -60,14 +60,27 @@ select m.id, 'Market', 1, 'visitor'
    );
 
 -- The Quest and Admin shift down one so Market lands between Community and The Quest.
+--
+-- 🔴 SET, DO NOT INCREMENT. The first version of this was `position + 1 ... where position < 2`,
+-- where the `< 2` was meant as idempotency protection. It was not: the seeded Admin group was
+-- ALREADY at 2, so it never moved while The Quest went 1 -> 2, and the two collided at the same
+-- position with a non-deterministic order between them. Caught on the live database by the
+-- post-apply verification, not by anything in this file.
+--
+-- Absolute positions are the fix AND the idempotency: running this twice lands on the same four
+-- numbers, whatever the rows started at, which an increment can never promise.
 update public.menu_categories c
-   set position = c.position + 1
+   set position = case c.label
+                    when 'Community' then 0
+                    when 'Market'    then 1
+                    when 'The Quest' then 2
+                    when 'Admin'     then 3
+                  end
   from public.menus m
  where c.menu_id = m.id
    and m.surface_key = 'left'
    and m.space_id is null
-   and c.label in ('The Quest', 'Admin')
-   and c.position < 2;
+   and c.label in ('Community', 'Market', 'The Quest', 'Admin');
 
 update public.menu_items i
    set category_id = (
