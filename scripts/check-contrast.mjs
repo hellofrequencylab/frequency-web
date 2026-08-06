@@ -267,6 +267,41 @@ export const WAIVERS = [
     why: 'The amber brand fill on white is 2.52:1. Fine for a decorative fill; listed because the same token is the fill under button labels (see the first waiver).',
   },
   {
+    fg: '--color-text-on-primary',
+    bg: '--color-primary',
+    floors: {
+      'DAWN light': 2.52, 'DAWN dark': 1.88, 'Midnight light': 2.86, 'Midnight dark': 1.95,
+      'Light-lock on a dark device': 2.52,
+    },
+    why:
+      'OWNER PALETTE DECISION, 2026-08-06, made with the measurement in hand and stated plainly ' +
+      'rather than buried: the primary button label is WHITE on the brand amber, and it does not ' +
+      'meet 4.5:1 in any state. Worst is DAWN dark at 1.88:1. This is not drift and not an ' +
+      'oversight -- the amber was darkened to #A06621 so white WOULD pass (4.75:1), the owner saw ' +
+      'it, and rejected the colour. The instruction was "roll it back to the original orange and ' +
+      'leave the white. That rule doesn\'t apply here." So the pair ships knowingly. ' +
+      'WHAT IS AND IS NOT WAIVED: the FILL is waived, the practice is not. There is no amber this ' +
+      'bright that can carry white text -- white on #E2912F is 2.52:1, under even the 3:1 ' +
+      'large-text floor, so no font size or weight rescues it. The `chisel` utility on the button ' +
+      'is a FINISH and changes no ratio; do not cite it as mitigation. If this is ever revisited, ' +
+      'the only two honest moves are a darker fill (#A06621 for AA) or ink labels (7.35:1). ' +
+      'Frozen at the measured floors so the amber cannot drift LIGHTER from here, which is the one ' +
+      'direction that would make a knowingly-weak pair quietly worse.',
+  },
+  {
+    fg: '--color-text-on-primary',
+    bg: '--color-primary-hover',
+    floors: {
+      'DAWN light': 3.12, 'DAWN dark': 1.59, 'Midnight light': 3.61, 'Midnight dark': 1.64,
+      'Light-lock on a dark device': 3.12,
+    },
+    why:
+      'The hover half of the owner decision above. Recorded as its own entry rather than folded in ' +
+      'because the hover fill is a DIFFERENT colour with a different floor, and in the dark skins ' +
+      'it is the WEAKER of the two (1.59:1 vs 1.88:1) -- hovering makes the label harder to read, ' +
+      'not easier, which is worth having printed in every run.',
+  },
+  {
     fg: '#FFFFFF',
     bg: '--rank-gold',
     floors: {

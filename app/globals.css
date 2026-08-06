@@ -64,15 +64,14 @@
   --color-on-media:         var(--color-on-media-light);
 
   /* Brand. Primary (amber-gold) */
-  --color-primary:          #A06621;
-  --color-primary-hover:    #A2651C;
+  --color-primary:          #E2912F;
+  --color-primary-hover:    #CE8023;
   --color-primary-strong:   #9A5E12;
   --color-primary-bg:       #FBEFD9;
   --color-text-on-primary:  #FFFFFF;
   /* Glyphs on a RANK CORE, decoupled from the button label (2026-08-06). These borrowed
      --color-text-on-primary while that token was ink, and the contrast gate's own model still
-     called it "the dark ink on the CORE". The moment on-primary became white to sit on the
-     darkened amber, every rank core inherited a white glyph — and gold, the lightest core in the
+     called it "the dark ink on the CORE". The moment on-primary became white, every rank core inherited a white glyph — and gold, the lightest core in the
      spectrum by design, fell to 2.46:1. The two are different jobs on different fills and now
      have different tokens; the rank spectrum is fixed across skins, so this needs no per-skin
      override. */
@@ -457,8 +456,8 @@
   --color-text:              #3D352A;
   --color-text-muted:        #6B6253;
   --color-text-subtle:       #6E6558;
-  --color-primary:           #A06621;
-  --color-primary-hover:     #A2651C;
+  --color-primary:           #E2912F;
+  --color-primary-hover:     #CE8023;
   --color-primary-strong:    #9A5E12;
   --color-primary-bg:        #FBEFD9;
   --color-text-on-primary:   #FFFFFF;
@@ -566,8 +565,8 @@
 
   /* Primary — keep the warm amber accent so the brand carries; nudged slightly
      deeper/cooler-shadowed to sit on the cool surfaces. */
-  --color-primary:           #A46420;
-  --color-primary-hover:     #A6631A;
+  --color-primary:           #D9852A;
+  --color-primary-hover:     #C2741F;
   --color-primary-strong:    #8C5410;
   --color-primary-bg:        #F6E7CF;
   --color-text-on-primary:   #FFFFFF;
@@ -615,8 +614,8 @@
   --color-on-ink-muted:     #A99C88;
   --color-on-ink-subtle:    #7E735F;
 
-  --color-primary:          #936C2F;
-  --color-primary-hover:    #8B6E3E;
+  --color-primary:          #F2B14E;
+  --color-primary-hover:    #F8C56F;
   --color-primary-strong:   #F2B14E;
   --color-primary-bg:       #30240F;
   --color-text-on-primary:  #FFFFFF;
@@ -699,8 +698,8 @@
 
   /* Primary — warm amber accent kept (brighter in the dark, as DAWN does), so the
      cool field still carries a Frequency-warm highlight. */
-  --color-primary:          #956B30;
-  --color-primary-hover:    #8C6E3F;
+  --color-primary:          #F0AD4E;
+  --color-primary-hover:    #F6C16F;
   --color-primary-strong:   #F0AD4E;
   --color-primary-bg:       #2A2113;
   --color-text-on-primary:  #FFFFFF;
@@ -768,8 +767,8 @@
    warmer/deeper and ornament lifts slightly so glows/strips feel a little more lit, the
    way the spaces glow at solstice. Palette structure + contrast otherwise untouched. */
 [data-occasion="solstice"] {
-  --color-primary:        #A66318;
-  --color-primary-hover:  #A96115;
+  --color-primary:        #E68A22;
+  --color-primary-hover:  #D2791A;
   --color-focus-ring:     #E68A22;
   /* Ornament lifts a notch so decorative glow layers read warmer for the season. */
   --ornament: 0.75;
@@ -779,8 +778,8 @@
    slightly brighter amber against the dark wood, ornament lifted a touch more so the
    light strips/glows feel festively lit in the dark. */
 .dark [data-occasion="solstice"] {
-  --color-primary:        #8F6D37;
-  --color-primary-hover:  #877043;
+  --color-primary:        #F6BC5E;
+  --color-primary-hover:  #FACE7C;
   --color-focus-ring:     #F6BC5E;
   --ornament: 0.85;
 }
