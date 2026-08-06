@@ -68,7 +68,14 @@
   --color-primary-hover:    #CE8023;
   --color-primary-strong:   #9A5E12;
   --color-primary-bg:       #FBEFD9;
-  --color-text-on-primary:  #1A1206;
+  --color-text-on-primary:  #FFFFFF;
+  /* Glyphs on a RANK CORE, decoupled from the button label (2026-08-06). These borrowed
+     --color-text-on-primary while that token was ink, and the contrast gate's own model still
+     called it "the dark ink on the CORE". The moment on-primary became white, every rank core inherited a white glyph — and gold, the lightest core in the
+     spectrum by design, fell to 2.46:1. The two are different jobs on different fills and now
+     have different tokens; the rank spectrum is fixed across skins, so this needs no per-skin
+     override. */
+  --color-text-on-rank:     #1A1206;
 
   /* Brand. Signal (emerald-teal) — a deep, green-leaning jewel teal, distinct in hue
      from Broadcast's cyan and cohesive with the teal success. */
@@ -103,10 +110,13 @@
   --color-warning-bg:       #F6ECD8;
   --color-danger:           #BA3B30;
   --color-danger-bg:        #F7E4E1;
-  /* Labels ON a solid semantic fill. Split out from --color-text-on-primary, which is the
-     amber pair and now resolves to ink: ink on the light danger red is 3.31 (sub-AA), so a
-     shared token cannot serve both. Measured light: white/danger 5.59, ink/warning 4.77,
-     white/success 4.67. */
+  /* Labels ON a solid semantic fill. Split out from --color-text-on-primary because the two
+     fills need different labels: ink on the light danger red is 3.31 (sub-AA), so one shared
+     token cannot serve both. Measured light: white/danger 5.59, ink/warning 4.77,
+     white/success 4.67.
+     (This comment used to add "…--color-text-on-primary, which now resolves to ink". It resolves
+     to WHITE as of 2026-08-06 — see the amber block above. The split still stands: warning keeps
+     ink, because ink on the light warning yellow is what passes there.) */
   --color-text-on-danger:   #FFFFFF;
   --color-text-on-warning:  #1A1206;
   --color-text-on-success:  #FFFFFF;
@@ -450,7 +460,7 @@
   --color-primary-hover:     #CE8023;
   --color-primary-strong:    #9A5E12;
   --color-primary-bg:        #FBEFD9;
-  --color-text-on-primary:   #1A1206;
+  --color-text-on-primary:   #FFFFFF;
   --color-success:           #11827A;
   --color-success-bg:        #D7EFEA;
   --color-danger:            #BA3B30;
@@ -559,7 +569,7 @@
   --color-primary-hover:     #C2741F;
   --color-primary-strong:    #8C5410;
   --color-primary-bg:        #F6E7CF;
-  --color-text-on-primary:   #1A1206;
+  --color-text-on-primary:   #FFFFFF;
 
   /* Focus follows primary, as DAWN does. */
   --color-focus-ring:        #B86A15;
@@ -608,7 +618,7 @@
   --color-primary-hover:    #F8C56F;
   --color-primary-strong:   #F2B14E;
   --color-primary-bg:       #30240F;
-  --color-text-on-primary:  #1A1206;
+  --color-text-on-primary:  #FFFFFF;
 
   /* Teal stays the calibrated secondary (pool-water accent); slightly richer
      tint so it reads clearly teal against the warm dark wood. Amber still leads. */
@@ -692,7 +702,7 @@
   --color-primary-hover:    #F6C16F;
   --color-primary-strong:   #F0AD4E;
   --color-primary-bg:       #2A2113;
-  --color-text-on-primary:  #1A1206;
+  --color-text-on-primary:  #FFFFFF;
 
   --color-focus-ring:       #F0AD4E;
 
@@ -1190,6 +1200,7 @@
   --color-primary-strong:   var(--color-primary-strong);
   --color-primary-bg:       var(--color-primary-bg);
   --color-on-primary:       var(--color-text-on-primary);
+  --color-on-rank:          var(--color-text-on-rank);
   --color-on-danger:        var(--color-text-on-danger);
   --color-on-warning:       var(--color-text-on-warning);
   --color-on-success:       var(--color-text-on-success);
@@ -1606,6 +1617,20 @@
    `tap-target` consumer inherits it. */
 @media (pointer: coarse) {
   :root { --tap-min: 44px; }
+}
+
+@utility chisel {
+  /* The ultra-fine top highlight (owner, 2026-08-06). A one-pixel inset light edge along the top
+     of a filled control, so the deeper amber reads as a raised, chiselled face rather than a flat
+     slab. Paired with a whisper of shade along the bottom edge, which is what makes it read as
+     bevelled rather than merely lighter at the top.
+     🔴 IT IS A FINISH, NOT A FIX. A highlight cannot move a contrast ratio -- WCAG measures the
+     text colour against the fill behind it, and an inset shadow is neither. White reads on these
+     buttons because the FILL was darkened to 4.75:1 (see --color-primary above); this is what
+     stops that darker fill from looking heavy. Never reach for it to rescue a failing pair. */
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.20),
+    inset 0 -1px 0 0 rgb(0 0 0 / 0.10);
 }
 
 @utility tap-target {

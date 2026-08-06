@@ -209,7 +209,7 @@ describe('the rank spectrum is inside the contract', () => {
       expect(forRank.map((p) => `${p.fg} on ${p.bg}`).sort(), `rank ${r} is not fully covered`).toEqual([
         `#FFFFFF on --rank-${r}`,
         `--color-on-ink on --rank-${r}-deep`,
-        `--color-text-on-primary on --rank-${r}`,
+        `--color-text-on-rank on --rank-${r}`,
       ])
     }
   })
@@ -225,7 +225,10 @@ describe('the rank spectrum is inside the contract', () => {
   })
 
   it('holds a GLYPH on a rank core to 1.4.11 (3:1), not the 4.5 text bar — stated, not assumed', () => {
-    const glyphs = PAIRS.filter((p) => p.fg === '--color-text-on-primary' && /^--rank-[a-z]+$/.test(p.bg))
+    // `text-on-rank`, not `text-on-primary`. They were the same token until 2026-08-06, when the
+    // amber darkened so white could sit on it — at which point the button LABEL went white and
+    // would have taken every rank glyph with it, onto gold, at 2.46:1. Two jobs, two tokens.
+    const glyphs = PAIRS.filter((p) => p.fg === '--color-text-on-rank' && /^--rank-[a-z]+$/.test(p.bg))
     expect(glyphs).toHaveLength(10)
     for (const p of glyphs) expect(p.role, `${p.bg} must be an edge/1.4.11 pair`).toBe('edge')
     expect(ROLE_MINIMUM.edge).toBe(3.0)
@@ -236,7 +239,7 @@ describe('the rank spectrum is inside the contract', () => {
     // If that ever stops being true the role could be tightened; until then the ceiling is real
     // and this test is what keeps "core = glyph, deep = label" from being folklore.
     const t = resolveTokens(css, STATES[0])
-    const ink = deref(t, '--color-text-on-primary')!
+    const ink = deref(t, '--color-text-on-rank')!
     expect(contrastRatio(ink, deref(t, '--rank-slate')!)!).toBeLessThan(ROLE_MINIMUM.body)
     expect(contrastRatio(ink, deref(t, '--rank-plum')!)!).toBeLessThan(ROLE_MINIMUM.body)
     // …and both clear the glyph bar comfortably, which is why the crest pattern is sound.
