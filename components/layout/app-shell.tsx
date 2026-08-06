@@ -2113,9 +2113,14 @@ export default function AppShell({
               // containing block of its own — see components/layout/rail-fold-control.tsx.)
               <aside
                 className={
+                  // NO RULE (owner, 2026-08-06). The hairline that used to define this edge is
+                  // gone: the rail and the content share the page's ground, and the nav's own
+                  // inset is what separates them. Removed on BOTH branches together — a strip
+                  // with a rule and an open rail without one is the same edge disagreeing with
+                  // itself depending on a fold.
                   leftStrip
-                    ? 'hidden md:flex w-14 shrink-0 flex-col border-r border-chrome-border'
-                    : 'hidden md:flex w-48 shrink-0 flex-col border-r border-chrome-border'
+                    ? 'hidden md:flex w-14 shrink-0 flex-col'
+                    : 'hidden md:flex w-48 shrink-0 flex-col'
                 }
               >
                 {/* The menu + profile footer live in NORMAL FLOW and scroll WITH the page
