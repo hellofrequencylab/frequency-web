@@ -866,16 +866,73 @@ function ChatTrigger({
 
   if (!slot) {
     return (
-      <EdgePill
-        side="right"
-        glow="orange"
-        label="Chat"
-        icon={<MessageSquare className="h-[18px] w-[18px]" aria-hidden />}
-        waiting={waiting}
-        badgeCount={unread}
-        onOpen={onOpen}
-        ariaLabel="Open messages, Vera, and help"
-      />
+      <>
+        {/* ── PHONE: a tab peeling out from behind the bottom rail (owner, 2026-08-06) ──────────
+            It used to be the EdgePill at `top-1/2` on the right edge — a 29.75px disc floating
+            halfway down the screen, under the touch floor and nowhere near the thumb. This is the
+            same trigger parked where the other bottom furniture lives.
+
+            HOW "BEHIND" IS ACHIEVED: `z-30` against the tab bar's `z-40`. The bar is
+            `bg-surface/95 backdrop-blur-sm`, so the tucked part of the tab is covered but not
+            perfectly erased — a faint amber ghost reads through the blur, which is what sells it
+            as one object sliding behind another rather than two shapes meeting at a line.
+
+            `bottom: var(--tab-bar-h)` puts the tab's own bottom edge exactly on the bar's top
+            edge, and the translate then pushes it back down by its height MINUS the peek — so the
+            peek is a single number that means what it says, at every safe-area inset, with no
+            second calc to keep in sync. Only the top corners are rounded: the bottom of a tab that
+            is behind something has no corners to see. */}
+        <button
+          type="button"
+          onClick={onOpen}
+          aria-expanded={open}
+          aria-controls={panelMounted ? 'fq-dock-panel' : undefined}
+          aria-label={
+            unread > 0
+              ? `Open messages, Vera, and help. ${unread} unread`
+              : 'Open messages, Vera, and help'
+          }
+          style={{ bottom: 'var(--tab-bar-h)' }}
+          // The hit area extends 1rem ABOVE the visible tab via the ::before, because the peek is
+          // what a thumb can actually reach — the rest of the button is behind an opaque bar and
+          // cannot receive the tap. 26px of peek plus 17px of invisible extension is ~43px, which
+          // is the touch floor met honestly rather than by claiming the hidden half counts.
+          className={cn(
+            'fixed right-3 z-30 flex h-11 w-14 items-start justify-center rounded-t-card border-x border-t border-primary-strong/20 pt-1.5 md:hidden print:hidden',
+            'before:absolute before:inset-x-0 before:-top-4 before:h-4 before:content-[""]',
+            'transition-transform duration-[var(--motion-base)] ease-[var(--ease-out)] motion-reduce:transition-none',
+            unread > 0 || waiting
+              ? 'translate-y-[calc(100%-36px)] animate-wiggle'
+              : 'translate-y-[calc(100%-26px)]',
+            // Yielding is TONE ONLY, same law as the docked tab: the Vault owns the open panel,
+            // so this goes quiet — it does not hide, and it stays pressable.
+            !yielding && (unread > 0 || open) ? 'bg-primary text-on-primary chisel' : 'bg-primary-bg text-primary-strong',
+          )}
+        >
+          <MessageSquare className="h-[18px] w-[18px]" aria-hidden />
+          {unread > 0 && (
+            <span aria-hidden className={UNREAD_BADGE}>
+              {unread > 9 ? '9+' : unread}
+            </span>
+          )}
+          {unread === 0 && waiting && <span aria-hidden className={WAITING_DOT} />}
+        </button>
+
+        {/* Tablet and up with no dock (marketing, /help, /discover, /admin) keep the edge pill:
+            there is no bottom rail on those surfaces to peel out from. */}
+        <span className="hidden md:block">
+          <EdgePill
+            side="right"
+            glow="orange"
+            label="Chat"
+            icon={<MessageSquare className="h-[18px] w-[18px]" aria-hidden />}
+            waiting={waiting}
+            badgeCount={unread}
+            onOpen={onOpen}
+            ariaLabel="Open messages, Vera, and help"
+          />
+        </span>
+      </>
     )
   }
 
