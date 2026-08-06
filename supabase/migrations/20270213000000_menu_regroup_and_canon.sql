@@ -98,3 +98,42 @@ update public.menu_items i
    and m.space_id is null
    and i.href in ('/network/contacts', '/journal')
    and i.mode = 'active';
+
+-- ── 5 · The left rail: two rows both called "Market" ────────────────────────────────────────
+-- The member commerce row (/marketplace) and the operator board (/admin/marketplace) were both
+-- labelled "Market". In an open rail the section header was the only thing telling them apart;
+-- in a FOLDED rail there are no section headers at all, so the two were indistinguishable.
+-- The code default now says "Market admin" (lib/nav-areas.ts); this matches the seeded row.
+update public.menu_items i
+   set label = 'Market admin'
+  from public.menus m
+ where i.menu_id = m.id
+   and m.surface_key = 'left'
+   and m.space_id is null
+   and i.href = '/admin/marketplace'
+   and i.label = 'Market';
+
+-- ── 6 · The header: Partners comes back ─────────────────────────────────────────────────────
+-- /discover/partners is a live page and a code-default member of the Community dropdown, but
+-- the seeded row was `mode = 'hidden'`, so the panel had silently lost it. Restored to match
+-- the code default. If it was hidden on purpose, one click in the Menu Manager puts it back.
+update public.menu_items i
+   set mode = 'active'
+  from public.menus m
+ where i.menu_id = m.id
+   and m.surface_key = 'header'
+   and m.space_id is null
+   and i.href = '/discover/partners'
+   and i.mode = 'hidden';
+
+-- ── 7 · The header: sentence case ───────────────────────────────────────────────────────────
+-- "Business Pricing" was the one title-cased label among sentence-cased siblings ("For coaches
+-- and healers", "Help center"). docs/CONTENT-VOICE.md: plain sentences.
+update public.menu_items i
+   set label = 'Business pricing'
+  from public.menus m
+ where i.menu_id = m.id
+   and m.surface_key = 'header'
+   and m.space_id is null
+   and i.href = '/pricing'
+   and i.label = 'Business Pricing';

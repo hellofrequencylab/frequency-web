@@ -18278,3 +18278,31 @@ rails' live fold state threaded through `PrimaryNav`.
 **Consequences.** ✅ The panel is inside the guard that `shell-metrics.test.ts` already runs
 against `app-shell.tsx`. ⚠️ Dropdowns of 5+ links now read across as well as down; the four-link
 ones are unchanged.
+
+---
+
+## ADR-957 — A retired name cannot be typed back in
+
+**Date:** 2026-08-06 · **Status:** Accepted
+
+**Context.** `docs/NAMING.md` retires "Interests" by name: *"The SEVEN topics are Channels, never
+'Interests'"* and *"'Interests' is RETIRED as a member-facing word for these."* The live header
+dropdown said Interests. Every code path respected the canon; the label field in the Menu Manager
+did not, because a text input has no opinion.
+
+**Why `check:canon` could never have caught it.** That guard scans `content/**` in the repo. This
+string lived in a database row. CI has no access to it, and no amount of widening the file glob
+changes that.
+
+**Decision.** The guard moves to the write. `lib/menus/canon.ts` holds the retired-term list
+(pure, framework-free), and `createItem` / `updateItem` / `createCategory` / `updateCategory`
+reject a label that reintroduces one, with the canon's own replacement in the message: *"Interests"
+is a retired name. Use "Channels" instead. See docs/NAMING.md.* An operator is told what to type,
+not just told no.
+
+**Consequences.** ✅ The one surface that could override a locked canon no longer can. ✅ Three
+terms seeded: Interests → Channels, Marketplace → Market, Domains → Pillars. ⚠️ Matching is
+word-bounded, and `canon.test.ts` pins the case that matters most — "Market" must never trip the
+"Marketplace" rule, or the canon-correct name would be unenterable, which is the worst possible
+failure for a guard whose whole job is naming. ⏳ Only menu labels are covered; other operator-editable
+copy fields are a later pass.

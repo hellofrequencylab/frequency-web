@@ -161,7 +161,11 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   // (defaultAccess 'admin' = the top of the ladder) OR platform-capable staff (staffDomain
   // 'platform'), so only Admin + Janitor see it. Telescopes like the rest of the Admin section.
   { key: 'admin-spaces',     href: '/admin/spaces',     label: 'Manage Spaces', section: 'Admin', defaultAccess: 'janitor', surface: 'platformSpaces' },
-  { key: 'admin-marketplace', href: '/admin/marketplace', label: 'Market', section: 'Admin', defaultAccess: 'admin', staffDomain: 'platform', surface: 'platformManage' },
+  // Labeled "Market admin", not "Market": the member commerce row (the `market` vertical,
+  // /marketplace) already owns that word, and the two sat in one rail reading identically —
+  // the section header was the only thing telling them apart, and a folded rail has no
+  // section headers at all. Same concept, operator side; the label now says so.
+  { key: 'admin-marketplace', href: '/admin/marketplace', label: 'Market admin', section: 'Admin', defaultAccess: 'admin', staffDomain: 'platform', surface: 'platformManage' },
   // Personal Settings is NOT an admin tool — every logged-in member reaches it from the
   // profile card (bottom-left) + /settings. It deliberately no longer sits under "Admin".
 ] as const

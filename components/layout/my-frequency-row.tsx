@@ -151,13 +151,17 @@ export function MyFrequencyRow({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
+        // WEIGHT AND COLOUR, NEVER A FILL. When a child row is active the fill belongs to
+        // THAT row — DAWN's rail has one amber moment, and painting the parent as well says
+        // "you are here" twice about one location. Collapsed, the parent still needs to carry
+        // the signal (you cannot see the child), so it takes the active ink and weight alone.
         className={`w-full text-left ${ROW} ${
           anyActive && !open
-            ? 'bg-primary-bg text-primary-strong font-extrabold'
+            ? 'text-primary-strong font-extrabold hover:bg-surface'
             : 'text-muted font-semibold hover:bg-surface hover:text-text'
         }`}
       >
-        <UserRound className="h-[17px] w-[17px] shrink-0" strokeWidth={2} aria-hidden />
+        <UserRound className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
         <span className="flex-1">My Frequency</span>
         {!open && <Badge count={data.total} active={anyActive} />}
         <ChevronDown

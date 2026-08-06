@@ -76,6 +76,11 @@ const DEFAULT_OPEN_DELAY_MS = 0
 const DEFAULT_DWELL_MS = 1500
 const DEFAULT_FADE_MS = 240
 
+// How far the page must actually move before a scroll dismisses an open panel. Big enough to
+// absorb trackpad inertia and a mobile address bar collapsing, small enough that a deliberate
+// scroll still closes it on the first flick.
+const SCROLL_DISMISS_PX = 24
+
 // ── Resolved-menu adapter ─────────────────────────────────────────────────────
 // The bar renders from a uniform shape regardless of triggerLevel: a list of TRIGGERS,
 // each with the panel's columns (categories), loose root items, and rail cards. Computed
@@ -258,6 +263,8 @@ export function MegaBar({
   const lingerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fadeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // The trigger that opened the panel, so Escape can hand focus back to it.
+  const triggerRef = useRef<HTMLElement | null>(null)
   const panelId = useId()
 
   const triggers = useMemo(() => buildTriggers(menus, triggerLevel), [menus, triggerLevel])
@@ -338,12 +345,27 @@ export function MegaBar({
   useEffect(() => {
     if (!active) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') beginClose()
+      // Escape returns focus to the trigger that opened the panel. Without this a keyboard
+      // user who dismissed the menu was dropped at the top of the document and had to tab
+      // back through the whole header (WCAG 2.4.3 Focus Order). `activeRef` is set on open.
+      if (e.key === 'Escape') {
+        beginClose()
+        triggerRef.current?.focus()
+      }
     }
     const onDoc = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) beginClose()
     }
-    const onScroll = () => beginClose()
+    // ── SCROLL DISMISSAL HAS A THRESHOLD ─────────────────────────────────────────────────
+    // This used to close on ANY scroll event. On a trackpad, one pixel of inertial drift with
+    // the pointer resting inside the open panel closed it — and on iOS/Android a scroll fires
+    // from the address bar collapsing, which no member did on purpose. The intent was real
+    // (content moving under a pinned panel reads as stale), so the rule is kept and given a
+    // deadband: dismiss once the page has genuinely moved.
+    const openedAt = window.scrollY
+    const onScroll = () => {
+      if (Math.abs(window.scrollY - openedAt) > SCROLL_DISMISS_PX) beginClose()
+    }
     document.addEventListener('keydown', onKey)
     document.addEventListener('mousedown', onDoc)
     window.addEventListener('scroll', onScroll, { passive: true })
@@ -628,6 +650,7 @@ export function MegaBar({
               className={triggerClass(variant, highlighted)}
               onClick={(e) => {
                 e.preventDefault()
+                triggerRef.current = e.currentTarget
                 if (active === t.key) beginClose()
                 else open(t.key)
               }}
@@ -642,7 +665,11 @@ export function MegaBar({
               aria-expanded={active === t.key}
               aria-controls={panelId}
               className={triggerClass(variant, highlighted)}
-              onClick={() => (active === t.key ? beginClose() : open(t.key))}
+              onClick={(e) => {
+                triggerRef.current = e.currentTarget
+                if (active === t.key) beginClose()
+                else open(t.key)
+              }}
             >
               {inner}
             </button>
