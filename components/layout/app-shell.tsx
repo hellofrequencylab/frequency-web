@@ -878,12 +878,12 @@ function NavLinkList({
   // active row is 800, because the active row is meant to be "the one amber moment" in the rail
   // and colour alone was carrying it. The home anchor keeps its own 700 brand treatment.
   const itemClass = (active: boolean, emphasize = false, depth = 0) =>
-    `${nestClass(depth)}flex items-center gap-2.5 px-3 py-2 rounded-control text-body-sm transition-colors ${
+    `${nestClass(depth)}flex items-center gap-2.5 px-3 py-[0.42rem] rounded-control text-body-sm transition-colors ${
       emphasize
-        ? `font-bold text-[var(--brand-mark)] ${active ? 'bg-primary-bg' : 'hover:bg-chrome-hover'}`
+        ? `font-bold text-[var(--brand-mark)] ${active ? 'bg-primary-bg' : 'hover:bg-surface'}`
         : active
           ? 'bg-primary-bg text-primary-strong font-extrabold'
-          : 'text-muted font-semibold hover:bg-chrome-hover hover:text-text'
+          : 'text-muted font-semibold hover:bg-surface hover:text-text'
     }`
 
   // The group label is an EYEBROW, and eyebrows are tracked at 0.18em (`--tracking-eyebrow`).
@@ -989,7 +989,7 @@ function NavLinkList({
                     ariaLabel={label}
                     className={`${nest}flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm font-medium text-subtle`}
                   >
-                    <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden />
+                    <Icon className="h-[17px] w-[17px] shrink-0" strokeWidth={2} aria-hidden />
                     {label}
                   </GhostLink>
                 )
@@ -1012,10 +1012,7 @@ function NavLinkList({
               }
               return (
                 <Link key={item.key} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active, false, item.depth)}>
-                  <Icon
-                    className="w-[18px] h-[18px] shrink-0"
-                    strokeWidth={active ? 2.5 : 2}
-                  />
+                  <Icon className="w-[17px] h-[17px] shrink-0" strokeWidth={2} />
                   {label}
                 </Link>
               )
@@ -1083,7 +1080,7 @@ function NavLinkList({
                     active ? 'bg-chrome-hover text-muted' : 'text-subtle hover:bg-chrome-hover hover:text-muted'
                   }`}
                 >
-                  <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+                  <Icon className="h-[17px] w-[17px] shrink-0" strokeWidth={2} />
                   {label}
                 </Link>
               )
@@ -1097,7 +1094,7 @@ function NavLinkList({
                   title="You don't have access to this yet"
                   className={`${nest}flex items-center gap-2.5 px-3 py-2 rounded-lg text-body-sm font-medium text-subtle opacity-50 cursor-not-allowed select-none`}
                 >
-                  <Icon className="w-[18px] h-[18px] shrink-0" strokeWidth={2} />
+                  <Icon className="w-[17px] h-[17px] shrink-0" strokeWidth={2} />
                   {label}
                 </div>
               )
@@ -1105,10 +1102,7 @@ function NavLinkList({
             const active = isActive(href)
             return (
               <Link key={href} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active, false, item.depth)}>
-                <Icon
-                  className="w-[18px] h-[18px] shrink-0"
-                  strokeWidth={active ? 2.5 : 2}
-                />
+                <Icon className="w-[17px] h-[17px] shrink-0" strokeWidth={2} />
                 {label}
               </Link>
             )
@@ -1143,10 +1137,7 @@ function NavLinkList({
             }
             return (
               <Link key={href} href={href} onClick={onNavigate} className={itemClass(active)}>
-                <Icon
-                  className="w-[18px] h-[18px] shrink-0"
-                  strokeWidth={active ? 2.5 : 2}
-                />
+                <Icon className="w-[17px] h-[17px] shrink-0" strokeWidth={2} />
                 {label}
               </Link>
             )
