@@ -73,9 +73,19 @@ describe('chat routes respect the shell gutter', () => {
   it.each(FILES)('%s mirrors the shell padding and uses dvh', (f) => {
     const src = read(f)
     expect(src).toContain('-mx-4 -my-6 sm:-mx-6 lg:-mx-8')
-    expect(src).toContain('100dvh-3.5rem')
+    // `dvh`, never `vh` — the original point of this assertion, and unchanged.
+    expect(src).toContain('100dvh')
     expect(src).not.toContain('"-mx-6 -my-6')
-    expect(src).not.toContain('100vh-3.5rem')
+    expect(src).not.toContain('100vh')
+    // The literal `100dvh-3.5rem` this used to pin was itself the bug (2026-08-06). 3.5rem is the
+    // header, but the shell ALSO pads the content column by the tab bar's height — so subtracting
+    // only the header made this box taller than the space it sits in by exactly the tab bar,
+    // pushing the composer below the fold on every phone. It now subtracts both, through the
+    // tokens, and the `md:` branch drops the tab-bar term because there is no tab bar above md.
+    expect(src).toContain('var(--app-header-h)')
+    expect(src).toContain('var(--tab-bar-h)')
+    // The old shape must not come back: a bare header subtraction with no tab-bar term.
+    expect(src).not.toContain('100dvh-3.5rem')
   })
 })
 

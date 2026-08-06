@@ -194,6 +194,26 @@
   --ornament:   0.6;
   --tap-min:    32px;
 
+  /* ── The mobile bottom lane, named once ──────────────────────────────────────
+     Below md the bottom edge belongs to the tab bar, and FOUR separate files were each
+     re-deriving its geometry by hand — `calc(3.5rem + env(safe-area-inset-bottom))`, written
+     out longhand in the shell, the teaser gate, the event RSVP bar and the room page. Four
+     copies of one number is four chances to be wrong, and two of them already were.
+
+     🔴 --tab-bar-clearance IS NOT THE BAR'S HEIGHT, and that gap is the bug it exists to stop.
+     The bar is 3.5rem, but the raised Zap catch (`-translate-y-[22px]` in app-shell.tsx) is a
+     59.5px disc whose top sits 22px ABOVE the bar's top edge. Anything pinned "above the tab
+     bar" that centres horizontally has to clear the CATCH, not the bar — the teaser pill and
+     the RSVP bar both cleared the bar exactly, and the disc painted straight over them
+     (9.25px and 22px of overlap respectively, on the primary conversion control of each page).
+
+     Use --tab-bar-h when you need the bar's own box (content padding, scroll offsets).
+     Use --tab-bar-clearance when you are PLACING something above it. */
+  --tab-bar-h:         calc(3.5rem + env(safe-area-inset-bottom));
+  --tab-bar-clearance: calc(3.5rem + env(safe-area-inset-bottom) + 22px);
+  /* The sticky app header, same reasoning: 3.5rem plus the TOP inset under viewport-fit=cover. */
+  --app-header-h:      calc(3.5rem + env(safe-area-inset-top));
+
   /* ── Structure axis token (docs/THEME.md, lib/theme/structure.ts) ────────────
      The STRUCTURE axis is the coarse COMPOSITION knob, orthogonal to the feel knobs
      above: the resolved generation maps (via structureFor) to one of simple /

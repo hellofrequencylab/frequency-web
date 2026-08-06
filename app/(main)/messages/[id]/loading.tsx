@@ -18,7 +18,7 @@ export default function ConversationLoading() {
   // past the viewport and causing a horizontal scroll) and under-pulled at lg. dvh, not vh, so
   // the iOS dynamic toolbar does not push the composer off-screen.
   return (
-    <div className="-mx-4 -my-6 sm:-mx-6 lg:-mx-8 flex flex-col h-[calc(100dvh-3.5rem)]">
+    <div className="-mx-4 -my-6 sm:-mx-6 lg:-mx-8 flex flex-col h-[calc(100dvh-var(--app-header-h)-var(--tab-bar-h))] md:h-[calc(100dvh-var(--app-header-h))]">
       {/* Header */}
       <header className="shrink-0 flex items-center gap-3 px-5 py-3 border-b border-border bg-surface">
         <Skeleton className="w-9 h-9 rounded-pill shrink-0" />
