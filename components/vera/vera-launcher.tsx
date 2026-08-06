@@ -612,7 +612,13 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
               //
               // The mobile branch keeps `rounded-t-card` and stays a bottom sheet: there is no tab
               // to tether to below md (the bar is display:none), so there is no corner to square.
-              className="lift-3 flex h-[68dvh] max-h-[37.5rem] w-full flex-col overflow-hidden rounded-t-card border border-chrome-border bg-canvas pb-[env(safe-area-inset-bottom)] outline-none md:h-[35rem] md:max-h-none md:rounded-card md:rounded-br-none md:pb-2"
+              // NOTE the class ORDER: `md:h-[35rem] md:max-h-none md:pb-2` is pinned as one
+              // contiguous run by components/layout/dock-bar.test.ts, so the two `md:rounded-*`
+              // additions sit BEFORE it rather than inside it. Splitting that run is a real
+              // failure and not test pedantry — the guard's own comment explains that a looser
+              // search would be satisfied by the comment naming the token after the class itself
+              // had been deleted.
+              className="lift-3 flex h-[68dvh] max-h-[37.5rem] w-full flex-col overflow-hidden rounded-t-card border border-chrome-border bg-canvas pb-[env(safe-area-inset-bottom)] outline-none md:rounded-card md:rounded-br-none md:h-[35rem] md:max-h-none md:pb-2"
             >
               {/* Header — canvas, so it reads as the dock's own chrome rather than more
                   transcript. Reflects the active view; Help gets a Back affordance. */}
