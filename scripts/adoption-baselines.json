@@ -394,7 +394,7 @@
       "description": "Raw <button> whose OPENING TAG carries a bg-primary fill, instead of composing the Button primitive. Scoped to the tag itself (the `=>` alternative lets an onClick arrow through without truncating the scan, the same idiom handrolled-icon-button uses), so a bg-primary on a CHILD element can never be attributed to the button above it and reformatting cannot move the count.",
       "mode": "matches",
       "patterns": [
-        "<button\\b(?:[^>]|=>)*?\\bbg-primary"
+        "<button\\b(?:[^>=]|=>|=(?!>))*?\\bbg-primary"
       ],
       "include": [
         "{app,components,lib}/**/*.tsx"
@@ -408,10 +408,10 @@
       "frozen": {
         "at": "2026-08-06",
         "value": 526,
-        "direction": "lowered",
-        "basis": "b608cf8230c7",
-        "reason": "530 -> 526. Four hand-rolled buttons carrying the fill on their opening tag composed the Button primitive instead. Incidental to the components sweep rather than the target of it.",
-        "from": 530
+        "direction": "rebased",
+        "basis": "9bcf47d8a607",
+        "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it.",
+        "from": 526
       },
       "history": [
         {
@@ -469,6 +469,13 @@
           "to": 526,
           "direction": "lowered",
           "reason": "530 -> 526. Four hand-rolled buttons carrying the fill on their opening tag composed the Button primitive instead. Incidental to the components sweep rather than the target of it."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 526,
+          "to": 526,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it."
         }
       ]
     },
@@ -818,10 +825,10 @@
     },
     {
       "key": "handrolled-icon-button",
-      "description": "Icon-only <button>s sized and rounded by hand instead of composing IconButton. The primitive owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance — every hand-rolled one re-derives those four, and the ones that get it wrong are invisible until someone tries to tap them on a phone (components/events/rsvp-controls.tsx ships a 28px stepper). DELIBERATELY CONSERVATIVE: the shape is `<button …size…rounded…>` then ONE self-closing element then `</button>`, so it counts only unambiguous icon-only buttons and undercounts the `{cond ? <A/> : <B/>}` forms. A first attempt merely looked for an icon SOMEWHERE inside the button and matched text buttons and whole card buttons — a ratchet on a number that means the wrong thing is worse than no ratchet, so this trades recall for precision. `(?:[^>]|=>)` rather than `[^>]` because a JSX attribute list routinely contains `>` inside an arrow function.",
+      "description": "Icon-only <button>s sized and rounded by hand instead of composing IconButton. The primitive owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance — every hand-rolled one re-derives those four, and the ones that get it wrong are invisible until someone tries to tap them on a phone (components/events/rsvp-controls.tsx ships a 28px stepper). DELIBERATELY CONSERVATIVE: the shape is `<button …size…rounded…>` then ONE self-closing element then `</button>`, so it counts only unambiguous icon-only buttons and undercounts the `{cond ? <A/> : <B/>}` forms. A first attempt merely looked for an icon SOMEWHERE inside the button and matched text buttons and whole card buttons — a ratchet on a number that means the wrong thing is worse than no ratchet, so this trades recall for precision. `(?:[^>=]|=>|=(?!>))` rather than `[^>]` because a JSX attribute list routinely contains `>` inside an arrow function.",
       "mode": "matches",
       "patterns": [
-        "<button(?:[^>]|=>)*?(?:\\bh-\\d|\\bw-\\d|\\bsize-\\d)(?:[^>]|=>)*?rounded-(?:sm|md|lg|xl|2xl|3xl|full|pill|card|control)(?:[^>]|=>)*>\\s*<(?:svg|[A-Z][A-Za-z0-9]*)(?:[^>]|=>)*?/>\\s*</button>"
+        "<button(?:[^>=]|=>|=(?!>))*?(?:\\bh-\\d|\\bw-\\d|\\bsize-\\d)(?:[^>=]|=>|=(?!>))*?rounded-(?:sm|md|lg|xl|2xl|3xl|full|pill|card|control)(?:[^>=]|=>|=(?!>))*>\\s*<(?:svg|[A-Z][A-Za-z0-9]*)(?:[^>=]|=>|=(?!>))*?/>\\s*</button>"
       ],
       "include": [
         "{app,components}/**/*.tsx"
@@ -834,10 +841,10 @@
       "frozen": {
         "at": "2026-08-06",
         "value": 6,
-        "direction": "lowered",
-        "basis": "3b1142ddb186",
-        "reason": "10 -> 6. Four hand-rolled icon buttons composed the icon-button primitive during the components sweep.",
-        "from": 10
+        "direction": "rebased",
+        "basis": "772c3e554a45",
+        "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it.",
+        "from": 6
       },
       "history": [
         {
@@ -874,6 +881,13 @@
           "to": 6,
           "direction": "lowered",
           "reason": "10 -> 6. Four hand-rolled icon buttons composed the icon-button primitive during the components sweep."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 6,
+          "to": 6,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it."
         }
       ]
     },
@@ -929,7 +943,7 @@
       "description": "Raw <input> elements instead of the field primitives (components/ui/field.tsx, components/ui/checkbox.tsx). Counts OPENING TAGS; <Field>/<Checkbox> never match because JSX components are capitalised. type=\"hidden\" is excluded by a lookahead over the tag's own attributes: a hidden input is form serialisation, not a control, so no primitive can receive it and counting it would put zero out of reach and fail CI on a legitimate hidden field.",
       "mode": "matches",
       "patterns": [
-        "<input\\b(?!(?:[^>]|=>)*?type=[\"']hidden)"
+        "<input\\b(?!(?:[^>=]|=>|=(?!>))*?type=[\"']hidden)"
       ],
       "include": [
         "{app,components,lib}/**/*.tsx"
@@ -961,15 +975,22 @@
           "to": 184,
           "direction": "lowered",
           "reason": "605 -> 184. components/** retired raw inputs onto Field/Input. Of the remainder, a named subset can never be retired as instrumented: ~18 are type=file held behind hidden/sr-only and fired by a sibling button, which no text-field primitive can receive. The lookahead only excludes type=hidden; recorded in the Phase 9 queue."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 184,
+          "to": 184,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it."
         }
       ],
       "frozen": {
         "at": "2026-08-06",
         "value": 184,
-        "direction": "lowered",
-        "basis": "8de521171b36",
-        "reason": "605 -> 184. components/** retired raw inputs onto Field/Input. Of the remainder, a named subset can never be retired as instrumented: ~18 are type=file held behind hidden/sr-only and fired by a sibling button, which no text-field primitive can receive. The lookahead only excludes type=hidden; recorded in the Phase 9 queue.",
-        "from": 605
+        "direction": "rebased",
+        "basis": "23c25a5145a1",
+        "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it.",
+        "from": 184
       }
     },
     {
