@@ -19,9 +19,18 @@
 //
 // FAIL-SAFE, like every other nav read: any error resolves to an empty menu (the row still
 // renders with the member's profile in it). Navigation never blocks and never throws.
+//
+// 🔴 THE SESSION CLIENT, NOT THE ADMIN ONE (ADR-923, caught by `pnpm check:admin-client`).
+// Every read here is a member reading their OWN rows, and RLS already says exactly that:
+// `notifications` is gated on `recipient_id = private.get_my_profile_id()`, `memberships` on
+// `profile_id = private.get_my_profile_id()`, and `circles` on the authenticated non-archived
+// read. So the policies ARE this function's access rule, and reaching for the service key
+// would be bypassing a gate that already fits, on a menu that renders for every member on
+// every page. The explicit `.eq(...)` filters stay as defense in depth: RLS decides what is
+// visible, the filters say what we asked for, and the two agreeing is the point.
 
 import { cache } from 'react'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { listOperatedSpaces } from '@/lib/spaces/operated'
 
 /** One thing the member owns or belongs to, ready to render as a rail row. */
@@ -64,7 +73,8 @@ type CircleNameRow = { id: string; name: string | null; slug: string | null }
  */
 async function noticeCounts(profileId: string): Promise<Map<string, number>> {
   const out = new Map<string, number>()
-  const { data, error } = await createAdminClient()
+  const db = await createClient()
+  const { data, error } = await db
     .from('notifications')
     .select('reference_type, reference_id')
     .eq('recipient_id', profileId)
@@ -82,7 +92,7 @@ async function noticeCounts(profileId: string): Promise<Map<string, number>> {
 
 /** The Circles this member is an ACTIVE member of, newest membership first, capped. */
 async function myCircles(profileId: string): Promise<CircleNameRow[]> {
-  const db = createAdminClient()
+  const db = await createClient()
   const { data: memberships, error } = await db
     .from('memberships')
     .select('circle_id')
