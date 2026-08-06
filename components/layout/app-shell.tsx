@@ -1476,7 +1476,7 @@ function MobileTabBar({
     <nav
       className="md:hidden fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-border bg-surface/95 backdrop-blur-sm"
       style={{
-        height: 'calc(3.5rem + env(safe-area-inset-bottom))',
+        height: 'var(--tab-bar-h)',
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
@@ -1977,7 +1977,7 @@ export default function AppShell({
         // tinted frame tokens so the frame reads as frame against the lightened canvas,
         // instead of a translucent white strip. Skins retune both tokens.
         className="sticky top-0 shrink-0 flex items-stretch bg-chrome backdrop-blur-sm border-b border-chrome-border z-30"
-        style={{ height: 'calc(3.5rem + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}
+        style={{ height: 'var(--app-header-h)', paddingTop: 'env(safe-area-inset-top)' }}
       >
 
         {/* Engraved, interactive wordmark. Leads the bar — on mobile the menu now
@@ -2141,7 +2141,7 @@ export default function AppShell({
       <div className="flex min-w-0 flex-1 px-safe">
         <div
           data-feed-scroll
-          className={`min-w-0 flex-1 ${editorTakeover ? '' : 'pb-[calc(3.5rem_+_env(safe-area-inset-bottom))] md:pb-0'}`}
+          className={`min-w-0 flex-1 ${editorTakeover ? '' : 'pb-[var(--tab-bar-clearance)] md:pb-0'}`}
         >
           {/* The page-admin context wraps the whole content row (not just <main>) so the
               settings drawer — mounted in the right-rail slot — can read the viewer's

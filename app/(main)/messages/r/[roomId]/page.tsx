@@ -193,7 +193,7 @@ export default async function RoomPage({
   // past the viewport and causing a horizontal scroll) and under-pulled at lg. dvh, not vh, so
   // the iOS dynamic toolbar does not push the composer off-screen.
   return (
-    <div className="-mx-4 -my-6 sm:-mx-6 lg:-mx-8 flex flex-col h-[calc(100dvh-3.5rem)]">
+    <div className="-mx-4 -my-6 sm:-mx-6 lg:-mx-8 flex flex-col h-[calc(100dvh-var(--app-header-h)-var(--tab-bar-h))] md:h-[calc(100dvh-var(--app-header-h))]">
       {/* Takeover chat bar — bespoke, full-bleed chrome (the documented exception,
           MEMBER-DESIGN-SYSTEM §207), with the room identity title routed through the
           shared PageHeading grammar instead of a hand-rolled <h1>. */}
