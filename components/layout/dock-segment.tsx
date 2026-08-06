@@ -89,12 +89,18 @@ export function DockSegment({
   }, [open])
 
   /** THE ONE WAY IN. The announcement is what slides the chat panel shut, so an open path that
-   *  forgets to announce is an open path that leaves two panels stacked in one column. */
+   *  forgets to announce is an open path that leaves two panels stacked in one column.
+   *
+   *  The announcement is deliberately OUTSIDE the state updater. A `setOpen(was => { announce();
+   *  return !was })` reads as tidier and is wrong twice over: a React updater must be PURE, and
+   *  `announceDockSegmentOpen` dispatches a DOM event synchronously — so under StrictMode's
+   *  double-invocation the bar hears the same open announced twice, and any listener that is not
+   *  idempotent acts on it twice. This mirrors the Vault's own `openVault()`, which sets first
+   *  and announces after, for the same reason. */
   function toggle() {
-    setOpen((was) => {
-      if (!was) announceDockSegmentOpen('vault')
-      return !was
-    })
+    const next = !open
+    setOpen(next)
+    if (next) announceDockSegmentOpen('vault')
   }
 
   return (
