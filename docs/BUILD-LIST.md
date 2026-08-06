@@ -931,7 +931,7 @@ a settled tree with its own re-freeze and its own reason.
 Verified on merged `main` (`5d15a1efa`): `tsc` rc=0, and `check:adoption`, `check:seo`,
 `check:headers`, `check:contrast`, `check:menu` all exit 0.
 
-### 🔴 The migration ledger is 8 rows behind the repo, and the schema is NOT the problem
+### ✅ The migration ledger gap — REPAIRED 2026-08-06
 
 **Every migration in the repo is applied to the database.** All eight files above the ledger head
 were verified against the live schema rather than trusted from a filename:
@@ -993,3 +993,62 @@ belongs to the File, not to the URL identifying it.
 `// codeql[js/xss-through-dom]` suppressions were already tried on all nine sites and moved the count
 by zero (an LGTM legacy feature GitHub code scanning does not honour), and that excluding the query
 repo-wide would blind us to a genuine `innerHTML` finding. Dismiss, and leave the query armed.
+
+---
+
+## Closed 2026-08-06 — the last two 🔴 and the ledger
+
+### ✅ The migration ledger is repaired
+
+Eight rows were written to `supabase_migrations.schema_migrations` for versions
+`20270206000000` … `20270212000000`. **No schema was touched** — this is the ledger half of
+`supabase migration repair --status applied`, and every one of the eight was verified against the
+live schema *before* the write, not trusted from a filename:
+
+| Migration | Verified by |
+| :--- | :--- |
+| `tenancy_walls_space_crm_quads` · `app_instances_phase2_policies` | 4 policies on `app_instances` |
+| `insights_journey_and_vitals_rpcs` | `journey_funnel` + `vitals_p75` both present |
+| `page_settings_tenancy_wall` | policy present on `page_settings` |
+| `pages_space_slug_unique` | `pages_space_id_slug_key` constraint present |
+| `invite_token_and_space_scoped_reads` | `space_invites.token` present |
+| `retire_beta_waitlist` · `retire_growth_engine3_intakes` | tables absent |
+
+Ledger is now 602 rows with head `20270212000000`, which matches the newest file in
+`supabase/migrations/`. `supabase db push` is safe again — before this it would have tried to
+re-run all eight against a schema that already had them, and `create policy` / `add constraint`
+are not idempotent, so it would have failed partway and left a third state.
+
+**The root cause is still open and is not a code change:** migrations are being renumbered *after*
+they are applied. That is what produced both this gap and the four duplicate rows already in the
+ledger (`event_host_transfers`, `pricing_gate_overrides_reset`, `event_ticket_fee_receipt`,
+`seed_take_rate_vector`, each present under two numbers). Either stop renumbering applied
+migrations, or make the repair part of whatever renumbers them.
+
+### ✅ The mobile bottom lane is one token, not four hand-derivations
+
+Both remaining 🔴 from the mobile audit were the same defect wearing two faces — four files each
+re-deriving `calc(3.5rem + env(safe-area-inset-bottom))` by hand.
+
+`--tab-bar-h`, `--tab-bar-clearance` and `--app-header-h` now live in `app/globals.css`.
+**`--tab-bar-clearance` is deliberately not the bar's height:** the raised Zap catch is a 59.5px
+disc sitting 22px *above* the bar, so anything placed above the lane must clear the disc. The
+teaser-gate pill and the event RSVP bar both cleared the bar exactly and were being painted over
+by 9.25px and 22px — on the primary conversion control of each page. The shell's own content
+padding had the same fault, so the last 22px of every page sat under the disc.
+
+The three chat routes double-counted the tab bar: `h-[calc(100dvh-3.5rem)]` subtracts the header,
+but the shell already pads the column by the bar's height, so the box was taller than its space by
+exactly the bar and pushed the composer below the fold.
+
+The guard in `lib/meta-scan-highs.test.ts` pinned the literal `100dvh-3.5rem` — which *was* the
+bug. Rewritten to assert what it protects (dvh never vh, the shell gutter mirrored, both tokens
+present, and the old shape prohibited), it then caught two more files I had missed.
+
+### ⚠️ Still open — one decision, not a task
+
+**White-on-amber button text.** The DAWN artifact shows white on `#E2912F`; the shipped token is
+ink. Measured: ink 7.35:1 (passes AA and AAA), white **2.52:1** (needs 4.5). White cannot ship on
+the current amber without failing `check:contrast` and degrading every primary button in the
+product. Either darken the amber (~`#8A5410` puts white at 6.26:1, but that is a real brand shift,
+not a tweak) or correct the DS artifact to match the shipped ink. **Owner's call.**
