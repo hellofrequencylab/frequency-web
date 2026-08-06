@@ -365,6 +365,9 @@ function PostCard({
       {canInteract && anchorId && (
         <div className="flex items-start gap-2 pt-1">
           <Textarea
+            // Level with the post it sits in — the same rule as the main feed's comment box
+            // (components/feed/post-replies.tsx). "In every feed" was the owner's phrasing.
+            surface="post"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             aria-label="Write a comment"

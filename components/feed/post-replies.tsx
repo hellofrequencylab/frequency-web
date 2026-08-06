@@ -173,6 +173,11 @@ function ReplyComposer({
     >
       <Textarea
         ref={boxRef}
+        // `surface="post"`, not the default white (owner, 2026-08-06: "make all comment and
+        // dispatch box backgrounds the same as the post box in every feed"). A `bg-surface`
+        // field inside a `bg-surface-post` card was the brightest thing in the post — the
+        // loudest surface on the row you use least. Level with the card, read by its border.
+        surface="post"
         value={value}
         autoFocus={autoFocus}
         onChange={(e) => onChange(e.target.value)}
@@ -359,10 +364,19 @@ export function PostReplies({
           {/* NOT `compact`: these tallies are numeric CONTENT (how many people
               reacted), so they sit at the --text-meta content floor. The 11px
               `compact` pill stays for the per-comment bar, which is chrome-tight. */}
+          {/* ── SELECTOR FIRST, THEN WHAT YOU PICKED (owner, 2026-08-06: "emoji selector is
+              aligned left … when one is selected, it shows on the right by the react menu") ──
+              The order was counts-then-selector, which meant the one FIXED control on this line
+              moved every time somebody reacted: react to a post with no reactions and the
+              trigger you just pressed slides right to make room for the pill it created. Anchor
+              the control and let the variable-width part grow away from it, and the trigger
+              stays where your finger last found it.
+              `align="start"`: the popover hangs from the trigger's LEFT edge, opening rightward
+              over the counts rather than out past the card. That only fits because the menu is
+              compact — at ~148px it clears a 390px phone from where this cluster sits; the old
+              ~180px row did not, which is why it used to hang from the right. */}
+          <ReactionInlinePicker {...reactionState} align="start" />
           <ReactionCounts {...reactionState} />
-          {/* `align="end"`: this sits at the right edge of the card, so the popover has to
-              hang from its right or it opens past the viewport on a phone. */}
-          <ReactionInlinePicker {...reactionState} align="end" />
           <button
             onClick={() => setOpen((o) => !o)}
             aria-label={open ? 'Hide comments' : 'Show comments'}
