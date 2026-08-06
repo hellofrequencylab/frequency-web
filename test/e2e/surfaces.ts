@@ -320,11 +320,21 @@ export function masksFor(page: Page, surface: Surface): Locator[] {
  * region; the element keeps its box, so a masked block that arrives late still moves
  * everything under it. The failure is the page's HEIGHT, not its pixels.
  *
- * Worse, `fullPage: true` is part of the loop: stitching a full-page shot scrolls the whole
- * document, which trips lazy content below the fold, which grows the page again — so the
- * act of capturing produces the instability the capture then fails on. Hence the scroll
- * pass BEFORE the stability wait rather than after: trigger everything deliberately while
- * we are still allowed to wait, then hold still.
+ * 🔴 DO NOT ADD A SCROLL PASS HERE. It has been tried and it cost 46 passing tests.
+ * The reasoning was that `fullPage: true` stitches by scrolling, which trips lazy content,
+ * which grows the page — so walking the document first would trigger everything while we
+ * were still allowed to wait. That is plausible and it is not what happens. Scrolling fires
+ * every scroll-triggered reveal on the page, and `animations: 'disabled'` does not undo it:
+ * an IntersectionObserver toggling a class is JS state, not a CSS animation, and it does not
+ * rewind when you scroll back to the top. Every marketing surface then rendered ~3% away
+ * from a baseline captured without the scroll — over the 2% tolerance — and `/`, `/about`,
+ * `/the-lab`, `/discover`, `/spaces`, `/the-community` and `/the-quest` all went red across
+ * both viewports and all four render states. Measured: 3 failures became 49.
+ *
+ * The lesson is narrower than "no scrolling". The height problem was OBSERVED (a logged
+ * 8497 → 9272 → 9390). The lazy-content problem was HYPOTHESISED and never seen. Shipping a
+ * fix for the second alongside the first is what turned a three-surface failure into a
+ * suite-wide one.
  */
 export async function settle(page: Page): Promise<void> {
   await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {})
@@ -334,13 +344,14 @@ export async function settle(page: Page): Promise<void> {
 }
 
 /**
- * Scroll the document end to end to trigger anything lazy, return to the top, then wait for
- * `scrollHeight` to hold a single value.
+ * Wait for `scrollHeight` to hold a single value. Observation only — this must not touch the
+ * page, scroll it, or otherwise change what the camera is about to see (see the 🔴 note in
+ * `settle`).
  *
- * Everything runs INSIDE one `page.evaluate` on purpose: polling height over the CDP wire
+ * The whole wait runs INSIDE one `page.evaluate` on purpose: polling height over the CDP wire
  * would put a round trip between each reading, so a page growing steadily could report the
- * same number twice by luck of timing and be declared stable. In-page, the readings are
- * ~100ms apart and mean what they say.
+ * same number twice by luck of timing and be declared stable — a flake that would surface
+ * only under load. In-page, the readings are ~100ms apart and mean what they say.
  *
  * It resolves rather than throws on timeout. A surface that genuinely never settles should
  * fail as a SCREENSHOT diff, naming the surface and showing the pixels, not as an opaque
@@ -348,21 +359,13 @@ export async function settle(page: Page): Promise<void> {
  */
 async function settleHeight(page: Page): Promise<void> {
   await page.evaluate(
-    async ({ timeout, quietFor, step }) => {
+    async ({ timeout, quietFor }) => {
       const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
       const height = () => document.documentElement.scrollHeight
 
-      // Pass 1 — walk the page so lazy content, IntersectionObservers and unresolved
-      // boundaries below the fold all fire now, not during the stitch.
+      // `quietFor` of no change is what counts as settled; a page that is still growing
+      // resets the clock every time it does.
       const startedAt = Date.now()
-      for (let y = 0; y < height() && Date.now() - startedAt < timeout; y += step) {
-        window.scrollTo(0, y)
-        await sleep(50)
-      }
-      window.scrollTo(0, 0)
-
-      // Pass 2 — hold still. `quietFor` of no change is what counts as settled; a page that
-      // is still growing resets the clock every time it does.
       let last = height()
       let lastChangedAt = Date.now()
       while (Date.now() - startedAt < timeout) {
@@ -376,7 +379,7 @@ async function settleHeight(page: Page): Promise<void> {
         }
       }
     },
-    { timeout: 20_000, quietFor: 600, step: 800 },
+    { timeout: 15_000, quietFor: 600 },
   )
 }
 

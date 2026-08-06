@@ -18110,9 +18110,30 @@ masked block still moves everything under it. The failure is the page's height, 
 masking is aimed at the wrong quantity. (b) and (c) both buy green by photographing less, and (c)
 would surrender the surface members actually look at, to fix a fault that is not in the surface.
 
-`settle()` now scrolls the document end to end — deliberately tripping lazy content and below-fold
-boundaries **while we are still allowed to wait** — returns to the top, and then holds until
-`scrollHeight` reports one unchanged value for 600ms, capped at 20s.
+`settle()` now holds until `scrollHeight` reports one unchanged value for 600ms, capped at 15s.
+
+**🔴 Correction, same day — the first version of this shipped TWO fixes and only one of them was
+diagnosed.** It also scrolled the document end to end before waiting, on the reasoning quoted above:
+`fullPage` stitches by scrolling, so walking the page first would trip lazy content while we were
+still allowed to wait. That is plausible, it was never observed, and **it cost 46 passing tests**.
+
+Scrolling fires every scroll-triggered reveal on the page, and `animations: 'disabled'` does not
+undo it — an IntersectionObserver toggling a class is JS state, not a CSS animation, and it does not
+rewind when you scroll back to the top. Every marketing surface then rendered ~3% away from a
+baseline captured without the scroll, over the 2% `maxDiffPixelRatio`. `/`, `/about`, `/the-lab`,
+`/discover`, `/spaces`, `/the-community` and `/the-quest` went red across both viewports and all
+four render states. The tell was in the error text: the message stopped being "failed to take two
+consecutive stable screenshots" and became "78550 pixels are different" alongside "captured a
+stable screenshot" — the height wait had worked, and the scroll pass had changed what was being
+photographed. Measured on the same sweeps, with `settle` as the only difference: **3 failures
+became 49.**
+
+The scroll pass is gone and `settleHeight` is now observation-only. The lesson is narrower than
+"no scrolling in a settle helper": the height problem was **observed**, in a logged 8497 → 9272 →
+9390. The lazy-content problem was **hypothesised**. Shipping a fix for the second alongside the
+first is what turned a three-surface failure into a suite-wide one, and it also made the first fix
+impossible to evaluate on its own. A 🔴 comment in `settle()` records this so the scroll pass is not
+reinvented by the next person who notices that `fullPage` scrolls.
 
 **Why the whole wait lives inside a single `page.evaluate`.** Polling height over CDP would put a
 round trip between readings, so a page growing steadily could report the same number twice by luck
