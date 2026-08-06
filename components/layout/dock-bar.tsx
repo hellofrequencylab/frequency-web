@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
+import { RailFoldTick } from '@/components/layout/rail-fold-control'
 import { railHandleId } from '@/lib/layout/rail-fold'
 
 /** The chat trigger portals into this node, so the launcher stays independent of the Vault. */
@@ -62,16 +63,69 @@ export function announceDockSegmentOpen(segment: DockSegment): void {
 }
 
 /**
- * Announce that the BAR is leaving the screen, so both segments close.
+ * Announce that the bar's PANELS are leaving the screen, so both segments close.
  *
- * The one caller is DockBar, when a fold takes the bar away (see `dockDismissalDue`). It rides
- * the open channel because every listener already treats "not me" as "close", so the Vault and
- * the chat panel each run the SAME `close()` the Esc key and the outside click run — focus
- * return, the collapse timer and the inbox reset happen once, through one path, rather than
+ * The one caller is DockBar, when a fold takes the Vault segment away (see `dockDismissalDue`).
+ * It rides the open channel because every listener already treats "not me" as "close", so the
+ * Vault and the chat panel each run the SAME `close()` the Esc key and the outside click run —
+ * focus return, the collapse timer and the inbox reset happen once, through one path, rather than
  * being re-implemented for the fold.
+ *
+ * 🔴 IT STILL CLOSES BOTH, even though the chat TAB now survives the fold (owner, 2026-08-05).
+ * The tab surviving and the panel surviving are different claims. An open panel is sized and
+ * placed against a column that the fold has just deleted — the Vault's segment is gone outright,
+ * and the chat panel was hanging off a bar that has shrunk from the rail's width to a corner
+ * square. Closing both keeps ONE dismissal path (the thing this channel exists to guarantee) and
+ * costs the member nothing they cannot get back in one press: the chat tab is right there.
  */
 export function announceDockDismissed(): void {
   announce('dismissed')
+}
+
+// ── WHO OWNS THE OPEN PANEL, as readable state ────────────────────────────────
+//
+// The channel above is an EVENT: it is how a segment tells the other one to stand down, and it is
+// deliberately fire-and-forget. What it cannot answer is the standing question "is the Vault open
+// right now", and that question now has a consumer:
+//
+//   OWNER, 2026-08-05, off a screenshot of the open Vault: "when the Vault is open, the message
+//   tab stays closed" — i.e. the chat tab must not be sitting beside an open Vault panel wearing
+//   its full-amber active fill.
+//
+// The tab could not answer that from the event channel alone: it hears "the Vault opened" but
+// never "the Vault closed", so it would latch. So each segment publishes its own open/closed here
+// and the other reads it. A module store rather than a context, for the same reason the geometry
+// store is one: DockBar, the Vault segment and the chat launcher have three different parents.
+
+let panelOwner: DockSegment | null = null
+const panelListeners = new Set<() => void>()
+
+/** Report this segment's panel state. Idempotent, and a segment can only ever clear ITS OWN
+ *  ownership — `setDockPanelOpen('chat', false)` must not erase an open Vault, which is exactly
+ *  what a naive `open ? segment : null` would do on the chat panel's unmount. */
+export function setDockPanelOpen(segment: DockSegment, open: boolean): void {
+  const next = open ? segment : panelOwner === segment ? null : panelOwner
+  if (next === panelOwner) return
+  panelOwner = next
+  for (const listener of panelListeners) listener()
+}
+
+export function subscribeDockPanel(onChange: () => void): () => void {
+  panelListeners.add(onChange)
+  return () => {
+    panelListeners.delete(onChange)
+  }
+}
+
+/** Which segment's panel is open, or null. Stable by identity (it is a string or null), which is
+ *  what `useSyncExternalStore` needs. */
+export function getDockPanelOwner(): DockSegment | null {
+  return panelOwner
+}
+
+/** The server has no open panel, ever. */
+export function getServerDockPanelOwner(): DockSegment | null {
+  return null
 }
 
 function announce(segment: DockAnnouncement): void {
@@ -107,16 +161,24 @@ export function onOtherDockSegmentOpen(mine: DockSegment, close: () => void): ()
  *     nothing open to close, and announcing on mount would slam shut a panel that a `?chat=…`
  *     deep link is opening on the same tick (components/vera/vera-launcher.tsx reads the URL in
  *     its own mount effect).
- *   • `barWidth` is the one that keeps a tablet member from being trapped. The fold hides the bar
- *     at lg and up, where the rail it belongs to actually exists. In the md–lg band there is NO
- *     right rail (`hidden lg:flex`) and therefore no fold control on screen either — so a standing
- *     'strip' instruction set on a desktop must NOT take the bar away there, or the member loses
- *     the Vault and Messages with no affordance anywhere to bring them back. The bar stays put in
- *     that band, so nothing was dismissed and nothing should be announced. Zero width is the tell,
- *     the same tell `measure()` uses below: a `display:none` box reports all zeros.
+ *   • `vaultWidth` is the one that keeps a tablet member from being trapped. The fold takes the
+ *     VAULT segment at lg and up, where the rail it belongs to actually exists. In the md–lg band
+ *     there is NO right rail (`hidden lg:flex`) and therefore no fold tick on screen either — so a
+ *     standing 'strip' instruction set on a desktop must NOT take the Vault away there, or the
+ *     member loses it with no affordance anywhere to bring it back. It stays put in that band, so
+ *     nothing was dismissed and nothing should be announced. Zero width is the tell, the same tell
+ *     `measure()` uses below: a `display:none` box reports all zeros.
+ *
+ * 🔴 IT IS THE VAULT SEGMENT'S WIDTH, NOT THE BAR'S, and that is the ADR-946 amendment in one
+ * argument. The bar used to go with the fold entirely (`lg:hidden`), so "the bar has no width" and
+ * "the Vault went away" were the same fact and either could be measured. The owner has since asked
+ * for the chat tab to SURVIVE the fold, so the bar is never zero-width at lg+ any more and reading
+ * it would report `false` on every fold — no dismissal, and an open Vault panel left hanging over
+ * a column that no longer exists. The subject of the sentence has to be the thing that actually
+ * left.
  */
-export function dockDismissalDue(wasFolded: boolean, folded: boolean, barWidth: number): boolean {
-  return folded && !wasFolded && barWidth === 0
+export function dockDismissalDue(wasFolded: boolean, folded: boolean, vaultWidth: number): boolean {
+  return folded && !wasFolded && vaultWidth === 0
 }
 
 /**
@@ -132,6 +194,14 @@ export function dockDismissalDue(wasFolded: boolean, folded: boolean, barWidth: 
  * down to subscription order. One owner, decided in one place, is the only coherent shape.
  *
  * `null` restores the old behaviour (reaching the end does nothing).
+ *
+ * 🔴 WHAT IT DOES WHILE THE RAIL IS FOLDED: nothing, and by construction rather than by a guard.
+ * The Vault segment is not on screen at lg+ while folded, so an auto-open would be an open nobody
+ * can see. `atRailEnd` is derived from `RAIL_END_SENTINEL_ID`, which lives inside the OPEN rail's
+ * <aside> — a folded rail has no sentinel, so `measure()` takes its no-rail branch and publishes
+ * `atRailEnd: false` on every frame. The trigger cannot fire because the fact it reads is never
+ * true, which is a better answer than an `if (folded) return` somebody has to keep in sync: there
+ * is no "end of the rail" to reach when the rail is a strip of three icons.
  */
 export const RAIL_END_OPENS: DockSegment | null = 'vault'
 
@@ -256,25 +326,33 @@ export function getServerDockGeometry(): DockGeometry {
 //   • `folded` hides the bar at lg+ (see below), so the case the class was wrong for cannot be
 //     on screen at all.
 //
-// ── FOLDED: THE BAR HIDES (owner's decision, 2026-08-05) ──────────────────────
+// ── FOLDED: THE VAULT GOES, THE CHAT TAB STAYS (owner, 2026-08-05 — AMENDS ADR-946) ───────────
 //
-// Not narrowed to icons — hidden. What survives the fold is real navigation: the rail-foot
-// account dock and the top-right system dock are both untouched, so nothing in the app becomes
-// unreachable. What is LOST is precise and worth naming rather than papering over: ONE-TAP
-// VAULT AND ONE-TAP MESSAGES. The score stops being readable at rest (its other home is the
-// mobile drawer, which a desktop member does not have), and the chat trigger goes with it — the
-// panel can still be opened by ⌘K, the `open-chat` / `open-vera` events and a `?chat=` link, but
-// there is no button in the corner until the rail is unfolded. That is the trade the fold buys:
-// a member who folded the rail asked for the column back, and a 288px bar hanging under a 56px
-// strip is the opposite of that.
+// ADR-946 recorded the whole bar hiding at strip width, on the reasoning that a member who folded
+// the rail asked for the page rather than more chrome. The owner has now seen that live and
+// amended it: the CHAT TAB specifically survives the fold. So the bar's two segments no longer
+// share a fate.
 //
-// IT HIDES IN CSS, NOT BY UNMOUNTING, and the reason is the md–lg band. The fold is a STANDING
-// instruction stored per member; the right rail is `hidden lg:flex`. So a member who folded on
-// a desktop arrives on a tablet with `folded` true and NO right rail on screen — and therefore
-// no fold control either, because the control lives in the rail. Unmounting would take the Vault
-// and Messages away there with no affordance anywhere to bring them back. `lg:hidden` yields to
-// the same media query the rail itself yields to, which is rail-fold.ts's own law: the position
-// decides the fold, the media query decides whether there is a rail to fold at all.
+//   Vault segment  `lg:hidden` while folded. It is a 288px-wide score readout; there is no 288px
+//                  column under it any more, and it is the half that was actually overhanging.
+//   Chat segment   stays. Messages is a conversation somebody else may be waiting on, which is
+//                  not the same kind of thing as a score you can look at later.
+//   The BAR        stops spanning the rail and shrinks to its content (`lg:w-auto`), so what is
+//                  left is a ~48px corner tab at `right-3` rather than a 288px bar overhanging
+//                  the content column by ~232px. That overhang is the defect ADR-946 was fixing,
+//                  and it is fixed here by SIZING rather than by hiding.
+//
+// What is still LOST, stated rather than papered over: one-tap VAULT. The score stops being
+// readable at rest (its other home is the mobile drawer, which a desktop member does not have)
+// until the rail is unfolded — one press of the fold tick, which now rides on this very tab.
+//
+// THE MD–LG REASONING IS UNCHANGED AND STILL LOAD-BEARING. The fold is a STANDING instruction
+// stored per member; the right rail is `hidden lg:flex`. So a member who folded on a desktop
+// arrives on a tablet with `folded` true and NO right rail on screen — and therefore no fold tick
+// on screen either. Everything the fold takes is taken with an `lg:` variant, so that band keeps
+// its whole bar and nothing becomes unreachable where the affordance to undo it does not exist.
+// That is rail-fold.ts's own law: the position decides the fold, the media query decides whether
+// there is a rail to fold at all.
 //
 // WHAT THE SPLIT COSTS: ~48px off the Vault head. At 288px it carried zaps, gems, streak AND
 // the rank chip; at ~240px the rank chip no longer fits beside three numbers and a chevron.
@@ -292,6 +370,7 @@ export function getServerDockGeometry(): DockGeometry {
 export function DockBar({
   vault,
   folded,
+  onFold,
 }: {
   vault: React.ReactNode
   /** Is the right rail folded to its strip? The shell's `railCollapsed`, passed down rather than
@@ -300,8 +379,16 @@ export function DockBar({
    *  answer to a question that already has one. Required, not defaulted — a new call site has to
    *  say what it means. */
   folded: boolean
+  /** Fold/unfold the right rail. Optional because not every bar belongs to a rail on the ladder:
+   *  the operator info rail (app/(main)/admin/layout.tsx) mounts this same bar and cannot be
+   *  folded at all, so it passes nothing and no tick renders. Omission is the honest way to say
+   *  "there is no fold here" — a no-op handler would draw a control that does nothing. */
+  onFold?: () => void
 }) {
   const barRef = useRef<HTMLDivElement>(null)
+  /** The Vault segment's own box. It, not the bar's, is what the fold takes at lg+ now that the
+   *  chat tab survives — see `dockDismissalDue`. */
+  const vaultRef = useRef<HTMLDivElement>(null)
   const [lift, setLift] = useState(0)
   /** The rail's measured left edge + width. Null until the first measure, which is why the bar
    *  stays invisible rather than painting at a guessed position for a frame. */
@@ -378,30 +465,37 @@ export function DockBar({
   //
   // A LAYOUT effect, not a passive one, and both duties are the reason:
   //
-  //   1. WHAT THE BAR'S BOX IS. `folded` only adds a class, so the answer is "ask the browser".
-  //      Reading the rect here flushes style once, after the class lands and before paint, which
-  //      is what tells the md–lg band (bar still on screen, nothing dismissed) apart from lg+
-  //      (bar hidden). A passive effect would answer the same question a frame later, after the
-  //      hidden bar had already been painted away.
-  //   2. WHERE FOCUS IS. Once the bar is `display:none` the browser blurs whatever was inside it
-  //      and `document.activeElement` is <body> — the very drop this exists to prevent, and by
+  //   1. WHAT THE VAULT SEGMENT'S BOX IS. `folded` only adds a class, so the answer is "ask the
+  //      browser". Reading the rect here flushes style once, after the class lands and before
+  //      paint, which is what tells the md–lg band (Vault still on screen, nothing dismissed)
+  //      apart from lg+ (Vault hidden). A passive effect would answer the same question a frame
+  //      later, after the hidden segment had already been painted away.
+  //   2. WHERE FOCUS IS. Once the segment is `display:none` the browser blurs whatever was inside
+  //      it and `document.activeElement` is <body> — the very drop this exists to prevent, and by
   //      then unreadable. Inside a layout effect the node is still focused, so "was focus in the
-  //      bar?" is a plain containment question rather than a flag someone has to keep in sync.
+  //      Vault?" is a plain containment question rather than a flag someone has to keep in sync.
   //
   // The focus hand-off is the same duty `close()` performs in vera-launcher.tsx: move focus only
   // when it is actually inside the thing being taken away, and move it somewhere connected — here
-  // the rail's foot control, which is both the affordance that caused this and the way back.
+  // the fold tick on this bar's own corner, which is both the affordance that caused this and the
+  // way back.
   useIsoLayoutEffect(() => {
-    const bar = barRef.current
-    const due = dockDismissalDue(wasFolded.current, folded, bar?.getBoundingClientRect().width ?? 0)
+    const vaultBox = vaultRef.current
+    const due = dockDismissalDue(
+      wasFolded.current,
+      folded,
+      vaultBox?.getBoundingClientRect().width ?? 0,
+    )
     wasFolded.current = folded
     if (!due) return
-    const hadFocus = !!bar && bar.contains(document.activeElement)
+    // Focus only has to move if it was inside the part that is LEAVING. The chat tab survives the
+    // fold, so a member focused on it keeps their place and no hand-off is owed.
+    const hadFocus = !!vaultBox && vaultBox.contains(document.activeElement)
     // Both segments close through their OWN close(), so the collapse timer, the inbox reset and
     // the chat panel's own focus return each run exactly once. Nothing here reaches into either.
     announceDockDismissed()
     if (hadFocus) {
-      document.getElementById(railHandleId('right'))?.querySelector('button')?.focus()
+      document.getElementById(railHandleId('right'))?.focus()
     }
   }, [folded])
 
@@ -460,8 +554,6 @@ export function DockBar({
       // than by empty space. Previously `gap-2` put 8.5px of canvas between the Vault and the
       // chat button and each drew its own rounded box, so the corner read as two unrelated
       // controls that happened to be adjacent, which is exactly what it looked like.
-      // `overflow-hidden` clips both segments to the crest, so the chat button's own square
-      // corner cannot poke out past the rounded top.
       // `right-3 w-72` stays as the FALLBACK for md–lg, where the bar renders but no rail
       // exists to measure. At lg+ the inline span overrides both. It must not be `invisible`
       // while unmeasured: on a tablet there is no rail and there never will be, so hiding on a
@@ -472,27 +564,70 @@ export function DockBar({
       // open space wants the softer card radius; one that dies against an edge wants the
       // tighter control radius, or it reads as a bubble floating off the side of the screen.
       //
-      // The INNER edges either side of the divider stay square — that is what makes this one
-      // split button rather than two tabs. `overflow-hidden` enforces it: neither segment can
-      // round a corner the bar has not granted it.
+      // 🔴 `overflow-hidden` MOVED OFF THIS ELEMENT onto the segment row below, and it is not a
+      // tidy-up. It clips the two segments to the crest (which is what keeps the chat button's
+      // own square corner from poking out past the rounded top) — but it clipped EVERY descendant,
+      // including the fold tick, which is deliberately centred ON this bar's top-left corner and
+      // would have been sliced in half and made unclickable. The clip now belongs to the row that
+      // needs clipping; the tick is a sibling of that row, so it keeps both halves.
       //
-      // `lg:hidden` is the fold, and it is the LAST word by breakpoint order — Tailwind emits the
-      // lg block after the md one, so at lg+ it beats `md:flex` and the bar goes. Below lg it says
-      // nothing, which is the whole point: that band has no right rail to have folded (see the
-      // md–lg note above the component). `display:none` also does the a11y work for free — the
-      // segments leave the tab order and the accessibility tree rather than lingering as
-      // invisible targets, which `opacity-0` or a translate would not.
-      className={`pointer-events-none fixed bottom-0 right-3 z-40 hidden w-72 items-stretch overflow-hidden rounded-tl-card rounded-tr-control border-x border-t border-chrome-border bg-chrome/95 backdrop-blur-sm md:flex print:hidden${
-        folded ? ' lg:hidden' : ''
+      // `lg:w-auto` is the fold. It is the LAST word by breakpoint order — Tailwind emits the lg
+      // block after the md one — and it REPLACES the `lg:hidden` ADR-946 shipped: the whole bar
+      // used to go, and the owner has since asked for the chat tab to survive (see the block above
+      // the component). Shrinking to content is what stops the ~232px overhang the hide was for,
+      // while leaving a real tab in the corner. Below lg it says nothing, which is the whole
+      // point: that band has no right rail to have folded.
+      className={`pointer-events-none fixed bottom-0 right-3 z-40 hidden w-72 items-stretch rounded-tl-card rounded-tr-control border-x border-t border-chrome-border bg-chrome/95 backdrop-blur-sm md:flex print:hidden${
+        folded ? ' lg:w-auto' : ''
       }`}
     >
-      {/* The Vault segment. min-w-0 so its head can shrink rather than push the chat off. */}
-      <div className="pointer-events-auto min-w-0 flex-1">{vault}</div>
+      {/* The rail's fold TICK, on this tab's top-left corner — the corner nearest the seam it
+          moves. It is a CHILD of the bar rather than a sibling parked near it, which is the whole
+          reason the foot control's old failure mode (a `sticky` offset that does not stack against
+          a `fixed` bar, so the control painted underneath it) cannot recur: it rides the bar's own
+          box, including the ride-up and the Vault panel's unfurl.
+          `hidden lg:flex` because the RIGHT RAIL only exists at lg+, while this bar renders from
+          md — a fold tick in the md–lg band would offer to fold a rail that is not there.
+          Rendered only when a fold is actually possible; /admin's info rail passes no handler. */}
+      {onFold && (
+        <RailFoldTick
+          side="right"
+          showing={folded ? 'strip' : 'open'}
+          onPress={onFold}
+          className="hidden lg:flex"
+        />
+      )}
 
-      {/* The chat segment, divided from the Vault by the rail's own hairline. Same bar, same
-          bottom edge, same crest — one anchored system, two jobs. The launcher portals its
-          button in here and owns its own tone (muted at rest, full amber on an unread). */}
-      <div id={DOCK_CHAT_SLOT_ID} className="pointer-events-auto shrink-0 border-l border-chrome-border" />
+      {/* The segment row. It carries the clip (see above) and therefore has to restate the crest
+          radii: its box is inset by the bar's 1px border, so the two curves differ by a pixel that
+          no one can see, and the alternative — clipping on the bar itself — costs the tick. */}
+      <div className="flex flex-1 items-stretch overflow-hidden rounded-tl-card rounded-tr-control">
+        {/* The Vault segment. min-w-0 so its head can shrink rather than push the chat off.
+            `relative` is load-bearing: the fold tick is absolutely positioned over this corner, and
+            a positioned sibling LATER in the tree paints (and hit-tests) above it — so the Vault's
+            own head keeps every one of its own pixels and the tick can never steal its press.
+            `lg:hidden` while folded is the amended ADR-946: the score goes with the rail, the chat
+            tab beside it stays. */}
+        <div
+          ref={vaultRef}
+          className={`pointer-events-auto relative min-w-0 flex-1${folded ? ' lg:hidden' : ''}`}
+        >
+          {vault}
+        </div>
+
+        {/* The chat segment, divided from the Vault by the rail's own hairline. Same bar, same
+            bottom edge, same crest — one anchored system, two jobs. The launcher portals its
+            button in here and owns its own tone (muted at rest, full amber on an unread).
+            `relative` for the same reason the Vault's wrapper has it. The left hairline is dropped
+            while folded: with the Vault gone there is nothing on the other side of it to divide
+            from, and a rule down the left edge of a lone tab reads as a seam to nowhere. */}
+        <div
+          id={DOCK_CHAT_SLOT_ID}
+          className={`pointer-events-auto relative shrink-0 border-l border-chrome-border${
+            folded ? ' lg:border-l-0' : ''
+          }`}
+        />
+      </div>
     </div>
   )
 }

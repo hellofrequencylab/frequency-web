@@ -4,7 +4,8 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { setJourneyOfficialAction } from '../../actions'
 import type { AssignableJourney } from './data'
@@ -44,14 +45,14 @@ export function AssignJourneyToSeason({ questId, journeys }: { questId: string; 
     <div className="rounded-2xl border border-dashed border-border bg-surface/50 p-3">
       <label htmlFor="assign-journey" className={labelClasses}>Assign an existing Journey</label>
       <div className="mt-1.5 flex flex-col gap-2 sm:flex-row sm:items-center">
-        <select
+        <Select
           id="assign-journey"
           value={selected}
           onChange={(e) => setSelected(e.target.value)}
           disabled={pending}
-          className={`${fieldClasses} sm:max-w-sm`}
+          wrapperClassName="sm:max-w-sm"
+          emptyLabel="Choose a Journey…"
         >
-          <option value="">Choose a Journey…</option>
           {journeys.map((j) => (
             <option key={j.id} value={j.id}>
               {j.title}
@@ -59,7 +60,7 @@ export function AssignJourneyToSeason({ questId, journeys }: { questId: string; 
               {j.inOtherQuest ? ' · in another season' : ''}
             </option>
           ))}
-        </select>
+        </Select>
         <Button size="sm" onClick={assign} disabled={!selected || pending} className="shrink-0">
           {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Plus className="h-4 w-4" aria-hidden />}
           Assign to this season

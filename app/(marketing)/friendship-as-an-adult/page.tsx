@@ -188,7 +188,7 @@ export default function FriendshipPage() {
       </PhotoHero>
 
       {/* Answer-first opening: the direct answer in the first two sentences. */}
-      <Section tone="canvas" pad="pt-16 pb-16 sm:pt-20 sm:pb-20">
+      <Section tone="canvas">
         <Lead>
           You make friends as an adult by going back to the same place, with the
           same people, more than once. That is the whole trick, and almost nobody

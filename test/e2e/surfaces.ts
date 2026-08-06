@@ -306,12 +306,81 @@ export function masksFor(page: Page, surface: Surface): Locator[] {
 /**
  * Wait for a surface to stop moving: 'load', then a CAPPED networkidle (streaming
  * sections and analytics beacons mean /discover and the feed never reach true idle), then
- * web fonts, which swap late and shift every text metric.
+ * web fonts, which swap late and shift every text metric, then HEIGHT.
+ *
+ * Height is the one that took three runs to find. `/feed` failed with `Failed to take two
+ * consecutive stable screenshots` at 8497 → 9272 → 9390px, which reads like volatile
+ * content and is not: the page carries five `<Suspense fallback={null}>` boundaries and
+ * `/settings` carries twelve. A null fallback reserves ZERO height, so every boundary that
+ * resolves does not swap a placeholder for content — it APPENDS. Neither of the first two
+ * waits can see that. `networkidle` is capped precisely because these pages never idle, and
+ * `document.fonts.ready` resolves long before the last boundary does.
+ *
+ * Masking cannot fix this and neither can a longer networkidle. A mask paints over a
+ * region; the element keeps its box, so a masked block that arrives late still moves
+ * everything under it. The failure is the page's HEIGHT, not its pixels.
+ *
+ * 🔴 DO NOT ADD A SCROLL PASS HERE. It has been tried and it cost 46 passing tests.
+ * The reasoning was that `fullPage: true` stitches by scrolling, which trips lazy content,
+ * which grows the page — so walking the document first would trigger everything while we
+ * were still allowed to wait. That is plausible and it is not what happens. Scrolling fires
+ * every scroll-triggered reveal on the page, and `animations: 'disabled'` does not undo it:
+ * an IntersectionObserver toggling a class is JS state, not a CSS animation, and it does not
+ * rewind when you scroll back to the top. Every marketing surface then rendered ~3% away
+ * from a baseline captured without the scroll — over the 2% tolerance — and `/`, `/about`,
+ * `/the-lab`, `/discover`, `/spaces`, `/the-community` and `/the-quest` all went red across
+ * both viewports and all four render states. Measured: 3 failures became 49.
+ *
+ * The lesson is narrower than "no scrolling". The height problem was OBSERVED (a logged
+ * 8497 → 9272 → 9390). The lazy-content problem was HYPOTHESISED and never seen. Shipping a
+ * fix for the second alongside the first is what turned a three-surface failure into a
+ * suite-wide one.
  */
 export async function settle(page: Page): Promise<void> {
   await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {})
   // `.then(() => undefined)`: FontFaceSet is not serialisable across the protocol.
   await page.evaluate(() => document.fonts.ready.then(() => undefined))
+  await settleHeight(page)
+}
+
+/**
+ * Wait for `scrollHeight` to hold a single value. Observation only — this must not touch the
+ * page, scroll it, or otherwise change what the camera is about to see (see the 🔴 note in
+ * `settle`).
+ *
+ * The whole wait runs INSIDE one `page.evaluate` on purpose: polling height over the CDP wire
+ * would put a round trip between each reading, so a page growing steadily could report the
+ * same number twice by luck of timing and be declared stable — a flake that would surface
+ * only under load. In-page, the readings are ~100ms apart and mean what they say.
+ *
+ * It resolves rather than throws on timeout. A surface that genuinely never settles should
+ * fail as a SCREENSHOT diff, naming the surface and showing the pixels, not as an opaque
+ * helper timeout several frames removed from the thing that moved.
+ */
+async function settleHeight(page: Page): Promise<void> {
+  await page.evaluate(
+    async ({ timeout, quietFor }) => {
+      const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+      const height = () => document.documentElement.scrollHeight
+
+      // `quietFor` of no change is what counts as settled; a page that is still growing
+      // resets the clock every time it does.
+      const startedAt = Date.now()
+      let last = height()
+      let lastChangedAt = Date.now()
+      while (Date.now() - startedAt < timeout) {
+        await sleep(100)
+        const current = height()
+        if (current !== last) {
+          last = current
+          lastChangedAt = Date.now()
+        } else if (Date.now() - lastChangedAt >= quietFor) {
+          return
+        }
+      }
+    },
+    { timeout: 15_000, quietFor: 600 },
+  )
 }
 
 /**
@@ -341,6 +410,40 @@ export async function assertNotProtectionWall(page: Page): Promise<void> {
       ].join(' '),
     )
   }
+}
+
+/**
+ * Fail LOUDLY when a MEMBER surface lands on /sign-in.
+ *
+ * Two different silences hide here, and neither may be allowed to pass as a result:
+ *
+ *  · The storage state is present but DEAD — an expired access token whose refresh token has
+ *    already been rotated, or (the one that bites in CI) a session minted for a different
+ *    host, because a Supabase auth cookie is domain-scoped and every PR gets a new preview
+ *    hostname. Nothing about that is visible from the outside: Playwright would happily
+ *    photograph the sign-in page under the name `/feed`, and the a11y suite would audit it
+ *    and report on the sign-in form's contrast as if it were the shell's.
+ *  · The account exists but cannot reach the surface (onboarding not finished, no Space
+ *    membership). Same photograph-the-wrong-page outcome.
+ *
+ * A skip would be wrong here. The anon path skips because "this route has no public view" is
+ * a true and permanent fact; this is a broken credential, which is a thing someone must fix,
+ * so it throws.
+ */
+export function assertMemberSession(page: Page, surface: Surface): void {
+  if (surface.audience !== 'member') return
+  const landed = currentPathname(page)
+  if (!landed.startsWith('/sign-in')) return
+  throw new Error(
+    [
+      `${surface.path} redirected to ${landed} WITH a member session configured.`,
+      'PW_STORAGE_STATE is set, so this is a dead credential rather than the known blind spot:',
+      '  · the session expired, or its refresh token was already rotated by an earlier run; or',
+      '  · it was minted for a different host (auth cookies are domain-scoped, and every PR',
+      '    preview gets a new hostname), so re-mint it against THIS PW_BASE_URL.',
+      'Re-mint with `pnpm e2e:session` — see test/e2e/README.md § The member shell.',
+    ].join('\n'),
+  )
 }
 
 /** Did an anonymous visit get bounced to sign-in? Returns the landing pathname. */

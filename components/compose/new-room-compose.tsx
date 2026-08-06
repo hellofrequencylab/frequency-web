@@ -7,7 +7,7 @@ import { createRoom } from '@/app/(main)/messages/rooms/actions'
 import { isError } from '@/lib/action-result'
 import { StudioWindow } from '@/components/studio/studio-window'
 import { StudioFooter } from '@/components/studio/kit/studio-footer'
-import { Input, Textarea, Label } from '@/components/ui/field'
+import { Field, Input, Textarea, labelClasses } from '@/components/ui/field'
 
 type Visibility = 'public' | 'private'
 
@@ -94,8 +94,7 @@ export function NewRoomCompose({
           }
         >
           <div className="space-y-5">
-            <div className="space-y-1.5">
-              <Label>Board name</Label>
+            <Field label="Board name">
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -103,10 +102,9 @@ export function NewRoomCompose({
                 maxLength={80}
                 disabled={isPending}
               />
-            </div>
+            </Field>
 
-            <div className="space-y-1.5">
-              <Label>Description <span className="font-normal text-subtle">(optional)</span></Label>
+            <Field label={<>Description <span className="font-normal text-subtle">(optional)</span></>}>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -116,10 +114,12 @@ export function NewRoomCompose({
                 disabled={isPending}
                 className="resize-none"
               />
-            </div>
+            </Field>
 
             <div className="space-y-1.5">
-              <Label>Who can see it</Label>
+              {/* Not a <Label>: this names a group of buttons, and a <label> would bind to the
+                  first labelable descendant rather than to the set. */}
+              <span className={labelClasses}>Who can see it</span>
               <div className="grid grid-cols-2 gap-2">
                 {([
                   ['public', Globe, 'Public', 'Anyone can find and join'],

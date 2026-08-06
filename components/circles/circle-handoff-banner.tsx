@@ -68,7 +68,7 @@ export function CircleHandoffBanner({ circleId }: { circleId: string }) {
               type="button"
               onClick={() => respond('accept')}
               disabled={pending}
-              className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+              className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               Accept
             </button>
@@ -76,7 +76,7 @@ export function CircleHandoffBanner({ circleId }: { circleId: string }) {
               type="button"
               onClick={() => respond('decline')}
               disabled={pending}
-              className="rounded-lg px-3 py-1.5 text-meta font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
+              className="rounded-control px-3 py-1.5 text-meta font-medium text-subtle transition-colors hover:text-text disabled:opacity-40"
             >
               No thanks
             </button>

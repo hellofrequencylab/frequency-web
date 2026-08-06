@@ -62,7 +62,12 @@ export function PhotoHero({
   const isScreen = minHeight === 'screen'
   // The dock overhangs the section's bottom edge by 2rem, so a hero carrying one must not
   // clip its own children; nothing else in the hero can overflow (every layer is inset-0).
-  const shape = facts ? 'mk-hero mk-hero-dock' : 'overflow-hidden'
+  // `.mk-hero` on BOTH arms, not just the dock arm. It is the tag the globals.css adjacency
+  // rule keys on (`.mk-hero:not(.mk-hero-dock) + .mk-beat { padding-top: 0 }`) so a beat right
+  // after a hero does not add a second gap on top of the room the hero already carries. Until
+  // now a dockless PhotoHero emitted neither class, so that rule had never fired for any hero
+  // on the site and eight pages had hand-written the `pt-0` it exists to supply.
+  const shape = facts ? 'mk-hero mk-hero-dock' : 'mk-hero overflow-hidden'
   const padY = isScreen
     ? 'py-16 sm:py-28'
     : facts
@@ -153,7 +158,11 @@ export function PageHero({
   vis?: string
 }) {
   return (
-    <section className={`px-6 ${pad ?? 'pt-20 pb-12 sm:pt-32 sm:pb-20'} ${vis}`}>
+    // `mk-hero` is the rhythm tag, not a padding: it carries no padding of its own and exists
+    // so the section BELOW knows it follows a hero (globals.css zeroes that section's top
+    // padding, since the hero already ends with room). It rides alongside `pad`, which still
+    // owns this hero's own padding.
+    <section className={`mk-hero px-6 ${pad ?? 'pt-20 pb-12 sm:pt-32 sm:pb-20'} ${vis}`}>
       <div className="max-w-3xl mx-auto text-center">
         {eyebrow && (
           <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-5">
@@ -192,9 +201,13 @@ export function Section({
   width?: 'prose' | 'wide'
   /** Explicit vertical-rhythm role (DAWN four-role system, globals.css). Usually derived:
    *  `band` (loose — a tone change) for tone 'ink', `beat` (the workhorse) otherwise.
-   *  `cont` continues the section above at the same tone (no top padding); `tight` is a
-   *  short statement/banner beat. An explicit `pad` still opts out entirely. */
-  role?: 'band' | 'beat' | 'cont' | 'tight'
+   *  `cont` continues the section above at the same tone (no top padding); `cont-soft` is the
+   *  half-gap version of that (two nearly-identical tones stacked); `tight` is a short
+   *  statement/banner beat. An explicit `pad` still opts out entirely.
+   *
+   *  `cont-soft` is a ROLE, not a `pad` string. It was reachable only through the escape hatch
+   *  until now, which made a deliberate declaration read as an opt-out at the call site. */
+  role?: 'band' | 'beat' | 'cont' | 'cont-soft' | 'tight'
 }) {
   const bg =
     tone === 'canvas'
@@ -209,8 +222,24 @@ export function Section({
   // (DAWN 2026-08-03 final round — a value that read right at the end of a page read as a
   // hole in the middle). An explicit `pad` opts out and pays exactly what it asks for.
   const roleClass = `mk-${role ?? (tone === 'ink' ? 'band' : 'beat')}`
+  // THE TONE TAG, and why it rides alongside `pad` rather than inside `roleClass`.
+  // `.mk-cream` / `.mk-ink` are what make the same-tone-halving rule in globals.css fire: two
+  // beats of the same tone in a row give up half the gap between them, while a tone CHANGE
+  // keeps the full beat — which is the thing that makes a tone change read as a change. Both
+  // classes shipped with ZERO adopters, so the rule had never fired once and the whole
+  // four-role rhythm was running on the uncorrected numbers.
+  //
+  // `Section` is the majority of marketing call sites, so tagging it is the adoption; tagging
+  // only the hand-rolled sections would make the correction fire on some seams and not others,
+  // which reads as a bug rather than as no rule at all.
+  //
+  // It is emitted even when `pad` opts out of the ROLE, because tone is not padding: a section
+  // that pays its own py-* is still cream or ink to the section under it. The halving rule's
+  // `:where(:not(.mk-cont, .mk-cont-soft, .mk-arc))` guard is what keeps a deliberate
+  // declaration winning over this inference, so the two cannot collide.
+  const toneClass = tone === 'ink' ? 'mk-ink' : 'mk-cream'
   return (
-    <section className={`px-6 ${pad ?? roleClass} ${bg} ${vis} ${className}`}>
+    <section className={`px-6 ${toneClass} ${pad ?? roleClass} ${bg} ${vis} ${className}`}>
       <div className={`${width === 'wide' ? 'max-w-5xl' : 'max-w-3xl'} mx-auto`}>{children}</div>
     </section>
   )
@@ -595,8 +624,13 @@ export function Statement({
 }) {
   const isInk = tone === 'ink'
   const bg = tone === 'canvas' ? 'bg-marketing-canvas' : isInk ? 'bg-slat' : 'bg-surface'
+  // A Statement IS the four-role system's `tight` beat — "a statement or a banner: short, so it
+  // does not need the full beat" is the role's own definition in globals.css. It had been paying
+  // `py-14 sm:py-24` by hand, which is the same shape as the token but frozen at two breakpoints
+  // instead of fluid, and invisible to the double-count correction that discounts a section
+  // followed by another. The tone tag comes with it for the same reason it does on `Section`.
   return (
-    <section className={`${bg} px-6 ${pad ?? 'py-14 sm:py-24'} ${vis}`}>
+    <section className={`${bg} ${isInk ? 'mk-ink' : 'mk-cream'} px-6 ${pad ?? 'mk-tight'} ${vis}`}>
       <p
         className={`font-display uppercase max-w-3xl mx-auto text-center ${
           isInk ? 'text-on-ink' : 'text-text'
@@ -931,7 +965,11 @@ export function BetaCTA({
   vis?: string
 }) {
   return (
-    <section className={`relative bg-slat px-6 ${pad ?? 'py-24 sm:py-28'} text-center overflow-hidden ${vis}`}>
+    // `mk-band` + `mk-ink`: the close is a tone change, which is the band role's definition, and
+    // every marketing page ends here — so this is the single highest-leverage row of the rhythm.
+    // The hand-rolled `py-24 sm:py-28` was within a few px of the token at both breakpoints but
+    // could not participate in the double-count correction or the same-tone halving above it.
+    <section className={`relative bg-slat mk-ink px-6 ${pad ?? 'mk-band'} text-center overflow-hidden ${vis}`}>
       {/* Warm LED seam at the top edge + amber glow behind the CTA. */}
       <div className="light-strip absolute inset-x-0 top-0" />
       <div className="amber-glow absolute inset-0 pointer-events-none" />

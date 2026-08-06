@@ -68,7 +68,7 @@ export function ManageEmailsForm({
         start again. Changes save right away.
       </p>
 
-      <div className="rounded-2xl border border-border bg-surface divide-y divide-border overflow-hidden">
+      <div className="rounded-card border border-border bg-surface divide-y divide-border overflow-hidden">
         {states.map(({ category, subscribed }) => {
           const meta = CATEGORY_LABELS.find((c) => c.key === category)
           if (!meta) return null

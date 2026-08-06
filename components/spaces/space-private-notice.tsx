@@ -35,10 +35,10 @@ export function SpacePrivateNotice({ spaceId }: { spaceId: string }) {
   return (
     <div
       role="status"
-      className="mb-6 flex flex-col gap-3 rounded-2xl border border-warning/40 bg-warning-bg/60 p-4 sm:flex-row sm:items-center sm:justify-between"
+      className="mb-6 flex flex-col gap-3 rounded-card border border-warning/40 bg-warning-bg/60 p-4 sm:flex-row sm:items-center sm:justify-between"
     >
       <div className="flex items-start gap-3">
-        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-warning/15 text-warning">
+        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-control bg-warning/15 text-warning">
           <EyeOff className="h-4 w-4" aria-hidden />
         </span>
         <div className="min-w-0">

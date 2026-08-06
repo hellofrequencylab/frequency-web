@@ -42,9 +42,9 @@ export async function LocalCornerCard({ viewerProfileId }: { viewerProfileId: st
 // whole pitch: we use your approximate neighborhood, never your address.
 function LocationNudge() {
   return (
-    <section className="rounded-2xl border border-primary-bg bg-primary-bg/40 p-4">
+    <section className="rounded-card border border-primary-bg bg-primary-bg/40 p-4">
       <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
           <MapPin className="h-4.5 w-4.5" />
         </span>
         <div className="min-w-0">
@@ -56,7 +56,7 @@ function LocationNudge() {
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Link
               href="/settings/profile"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               <MapPin className="h-4 w-4" /> Set your location
             </Link>
@@ -102,9 +102,9 @@ function FounderPrompt({
   // 'live' never reaches here, but the type is the full union; fall back to 'warm' copy.
   const copy = readiness === 'live' ? COPY.warm : COPY[readiness]
   return (
-    <section className="rounded-2xl border border-border bg-gradient-to-br from-primary-bg/40 to-signal-bg/30 p-4">
+    <section className="rounded-card border border-border bg-gradient-to-br from-primary-bg/40 to-signal-bg/30 p-4">
       <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
           <Sparkles className="h-4.5 w-4.5" />
         </span>
         <div className="min-w-0">
@@ -115,13 +115,13 @@ function FounderPrompt({
               <NewCircleCompose
                 buttonLabel="Start a circle"
                 canCreate={canStartCircle}
-                buttonClass="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                buttonClass="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               />
             </FounderActionTracker>
             <FounderActionTracker action="event">
               <Link
                 href="/events"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
               >
                 <CalendarPlus className="h-4 w-4 text-subtle" /> Host an event
               </Link>
@@ -129,7 +129,7 @@ function FounderPrompt({
             <FounderActionTracker action="invite">
               <Link
                 href="/network"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
               >
                 <Users className="h-4 w-4 text-subtle" /> Invite people
               </Link>

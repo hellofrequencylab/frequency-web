@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation'
 import { Loader2, Plus, ChevronLeft, ChevronRight, CalendarClock, Pencil } from 'lucide-react'
 import { createDeal, moveDeal } from './actions'
 import { isError } from '@/lib/action-result'
+import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { formatMoney, type CrmStage, type CrmDeal, type PersonLite } from '@/lib/crm/pipeline'
 import { PIPELINE_LANES, laneMeta, type PipelineLane } from '@/lib/crm/stage-templates'
 import { getInitials } from '@/lib/utils'
@@ -78,7 +80,7 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
   const shown = lane === 'all' ? deals : deals.filter((d) => d.source === lane)
   const byStage = (id: string) => shown.filter((d) => d.stage_id === id)
   const stageValue = (id: string) => byStage(id).reduce((s, d) => s + (d.value || 0), 0)
-  const field = 'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text focus:border-border-strong focus:outline-none'
+  const field = 'px-2.5 py-1.5'
 
   return (
     <div className="space-y-4">
@@ -112,10 +114,9 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
 
       {adding && (
         <div className="grid gap-2 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-6">
-          <select
+          <Select
             value={newLane}
             onChange={(e) => setNewLane(e.target.value as PipelineLane)}
-            className={field}
             aria-label="Lane"
           >
             {PIPELINE_LANES.map((l) => (
@@ -123,26 +124,27 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
                 {l.cta}
               </option>
             ))}
-          </select>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Who, in a few words" className={`lg:col-span-2 ${field}`} />
-          <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Contact (optional)" className={field} />
-          <input
+          </Select>
+          <Input aria-label="Who" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Who, in a few words" className={`lg:col-span-2 ${field}`} />
+          <Input aria-label="Contact" value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Contact (optional)" className={field} />
+          <Input
             type="number"
+            aria-label="Value"
             min={0}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder="Value $"
             className={field}
           />
-          <select value={stageId} onChange={(e) => setStageId(e.target.value)} className={field}>
+          <Select value={stageId} onChange={(e) => setStageId(e.target.value)} aria-label="Stage">
             {stages.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
             ))}
-          </select>
+          </Select>
           <div className="flex gap-2 sm:col-span-2 lg:col-span-6">
-            <input type="date" value={close} onChange={(e) => setClose(e.target.value)} className={`min-w-0 flex-1 ${field}`} title="Expected close" />
+            <Input type="date" aria-label="Expected close" value={close} onChange={(e) => setClose(e.target.value)} className={`min-w-0 flex-1 ${field}`} title="Expected close" />
             <Button type="button" size="sm" disabled={pending} onClick={submitNew} className="shrink-0">
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add
             </Button>

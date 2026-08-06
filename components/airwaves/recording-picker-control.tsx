@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Radio } from 'lucide-react'
+import { Select } from '@/components/ui/select'
 
 export interface RecordingChoice {
   id: string
@@ -89,18 +90,18 @@ export function RecordingPickerControl({
   return (
     <label className="block space-y-1.5">
       <span className={labelCls}>{label}</span>
-      <select
+      <Select
         value={value || ''}
         onChange={(e) => onChange(e.target.value || undefined)}
-        className="w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-meta text-text outline-none focus:border-primary"
+        className="text-meta"
+        emptyLabel="Choose a recording"
       >
-        <option value="">Choose a recording</option>
         {choices.map((c) => (
           <option key={c.id} value={c.id}>
             {c.title} {c.mediaKind === 'video' ? '(video)' : '(audio)'}
           </option>
         ))}
-      </select>
+      </Select>
     </label>
   )
 }

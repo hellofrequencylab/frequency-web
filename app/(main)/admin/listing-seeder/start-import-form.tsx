@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { Loader2, ClipboardPaste, Home, Tag, ImagePlus, X } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
+import { Input, Textarea } from '@/components/ui/field'
 import { Banner } from '@/components/admin/status'
 import { cn } from '@/lib/utils'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
@@ -18,8 +19,6 @@ import { detectListingKind } from '@/lib/listing-seeder/detect'
 import type { ListingSeedKind } from '@/lib/listing-seeder/types'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
-const field =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 const labelCls = 'flex flex-col gap-1 text-meta font-medium text-muted'
 
 const KINDS: { key: ListingSeedKind; label: string; blurb: string; icon: typeof Tag }[] = [
@@ -159,7 +158,7 @@ export function StartImportForm() {
               onClick={() => pickKind(k.key)}
               aria-pressed={active}
               className={cn(
-                'flex items-start gap-3 rounded-xl border p-3 text-left transition-colors',
+                'flex items-start gap-3 rounded-card border p-3 text-left transition-colors',
                 active
                   ? 'border-primary bg-primary-bg'
                   : 'border-border bg-surface hover:border-border-strong',
@@ -180,8 +179,8 @@ export function StartImportForm() {
       {/* Paste */}
       <label className={`${labelCls} mt-4`}>
         Paste the listing
-        <textarea
-          className={`${field} min-h-40 resize-y`}
+        <Textarea
+          className="min-h-40 resize-y"
           placeholder="Paste the copied listing here: the title, the description, the price or rent, and how to reach the poster."
           value={pastedText}
           onChange={(e) => onPasteChange(e.target.value)}
@@ -194,16 +193,15 @@ export function StartImportForm() {
       <div className="grid gap-4 sm:grid-cols-3">
         <label className={labelCls}>
           City
-          <input className={field} placeholder="Encinitas" value={city} onChange={(e) => setCity(e.target.value)} />
+          <Input placeholder="Encinitas" value={city} onChange={(e) => setCity(e.target.value)} />
         </label>
         <label className={labelCls}>
           Neighborhood
-          <input className={field} placeholder="Leucadia" value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} />
+          <Input placeholder="Leucadia" value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} />
         </label>
         <label className={labelCls}>
           {kind === 'housing' ? 'Property type' : 'Category'}
-          <input
-            className={field}
+          <Input
             placeholder={kind === 'housing' ? 'Apartment' : 'Furniture'}
             value={category}
             onChange={(e) => setCategory(e.target.value)}

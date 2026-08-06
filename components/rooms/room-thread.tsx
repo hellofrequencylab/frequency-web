@@ -9,6 +9,7 @@ import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { useTypingIndicator } from '@/lib/realtime/use-typing'
 import { TypingIndicator } from '@/components/messages/typing-indicator'
+import { Textarea } from '@/components/ui/field'
 
 export type RoomMessage = {
   id: string
@@ -227,7 +228,7 @@ export function RoomThread({
                 </button>
               </div>
               <div className="flex items-end gap-2">
-                <textarea
+                <Textarea
                   value={body}
                   onChange={e => { setBody(e.target.value); notifyTyping() }}
                   onKeyDown={e => {
@@ -243,7 +244,8 @@ export function RoomThread({
                   rows={1}
                   autoFocus
                   disabled={isPending}
-                  className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2 text-body-sm placeholder-subtle outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 leading-relaxed max-h-32"
+                  aria-label="Say it to the room"
+                  className="flex-1 resize-none leading-relaxed max-h-32"
                   style={{ minHeight: '2.5rem' }}
                 />
                 <button

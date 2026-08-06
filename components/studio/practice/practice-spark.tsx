@@ -9,6 +9,7 @@ import { sparkPracticeAction, createPracticeFromSparkAction } from '@/app/(main)
 import { createPracticeDraftAction } from '@/app/(main)/practices/actions'
 import type { PracticePace, PracticeCadenceHint, PracticeSparkTimer } from '@/lib/ai/practice-spark'
 import { timerPreview } from '@/lib/movement'
+import { Input, Textarea } from '@/components/ui/field'
 
 // The Be Still sub-mode LABELS (naming canon: member copy never shows raw enum slugs).
 const MINDLESS_LABEL: Record<string, string> = {
@@ -25,9 +26,6 @@ const MINDLESS_LABEL: Record<string, string> = {
 // Either way Vera drafts the WHOLE Practice for review, then committing creates the row and
 // drops the author into the editor. Nothing persists until that commit (deferred creation).
 // "Build it myself" creates a blank draft and opens the editor straight away.
-
-const FIELD =
-  'w-full rounded-card border border-border bg-surface px-3 py-2.5 text-body-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
 
 const CADENCE_CHOICES: { key: PracticeCadenceHint; label: string }[] = [
   { key: 'daily', label: 'Daily' },
@@ -151,25 +149,25 @@ export function PracticeSpark() {
 
       <div className="mt-7">
         <p className="mb-1.5 text-meta font-semibold uppercase tracking-widest text-primary-strong">New Practice</p>
-        <h1 className="text-page-title font-bold text-text">{heading.title}</h1>
+        <h1 id="spark-step" className="text-page-title font-bold text-text">{heading.title}</h1>
         <p className="mt-1 text-body-sm leading-relaxed text-muted">{heading.description}</p>
 
         <div className="mt-5">
           {/* WRITTEN path — paste a Practice you already have and let Vera shape it. */}
           {usingWritten && !onReview && (
-            <textarea
+            <Textarea
               autoFocus
+              aria-labelledby="spark-step"
               value={sourceText}
               onChange={(e) => setSourceText(e.target.value)}
-              rows={9}
-              className={FIELD}
+              rows={9} className="py-2.5"
               placeholder="Paste your practice here, the steps and how to do it, anything you've already written…"
             />
           )}
 
           {!usingWritten && step === 1 && (
             <>
-              <textarea autoFocus value={who} onChange={(e) => setWho(e.target.value)} rows={3} className={FIELD} placeholder="e.g. People who wake up wired and want a calmer start." />
+              <Textarea autoFocus aria-labelledby="spark-step" value={who} onChange={(e) => setWho(e.target.value)} rows={3} className="py-2.5" placeholder="e.g. People who wake up wired and want a calmer start." />
               {/* Second path: drop in a Practice you already wrote and let Vera shape it. */}
               <button
                 type="button"
@@ -185,10 +183,10 @@ export function PracticeSpark() {
             </>
           )}
           {!usingWritten && step === 2 && (
-            <textarea autoFocus value={act} onChange={(e) => setAct(e.target.value)} rows={3} className={FIELD} placeholder="e.g. Sit for two minutes and breathe before reaching for the phone." />
+            <Textarea autoFocus aria-labelledby="spark-step" value={act} onChange={(e) => setAct(e.target.value)} rows={3} className="py-2.5" placeholder="e.g. Sit for two minutes and breathe before reaching for the phone." />
           )}
           {!usingWritten && step === 3 && (
-            <textarea autoFocus value={outcome} onChange={(e) => setOutcome(e.target.value)} rows={3} className={FIELD} placeholder="e.g. Start the day a notch calmer, most mornings." />
+            <Textarea autoFocus aria-labelledby="spark-step" value={outcome} onChange={(e) => setOutcome(e.target.value)} rows={3} className="py-2.5" placeholder="e.g. Start the day a notch calmer, most mornings." />
           )}
           {!usingWritten && step === 4 && (
             <div className="space-y-5">
@@ -229,19 +227,19 @@ export function PracticeSpark() {
                 <>
                   <label className="block">
                     <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Name</span>
-                    <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} className={`${FIELD} font-semibold`} placeholder="Name your Practice" />
+                    <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} className="font-semibold py-2.5" placeholder="Name your Practice" />
                   </label>
                   <label className="block">
                     <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Card hook</span>
-                    <input value={summary} onChange={(e) => setSummary(e.target.value)} maxLength={140} className={FIELD} placeholder="The problem it solves, in a line" />
+                    <Input value={summary} onChange={(e) => setSummary(e.target.value)} maxLength={140} className="py-2.5" placeholder="The problem it solves, in a line" />
                   </label>
                   <label className="block">
                     <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Description</span>
-                    <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} maxLength={280} className={FIELD} placeholder="Who it's for and what they notice after a week" />
+                    <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} maxLength={280} className="py-2.5" placeholder="Who it's for and what they notice after a week" />
                   </label>
                   <label className="block">
                     <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Guide</span>
-                    <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} maxLength={8000} className={FIELD} placeholder="The steps, in plain words" />
+                    <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} maxLength={8000} className="py-2.5" placeholder="The steps, in plain words" />
                   </label>
                   <div>
                     <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Pillars</span>

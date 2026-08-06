@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { Heart, Loader2 } from 'lucide-react'
+import { Input } from '@/components/ui/field'
 import { startTip } from './tip-actions'
 import { TIP_PRESETS_CENTS, TIP_MIN_CENTS, TIP_MAX_CENTS } from '@/lib/billing/tips'
 import { isError } from '@/lib/action-result'
@@ -38,7 +39,7 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
     return (
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-body-sm font-medium text-primary-strong transition-colors hover:bg-primary-bg/70"
+        className="flex items-center gap-1.5 rounded-control border border-primary-bg bg-primary-bg px-3 py-1.5 text-body-sm font-medium text-primary-strong transition-colors hover:bg-primary-bg/70"
       >
         <Heart className="h-3.5 w-3.5" />
         Tip
@@ -47,7 +48,7 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
   }
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="w-full max-w-sm rounded-card border border-border bg-surface p-4 lift-1">
       <p className="text-body-sm font-bold text-text">Tip {recipientName}</p>
       <p className="mt-0.5 text-meta text-muted">Sends directly to them. Frequency takes a small fee.</p>
 
@@ -70,6 +71,7 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
           <input
             type="number"
             inputMode="decimal"
+            aria-label="Another tip amount, in dollars"
             min={TIP_MIN_CENTS / 100}
             max={TIP_MAX_CENTS / 100}
             value={custom}
@@ -80,13 +82,14 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
         </div>
       </div>
 
-      <input
+      <Input
         type="text"
+        aria-label="Add a note"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         maxLength={280}
         placeholder="Add a note (optional)"
-        className="mt-3 w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none placeholder:text-subtle focus:border-primary"
+        className="mt-3"
       />
 
       {error && <p className="mt-2 text-body-sm text-danger">{error}</p>}

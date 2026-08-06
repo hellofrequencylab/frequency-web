@@ -84,7 +84,7 @@ export async function DonateMember({
       {/* Record one space.cta_click on mount (Epic 1.11): the Donate engine has no action button yet,
           so this keeps the CTA telemetry the placeholder list used to fire. Fail-safe + fire-and-forget. */}
       {ask.id && <DonateCtaTracker spaceId={spaceId} />}
-      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+      <div className="rounded-card border border-border bg-surface p-5 lift-1">
         <h3 className="text-body font-bold leading-tight text-text">{ask.fundLabel}</h3>
         {ask.description && (
           <p className="mt-2 text-body-sm leading-relaxed text-muted">{ask.description}</p>

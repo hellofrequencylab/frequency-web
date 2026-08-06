@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ArrowUpRight, ShieldCheck } from 'lucide-react'
 import { AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ProgressTrack, type ProgressTone } from '@/components/ui/progress-track'
 import {
   getStrongestConnections,
   type StrongConnection,
@@ -40,10 +41,10 @@ export async function CrmGraphConnections() {
 }
 
 /** A score band → semantic tone for the strength meter (mirrors the health legend bands). */
-function scoreTone(score: number): string {
-  if (score >= 0.5) return 'bg-success'
-  if (score >= 0.25) return 'bg-warning'
-  return 'bg-primary'
+function scoreTone(score: number): ProgressTone {
+  if (score >= 0.5) return 'success'
+  if (score >= 0.25) return 'warning'
+  return 'primary'
 }
 
 function ConnectionRow({ connection, rank }: { connection: StrongConnection; rank: number }) {
@@ -62,13 +63,13 @@ function ConnectionRow({ connection, rank }: { connection: StrongConnection; ran
         <span className="shrink-0 text-body-sm font-bold tabular-nums text-text">{pct}%</span>
       </div>
       {/* The strength meter: an accessible bar, semantic tokens only (no graph-viz, no hardcoded hex). */}
-      <div
-        className="mt-2 h-1.5 overflow-hidden rounded-pill bg-surface-elevated"
-        role="img"
-        aria-label={`Resonance strength ${pct} percent`}
-      >
-        <div className={`h-full rounded-pill ${scoreTone(connection.score)}`} style={{ width: `${Math.max(4, pct)}%` }} />
-      </div>
+      <ProgressTrack
+        value={pct}
+        minVisible={4}
+        label={`Resonance strength ${pct} percent`}
+        tone={scoreTone(connection.score)}
+        className="mt-2"
+      />
       <p className="mt-2 text-meta text-muted">Because {why}.</p>
     </li>
   )

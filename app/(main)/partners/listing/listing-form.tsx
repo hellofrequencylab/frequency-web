@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Store } from 'lucide-react'
+import { Input, Textarea } from '@/components/ui/field'
 import { saveListing, type ListingInput } from './actions'
 import { isError } from '@/lib/action-result'
 
@@ -50,19 +51,19 @@ export function ListingForm({ initial }: { initial: Partial<Record<keyof Listing
         <label key={f.key} className="block">
           <span className="mb-1 block text-body-sm font-medium text-text">{f.label}</span>
           {f.textarea ? (
-            <textarea
+            <Textarea
               value={form[f.key]}
               onChange={(e) => set(f.key, e.target.value)}
               rows={4}
               placeholder={f.placeholder}
-              className="w-full resize-none rounded-control border border-border bg-surface-elevated px-4 py-3 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary"
+              className="resize-none bg-surface-elevated px-4 py-3"
             />
           ) : (
-            <input
+            <Input
               value={form[f.key]}
               onChange={(e) => set(f.key, e.target.value)}
               placeholder={f.placeholder}
-              className="w-full rounded-control border border-border bg-surface-elevated px-4 py-2.5 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary"
+              className="bg-surface-elevated px-4 py-2.5"
             />
           )}
         </label>

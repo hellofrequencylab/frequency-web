@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { setCirclePracticeAction } from '@/app/(main)/practices/actions'
 import { isError } from '@/lib/action-result'
+import { Select } from '@/components/ui/select'
 
 // Host control: pick the circle's current practice from the library.
 export function SetCirclePractice({
@@ -23,18 +24,19 @@ export function SetCirclePractice({
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <span className="text-meta text-subtle">Set practice:</span>
-      <select
+      <Select
         value={val}
         onChange={(e) => setVal(e.target.value)}
-        className="rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text"
+        aria-label="Set practice"
+        wrapperClassName="inline-block w-max max-w-full"
+        emptyLabel="Choose a practice…"
       >
-        <option value="">Choose a practice…</option>
         {library.map((p) => (
           <option key={p.id} value={p.id}>
             {p.title}
           </option>
         ))}
-      </select>
+      </Select>
       <button
         disabled={pending || !val || val === current}
         onClick={() =>

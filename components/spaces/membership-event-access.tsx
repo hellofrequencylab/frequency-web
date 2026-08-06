@@ -35,7 +35,7 @@ export function MembershipEventAccess({
 
   if (rows.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
+      <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
         No upcoming events yet. Events your space hosts show here so you can include them with a
         membership.
       </p>
@@ -45,7 +45,7 @@ export function MembershipEventAccess({
   if (!allowed) {
     // One plain sentence, one link (the house upsell pattern). Never a modal, never urgency.
     return (
-      <p className="rounded-lg bg-surface px-3 py-2 text-body-sm text-muted">
+      <p className="rounded-card bg-surface px-3 py-2 text-body-sm text-muted">
         Including events with your membership comes with the Collective plan.{' '}
         <Link href={`/spaces/${slug}/settings/billing`} className="font-medium text-primary hover:underline">
           See plans
@@ -72,8 +72,8 @@ export function MembershipEventAccess({
 
   return (
     <div className="space-y-2">
-      {error && <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>}
-      <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
+      {error && <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>}
+      <ul className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
         {rows.map((r) => (
           <li key={r.eventId} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
             <div className="min-w-0">

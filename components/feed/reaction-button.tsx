@@ -192,7 +192,7 @@ export function ReactionInlinePicker({ base, toggle, pending, quickCount = 5 }: 
         {pickerOpen && (
           <div
             role="menu"
-            className="absolute bottom-full left-0 z-20 mb-1.5 flex gap-0.5 rounded-2xl bg-surface-elevated p-1.5 lift-3 ring-1 ring-border/40"
+            className="absolute bottom-full left-0 z-20 mb-1.5 flex gap-0.5 rounded-card bg-surface-elevated p-1.5 lift-3 ring-1 ring-border/40"
           >
             {REACTIONS.map((r) => (
               <button

@@ -11,6 +11,7 @@ import {
   recordPaymentAction,
 } from '@/app/(main)/admin/spaces/[id]/billing-agreement-actions'
 
+import { Input, Textarea } from '@/components/ui/field'
 // The MANUAL BILLING panel on /admin/spaces/[id] (ADR-872): the crew's no-SQL path for off-Stripe
 // deals. No active agreement -> the record form (plan, cadence, locked amount, method, dates).
 // Active agreement -> the receipt summary + one "Record payment" button that extends paid_through
@@ -43,8 +44,6 @@ const METHOD_OPTIONS = [
   { value: 'other', label: 'Other' },
 ]
 
-const inputClass =
-  'w-full rounded-card border border-border bg-surface px-3 py-2 text-body-sm text-text focus:outline-none focus:ring-2 focus:ring-primary'
 
 function dateLabel(dateISO: string): string {
   return new Date(`${dateISO}T00:00:00Z`).toLocaleDateString('en-US', {
@@ -161,7 +160,7 @@ export function ManualAgreementPanel({
         </label>
         <label className="block text-body-sm">
           <span className="mb-1 block text-meta font-semibold text-subtle">Amount per interval (dollars)</span>
-          <input name="amount" type="number" min="0" step="0.01" required className={inputClass} placeholder="490" />
+          <Input name="amount" type="number" min="0" step="0.01" required placeholder="490" />
         </label>
         <label className="block text-body-sm">
           <span className="mb-1 block text-meta font-semibold text-subtle">Method</span>
@@ -169,25 +168,24 @@ export function ManualAgreementPanel({
         </label>
         <label className="block text-body-sm">
           <span className="mb-1 block text-meta font-semibold text-subtle">Started</span>
-          <input name="started_at" type="date" required className={inputClass} />
+          <Input name="started_at" type="date" required />
         </label>
         <label className="block text-body-sm">
           <span className="mb-1 block text-meta font-semibold text-subtle">Paid through</span>
-          <input name="paid_through" type="date" required className={inputClass} />
+          <Input name="paid_through" type="date" required />
         </label>
       </div>
       <label className="block text-body-sm">
         <span className="mb-1 block text-meta font-semibold text-subtle">Rate label (shown to the owner)</span>
-        <input
+        <Input
           name="label"
           type="text"
-          className={inputClass}
           placeholder="Grandfathered at $49/mo, normally $79"
         />
       </label>
       <label className="block text-body-sm">
         <span className="mb-1 block text-meta font-semibold text-subtle">Crew note (private)</span>
-        <textarea name="note" rows={2} className={inputClass} />
+        <Textarea name="note" rows={2} />
       </label>
       <Button type="submit" disabled={pending}>
         {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}

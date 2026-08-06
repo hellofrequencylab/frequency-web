@@ -75,7 +75,7 @@ export default async function DiscoverJourneysPage() {
 
       {journeys.length === 0 ? (
         // Founding state: no public Journeys yet. Frame it as a beginning.
-        <section className="relative overflow-hidden bg-surface px-6 py-20 sm:py-24">
+        <section className="relative overflow-hidden bg-surface mk-beat">
           <FrequencyArcs
             aria-hidden
             className="pointer-events-none absolute -top-12 left-1/2 -translate-x-1/2 w-[38rem] max-w-none text-primary opacity-[0.05]"
@@ -99,7 +99,7 @@ export default async function DiscoverJourneysPage() {
       ) : (
         <>
           {/* ── The library ─────────────────────────────────────── */}
-          <section className="relative overflow-hidden bg-surface px-6 py-20 sm:py-24">
+          <section className="relative overflow-hidden bg-surface mk-beat">
             <FrequencyArcs
               aria-hidden
               className="pointer-events-none absolute -top-10 right-0 w-[32rem] max-w-none text-primary opacity-[0.05]"

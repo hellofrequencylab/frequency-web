@@ -206,7 +206,7 @@ export default async function ManageChannelPage({
           {/* The full editor is the deliberate surface (ADR-882): one Save, the URL, and the
               destructive controls. It is offered FIRST so the tab is a route to it, not a
               dead end for anyone who wants more than a quick tweak. */}
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface-elevated/40 p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface-elevated/40 p-4">
             <p className="text-body-sm text-muted">
               Editing more than one thing? The full editor has every field, the URL, and the archive
               and delete controls.
@@ -217,7 +217,7 @@ export default async function ManageChannelPage({
               </Link>
             </Button>
           </div>
-          <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+          <div className="rounded-card border border-border bg-surface p-5 lift-1">
             <ChannelSettingsModule />
           </div>
         </section>

@@ -9,6 +9,7 @@ import { DangerModal } from '@/components/admin/danger-modal'
 import { Banner } from '@/components/admin/status'
 import { purgeArea, runDemoDecay } from './studio/actions'
 import { deleteDemoCircles, purgeDemoContent } from './actions'
+import { Checkbox } from '@/components/ui/checkbox'
 
 type DemoCircle = { id: string; name: string; memberCount: number; channel: string | null }
 
@@ -136,11 +137,9 @@ export function DangerZone({
           <ul className="mt-3 divide-y divide-border">
             {circles.map((c) => (
               <li key={c.id} className="flex items-center gap-3 py-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={selected.has(c.id)}
                   onChange={() => toggleSel(c.id)}
-                  className="h-4 w-4 accent-danger"
                   aria-label={`Select ${c.name}`}
                 />
                 <span className="min-w-0 flex-1 truncate text-body-sm text-text">{c.name}</span>
@@ -188,7 +187,7 @@ export function DangerZone({
       </div>
 
       {/* 4 · Purge everything */}
-      <div className="rounded-xl border border-danger/50 bg-danger-bg/20 p-4">
+      <div className="rounded-card border border-danger/50 bg-danger-bg/20 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-body-sm font-semibold text-text">Purge ALL demo content</p>
           <Button type="button" variant="danger" disabled={pending || total === 0} onClick={() => setModal('all')}>

@@ -9,6 +9,8 @@
 import { useRef, useState, useTransition, type ReactNode } from 'react'
 import { Upload, Trash2, Music, Video } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { SectionHeader } from '@/components/ui/section-header'
 import { RecordingBlockEmbed } from '@/components/airwaves/recording-block-embed'
 import { RecordingAttachManager } from '@/components/airwaves/recording-attach-manager'
@@ -111,8 +113,8 @@ export function AirwavesConsole({
               onClick={() => setTab(t)}
               className={
                 tab === t
-                  ? 'flex-1 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary'
-                  : 'flex-1 rounded-lg px-3 py-1.5 text-body-sm font-semibold text-muted transition-colors hover:text-text'
+                  ? 'flex-1 rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary'
+                  : 'flex-1 rounded-control px-3 py-1.5 text-body-sm font-semibold text-muted transition-colors hover:text-text'
               }
             >
               {t === 'recordings' ? 'Recordings' : 'Shows'}
@@ -123,17 +125,16 @@ export function AirwavesConsole({
 
       <div className={canEdit && tab !== 'recordings' ? 'hidden' : 'space-y-8'}>
       {canEdit && (
-        <section className="space-y-3 rounded-2xl border border-border bg-surface p-5">
+        <section className="space-y-3 rounded-card border border-border bg-surface p-5">
           <SectionHeader title="Add a recording" />
           <div className="space-y-3">
             <label className="block space-y-1">
               <span className="text-meta font-semibold text-muted">Title (optional)</span>
-              <input
+              <Input
                 type="text"
                 value={title}
                 placeholder="Name this recording"
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary"
               />
             </label>
             <input
@@ -151,7 +152,7 @@ export function AirwavesConsole({
               type="button"
               disabled={pending}
               onClick={() => fileRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               <Upload className="h-4 w-4" aria-hidden />
               {pending ? 'Uploading' : 'Upload audio or video'}
@@ -177,7 +178,7 @@ export function AirwavesConsole({
         ) : (
           <ul className="space-y-5">
             {recordings.map((r) => (
-              <li key={r.id} className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+              <li key={r.id} className="space-y-3 rounded-card border border-border bg-surface p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">
                     {r.mediaKind === 'video' ? (
@@ -192,19 +193,20 @@ export function AirwavesConsole({
                       <label className="sr-only" htmlFor={`vis-${r.id}`}>
                         Visibility
                       </label>
-                      <select
+                      <Select
                         id={`vis-${r.id}`}
                         value={r.visibility}
                         disabled={pending}
                         onChange={(e) => setVisibility(r.id, e.target.value as RecordingVisibility)}
-                        className="rounded-lg border border-border bg-surface px-2 py-1 text-2xs text-text outline-none focus:border-primary"
+                        className="text-2xs"
+                        wrapperClassName="inline-block w-max max-w-full"
                       >
                         {RECORDING_VISIBILITIES.map((v) => (
                           <option key={v} value={v}>
                             {VISIBILITY_LABEL[v]}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                       <button
                         type="button"
                         aria-label={`Delete ${r.title}`}

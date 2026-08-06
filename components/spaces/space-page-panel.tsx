@@ -103,7 +103,7 @@ export function SpacePagePanel({
   return (
     <div className="space-y-8">
       {error && (
-        <p className="rounded-lg border border-danger bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger">
+        <p className="rounded-card border border-danger bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger">
           {error}
         </p>
       )}
@@ -250,7 +250,7 @@ function PageRow({
             onChange={(e) => setDraft(e.target.value)}
             onBlur={saveRename}
             aria-label={`Rename ${page.label}`}
-            className="min-w-0 flex-1 rounded-lg border border-border bg-canvas px-2 py-1 text-body-sm font-medium text-text"
+            className="min-w-0 flex-1 rounded-control border border-border bg-canvas px-2 py-1 text-body-sm font-medium text-text"
           />
           <IconButton variant="bordered" label="Save name" disabled={pending} onClick={saveRename}>
             <Check className="h-4 w-4" aria-hidden />
@@ -365,7 +365,7 @@ function AddPageRow({
         placeholder="New page name"
         onChange={(e) => setLabel(e.target.value)}
         aria-label="New page name"
-        className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle"
+        className="min-w-0 flex-1 rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle"
       />
       <Button type="submit" variant="secondary" size="sm" disabled={pending || label.trim().length === 0}>
         {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Plus className="h-3.5 w-3.5" aria-hidden />}

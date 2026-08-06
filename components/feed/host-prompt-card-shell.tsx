@@ -40,7 +40,7 @@ export function HostPromptCardShell({
   }
 
   return (
-    <section className="relative rounded-2xl border border-border bg-gradient-to-br from-primary-bg/40 to-signal-bg/30 p-4">
+    <section className="relative rounded-card border border-border bg-gradient-to-br from-primary-bg/40 to-signal-bg/30 p-4">
       <button
         type="button"
         aria-label="Not now"
@@ -50,7 +50,7 @@ export function HostPromptCardShell({
         <X className="h-3.5 w-3.5" />
       </button>
       <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
           <Sparkles className="h-4.5 w-4.5" />
         </span>
         <div className="min-w-0 pr-6">

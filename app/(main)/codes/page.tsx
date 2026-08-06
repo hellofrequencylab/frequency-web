@@ -79,7 +79,7 @@ export default async function CodesPage() {
 
         {isCrew && <CrewMarketing profileId={profileId} />}
 
-        <div className="rounded-2xl border border-border bg-surface-elevated/50 p-4">
+        <div className="rounded-card border border-border bg-surface-elevated/50 p-4">
           <h2 className="flex items-center gap-2 text-body-sm font-bold text-text">
             <ScanLine className="w-4 h-4 text-primary-strong" /> Scanning a code
           </h2>

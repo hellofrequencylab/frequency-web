@@ -69,7 +69,7 @@ export default function SubscribePage() {
       />
 
       {/* ── The form (the whole point of the page) ─────────────────────────── */}
-      <Section tone="surface" pad="pb-16 sm:pb-20">
+      <Section tone="surface" role="cont">
         <div className="max-w-md mx-auto">
           <SubscribeForm />
           <p className="mt-4 text-center text-meta text-subtle leading-relaxed">
@@ -90,8 +90,8 @@ export default function SubscribePage() {
         </div>
         <ol className="grid sm:grid-cols-3 gap-5">
           {HOW_IT_WORKS.map(({ Icon, t, b }) => (
-            <li key={t} className="rounded-2xl border border-border bg-surface p-7 lift-1">
-              <span className="inline-flex w-10 h-10 rounded-2xl bg-primary-bg items-center justify-center mb-4">
+            <li key={t} className="rounded-card border border-border bg-surface p-7 lift-1">
+              <span className="inline-flex w-10 h-10 rounded-card bg-primary-bg items-center justify-center mb-4">
                 <Icon className="w-5 h-5 text-primary-strong" aria-hidden />
               </span>
               <p className="text-body-lg font-bold text-text">{t}</p>

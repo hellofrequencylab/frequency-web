@@ -41,7 +41,7 @@ export async function AccountSection() {
                 <form action={unblockFromSettings.bind(null, p.id)}>
                   <button
                     type="submit"
-                    className="shrink-0 rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm font-medium text-text hover:border-border-strong transition-colors"
+                    className="shrink-0 rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm font-medium text-text hover:border-border-strong transition-colors"
                   >
                     Unblock
                   </button>

@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useTransition } from 'react'
 import { CalendarDays, Home, MapPin, ShieldCheck, Users } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/field'
 import { previewImport } from './actions'
 import type { ClassifiedItem, ImportPreview } from '@/lib/whatsapp/types'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
@@ -12,8 +13,6 @@ import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 // importer found — each event/housing item shown with the photos posted alongside it.
 // Images stay in the browser (object URLs); nothing is uploaded and nothing is saved.
 
-const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
 const MAX_RENDER = 150 // cap the rendered list so a huge export stays responsive
 const IMAGE_EXT = /\.(jpe?g|png|webp|gif|heic|heif)$/i
 
@@ -108,7 +107,8 @@ export function ImportClient() {
             </span>
           )}
         </div>
-        <textarea
+        <Textarea
+          aria-label="Exported chat text"
           value={text}
           onChange={(e) => {
             setText(e.target.value)
@@ -116,7 +116,6 @@ export function ImportClient() {
           }}
           rows={5}
           maxLength={4_000_000}
-          className={FIELD}
           placeholder="…or paste the exported chat text here (text only, no photos)."
         />
         <div className="flex items-center gap-3">

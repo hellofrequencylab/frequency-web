@@ -262,9 +262,30 @@ the rail shows everywhere by design). Fix the doc, do not "fix" the code.
 
 ### 🔴 Phase 7 — Marketing
 
-15 of 38 marketing pages bypass `Section` and its four-role rhythm. `.mk-cream` / `.mk-ink` have
-**zero** adopters, so the same-tone-halving rule never fires and the thing that makes a tone change
-read as a change is inert. Size: M.
+~~15 of 38 marketing pages bypass `Section` and its four-role rhythm.~~ **Corrected 2026-08-05: this
+census row was wrong.** All 38 were re-checked one by one, and **the 15 are redirect stubs** —
+eight-line files whose entire body is a `permanentRedirect()`. They have no layout to bypass. The
+only non-redirect pages with zero `<Section>` were `beta/[slug]` (now composing `Section role="band"`)
+plus `rsvp/[token]` and `subscribe/confirm`, both single-section transactional surfaces. An audit
+finding is a lead, not a fact; this one survived unverified until someone opened all 38 files.
+
+What was true and remains the real work: `.mk-cream` / `.mk-ink` have **zero** adopters, so the
+same-tone-halving rule never fires and the thing that makes a tone change read as a change is inert.
+That is not 15 stubborn pages — it is **one line in `Section`** (`components/marketing/marketing-ui.tsx`),
+which must emit the class before any page can adopt it.
+
+A second dead rule found in the same pass: `.mk-hero:not(.mk-hero-dock) + .mk-beat { padding-top: 0 }`
+in `app/globals.css` **has never fired for any hero on the site**, because `PageHero` never emits
+`.mk-hero` and `PhotoHero` emits it only when it has `facts`. That is why eight pages carried
+hand-written `pt-0`. The pages now declare `role="cont"` instead, which is correct regardless, but
+the adjacency rule stays dead code until a hero carries the class.
+
+Marketing page-level rhythm is **done**: all 22 `pad=` opt-outs under `app/(marketing)/**` are
+retired but one, and that one is a component gap rather than a holdout (`Section`'s `role` prop has
+no `'cont-soft'` member, so `about/page.tsx` reaches `mk-cont-soft` through the escape hatch). What
+remains is in `components/marketing/**`: the two class emissions above, plus `Statement` and
+`BetaCTA` hand-rolling padding that is exactly `mk-tight` and `mk-band`. Size: M → **S**, and it
+moved to a different file than this row assumed.
 
 ### 🅿️ Phase 8 — `resonance/`
 
@@ -386,6 +407,21 @@ the app shell at all.**
 > It also inverts the sequencing on ADR-948. See its 🔴 amendment: `PW_STORAGE_STATE` first,
 > baselines second, required third. Required-and-blind promotes a known gap to an institutional
 > claim.
+>
+> **Fixed 2026-08-05, and the fix is worth generalising (ADR-950).** The instrument could not be
+> pointed at the app without a credential only the owner can create — but *saying that it was not
+> pointed at the app* needed no credential at all, and that half shipped first. Every run now
+> counts its `@shell` tests and, when none of them execute, prints a **PARTIAL** banner into
+> `$GITHUB_STEP_SUMMARY` naming `/feed`, the room, `/settings` and the Space console as
+> unphotographed, with the cause and the one command that fixes it. The exit code is untouched:
+> an absent owner-held secret is not a pull request's fault, and a red X meaning "nobody has made
+> a credential yet" is how a check gets ignored. `PW_REQUIRE_SHELL=1` converts the same situation
+> to a failure once the credential exists.
+>
+> **The transferable rule.** When a gate cannot reach its subject, the reachable fix is not always
+> the gate — it is the REPORT. A blind spot that announces itself on every run is a different
+> object from one that has to be remembered, and it costs nothing to build. Of the six items in
+> this queue, this was the only one whose fix could ship before its blocker.
 
 **The rule this yields, and the one worth carrying past this conversion:**
 
@@ -394,6 +430,22 @@ the app shell at all.**
 > dock-clearance pair by re-applying `sticky bottom-4` and confirming two assertions flipped.
 > A guard that has never been observed failing is not evidence; it is decoration that reads
 > like evidence, which is worse than nothing because it ends the investigation.
+
+> **The rule paid for itself the same day it was written, and the story is the argument.**
+> While widening `check:seo`, the first draft of its private-route detector treated
+> `getMyProfileId()` as a wall — reasonable, since a page asking who you are usually needs you to
+> be someone. But `/market` calls it to **personalise**, not to gate. So the new gate classified
+> `/market` as correctly-private and reported green **over the exact route it had just been
+> written to watch**. Nothing about the output hinted at it: 46 pages checked, no failures, a
+> clean tick.
+>
+> Only the fail-proof caught it. Injecting the defect the gate existed to catch produced green,
+> which is the one result an injection must never produce. The signal is now the *stop* —
+> `redirect(`, `notFound()`, a `require*` guard — not the lookup.
+>
+> Generalise from it: a gate is at its most convincing in the minutes after you write it, because
+> you know what it is for and it agrees with you. That is precisely when it has never been
+> observed failing. **Write the injection before you trust the tick.**
 
 The corollary is about *shape*, not diligence. Four of the five failures above share one form: **a
 test that greps the string it was just handed cannot see what the compiler or the cascade does with
@@ -407,12 +459,22 @@ or display that does not compile `app/globals.css` is asserting about a string, 
 
 | Item | Size | Why |
 | :--- | :---: | :--- |
-| `white-on-rank` pairs in `check:contrast` | S | 10 measured AA failures the gate currently calls green. Blocks the `RankBadge` sweep from being verifiable |
-| `raw-button-bg` → opening-tag form | S | It is a 500-char proximity window over arbitrary JSX, not a count of buttons: collapsing indentation alone moves it 529 → 564. It cannot measure the largest sweep in Phase 3 |
-| `check:headers` sees delegated `<h1>` | S | 3 known evaders |
-| `check:seo` covers non-marketing indexable routes | S | `/market`, `/housing`, `/classifieds` are crawlable and unwatched |
-| 🔴 **`PW_STORAGE_STATE`** | S | **Now the top of this queue.** The visual suite skips all four member-shell surfaces without it, so `pr-compare` photographs the marketing site and nothing else. Measured on #2048: rails, fold handle and both dock heads all changed, gate returned `12 skipped · 64 passed` — green, and blind to every one of them |
-| `pr-compare` required | XS | Approved (ADR-948) — but **strictly after** `PW_STORAGE_STATE`. Required-and-blind is worse than advisory-and-blind: it turns a known gap into a merge gate asserting the shell is fine |
+| ✅ `white-on-rank` pairs in `check:contrast` | S | **Done 2026-08-05.** 30 pairs × 5 states; the table went 215 → 365 rows. Worst non-waived pair moved 3.68:1 → **3.06:1**, which is the gate showing its real floor rather than a flattering one. Icons take the `edge` 3:1 minimum, text the `body` 4.5 — and that split encodes a ceiling: slate (4.31) and plum (4.46) do not clear 4.5, so a rank **core** may carry a glyph and must never carry a label |
+| ✅ `raw-button-bg` → opening-tag form | S | **Done 2026-08-05**, re-frozen at **530**. The `=>` alternative in the new pattern is load-bearing, not tidiness: a plain `[^>]*` truncates at `onClick={() => …}`, which most raw buttons carry *before* their className, and that under-counts 244 against a true 530 — the one direction a ratchet must never be wrong in. Validated against a brace- and quote-aware mini-parser over the identical corpus: **0 missed, 0 extra**, and it needs no proximity window at all |
+| ✅ `check:headers` sees delegated `<h1>` | S | **Done 2026-08-05.** It had TWO defects, not one: it walked `page.tsx` only, *and* its `/<h1[\s/>]/` ran per line, so `\s` had no newline to match and a bare `<h1` with attributes on following lines scored zero — **the shape `PageHeading` itself is written in**. Now starts at `page.tsx` *and* `layout.tsx` and follows route-local imports. The 3 evaders are named in a `KNOWN_DELEGATED` map that may only shrink, and a listed file that stops hand-rolling fails as a stale entry |
+| ✅ `check:seo` covers non-marketing indexable routes | S | **Done 2026-08-05.** Every crawler-reachable page outside `(marketing)` must now declare intent — advertised, or `index:false`. Silence fails; noindex *and* advertised fails as a contradiction. 47 checked, 158 skipped as private, 0 noise. Found one real defect on its first run: `/spaces/operating` gates by **scoping rather than redirecting**, so an anonymous crawler got a 200 and an empty operator hub |
+| ✅ **`PW_STORAGE_STATE`** | S | **Built 2026-08-05 (ADR-950).** Was the top of this queue. Two halves: the harness now ANNOUNCES an unphotographed shell (no credential needed — see below), and `pnpm e2e:session` mints a member session per run from the service-role key, the same `generateLink` + `verifyOtp` pair `impersonate-actions.ts` uses. 🔴 Owner action remaining: create the e2e member account and add three repo secrets |
+| 🔴 First member-shell baselines | S | The four shell surfaces have **never had a PNG**. `e2e-manual.yml` gained `capture_shell` (default OFF) so the first capture is chosen, not sprung: `capture_shell + update_baselines` writes 12 new files (16 with `PW_SPACE_SLUG`), then `capture_shell + update_a11y` seeds their a11y counts before a PR run meets `$defaultMax: 0` |
+| ✅ `PW_REQUIRE_SHELL=1` | XS | **Done 2026-08-06.** The ratchet: before the credential a zero-app-surface run announces, after it the same run fails, so an expiring credential cannot silently re-open the blind spot. Now read as `vars.PW_REQUIRE_SHELL \|\| secrets.PW_REQUIRE_SHELL` — it belongs in Variables, but a ratchet that stays silently off because it was typed into the Secrets tab is the exact failure it exists to prevent, so it does not depend on aim. 🔴 One consequence worth knowing: a **one-character secret** makes GitHub redact that character everywhere in the run log — with `1` as a secret, every height, test count and line number came back as `***`. Keep it in Variables |
+| `pr-compare` required | XS | Approved (ADR-948) — but **strictly after** the rows above. Required-and-blind is worse than advisory-and-blind: it turns a known gap into a merge gate asserting the shell is fine |
+| 🔴 `raw-input` counts controls no primitive can receive | XS | Found independently by **two** sweep agents, which is what makes it worth a row. The lookahead is `(?!(?:[^>]\|=>)*?type=["']hidden)` — it excludes `type="hidden"` and nothing else. But ~18 sites are `<input type="file">` held behind `className="hidden"` or `sr-only` and fired by a sibling button. They are not fields, they have no chrome, and routing them through a text-field primitive is cosmetic misuse — so they are **permanently un-retirable debt inside a ratchet**, which is the same "puts zero out of reach" reasoning the existing lookahead was written for. Fix is a second lookahead for `type="file"` co-occurring with `hidden`/`sr-only`; write it order-independently, since `className` may precede `type` |
+| 🔴 `white-black-literals` floor is permanently 2 | XS | It excludes `lib/og/**` and the OG/Twitter image routes but **not** `app/print/**`, even though §1 of this doc names `app/print/qr/*` as a carve-out and both sites carry a `// KEEP bg-white` comment explaining that a QR scanner needs true white, not a themed surface. So the class can never reach zero and the last two sites will read as debt forever. Either exclude `app/print/**` or state in the entry that 2 is the floor by design |
+
+**Why these two are recorded rather than fixed on the spot.** Both were found while four sweep agents
+were live. Editing a ratchet moves every count under an agent that is measuring against it, which is
+exactly how three commit messages on this branch ended up citing a `literal-radius` floor that was
+already stale when written. An instrument correction is a change to the *question*, so it lands on a
+settled tree with its own re-freeze and its own reason — never interleaved with the sweeps it grades.
 
 **Sequencing note.** Every sweep after this point is measured by these instruments. Fixing them
 first is not overhead — a sweep verified by a gate that cannot see its subject produces a number,

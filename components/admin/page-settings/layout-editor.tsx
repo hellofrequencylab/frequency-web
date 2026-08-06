@@ -8,6 +8,7 @@ import { isError } from '@/lib/action-result'
 import { getPageLayoutForEditor, savePageLayout, type LayoutEditorItem, type SlotHeaderState } from '@/lib/page-settings/actions'
 import { MODULE_ROLES, ROW_HEADER_MAX, type ModuleRole } from '@/lib/page-settings/layout'
 import { TEMPLATES, templateMeta, slotIds, defaultSlotId, type TemplateId } from '@/lib/widgets/templates'
+import { Input } from '@/components/ui/field'
 
 // The live Layout editor for the on-page "Page" settings panel (ADR-270/271/272). Staff pick the
 // interior TEMPLATE, assign each module to one of its AREAS (slots), set order + visibility + a
@@ -316,7 +317,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
                         >
                           {h.enabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                         </button>
-                        <input
+                        <Input
                           type="text"
                           value={h.text}
                           maxLength={ROW_HEADER_MAX}
@@ -324,7 +325,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
                           disabled={pending}
                           placeholder="Row header (optional)"
                           aria-label={`Row header for ${s.label}`}
-                          className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1 text-body-sm text-text placeholder:text-subtle disabled:opacity-40"
+                          className="min-w-0 flex-1 !px-2 !py-1"
                         />
                       </div>
                     )

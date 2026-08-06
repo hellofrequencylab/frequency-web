@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Sparkles, Loader2, X, Wand2, ArrowLeft, Zap } from 'lucide-react'
 import { suggestPracticeAction, claimPracticeAction } from '@/app/(main)/practices/actions'
 import { isError } from '@/lib/action-result'
+import { Input, Textarea } from '@/components/ui/field'
 
 // Claim a starter TEMPLATE → your own practice, via a short Vera-guided wizard
 // (ADR-116). Mirrors the demo-circle claim (components/circles/claim-circle.tsx):
@@ -14,8 +15,6 @@ import { isError } from '@/lib/action-result'
 
 type Fallback = { title: string; cadence: string; why: string; steps: string[] }
 
-const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 const LABEL = 'block text-meta font-semibold uppercase tracking-wide text-subtle'
 
 export function ClaimPractice({ templateId, fallback }: { templateId: string; fallback: Fallback }) {
@@ -157,25 +156,25 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
                 </p>
                 <div>
                   <label className={LABEL} htmlFor="goal">What do you want from this?</label>
-                  <textarea
+                  <Textarea
                     id="goal"
                     value={goal}
                     onChange={(e) => setGoal(e.target.value)}
                     rows={3}
                     maxLength={1000}
                     placeholder="e.g. I want to feel calmer in the mornings and stop reaching for my phone first."
-                    className={`mt-1 ${FIELD}`}
+                    className="mt-1"
                   />
                 </div>
                 <div>
                   <label className={LABEL} htmlFor="schedule">When can you realistically do it?</label>
-                  <input
+                  <Input
                     id="schedule"
                     value={schedule}
                     onChange={(e) => setSchedule(e.target.value)}
                     maxLength={300}
                     placeholder="e.g. weekday mornings, 10 minutes before work"
-                    className={`mt-1 ${FIELD}`}
+                    className="mt-1"
                   />
                 </div>
                 {error && <p className="text-body-sm text-danger">{error}</p>}
@@ -208,19 +207,19 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
                 )}
                 <div>
                   <label className={LABEL} htmlFor="ctitle">Name</label>
-                  <input id="ctitle" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} className={`mt-1 ${FIELD}`} />
+                  <Input id="ctitle" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} className="mt-1" />
                 </div>
                 <div>
                   <label className={LABEL} htmlFor="ccadence">Cadence</label>
-                  <input id="ccadence" value={cadence} onChange={(e) => setCadence(e.target.value)} maxLength={40} className={`mt-1 ${FIELD}`} />
+                  <Input id="ccadence" value={cadence} onChange={(e) => setCadence(e.target.value)} maxLength={40} className="mt-1" />
                 </div>
                 <div>
                   <label className={LABEL} htmlFor="csteps">Your steps (one per line)</label>
-                  <textarea id="csteps" value={steps} onChange={(e) => setSteps(e.target.value)} rows={4} className={`mt-1 ${FIELD}`} />
+                  <Textarea id="csteps" value={steps} onChange={(e) => setSteps(e.target.value)} rows={4} className="mt-1" />
                 </div>
                 <div>
                   <label className={LABEL} htmlFor="cwhy">Why it matters to you</label>
-                  <textarea id="cwhy" value={why} onChange={(e) => setWhy(e.target.value)} rows={2} maxLength={280} className={`mt-1 ${FIELD}`} />
+                  <Textarea id="cwhy" value={why} onChange={(e) => setWhy(e.target.value)} rows={2} maxLength={280} className="mt-1" />
                 </div>
                 {error && <p className="text-body-sm text-danger">{error}</p>}
                 <div className="flex items-center justify-between gap-3 pt-1">

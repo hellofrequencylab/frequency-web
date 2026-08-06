@@ -17728,6 +17728,28 @@ that measurement must not run against a null ref. ⚠️ `railFoldClearsDock()` 
 no bar to clear, that clearance becomes conditional and the guard must say which case it is
 asserting.
 
+**🔴 Amendment (2026-08-05, owner) — the two segments no longer share a fate.** The owner's later
+instruction, "in the closed state on the right, the chat tab should be present in the bottom,"
+overrides the half of this decision that hid *everything*. The bar is now `lg:w-auto` rather than
+`lg:hidden`: the **Vault segment** goes with the fold, the **chat tab** survives it, shrinking from
+the rail's width to a corner tab.
+
+Two consequences the original text got wrong and this amendment corrects:
+
+- **"What is genuinely lost" is now half of what it said.** One-tap Vault is still surrendered by
+  folding. One-tap **Messages is not** — the tab is right there. The paragraph above should be read
+  as applying to the Vault alone.
+- **`dockDismissalDue` measures the wrong thing if read literally from the original.** With the bar
+  no longer vanishing, "the bar has no width" stopped being the dismissal trigger; the predicate now
+  reads the **Vault segment's** width. A fold still dismisses **both** panels, which is deliberate
+  and not an oversight: the chat *panel* hangs off a bar that just shrank to a corner, so leaving it
+  open would strand it against a column the fold deleted. Closing it costs one press to undo,
+  because the tab it re-opens from never left.
+
+The rest of the decision — that folding means one thing on every route, and that the content column
+is never overlapped — stands unchanged. Option (a) remains the upgrade path if the Vault proves to
+be a surface members reach for constantly while folded.
+
 ---
 
 ## ADR-947 — Three fixed type roles, because the ladder is fluid all the way down
@@ -17794,6 +17816,13 @@ The `events/[slug]` ⇄ `detail-template` pair is **left on literals, together**
 responsive ramp (1.5 / 1.875 / 2.25rem), no fixed role reproduces a ramp, and the nearest fluid role
 (`display-h3`) floors at 1.75rem — it would grow every Detail title ~17% on phones and swap bold
 sans for Anton. Retiring it needs a fluid *page-title* role, which is a fourth decision.
+
+> **⚠️ SUPERSEDED, same day.** The fourth decision was taken and shipped hours after this section
+> was written: **ADR-951** adds `--text-page-title-lg`, and `77bb066e5` converted **both** halves of
+> the pair onto it. The paragraph above is preserved because it is the reasoning that *produced*
+> ADR-951 — but read as current status it is false, and a repo-wide audit caught it in that state.
+> An ADR's Resolved section is a snapshot, not a subscription; when the thing it resolved moves,
+> the amendment is the work.
 
 ---
 
@@ -17866,15 +17895,29 @@ ADR-949 was written about, promoted to a branch-protection rule.
 
 **Therefore:**
 
-1. **First** — create the beta member account, save its Playwright storage state, expose the file
-   to CI as `PW_STORAGE_STATE`. `test/e2e/surfaces.ts:225` already carries this as a 🔴 owner
-   action; it is now blocking rather than aspirational.
-2. **Then** — capture baselines for the four member-shell surfaces, which have never had any.
+1. **First** — create the e2e member account and expose it to CI so a session can be minted.
+   `test/e2e/surfaces.ts` carried this as a 🔴 owner action; it is now blocking rather than
+   aspirational.
+2. **Then** — capture baselines for the four member-shell surfaces, which have never had any,
+   and seed their a11y counts.
 3. **Only then** — add `pr-compare` to the required checks on `main`.
 
 Until step 1 lands, every rendering change to the app shell is verified by types, tests and the
 token gates, and looked at by nobody. The honest mitigation in the meantime is a human opening the
 Vercel preview, and saying so in the PR rather than pointing at a green tick.
+
+**Amendment update, 2026-08-05 (later the same day).** Steps 1-3 are now BUILT, and the shape of
+step 1 changed on contact with the facts — see **ADR-950**. The credential is not a saved file
+handed to CI; it is a session **minted per run** from the service-role key, because a saved
+storage state is defeated twice over (auth cookies are host-scoped and every PR gets a new preview
+hostname; refresh tokens rotate on first use). What the owner must produce is therefore an
+ACCOUNT and three repo secrets, not a file to keep rotating.
+
+The waiting is now instrumented rather than silent: while the account does not exist, every
+`pr-compare` run prints a **PARTIAL** banner naming `/feed`, the room, `/settings` and the Space
+console as unphotographed. The exact run this ADR was written about would no longer read as a
+pass. The ordered checklist is `test/e2e/README.md` § *Owner runbook*; step 5 of it
+(`PW_REQUIRE_SHELL=1`) is what makes step 3 here safe to apply.
 
 ---
 
@@ -17912,3 +17955,206 @@ guard and cannot be skipped when the guard is the reason a sweep is believed. �
 `adoption-baselines.json` entries carry rebase provenance rather than earned falls, because they
 were measured under a question the instrument was asking wrong — those are debt the ratchet stopped
 guarding, and they stay named until a sweep brings them down.
+
+---
+
+## ADR-950 — The e2e member session is minted per run, and a run that photographs no app surface says so
+
+**Date.** 2026-08-05 · **Status.** Accepted · **Scope.** `test/e2e/**`, `.github/workflows/e2e*.yml`
+· **Follows** ADR-948's 🔴 amendment (`PW_STORAGE_STATE` is a hard prerequisite) and ADR-949
+(prove a guard can fail).
+
+**Context.** `pr-compare` cannot see the app. The four member-shell surfaces — `/feed`, the room,
+`/settings`, the Space console — are the only captured surfaces with a rail, a dock or a fold
+control, and they skip whenever `PW_STORAGE_STATE` is unset. On #2048 that produced `12 skipped ·
+64 passed`, green, over a PR that changed all three of those things. Sign-in is magic-link only, so
+the suite cannot authenticate itself.
+
+Two separate problems hide in that sentence, and they have different fixes: the suite has no
+credential, and **nothing in its output says that the credential's absence emptied the run of the
+product.**
+
+**Decision 1 — make the silence loud, with no credential at all.** A Playwright reporter
+(`test/e2e/shell-reporter.ts`) counts every `@shell`-tagged test. When they are collected and none
+execute, the run prints a **PARTIAL** banner to `$GITHUB_STEP_SUMMARY` and the terminal that names
+each unphotographed surface, the cause (unset variable / missing file / present-but-inert, told
+apart rather than guessed at), and the command that fixes it, plus a `::warning` annotation. It
+also says when `PW_SPACE_SLUG` is unset, because that surface is not skipped — it is never
+created, which is quieter still.
+
+**It does not fail the run.** A red X meaning "the owner has not made a credential yet" is how a
+check gets ignored, and that is e2e.yml's own founding argument. The exit code stays as it was;
+the words change. The single opt-in exception is `PW_REQUIRE_SHELL=1`, set as a repo variable
+AFTER the credential and the baselines exist: from then on a zero-app-surface run fails, so a
+credential that later expires cannot re-open the blind spot the same silent way. The rendering
+logic is pure and unit-tested, including the negative control that a covered run cannot print the
+partial banner (ADR-949: observed red, then green).
+
+**Decision 2 — mint the session per run; never store one.** `pnpm e2e:session`
+(`test/e2e/mint-storage-state.mts`) calls `admin.auth.admin.generateLink({ type: 'magiclink' })`,
+which sends no email, then `verifyOtp` — the same two calls `app/(main)/impersonate-actions.ts`
+already makes in production. The cookies are written by handing `@supabase/ssr` a jar of our own,
+so the cookie name, base64url encoding and >3180-byte chunking come from the installed library
+rather than a second implementation of a private format.
+
+A **saved** storage state was the obvious alternative and it fails twice, independently:
+
+| | Why a stored credential dies |
+| :--- | :--- |
+| Cookie domain | Supabase auth cookies are host-scoped, and every PR gets a NEW `*.vercel.app` preview hostname. A file exported against production is simply never sent to the deployment under test. |
+| Refresh rotation | Refresh tokens rotate on use, so the first run that refreshes invalidates the stored copy. |
+
+Both land the suite on `/sign-in` — indistinguishable from having no credential, which is exactly
+the failure this ADR is closing. So the owner produces an ACCOUNT and three repo secrets
+(`PW_MEMBER_EMAIL`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL`; the latter two already
+exist for `help-index.yml`), and nothing needs rotating. The script **verifies before it writes**:
+it replays the minted cookies against `PW_BASE_URL/feed` and refuses to emit a file that lands on
+`/sign-in`. `assertMemberSession()` in `surfaces.ts` throws for the same case at test time, because
+photographing the sign-in page under `/feed`'s name would be worse than skipping it.
+
+**Decision 3 — the first shell capture is opt-in.** `e2e-manual.yml` gains `capture_shell`,
+defaulting OFF. The four shell surfaces have never had baselines, so their first capture writes 12
+new PNGs (16 with a Space slug) and their first a11y run measures debt against a `$defaultMax` of
+zero. Neither should be discovered by someone dispatching a routine baseline refresh.
+
+**Consequences.** ✅ A green `pr-compare` with the app missing from it now reads as PARTIAL, in
+words, before the credential exists — which is the whole gap ADR-948's amendment describes, closed
+from the side that needed no owner action. ✅ CI holds no long-lived member credential. ⚠️ It does
+hold the service-role key, which `help-index.yml` already required; it is used only to mint and is
+never written to disk. ⚠️ The ordering in ADR-948 stands and gains two steps: account + secrets,
+`capture_shell` baselines, `capture_shell` a11y seed, `PW_REQUIRE_SHELL=1`, and only then required.
+The runbook is `test/e2e/README.md` § *Owner runbook*.
+
+---
+
+## ADR-951 — A fluid page-title role, because a ramp is a decision the ladder could not express
+
+**Date.** 2026-08-05 · **Status.** Accepted (owner decision) · **Scope.** `app/globals.css`,
+`components/templates/detail-template.tsx`, `app/(main)/events/[slug]/page.tsx`
+· **Completes** the "fourth decision" ADR-947 named and deferred.
+
+**Context.** ADR-947 added three **fixed** roles because the type ladder was `clamp()`-based all
+the way down and nothing could express "this figure must not scale." It then hit a case that is the
+exact inverse and correctly refused to guess at it: `detail-template.tsx` and `events/[slug]` both
+carried `text-page-title sm:text-3xl lg:text-4xl` — a **three-step responsive ramp**, 1.5 → 1.875 →
+2.25rem. No fixed role reproduces a ramp, and the nearest fluid role is not a substitute:
+`display-h3` floors at 1.75rem, so every Detail title would grow ~17% on phones, and it is an Anton
+display face against this surface's bold sans.
+
+Two things made this worth its own decision rather than a sweep's judgment call:
+
+1. **It is the opposite call to ADR-947's.** That ADR replaced fixed literals with fixed roles. This
+   one replaces a *stepped* literal chain with a *fluid* role. Both are correct, and a reader who
+   sees only one will generalise it wrongly — hence a separate record rather than a footnote.
+2. **The two sites are one decision, not two.** `events/[slug]` is an **inline-edit input mirroring
+   the template's rendered title verbatim**. Converting either alone desyncs the editor from the
+   thing it edits — the member types into a box that no longer looks like the heading it produces.
+   They were marked `🔴 MIRRORED` at both ends for exactly this reason.
+
+**Decision.** Add `--text-page-title-lg: clamp(1.5rem, 4vw, 2.25rem)`, scaled by `--type-scale` so
+it stays on the generation axis, with a paired `--*--line-height`, declared in `:root` and bridged
+into `@theme inline`. Convert both halves of the mirrored pair together.
+
+Floor and ceiling are **unchanged** from the ramp they replace, so nothing resizes at either end.
+What changes is that the title interpolates instead of jumping at 640px and 1024px.
+
+**Consequences.** ✅ A ramp is now expressible, and the editor still matches its own output.
+⚠️ Registered in `check-phantom-classes`' `DECLARED` list, not only the consumer scan: a role born
+declared-but-unbridged with zero consumers is invisible to a scan that starts from call sites, and
+that is precisely the state a new role passes through. ⚠️ The `🔴 MIRRORED` markers **stay** — the
+coupling is a property of the two files, not of the literals they happened to share, and the next
+sweep must still move them together. ⚠️ ADR-947's Resolved section said this pair was "left on
+literals, together"; that is now superseded and annotated in place rather than rewritten, because
+the reasoning there is what produced this ADR.
+
+**How this was found, which is the transferable part.** Not by a gate — by a **repo-wide
+reconciliation** run specifically to find decisions the code had outgrown. It compared the phase
+plan's status markers, the ADR ledger, every commit message containing "left alone" / "follow-up" /
+"needs a design call", in-code `🔴` markers, and the ratchet's rebased entries against each other.
+The shipped-role-with-no-ADR was its top finding. Four ADRs were written in one day here, and a
+decision record that describes behaviour the product does not have is worse than no record — so
+that reconciliation is worth repeating after any burst of decisions, not just this one.
+
+---
+
+## ADR-952 — A settled surface is one whose HEIGHT stopped changing, not one whose network went quiet
+
+**Date.** 2026-08-05 · **Status.** Accepted · **Scope.** `test/e2e/surfaces.ts` (`settle`)
+
+**Context.** `pr-compare` closed the app-shell blind spot and immediately produced three failures,
+all `/feed`, all `Failed to take two consecutive stable screenshots`, with the page height reported
+at 8497 → 9272 → 9390px across attempts. The obvious reading is that the feed renders live content
+and is therefore unphotographable. That reading is wrong, and acting on it would have masked or
+excluded the most-visited member surface for a reason that was never true.
+
+`/feed` carries **five** `<Suspense fallback={null}>` boundaries; `/settings`, the other failing
+surface, carries **twelve**. This is the page framework working as designed — PAGE-FRAMEWORK §5
+says never block the shell on a slow await, push it behind a per-section boundary. But a `null`
+fallback reserves **zero height**. A resolving boundary therefore does not swap a placeholder for
+content of similar size; it **appends**, and everything below it moves.
+
+Neither existing wait can observe that. `networkidle` is capped at 10s *precisely because* these
+pages never reach true idle, and `document.fonts.ready` resolves long before the last boundary does.
+So `settle()` was returning while the page was still growing, and doing so by design.
+
+There is a second mechanism compounding it: `fullPage: true` stitches by scrolling the whole
+document, which trips lazy content below the fold, which grows the page again. **The act of
+capturing was producing the instability the capture then failed on.**
+
+**Options.** (a) Mask more of the feed. (b) Capture `/feed` at viewport size instead of `fullPage`.
+(c) Exclude `/feed` from the visual suite. (d) Wait for height.
+
+**Decision.** **(d).** (a) cannot work and it matters that this is understood rather than merely
+rejected: a mask paints over a region, but the masked element **keeps its box**, so a late-arriving
+masked block still moves everything under it. The failure is the page's height, not its pixels —
+masking is aimed at the wrong quantity. (b) and (c) both buy green by photographing less, and (c)
+would surrender the surface members actually look at, to fix a fault that is not in the surface.
+
+`settle()` now holds until `scrollHeight` reports one unchanged value for 600ms, capped at 15s.
+
+**🔴 Correction, same day — the first version of this shipped TWO fixes and only one of them was
+diagnosed.** It also scrolled the document end to end before waiting, on the reasoning quoted above:
+`fullPage` stitches by scrolling, so walking the page first would trip lazy content while we were
+still allowed to wait. That is plausible, it was never observed, and **it cost 46 passing tests**.
+
+Scrolling fires every scroll-triggered reveal on the page, and `animations: 'disabled'` does not
+undo it — an IntersectionObserver toggling a class is JS state, not a CSS animation, and it does not
+rewind when you scroll back to the top. Every marketing surface then rendered ~3% away from a
+baseline captured without the scroll, over the 2% `maxDiffPixelRatio`. `/`, `/about`, `/the-lab`,
+`/discover`, `/spaces`, `/the-community` and `/the-quest` went red across both viewports and all
+four render states. The tell was in the error text: the message stopped being "failed to take two
+consecutive stable screenshots" and became "78550 pixels are different" alongside "captured a
+stable screenshot" — the height wait had worked, and the scroll pass had changed what was being
+photographed. Measured on the same sweeps, with `settle` as the only difference: **3 failures
+became 49.**
+
+The scroll pass is gone and `settleHeight` is now observation-only. The lesson is narrower than
+"no scrolling in a settle helper": the height problem was **observed**, in a logged 8497 → 9272 →
+9390. The lazy-content problem was **hypothesised**. Shipping a fix for the second alongside the
+first is what turned a three-surface failure into a suite-wide one, and it also made the first fix
+impossible to evaluate on its own. A 🔴 comment in `settle()` records this so the scroll pass is not
+reinvented by the next person who notices that `fullPage` scrolls.
+
+**Why the whole wait lives inside a single `page.evaluate`.** Polling height over CDP would put a
+round trip between readings, so a page growing steadily could report the same number twice by luck
+of timing and be declared stable — a flake that would appear only under load, which is the worst
+kind. In-page, the readings are ~100ms apart and mean what they say.
+
+**Why it resolves rather than throws on timeout.** A surface that genuinely never settles should
+fail as a *screenshot diff* — naming the surface, showing the pixels — not as an opaque helper
+timeout several frames removed from whatever moved. The helper's job is to give the assertion its
+best shot, not to become a second, worse assertion.
+
+**Consequences.** ✅ Every streaming surface benefits, not just `/feed` — the existing comment in
+`settle` already named `/discover` as never reaching idle. ✅ `/feed` and `/settings` stay
+`fullPage`, so below-fold regressions remain catchable. ⚠️ Each captured surface now costs up to
+~20s more in the worst case; the scroll pass is bounded by the same clock, so a pathological page
+cannot spend the budget twice. ⚠️ This makes the suite tolerant of zero-height fallbacks rather
+than fixing them. A `fallback` that reserved the height of the content it stands in for would stop
+the layout shift **for members**, not just for the camera — members on a slow connection are
+watching the same 900px jump. That is a real follow-up and this ADR is not a substitute for it.
+
+**Open, unchanged by this.** The four `/feed` and `/settings` a11y failures are a *separate* fault:
+those baselines were never seeded, so both surfaces are being held to zero serious+ violations
+against debt that predates the gate. Seeding them is `e2e-manual.yml` with `capture_shell` +
+`update_a11y`, and it is a different decision from this one.

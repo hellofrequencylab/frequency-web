@@ -23,6 +23,7 @@ import {
   STORAGE_STATE,
   appSurfaces,
   applyRenderState,
+  assertMemberSession,
   assertNotProtectionWall,
   currentPathname,
   masksFor,
@@ -44,6 +45,9 @@ async function capture(
   await applyRenderState(page, state)
   await page.goto(surface.path, { waitUntil: 'load' })
   await assertNotProtectionWall(page)
+  // A member surface on the sign-in page is a dead credential, not a missing one. Throw
+  // rather than photograph the wall under the shell's name.
+  assertMemberSession(page, surface)
 
   const landed = currentPathname(page)
   if (surface.audience === 'anon' && landed.startsWith('/sign-in') && surface.path !== '/sign-in') {
@@ -82,7 +86,10 @@ test.describe('visual', { tag: '@visual' }, () => {
 
 // The member shell. Sign-in is magic-link only, so there is nothing to script: the suite
 // consumes a pre-baked storage state and skips loudly without it.
-test.describe('visual · member shell', { tag: '@visual' }, () => {
+// @shell is what test/e2e/shell-reporter.ts counts: it is the difference between "12
+// skipped" and a job summary that names /feed, the room, /settings and the Space console as
+// unphotographed. Adding a member-shell describe without the tag re-opens that silence.
+test.describe('visual · member shell', { tag: ['@visual', '@shell'] }, () => {
   test.use({ storageState: STORAGE_STATE })
 
   test.skip(

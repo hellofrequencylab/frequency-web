@@ -6,6 +6,7 @@ import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { NewPracticeButton } from '@/components/studio/practice/new-practice-button'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { PageContents } from '@/components/templates/page-contents'
+import { Input } from '@/components/ui/field'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { getPageHeaderImage, getPageHeaderFocus } from '@/lib/page-settings/store'
@@ -146,11 +147,12 @@ export default async function PracticesPage({
             {sort !== 'trending' && <input type="hidden" name="sort" value={sort} />}
             {showHidden && <input type="hidden" name="hidden" value="1" />}
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
-            <input
+            <Input
               name="q"
               defaultValue={qParam}
               placeholder="Search practices…"
-              className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+              aria-label="Search practices"
+              className="pl-9 pr-3"
             />
           </form>
           <div className="flex flex-wrap items-center gap-1.5">

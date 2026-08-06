@@ -6,6 +6,7 @@ import { MergeTagPicker } from './merge-tag-picker'
 import { EmojiPicker } from '@/components/feed/emoji-picker'
 import { sendTestEmail } from '@/app/(main)/admin/email-studio/actions'
 import { isError, type ActionResult } from '@/lib/action-result'
+import { Input } from '@/components/ui/field'
 
 // COMPOSE TOOLBAR. The header controls above the block arranger: the subject + preheader fields, a "Send test
 // to me" button (delivers ONE copy to the operator's own address, never a list), the merge-tag picker, and
@@ -86,37 +87,37 @@ export function ComposeToolbar({
       <div className="space-y-2">
         <label className="block">
           <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Subject</span>
-          <input
+          <Input
             ref={subjectRef}
             type="text"
             value={subject}
             placeholder="Subject line"
             onChange={(e) => onSubject(e.target.value)}
-            className="w-full rounded-lg border border-border bg-surface-elevated/50 px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+            className="bg-surface-elevated/50"
           />
         </label>
         <label className="block">
           <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
             Preheader
           </span>
-          <input
+          <Input
             type="text"
             value={preheader}
             placeholder="The preview line shown beside the subject in the inbox"
             onChange={(e) => onPreheader(e.target.value)}
-            className="w-full rounded-lg border border-border bg-surface-elevated/50 px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+            className="bg-surface-elevated/50"
           />
         </label>
         <label className="block">
           <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
             From name
           </span>
-          <input
+          <Input
             type="text"
             value={fromName}
             placeholder="Frequency"
             onChange={(e) => onFromName(e.target.value)}
-            className="w-full rounded-lg border border-border bg-surface-elevated/50 px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+            className="bg-surface-elevated/50"
           />
           <span className="mt-1 block text-2xs text-muted">
             The name recipients see this email is from. Leave it blank to send as Frequency. The sending address stays the same.

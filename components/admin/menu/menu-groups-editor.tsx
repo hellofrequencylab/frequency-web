@@ -22,6 +22,7 @@ import { MenuMoveField } from './menu-move-field'
 import { isGridSurface } from './known-routes'
 import type { MenuSurfaceKey } from '@/lib/menus/types'
 import { isPinnedRailItem, PINNED_PROFILE_ID } from '@/lib/menus/defaults'
+import { Input } from '@/components/ui/field'
 
 // The Menu groups + links editor — the `menu-groups` template block, and the BULK of the
 // navigation editor. Holds the working ResolvedMenu in local state and drives the category/item
@@ -667,7 +668,7 @@ function CategoryHeader({
           <label className="mb-1 block text-meta font-semibold text-subtle" htmlFor={`cat-${cat.id}`}>
             Group heading
           </label>
-          <input
+          <Input
             id={`cat-${cat.id}`}
             type="text"
             value={label}
@@ -675,7 +676,7 @@ function CategoryHeader({
             disabled={isPending}
             onChange={(e) => setLabel(e.target.value)}
             onBlur={() => label !== (cat.label ?? '') && onRename(label)}
-            className="w-full max-w-sm rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm font-semibold text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+            className="max-w-sm !px-2.5 !py-1.5 font-semibold"
           />
         </div>
         <div className="flex shrink-0 items-center gap-2">

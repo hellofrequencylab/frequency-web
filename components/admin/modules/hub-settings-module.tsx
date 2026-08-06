@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Input, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { RailAutosaveForm } from '@/components/admin/rail/rail-autosave-form'
 import { getHubAdminData, updateHubSettings } from '@/app/(main)/hubs/admin-actions'
@@ -13,7 +13,6 @@ import { getHubAdminData, updateHubSettings } from '@/app/(main)/hubs/admin-acti
 
 type HubData = NonNullable<Awaited<ReturnType<typeof getHubAdminData>>>
 
-const input = fieldClasses
 const fieldLabel = labelClasses
 
 export function HubSettingsModule() {
@@ -47,7 +46,7 @@ export function HubSettingsModule() {
     <RailAutosaveForm action={updateHubSettings.bind(null, data.id, data.slug)} className="space-y-3">
       <label className="block space-y-1">
         <span className={fieldLabel}>Name</span>
-        <input name="name" defaultValue={data.name} required className={input} />
+        <Input name="name" defaultValue={data.name} required />
       </label>
 
       <label className="block space-y-1">

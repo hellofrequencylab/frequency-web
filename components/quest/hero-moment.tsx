@@ -135,7 +135,7 @@ function KeepAnchorBand({ anchor }: { anchor: { practiceId: string; title: strin
     )
   }
   return (
-    <div className="mt-4 rounded-2xl border border-border bg-surface p-3.5">
+    <div className="mt-4 rounded-card border border-border bg-surface p-3.5">
       <p className="text-body-sm text-text">
         <span className="font-semibold">{anchor.title}</span> carried you through this Journey.
         Keep it as your own?
@@ -154,7 +154,7 @@ function KeepAnchorBand({ anchor }: { anchor: { practiceId: string; title: strin
             setKept(true)
           })
         }
-        className="mt-2.5 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60 motion-reduce:transition-none"
+        className="mt-2.5 inline-flex min-h-9 items-center gap-1.5 rounded-control bg-primary px-3.5 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60 motion-reduce:transition-none"
       >
         {pending ? 'Keeping…' : 'Keep it'}
       </button>
@@ -195,13 +195,13 @@ function FinishMoment({
     <section
       role="status"
       aria-live="polite"
-      className="relative overflow-hidden rounded-3xl border border-rank-gold/40 bg-gradient-to-br from-rank-gold/15 via-surface to-surface p-5 lift-1 motion-safe:animate-[slideUp_0.45s_ease-out] sm:p-7 dark:from-rank-gold/10"
+      className="relative overflow-hidden rounded-card border border-rank-gold/40 bg-gradient-to-br from-rank-gold/15 via-surface to-surface p-5 lift-1 motion-safe:animate-[slideUp_0.45s_ease-out] sm:p-7 dark:from-rank-gold/10"
     >
       <DismissButton onClose={onClose} />
 
       <div className="flex items-start gap-4">
         <span
-          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-on-primary lift-1"
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-control text-on-primary lift-1"
           style={{ background: 'var(--rank-gold)' }}
           aria-hidden
         >
@@ -235,7 +235,7 @@ function FinishMoment({
           <div className="mt-4">
             <Link
               href={trophiesHref}
-              className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
+              className="inline-flex min-h-11 items-center rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
             >
               See your Trophies
             </Link>
@@ -281,13 +281,13 @@ function SeasonCompleteMoment({
     <section
       role="status"
       aria-live="polite"
-      className="relative overflow-hidden rounded-3xl border border-rank-gold/50 bg-gradient-to-br from-rank-gold/20 via-surface to-surface p-6 lift-1 motion-safe:animate-[slideUp_0.5s_ease-out] sm:p-8 dark:from-rank-gold/12"
+      className="relative overflow-hidden rounded-card border border-rank-gold/50 bg-gradient-to-br from-rank-gold/20 via-surface to-surface p-6 lift-1 motion-safe:animate-[slideUp_0.5s_ease-out] sm:p-8 dark:from-rank-gold/12"
     >
       <DismissButton onClose={onClose} />
 
       <div className="max-w-xl pr-6">
         <span
-          className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl text-on-primary lift-1"
+          className="mb-4 flex h-16 w-16 items-center justify-center rounded-control text-on-primary lift-1"
           style={{ background: 'var(--rank-gold)' }}
           aria-hidden
         >
@@ -322,7 +322,7 @@ function SeasonCompleteMoment({
 
         {/* The re-light — what comes next, so the apex opens a door. The Trophy Case keeps
             the win across the reset; the next Quest is the goal to climb again. */}
-        <div className="mt-5 rounded-2xl border border-border bg-surface/70 p-4">
+        <div className="mt-5 rounded-card border border-border bg-surface/70 p-4">
           <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-widest text-primary-strong">
             <Sparkles className="h-3.5 w-3.5" aria-hidden />
             What comes next
@@ -337,7 +337,7 @@ function SeasonCompleteMoment({
         <div className="mt-5">
           <Link
             href={trophiesHref}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
           >
             See your Trophy Case
             <ArrowRight className="h-4 w-4" aria-hidden />

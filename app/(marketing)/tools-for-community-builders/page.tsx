@@ -117,7 +117,7 @@ export default function ToolsForCommunityBuildersPage() {
       </PhotoHero>
 
       {/* Answer-first opening: the direct answer in the first two sentences. */}
-      <Section tone="canvas" pad="pt-16 pb-16 sm:pt-20 sm:pb-20">
+      <Section tone="canvas">
         <Lead>
           A community builder needs four tools: a way in so new people can find you,
           a place to gather on a rhythm, a shared feed so the group stays connected

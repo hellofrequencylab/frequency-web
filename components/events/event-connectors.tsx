@@ -23,7 +23,7 @@ export async function EventConnectors({
   if (suggestions.length === 0) return null
 
   return (
-    <section className="rounded-2xl border border-border bg-surface-elevated p-5">
+    <section className="rounded-card border border-border bg-surface-elevated p-5">
       <div className="flex items-center gap-2">
         <Users className="h-4 w-4 text-primary-strong" />
         <h2 className="text-body-sm font-bold tracking-tight text-text">People to meet</h2>

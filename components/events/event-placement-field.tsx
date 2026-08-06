@@ -14,6 +14,7 @@ import {
 import { transferEventHost } from '@/app/(main)/events/[slug]/social-actions'
 import { isError } from '@/lib/action-result'
 import { labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import type { PlacementView, PlacementTargetType } from '@/lib/events/placement'
@@ -181,11 +182,12 @@ function HostEntityControl({ eventId, slug }: { eventId: string; slug: string })
           : 'You host this personally. Pick a space to run it through the space instead.'}
       </p>
       {options.length > 0 ? (
-        <select
+        <Select
           value={hostSpace?.id ?? 'personal'}
           onChange={(e) => choose(e.target.value)}
           disabled={pending}
-          className="mt-1.5 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-border-strong disabled:opacity-60"
+          aria-label="Who hosts this event"
+          wrapperClassName="mt-1.5"
         >
           <option value="personal">You (personal event)</option>
           {options.map((s) => (
@@ -196,7 +198,7 @@ function HostEntityControl({ eventId, slug }: { eventId: string; slug: string })
           {hostSpace && !options.some((s) => s.id === hostSpace.id) && (
             <option value={hostSpace.id}>{hostSpace.name}</option>
           )}
-        </select>
+        </Select>
       ) : hostSpace ? (
         <p className="mt-1 text-2xs text-muted">Only someone who helps run {hostSpace.name} can change this.</p>
       ) : null}
@@ -264,7 +266,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
   }
 
   return (
-    <div className="rounded-lg bg-surface p-3">
+    <div className="rounded-card bg-surface p-3">
       <div className="flex items-center justify-between">
         <p className="text-meta font-semibold text-text">Transfer host role</p>
         <button
@@ -292,7 +294,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
               type="button"
               onClick={confirm}
               disabled={pending}
-              className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+              className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               {pending ? 'Transferring…' : 'Confirm transfer'}
             </button>
@@ -300,7 +302,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
               type="button"
               onClick={() => setChoice(null)}
               disabled={pending}
-              className="rounded-lg px-2 py-1.5 text-meta font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
+              className="rounded-control px-2 py-1.5 text-meta font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
             >
               Back
             </button>
@@ -317,7 +319,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
             }}
             placeholder="New host by name or @handle"
             disabled={pending}
-            className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
+            className="w-full rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
           />
           {hits.length > 0 && (
             <div className="mt-1 overflow-hidden rounded-card border border-border bg-surface py-1 lift-3">
@@ -364,7 +366,7 @@ function CurrentPlacement({
   const live = view.status === 'live'
   const TargetIcon = target.type === 'space' ? Building2 : Users
   return (
-    <div className="flex items-center gap-2.5 rounded-lg bg-surface px-3 py-2">
+    <div className="flex items-center gap-2.5 rounded-card bg-surface px-3 py-2">
       <TargetIcon className="h-4 w-4 shrink-0 text-subtle" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-body-sm font-medium text-text">{target.name}</p>
@@ -388,7 +390,7 @@ function CurrentPlacement({
         onClick={onClear}
         disabled={pending}
         aria-label={live ? 'Remove from this Space or Circle' : 'Cancel request'}
-        className="shrink-0 rounded-lg px-2 py-1 text-meta font-medium text-subtle transition-colors hover:text-danger disabled:opacity-40"
+        className="shrink-0 rounded-control px-2 py-1 text-meta font-medium text-subtle transition-colors hover:text-danger disabled:opacity-40"
       >
         {live ? 'Remove' : 'Cancel'}
       </button>
@@ -432,7 +434,7 @@ function ScopeSearch({
 
   return (
     <div>
-      <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5">
+      <div className="flex items-center gap-2 rounded-control border border-border bg-surface px-3 py-1.5">
         <MapPin className="h-4 w-4 shrink-0 text-subtle" />
         <input
           type="text"
@@ -484,9 +486,9 @@ function ResultGroup({
           className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-elevated disabled:opacity-40"
         >
           {h.image_url ? (
-            <Image src={h.image_url} alt={h.name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-lg object-cover" />
+            <Image src={h.image_url} alt={h.name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-control object-cover" />
           ) : (
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-3xs font-bold text-primary-strong">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-control bg-primary-bg text-3xs font-bold text-primary-strong">
               {getInitials(h.name)}
             </div>
           )}

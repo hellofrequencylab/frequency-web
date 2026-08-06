@@ -135,7 +135,7 @@ export function JourneyBoard({
             onClick={toggle}
             aria-label="Expand"
             aria-expanded={false}
-            className="shrink-0 rounded-md p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
+            className="shrink-0 rounded-control p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
           >
             <ChevronDown className="h-4 w-4" />
           </button>
@@ -198,7 +198,7 @@ export function JourneyBoard({
               onClick={toggle}
               aria-label="Collapse"
               aria-expanded
-              className="rounded-md p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
+              className="rounded-control p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
             >
               <ChevronDown className="h-4 w-4 rotate-180" />
             </button>
@@ -337,7 +337,7 @@ export function JourneyBoard({
             {pillarBalance.map((p) => (
               <div
                 key={p.slug}
-                className={`flex-1 rounded-lg px-2 py-1.5 text-center ${
+                className={`flex-1 rounded-card px-2 py-1.5 text-center ${
                   p.count > 0 ? 'bg-surface' : 'bg-surface/50'
                 }`}
               >

@@ -78,7 +78,7 @@ export function ClientNotesPanel({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
+      <div className="rounded-card border border-border bg-surface p-4 lift-1">
         <p className="text-body-sm font-semibold text-text">Notes on {contactName}</p>
         <p className="mt-0.5 text-meta text-muted">
           Private to this space. Only your team sees these.
@@ -102,7 +102,7 @@ export function ClientNotesPanel({
             />
             {error && (
               <p
-                className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger"
+                className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger"
                 role="alert"
               >
                 {error}
@@ -136,7 +136,7 @@ export function ClientNotesPanel({
           {notes.map((note) => (
             <li
               key={note.id}
-              className="rounded-2xl border border-border bg-surface p-4 lift-1"
+              className="rounded-card border border-border bg-surface p-4 lift-1"
             >
               <p className="whitespace-pre-wrap text-body-sm text-text">{note.body}</p>
               <div className="mt-2 flex items-center justify-between gap-3">

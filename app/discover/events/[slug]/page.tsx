@@ -160,7 +160,7 @@ export default async function EventPage({
             )}
 
             {/* Location-protected notice */}
-            <div className="flex items-start gap-3 rounded-2xl border border-border bg-marketing-canvas p-4">
+            <div className="flex items-start gap-3 rounded-card border border-border bg-marketing-canvas p-4">
               <Lock className="w-4 h-4 text-muted shrink-0 mt-0.5" />
               <p className="text-body-sm text-muted leading-relaxed">
                 The exact venue is shared with members who RSVP. Sign up free to see the full

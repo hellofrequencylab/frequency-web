@@ -20,6 +20,8 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Check, X, Pencil, ExternalLink, Sparkles, ShieldQuestion, CheckCircle2, Palette, Plus, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Textarea } from '@/components/ui/field'
 import { Banner, StatusChip } from '@/components/admin/status'
 import { cn } from '@/lib/utils'
 import { updateImportField, approveBusinessImport, reseedBusinessImport, reresearchWithInfo, setBusinessListed, type FieldAction } from '../actions'
@@ -246,16 +248,13 @@ export function ReviewBoard({
             )
           })}
         </div>
-        <label className="mt-3 flex items-center gap-2 text-meta text-muted">
-          <input
-            type="checkbox"
-            checked={lockHero}
-            onChange={(e) => setLockHero(e.target.checked)}
-            disabled={reseeding}
-            className="h-3.5 w-3.5 rounded border-border text-primary focus:ring-primary"
-          />
-          Lock the hero (freeze the headline and hero image; re-seed everything else)
-        </label>
+        <Checkbox
+          wrapperClassName="mt-3"
+          label="Lock the hero (freeze the headline and hero image; re-seed everything else)"
+          checked={lockHero}
+          onChange={(e) => setLockHero(e.target.checked)}
+          disabled={reseeding}
+        />
 
         {/* Directions (Importer v2.1): a freeform steer folded into the re-voice. Persists on re-seed, so it
             keeps driving future runs. Blank leaves any stored directions untouched. */}
@@ -263,14 +262,14 @@ export function ReviewBoard({
           <label htmlFor="reseed-directions" className="block text-2xs font-semibold uppercase tracking-wide text-muted">
             Directions for the re-seed
           </label>
-          <textarea
+          <Textarea
             id="reseed-directions"
             rows={2}
             value={directions}
             onChange={(e) => setDirections(e.target.value)}
             disabled={reseeding}
             placeholder="e.g. Lead with the retreat space, keep it calm and grounded, mention the sky deck."
-            className="mt-1 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta text-text placeholder:text-subtle outline-none focus:border-primary"
+            className="mt-1 text-meta"
           />
           <p className="mt-1 text-2xs text-muted">Steers the wording and tone. Pick a mood above to re-seed with these directions.</p>
         </div>
@@ -314,13 +313,13 @@ export function ReviewBoard({
               ).map((box) => (
                 <label key={box.key} className="block">
                   <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">{box.label}</span>
-                  <textarea
+                  <Textarea
                     rows={2}
                     value={info[box.key]}
                     onChange={(e) => setInfoField(box.key, e.target.value)}
                     disabled={addingInfo}
                     placeholder={box.ph}
-                    className="mt-1 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta text-text placeholder:text-subtle outline-none focus:border-primary"
+                    className="mt-1 text-meta"
                   />
                 </label>
               ))}
@@ -382,16 +381,13 @@ export function ReviewBoard({
           </p>
           {/* The easy LISTED toggle: list = show in the Business Spaces directory (visibility network),
               unlist = owner/members only (private). No more digging in settings. */}
-          <label className="mt-3 flex items-center gap-2 text-body-sm font-medium text-text">
-            <input
-              type="checkbox"
-              checked={listed}
-              onChange={(e) => toggleListed(e.target.checked)}
-              disabled={listing}
-              className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-            />
-            {listing ? 'Saving…' : 'Listed in the Business Spaces directory'}
-          </label>
+          <Checkbox
+            wrapperClassName="mt-3"
+            label={listing ? 'Saving…' : 'Listed in the Business Spaces directory'}
+            checked={listed}
+            onChange={(e) => toggleListed(e.target.checked)}
+            disabled={listing}
+          />
           <div className="mt-3 flex flex-wrap gap-3 text-body-sm font-semibold">
             <a href={links.profileHref} className="inline-flex items-center gap-1 text-info hover:underline" target="_blank" rel="noreferrer">
               Space profile <ExternalLink className="h-3.5 w-3.5" />
@@ -472,8 +468,9 @@ function FieldRow({
 
           {/* Value / edit field */}
           {editing ? (
-            <textarea
-              className="mt-2 w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none"
+            <Textarea
+              aria-label={`Edit ${field.label}`}
+              className="mt-2 resize-y"
               rows={field.value.length > 60 ? 3 : 1}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}

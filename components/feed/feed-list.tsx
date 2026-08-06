@@ -406,10 +406,10 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
   return (
     <Link
       href={href}
-      className="group block rounded-2xl border border-border/70 bg-surface px-4 py-3.5 lift-1 transition-colors hover:border-broadcast dark:border-border/60 dark:bg-surface-elevated/80"
+      className="group block rounded-card border border-border/70 bg-surface px-4 py-3.5 lift-1 transition-colors hover:border-broadcast dark:border-border/60 dark:bg-surface-elevated/80"
     >
       <div className="flex items-start gap-3">
-        <div className="shrink-0 w-7 h-7 rounded-lg bg-broadcast-bg flex items-center justify-center mt-0.5">
+        <div className="shrink-0 w-7 h-7 rounded-control bg-broadcast-bg flex items-center justify-center mt-0.5">
           <Megaphone className="w-3.5 h-3.5 text-broadcast-strong" />
         </div>
         <div className="flex-1 min-w-0">
@@ -462,10 +462,10 @@ function EventFeedCard({ event: e }: { event: { id: string; title: string; start
   return (
     <Link
       href={`/events/${e.slug}`}
-      className="group block rounded-2xl border border-border/70 bg-surface px-4 py-3.5 lift-1 transition-colors hover:border-success dark:border-border/60 dark:bg-surface-elevated/80"
+      className="group block rounded-card border border-border/70 bg-surface px-4 py-3.5 lift-1 transition-colors hover:border-success dark:border-border/60 dark:bg-surface-elevated/80"
     >
       <div className="flex items-center gap-3">
-        <div className="shrink-0 w-10 h-10 rounded-lg bg-success-bg flex flex-col items-center justify-center">
+        <div className="shrink-0 w-10 h-10 rounded-control bg-success-bg flex flex-col items-center justify-center">
           <span className="text-3xs font-bold text-success leading-none">{month}</span>
           <span className="text-body-sm font-bold text-success leading-tight">{day}</span>
         </div>
@@ -494,7 +494,7 @@ function EventFeedCard({ event: e }: { event: { id: string; title: string; start
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-12 text-center">
+    <div className="rounded-card border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-12 text-center">
       <MessageSquare className="w-8 h-8 text-subtle/60 mx-auto mb-3" />
       <p className="text-body-sm text-muted">{message}</p>
     </div>

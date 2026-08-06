@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { Loader2, Search, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { searchActiveSpaces, adoptSpaceMasterProfile, type SpaceSearchResult } from './actions'
+import { Input } from '@/components/ui/field'
 
 export function ReseedSpaceSearch() {
   const router = useRouter()
@@ -55,8 +56,9 @@ export function ReseedSpaceSearch() {
       >
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
-          <input
-            className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+          <Input
+            aria-label="Search active Spaces"
+            className="py-2 pl-9 pr-3"
             placeholder="Search active Spaces by name or slug…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}

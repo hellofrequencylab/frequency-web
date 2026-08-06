@@ -128,7 +128,7 @@ export default async function DiscoverPlacePage({
       />
 
       {/* ── At a glance ─────────────────────────────────────────── */}
-      <Section tone="canvas" pad="pb-14 sm:pb-20">
+      <Section tone="canvas" role="cont">
         <div className="grid grid-cols-2 gap-8 text-center sm:gap-12">
           <Stat value={circles.length} label={circles.length === 1 ? 'Circle' : 'Circles'} />
           <Stat

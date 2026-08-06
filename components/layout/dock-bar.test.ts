@@ -7,29 +7,42 @@ import {
   announceDockDismissed,
   announceDockSegmentOpen,
   dockDismissalDue,
+  getDockPanelOwner,
   getServerDockGeometry,
+  getServerDockPanelOwner,
   onOtherDockSegmentOpen,
   railEndOpenDue,
+  setDockPanelOpen,
+  subscribeDockPanel,
   type DockAnnouncement,
 } from './dock-bar'
 
-// ── THE FOLD TAKES THE BAR (owner's decision, 2026-08-05) ──────────────────────────────────
+// ── THE FOLD TAKES THE VAULT, NOT THE BAR (owner, 2026-08-05 — AMENDS ADR-946) ─────────────
 //
-// 🔴 THE BUG. DockBar is `fixed bottom-0 right-3 w-72`, and `w-72` is the OPEN right rail (288px).
-// The rail now folds to a 56px strip on ANY route (lib/layout/rail-fold.ts), and the bar had no
-// input for it — so at strip width it went on spanning 288px and overhung the content column by
-// ~232px. The owner's call is that it HIDES there rather than shrinking to icons.
+// 🔴 THE ORIGINAL BUG. DockBar is `fixed bottom-0 right-3 w-72`, and `w-72` is the OPEN right rail
+// (288px). The rail folds to a 56px strip on ANY route (lib/layout/rail-fold.ts), and the bar had
+// no input for it — so at strip width it went on spanning 288px and overhung the content column by
+// ~232px. ADR-946 answered that by hiding the whole bar.
 //
-// Three things have to hold for that to be a fix rather than a new defect, and each is pinned
+// 🔴 THE AMENDMENT. The owner has now seen that live and wants the CHAT TAB specifically to
+// survive the fold. So the two segments stop sharing a fate: the Vault segment goes with the rail
+// (`lg:hidden`), the chat tab stays, and the bar shrinks to fit it (`lg:w-auto`) so the overhang
+// the hide was for is fixed by SIZING instead. Messages is a conversation somebody may be waiting
+// on; a score is something you can look at later.
+//
+// Four things have to hold for that to be a fix rather than a new defect, and each is pinned
 // below by a test that was watched go red with the defect put back:
 //
-//   1. It hides at lg and up ONLY. The fold is a standing per-member instruction; the right rail
-//      is `hidden lg:flex`. A member who folded on a desktop and opened a tablet has no rail on
-//      screen and therefore no fold control — unmounting the bar there would take the Vault and
-//      Messages away with nothing anywhere to bring them back.
-//   2. Hiding does not strand an open panel. Both segments close through their OWN close(), on
+//   1. Everything the fold takes, it takes at lg and up ONLY. The fold is a standing per-member
+//      instruction; the right rail is `hidden lg:flex`. A member who folded on a desktop and
+//      opened a tablet has no rail on screen and therefore no fold tick — taking anything there
+//      would leave nothing anywhere to bring it back.
+//   2. The dismissal now reads the VAULT's box, not the bar's. The bar is never zero-width at lg+
+//      any more, so a bar-width test would report "no fold happened" on every fold and leave an
+//      open Vault panel hanging over a column that no longer exists.
+//   3. Dismissing does not strand an open panel. Both segments close through their OWN close(), on
 //      the channel the bar already had, so focus return and the collapse timer run exactly once.
-//   3. The rail-end sentinel survives. It lives inside the OPEN rail's subtree, so every fold
+//   4. The rail-end sentinel survives. It lives inside the OPEN rail's subtree, so every fold
 //      destroys the node the ride-up observer was watching.
 
 const dock = readFileSync('components/layout/dock-bar.tsx', 'utf8')
@@ -110,14 +123,14 @@ describe('folding the rail closes whatever the bar had open', () => {
 })
 
 describe('dockDismissalDue — when a fold actually owes a dismissal', () => {
-  it('fires on the fold that hides the bar', () => {
-    // lg+: the class lands, the box goes to zero, the panels have to go.
+  it('fires on the fold that hides the VAULT segment', () => {
+    // lg+: the class lands, the Vault's box goes to zero, the panels have to go.
     expect(dockDismissalDue(false, true, 0)).toBe(true)
   })
 
-  it('🔴 does NOT fire in the md–lg band, where the bar is still on screen', () => {
-    // THE TABLET TRAP. Below lg there is no right rail, so there is no fold control either — a
-    // standing 'strip' set on a desktop must not take the bar away here. The bar keeps its box,
+  it('🔴 does NOT fire in the md–lg band, where the Vault is still on screen', () => {
+    // THE TABLET TRAP. Below lg there is no right rail, so there is no fold tick either — a
+    // standing 'strip' set on a desktop must not take the Vault away here. It keeps its box,
     // nothing was dismissed, and announcing would slam shut a panel the member can still see.
     expect(dockDismissalDue(false, true, 288)).toBe(false)
   })
@@ -138,11 +151,22 @@ describe('dockDismissalDue — when a fold actually owes a dismissal', () => {
   })
 })
 
-describe('the bar HIDES rather than unmounting', () => {
-  it('yields at lg+ in CSS, the same media query the rail itself yields to', () => {
-    // `lg:hidden` is emitted after `md:flex`, so it wins at lg+ and says nothing below it.
-    expect(dock).toContain("folded ? ' lg:hidden' : ''")
-    expect(dock).toContain('md:flex print:hidden')
+describe('the fold takes the VAULT and leaves the chat tab (the ADR-946 amendment)', () => {
+  it('🔴 the chat tab is NOT hidden by the fold any more', () => {
+    // The one-line statement of the amendment, asserted on the BAR's own class string — the
+    // Vault segment one line down legitimately still carries `lg:hidden`, so a file-wide
+    // "must not contain" would be answering a different question.
+    expect(dock).not.toMatch(/md:flex print:hidden\$\{\s*folded \? ' lg:hidden'/)
+  })
+
+  it('the bar SHRINKS instead, so the ~232px overhang is still gone', () => {
+    // Hiding was never the point — the overhang was. `lg:w-auto` collapses the bar onto the one
+    // segment left in it, which is a ~48px corner tab rather than a 288px bar under a 56px strip.
+    expect(dock).toMatch(/md:flex print:hidden\$\{\s*folded \? ' lg:w-auto' : ''\s*\}/)
+  })
+
+  it('the Vault segment is the half that yields, and only at lg+', () => {
+    expect(dock).toContain("folded ? ' lg:hidden' : ''}`}\n        >\n          {vault}")
   })
 
   it('🔴 never returns null on the fold — that is the md–lg trap', () => {
@@ -151,11 +175,44 @@ describe('the bar HIDES rather than unmounting', () => {
     expect(dock).not.toMatch(/if\s*\(\s*folded\s*\)\s*return null/)
   })
 
+  it('the dismissal reads the VAULT segment, which is the thing that actually left', () => {
+    // 🔴 THE DEFECT THE AMENDMENT INTRODUCES IF THIS IS MISSED. `dockDismissalDue` used to take
+    // the BAR's width, because the bar going to zero and the Vault going away were the same fact.
+    // They are not any more: the bar survives every fold, so a bar-width reading is `false`
+    // forever and an open Vault panel is left hanging over a column that has gone.
+    expect(dock).toContain('const vaultBox = vaultRef.current')
+    expect(dock).toContain('vaultBox?.getBoundingClientRect().width ?? 0')
+    expect(dock).toContain('const hadFocus = !!vaultBox && vaultBox.contains(document.activeElement)')
+  })
+
+  it('the clip moved off the bar so the fold TICK is not sliced in half', () => {
+    // `overflow-hidden` on the bar clipped every descendant, and the tick is deliberately centred
+    // ON the bar's top-left corner. It now belongs to the segment row, which is the thing that
+    // actually needs clipping (the chat button's square corner).
+    expect(dock).toContain('flex flex-1 items-stretch overflow-hidden rounded-tl-card rounded-tr-control')
+    expect(dock).not.toMatch(/fixed bottom-0[^\n]*overflow-hidden/)
+  })
+
   it('takes the fold as an INPUT, from the shell that already derives it', () => {
     expect(dock).toContain('folded: boolean')
     // No second source of truth: the bar must not read the fold store itself.
     expect(dock).not.toContain('resolveRailFold')
     expect(dock).not.toContain('railFoldsSnapshot')
+  })
+
+  it('and the fold TICK is optional, so a bar with no ladder draws no control', () => {
+    // /admin's info rail mounts this same bar and cannot be folded. A defaulted no-op handler
+    // would paint a control that does nothing; omission says it out loud.
+    expect(dock).toContain('onFold?: () => void')
+    expect(dock).toContain('{onFold && (')
+  })
+
+  it('and it only appears where there IS a right rail to fold', () => {
+    // 🔴 The bar renders from md; the right rail is `hidden lg:flex`. A tick in the md–lg band
+    // would offer to fold a rail that is not on screen. It works because Tailwind emits `.flex`
+    // (the tick's own base display) BEFORE `.hidden`, and both before the `lg` block — so `hidden`
+    // wins below lg and `lg:flex` wins above it. Verified against the compiled sheet.
+    expect(dock).toContain('className="hidden lg:flex"')
   })
 })
 
@@ -182,19 +239,21 @@ describe('the rail-end sentinel survives the fold', () => {
 
 describe('focus is handed over, not dropped', () => {
   it('reads focus in a LAYOUT effect, while the node is still focused', () => {
-    // Once the bar is display:none the browser has already blurred whatever was inside it and
+    // Once the segment is display:none the browser has already blurred whatever was inside it and
     // document.activeElement is <body> — the very drop this prevents, and by then unreadable.
     expect(dock).toContain('useIsoLayoutEffect(')
-    expect(dock).toContain('const hadFocus = !!bar && bar.contains(document.activeElement)')
+    expect(dock).toContain('const hadFocus = !!vaultBox && vaultBox.contains(document.activeElement)')
   })
 
-  it('moves focus only when it was inside the bar, the way close() already does', () => {
+  it('moves focus only when it was inside the part that LEFT', () => {
     expect(dock).toContain('if (hadFocus) {')
-    // The destination is the rail's foot control: the affordance that caused this, and the way
-    // back. Looked up by id because the bar renders from md and the rail only exists from lg,
-    // so it can never hold a ref to it — and the id is on the handle's box, which is the one
-    // thing on the rail's edge that survives the fold (both branches render the same handle).
-    expect(dock).toContain("document.getElementById(railHandleId('right'))?.querySelector('button')?.focus()")
+    // The destination is the fold tick on this bar's own corner: the affordance that caused this,
+    // and the way back. Looked up by id because the launcher and the shell both need it and
+    // neither can hold a ref across the portal — and the id is now on the BUTTON, so the lookup
+    // does not have to go hunting for a focusable child.
+    expect(dock).toContain("document.getElementById(railHandleId('right'))?.focus()")
+    // A member focused on the chat tab keeps their place: it survives the fold, so nothing is owed.
+    expect(dock).not.toContain('bar.contains(document.activeElement)')
   })
 
   it('closes the panels through THEIR close(), never by reaching into them', () => {
@@ -315,6 +374,112 @@ describe('the Vault has ONE way in, so every open announces (items 6 + 7)', () =
 
   it('and closing still runs through the shared setter, not a second path', () => {
     expect(vaultSegment).toContain("onOtherDockSegmentOpen('vault', () => setOpen(false))")
+  })
+})
+
+// ── "When the Vault is open, the message tab stays closed" (owner, 2026-08-05) ──────────────
+
+describe('the panel-owner store — the standing fact the open EVENT cannot give', () => {
+  beforeEach(() => {
+    setDockPanelOpen('vault', false)
+    setDockPanelOpen('chat', false)
+  })
+
+  it('reports who owns the open panel', () => {
+    expect(getDockPanelOwner()).toBeNull()
+    setDockPanelOpen('vault', true)
+    expect(getDockPanelOwner()).toBe('vault')
+  })
+
+  it('🔴 a segment can only clear its OWN ownership', () => {
+    // THE DEFECT A NAIVE `open ? segment : null` SHIPS. The chat panel unmounts (route change,
+    // the collapse timer) and reports closed while the Vault is up — and a null-on-close would
+    // erase the Vault's ownership, so the chat tab would light back up beside an open Vault.
+    setDockPanelOpen('vault', true)
+    setDockPanelOpen('chat', false)
+    expect(getDockPanelOwner()).toBe('vault')
+  })
+
+  it('tells subscribers, and only when something actually changed', () => {
+    let told = 0
+    const off = subscribeDockPanel(() => { told += 1 })
+    setDockPanelOpen('vault', true)
+    setDockPanelOpen('vault', true) // idempotent: no second notification
+    expect(told).toBe(1)
+    setDockPanelOpen('vault', false)
+    expect(told).toBe(2)
+    off()
+    setDockPanelOpen('chat', true)
+    expect(told).toBe(2)
+  })
+
+  it('the server owns no panel, so the first client render agrees with the HTML', () => {
+    expect(getServerDockPanelOwner()).toBeNull()
+  })
+})
+
+describe('the chat tab YIELDS to an open Vault rather than hiding or going inert', () => {
+  it('withholds the active fill while the Vault owns the panel', () => {
+    // 🔴 WHAT THE OWNER SAW. `unread > 0` lights this tab independently of whether its own panel
+    // is open, so an unread put it in the full amber fill NEXT TO an open Vault panel: two lit
+    // things, one of them not open. The `!yielding &&` is the whole fix.
+    expect(launcher).toContain('!yielding && (unread > 0 || open) ? \'primary\' : \'primarySoft\'')
+    expect(launcher).toContain("yielding={panelOwner === 'vault'}")
+  })
+
+  it('but stays MOUNTED and PRESSABLE — yielding is tone, not removal', () => {
+    // Hiding it would strand the member's one-tap route out of the Vault into Messages, and
+    // would shrink the bar under a panel that is being read. Nothing gates the trigger's render
+    // or its handler on `yielding`.
+    expect(launcher).not.toMatch(/yielding\s*&&\s*[\s\S]{0,40}return null/)
+    expect(launcher).not.toContain('disabled={yielding}')
+    expect(launcher).toContain('onClick={onOpen}')
+  })
+
+  it('both segments publish their own state, so neither latches', () => {
+    expect(vaultSegment).toContain("setDockPanelOpen('vault', open)")
+    expect(vaultSegment).toContain("return () => setDockPanelOpen('vault', false)")
+    expect(launcher).toContain("setDockPanelOpen('chat', open)")
+    expect(launcher).toContain("return () => setDockPanelOpen('chat', false)")
+  })
+})
+
+describe('the chat panel is sized to its CONTENT, and grows left out of the tab', () => {
+  it('🔴 no longer takes the bar\'s width', () => {
+    // THE BUG, off a live screenshot: the panel took `{left: bar.left, width: bar.width}`, and at
+    // lg+ the bar spans the rail — so a message inbox was 288px wide and every preview was cut
+    // mid-word ("Heyooo! I'm planning on heading out to Ro…"). The panel was sized to the door it
+    // comes through instead of to the thing it holds.
+    //
+    // Matched against the CODE, not the file: the comment above `panelBox` quotes the old
+    // expression on purpose, because a reader has to know what was wrong to understand the fix.
+    // A raw "must not contain" would fail on its own documentation.
+    const code = launcher.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+    expect(code).not.toContain('width: bar.width')
+    expect(code).not.toContain('left: bar.left')
+    // And the `bar` binding itself is gone: the only thing it still did was gate the anchor, and
+    // `anchor` already carries that gate. A live binding with one dead use is where the old
+    // sizing creeps back in.
+    expect(code).not.toContain('const bar = slot ? geometry.bar : null')
+  })
+
+  it('pins the RIGHT edge to the tab and takes its width from a stated measurement', () => {
+    // Right edge on the tab keeps the reveal reading as "out from behind this tab"; the width is
+    // derived in PANEL_WIDTH's comment from the preview line it has to fit, not rounded to a
+    // number that looked nice.
+    expect(launcher).toContain('{ right: anchor.right, bottom: anchor.bottom, left: \'auto\' as const, width: PANEL_WIDTH }')
+    expect(launcher).toContain("const PANEL_WIDTH = 'min(26rem, calc(100vw - 5rem))'")
+  })
+
+  it('leaves the phone sheet alone', () => {
+    // `panelBox` only exists when there is a bar to anchor to, which is md and up — below that
+    // the sheet keeps its own class box, including the `md:max-h-none` that releases the cap
+    // ABOVE md and must not start applying below it.
+    expect(launcher).toContain('const panelBox = anchor')
+    expect(launcher).toContain('fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md')
+    // The exact class run, not a bare `md:max-h-none`: the comment above it names the token, so a
+    // loose search would be satisfied by the prose after the class had been deleted.
+    expect(launcher).toContain('md:h-[35rem] md:max-h-none md:pb-2')
   })
 })
 

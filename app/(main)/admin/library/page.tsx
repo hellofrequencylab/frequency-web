@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Images, Search, ChevronLeft, ChevronRight, LayoutGrid, Grid2x2, List, Sparkles } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
+import { Select } from '@/components/ui/select'
 import { LIBRARY_KINDS } from '@/lib/library/types'
 import { resolveActiveScope } from '@/lib/library/scope'
 import {
@@ -28,6 +29,7 @@ import { SplashLaneView } from './splash-lane-view'
 import { splashTemplates } from '@/lib/library/splash-registry'
 import { IconsLaneView } from './icons-lane-view'
 import { SequenceLaneView } from './sequence-lane-view'
+import { Input } from '@/components/ui/field'
 
 // Loom Studio — the admin surface for The Loom asset library. A full-width header (create +
 // context + search + sort + view mode) sits above two vertically-aligned columns: a folder rail
@@ -272,29 +274,29 @@ export default async function LoomStudioPage({
               {view !== 'cards' && <input type="hidden" name="view" value={view} />}
               <span className="relative min-w-[180px] flex-1 sm:max-w-xs">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
-                <input
+                <Input
                   type="search"
                   name="q"
+                  aria-label="Search title, category"
                   defaultValue={q}
                   placeholder="Search title, category…"
-                  className="w-full rounded-2xl border border-border bg-surface py-2 pl-9 pr-3 text-body-sm"
+                  className="py-2 pl-9 pr-3"
                 />
               </span>
-              <select name="kind" defaultValue={kind} aria-label="Type" className="rounded-2xl border border-border bg-surface px-3 py-2 text-body-sm">
-                <option value="">All types</option>
+              <Select name="kind" defaultValue={kind} aria-label="Type" wrapperClassName="inline-block w-max max-w-full" emptyLabel="All types">
                 {LIBRARY_KINDS.map((k) => (
                   <option key={k} value={k}>
                     {k}
                   </option>
                 ))}
-              </select>
-              <select name="sort" defaultValue={sort} aria-label="Sort" className="rounded-2xl border border-border bg-surface px-3 py-2 text-body-sm">
+              </Select>
+              <Select name="sort" defaultValue={sort} aria-label="Sort" wrapperClassName="inline-block w-max max-w-full">
                 {SORTS.map((s) => (
                   <option key={s.value} value={s.value}>
                     {s.label}
                   </option>
                 ))}
-              </select>
+              </Select>
               <button
                 type="submit"
                 className="rounded-2xl border border-border-strong px-4 py-2 text-body-sm font-semibold text-text hover:bg-surface-elevated"

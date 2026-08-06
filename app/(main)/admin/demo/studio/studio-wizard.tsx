@@ -8,6 +8,8 @@ import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
 import { Button } from '@/components/ui/button'
 import { Banner } from '@/components/admin/status'
 import { RangeField } from '@/components/admin/range-field'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/field'
 
 type Channel = { slug: string; name: string }
 type Preview = Awaited<ReturnType<typeof previewArea>>
@@ -126,21 +128,24 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
           ))}
         </div>
         <label className="flex flex-col gap-1 text-meta text-muted">Local flavor words (comma-separated, used as place/vibe variables)
-          <input value={flavor} onChange={(e) => setFlavor(e.target.value)} placeholder="e.g. Barton Springs, tacos, greenbelt, East Side" className={field} /></label>
+          <Input value={flavor} onChange={(e) => setFlavor(e.target.value)} placeholder="e.g. Barton Springs, tacos, greenbelt, East Side" className={field} /></label>
       </section>
 
       {/* 4. Voice */}
       <section className="rounded-2xl border border-border bg-surface p-5">
         <h3 className="mb-1 text-body-sm font-bold text-text">4 · Voice</h3>
-        <label className="flex cursor-pointer items-start gap-3">
-          <input type="checkbox" checked={aiPolish} onChange={(e) => setAiPolish(e.target.checked)}
-            className="mt-0.5 h-4 w-4 shrink-0 accent-primary" />
+        <Checkbox
+          checked={aiPolish}
+          onChange={(e) => setAiPolish(e.target.checked)}
+          wrapperClassName="items-start"
+          label={
           <span className="text-body-sm text-muted">
             <span className="font-semibold text-text">Demographic-aware (AI)</span>. One quick model call reads the
             place and channels to draw names, local activities, and journey titles that fit the area; templates expand
             it into every row. Off uses the built-in pools. Falls back automatically if AI is unavailable.
           </span>
-        </label>
+          }
+        />
       </section>
 
       {/* 5. Preview */}

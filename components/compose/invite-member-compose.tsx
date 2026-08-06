@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { UserPlus, Check, Copy } from 'lucide-react'
-import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
+import { CreateModal } from '@/components/create-modal'
+import { Field, Input, Textarea } from '@/components/ui/field'
 
 export function InviteMemberCompose({
   inviterName,
@@ -51,16 +52,16 @@ export function InviteMemberCompose({
         submitLabel="Open Email" pendingLabel="Opening…"
         submitDisabled={!email.trim() || !message.trim()}
       >
-        <div>
-          <label className={cmLabel}>Their email *</label>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-            placeholder="friend@example.com" required className={cmInput} />
-        </div>
+        <Field label="Their email *">
+          <Input type="email" value={email} onChange={e => setEmail(e.target.value)}
+            placeholder="friend@example.com" required />
+        </Field>
 
+        <Field label="Your message">
+          <Textarea value={message} onChange={e => setMessage(e.target.value)}
+            rows={4} className="resize-y leading-relaxed" />
+        </Field>
         <div>
-          <label className={cmLabel}>Your message</label>
-          <textarea value={message} onChange={e => setMessage(e.target.value)}
-            rows={4} className={`${cmInput} resize-y leading-relaxed`} />
           <p className="text-2xs text-muted mt-1">
             The signup link will be added automatically at the bottom.
           </p>

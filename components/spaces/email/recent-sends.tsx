@@ -69,7 +69,7 @@ export async function RecentSends({ spaceId, limit }: { spaceId: string; limit?:
   return (
     <section aria-labelledby="space-email-recent-sends">
       <SectionHeader id="space-email-recent-sends" title="Recent sends" count={sends.length} />
-      <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
+      <ul className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
         {sends.map((s) => (
           <li key={s.id} className="flex items-center justify-between gap-4 px-4 py-3">
             <div className="min-w-0">

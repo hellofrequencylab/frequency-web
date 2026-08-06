@@ -11,6 +11,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, Bookmark, ChevronDown, Search, Trash2, X } from 'lucide-react'
 import { IconButton } from '@/components/ui/icon-button'
+import { Select } from '@/components/ui/select'
+import { Input } from '@/components/ui/field'
 
 // The filter/sort params the controls own. Paging cursors (cursor/page) are reset whenever a
 // filter changes so a stale cursor can never point past the new, smaller result set.
@@ -77,13 +79,13 @@ export function PracticeSearchBox() {
   return (
     <form onSubmit={submit} className="relative min-w-[12rem] flex-1">
       <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-subtle" aria-hidden />
-      <input
+      <Input
         type="search"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="Search title, summary, or description"
         aria-label="Search practices"
-        className="h-9 w-full rounded-lg border border-border bg-surface pl-8 pr-3 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-primary/40"
+        className="h-9 pl-8 pr-3"
       />
     </form>
   )
@@ -99,16 +101,16 @@ export function PracticeSortControl() {
   return (
     <div className="flex items-center gap-1.5">
       <label className="text-meta font-medium text-muted" htmlFor="practice-sort">Sort</label>
-      <select
+      <Select
         id="practice-sort"
         value={sort}
         onChange={(e) => patch({ sort: e.target.value === 'score' ? null : e.target.value })}
-        className="h-9 rounded-lg border border-border bg-surface px-2 text-body-sm text-text focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-primary/40"
+        wrapperClassName="inline-block w-max max-w-full"
       >
         {SORTS.map((s) => (
           <option key={s.value} value={s.value}>{s.label}</option>
         ))}
-      </select>
+      </Select>
       {/* `title` is passed alongside `label` because they say different things here: the
           accessible name states the change the press makes, the tooltip names the current
           state. IconButton defaults the tooltip to the label; this keeps both as they were. */}

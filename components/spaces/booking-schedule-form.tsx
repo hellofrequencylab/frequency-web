@@ -4,12 +4,11 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, Label, fieldClasses } from '@/components/ui/field'
+import { Input, Label } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { setSpaceSchedule } from '@/lib/spaces/booking-actions'
 import type { ScheduleSettings, SlotOverride } from '@/lib/spaces/booking'
-import { cn } from '@/lib/utils'
 import { IconButton } from '@/components/ui/icon-button'
 
 // OWNER SCHEDULING RULES EDITOR (client, P2, ADR-605). Buffers before / after a booking, a minimum
@@ -152,7 +151,7 @@ export function BookingScheduleForm({
 
   return (
     <form
-      className="space-y-6 rounded-2xl border border-border bg-surface p-5 lift-1 sm:p-6"
+      className="space-y-6 rounded-card border border-border bg-surface p-5 lift-1 sm:p-6"
       onSubmit={(e) => {
         e.preventDefault()
         if (!pending) save()
@@ -231,14 +230,14 @@ export function BookingScheduleForm({
           Take a day off, or set one-off hours for a specific date. These win over your weekly times.
         </p>
         {overrides.length === 0 && (
-          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
+          <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-body-sm text-muted">
             No overrides. Your weekly times apply every week.
           </p>
         )}
         {overrides.map((o, i) => (
           <div
             key={i}
-            className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface-elevated/40 p-3"
+            className="flex flex-wrap items-end gap-3 rounded-card border border-border bg-surface-elevated/40 p-3"
           >
             <label className="flex flex-col gap-1">
               <span className="text-meta font-medium text-muted">Date</span>
@@ -264,20 +263,20 @@ export function BookingScheduleForm({
               <>
                 <label className="flex flex-col gap-1">
                   <span className="text-meta font-medium text-muted">Start</span>
-                  <input
+                  <Input
                     type="time"
                     value={o.start}
                     onChange={(e) => updateOverride(i, { start: e.target.value })}
-                    className={cn(fieldClasses, 'w-32')}
+                    className="w-32"
                   />
                 </label>
                 <label className="flex flex-col gap-1">
                   <span className="text-meta font-medium text-muted">End</span>
-                  <input
+                  <Input
                     type="time"
                     value={o.end}
                     onChange={(e) => updateOverride(i, { end: e.target.value })}
-                    className={cn(fieldClasses, 'w-32')}
+                    className="w-32"
                   />
                 </label>
               </>
@@ -303,7 +302,7 @@ export function BookingScheduleForm({
       </div>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}

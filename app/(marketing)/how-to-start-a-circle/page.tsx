@@ -160,7 +160,7 @@ export default function HowToStartACirclePage() {
       </PhotoHero>
 
       {/* Answer-first opening: the direct answer in the first two sentences. */}
-      <Section tone="canvas" pad="pt-16 pb-16 sm:pt-20 sm:pb-20">
+      <Section tone="canvas">
         <Lead>
           To start a Circle, pick one simple thing to do together, set a standing
           time, and invite a few people to the first one. You are not building a

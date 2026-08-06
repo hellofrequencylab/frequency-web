@@ -44,7 +44,7 @@ export default async function OnAirPage({
         width="narrow"
         divider={false}
       >
-        <div className="rounded-2xl border border-border bg-surface p-6 text-center">
+        <div className="rounded-card border border-border bg-surface p-6 text-center">
           <p className="text-body-sm font-medium text-text">Nothing on your list yet.</p>
           <p className="mt-1 text-body-sm text-muted">
             Adopt a practice first; then this is where you do it.

@@ -15,7 +15,7 @@ export function ProfileCover({
   dimmed?: boolean
 }) {
   return (
-    <div className="relative h-28 overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-signal to-signal-strong sm:h-52">
+    <div className="relative h-28 overflow-hidden rounded-card bg-gradient-to-br from-primary via-signal to-signal-strong sm:h-52">
       {imageUrl ? (
         <Image
           fill

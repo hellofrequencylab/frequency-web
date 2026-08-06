@@ -22,12 +22,16 @@ export type RankKey =
   | 'teal'  | 'slate' | 'indigo' | 'plum'  | 'rose'
 
 export const SEASON_RANKS = [
-  // `color` is the rank's CORE — a dot, a bar, any fill with nothing on top of it.
-  // `solid` is the DEEP step, and it is the one to use when the fill has to CARRY TEXT.
-  // Measured 2026-08-05: white on every core runs 2.46:1 (gold) to 3.88:1 (stone), all under
-  // AA; the same hue at `-deep` runs 6.00:1 to 8.83:1. check-contrast models named token pairs
-  // and has no entry for white-on-rank, so it stayed green over a failing chip. Reach for
-  // `solid` the moment a label sits on the fill.
+  // `color` is the rank's CORE — a dot, a pip, a bar, a crest fill. `solid` is the DEEP step,
+  // and it is the one to use when the fill has to CARRY TEXT.
+  // Measured 2026-08-05: white on a core runs 2.46:1 (gold) to 4.30:1 (slate) — every rank under
+  // AA, and gold under even the 3:1 non-text bar; the same hues at `-deep` carry the light ink at
+  // 4.92:1 to 8.19:1. The three grounds are now IN the contrast contract (RANK_PAIRS in
+  // scripts/check-contrast.mjs), so a palette edit that lightens a core or a deep step fails CI:
+  //   · CORE  may carry a dark GLYPH (`text-on-primary`, 4.31–7.54, held to 1.4.11's 3:1) and
+  //           must never carry a label — slate 4.31 and plum 4.46 both miss 4.5.
+  //   · DEEP  is the text-bearing ground (`text-on-ink`, 4.5 and clear).
+  // Reach for `solid` the moment a LABEL sits on the fill; keep the core for glyphs and dots.
   { rank: 'ghost',    label: 'Ghost',    minJourneys: 0, order: 1, rankKey: 'stone' as RankKey, color: 'bg-rank-stone', solid: 'bg-rank-stone-deep', text: 'text-rank-stone' },
   { rank: 'initiate', label: 'Initiate', minJourneys: 1, order: 2, rankKey: 'clay'  as RankKey, color: 'bg-rank-clay', solid: 'bg-rank-clay-deep',  text: 'text-rank-clay'  },
   { rank: 'adept',    label: 'Adept',    minJourneys: 2, order: 3, rankKey: 'gold'  as RankKey, color: 'bg-rank-gold', solid: 'bg-rank-gold-deep',  text: 'text-rank-gold'  },

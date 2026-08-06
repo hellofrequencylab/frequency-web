@@ -705,7 +705,7 @@ function Splash({
       </Section>
 
       {/* ── Closing CTA — one calm path into /start ─────────────────────────── */}
-      <section className="relative bg-slat px-6 py-24 sm:py-28 text-center overflow-hidden">
+      <section className="relative bg-slat mk-band text-center overflow-hidden">
         <div className="light-strip absolute inset-x-0 top-0" />
         <div className="amber-glow absolute inset-0 pointer-events-none" />
         <div className="relative mx-auto max-w-2xl">
@@ -753,7 +753,7 @@ async function LiveProof() {
   return (
     <>
       {/* ── It's real, and it's early (honest live proof) ──────────────────── */}
-      <section className="relative bg-slat px-6 py-24 sm:py-28 overflow-hidden">
+      <section className="relative bg-slat mk-band overflow-hidden">
         <div className="light-strip absolute inset-x-0 top-0 z-10" />
         <div className="amber-glow absolute inset-0 pointer-events-none" />
         <div className="relative z-10 mx-auto max-w-3xl text-center">
@@ -790,7 +790,7 @@ async function LiveProof() {
 
       {/* ── Upcoming events (live) ─────────────────────────────────────────── */}
       {upcomingEvents.length > 0 && (
-        <section className="bg-marketing-canvas px-6 py-20 sm:py-24">
+        <section className="bg-marketing-canvas mk-beat">
           <div className="max-w-2xl mx-auto">
             <Reveal className="flex items-center justify-center gap-2 mb-9">
               <CalendarDays className="w-5 h-5 text-primary-strong" aria-hidden />
@@ -811,7 +811,7 @@ async function LiveProof() {
 
       {/* ── Member posts (live social proof) ───────────────────────────────── */}
       {posts.length > 0 && (
-        <section className="bg-surface px-6 py-20 sm:py-24">
+        <section className="bg-surface mk-beat">
           <div className="max-w-2xl mx-auto">
             <Reveal className="text-center">
               <p className="text-body-sm font-bold uppercase tracking-eyebrow text-primary-strong mb-4">
@@ -841,7 +841,7 @@ async function LiveProof() {
 
 // Holds the live-proof band's vertical space (bg matches the proof section) while it streams.
 function LiveProofSkeleton() {
-  return <section aria-hidden className="bg-slat px-6 py-24 sm:py-28" />
+  return <section aria-hidden className="bg-slat mk-band" />
 }
 
 function PostPreviewCard({ post }: { post: PostPreviewRow }) {
@@ -883,7 +883,7 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
   )
 
   return (
-    <article className="rounded-2xl border border-border bg-surface lift-2">
+    <article className="rounded-card border border-border bg-surface lift-2">
       <div className="p-5">
         {a?.handle ? (
           <Link href={communityHref(`/people/${a.handle}`, false)} className="flex items-start gap-3 mb-3 group">
@@ -916,7 +916,7 @@ function EventRow({ event }: { event: LiveEvent }) {
   const { month, day } = eventDateBadge(event.starts_at)
   const dateStr = formatEventDate(event.starts_at)
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface px-5 py-4 lift-1">
+    <div className="flex items-center gap-4 rounded-card border border-border bg-surface px-5 py-4 lift-1">
       <div className="shrink-0 flex h-12 w-12 flex-col items-center justify-center rounded-xl bg-primary-bg">
         <span className="text-3xs font-bold leading-none text-primary-strong">{month}</span>
         <span className="text-body font-bold leading-tight text-primary-strong">{day}</span>

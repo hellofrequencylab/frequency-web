@@ -3,6 +3,8 @@
 import { useMemo, useState, useTransition } from 'react'
 import { HeartHandshake, Check } from 'lucide-react'
 import { isError } from '@/lib/action-result'
+import { Select } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/field'
 import { createIntroduction } from '@/lib/connections/introductions'
 
 export interface FriendOption {
@@ -46,7 +48,7 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
 
   if (friends.length < 2) {
     return (
-      <div className="rounded-2xl border border-border bg-surface-elevated px-5 py-4">
+      <div className="rounded-card border border-border bg-surface-elevated px-5 py-4">
         <p className="text-body-sm font-semibold text-text">Know two people who should meet?</p>
         <p className="mt-1 text-body-sm text-muted">
           Once you have at least two friends, you can introduce them here and earn Gems when they
@@ -57,7 +59,7 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface-elevated px-5 py-4">
+    <div className="rounded-card border border-border bg-surface-elevated px-5 py-4">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-primary-strong">
           <HeartHandshake className="h-5 w-5" />
@@ -76,42 +78,40 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
           <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
             First friend
           </span>
-          <select
+          <Select
             value={personA}
             onChange={(e) => {
               setPersonA(e.target.value)
               setDone(false)
             }}
-            className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text focus:border-primary focus:outline-none"
+            emptyLabel="Choose someone…"
           >
-            <option value="">Choose someone…</option>
             {optionsA.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.displayName} (@{f.handle})
               </option>
             ))}
-          </select>
+          </Select>
         </label>
 
         <label className="block">
           <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
             Second friend
           </span>
-          <select
+          <Select
             value={personB}
             onChange={(e) => {
               setPersonB(e.target.value)
               setDone(false)
             }}
-            className="w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text focus:border-primary focus:outline-none"
+            emptyLabel="Choose someone…"
           >
-            <option value="">Choose someone…</option>
             {optionsB.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.displayName} (@{f.handle})
               </option>
             ))}
-          </select>
+          </Select>
         </label>
       </div>
 
@@ -119,7 +119,7 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
         <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
           Why they’d click <span className="font-normal normal-case text-muted">(optional)</span>
         </span>
-        <textarea
+        <Textarea
           value={note}
           onChange={(e) => {
             setNote(e.target.value)
@@ -128,7 +128,7 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
           rows={2}
           maxLength={500}
           placeholder="A line on what they have in common. It’ll be shown to them."
-          className="w-full resize-none rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-muted focus:border-primary focus:outline-none"
+          className="resize-none"
         />
       </label>
 

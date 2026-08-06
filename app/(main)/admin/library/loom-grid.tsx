@@ -27,6 +27,7 @@ import {
   Music,
   Sparkles as SparklesIcon,
 } from 'lucide-react'
+import { Input, Textarea } from '@/components/ui/field'
 import type { LibraryGalleryItem, LibraryCollection } from '@/lib/library/store'
 import { renderRegistryElement, isRenderableElement } from '@/lib/library/element-registry'
 import { sanitizeSvg } from '@/lib/library/svg-sanitize'
@@ -407,13 +408,14 @@ function BulkBar({
                   <p className="mb-2 text-meta text-subtle">
                     Teach a house look from these {n} image{n === 1 ? '' : 's'}. Pick it later in the studio to match a whole set.
                   </p>
-                  <input
+                  <Input
                     autoFocus
+                    aria-label="Style name"
                     value={styleName}
                     onChange={(e) => setStyleName(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && trainStyle()}
                     placeholder="Style name (e.g. Warm icon set)"
-                    className="mb-2 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm"
+                    className="mb-2 px-2.5 py-1.5"
                   />
                   <div className="mb-2 inline-flex rounded-card border border-border p-0.5">
                     {(['vector', 'raster'] as const).map((l) => (
@@ -682,7 +684,6 @@ function DetailDrawer({
     if (asset.url) void downloadImageUrl(asset.url, `${asset.slug || 'image'}.${extForMime(asset.mime)}`)
   }
 
-  const inputCls = 'w-full rounded-2xl border border-border bg-surface px-3 py-2 text-body-sm'
   const chipCls =
     'inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-body-sm text-text hover:bg-surface-elevated'
 
@@ -776,8 +777,8 @@ function DetailDrawer({
                 <Sparkles className="h-4 w-4 text-primary-strong" aria-hidden />
                 Design with Vera
               </p>
-              <textarea
-                className={inputCls}
+              <Textarea
+                aria-label="Design instruction for Vera"
                 rows={2}
                 value={instruction}
                 onChange={(e) => setInstruction(e.target.value)}
@@ -861,19 +862,19 @@ function DetailDrawer({
 
           <label className="block">
             <span className="mb-1 block text-meta font-semibold uppercase tracking-wide text-subtle">Title</span>
-            <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} />
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
           </label>
           <label className="block">
             <span className="mb-1 block text-meta font-semibold uppercase tracking-wide text-subtle">Alt text</span>
-            <input className={inputCls} value={alt} onChange={(e) => setAlt(e.target.value)} placeholder="Describe the image" />
+            <Input value={alt} onChange={(e) => setAlt(e.target.value)} placeholder="Describe the image" />
           </label>
           <label className="block">
             <span className="mb-1 block text-meta font-semibold uppercase tracking-wide text-subtle">Category</span>
-            <input className={inputCls} value={category} onChange={(e) => setCategory(e.target.value)} />
+            <Input value={category} onChange={(e) => setCategory(e.target.value)} />
           </label>
           <label className="block">
             <span className="mb-1 block text-meta font-semibold uppercase tracking-wide text-subtle">Tags</span>
-            <input className={inputCls} value={tags} onChange={(e) => setTags(e.target.value)} placeholder="comma, separated" />
+            <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="comma, separated" />
           </label>
 
           {err && <p className="text-body-sm text-danger">{err}</p>}

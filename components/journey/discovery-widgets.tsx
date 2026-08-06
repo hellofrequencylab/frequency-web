@@ -25,6 +25,7 @@ import { SidebarCard } from '@/components/ui/sidebar-card'
 import { buttonClasses } from '@/components/ui/button'
 import type { Pillar } from '@/lib/pillars'
 import { buildJourneyTree, type BlockRow, type Phase } from '@/lib/journeys/tree'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // Discovery-mode content blocks (docs/JOURNEYS.md §10) — the visitor / not-enrolled face.
 // Each is a small Server Component the page composes. Token colors only; no hand-rolled
@@ -567,14 +568,13 @@ export function AtAGlanceCard({
                 ? `Phase ${phaseAt} of ${phasesTotal}`
                 : `Phase 1 of ${phasesTotal}`}
             </p>
-            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-pill bg-surface-elevated">
-              <div
-                className="h-full rounded-pill bg-primary transition-[width] motion-reduce:transition-none"
-                style={{
-                  width: `${Math.round(((progress?.phasesComplete ?? 0) / Math.max(phasesTotal, 1)) * 100)}%`,
-                }}
-              />
-            </div>
+            <ProgressTrack
+              value={progress?.phasesComplete ?? 0}
+              max={Math.max(phasesTotal, 1)}
+              label={`Phase ${phaseAt} of ${phasesTotal}`}
+              animate
+              className="mt-1.5"
+            />
           </div>
         )}
 

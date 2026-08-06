@@ -19,6 +19,7 @@ import {
   screenPracticeAction,
 } from '@/app/(main)/admin/content/actions'
 
+import { Checkbox } from '@/components/ui/checkbox'
 export interface ReviewRow {
   id: string
   title: string
@@ -141,15 +142,12 @@ function ReviewRowItem({
   return (
     <div className={`px-4 py-3 ${checked ? 'bg-primary/5' : ''}`}>
       <div className="flex flex-wrap items-start gap-3">
-        <label className="-my-1 flex h-9 w-9 cursor-pointer items-center justify-center sm:my-0 sm:h-auto sm:w-auto">
-          <span className="sr-only">Select {row.title}</span>
-          <input
-            type="checkbox"
-            checked={checked}
-            onChange={(e) => onToggle(e.target.checked)}
-            className="h-4 w-4 cursor-pointer rounded border-border-strong text-primary focus:ring-2 focus:ring-primary/50"
-          />
-        </label>
+        <Checkbox
+          checked={checked}
+          onChange={(e) => onToggle(e.target.checked)}
+          aria-label={`Select ${row.title}`}
+          wrapperClassName="-my-1 sm:my-0"
+        />
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
@@ -314,18 +312,14 @@ export function ReviewQueuePanel({ rows }: { rows: ReviewRow[] }) {
 
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
         <div className="flex items-center gap-3 border-b border-border bg-surface-elevated/50 px-4 py-2">
-          <label className="flex cursor-pointer items-center gap-2">
-            <input
-              type="checkbox"
-              checked={allSelected}
-              ref={(el) => {
-                if (el) el.indeterminate = someSelected
-              }}
-              onChange={(e) => toggleAll(e.target.checked)}
-              className="h-4 w-4 cursor-pointer rounded border-border-strong text-primary focus:ring-2 focus:ring-primary/50"
-            />
-            <span className="text-meta font-semibold uppercase tracking-wide text-muted">Select all</span>
-          </label>
+          <Checkbox
+            checked={allSelected}
+            ref={(el) => {
+              if (el) el.indeterminate = someSelected
+            }}
+            onChange={(e) => toggleAll(e.target.checked)}
+            label={<span className="text-meta font-semibold uppercase tracking-wide text-muted">Select all</span>}
+          />
         </div>
         <div className="divide-y divide-border/60">
           {rows.map((row) => (

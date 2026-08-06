@@ -32,7 +32,7 @@ export function RemoveCircleButton({
         })
       }}
       disabled={pending}
-      className="rounded-lg px-2 py-1 text-2xs font-medium text-muted transition-colors hover:text-danger disabled:opacity-40"
+      className="rounded-control px-2 py-1 text-2xs font-medium text-muted transition-colors hover:text-danger disabled:opacity-40"
     >
       {pending ? 'Removing…' : 'Remove'}
     </button>

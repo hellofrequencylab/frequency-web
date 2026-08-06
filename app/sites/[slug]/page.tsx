@@ -47,7 +47,7 @@ export default async function SpaceWebsiteComingSoon({
     <AccentScope vars={accentVars} theme={parseSpaceTheme(space.preferences)}>
       <main className="flex min-h-dvh items-center justify-center bg-canvas px-6 py-16 text-text">
         <div className="w-full max-w-md text-center">
-          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-card bg-primary-bg text-primary-strong">
             <Radio className="h-7 w-7" aria-hidden />
           </span>
           <h1 className="mt-6 font-display text-display-h3 font-bold tracking-tight text-text">Coming soon</h1>

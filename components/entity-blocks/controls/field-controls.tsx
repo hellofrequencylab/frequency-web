@@ -25,6 +25,7 @@ import {
 import { searchEmoji, searchLucide } from '@/lib/entity-blocks/icon-tokens'
 import { BlockIcon } from '@/components/entity-blocks/block-icon'
 import { IconButton } from '@/components/ui/icon-button'
+import { Input } from '@/components/ui/field'
 
 // THE REUSABLE INSPECTOR CONTROL PRIMITIVES (ADR-569 C6). A tight, modern, Framer/Webflow/Notion-style set
 // of controls the block editor composes — and that a FEATURE agent attaches to a block by DECLARING a field,
@@ -585,12 +586,12 @@ export function IconPicker({
               )}
             </div>
 
-            <input
+            <Input
               type="text"
               value={query}
               placeholder={source === 'icon' ? 'Search icons' : 'Search emoji'}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-meta text-text placeholder:text-subtle outline-none focus:border-primary"
+              className="!px-2.5 !py-1.5 text-meta"
               autoFocus
             />
 

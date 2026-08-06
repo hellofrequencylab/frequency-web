@@ -43,7 +43,7 @@ export async function SpaceContacts({
   return (
     <section>
       <SectionHeader title="Contacts" count={contacts.length} />
-      <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
+      <ul className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
         {contacts.map((c) => {
           const selected = c.id === selectedContactId
           return (

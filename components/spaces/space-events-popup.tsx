@@ -156,7 +156,7 @@ function EventPopupBody({ item, onClose }: { item: SpaceEventsViewItem; onClose:
 
   const eventHref = `/events/${item.slug}`
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-surface lift-3">
+    <div className="overflow-hidden rounded-card border border-border bg-surface lift-3">
       {item.coverUrl && (
         // eslint-disable-next-line @next/next/no-img-element -- external public bucket URL, not a local asset
         <img
@@ -224,7 +224,7 @@ function EventPopupBody({ item, onClose }: { item: SpaceEventsViewItem; onClose:
             <div className="space-y-2">
               <Link
                 href={`/sign-in?next=${eventHref}`}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 Sign in to RSVP
               </Link>

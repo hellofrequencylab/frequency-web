@@ -297,6 +297,32 @@
 
   /* Sans (Nunito) — body, in-app headings, UI. */
   --text-page-title:   calc(1.5rem * var(--type-scale, 1));
+  /* THE FLUID PAGE TITLE — ADR-947's "fourth decision", named there and not yet written up, so
+     this cites the parent rather than reserve a number (949 is already taken, by an unrelated
+     decision). It is the only role in this file that exists to retire a RESPONSIVE RAMP rather
+     than a single literal. Two sites — DetailTemplate's
+     `titleScale="display"` h1 and the event page's inline-edit input that mirrors it — carried
+     `text-page-title sm:text-3xl lg:text-4xl`: 1.5 → 1.875 → 2.25rem in two jumps. Nothing in the
+     vocabulary could take it. Every FIXED role is one size by definition, and the nearest fluid
+     one, `display-h3`, is wrong twice over: it floors at 1.75rem (so every Detail title would grow
+     ~17% on a phone, at the width where a long title is already wrapping) and it is an Anton
+     DISPLAY face against a bold sans h1.
+     So: the ramp's own floor and its own ceiling, interpolated instead of stepped.
+       floor 1.5rem   — identical to what the ramp already paints below `sm`.
+       ceiling 2.25rem — identical to what it already paints at `lg` and above.
+     `4vw` is chosen, not decorative. The floor releases at 1.5rem ÷ 4vw = 637.5px, which is the
+     `sm` breakpoint (640px) to within 2.5px — so BELOW sm this role is pixel-identical to the ramp
+     it replaces, and the phone rendering, the one the ramp's floor exists to protect, does not
+     move at all. It reaches the ceiling at 956px rather than waiting for `lg`, which is the point
+     of interpolating: the title arrives at full stature as the surface earns it instead of
+     snapping. Mid-band fidelity is close — at 768px it reads 1.81rem against the ramp's 1.875rem.
+     An integer `vw` also keeps it on the same construction as its neighbours (6/5/4/3vw above).
+     Note this is the OPPOSITE call to ADR-947's three roles, and deliberately: those replaced
+     literals that must NOT move with the medium (a price, a printed poster), this replaces one
+     whose entire intent was to move with it. `* var(--type-scale, 1)` wraps the clamp, so the
+     whole ramp still rides the generation axis — a `clamp()` outside that multiply would be the
+     one role the axis could not reach. */
+  --text-page-title-lg: calc(clamp(1.5rem, 4vw, 2.25rem) * var(--type-scale, 1));
   --text-lead:         calc(1.25rem * var(--type-scale, 1));
   /* PAIRED LINE-HEIGHTS — the thing that makes the literal->role sweep safe.
      Tailwind's text-* utilities emit font-size AND line-height (`--text-sm--line-height`
@@ -311,6 +337,11 @@
      NOT bundled here: it would move every baseline at the same moment as 7,282 mechanical
      edits, and destroy the one property that makes this sweep reviewable. */
   --text-page-title--line-height: calc(2 / 1.5);
+  /* Same rule as the display roles: the line-height of the literal AT THE CEILING, because the
+     ceiling is what the role replaces. The ramp topped out at `text-4xl`, so this is text-4xl's
+     ratio — desktop leading is unchanged and SIZE is the only thing the conversion moves. It is
+     also what `display-h3` and `stat-md` carry, for the same reason: they end at 2.25rem too. */
+  --text-page-title-lg--line-height: calc(2.5 / 2.25);
   --text-lead--line-height:       calc(1.75 / 1.25);
   --text-body-lg--line-height:    calc(1.75 / 1.125);
   --text-body--line-height:       calc(1.5 / 1);
@@ -1322,6 +1353,7 @@
      font-size ONLY, which is exactly the silent line-height drop this sweep exists to avoid.
      Caught by compiling and comparing against the literal before touching a single call site. */
   --text-page-title--line-height: var(--text-page-title--line-height);
+  --text-page-title-lg--line-height: var(--text-page-title-lg--line-height);
   --text-lead--line-height:       var(--text-lead--line-height);
   --text-body-lg--line-height:    var(--text-body-lg--line-height);
   --text-body--line-height:       var(--text-body--line-height);
@@ -1331,6 +1363,12 @@
   --text-eyebrow--line-height:    var(--text-eyebrow--line-height);
 
   --text-page-title:   var(--text-page-title);
+  /* The fluid page title. Bridged for the same reason as every line above it — declared in :root
+     alone it reads perfectly and emits NOTHING, and unlike a colour there is no Tailwind default
+     under this name to mask the miss with a wrong-but-present value. `check:phantom` asserts the
+     class directly (its DECLARED list) so the omission fails on the declaration, not on the first
+     call site that reaches for it. */
+  --text-page-title-lg: var(--text-page-title-lg);
   --text-lead:         var(--text-lead);
   --text-card-title:   var(--text-card-title);
   --text-body-lg:      var(--text-body-lg);
@@ -1460,8 +1498,33 @@
 .mk-cont-soft { padding-block: calc(var(--space-section) / 2) var(--space-section); }
 /* And the same correction, automatically. Tag a section .mk-cream or .mk-ink and
    two of the SAME tone in a row halve the gap between them, while a tone CHANGE
-   keeps the full beat — which is what makes a tone change read as a change. */
-.mk-cream + .mk-cream, .mk-ink + .mk-ink { padding-top: calc(var(--space-section) / 2); }
+   keeps the full beat — which is what makes a tone change read as a change.
+
+   THE :where() GUARD IS LOAD-BEARING — do not "simplify" it away. This rule is an
+   INFERENCE (we guessed the tone repeated, so we shrink the gap); .mk-cont, .mk-arc
+   and .mk-cont-soft are DECLARATIONS (an author stated this section's top padding).
+   A declaration must beat an inference, and without the guard it does not: bare
+   `.mk-cream + .mk-cream` is (0,2,0) and outranks all three at (0,1,0), so the
+   automatic correction silently overwrites the deliberate one. The collision is
+   structural, not incidental — .mk-cont is *defined* as "continues at the same
+   tone", so it is the same-tone case by construction and this rule would fire on
+   100% of them, replacing its deliberate 0 with half a beat. .mk-arc has the same
+   problem the moment an arc rises out of cream rather than ink (the-lab's
+   Statement→arc pair is exactly that), and there the shoulder clearance is what
+   keeps the heading out of the curve.
+
+   Nobody has seen this because the rule has never fired: .mk-cream / .mk-ink have
+   zero adopters today, so the defect is latent and lands with the tone sweep, not
+   before it. Guard first, then adopt.
+
+   :where() and NOT :not() at full weight: :where() contributes ZERO specificity, so
+   the selector stays exactly (0,2,0) — unchanged from before the guard. That matters
+   in both directions. Plain `.mk-cream + .mk-cream:not(…)` would be (0,3,0) and would
+   start beating `.mk-hero-dock + .mk-band` below, stealing the fact dock's overhang
+   clearance the first time a dark hero is tagged .mk-ink (which is what DAWN's own
+   kit does). The guard must remove this rule from two fights without entering a third. */
+.mk-cream + .mk-cream:where(:not(.mk-cont, .mk-cont-soft, .mk-arc)),
+.mk-ink   + .mk-ink:where(:not(.mk-cont, .mk-cont-soft, .mk-arc)) { padding-top: calc(var(--space-section) / 2); }
 /* And the double-count correction. Two stacked sections EACH pay for the gap between
    them, so a padding that reads right at the end of a page reads as a hole in the
    middle of one. A section that is followed by another gives up a third of its

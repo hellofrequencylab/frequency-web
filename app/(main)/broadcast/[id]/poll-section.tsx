@@ -76,7 +76,7 @@ export function PollSection({
               key={opt.id}
               onClick={() => handleVote(opt.id)}
               disabled={!isLoggedIn || isPending}
-              className={`relative w-full text-left rounded-lg border px-4 py-2.5 transition-colors overflow-hidden ${
+              className={`relative w-full text-left rounded-control border px-4 py-2.5 transition-colors overflow-hidden ${
                 isMyVote
                   ? 'border-broadcast bg-broadcast-bg/80'
                   : hasVoted

@@ -93,7 +93,7 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
           type="button"
           onClick={toggle}
           aria-label={`Expand getting-started. Next: ${current.label}`}
-          className="mb-6 flex w-full items-center gap-3 rounded-xl border border-broadcast-bg bg-broadcast-bg/50 px-4 py-2.5 text-left transition-colors hover:bg-broadcast-bg/70 dark:bg-broadcast-bg/30"
+          className="mb-6 flex w-full items-center gap-3 rounded-card border border-broadcast-bg bg-broadcast-bg/50 px-4 py-2.5 text-left transition-colors hover:bg-broadcast-bg/70 dark:bg-broadcast-bg/30"
         >
           <Compass className="h-4 w-4 shrink-0 text-broadcast-strong" />
           <span className="shrink-0 text-body-sm font-semibold text-text">Getting set up</span>
@@ -121,7 +121,7 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
   return (
     <>
     {tourEl}
-    <div className="mb-6 rounded-2xl border border-broadcast-bg bg-broadcast-bg/40 p-4 dark:bg-broadcast-bg/20">
+    <div className="mb-6 rounded-card border border-broadcast-bg bg-broadcast-bg/40 p-4 dark:bg-broadcast-bg/20">
       {/* Header: progress ring + the current step's invitation + minimize */}
       <div className="flex items-start gap-3">
         <div className="relative shrink-0" aria-hidden>
@@ -150,7 +150,7 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
           type="button"
           onClick={toggle}
           aria-label="Minimize"
-          className="shrink-0 rounded-md p-1 text-broadcast-strong/70 transition-colors hover:bg-broadcast-bg/60 hover:text-broadcast-strong"
+          className="shrink-0 rounded-control p-1 text-broadcast-strong/70 transition-colors hover:bg-broadcast-bg/60 hover:text-broadcast-strong"
         >
           <ChevronDown className="h-4 w-4" />
         </button>
@@ -232,19 +232,19 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
         <button
           type="button"
           onClick={() => setTourOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-broadcast px-4 py-2 text-body-sm font-semibold text-on-broadcast transition-colors hover:opacity-90"
+          className="inline-flex items-center gap-1.5 rounded-control bg-broadcast px-4 py-2 text-body-sm font-semibold text-on-broadcast transition-colors hover:opacity-90"
         >
           <Route className="h-3.5 w-3.5" /> {tourLabel}
         </button>
         <Link
           href={current.href}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-broadcast-bg px-4 py-2 text-body-sm font-medium text-broadcast-strong transition-colors hover:bg-broadcast-bg/50"
+          className="inline-flex items-center gap-1.5 rounded-control border border-broadcast-bg px-4 py-2 text-body-sm font-medium text-broadcast-strong transition-colors hover:bg-broadcast-bg/50"
         >
           {current.cta} <ArrowRight className="h-3.5 w-3.5" />
         </Link>
         <Link
           href="/feed?welcome=vera&v=chat"
-          className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-body-sm font-medium text-broadcast-strong transition-colors hover:bg-broadcast-bg/50"
+          className="inline-flex items-center gap-1.5 rounded-control px-3 py-2 text-body-sm font-medium text-broadcast-strong transition-colors hover:bg-broadcast-bg/50"
         >
           <Sparkles className="h-3.5 w-3.5" /> Ask Vera
         </Link>

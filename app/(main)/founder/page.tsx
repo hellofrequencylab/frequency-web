@@ -46,7 +46,7 @@ export default async function FounderPage() {
       <FounderClaim />
 
       {/* Progress + badge state */}
-      <div className="mb-5 flex items-center gap-4 rounded-2xl border border-border bg-surface p-5 lift-1">
+      <div className="mb-5 flex items-center gap-4 rounded-card border border-border bg-surface p-5 lift-1">
         <span
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-pill ${
             fw.complete ? 'bg-signal-bg text-signal' : 'bg-broadcast-bg text-broadcast-strong'
@@ -77,7 +77,7 @@ export default async function FounderPage() {
       <ul className="space-y-2">
         {fw.tasks.map((t) =>
           t.done ? (
-            <li key={t.key} className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
+            <li key={t.key} className="flex items-center gap-3 rounded-card border border-border bg-surface px-4 py-3">
               <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-pill bg-broadcast text-on-broadcast">
                 <Check className="h-4 w-4" strokeWidth={3} aria-hidden />
               </span>

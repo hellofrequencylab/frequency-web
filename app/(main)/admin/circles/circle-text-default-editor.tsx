@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { Check } from 'lucide-react'
-import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { labelClasses, Textarea } from '@/components/ui/field'
 import { saveCircleTextDefault } from '@/lib/circles/circle-text-actions'
 
 // The network-wide default for the movable circle Page-text block (janitor only). Sets the copy
@@ -32,13 +32,13 @@ export function CircleTextDefaultEditor({ initial }: { initial: string }) {
     <div className="max-w-2xl space-y-2 rounded-2xl border border-border bg-surface p-4 lift-1">
       <label className="block space-y-1.5">
         <span className={labelClasses}>Default text</span>
-        <textarea
+        <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={5}
           disabled={pending}
           placeholder="The text every circle shows until it sets its own. Leave blank for none."
-          className={`${fieldClasses} resize-y`}
+          className="resize-y"
         />
       </label>
       <p className="text-meta text-muted">

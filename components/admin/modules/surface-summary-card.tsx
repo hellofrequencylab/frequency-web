@@ -8,6 +8,7 @@ import { SurfaceLinkRow } from './surface-link-row'
 import type { SurfaceSummaryEntry } from './surface-summaries'
 import { useSpaceRailSummary } from './space-rail-data'
 import { ALLOWANCE_NUDGE, allowanceAt, featureMeter, nearAllowanceLimit } from '@/lib/pricing/feature-meters'
+import { ProgressTrack } from '@/components/ui/progress-track'
 
 // SURFACE SUMMARY CARD — the Phase 2 "keep it in the rail" affordance (ADR-514). A generic card for a
 // `render: 'link'` Space surface that has a glanceable stat (SURFACE_SUMMARIES[id]). It keeps the SIGNAL in
@@ -124,12 +125,13 @@ export function SurfaceSummaryCard({
             )}
           </div>
           {meter.allowance != null && (
-            <div className="mt-1 h-1 w-full overflow-hidden rounded-pill bg-surface-elevated" aria-hidden>
-              <div
-                className={`h-full rounded-pill ${meter.nearLimit ? 'bg-primary-strong' : 'bg-primary/60'}`}
-                style={{ width: `${Math.round(meter.ratio * 100)}%` }}
-              />
-            </div>
+            <ProgressTrack
+              value={Math.round(meter.ratio * 100)}
+              label={`${data.count.toLocaleString('en-US')} of ${meter.allowance.toLocaleString('en-US')} ${meter.unit}`}
+              size="sm"
+              tone={meter.nearLimit ? 'primary-strong' : 'primary'}
+              className="mt-1"
+            />
           )}
           {/* The one shared nudge sentence (ADR-837): plain, no urgency, links only via the chip above. */}
           {meter.nearLimit && <p className="mt-1 text-2xs text-muted">{ALLOWANCE_NUDGE}</p>}

@@ -22,10 +22,10 @@ export async function RomanceStrip({ viewerProfileId }: { viewerProfileId: strin
   if (lane.people.length === 0 && lane.viewerVerified) return null
 
   return (
-    <section className="rounded-2xl border border-border bg-surface/60 p-4">
+    <section className="rounded-card border border-border bg-surface/60 p-4">
       <div className="mb-1 flex items-center justify-between">
         <h3 className="flex items-center gap-1.5 text-body-sm font-bold text-text">
-          <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+          <span className="flex h-6 w-6 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
             <Heart className="h-3.5 w-3.5" />
           </span>
           Open to connection

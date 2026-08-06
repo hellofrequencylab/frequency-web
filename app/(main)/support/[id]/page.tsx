@@ -33,7 +33,7 @@ export default async function SupportTicketPage({ params }: { params: Promise<{ 
         <div className="space-y-5">
           <TicketContext context={ticket.context} pageUrl={ticket.pageUrl} screenshotUrl={ticket.screenshotUrl} />
 
-          <section className="rounded-2xl border border-border bg-surface p-4">
+          <section className="rounded-card border border-border bg-surface p-4">
             <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-muted">Conversation</p>
             <TicketMessages messages={ticket.messages} />
             <div className="mt-4 border-t border-border pt-3">

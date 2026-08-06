@@ -156,7 +156,7 @@ export function SpaceInfoConnectForm({
 
   return (
     <form
-      className="space-y-8 rounded-2xl border border-border bg-surface p-5 lift-1 sm:p-6"
+      className="space-y-8 rounded-card border border-border bg-surface p-5 lift-1 sm:p-6"
       onSubmit={(e) => e.preventDefault()}
       onBlur={onFieldBlur}
     >
@@ -343,7 +343,7 @@ export function SpaceInfoConnectForm({
         </section>
 
         {veraError && (
-          <p className="rounded-lg bg-warning-bg px-3 py-2 text-body-sm font-medium text-warning" role="status">
+          <p className="rounded-card bg-warning-bg px-3 py-2 text-body-sm font-medium text-warning" role="status">
             {veraError}
           </p>
         )}

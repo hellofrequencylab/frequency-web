@@ -44,7 +44,7 @@ export async function CampaignList({ spaceId }: { spaceId: string }) {
   })
 
   return (
-    <ul className="divide-y divide-border rounded-2xl border border-border bg-surface lift-1">
+    <ul className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
       {campaigns.map((c) => {
         const when =
           c.status === 'sent' && c.sentAt

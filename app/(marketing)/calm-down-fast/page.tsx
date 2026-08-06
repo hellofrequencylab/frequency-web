@@ -117,7 +117,7 @@ export default function CalmDownFastPage() {
       </PhotoHero>
 
       {/* Answer-first opening: the direct answer in the first two sentences. */}
-      <Section tone="canvas" pad="pt-16 pb-16 sm:pt-20 sm:pb-20">
+      <Section tone="canvas">
         <Lead>
           To calm down fast, slow your exhale until it is longer than your breath
           in. That is the fastest lever you have, and it works in about a minute.

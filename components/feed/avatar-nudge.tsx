@@ -29,8 +29,8 @@ export function AvatarNudge() {
   if (persistedDismissed || closed) return null
 
   return (
-    <div className="mb-4 flex items-center gap-3 rounded-2xl border border-primary-bg bg-primary-bg/40 px-4 py-3">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+    <div className="mb-4 flex items-center gap-3 rounded-card border border-primary-bg bg-primary-bg/40 px-4 py-3">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
         <Camera className="h-4.5 w-4.5" />
       </span>
       <div className="min-w-0 flex-1">
@@ -39,7 +39,7 @@ export function AvatarNudge() {
       </div>
       <Link
         href="/settings/profile"
-        className="shrink-0 rounded-lg bg-primary px-3.5 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        className="shrink-0 rounded-control bg-primary px-3.5 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
       >
         Add photo
       </Link>

@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { saveSeriesDisplay } from './series-actions'
+import { Input } from '@/components/ui/field'
 import {
   MIN_CARDS_PER_SERIES,
   MAX_CARDS_PER_SERIES,
@@ -51,7 +52,7 @@ function NumberField({
     <label className="block">
       <span className="block text-body-sm font-semibold text-text">{label}</span>
       <span className="mt-0.5 block text-meta text-muted">{hint}</span>
-      <input
+      <Input
         type="number"
         value={value}
         min={min}
@@ -59,7 +60,7 @@ function NumberField({
         step={1}
         disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="mt-2 w-24 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm tabular-nums text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-50"
+        className="mt-2 w-24 px-2.5 py-1.5 tabular-nums"
       />
     </label>
   )

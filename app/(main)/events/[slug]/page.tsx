@@ -1180,7 +1180,7 @@ export default async function EventDetailPage({
   // The Join column's primary action — reused in the aside AND the mobile sheet.
   const joinActions = (
     <div className="space-y-4">
-      <div className="space-y-4 rounded-2xl border border-border bg-surface p-4">
+      <div className="space-y-4 rounded-card border border-border bg-surface p-4">
         <div className="flex items-center gap-2">
           <Ticket className="h-4 w-4 text-primary" />
           <span className="text-body-sm font-bold text-text">RSVP</span>
@@ -1434,7 +1434,7 @@ export default async function EventDetailPage({
           <form action={toggleRSVP.bind(null, event.id)}>
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-muted transition-colors hover:border-danger hover:text-danger"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-muted transition-colors hover:border-danger hover:text-danger"
             >
               <Clock className="w-4 h-4" />
               On waitlist · tap to leave
@@ -1699,14 +1699,16 @@ export default async function EventDetailPage({
       titleScale="display"
       title={
         canManage ? (
-          /* 🔴 The size chain here MIRRORS DetailTemplate's `titleScale="display"` h1 verbatim,
-             so the input matches the title it replaces. Change one and you must change both.
-             Left on literals with that h1 (ADR-947): it is a responsive ramp, and none of the
-             fixed roles reproduces one — see the note at components/templates/detail-template.tsx. */
+          /* 🔴 The size here MIRRORS DetailTemplate's `titleScale="display"` h1, so the input
+             matches the title it replaces. Change one and you must change both — an input gets
+             the browser's own form-control font, so it cannot simply inherit the h1 it sits in.
+             Converted with that h1 to the single fluid role (ADR-947's "fourth decision"): the mirror is now
+             one token rather than a three-step ramp across two breakpoints, which is a smaller
+             coupling but the same one. See the note at components/templates/detail-template.tsx. */
           <InlineText
             value={event.title}
             save={updateEventField.bind(null, event.id, slug, 'title')}
-            inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-page-title sm:text-3xl lg:text-4xl font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
+            inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-page-title-lg font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
           />
         ) : (
           event.title

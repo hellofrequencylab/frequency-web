@@ -24,7 +24,9 @@
 // THE PAIR TABLE lives in this file, below, with a minimum per ROLE:
 //   body  4.5  — text at normal weight/size (WCAG 1.4.3 AA)
 //   large 3.0  — type only used at ≥18.66px bold / ≥24px, plus decorative accents (1.4.3 large)
-//   edge  3.0  — non-text boundaries that identify a control or state (WCAG 1.4.11)
+//   edge  3.0  — non-text boundaries, GLYPHS and indicators that identify a control or state
+//                (WCAG 1.4.11). This is how the table expresses an icon-only minimum: a chip
+//                carrying an icon rather than a label is `edge`, not `body`.
 // A pair may carry a `waiver`: a pair that fails its role minimum TODAY and cannot be fixed
 // without a palette decision by the owner. A waiver freezes the CURRENT ratio as a floor, so the
 // pair is still regression-proof (it may improve, never worsen) and stays visible in every run's
@@ -61,9 +63,62 @@ export const STATES = [
 // ═══════════════════════════════════════════════════════════════════════════════════════════
 // The pair table — the contract. fg = foreground token, bg = background token.
 // `only` restricts a pair to the states where the surface actually exists.
+// A side may also be a LITERAL colour (`#FFFFFF`) rather than a token name. That is for the
+// one case a token cannot express: a pairing the palette does NOT offer a token for, which we
+// still want measured so nobody reaches for it. See the rank family below.
 // ═══════════════════════════════════════════════════════════════════════════════════════════
 
 export const ROLE_MINIMUM = { body: 4.5, large: 3.0, edge: 3.0 }
+
+// ── The rank spectrum ────────────────────────────────────────────────────────────────────
+// Ten primitives × three steps: `--rank-X` (CORE — a dot, a pip, a crest fill), `--rank-X-deep`
+// (text on light), `--rank-X-bright` (text on dark). The steps are mode-invariant: they are
+// declared once in `:root` and no skin or `.dark` block overrides them, so every rank row below
+// measures the same in all five states — but the INKS it is paired with are not mode-invariant,
+// which is why the family is still evaluated per state rather than once.
+//
+// Until 2026-08-05 not one rank token appeared in this table, and the gate reported green over
+// a live chip painting a glyph at 2.90:1. The hole was structural: the table only ever modelled
+// NAMED pairs, and no token is named "the ink that goes on a rank ground" — so the whole
+// spectrum sat outside the contract. These three sub-families close it.
+export const RANK_KEYS = ['stone', 'clay', 'gold', 'olive', 'jade', 'teal', 'slate', 'indigo', 'plum', 'rose']
+
+/**
+ * The rank sub-families, three per primitive.
+ *
+ *  A. text-on-primary (the dark ink) on the CORE — role `edge`.
+ *     ROLE CALL, stated rather than assumed: every live site that paints on a rank core paints an
+ *     `aria-hidden` GLYPH (the Trophy crest in standing-hero / season-map / hero-moment, the
+ *     Expression check pip in journey-progress-card), not a label. A glyph that identifies state
+ *     is governed by WCAG 1.4.11, whose minimum is 3:1 — and this script CAN express that: it is
+ *     the `edge` role, already used for the focus ring and control outlines. So icons are held to
+ *     3:1 here, deliberately, and are neither silently held to the 4.5 text bar nor exempted.
+ *     Measured 2026-08-05: 4.31 (slate) to 7.54 (gold) — every rank clears 3:1 with room.
+ *     NOTE the ceiling this role encodes: slate (4.31) and plum (4.46) do NOT clear 4.5, so a
+ *     rank CORE may carry a glyph and must never carry a LABEL. Labels go on the deep step (B).
+ *
+ *  B. on-ink (the light ink) on the DEEP step — role `body`.
+ *     `lib/season-ranks.ts` carries `solid` (= `-deep`) beside `color` (= core) precisely so a
+ *     fill that has to CARRY TEXT has somewhere to go, and `components/walkthroughs/slide.tsx`
+ *     already pairs `bg-rank-*-deep` with `text-on-ink`. That pairing was unmeasured. It is the
+ *     spectrum's only text-bearing ground, so it takes the full 4.5.
+ *     Measured: 4.92 (gold-deep, dark mode) to 8.19 — every rank clears AA.
+ *
+ *  C. literal white on the CORE — role `edge`.
+ *     The naive reach, and the measured hole the family exists for. No token in the palette is
+ *     pure white on a rank ground, so there is no token name to put here; the literal is the
+ *     honest way to state "if you paint white on a core, this is what you get". Held at the same
+ *     3:1 glyph bar as (A), because a white LABEL on a core is off the table at any rank.
+ *     Measured: 2.46 (gold) to 4.30 (slate). Nine of ten clear 3:1. GOLD DOES NOT — it is the
+ *     brand light and deliberately the lightest core in the spectrum, so it cannot carry a light
+ *     glyph at all. That single pair is waived at its measured floor (see WAIVERS), which keeps
+ *     it printed in every run and stops gold drifting lighter still.
+ */
+const RANK_PAIRS = RANK_KEYS.flatMap((r) => [
+  { fg: '--color-text-on-primary', bg: `--rank-${r}`, role: 'edge', note: `dark glyph on the ${r} core (crest/pip — 1.4.11, not a label)` },
+  { fg: '--color-on-ink', bg: `--rank-${r}-deep`, role: 'body', note: `label on the ${r} deep step — the spectrum's text-bearing ground` },
+  { fg: '#FFFFFF', bg: `--rank-${r}`, role: 'edge', note: `white glyph on the ${r} core — the pairing to avoid` },
+])
 
 export const PAIRS = [
   // ── Body copy on every app surface ──────────────────────────────────────────────────────
@@ -139,6 +194,9 @@ export const PAIRS = [
   // table, so nothing caught it.
   { fg: '--color-focus-ring', bg: '--color-surface-elevated', role: 'edge', note: 'focus ring on a field' },
   { fg: '--color-primary', bg: '--color-surface', role: 'edge', note: 'primary fill/graphic on a card' },
+
+  // ── The rank spectrum: ten primitives × three grounds. See RANK_PAIRS above for the roles ──
+  ...RANK_PAIRS,
 ]
 
 // ═══════════════════════════════════════════════════════════════════════════════════════════
@@ -205,6 +263,21 @@ export const WAIVERS = [
     bg: '--color-surface',
     floors: { 'Light-lock on a dark device': 2.52, 'DAWN light': 2.52, 'Midnight light': 2.86 },
     why: 'The amber brand fill on white is 2.52:1. Fine for a decorative fill; listed because the same token is the fill under button labels (see the first waiver).',
+  },
+  {
+    fg: '#FFFFFF',
+    bg: '--rank-gold',
+    floors: {
+      'DAWN light': 2.46, 'DAWN dark': 2.46, 'Midnight light': 2.46, 'Midnight dark': 2.46,
+      'Light-lock on a dark device': 2.46,
+    },
+    why:
+      'White on the GOLD core is 2.46:1 — under even the 3:1 non-text bar, and the only rank of the ' +
+      'ten that misses it. Not shipped debt: NOTHING paints it today, and the fix is not a palette ' +
+      'edit — gold is the brand light and is meant to be the lightest core in the spectrum, so it ' +
+      'cannot carry a light glyph by construction. The pair is kept at a frozen floor so (a) the ' +
+      'fact stays printed in every run instead of being deleted, and (b) gold cannot drift lighter. ' +
+      'Anything gold-cored that needs a glyph uses --color-text-on-primary (7.54:1) or the deep step.',
   },
   {
     fg: '--color-border-strong',
@@ -303,6 +376,17 @@ export function resolveTokens(src, state) {
   return new Map([...winners].map(([k, v]) => [k, v.value]))
 }
 
+/**
+ * Resolve one side of a pair. A `--token` goes through the cascade; anything else is already a
+ * literal colour and is returned as-is. Literals exist for exactly one reason: a pairing the
+ * palette offers NO token for but that the contract still has to state (white on a rank core).
+ * They are not an escape hatch for skipping the token layer — a literal that names a colour the
+ * palette DOES have is a bug, because it would stop tracking the palette.
+ */
+export function resolveSide(tokens, side) {
+  return side.startsWith('--') ? deref(tokens, side) : side
+}
+
 /** Follow `var(--x, fallback)` chains to a literal color. */
 export function deref(tokens, name, seen = new Set()) {
   if (seen.has(name)) return null
@@ -393,7 +477,9 @@ export function contrastRatio(fg, bg) {
 // The check
 // ═══════════════════════════════════════════════════════════════════════════════════════════
 
-const short = (t) => t.replace(/^--color-/, '')
+// Pair labels. `--color-` is the app's role prefix and drops; a bare `--` prefix (the rank
+// primitives) drops too; a literal colour prints as itself.
+const short = (t) => t.replace(/^--color-/, '').replace(/^--/, '')
 
 function waiverFor(pair, stateKey) {
   const w = WAIVERS.find((x) => x.fg === pair.fg && x.bg === pair.bg && stateKey in x.floors)
@@ -407,8 +493,8 @@ export function evaluateContrast(src, { pairs = PAIRS, states = STATES } = {}) {
     const tokens = resolveTokens(src, state)
     for (const pair of pairs) {
       if (pair.only && !pair.only.includes(state.key)) continue
-      const fgValue = deref(tokens, pair.fg)
-      const bgValue = deref(tokens, pair.bg)
+      const fgValue = resolveSide(tokens, pair.fg)
+      const bgValue = resolveSide(tokens, pair.bg)
       // `alpha` models the opacity the token is PAINTED AT, which is not always the opacity it
       // is DEFINED at. The focus ring was the case that proved this matters: globals.css drew it
       // through `color-mix(… 45%, transparent)`, so the gate measured a passing 3.87:1 on the

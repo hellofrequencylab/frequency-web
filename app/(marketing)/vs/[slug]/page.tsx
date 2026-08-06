@@ -121,7 +121,7 @@ export default async function ComparisonPage({
       </PhotoHero>
 
       {/* Answer-first opening: the honest difference, in the first lines. */}
-      <Section tone="canvas" pad="pt-16 pb-16 sm:pt-20 sm:pb-20">
+      <Section tone="canvas">
         <Lead>{copy.lede}</Lead>
         <Body>{comparison.forReader}</Body>
       </Section>
@@ -136,7 +136,7 @@ export default async function ComparisonPage({
         <h2 className="mb-6 font-display text-display-h3 uppercase text-text">
           {comparison.name} vs Frequency, side by side
         </h2>
-        <div className="overflow-hidden rounded-2xl border border-border">
+        <div className="overflow-hidden rounded-card border border-border">
           {/* Header row */}
           <div className="grid grid-cols-3 border-b border-border bg-surface-elevated text-body-sm font-semibold text-text">
             <div className="px-4 py-3" />

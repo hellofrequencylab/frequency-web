@@ -79,6 +79,10 @@ const DECLARED = [
   // four abreast in a header).
   'text-display-poster',
   'text-stat', 'text-stat-md', 'text-stat-sm',
+  // The fluid page title (ADR-947's "fourth decision") — the role that retires a responsive RAMP
+  // rather than a literal. Asserted here for the reason this list exists: it is a `clamp()` under
+  // a name Tailwind has no default for, so an unbridged declaration emits nothing and reads fine.
+  'text-page-title-lg',
   'text-page-title', 'text-lead', 'text-card-title',
   'text-body-lg', 'text-body', 'text-body-sm', 'text-meta', 'text-eyebrow',
 ]

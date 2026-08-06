@@ -251,7 +251,7 @@ export default function HowToBuildCommunityPage() {
       />
 
       {/* Answer-first opening. Fully resolves "how to build community" up front. */}
-      <Section tone="canvas" pad="pt-4 pb-16 sm:pt-6 sm:pb-20">
+      <Section tone="canvas" role="cont">
         <Lead>
           To build community: pick one thing, set a standing time and place, keep it
           small, and meet again. That is the whole recipe, and it works whether you

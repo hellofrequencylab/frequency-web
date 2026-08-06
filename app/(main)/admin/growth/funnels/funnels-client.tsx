@@ -12,7 +12,8 @@ import { Plus, ChevronRight, Sparkles } from 'lucide-react'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
-import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
+import { Input, Textarea, Label } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { PERSONA_ORDER } from '@/lib/onboarding/personas'
 import { createFunnel, createFunnelFromTemplate } from './actions'
@@ -205,11 +206,10 @@ function CreateForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <Label htmlFor="funnel-persona">Persona</Label>
-          <select
+          <Select
             id="funnel-persona"
             value={persona}
             onChange={(e) => setPersona(e.target.value)}
-            className={fieldClasses}
           >
             <option value="">Any persona</option>
             {PERSONA_ORDER.map((p) => (
@@ -217,7 +217,7 @@ function CreateForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => 
                 {p}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <div>
           <Label htmlFor="funnel-goal">Goal event</Label>

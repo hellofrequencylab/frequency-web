@@ -48,7 +48,7 @@ function Tool({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className={`inline-flex items-center rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
+      className={`inline-flex items-center rounded-control p-1.5 transition-colors disabled:opacity-40 ${
         active ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
       }`}
     >
@@ -453,8 +453,8 @@ export function Composer({
       data-tour-anchor="composer"
       className={`relative bg-surface transition-shadow dark:bg-surface-elevated/80 ${
         expanded
-          ? 'rounded-3xl border border-border p-5 lift-3'
-          : 'rounded-2xl border border-border/70 p-4 lift-1 dark:border-border/60'
+          ? 'rounded-card border border-border p-5 lift-3'
+          : 'rounded-card border border-border/70 p-4 lift-1 dark:border-border/60'
       }`}
     >
       {expanded && (
@@ -570,7 +570,7 @@ export function Composer({
           aria-label="Add a photo"
         >
           <div
-            className="w-full max-w-sm space-y-1 rounded-t-2xl border border-border bg-surface p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lift-3 sm:rounded-2xl sm:pb-2"
+            className="w-full max-w-sm space-y-1 rounded-t-card border border-border bg-surface p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lift-3 sm:rounded-card sm:pb-2"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -647,7 +647,7 @@ export function Composer({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => setToolsOpen(true)}
             aria-expanded={false}
-            className="inline-flex items-center gap-1 rounded-md px-1 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
+            className="inline-flex items-center gap-1 rounded-control px-1 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
           >
             <ChevronUp className="h-3 w-3" /> Format
           </button>
@@ -707,7 +707,7 @@ export function Composer({
           <button
             onClick={submit}
             disabled={!canPost}
-            className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+            className="shrink-0 rounded-control bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
           >
             {isPending
               ? kind === 'note' ? 'Saving…' : 'Posting…'

@@ -68,7 +68,7 @@ export async function TicketsMember({
           return (
             <div
               key={tier.id}
-              className="flex h-full flex-col rounded-2xl border border-border bg-surface p-5 lift-1"
+              className="flex h-full flex-col rounded-card border border-border bg-surface p-5 lift-1"
             >
               <div className="flex items-start justify-between gap-2">
                 <h3 className="text-body font-bold leading-tight text-text">{tier.name}</h3>
@@ -89,7 +89,7 @@ export async function TicketsMember({
                 {tier.kind === 'free' ? (
                   <p className="text-body-sm text-muted">Open entry. No reservation needed.</p>
                 ) : reservedHere && mine ? (
-                  <div className="rounded-xl border border-success/30 bg-success-bg px-4 py-3 text-center">
+                  <div className="rounded-card border border-success/30 bg-success-bg px-4 py-3 text-center">
                     <BadgeCheck className="mx-auto mb-1.5 h-6 w-6 text-success" aria-hidden />
                     <p className="text-body-sm font-semibold text-text">You have a spot.</p>
                     <div className="mt-3 flex justify-center">

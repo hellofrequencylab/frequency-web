@@ -66,9 +66,9 @@ export function PosterLineup({
             <div key={`${item.name}-${i}`} className="flex items-center gap-3 rounded-card border border-border bg-surface p-2.5">
               {url ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={url} alt={item.name} className="h-11 w-11 shrink-0 rounded-lg object-cover" />
+                <img src={url} alt={item.name} className="h-11 w-11 shrink-0 rounded-control object-cover" />
               ) : (
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-surface-elevated text-subtle">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-surface-elevated text-subtle">
                   <UserRound className="h-5 w-5" />
                 </span>
               )}
@@ -133,7 +133,7 @@ export function PosterPricing({ details }: { details: EventDetailsWithMedia }) {
   return (
     <section>
       <SectionHeader title="Pricing" />
-      <div className="rounded-2xl border border-border bg-surface p-4">
+      <div className="rounded-card border border-border bg-surface p-4">
         <ul className="space-y-1.5">
           {tickets.map((t, i) => (
             <li key={`${t.label}-${i}`} className="flex items-baseline justify-between gap-3 text-body-sm">
@@ -166,7 +166,7 @@ export function PosterLinks({ details }: { details: EventDetailsWithMedia }) {
             href={l.href}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated"
+            className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated"
           >
             <ExternalLink className="h-3.5 w-3.5 text-subtle" /> {l.label}
           </a>

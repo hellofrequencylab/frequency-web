@@ -17,6 +17,7 @@ import { FUNNEL_STYLES } from '@/lib/funnels/funnel-styles'
 import { DashboardTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Input } from '@/components/ui/field'
 import { listAllSequences, resolveSequence } from '@/lib/onboarding/resolve-sequence'
 import { createSequenceVersion, createFromTemplateAction } from './builder-actions'
 import { getTrait } from '@/lib/traits/registry'
@@ -129,7 +130,7 @@ export default async function SplashFunnelsPage() {
           <form action={createFromTemplateAction}>
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" /> Create from template
             </button>
@@ -141,7 +142,7 @@ export default async function SplashFunnelsPage() {
               New funnels start from a separate prompts template, so they never disturb this one. ── */}
       <section>
         <SectionHeader title="Funnel 1 — your live onboarding" />
-        <div className="flex max-w-3xl flex-col gap-4 rounded-2xl border border-primary/40 bg-primary-bg/60 p-5 lift-1 sm:flex-row sm:items-center">
+        <div className="flex max-w-3xl flex-col gap-4 rounded-card border border-primary/40 bg-primary-bg/60 p-5 lift-1 sm:flex-row sm:items-center">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-on-primary">
             <Sparkles className="h-5 w-5" aria-hidden />
           </span>
@@ -185,7 +186,7 @@ export default async function SplashFunnelsPage() {
         </p>
         <div className="grid gap-3 sm:grid-cols-3">
           {FUNNEL_STYLES.map((s) => (
-            <div key={s.id} className={`flex flex-col rounded-2xl border bg-surface p-4 lift-1 ${s.accent.ring}`}>
+            <div key={s.id} className={`flex flex-col rounded-card border bg-surface p-4 lift-1 ${s.accent.ring}`}>
               <div className="flex items-center justify-between">
                 <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${s.accent.icon}`}>
                   <s.icon className="h-4 w-4" aria-hidden />
@@ -223,7 +224,7 @@ export default async function SplashFunnelsPage() {
                 <form action={createFromTemplateAction}>
                   <button
                     type="submit"
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                    className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
                   >
                     <Plus className="h-4 w-4" /> Create from template
                   </button>
@@ -236,7 +237,7 @@ export default async function SplashFunnelsPage() {
             {onboardingCards.map(({ slug, status, seq, inductionPath, inductionQr, tagDef }) => (
               <article
                 key={slug}
-                className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1"
+                className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1"
               >
                 {/* Header: audience, status, link, tag */}
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -331,7 +332,7 @@ export default async function SplashFunnelsPage() {
                 {styleCards.map(({ slug, status, source, seq, inductionPath }) => (
                   <article
                     key={slug}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 lift-1"
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface p-4 lift-1"
                   >
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
@@ -375,7 +376,7 @@ export default async function SplashFunnelsPage() {
                 ))}
               </div>
             ) : s.status === 'live' ? (
-              <div className="max-w-3xl rounded-2xl border border-dashed border-border bg-surface/40 p-6 text-center">
+              <div className="max-w-3xl rounded-card border border-dashed border-border bg-surface/40 p-6 text-center">
                 <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-xl ${s.accent.icon}`}>
                   <s.icon className="h-5 w-5" aria-hidden />
                 </span>
@@ -385,7 +386,7 @@ export default async function SplashFunnelsPage() {
                 </p>
               </div>
             ) : (
-              <div className="max-w-3xl rounded-2xl border border-dashed border-border bg-surface/40 p-6 text-center">
+              <div className="max-w-3xl rounded-card border border-dashed border-border bg-surface/40 p-6 text-center">
                 <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-xl ${s.accent.icon}`}>
                   <s.icon className="h-5 w-5" aria-hidden />
                 </span>
@@ -407,20 +408,19 @@ export default async function SplashFunnelsPage() {
           Same fill-in template as the button above, but name the audience up front so the funnel
           and its marketing tag are labelled from the start.
         </p>
-        <div className="max-w-3xl rounded-2xl border border-border bg-surface p-5 lift-1">
+        <div className="max-w-3xl rounded-card border border-border bg-surface p-5 lift-1">
           <form action={createSequenceVersion} className="flex flex-wrap items-end gap-2">
             <label className="min-w-0 flex-1">
               <span className="mb-1 block text-meta font-semibold text-subtle">Audience name</span>
-              <input
+              <Input
                 name="audience"
                 required
                 placeholder="e.g. Local business owners"
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-broadcast"
               />
             </label>
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-body-sm font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border px-4 py-2 text-body-sm font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <Plus className="h-4 w-4" /> Create funnel
             </button>
@@ -433,7 +433,7 @@ export default async function SplashFunnelsPage() {
       {/* ── How it works — the share-and-segment loop in plain terms. ── */}
       <section>
         <SectionHeader title="How it works" />
-        <ol className="max-w-3xl space-y-2 rounded-2xl border border-border bg-surface p-5 text-body-sm text-muted lift-1">
+        <ol className="max-w-3xl space-y-2 rounded-card border border-border bg-surface p-5 text-body-sm text-muted lift-1">
           <li>
             <span className="font-semibold text-text">1. Make a funnel, then share its link.</span>{' '}
             Each funnel gets a link and a QR (PNG or SVG) into its induction (
@@ -497,7 +497,7 @@ function RolePromotionTours() {
       </p>
       <div className="grid gap-3 sm:grid-cols-3">
         {tours.map((t) => (
-          <div key={t.slug} className="flex flex-col rounded-2xl border border-border bg-surface p-4 lift-1">
+          <div key={t.slug} className="flex flex-col rounded-card border border-border bg-surface p-4 lift-1">
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center rounded-pill bg-broadcast-bg px-2 py-0.5 text-2xs font-semibold text-broadcast-strong">
                 {TRIGGER_CHIP[t.trigger]}

@@ -1,6 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useId, useState, useTransition } from 'react'
+import { Field, Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import Link from 'next/link'
 import { Plus, Pencil, Send, EyeOff, Trash2, Check, X, Clock } from 'lucide-react'
 import {
@@ -48,7 +50,6 @@ const TYPE_TONE: Record<DispatchType, StatusTone> = {
 
 type CommunityRole = 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
-const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
 const lbl   = 'block text-meta font-medium text-muted mb-1'
 
 function DispatchForm({
@@ -72,6 +73,8 @@ function DispatchForm({
   onCancel:  () => void
   isPending: boolean
 }) {
+  // Ids for the label associations below, scoped per open form.
+  const formId = useId()
   const defaultScope = initial?.audience_scope ??
     (role === 'mentor' && nexuses.length > 0 ? 'nexus' :
      role === 'guide'  && hubs.length > 0    ? 'hub'   : 'circle')
@@ -107,20 +110,18 @@ function DispatchForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-xl border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg p-5 mb-5 space-y-4">
+    <form onSubmit={handleSubmit} className="rounded-card border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg p-5 mb-5 space-y-4">
       {/* Title */}
-      <div>
-        <label className={lbl}>Title *</label>
-        <input
+      <Field label="Title *">
+        <Input
           type="text"
           value={title}
           onChange={e => setTitle(e.target.value)}
           placeholder="e.g. This Week's Challenges Are Live"
           required
           disabled={isPending}
-          className={input}
         />
-      </div>
+      </Field>
 
       {/* Type */}
       <div>
@@ -146,7 +147,7 @@ function DispatchForm({
       {/* Body */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className={lbl + ' mb-0'}>Body * <span className="text-subtle font-normal">(markdown supported)</span></label>
+          <label className={lbl + ' mb-0'} htmlFor="dispatch-body">Body * <span className="text-subtle font-normal">(markdown supported)</span></label>
           <button
             type="button"
             onClick={() => setPreview(p => !p)}
@@ -160,14 +161,15 @@ function DispatchForm({
             <MarkdownPreview text={body} />
           </div>
         ) : (
-          <textarea
+          <Textarea
+            id="dispatch-body"
             value={body}
             onChange={e => setBody(e.target.value)}
             placeholder={`**Bold text**, *italic*, [links](https://...)\n\n- List item one\n- List item two`}
             rows={8}
             required
             disabled={isPending}
-            className={`${input} resize-y font-mono text-meta leading-relaxed`}
+            className="resize-y font-mono text-meta leading-relaxed"
           />
         )}
       </div>
@@ -179,8 +181,9 @@ function DispatchForm({
           <div className="space-y-2">
             {pollOptions.map((opt, i) => (
               <div key={i} className="flex items-center gap-2">
-                <input
+                <Input
                   type="text"
+                  aria-label={`Poll option ${i + 1}`}
                   value={opt}
                   onChange={e => {
                     const next = [...pollOptions]
@@ -189,7 +192,6 @@ function DispatchForm({
                   }}
                   placeholder={`Option ${i + 1}`}
                   disabled={isPending}
-                  className={input}
                 />
                 {pollOptions.length > 2 && (
                   <button
@@ -218,67 +220,63 @@ function DispatchForm({
       {/* Scope + Audience */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={lbl}>Send to</label>
-          <select
+          <label className={lbl} htmlFor={`${formId}-scope`}>Send to</label>
+          <Select
+            id={`${formId}-scope`}
             value={scope}
             onChange={e => { setScope(e.target.value as 'circle' | 'hub' | 'nexus'); setAudId('') }}
             disabled={isPending}
-            className={input}
           >
             {circles.length > 0  && <option value="circle">Circle</option>}
             {hubs.length > 0     && <option value="hub">Hub</option>}
             {nexuses.length > 0  && <option value="nexus">Nexus</option>}
-          </select>
+          </Select>
         </div>
         <div>
-          <label className={lbl}>Which {scope}</label>
-          <select
+          <label className={lbl} htmlFor={`${formId}-audience`}>Which {scope}</label>
+          <Select
+            id={`${formId}-audience`}
             value={audId}
             onChange={e => setAudId(e.target.value)}
             required
             disabled={isPending}
-            className={input}
+            emptyLabel="- Select -"
           >
-            <option value="">- Select -</option>
             {audienceOptions.map(a => (
               <option key={a.id} value={a.id}>{a.name}</option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 
       {/* Linked task */}
       {tasks.length > 0 && (
         <div>
-          <label className={lbl}>Link a Challenge <span className="text-subtle font-normal">(optional)</span></label>
-          <select
+          <label className={lbl} htmlFor={`${formId}-task`}>Link a Challenge <span className="text-subtle font-normal">(optional)</span></label>
+          <Select
+            id={`${formId}-task`}
             value={taskId}
             onChange={e => setTaskId(e.target.value)}
             disabled={isPending}
-            className={input}
+            emptyLabel="- None -"
           >
-            <option value="">- None -</option>
             {tasks.map(t => (
               <option key={t.id} value={t.id}>{t.name}</option>
             ))}
-          </select>
+          </Select>
         </div>
       )}
 
       {/* Schedule (optional) */}
-      <div>
-        <label className={lbl}>
-          <Clock className="w-3 h-3 inline mr-1" />
-          Schedule publish <span className="text-subtle font-normal">(optional. Leave blank to save as draft)</span>
-        </label>
-        <input
+      <Field label={<><Clock className="w-3 h-3 inline mr-1" />
+          Schedule publish <span className="text-subtle font-normal">(optional. Leave blank to save as draft)</span></>}>
+        <Input
           type="datetime-local"
           value={scheduledFor}
           onChange={e => setScheduledFor(e.target.value)}
           disabled={isPending}
-          className={input}
         />
-      </div>
+      </Field>
 
       <div className="flex items-center gap-2 pt-1">
         <Button

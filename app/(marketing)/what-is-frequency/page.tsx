@@ -204,7 +204,7 @@ export default function WhatIsFrequencyPage() {
       </PhotoHero>
 
       {/* Answer-first: the direct answer in the first two sentences. */}
-      <Section tone="canvas" pad="pt-14 pb-16 sm:pt-16 sm:pb-20">
+      <Section tone="canvas">
         <Lead>
           Frequency is a Community Collective built to rebuild the third place:
           the spaces that are not home and not work where you are known by name.
@@ -406,7 +406,7 @@ export default function WhatIsFrequencyPage() {
           {TIERS.map((t) => (
             <li
               key={t.name}
-              className="rounded-2xl border border-border bg-surface p-5 sm:flex sm:items-baseline sm:gap-5"
+              className="rounded-card border border-border bg-surface p-5 sm:flex sm:items-baseline sm:gap-5"
             >
               <div className="flex items-baseline gap-3 sm:w-64 sm:shrink-0">
                 <span className="font-display uppercase text-text text-lead leading-none">

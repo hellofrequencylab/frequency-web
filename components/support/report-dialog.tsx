@@ -14,6 +14,7 @@ import { TYPE_LABELS, type SupportContext, type TicketType } from '@/lib/support
 import type { HelpCitation } from '@/lib/ai/help-rag'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
+import { Textarea } from '@/components/ui/field'
 
 const TYPE_META: { key: TicketType; icon: typeof Bug }[] = [
   { key: 'bug', icon: Bug },
@@ -216,12 +217,12 @@ export function ReportDialog({
 
             <label className="mt-3 block">
               <span className="mb-1 block text-meta font-medium text-subtle">What happened?</span>
-              <textarea
+              <Textarea
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 rows={4}
                 placeholder="What you were doing, what you expected, and what happened instead."
-                className="w-full resize-none rounded-control border border-border bg-surface px-3 py-2 text-body-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+                className="resize-none leading-relaxed"
               />
             </label>
 

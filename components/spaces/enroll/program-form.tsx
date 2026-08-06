@@ -4,12 +4,11 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, Label, Textarea, fieldClasses } from '@/components/ui/field'
+import { Input, Label, Textarea } from '@/components/ui/field'
 import { Checkbox } from '@/components/ui/checkbox'
 import { isError } from '@/lib/action-result'
 import { setSpaceProgram } from '@/lib/spaces/enroll-actions'
 import type { SpaceProgram } from '@/lib/spaces/enroll'
-import { cn } from '@/lib/utils'
 
 // OWNER PROGRAM EDITOR (client). The Coaching owner defines ONE program (name, description, schedule
 // text, start/end dates, capacity, published), saved through the canEditProfile-gated setSpaceProgram
@@ -129,7 +128,7 @@ export function ProgramForm({
         if (!pending) save()
       }}
     >
-      <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
+      <div className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1">
         <div>
           <Label htmlFor="program-name" className="font-semibold">
             Name
@@ -177,30 +176,30 @@ export function ProgramForm({
         <div className="flex flex-wrap gap-4">
           <label className="flex flex-col gap-1">
             <span className="text-meta font-medium text-muted">Start date (optional)</span>
-            <input
+            <Input
               type="date"
               value={draft.startsOn}
               onChange={(e) => update({ startsOn: e.target.value })}
-              className={cn(fieldClasses, 'w-48')}
+              className="w-48"
             />
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-meta font-medium text-muted">End date (optional)</span>
-            <input
+            <Input
               type="date"
               value={draft.endsOn}
               onChange={(e) => update({ endsOn: e.target.value })}
-              className={cn(fieldClasses, 'w-48')}
+              className="w-48"
             />
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-meta font-medium text-muted">Capacity (optional)</span>
-            <input
+            <Input
               inputMode="numeric"
               value={draft.capacity}
               onChange={(e) => update({ capacity: e.target.value })}
               placeholder="No limit"
-              className={cn(fieldClasses, 'w-40')}
+              className="w-40"
             />
           </label>
         </div>
@@ -219,7 +218,7 @@ export function ProgramForm({
       </p>
 
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}

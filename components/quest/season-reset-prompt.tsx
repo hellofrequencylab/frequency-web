@@ -14,7 +14,7 @@ export function SeasonResetPrompt({ days, seasonName }: { days: number; seasonNa
   const when = days <= 1 ? 'today' : `in ${days} days`
   const season = seasonName ? `${seasonName} ` : 'The season '
   return (
-    <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary-bg bg-primary-bg/40 px-4 py-3">
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-card border border-primary-bg bg-primary-bg/40 px-4 py-3">
       <p className="flex items-center gap-2 text-body-sm text-text">
         <Clock className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
         <span>
@@ -24,7 +24,7 @@ export function SeasonResetPrompt({ days, seasonName }: { days: number; seasonNa
       </p>
       <Link
         href="/upgrade"
-        className="shrink-0 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        className="shrink-0 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
       >
         Upgrade
       </Link>

@@ -83,11 +83,11 @@ export function StreakHero({
   return (
     <section
       aria-labelledby="streak-hero-title"
-      className="overflow-hidden rounded-3xl border border-primary-bg bg-gradient-to-br from-primary-bg/40 via-surface to-surface p-5 lift-1 sm:p-6 dark:from-primary-bg/15"
+      className="overflow-hidden rounded-card border border-primary-bg bg-gradient-to-br from-primary-bg/40 via-surface to-surface p-5 lift-1 sm:p-6 dark:from-primary-bg/15"
     >
       <div className="flex items-start gap-4">
         <span
-          className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ${flameBg}`}
+          className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-control ${flameBg}`}
           aria-hidden
         >
           {resting ? <Pause className={`h-8 w-8 ${flameTone}`} /> : <Flame className={`h-8 w-8 ${flameTone}`} />}
@@ -147,7 +147,7 @@ export function StreakHero({
       {milestoneJustHit && (
         <div
           role="status"
-          className="mt-4 flex items-center gap-2.5 rounded-2xl bg-success-bg/70 px-4 py-3 motion-safe:animate-[slideUp_0.4s_ease-out]"
+          className="mt-4 flex items-center gap-2.5 rounded-card bg-success-bg/70 px-4 py-3 motion-safe:animate-[slideUp_0.4s_ease-out]"
         >
           <PartyPopper className="h-5 w-5 shrink-0 text-success" aria-hidden />
           <p className="text-body-sm font-semibold text-success">
@@ -205,7 +205,7 @@ export function StreakHero({
             type="button"
             onClick={() => run(() => resumeStreak())}
             disabled={pending}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60 motion-reduce:transition-none"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60 motion-reduce:transition-none"
           >
             <Play className="h-4 w-4" aria-hidden />
             End rest
@@ -215,7 +215,7 @@ export function StreakHero({
             type="button"
             onClick={() => run(() => pauseStreak(REST_DAYS))}
             disabled={pending}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border-strong bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60 motion-reduce:transition-none"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-border-strong bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60 motion-reduce:transition-none"
           >
             <Pause className="h-4 w-4" aria-hidden />
             Rest a week

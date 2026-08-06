@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { isError } from '@/lib/action-result'
 import type { StageKind } from '@/lib/crm/pipeline'
+import { Input } from '@/components/ui/field'
 import {
   createStage,
   renameStage,
@@ -184,7 +185,7 @@ export function StageEditor({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="rounded-card border border-border bg-surface p-4 lift-1">
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <p className="text-body-sm font-bold text-text">Edit stages</p>
@@ -201,7 +202,7 @@ export function StageEditor({
       </p>
 
       {error && (
-        <p className="mb-3 rounded-lg border border-danger bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger">
+        <p className="mb-3 rounded-card border border-danger bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger">
           {error}
         </p>
       )}
@@ -234,7 +235,7 @@ export function StageEditor({
                   onClick={() => move(index, 'up')}
                   disabled={pending || index === 0}
                   aria-label={`Move ${stage.name} up`}
-                  className="rounded-md p-1 text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:cursor-not-allowed disabled:opacity-30"
+                  className="rounded-control p-1 text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:cursor-not-allowed disabled:opacity-30"
                 >
                   <ChevronUp className="h-4 w-4" aria-hidden />
                 </button>
@@ -243,13 +244,13 @@ export function StageEditor({
                   onClick={() => move(index, 'down')}
                   disabled={pending || index === stages.length - 1}
                   aria-label={`Move ${stage.name} down`}
-                  className="rounded-md p-1 text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:cursor-not-allowed disabled:opacity-30"
+                  className="rounded-control p-1 text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:cursor-not-allowed disabled:opacity-30"
                 >
                   <ChevronDown className="h-4 w-4" aria-hidden />
                 </button>
               </div>
 
-              <input
+              <Input
                 type="text"
                 defaultValue={stage.name}
                 aria-label={`Stage name for ${stage.name}`}
@@ -261,7 +262,7 @@ export function StageEditor({
                     ;(e.target as HTMLInputElement).blur()
                   }
                 }}
-                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
+                className="min-w-0 flex-1 px-2.5 py-1.5"
               />
 
               <label className="sr-only" htmlFor={`kind-${stage.id}`}>
@@ -282,7 +283,7 @@ export function StageEditor({
                 disabled={pending || locked}
                 aria-label={`Remove ${stage.name}`}
                 title={locked ? 'Keep at least one Won and one Lost stage.' : undefined}
-                className="rounded-md p-1.5 text-muted transition-colors hover:bg-danger-bg hover:text-danger disabled:cursor-not-allowed disabled:opacity-30"
+                className="rounded-control p-1.5 text-muted transition-colors hover:bg-danger-bg hover:text-danger disabled:cursor-not-allowed disabled:opacity-30"
               >
                 <Trash2 className="h-4 w-4" aria-hidden />
               </button>
@@ -306,7 +307,7 @@ export function StageEditor({
               addStage()
             }
           }}
-          className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
+          className="min-w-0 flex-1 rounded-control border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
         />
         <label className="sr-only" htmlFor="new-stage-kind">
           New stage type

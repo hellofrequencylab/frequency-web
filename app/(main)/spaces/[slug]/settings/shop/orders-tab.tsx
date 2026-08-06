@@ -50,7 +50,7 @@ export async function OrdersTab({ spaceId }: { spaceId: string }) {
         <StatCard bordered size="sm" label="Refunded" value={usd(earnings.refundedCents)} icon={RotateCcw} />
       </div>
 
-      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+      <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
         {orders.map((o) => (
           <li key={o.id} className="flex items-center justify-between gap-3 p-4">
             <div className="min-w-0">

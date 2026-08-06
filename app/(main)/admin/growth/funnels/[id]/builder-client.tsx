@@ -9,7 +9,8 @@ import { useRouter } from 'next/navigation'
 import { Trash2, Link2, Plus } from 'lucide-react'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { Button } from '@/components/ui/button'
-import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
+import { Input, Textarea, Label } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { EmptyState } from '@/components/ui/empty-state'
 import { isError } from '@/lib/action-result'
 import { PERSONA_ORDER } from '@/lib/onboarding/personas'
@@ -92,11 +93,11 @@ function IdentityCard({ funnel }: { funnel: FunnelView }) {
           </div>
           <div>
             <Label htmlFor="b-status">Status</Label>
-            <select id="b-status" value={status} onChange={(e) => setStatus(e.target.value)} className={fieldClasses}>
+            <Select id="b-status" value={status} onChange={(e) => setStatus(e.target.value)}>
               {STATUSES.map((s) => (
                 <option key={s.value} value={s.value}>{s.label}</option>
               ))}
-            </select>
+            </Select>
           </div>
         </div>
         <div>
@@ -106,12 +107,12 @@ function IdentityCard({ funnel }: { funnel: FunnelView }) {
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <Label htmlFor="b-persona">Persona</Label>
-            <select id="b-persona" value={persona} onChange={(e) => setPersona(e.target.value)} className={fieldClasses}>
+            <Select id="b-persona" value={persona} onChange={(e) => setPersona(e.target.value)}>
               <option value="">Any persona</option>
               {PERSONA_ORDER.map((p) => (
                 <option key={p} value={p} className="capitalize">{p}</option>
               ))}
-            </select>
+            </Select>
           </div>
           <div>
             <Label htmlFor="b-goal">Goal event</Label>
@@ -231,16 +232,15 @@ function AddLinkForm({ stageId, onDone }: { stageId: string; onDone: () => void 
       <div className="grid gap-2 sm:grid-cols-2">
         <div>
           <Label htmlFor={`rt-${stageId}`}>Component</Label>
-          <select
+          <Select
             id={`rt-${stageId}`}
             value={refType}
             onChange={(e) => setRefType(e.target.value as StageRefType)}
-            className={fieldClasses}
           >
             {REF_TYPES.map((rt) => (
               <option key={rt} value={rt}>{REF_TYPE_META[rt].label}</option>
             ))}
-          </select>
+          </Select>
         </div>
         <div>
           <Label htmlFor={`tg-${stageId}`}>{useId ? 'Component id' : 'Slug or link'}</Label>

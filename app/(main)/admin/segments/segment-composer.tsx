@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, AlertCircle, Plus, Trash2, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
+import { Input, Textarea, Label } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { createSegment, updateSegment, previewSegment, type SegmentActionResult } from './actions'
 import { allowedOpsForType, opLabel, clampOp } from './field-ops'
@@ -283,18 +284,18 @@ function PredicateRow({
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-canvas/40 p-2">
       {/* Type: tag membership or a computed trait value */}
-      <select
+      <Select
         aria-label="Rule type"
         value={row.type}
         onChange={(e) => onChange({ type: e.target.value as 'tag' | 'trait', key: '' })}
-        className={cn(fieldClasses, 'w-auto')}
+        wrapperClassName="inline-block w-max max-w-full"
       >
         <option value="tag">Has tag</option>
         <option value="trait">Trait</option>
-      </select>
+      </Select>
 
       {/* Key picker from the registry */}
-      <select
+      <Select
         aria-label="Field"
         value={row.key}
         onChange={(e) => {
@@ -307,7 +308,7 @@ function PredicateRow({
           const op = clampOp(row.op, picked?.type)
           onChange(picked?.type === 'boolean' ? { key, op, value: 'true' } : { key, op })
         }}
-        className={cn(fieldClasses, 'min-w-40 flex-1')}
+        wrapperClassName="min-w-40 flex-1"
       >
         <option value="">Choose one…</option>
         {keyOptions.map((o) => (
@@ -315,23 +316,23 @@ function PredicateRow({
             {o.label}
           </option>
         ))}
-      </select>
+      </Select>
 
       {/* Operator + value, traits only */}
       {row.type === 'trait' && row.key && (
         <>
-          <select
+          <Select
             aria-label="Comparison"
             value={row.op}
             onChange={(e) => onChange({ op: e.target.value as TraitOp })}
-            className={cn(fieldClasses, 'w-auto')}
+            wrapperClassName="inline-block w-max max-w-full"
           >
             {allowedOpsForType(trait?.type).map((op) => (
               <option key={op} value={op}>
                 {opLabel(op, trait?.type)}
               </option>
             ))}
-          </select>
+          </Select>
           <ValueControl trait={trait} value={row.value} onChange={(value) => onChange({ value })} />
         </>
       )}
@@ -360,22 +361,22 @@ function ValueControl({
 }) {
   if (trait?.type === 'boolean') {
     return (
-      <select aria-label="Value" value={value || 'true'} onChange={(e) => onChange(e.target.value)} className={cn(fieldClasses, 'w-auto')}>
+      <Select aria-label="Value" value={value || 'true'} onChange={(e) => onChange(e.target.value)} wrapperClassName="inline-block w-max max-w-full">
         <option value="true">true</option>
         <option value="false">false</option>
-      </select>
+      </Select>
     )
   }
   if (trait?.type === 'enum' && trait.values?.length) {
     return (
-      <select aria-label="Value" value={value} onChange={(e) => onChange(e.target.value)} className={cn(fieldClasses, 'w-auto')}>
+      <Select aria-label="Value" value={value} onChange={(e) => onChange(e.target.value)} wrapperClassName="inline-block w-max max-w-full">
         <option value="">Choose…</option>
         {trait.values.map((v) => (
           <option key={v} value={v}>
             {v}
           </option>
         ))}
-      </select>
+      </Select>
     )
   }
   // A date picker for timestamp traits. Its value is an ISO date ("2026-01-01"), which

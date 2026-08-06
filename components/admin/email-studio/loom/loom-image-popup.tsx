@@ -10,6 +10,7 @@ import {
   type LoomImagePick,
 } from '@/lib/email-studio/loom-actions'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
+import { Input, Textarea } from '@/components/ui/field'
 
 // THE LOOM PHOTO POPUP (Email Studio canvas, Slice B). Clicking an image slot on the WYSIWYG email canvas
 // opens this dialog to manage the slot's photo through Loom (the media library): PICK an existing image from
@@ -210,12 +211,12 @@ export function LoomImagePopup({
               <div className="flex items-center gap-2">
                 <div className="relative min-w-0 flex-1">
                   <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
-                  <input
+                  <Input
                     type="search"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search your photos"
-                    className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+                    className="pl-9 pr-3"
                   />
                 </div>
                 <label className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text">
@@ -300,18 +301,18 @@ export function LoomImagePopup({
                   >
                     <Crop className="h-4 w-4" aria-hidden /> Crop
                   </button>
-                  <div>
-                    <label className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
+                  <label className="block">
+                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
                       Alt text
-                    </label>
-                    <textarea
+                    </span>
+                    <Textarea
                       value={alt}
                       onChange={(e) => setAlt(e.target.value)}
                       rows={2}
                       placeholder="Describe the photo for screen readers and when images are off."
-                      className="w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+                      className="resize-none"
                     />
-                  </div>
+                  </label>
                 </>
               ) : (
                 <p className="rounded-card border border-dashed border-border px-3 py-8 text-center text-meta text-muted">

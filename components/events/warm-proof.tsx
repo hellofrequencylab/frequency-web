@@ -51,7 +51,7 @@ export function WarmProof({
 }) {
   const shell = embedded
     ? 'border-t border-border pt-3'
-    : 'rounded-2xl border border-border bg-surface px-4 py-3'
+    : 'rounded-card border border-border bg-surface px-4 py-3'
   // Empty → warm invite, never a zero count.
   if (going <= 0) {
     return (

@@ -10,6 +10,7 @@ import {
 import type { AppSurfaceKind } from '@/lib/apps/types'
 import { AppsRail } from '@/components/admin/library/apps-rail'
 import { AppsLane, type AppCard } from '@/components/admin/library/apps-lane'
+import { Input } from '@/components/ui/field'
 
 // The Loom Studio Apps lane view (LP5b, docs/LOOM-PLATFORM.md §4). Rendered when ?lane=apps. Server
 // Component: it resolves the App catalog + previews (which reach the render layers), then hands plain
@@ -100,12 +101,13 @@ export async function AppsLaneView({
             {view !== 'cards' && <input type="hidden" name="view" value={view} />}
             <span className="relative min-w-[180px] flex-1 sm:max-w-xs">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
-              <input
+              <Input
                 type="search"
                 name="q"
+                aria-label="Search Apps"
                 defaultValue={q}
                 placeholder="Search Apps…"
-                className="w-full rounded-2xl border border-border bg-surface py-2 pl-9 pr-3 text-body-sm"
+                className="py-2 pl-9 pr-3"
               />
             </span>
             <button

@@ -61,10 +61,10 @@ export function TemplatesPanel({
           return (
             <li
               key={t.id}
-              className="flex flex-col rounded-2xl border border-border bg-surface p-4 lift-1"
+              className="flex flex-col rounded-card border border-border bg-surface p-4 lift-1"
             >
               <div className="mb-2 flex items-center gap-2">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
                   <Icon className="h-4 w-4" aria-hidden />
                 </span>
                 <span className="text-body-sm font-semibold text-text">{t.title}</span>

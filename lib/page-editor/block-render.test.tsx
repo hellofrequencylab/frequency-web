@@ -77,6 +77,50 @@ import { BlockRender } from './block-render'
 //     entries above — classes on leaves, render path untouched — so the golden is re-recorded
 //     rather than the conversion reverted. If a future LiveStats diff shows a changed element,
 //     a changed attribute, or a missing metadata-fed value, that is a real regression.
+//
+//   2026-08-06 · Phase 7, the marketing four-role rhythm. `Statement`
+//     (`components/marketing/marketing-ui.tsx`) stopped hand-rolling `py-14 sm:py-24` and took
+//     the role it IS — `.mk-tight`, whose definition in globals.css is literally "a statement or
+//     a banner, short, so it does not need the full beat" — plus the `.mk-cream` / `.mk-ink`
+//     tone tag that the same-tone-halving rule keys on. TWO goldens moved: the plain-blocks doc
+//     and the 3-column slot doc, which are the only two that render a Statement.
+//
+//     THE DIFF, read element by element rather than counted. In BOTH goldens exactly one
+//     `<section>` changed — Statement's — from
+//         class="bg-marketing-canvas px-6 py-14 sm:py-24 "
+//       to
+//         class="bg-marketing-canvas mk-cream px-6 mk-tight "
+//     No element was added, removed or moved; no attribute other than `class` changed anywhere;
+//     the `<p>` inside Statement is byte-identical in both. In the 3-column golden the outer
+//     Columns section, both sibling columns and every slot-recursion `<div>` are byte-identical,
+//     so the render path this file actually guards — slot recursion, metadata threading,
+//     unknown-type skipping, root wrapping — is untouched, same as the three entries above.
+//
+//     `mk-cream` DOES NOT SET A BACKGROUND, so it is not fighting `bg-marketing-canvas`, and
+//     that was checked rather than assumed — the trap here is that `cn()` is a plain join, not
+//     tailwind-merge, so two background declarations would be settled by the compiled sheet's
+//     emit order and no call site could see it. Grepping the source AND the compiled sheet finds
+//     `.mk-cream` / `.mk-ink` in exactly one rule,
+//         .mk-cream + .mk-cream:where(…), .mk-ink + .mk-ink:where(…) { padding-top: … }
+//     with no standalone `.mk-cream { }` block anywhere. They are pure adjacency MARKERS: they
+//     paint nothing on the element that carries them, and only ever add padding-top to the
+//     SECOND of two same-tone siblings. Both classes therefore coexist correctly.
+//
+//     A REAL VALUE CHANGE, and it is larger than the eyebrow one — stated plainly here because
+//     there are committed pixel baselines for the marketing pages and they will need a
+//     recapture (DAWN-CONVERSION §3 budgets exactly one per rendering merge).
+//     `py-14 sm:py-24` is 56px / 96px per edge, frozen at two breakpoints.
+//     `.mk-tight` is `clamp(3rem, 5.5vw, 3.75rem)` = 48px…60px, fluid.
+//       · 390px:  48 vs 56  → −8px per edge
+//       · 1280px: 60 vs 96  → −36px per edge
+//     And because `.mk-tight` is now a member of the four-role family, a Statement FOLLOWED by
+//     another rhythm section also picks up the double-count correction on its bottom edge
+//     (`calc(var(--space-section) * 0.62)`), which the literal could never participate in.
+//     Total height change for a Statement mid-page: about −22px at 390 and about −77px at 1280.
+//     That is the adoption working, not a regression — the hand-rolled value over-paid for the
+//     role and ignored both the density lever and the shared-gap correction — but it is a
+//     visible tightening on every page that renders a Statement, so it is written down as a
+//     value change rather than absorbed into a class-rename snapshot bump.
 // ─────────────────────────────────────────────────────────────────────────────
 
 type BlockItem = { type: string; props: Record<string, unknown> }
@@ -123,7 +167,7 @@ describe('BlockRender golden markup (frozen; was byte-identical to Puck rsc <Ren
     const html = block(data)
     expect(html).toContain('Gather your ') // accent word "people" is wrapped in a span
     expect(html).toContain('bold')
-    expect(html).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Gather your <span class="text-primary-strong">people</span></h2></div></section><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-body-lg text-muted leading-relaxed space-y-4"><p>Some <strong class="font-semibold text-text">bold</strong> and <em>italic</em> copy.</p></div></div></section><section class="bg-marketing-canvas px-6 py-14 sm:py-24 "><p class="font-display uppercase max-w-3xl mx-auto text-center text-text text-[clamp(2rem,6.5vw,3.75rem)] leading-[1.1]">A <span class="text-primary-strong">bold</span> statement.</p></section>"`)
+    expect(html).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Gather your <span class="text-primary-strong">people</span></h2></div></section><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-body-lg text-muted leading-relaxed space-y-4"><p>Some <strong class="font-semibold text-text">bold</strong> and <em>italic</em> copy.</p></div></div></section><section class="bg-marketing-canvas mk-cream px-6 mk-tight "><p class="font-display uppercase max-w-3xl mx-auto text-center text-text text-[clamp(2rem,6.5vw,3.75rem)] leading-[1.1]">A <span class="text-primary-strong">bold</span> statement.</p></section>"`)
   })
 
   it('threads metadata through the config root (space layout preset wraps children)', () => {
@@ -185,7 +229,7 @@ describe('BlockRender golden markup (frozen; was byte-identical to Puck rsc <Ren
         }),
       ],
     }
-    expect(block(data)).toMatchInlineSnapshot(`"<section class="px-6 py-12 sm:py-16 bg-surface "><div class="max-w-5xl mx-auto grid gap-8 md:grid-cols-3 items-start"><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Col one</h2></div></section></div><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-body-lg text-muted leading-relaxed space-y-4"><p>Col two</p></div></div></section></div><div><section class="bg-marketing-canvas px-6 py-14 sm:py-24 "><p class="font-display uppercase max-w-3xl mx-auto text-center text-text text-[clamp(2rem,6.5vw,3.75rem)] leading-[1.1]">Col three</p></section></div></div></section>"`)
+    expect(block(data)).toMatchInlineSnapshot(`"<section class="px-6 py-12 sm:py-16 bg-surface "><div class="max-w-5xl mx-auto grid gap-8 md:grid-cols-3 items-start"><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p data-text-role="eyebrow" class="font-eyebrow text-body-sm font-bold uppercase tracking-eyebrow mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Col one</h2></div></section></div><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-body-lg text-muted leading-relaxed space-y-4"><p>Col two</p></div></div></section></div><div><section class="bg-marketing-canvas mk-cream px-6 mk-tight "><p class="font-display uppercase max-w-3xl mx-auto text-center text-text text-[clamp(2rem,6.5vw,3.75rem)] leading-[1.1]">Col three</p></section></div></div></section>"`)
   })
 
   it('nested slots: SpaceLayout main/side, under a space-metadata root', () => {

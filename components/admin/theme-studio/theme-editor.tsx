@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Loader2, Palette, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { fieldClasses } from '@/components/ui/field'
+import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { SectionHeader } from '@/components/ui/section-header'
 import { isError, type ActionResult } from '@/lib/action-result'
@@ -194,9 +194,8 @@ export function ThemeEditor({ initial, mode }: { initial: ThemeRow | null; mode:
                 <label htmlFor="theme-name" className={labelCls}>
                   Name
                 </label>
-                <input
-                  id="theme-name"
-                  className={`${fieldClasses} mt-1`}
+                <Input
+                  id="theme-name" className="mt-1"
                   value={draft.name}
                   onChange={(e) => onNameChange(e.target.value)}
                   placeholder="e.g. Solstice"
@@ -206,9 +205,8 @@ export function ThemeEditor({ initial, mode }: { initial: ThemeRow | null; mode:
                 <label htmlFor="theme-slug" className={labelCls}>
                   Slug
                 </label>
-                <input
-                  id="theme-slug"
-                  className={`${fieldClasses} mt-1`}
+                <Input
+                  id="theme-slug" className="mt-1"
                   value={draft.slug}
                   onChange={(e) => {
                     setSlugTouched(true)
@@ -262,9 +260,8 @@ export function ThemeEditor({ initial, mode }: { initial: ThemeRow | null; mode:
                       <Calendar className="h-3.5 w-3.5" aria-hidden /> Window start (MM-DD)
                     </span>
                   </label>
-                  <input
-                    id="theme-window-start"
-                    className={`${fieldClasses} mt-1`}
+                  <Input
+                    id="theme-window-start" className="mt-1"
                     value={draft.windowStart ?? ''}
                     onChange={(e) => setField('windowStart', e.target.value || null)}
                     placeholder="12-01"
@@ -276,9 +273,8 @@ export function ThemeEditor({ initial, mode }: { initial: ThemeRow | null; mode:
                   <label htmlFor="theme-window-end" className={labelCls}>
                     Window end (MM-DD)
                   </label>
-                  <input
-                    id="theme-window-end"
-                    className={`${fieldClasses} mt-1`}
+                  <Input
+                    id="theme-window-end" className="mt-1"
                     value={draft.windowEnd ?? ''}
                     onChange={(e) => setField('windowEnd', e.target.value || null)}
                     placeholder="12-31"
@@ -343,12 +339,11 @@ function TokenField({
         <label htmlFor={id} className={labelCls}>
           {spec.label}
         </label>
-        <input
+        <Input
           id={id}
           type={spec.feel === 'number' ? 'number' : 'text'}
           inputMode={spec.feel === 'number' ? 'decimal' : 'text'}
-          step={spec.feel === 'number' ? 'any' : undefined}
-          className={`${fieldClasses} mt-1`}
+          step={spec.feel === 'number' ? 'any' : undefined} className="mt-1"
           value={value}
           placeholder={spec.placeholder}
           onChange={(e) => setToken('feel', spec.name, e.target.value)}
@@ -420,14 +415,13 @@ function ColorPair({
         onChange={(e) => onChange(e.target.value)}
         className="h-9 w-9 shrink-0 cursor-pointer rounded-lg border border-border bg-surface p-0.5"
       />
-      <input
+      <Input
         id={idBase}
         type="text"
         aria-label={`${ariaLabel} value`}
         value={value}
         placeholder={placeholder ? `${modeLabel} · ${placeholder}` : modeLabel}
-        onChange={(e) => onChange(e.target.value)}
-        className={`${fieldClasses} min-w-0 flex-1`}
+        onChange={(e) => onChange(e.target.value)} className="min-w-0 flex-1"
       />
     </div>
   )

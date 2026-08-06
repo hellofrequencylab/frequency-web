@@ -9,7 +9,7 @@ import { Dialog } from '@/components/ui/dialog'
 // pulsing placeholder while the tiles and script arrive.
 const ListingLocationMapCanvas = dynamic(() => import('./listing-location-map-canvas'), {
   ssr: false,
-  loading: () => <div className="h-56 w-full animate-pulse rounded-2xl border border-border bg-surface-elevated" />,
+  loading: () => <div className="h-56 w-full animate-pulse rounded-card border border-border bg-surface-elevated" />,
 })
 
 // The pickup location for a marketplace listing.
@@ -36,7 +36,7 @@ export function ListingLocationMap({
   // No coordinates on file — show a calm location card instead of a map.
   if (lat === null || lng === null) {
     return (
-      <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
+      <div className="flex items-start gap-3 rounded-card border border-border bg-surface p-4">
         <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-muted" aria-hidden="true" />
         <div>
           <p className="text-body-sm font-semibold text-text">{areaLabel ?? 'Shared with members'}</p>
@@ -68,11 +68,11 @@ export function ListingLocationMap({
         type="button"
         onClick={() => setExpanded(true)}
         aria-label="Expand the map"
-        className="group relative block h-56 w-full overflow-hidden rounded-2xl border border-border focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className="group relative block h-56 w-full overflow-hidden rounded-card border border-border focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         <ListingLocationMapCanvas lat={lat} lng={lng} precise={precise} />
         {/* An expand affordance so it reads as clickable; pointer-events off so the click hits the button. */}
-        <span className="pointer-events-none absolute right-2 top-2 inline-flex items-center gap-1 rounded-lg bg-surface/90 px-2 py-1 text-2xs font-semibold text-text lift-1 backdrop-blur-sm">
+        <span className="pointer-events-none absolute right-2 top-2 inline-flex items-center gap-1 rounded-control bg-surface/90 px-2 py-1 text-2xs font-semibold text-text lift-1 backdrop-blur-sm">
           <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" /> Expand
         </span>
       </button>
@@ -80,7 +80,7 @@ export function ListingLocationMap({
       {caption}
 
       <Dialog open={expanded} onClose={() => setExpanded(false)} ariaLabel="Pickup location map" className="max-w-3xl">
-        <div className="rounded-2xl border border-border bg-surface p-3 shadow-pop sm:p-4">
+        <div className="rounded-card border border-border bg-surface p-3 shadow-pop sm:p-4">
           <div className="relative h-[60vh] w-full overflow-hidden rounded-card border border-border">
             {expanded && <ListingLocationMapCanvas lat={lat} lng={lng} precise={precise} />}
           </div>

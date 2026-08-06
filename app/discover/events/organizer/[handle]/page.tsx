@@ -200,7 +200,7 @@ export default async function OrganizerPage({
         {/* Subscribe affordance: follow this host's public calendar. The subscribe
             URL is the public events feed for now; signed-in members get the live,
             personal feed from the /events library. */}
-        <div className="mb-8 flex items-start gap-3 rounded-2xl border border-border bg-marketing-canvas p-4">
+        <div className="mb-8 flex items-start gap-3 rounded-card border border-border bg-marketing-canvas p-4">
           <CalendarPlus className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
           <p className="text-body-sm leading-relaxed text-muted">
             Want these on your calendar?{' '}

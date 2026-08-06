@@ -3,7 +3,9 @@
 import { useState, useTransition } from 'react'
 import { CHANNEL_CATEGORIES } from '@/lib/channels/categories'
 import { Plus, Radio } from 'lucide-react'
-import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
+import { CreateModal, cmLabel } from '@/components/create-modal'
+import { Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { createTopicalChannel } from './actions'
 
 // The category options come from THE vocabulary (lib/channels/categories.ts), never a local copy.
@@ -96,14 +98,13 @@ export function NewChannelCompose({
 
           <div>
             <label htmlFor="ch-name" className={cmLabel}>Name</label>
-            <input
+            <Input
               id="ch-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Breathwork"
               maxLength={80}
-              className={cmInput}
               required
             />
           </div>
@@ -113,17 +114,16 @@ export function NewChannelCompose({
               <label htmlFor="ch-domain" className={cmLabel}>
                 Pillar <span className="text-subtle font-normal">(optional)</span>
               </label>
-              <select
+              <Select
                 id="ch-domain"
                 value={domainId}
                 onChange={(e) => setDomainId(e.target.value)}
-                className={cmInput}
+                emptyLabel="Unsorted (assign later)"
               >
-                <option value="">Unsorted (assign later)</option>
                 {pillars.map((d) => (
                   <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
-              </select>
+              </Select>
               <p className="mt-1 text-2xs text-muted">
                 The Pillar (Mind, Body, Spirit, Expression) this Channel sits under.
               </p>
@@ -132,16 +132,15 @@ export function NewChannelCompose({
 
           <div>
             <label htmlFor="ch-category" className={cmLabel}>Category</label>
-            <select
+            <Select
               id="ch-category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className={cmInput}
             >
               {CATEGORIES.map((c) => (
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
-            </select>
+            </Select>
             <p className="mt-1 text-2xs text-muted">
               The category sets the icon and where the channel sits in browse.
             </p>
@@ -151,14 +150,13 @@ export function NewChannelCompose({
             <label htmlFor="ch-description" className={cmLabel}>
               Description <span className="text-subtle font-normal">(optional)</span>
             </label>
-            <textarea
+            <Textarea
               id="ch-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What is this channel about? Who is it for?"
               rows={3}
               maxLength={240}
-              className={cmInput}
             />
           </div>
         </div>

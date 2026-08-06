@@ -49,14 +49,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 3706,
+      "baseline": 2450,
       "frozen": {
-        "at": "2026-08-05",
-        "value": 3706,
+        "at": "2026-08-06",
+        "value": 2450,
         "direction": "lowered",
         "basis": "6a00b952da5c",
-        "reason": "Side effect of the icon-button sweep and the dock geometry fix: literal radius steps moved onto role tokens while the surrounding markup was already being rewritten.",
-        "from": 3738
+        "reason": "The components/** sweep finishing the four-territory pass: 3005 -> 2450. Value-identical conversions only -- rounded-2xl -> rounded-card is 1rem, rounded-lg -> rounded-control is 0.5rem at the baseline generation -- so this is a theming fix with no rendering delta on the default skin. Frozen once against a settled tree with tsc rc=0 and vitest 698/8797 green over the result.",
+        "from": 3005
       },
       "history": [
         {
@@ -135,6 +135,27 @@
           "to": 3706,
           "direction": "lowered",
           "reason": "Side effect of the icon-button sweep and the dock geometry fix: literal radius steps moved onto role tokens while the surrounding markup was already being rewritten."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 3706,
+          "to": 3673,
+          "direction": "lowered",
+          "reason": "EARNED FALL, 3706 -> 3673, booking a sweep that already shipped and was never re-frozen behind. Measured per revision: 3743 at 98daa81ed, 3681 after 6056d0a82 (#2046, the monochrome/Phase-2 close), 3673 after b9e7fbaad (#2047, the post-merge audit fixes), and 3673 unchanged through #2048 and the two gate commits since. The freeze at 3706 was taken mid-#2046, so the remaining -33 is the tail of that sweep plus #2047 - real retired radius literals in committed code, not an instrument move. Distinct from the raw-button-bg entry re-frozen in the same pass, which changed a PATTERN and is recorded as rebased: nothing about this class was measured differently, only less of it exists."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 3673,
+          "to": 3005,
+          "direction": "lowered",
+          "reason": "The rounded-* sweep across app/** and components/**, retiring literal radii onto the rounded-lg/2xl/pill scale: 3673 -> 3005. CORRECTION TO THE RECORD: three commit messages already pushed on this branch cite this floor at 3533 and 3220. Neither was ever true of a settled tree -- I committed in batches while the sweep agents were still writing, so each message froze a reading its own working tree had already moved past. 3005 is the first number measured with every agent stopped and tsc/eslint/vitest green over the result. Those commits are pushed and are not being rewritten; this reason is where the corrected number lives."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 3005,
+          "to": 2450,
+          "direction": "lowered",
+          "reason": "The components/** sweep finishing the four-territory pass: 3005 -> 2450. Value-identical conversions only -- rounded-2xl -> rounded-card is 1rem, rounded-lg -> rounded-control is 0.5rem at the baseline generation -- so this is a theming fix with no rendering delta on the default skin. Frozen once against a settled tree with tsc rc=0 and vitest 698/8797 green over the result."
         }
       ]
     },
@@ -204,14 +225,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 50,
+      "baseline": 49,
       "frozen": {
         "at": "2026-08-05",
-        "value": 50,
+        "value": 49,
         "direction": "lowered",
         "basis": "50ae235138cf",
-        "reason": "Side effect of the monochrome sweep: two shadow literals sat on elements whose fill was being retokenised and moved to the .lift-* scale in the same edit. Small, real, and not worth a separate pass.",
-        "from": 52
+        "reason": "EARNED FALL, 50 -> 49. One literal, and it is worth the line: this class ran 52 -> 49 inside 6056d0a82 (#2046) and has held at 49 through every commit since, while the freeze was taken at 50 mid-sweep. A one-site gap is exactly the size of gap that never gets closed, and it still means one shadow-* could return and read green. The depth language (.lift-*) received it; no pattern, scope or corpus rule changed, so this is a fall bought by code and recorded as lowered.",
+        "from": 50
       },
       "history": [
         {
@@ -234,6 +255,13 @@
           "to": 50,
           "direction": "lowered",
           "reason": "Side effect of the monochrome sweep: two shadow literals sat on elements whose fill was being retokenised and moved to the .lift-* scale in the same edit. Small, real, and not worth a separate pass."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 50,
+          "to": 49,
+          "direction": "lowered",
+          "reason": "EARNED FALL, 50 -> 49. One literal, and it is worth the line: this class ran 52 -> 49 inside 6056d0a82 (#2046) and has held at 49 through every commit since, while the freeze was taken at 50 mid-sweep. A one-site gap is exactly the size of gap that never gets closed, and it still means one shadow-* could return and read green. The depth language (.lift-*) received it; no pattern, scope or corpus rule changed, so this is a fall bought by code and recorded as lowered."
         }
       ]
     },
@@ -253,14 +281,14 @@
         "app/**/opengraph-image.tsx",
         "app/**/twitter-image.tsx"
       ],
-      "baseline": 61,
+      "baseline": 27,
       "frozen": {
-        "at": "2026-08-05",
-        "value": 61,
+        "at": "2026-08-06",
+        "value": 27,
         "direction": "lowered",
         "basis": "564513ba9761",
-        "reason": "The bug-class sweep, earned not measured: 153 hardcoded monochromes mapped onto the semantic pair each one actually meant - white-as-surface to bg-surface, white-as-text-on-a-fill to the on-* token belonging to that fill, black-as-scrim to the ink tokens. These ignored every theme axis, so on a light generation the product was painting white text onto a light surface. check-contrast was run as the guard, since a colour sweep's failure mode is a wrong PAIR rather than a wrong token. 214 -> 61; the remainder is raster, print, email, canvas and map-marker surfaces where a literal is correct because there is no theme to follow.",
-        "from": 214
+        "reason": "53 -> 27 as components/** retired bare white/black onto semantic tokens. The residue is carve-outs, not debt: QR quiet zones that a scanner needs true white for, and a video letterbox, each already carrying a KEEP comment. Note the class cannot reach zero as instrumented -- app/print/** is not excluded though DAWN §1 names it a carve-out; recorded in the Phase 9 queue rather than fixed here.",
+        "from": 53
       },
       "history": [
         {
@@ -290,6 +318,27 @@
           "to": 61,
           "direction": "lowered",
           "reason": "The bug-class sweep, earned not measured: 153 hardcoded monochromes mapped onto the semantic pair each one actually meant - white-as-surface to bg-surface, white-as-text-on-a-fill to the on-* token belonging to that fill, black-as-scrim to the ink tokens. These ignored every theme axis, so on a light generation the product was painting white text onto a light surface. check-contrast was run as the guard, since a colour sweep's failure mode is a wrong PAIR rather than a wrong token. 214 -> 61; the remainder is raster, print, email, canvas and map-marker surfaces where a literal is correct because there is no theme to follow."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 61,
+          "to": 54,
+          "direction": "lowered",
+          "reason": "EARNED FALL, 61 -> 54, the tail of a sweep that already shipped. Measured per revision this class ran 214 -> 54 inside 6056d0a82 (#2046, \"Retire the monochromes that ignored every theme\"), and has held at 54 through #2047, #2048 and the two gate commits since. The 61 freeze was taken mid-sweep, so these last 7 are hardcoded monochromes that #2046 genuinely retired and nobody wrote down - the ratchets own description calls this the only BUG class in the census, so leaving its floor 7 above reality left room for seven of them to come back green. Real code, not a measurement change: the pattern and scope are untouched, which is why this is lowered and not rebased."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 54,
+          "to": 53,
+          "direction": "lowered",
+          "reason": "54 -> 53. One literal, incidental to the rounded-* sweep rather than the target of it: a site whose radius was being retired was also carrying a bare white/black and took the semantic token in the same edit. No sweep is claimed for this class -- it moved by one because one file happened to be in the path."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 53,
+          "to": 27,
+          "direction": "lowered",
+          "reason": "53 -> 27 as components/** retired bare white/black onto semantic tokens. The residue is carve-outs, not debt: QR quiet zones that a scanner needs true white for, and a video letterbox, each already carrying a KEEP comment. Note the class cannot reach zero as instrumented -- app/print/** is not excluded though DAWN §1 names it a carve-out; recorded in the Phase 9 queue rather than fixed here."
         }
       ]
     },
@@ -342,10 +391,10 @@
     },
     {
       "key": "raw-button-bg",
-      "description": "Raw <button> carrying bg-primary instead of the Button primitive (the census corrected the docs' '~18' by 27x)",
+      "description": "Raw <button> whose OPENING TAG carries a bg-primary fill, instead of composing the Button primitive. Scoped to the tag itself (the `=>` alternative lets an onClick arrow through without truncating the scan, the same idiom handrolled-icon-button uses), so a bg-primary on a CHILD element can never be attributed to the button above it and reformatting cannot move the count.",
       "mode": "matches",
       "patterns": [
-        "<button[\\s\\S]{0,500}?bg-primary"
+        "<button\\b(?:[^>=]|=>|=(?!>))*?\\bbg-primary"
       ],
       "include": [
         "{app,components,lib}/**/*.tsx"
@@ -355,14 +404,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 521,
+      "baseline": 526,
       "frozen": {
-        "at": "2026-08-05",
-        "value": 521,
-        "direction": "lowered",
-        "basis": "ceca96ead2f3",
-        "reason": "Earned, and checked by hand rather than trusted, because this pattern is a 500-character proximity window that moves by ~35 on reformatting alone. The sites are named: the post send button went from a solid bg-primary h-11 square to DAWN's 34px bg-primary-bg tinted pill, and the streak strips plus the Invite card dropped their bg-primary-bg fills for a neutral surface-elevated. Real removals of amber fills, not the window twitching.",
-        "from": 527
+        "at": "2026-08-06",
+        "value": 526,
+        "direction": "rebased",
+        "basis": "9bcf47d8a607",
+        "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it.",
+        "from": 526
       },
       "history": [
         {
@@ -406,6 +455,27 @@
           "to": 521,
           "direction": "lowered",
           "reason": "Earned, and checked by hand rather than trusted, because this pattern is a 500-character proximity window that moves by ~35 on reformatting alone. The sites are named: the post send button went from a solid bg-primary h-11 square to DAWN's 34px bg-primary-bg tinted pill, and the streak strips plus the Invite card dropped their bg-primary-bg fills for a neutral surface-elevated. Real removals of amber fills, not the window twitching."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 521,
+          "to": 530,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. The old pattern was <button followed by bg-primary anywhere within 500 characters of arbitrary JSX, so it read formatting as much as buttons - collapsing indentation alone moved it 529 -> 564 - and it could bind a button to a bg-primary sitting on a CHILD element several tags away. The new form is an OPENING-TAG form: it stops at the tag own closing angle bracket, with the => alternative there so an onClick arrow handler does not truncate the scan (the same idiom handrolled-icon-button already uses). It therefore counts opening tags carrying the fill, and nothing else. Validated against a brace- and quote-aware mini-parser run over the identical comment-blanked corpus: 530 sites, zero missed, zero extra. The new form needs NO proximity window at all, so the length-preserving comment blanking (CORPUS_BASIS strip-comments@1) is respected trivially - there is no window distance left to preserve. 521 -> 530 is the old instruments error being removed, not nine new buttons, and NO sweep is credited for it."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 530,
+          "to": 526,
+          "direction": "lowered",
+          "reason": "530 -> 526. Four hand-rolled buttons carrying the fill on their opening tag composed the Button primitive instead. Incidental to the components sweep rather than the target of it."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 526,
+          "to": 526,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it."
         }
       ]
     },
@@ -425,14 +495,14 @@
         "components/ui/meter.tsx",
         "components/ui/streak-meter.tsx"
       ],
-      "baseline": 12,
+      "baseline": 8,
       "frozen": {
-        "at": "2026-08-05",
-        "value": 12,
-        "direction": "rebased",
+        "at": "2026-08-06",
+        "value": 8,
+        "direction": "lowered",
         "basis": "d2bda376c3f2",
-        "reason": "Two causes in one number, stated so neither is mistaken for the other. (1) A REAL sweep: standing-hero.tsx replaced a five-line copy of ProgressTrack's own render with the primitive, and challenges-season.tsx did the same for its per-challenge bar - two bars genuinely retired. (2) The corpus basis moved to comment-blanking (strip-comments@1) in the same pass. The sweep is what moved this count; the basis change is recorded because the fingerprint moved with it and a floor measured under a different question is not a floor.",
-        "from": 14
+        "reason": "12 -> 8. Four more hand-rolled progress bars replaced by ProgressTrack, continuing the pass that retired the standing-hero and challenges-season copies.",
+        "from": 12
       },
       "history": [
         {
@@ -462,6 +532,13 @@
           "to": 12,
           "direction": "rebased",
           "reason": "Two causes in one number, stated so neither is mistaken for the other. (1) A REAL sweep: standing-hero.tsx replaced a five-line copy of ProgressTrack's own render with the primitive, and challenges-season.tsx did the same for its per-challenge bar - two bars genuinely retired. (2) The corpus basis moved to comment-blanking (strip-comments@1) in the same pass. The sweep is what moved this count; the basis change is recorded because the fingerprint moved with it and a floor measured under a different question is not a floor."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 12,
+          "to": 8,
+          "direction": "lowered",
+          "reason": "12 -> 8. Four more hand-rolled progress bars replaced by ProgressTrack, continuing the pass that retired the standing-hero and challenges-season copies."
         }
       ]
     },
@@ -611,14 +688,14 @@
         "components/ui/icon.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 122,
+      "baseline": 117,
       "frozen": {
-        "at": "2026-08-05",
-        "value": 122,
+        "at": "2026-08-06",
+        "value": 117,
         "direction": "lowered",
         "basis": "085cd5ead614",
-        "reason": "Sweep side effect: hand-sized controls in the retired tab tracks and the post send button gave up their arbitrary px sizing for scale utilities and role tokens.",
-        "from": 124
+        "reason": "122 -> 117. Arbitrary pixel values retired onto the spacing scale inside the components sweep. Not a wave of its own -- these are the ones that were already in hand while their file was open.",
+        "from": 122
       },
       "history": [
         {
@@ -641,6 +718,13 @@
           "to": 122,
           "direction": "lowered",
           "reason": "Sweep side effect: hand-sized controls in the retired tab tracks and the post send button gave up their arbitrary px sizing for scale utilities and role tokens."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 122,
+          "to": 117,
+          "direction": "lowered",
+          "reason": "122 -> 117. Arbitrary pixel values retired onto the spacing scale inside the components sweep. Not a wave of its own -- these are the ones that were already in hand while their file was open."
         }
       ]
     },
@@ -657,14 +741,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 300,
+      "baseline": 96,
       "frozen": {
         "at": "2026-08-05",
-        "value": 300,
-        "direction": "rebased",
+        "value": 96,
+        "direction": "lowered",
         "basis": "8cd8fa7502b5",
-        "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta.",
-        "from": 301
+        "reason": "EARNED FALL, 300 -> 96, and overdue: the display sweep bought these 204 sites across three shipped commits and the ratchet was never re-frozen behind any of them. Measured per revision: 300 -> 112 in 6056d0a82 (#2046), 112 -> 104 in 959ddb678 (#2048), 104 -> 96 in 77bb066e5 (\"Give the page title a fluid role\"), and 96 ever since. The script printed \"A sweep landed. Re-freeze so the new floor holds\" on every run across all three and it was read as decoration. A floor 204 above reality is not a ratchet: anyone could have put 204 display literals back and CI would have stayed green, which is the same green-over-its-own-subject failure Phase 9 exists to end. Distinct in kind from the raw-button-bg entry re-frozen in this same pass - that one changed a PATTERN with no code behind it and is recorded as rebased; this is code that was actually swept, so it is lowered and the credit belongs to the sweep.",
+        "from": 300
       },
       "history": [
         {
@@ -680,6 +764,13 @@
           "to": 300,
           "direction": "rebased",
           "reason": "Instrument correction, NOT a sweep: the corpus is now comment-blanked before matching (CORPUS_BASIS strip-comments@1), so prose ABOUT a token no longer counts as a USE of it. Found twice in one day - a comment containing shadow-lg raised shadow-literals, and one quoting text-6xl/7xl raised literal-display-type, both with zero markup involved. Comments are blanked rather than deleted so every offset and proximity-window distance survives, which is why this can only remove comment matches and never move a real one. No code changed for this delta."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 300,
+          "to": 96,
+          "direction": "lowered",
+          "reason": "EARNED FALL, 300 -> 96, and overdue: the display sweep bought these 204 sites across three shipped commits and the ratchet was never re-frozen behind any of them. Measured per revision: 300 -> 112 in 6056d0a82 (#2046), 112 -> 104 in 959ddb678 (#2048), 104 -> 96 in 77bb066e5 (\"Give the page title a fluid role\"), and 96 ever since. The script printed \"A sweep landed. Re-freeze so the new floor holds\" on every run across all three and it was read as decoration. A floor 204 above reality is not a ratchet: anyone could have put 204 display literals back and CI would have stayed green, which is the same green-over-its-own-subject failure Phase 9 exists to end. Distinct in kind from the raw-button-bg entry re-frozen in this same pass - that one changed a PATTERN with no code behind it and is recorded as rebased; this is code that was actually swept, so it is lowered and the credit belongs to the sweep."
         }
       ]
     },
@@ -734,10 +825,10 @@
     },
     {
       "key": "handrolled-icon-button",
-      "description": "Icon-only <button>s sized and rounded by hand instead of composing IconButton. The primitive owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance — every hand-rolled one re-derives those four, and the ones that get it wrong are invisible until someone tries to tap them on a phone (components/events/rsvp-controls.tsx ships a 28px stepper). DELIBERATELY CONSERVATIVE: the shape is `<button …size…rounded…>` then ONE self-closing element then `</button>`, so it counts only unambiguous icon-only buttons and undercounts the `{cond ? <A/> : <B/>}` forms. A first attempt merely looked for an icon SOMEWHERE inside the button and matched text buttons and whole card buttons — a ratchet on a number that means the wrong thing is worse than no ratchet, so this trades recall for precision. `(?:[^>]|=>)` rather than `[^>]` because a JSX attribute list routinely contains `>` inside an arrow function.",
+      "description": "Icon-only <button>s sized and rounded by hand instead of composing IconButton. The primitive owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance — every hand-rolled one re-derives those four, and the ones that get it wrong are invisible until someone tries to tap them on a phone (components/events/rsvp-controls.tsx ships a 28px stepper). DELIBERATELY CONSERVATIVE: the shape is `<button …size…rounded…>` then ONE self-closing element then `</button>`, so it counts only unambiguous icon-only buttons and undercounts the `{cond ? <A/> : <B/>}` forms. A first attempt merely looked for an icon SOMEWHERE inside the button and matched text buttons and whole card buttons — a ratchet on a number that means the wrong thing is worse than no ratchet, so this trades recall for precision. `(?:[^>=]|=>|=(?!>))` rather than `[^>]` because a JSX attribute list routinely contains `>` inside an arrow function.",
       "mode": "matches",
       "patterns": [
-        "<button(?:[^>]|=>)*?(?:\\bh-\\d|\\bw-\\d|\\bsize-\\d)(?:[^>]|=>)*?rounded-(?:sm|md|lg|xl|2xl|3xl|full|pill|card|control)(?:[^>]|=>)*>\\s*<(?:svg|[A-Z][A-Za-z0-9]*)(?:[^>]|=>)*?/>\\s*</button>"
+        "<button(?:[^>=]|=>|=(?!>))*?(?:\\bh-\\d|\\bw-\\d|\\bsize-\\d)(?:[^>=]|=>|=(?!>))*?rounded-(?:sm|md|lg|xl|2xl|3xl|full|pill|card|control)(?:[^>=]|=>|=(?!>))*>\\s*<(?:svg|[A-Z][A-Za-z0-9]*)(?:[^>=]|=>|=(?!>))*?/>\\s*</button>"
       ],
       "include": [
         "{app,components}/**/*.tsx"
@@ -746,14 +837,14 @@
         "**/*.{test,spec}.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 12,
+      "baseline": 6,
       "frozen": {
-        "at": "2026-08-05",
-        "value": 12,
-        "direction": "lowered",
-        "basis": "3b1142ddb186",
-        "reason": "Phase 3's first slice, unblocked by the primitives landing: 25 icon-only controls moved onto components/ui/icon-button.tsx, which owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance. Each hand-rolled control had been re-deriving all four and some got it wrong - rsvp-controls shipped a 28px stepper, under BOTH floors. 37 -> 12.",
-        "from": 37
+        "at": "2026-08-06",
+        "value": 6,
+        "direction": "rebased",
+        "basis": "772c3e554a45",
+        "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it.",
+        "from": 6
       },
       "history": [
         {
@@ -776,8 +867,178 @@
           "to": 12,
           "direction": "lowered",
           "reason": "Phase 3's first slice, unblocked by the primitives landing: 25 icon-only controls moved onto components/ui/icon-button.tsx, which owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance. Each hand-rolled control had been re-deriving all four and some got it wrong - rsvp-controls shipped a 28px stepper, under BOTH floors. 37 -> 12."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 12,
+          "to": 10,
+          "direction": "lowered",
+          "reason": "EARNED FALL, 12 -> 10, and cleanly attributable to one commit: this class held at 12 through #2046 and #2047 and dropped to 10 in 959ddb678 (#2048, \"Rails read as the page, the fold moves to an edge handle\"), which replaced two hand-rolled icon-only buttons with IconButton as part of moving the fold control. It has held at 10 since. Two real adoptions of the primitive, not a pattern change - handrolled-icon-buttons opening-tag pattern is untouched by this pass, so the number is comparable to the one it replaces and the direction is lowered."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 10,
+          "to": 6,
+          "direction": "lowered",
+          "reason": "10 -> 6. Four hand-rolled icon buttons composed the icon-button primitive during the components sweep."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 6,
+          "to": 6,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it."
         }
       ]
+    },
+    {
+      "key": "raw-select",
+      "description": "Raw <select> elements instead of the Select primitive (components/ui/select.tsx). Counts OPENING TAGS: JSX components are capitalised, so a lowercase <select> is by construction a site that has not adopted the primitive, and <Select> never matches. Phase 3's second-largest population and, until now, the largest one in the plan with no ratchet at all - Select was built in Phase 2 to be swept onto and two trees were cleared to zero with nothing stopping the rest regrowing.",
+      "mode": "matches",
+      "patterns": [
+        "<select\\b"
+      ],
+      "include": [
+        "{app,components,lib}/**/*.tsx"
+      ],
+      "exclude": [
+        "**/*.{test,spec}.tsx",
+        "components/ui/select.tsx"
+      ],
+      "baseline": 6,
+      "history": [
+        {
+          "at": "2026-08-05",
+          "from": 0,
+          "to": 180,
+          "direction": "seed",
+          "reason": "Seeded at the measured value for a class that was PREVIOUSLY UNGUARDED: adoption-baselines.json carried 14 entries and not one of them counted a raw <select>, so DAWN Phase 3 printed an em dash in the Ratchet column for the second-largest population in the conversion. Select was built in Phase 2 specifically to be swept onto and components/spaces + components/admin were cleared 83 -> 0, and nothing stopped the remaining sites regrowing or new ones landing. Not a sweep and not a fall: this number is the first measurement of the class, and it is a floor from here. The pattern is an OPENING-TAG form, not a proximity window - the defect being fixed in raw-button-bg in the same pass - so it has no window distance to preserve under the comment-blanked corpus (CORPUS_BASIS strip-comments@1), and prose about a <select> is blanked before it can be counted as one. components/ui/select.tsx is excluded because the primitive has to render the real DOM element; counting the fix as the bug is how a class becomes unreachable."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 180,
+          "to": 51,
+          "direction": "lowered",
+          "reason": "The select sweep: 180 -> 51. Raw <select> elements across app/** and components/** replaced by the Select primitive, which carries the chevron, the focus ring and the disabled treatment that each site was previously re-deriving by hand. The sweep also closed an accessibility gap it surfaced rather than caused -- several converted sites had no accessible name at all, announcing as an unnamed combobox, and now carry aria-label or aria-labelledby pointing at the label already on screen."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 51,
+          "to": 6,
+          "direction": "lowered",
+          "reason": "51 -> 6. The last raw <select> elements outside two chip-filter sites moved onto the Select primitive. The 6 that remain are deliberate: chip filters whose ACTIVE state is a border/bg swap, and cn() is a plain join rather than tailwind-merge, so a tint passed to Select would land beside the primitive's own border-border and emit order would decide the winner. They need a tone prop on Select, not a call-site hack."
+        }
+      ],
+      "frozen": {
+        "at": "2026-08-06",
+        "value": 6,
+        "direction": "lowered",
+        "basis": "08ace42d7483",
+        "reason": "51 -> 6. The last raw <select> elements outside two chip-filter sites moved onto the Select primitive. The 6 that remain are deliberate: chip filters whose ACTIVE state is a border/bg swap, and cn() is a plain join rather than tailwind-merge, so a tint passed to Select would land beside the primitive's own border-border and emit order would decide the winner. They need a tone prop on Select, not a call-site hack.",
+        "from": 51
+      }
+    },
+    {
+      "key": "raw-input",
+      "description": "Raw <input> elements instead of the field primitives (components/ui/field.tsx, components/ui/checkbox.tsx). Counts OPENING TAGS; <Field>/<Checkbox> never match because JSX components are capitalised. type=\"hidden\" is excluded by a lookahead over the tag's own attributes: a hidden input is form serialisation, not a control, so no primitive can receive it and counting it would put zero out of reach and fail CI on a legitimate hidden field.",
+      "mode": "matches",
+      "patterns": [
+        "<input\\b(?!(?:[^>=]|=>|=(?!>))*?type=[\"']hidden)"
+      ],
+      "include": [
+        "{app,components,lib}/**/*.tsx"
+      ],
+      "exclude": [
+        "**/*.{test,spec}.tsx",
+        "components/ui/field.tsx",
+        "components/ui/checkbox.tsx"
+      ],
+      "baseline": 184,
+      "history": [
+        {
+          "at": "2026-08-05",
+          "from": 0,
+          "to": 740,
+          "direction": "seed",
+          "reason": "Seeded at the measured value for a class that was PREVIOUSLY UNGUARDED. The 970-site <input>/<textarea> row in DAWN Phase 3 had no ratchet at all: components/ui/field.tsx exists with 80 importers, and nothing measured the sites that had not adopted it, so the largest field population in the product could grow without failing CI. Not a sweep and not a fall - this is the first measurement of the class and a floor from here. The pattern is an OPENING-TAG form rather than a proximity window (the raw-button-bg defect being corrected in the same pass), so nothing about it depends on distance and the length-preserving comment blanking (CORPUS_BASIS strip-comments@1) only removes prose that was never markup. type=\"hidden\" is excluded by a lookahead bounded to the tag own attributes: 49 of the 789 raw inputs are hidden fields, which are form serialisation rather than controls, so no field primitive can receive them and counting them would put zero permanently out of reach. components/ui/field.tsx and components/ui/checkbox.tsx are excluded because a primitive must render the real DOM element."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 740,
+          "to": 605,
+          "direction": "lowered",
+          "reason": "The input sweep: 740 -> 605. Raw <input> elements retired onto Field/Input, so the label association, the focus ring and the invalid state come from one place instead of being restated per form. Partial by design -- the sweep took the sites where Field's label+control pairing was a straight substitution and left the ones whose layout does not decompose that way, rather than reshaping forms under cover of a primitives sweep."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 605,
+          "to": 184,
+          "direction": "lowered",
+          "reason": "605 -> 184. components/** retired raw inputs onto Field/Input. Of the remainder, a named subset can never be retired as instrumented: ~18 are type=file held behind hidden/sr-only and fired by a sibling button, which no text-field primitive can receive. The lookahead only excludes type=hidden; recorded in the Phase 9 queue."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 184,
+          "to": 184,
+          "direction": "rebased",
+          "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it."
+        }
+      ],
+      "frozen": {
+        "at": "2026-08-06",
+        "value": 184,
+        "direction": "rebased",
+        "basis": "23c25a5145a1",
+        "reason": "Instrument correction, NOT a sweep, and no code changed for this delta. CodeQL flagged 2 high-severity alerts on this branch and this is the cause: the opening-tag scan (?:[^>]|=>)*? has OVERLAPPING alternation branches -- [^>] matches \"=\", and \"=>\" also starts with \"=\" -- so inside a lazy quantifier the engine has two ways to consume the same character and backtracks polynomially. That is the shape CodeQL reports as a polynomial regular expression. Rewritten disjointly as (?:[^>=]|=>|=(?!>))*?, where the three branches are mutually exclusive by construction: any char that is neither > nor =, an = followed by >, or an = NOT followed by >. Exactly the same language, no ambiguity, no backtracking. The =>-preserving behaviour that made the original necessary is untouched -- an onClick={() => ...} handler still does not truncate the scan, which is the whole reason this idiom exists. Counts verified UNCHANGED across the rewrite, which is what demonstrates the two forms accept the same language rather than merely claiming it.",
+        "from": 184
+      }
+    },
+    {
+      "key": "raw-textarea",
+      "description": "Raw <textarea> elements instead of the field primitive (components/ui/field.tsx). Counts OPENING TAGS; <Field> never matches because JSX components are capitalised. The other half of the 970-site input/textarea row in DAWN Phase 3, which printed an em dash in its Ratchet column until this entry existed.",
+      "mode": "matches",
+      "patterns": [
+        "<textarea\\b"
+      ],
+      "include": [
+        "{app,components,lib}/**/*.tsx"
+      ],
+      "exclude": [
+        "**/*.{test,spec}.tsx",
+        "components/ui/field.tsx"
+      ],
+      "baseline": 6,
+      "history": [
+        {
+          "at": "2026-08-05",
+          "from": 0,
+          "to": 160,
+          "direction": "seed",
+          "reason": "Seeded at the measured value for a class that was PREVIOUSLY UNGUARDED - the other half of the 970-site input/textarea row in DAWN Phase 3, which printed an em dash in its Ratchet column because no entry counted a raw <textarea>. components/ui/field.tsx has existed with 80 importers the whole time; what was missing was anything that noticed a surface skipping it. Not a sweep and not a fall: first measurement of the class, and a floor from here. Kept as its own entry rather than folded into raw-input because they are separately sweepable and the census counts them separately (808 / 162). The pattern is an OPENING-TAG form, not a proximity window, so it carries no window distance for the comment-blanked corpus (CORPUS_BASIS strip-comments@1) to disturb. components/ui/field.tsx is excluded because the primitive has to render the real element."
+        },
+        {
+          "at": "2026-08-05",
+          "from": 160,
+          "to": 120,
+          "direction": "lowered",
+          "reason": "The textarea sweep: 160 -> 120. Raw <textarea> elements retired onto the Textarea primitive alongside the input sweep, same substitution and same stopping rule: straight swaps taken, layout-entangled sites left for a pass that can look at the form as a whole."
+        },
+        {
+          "at": "2026-08-06",
+          "from": 120,
+          "to": 6,
+          "direction": "lowered",
+          "reason": "120 -> 6. Raw <textarea> is now effectively retired across the product; the 6 remaining sit inside already-bordered containers where the box owns the field chrome and Textarea would draw a border inside a border."
+        }
+      ],
+      "frozen": {
+        "at": "2026-08-06",
+        "value": 6,
+        "direction": "lowered",
+        "basis": "42a90640e4e9",
+        "reason": "120 -> 6. Raw <textarea> is now effectively retired across the product; the 6 remaining sit inside already-bordered containers where the box owns the field chrome and Textarea would draw a border inside a border.",
+        "from": 120
+      }
     }
   ]
 }

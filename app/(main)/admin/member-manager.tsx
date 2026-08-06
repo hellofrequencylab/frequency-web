@@ -5,10 +5,12 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { UserX } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
+import { Select } from '@/components/ui/select'
 import { assignRole, deactivateMember } from './actions'
 import type { SeasonRank } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
+import { Input } from '@/components/ui/field'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
@@ -84,12 +86,12 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
     <div>
       {/* Search */}
       <div className="mb-3">
-        <input
+        <Input
           type="text"
+          aria-label="Search members"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or handle..."
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30 dark:border-border-strong dark:bg-surface-elevated dark:text-subtle/60 dark:placeholder:text-muted"
         />
       </div>
 
@@ -207,18 +209,22 @@ export function MemberManager({ members, canManage }: { members: MemberItem[]; c
                 {/* Controls. Janitor-only (the actions are staff-gated), visible on hover */}
                 {canManage && (
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
-                    <select
+                    {/* Named after the member the row belongs to: a bare "Role" would repeat once
+                        per member and name none of them. */}
+                    <Select
+                      aria-label={`Role for ${m.displayName}`}
                       defaultValue={m.role}
                       disabled={isPending}
                       onChange={(e) => handleRoleChange(m.profileId, e.target.value)}
-                      className="rounded-md border border-border bg-surface px-2 py-1 text-meta text-text focus:border-border-strong focus:outline-none cursor-pointer disabled:opacity-50"
+                      className="text-meta"
+                      wrapperClassName="inline-block w-max max-w-full"
                     >
                       {ROLES.map((r) => (
                         <option key={r} value={r}>
                           {ROLE_LABEL[r]}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                     <button
                       onClick={() => setConfirmId(m.profileId)}
                       title="Deactivate member"

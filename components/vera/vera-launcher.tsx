@@ -26,10 +26,14 @@ import {
   RAIL_END_OPENS,
   announceDockSegmentOpen,
   getDockGeometry,
+  getDockPanelOwner,
   getServerDockGeometry,
+  getServerDockPanelOwner,
   onOtherDockSegmentOpen,
   railEndOpenDue,
+  setDockPanelOpen,
   subscribeDockGeometry,
+  subscribeDockPanel,
 } from '@/components/layout/dock-bar'
 import type { TeaseGate } from '@/lib/pricing/upsell-tease'
 import { buttonClasses } from '@/components/ui/button'
@@ -117,6 +121,38 @@ const PANEL_TUCK = 8
 /** Long enough to outlast the slowest `--motion-base` on the feel scale (340ms), so the body is
  *  still mounted while the row collapses and the panel does not blink out mid-slide. */
 const PANEL_COLLAPSE_MS = 400
+
+/**
+ * How wide the panel is wherever it has a tab to grow out of, and WHY IT IS NOT THE TAB'S WIDTH.
+ *
+ * 🔴 THE BUG THIS FIXES (owner, 2026-08-05, off a live screenshot). The panel used to take the
+ * bar's measured box outright — `{ left: bar.left, width: bar.width }` — and at lg+ the bar spans
+ * the right rail, so the panel was 288px wide. It is an INBOX: an avatar, a name, a timestamp and
+ * a one-line preview. At 288px the preview column is 288 − 25.5 (row `px-3`) − 38.25 (avatar) −
+ * 12.75 (`gap-3`) = 211.5px, which is about 40 characters of `--text-meta`, and every real message
+ * was being cut mid-word ("Heyooo! I'm planning on heading out to Ro…"). The panel was sized to
+ * the door it comes through instead of to the thing it holds. Nothing about the tab's width is a
+ * statement about how wide a conversation list should be.
+ *
+ * HOW THE NUMBER WAS CHOSEN, rather than rounded to something that looked nice. Work backwards
+ * from the line that was clipping. A preview should read as a sentence before it truncates, and
+ * the type system's own readable measure tops out around 70 characters — past that a single-line
+ * preview stops being scannable and you truncate on purpose rather than by accident. At
+ * `--text-meta` (0.75rem = 12.75px at this app's 17px root) the app's UI sans runs ~5.2px per
+ * character in mixed case, so 68 characters is ~354px of text, plus the 76.5px of row chrome
+ * above = 430px. `26rem` is 442px here, the first whole rem step that clears it with a little
+ * slack for a wide glyph run. It is also wider than the `md:w-96` (24rem) fallback the md–lg band
+ * already used, which is the tell that the lg+ case was the regression: the panel got NARROWER
+ * on the bigger screen.
+ *
+ * IT GROWS LEFT. The right edge stays pinned to the chat tab (see `panelBox`), so the reveal still
+ * reads as coming out from behind that tab; the extra width is taken from the gutter and, at the
+ * narrowest lg viewport, ~99px of the content column — about 18% of it, for a modeless drawer the
+ * member just opened. The `min()` is a viewport guard, not a content guard: it only bites below a
+ * ~31rem window, where there is no rail and this box does not apply anyway, and it exists so no
+ * future breakpoint change can hand this a width wider than the screen.
+ */
+const PANEL_WIDTH = 'min(26rem, calc(100vw - 5rem))'
 
 function initialTab(): Tab {
   if (typeof window === 'undefined') return 'chat'
@@ -245,8 +281,10 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
   // fallback, which is the same place the panel lives on every surface that has no bar at all.
   const measured = useDockAnchor(slot)
   const anchor = slot && geometry.bar ? measured : null
-  const bar = slot ? geometry.bar : null
   const railTopAboveBottom = slot ? geometry.railTopAboveBottom : null
+  // Which segment owns the open panel right now — the STANDING fact, not the open EVENT. The tab
+  // needs it to stay quiet while the Vault is up (owner, 2026-08-05); see ChatTrigger's `yielding`.
+  const panelOwner = useSyncExternalStore(subscribeDockPanel, getDockPanelOwner, getServerDockPanelOwner)
   const results = useMemo(() => searchHelp(index, q, 6), [q, index])
 
   // Remember the last mode across sessions.
@@ -277,6 +315,15 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
 
   // The collapse timer outlives any single close, so it is cleared on unmount.
   useEffect(() => () => { if (collapseTimer.current) clearTimeout(collapseTimer.current) }, [])
+
+  // Publish this segment's open state to the dock's panel store, so the OTHER segment can read
+  // the standing fact rather than latching on the open event. Reported from an effect (not from
+  // `show()` / `close()`) so every path that changes `open` reports once, and the cleanup covers
+  // unmount — navigating to a surface with no dock — without a fifth call site.
+  useEffect(() => {
+    setDockPanelOpen('chat', open)
+    return () => setDockPanelOpen('chat', false)
+  }, [open])
 
   /** Mount the body (if it is not already) and expand the reveal row. */
   function show() {
@@ -458,13 +505,17 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
   // Every number here comes from DockBar's ONE measurement plus the segment anchor this file
   // already took. The rail is not measured a second time.
   //
-  // `right: 'auto'` is required, not decorative: the class fallback carries `md:right-6` for the
-  // surfaces that have no bar, and left + width + right would otherwise be three constraints on a
+  // 🔴 IT PINS THE RIGHT EDGE AND GROWS LEFT — it no longer takes the bar's WIDTH. The bar's box
+  // is the rail's box at lg+, and sizing an inbox to a rail clipped every preview mid-word (see
+  // PANEL_WIDTH for the measurement and the character count behind the replacement). The right
+  // edge is `anchor.right`, which is the CHAT TAB's own right edge, so the panel still reads as
+  // sliding out from behind the tab it belongs to while its body is as wide as its content needs.
+  //
+  // `left: 'auto'` is required, not decorative: the class fallback carries `md:inset-x-0` /
+  // `md:right-6`, and left + width + right would otherwise be three constraints on a
   // two-constraint box.
   const panelBox = anchor
-    ? bar
-      ? { left: bar.left, width: bar.width, right: 'auto' as const, bottom: anchor.bottom }
-      : anchor
+    ? { right: anchor.right, bottom: anchor.bottom, left: 'auto' as const, width: PANEL_WIDTH }
     : undefined
   // Rail top → the panel's tucked bottom edge. Both are distances from the viewport's BOTTOM, so
   // the height is a subtraction and never needs `innerHeight` at render time. Null keeps the
@@ -497,6 +548,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
           panelMounted={render}
           waiting={pulse || unread > 0}
           unread={unread}
+          yielding={panelOwner === 'vault'}
           onOpen={openPanel}
         />
       )}
@@ -711,13 +763,12 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
 // /discover mount this launcher with no Vault and therefore no dock slot. `slotChecked` gates
 // the decision so the pill never flashes on a surface that does have a dock.
 //
-// A FOLDED RAIL IS NOT ONE OF THOSE SURFACES, and nothing here has to know that. DockBar hides
-// itself in CSS rather than unmounting, so the slot stays in the document, `slot` stays non-null
-// and this keeps portalling into it — into a `display:none` box, so the trigger simply is not on
-// screen. That is the owner's decision working out to a no-op here, and it is the RIGHT no-op:
-// falling back to the EdgePill would answer a fold by re-planting the floating edge launcher this
-// bar was built to retire, and the member who folded the rail asked for less furniture, not more.
-// (It also means the trigger returns on unfold with no re-lookup: same node, still portalled.)
+// A FOLDED RAIL IS NOT ONE OF THOSE SURFACES, and nothing here has to know that — for a better
+// reason than before. DockBar used to hide the whole bar on a fold; the owner has since amended
+// that (2026-08-05) so the VAULT segment goes and this tab STAYS, with the bar shrinking to fit
+// it. Either way the slot is in the document and this keeps portalling into it, so the tab needs
+// no fold input at all. Falling back to the EdgePill would answer a fold by re-planting the
+// floating edge launcher this bar was built to retire.
 //
 // TONE. The tile is MUTED at rest and full-strength only when something is actually waiting.
 // A solid amber block that is always solid amber says "act on me" on every page of the app,
@@ -728,8 +779,27 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
 // OPEN is the one other way into that full fill, and it does not dilute the rule above because it
 // is not on for longer than it is true: the tab is lit while its own panel is showing, which is
 // what an active tab does. The rail-end nudge that used to be a third way is retired — the rail's
-// end opens the VAULT now (owner, 2026-08-05), and a chat tab lighting up at that moment would
-// say something is waiting here when nothing is.
+// end opens the VAULT now, and a chat tab lighting up at that moment would say something is
+// waiting here when nothing is.
+//
+// ── YIELDING TO AN OPEN VAULT (owner, 2026-08-05) ───────────────────────────────────────────
+//
+// "When the Vault is open, the message tab stays closed." Read literally that is already true —
+// the two panels are mutually exclusive — and the screenshot shows what he actually saw: the
+// Vault panel up, and this tab sitting beside it in the FULL AMBER fill, because an unread lights
+// it independently of whether its own panel is open. Two lit things, one of them not open.
+//
+// Of the three available readings, the tab YIELDS rather than hides or goes inert:
+//   • HIDING would strand the member's route out of the Vault: with the panel open, that tab is
+//     the one-tap way to Messages, and taking it away means close-the-Vault-then-find-the-tab. It
+//     would also shrink the bar under an open panel, so the panel would reflow while being read.
+//   • INERT is worse than hiding: a control that is visible and refuses to work teaches nothing.
+//   • YIELDING is exactly the complaint, precisely fixed: the tab stays, stays pressable, and
+//     drops to the quiet resting tone so nothing beside the open Vault LOOKS active. Pressing it
+//     opens Messages and closes the Vault through the announcement channel, which is the same one
+//     press it always was.
+// The unread COUNT and the waiting dot stay in either state, because they are information about
+// somebody else's message, not a claim that this panel is open.
 function ChatTrigger({
   ref,
   slot,
@@ -738,6 +808,7 @@ function ChatTrigger({
   panelMounted,
   waiting,
   unread,
+  yielding,
   onOpen,
 }: {
   ref: React.RefObject<HTMLButtonElement | null>
@@ -750,6 +821,8 @@ function ChatTrigger({
   panelMounted: boolean
   waiting: boolean
   unread: number
+  /** The Vault owns the open panel. Tone only — the tab stays pressable. */
+  yielding: boolean
   onOpen: () => void
 }) {
   if (!slotChecked) return null
@@ -788,7 +861,11 @@ function ChatTrigger({
       aria-label="Open messages, Vera, and help"
       title="Messages, Vera and help"
       className={buttonClasses(
-        unread > 0 || open ? 'primary' : 'primarySoft',
+        // `!yielding &&` is the whole of the owner's rule: nothing beside an open Vault wears the
+        // active fill. `open` cannot be true here anyway (the two panels are exclusive), so this
+        // is really "an unread does not light the tab while the Vault is up" — and the count badge
+        // below still says the unread exists.
+        !yielding && (unread > 0 || open) ? 'primary' : 'primarySoft',
         'md',
         TRIGGER_SHAPE,
       )}

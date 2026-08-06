@@ -25,9 +25,12 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Select } from '@/components/ui/select'
 import { filterTimeline, type TimelineEntry } from '@/lib/crm/timeline'
 import type { InteractionChannel } from '@/lib/crm/interactions'
 import { logManualTouch, type ManualTouchKind } from './timeline-actions'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/field'
 
 const CHANNEL_ICON: Record<InteractionChannel, LucideIcon> = {
   email: Mail,
@@ -95,15 +98,11 @@ export function TimelinePanel({
         title="Timeline"
         count={visible.length}
         action={
-          <label className="inline-flex cursor-pointer items-center gap-2 text-meta font-medium text-muted">
-            <input
-              type="checkbox"
-              checked={showAutomated}
-              onChange={toggle}
-              className="h-3.5 w-3.5 rounded border-border-strong text-primary focus:ring-primary/40"
-            />
-            Show automated events
-          </label>
+          <Checkbox
+            label="Show automated events"
+            checked={showAutomated}
+            onChange={toggle}
+          />
         }
       />
       <p className="mb-3 text-meta text-subtle">
@@ -187,10 +186,10 @@ function LogTouch({ contactId }: { contactId: string }) {
         Record a call, meeting, or note you had with this person so the history stays complete.
       </p>
       <div className="mt-3 flex flex-wrap items-start gap-2">
-        <select
+        <Select
           value={kind}
           onChange={(e) => setKind(e.target.value as ManualTouchKind)}
-          className="rounded-lg border border-border-strong bg-surface px-2 py-2 text-body-sm text-text focus:outline-none"
+          wrapperClassName="inline-block w-max max-w-full"
           aria-label="Touch type"
         >
           {KINDS.map((k) => (
@@ -198,12 +197,13 @@ function LogTouch({ contactId }: { contactId: string }) {
               {k.label}
             </option>
           ))}
-        </select>
-        <input
+        </Select>
+        <Input
+          aria-label="What happened"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder={kind === 'note' ? 'What happened…' : 'What happened… (optional)'}
-          className="min-w-[12rem] flex-1 rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30"
+          className="min-w-[12rem] flex-1 border-border-strong"
         />
         <button
           type="button"

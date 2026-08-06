@@ -40,7 +40,7 @@ export function ChoosePlanButton({
         type="button"
         onClick={choose}
         disabled={pending}
-        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        className="inline-flex items-center justify-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
       >
         {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <ArrowRight className="h-3.5 w-3.5" aria-hidden />}
         {pending ? 'Redirecting' : label}

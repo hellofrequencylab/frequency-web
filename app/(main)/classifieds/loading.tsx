@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 // shape immediately instead of flashing blank while listings stream (no shift).
 function ListingCardSkeleton() {
   return (
-    <div className="flex flex-col overflow-hidden rounded-2xl border border-border bg-surface lift-1">
+    <div className="flex flex-col overflow-hidden rounded-card border border-border bg-surface lift-1">
       <Skeleton className="h-36 w-full rounded-none" />
       <div className="flex flex-1 flex-col p-4">
         <div className="flex items-center justify-between gap-2">

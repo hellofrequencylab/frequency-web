@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Input, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { RailAutosaveForm, useRailSaveNow } from '@/components/admin/rail/rail-autosave-form'
 import { COMMON_TIME_ZONES } from './event-shared-fields-module'
@@ -14,7 +14,6 @@ import { getCirclePlaceTimeData, updateCirclePlaceTime } from '@/app/(main)/circ
 // circle meets. The rail supplies the title; every field autosaves and reflects live, and a dragged map
 // pin commits via saveNow().
 
-const input = fieldClasses
 const fieldLabel = labelClasses
 
 type PlaceTimeData = NonNullable<Awaited<ReturnType<typeof getCirclePlaceTimeData>>>
@@ -150,11 +149,11 @@ function PlaceTimeFields({
           <div className="grid grid-cols-1 gap-2 @sm:grid-cols-2">
             <label className="block min-w-0 space-y-1.5">
               <span className={fieldLabel}>Neighborhood</span>
-              <input name="neighborhood" defaultValue={data.neighborhood ?? ''} className={`${input} min-w-0`} />
+              <Input name="neighborhood" defaultValue={data.neighborhood ?? ''} className="min-w-0" />
             </label>
             <label className="block min-w-0 space-y-1.5">
               <span className={fieldLabel}>City</span>
-              <input name="city" defaultValue={data.city ?? ''} className={`${input} min-w-0`} />
+              <Input name="city" defaultValue={data.city ?? ''} className="min-w-0" />
             </label>
           </div>
 

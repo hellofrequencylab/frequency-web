@@ -55,7 +55,7 @@ export function CirclesToolbar({ showSearch = true }: { showSearch?: boolean } =
 
       <div className="flex shrink-0 flex-wrap items-center gap-2">
         {/* Format toggle — segmented, the active option lifts onto the surface. */}
-        <div className="flex items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
+        <div className="flex items-center gap-0.5 rounded-control bg-surface-elevated p-0.5">
           {TYPES.map(({ key, label, Icon }) => {
             const active = type === key
             return (
@@ -64,7 +64,7 @@ export function CirclesToolbar({ showSearch = true }: { showSearch?: boolean } =
                 type="button"
                 onClick={() => update({ type: key || null })}
                 aria-pressed={active}
-                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-body-sm font-medium transition-colors ${
+                className={`inline-flex items-center gap-1.5 rounded-control px-2.5 py-1.5 text-body-sm font-medium transition-colors ${
                   active ? 'bg-surface text-primary-strong lift-1' : 'text-muted hover:text-text'
                 }`}
               >
@@ -76,7 +76,7 @@ export function CirclesToolbar({ showSearch = true }: { showSearch?: boolean } =
         </div>
 
         {/* Sort — ordering, not a facet, so a labelled native select stays clearest. */}
-        <div className="flex items-center gap-1.5 rounded-lg border border-border bg-surface pl-2.5">
+        <div className="flex items-center gap-1.5 rounded-control border border-border bg-surface pl-2.5">
           <ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
           <select
             value={sort}

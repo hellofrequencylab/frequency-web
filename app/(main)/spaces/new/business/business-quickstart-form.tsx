@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Loader2, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
 import { createBusinessSpace } from '@/lib/spaces/provision'
 import { Field, TextField, FormError } from '@/components/spaces/space-form'
@@ -46,13 +47,12 @@ export function BusinessQuickStartForm() {
       />
 
       <Field id="biz-what" label="What do you do?" hint="One plain sentence. We use it to write the prompts on your page, not to write your copy.">
-        <textarea
+        <Textarea
           id="biz-what"
           value={whatYouDo}
           onChange={(e) => setWhatYouDo(e.target.value)}
           placeholder="I teach beginner-friendly yoga and breathwork for busy people."
           rows={2}
-          className="w-full rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary"
         />
       </Field>
 

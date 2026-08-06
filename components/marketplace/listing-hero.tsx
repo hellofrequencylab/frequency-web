@@ -25,7 +25,7 @@ export function ListingHero({
   actionSlot?: React.ReactNode
 }) {
   return (
-    <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl bg-surface-elevated sm:aspect-[16/7]">
+    <div className="relative aspect-[16/10] w-full overflow-hidden rounded-card bg-surface-elevated sm:aspect-[16/7]">
       {image ? (
         <>
           {/* Listing photos live in the public event-media bucket (or are already absolute URLs);

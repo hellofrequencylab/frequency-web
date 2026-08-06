@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Megaphone, Plus, Pencil, Trash2, Download, Copy, Check } from 'lucide-react'
 import { StyleEditor } from '@/app/(main)/admin/qr/style-editor'
+import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { trackClient } from '@/components/analytics/track-provider'
 import { createMarketingCode, updateMarketingCode, deleteMarketingCode } from './actions'
 import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
@@ -40,7 +42,7 @@ export function MarketingCodes({
   const atLimit = cards.length >= limit
 
   return (
-    <section className="rounded-2xl border border-border bg-surface lift-1">
+    <section className="rounded-card border border-border bg-surface lift-1">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div>
           <h2 className="flex items-center gap-1.5 text-body-sm font-bold text-text">
@@ -54,7 +56,7 @@ export function MarketingCodes({
         {!creating && !atLimit && (
           <button
             onClick={() => setCreating(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary px-3 py-1.5 text-meta font-semibold hover:bg-primary-hover transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-control bg-primary text-on-primary px-3 py-1.5 text-meta font-semibold hover:bg-primary-hover transition-colors"
           >
             <Plus className="w-3.5 h-3.5" /> New code
           </button>
@@ -216,25 +218,23 @@ function MarketingForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="block">
           <span className="block text-meta font-medium text-subtle mb-1">Code name</span>
-          <input
+          <Input
             value={form.title}
             onChange={(e) => {
               setForm((f) => ({ ...f, title: e.target.value }))
               setError(null)
             }}
             placeholder="e.g. Coffee-shop flyer"
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           />
         </label>
         <label className="block">
           <span className="block text-meta font-medium text-subtle mb-1">Points at</span>
-          <select
+          <Select
             value={form.path}
             onChange={(e) => {
               setForm((f) => ({ ...f, path: e.target.value }))
               setError(null)
             }}
-            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text"
           >
             {targets.map((t) => (
               <option key={t.path} value={t.path}>
@@ -242,7 +242,7 @@ function MarketingForm({
                 {t.label}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
       </div>
 
@@ -258,14 +258,14 @@ function MarketingForm({
         <button
           onClick={submit}
           disabled={pending || targets.length === 0}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary px-3 py-1.5 text-meta font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-control bg-primary text-on-primary px-3 py-1.5 text-meta font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60"
         >
           <Megaphone className="w-3.5 h-3.5" />
           {pending ? 'Saving…' : card ? 'Save changes' : 'Create code'}
         </button>
         <button
           onClick={onCancel}
-          className="rounded-lg px-3 py-1.5 text-meta font-semibold text-muted hover:text-text transition-colors"
+          className="rounded-control px-3 py-1.5 text-meta font-semibold text-muted hover:text-text transition-colors"
         >
           Cancel
         </button>

@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { ArrowRight, Users, Circle as CircleIcon, Radio, Pencil } from 'lucide-react'
-import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Textarea, Input, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { InlineCover } from '@/components/admin/inline/inline-cover'
 import { RailAutosaveForm } from '@/components/admin/rail/rail-autosave-form'
@@ -35,7 +35,6 @@ import {
 
 type ChannelData = NonNullable<Awaited<ReturnType<typeof getChannelAdminData>>>
 
-const input = fieldClasses
 const fieldLabel = labelClasses
 
 const LINK_ROW =
@@ -124,12 +123,12 @@ export function ChannelSettingsModule() {
       <RailAutosaveForm action={updateChannelSettings.bind(null, data.id, data.slug)}>
         <label className="block space-y-1.5">
           <span className={fieldLabel}>Name</span>
-          <input name="name" defaultValue={data.name} required className={input} />
+          <Input name="name" defaultValue={data.name} required />
         </label>
 
         <label className="block space-y-1.5">
           <span className={fieldLabel}>Description</span>
-          <textarea name="description" defaultValue={data.description ?? ''} rows={3} className={`${input} resize-none`} />
+          <Textarea name="description" defaultValue={data.description ?? ''} rows={3} className="resize-none" />
         </label>
 
         {/* Category — a closed list, because the icon on the Channel page and its directory card is
@@ -167,12 +166,11 @@ export function ChannelSettingsModule() {
 
         <label className="block space-y-1.5">
           <span className={fieldLabel}>Display order</span>
-          <input
+          <Input
             name="display_order"
             type="number"
             step={1}
             defaultValue={data.display_order ?? 0}
-            className={input}
           />
           <p className="text-2xs text-muted">
             Sorts the Channel in the directory. A lower number lists it earlier.

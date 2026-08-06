@@ -43,7 +43,7 @@ function IconSubmit({ label, danger = false, children }: { label: string; danger
 
 function ProductRow({ p }: { p: CommerceProduct }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface p-4 lift-1">
       <div className="min-w-0">
         <Link href={`/market/${p.id}`} className="font-medium text-text hover:text-primary">
           {p.title}
@@ -100,7 +100,7 @@ export default async function MakerManagePage() {
       }
     >
       {/* Payout readiness */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface-elevated p-4">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface-elevated p-4">
         <div className="flex items-center gap-3">
           {connect.ready ? (
             <CheckCircle2 className="h-5 w-5 text-primary" aria-hidden />

@@ -32,6 +32,7 @@ import {
 import { messagingStatusMeta, funnelStatusToMessaging } from '@/lib/messaging/status'
 import { reorderFunnelStages, renameFunnelStage } from '@/app/(main)/admin/marketing/messaging/actions'
 import { addStageLink, removeStageLink } from '@/app/(main)/admin/growth/funnels/actions'
+import { Input } from '@/components/ui/field'
 
 // The visual Funnel FLOW VIEW (EMAIL-CAMPAIGNS-FUNNELS-PLAN P4, ask #4/#5). A funnel
 // renders as a clean vertical flow: a Trigger banner, the stages as minimal nodes
@@ -367,7 +368,7 @@ function StagePanel({
       <label className="mt-4 block text-meta font-semibold text-text" htmlFor={`label-${stage.id}`}>
         Step name
       </label>
-      <input
+      <Input
         id={`label-${stage.id}`}
         type="text"
         defaultValue={stage.label}
@@ -379,7 +380,7 @@ function StagePanel({
             ;(e.target as HTMLInputElement).blur()
           }
         }}
-        className="mt-1 w-full rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
+        className="mt-1 !px-2.5 !py-1.5"
       />
 
       <div className="mt-4">
@@ -431,7 +432,7 @@ function StagePanel({
             </option>
           ))}
         </Select>
-        <input
+        <Input
           type="text"
           value={refValue}
           placeholder={usesId ? 'Paste the id to link' : 'Enter the key or slug'}
@@ -444,7 +445,7 @@ function StagePanel({
               submitLink()
             }
           }}
-          className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text outline-none focus:border-primary"
+          className="!px-2.5 !py-1.5"
         />
         <Button type="button" variant="secondary" size="sm" disabled={pending || !refValue.trim()} onClick={submitLink}>
           <Plus className="h-3.5 w-3.5" aria-hidden /> Wire it up

@@ -70,7 +70,7 @@ export function EventDispatchCompose({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-3">
+    <div className="rounded-card border border-border bg-surface p-3">
       <p className="mb-2 flex items-center gap-1.5 text-meta font-semibold text-muted">
         <Megaphone className="h-3.5 w-3.5 text-primary" />
         Post an update
@@ -82,7 +82,7 @@ export function EventDispatchCompose({
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Title (optional)"
         disabled={pending}
-        className="mb-2 w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
+        className="mb-2 w-full rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
       />
 
       <textarea
@@ -94,12 +94,12 @@ export function EventDispatchCompose({
         placeholder="What should guests know? Parking, a time change, what to bring."
         rows={3}
         disabled={pending}
-        className="w-full resize-none rounded-lg bg-transparent px-1 text-body-sm leading-relaxed text-text/90 outline-none placeholder:text-subtle disabled:opacity-60"
+        className="w-full resize-none rounded-control bg-transparent px-1 text-body-sm leading-relaxed text-text/90 outline-none placeholder:text-subtle disabled:opacity-60"
       />
 
       {/* Channel toggles. Page post is always on (the base action). */}
       <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-border pt-2">
-        <span className="inline-flex items-center gap-1.5 rounded-lg bg-surface-elevated px-2.5 py-1.5 text-2xs font-medium text-muted">
+        <span className="inline-flex items-center gap-1.5 rounded-control bg-surface-elevated px-2.5 py-1.5 text-2xs font-medium text-muted">
           <MessageSquare className="h-3.5 w-3.5" />
           On this page
         </span>
@@ -109,7 +109,7 @@ export function EventDispatchCompose({
           onClick={() => setToDispatch((v) => !v)}
           disabled={pending}
           aria-pressed={toDispatch}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
+          className={`inline-flex items-center gap-1.5 rounded-control px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
             toDispatch
               ? 'bg-primary-bg text-primary-strong'
               : 'border border-border text-muted hover:border-border-strong hover:text-text'
@@ -125,7 +125,7 @@ export function EventDispatchCompose({
           disabled={pending}
           aria-pressed={toEmail}
           title="Also email this update to your guest list."
-          className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
+          className={`inline-flex items-center gap-1.5 rounded-control px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
             toEmail
               ? 'bg-primary-bg text-primary-strong'
               : 'border border-border text-muted hover:border-border-strong hover:text-text'
@@ -144,7 +144,7 @@ export function EventDispatchCompose({
             disabled={pending}
             aria-pressed={toSms}
             title="Marks this update to also go out by text."
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
+            className={`inline-flex items-center gap-1.5 rounded-control px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
               toSms
                 ? 'bg-primary-bg text-primary-strong'
                 : 'border border-dashed border-border text-muted hover:border-border-strong hover:text-text'
@@ -157,7 +157,7 @@ export function EventDispatchCompose({
           <span
             aria-disabled="true"
             title="Text messages are coming soon."
-            className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-dashed border-border px-2.5 py-1.5 text-2xs font-medium text-muted"
+            className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-control border border-dashed border-border px-2.5 py-1.5 text-2xs font-medium text-muted"
           >
             <Smartphone className="h-3.5 w-3.5" />
             Text the group
@@ -171,7 +171,7 @@ export function EventDispatchCompose({
           type="button"
           onClick={submit}
           disabled={!canSubmit}
-          className="ml-auto shrink-0 rounded-lg bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+          className="ml-auto shrink-0 rounded-control bg-primary px-4 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           {pending ? 'Posting…' : 'Post update'}
         </button>

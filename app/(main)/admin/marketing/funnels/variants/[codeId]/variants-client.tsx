@@ -7,15 +7,15 @@ import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Trophy } from 'lucide-react'
 import type { DestinationGroup } from '@/lib/entry-points/destinations'
 import type { VariantResult } from '@/lib/entry-points/ab'
+import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { addVariant, updateVariant, deleteVariant } from '../actions'
 
-const field = 'w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-body-sm text-text'
 const pct = (rate: number) => `${(rate * 100).toFixed(1)}%`
 
 function DestinationSelect({ value, onChange, groups }: { value: string; onChange: (v: string) => void; groups: DestinationGroup[] }) {
   return (
-    <select value={value} onChange={(e) => onChange(e.target.value)} className={field}>
-      <option value="">Pick a destination…</option>
+    <Select aria-label="Destination" value={value} onChange={(e) => onChange(e.target.value)} emptyLabel="Pick a destination…">
       {groups.map((g) => (
         <optgroup key={g.group} label={g.group}>
           {g.items.map((o) => (
@@ -23,7 +23,7 @@ function DestinationSelect({ value, onChange, groups }: { value: string; onChang
           ))}
         </optgroup>
       ))}
-    </select>
+    </Select>
   )
 }
 
@@ -107,11 +107,11 @@ function VariantRow({ codeId, v, groups, isWinner }: { codeId: string; v: Varian
   if (editing) {
     return (
       <div className="space-y-2 rounded-card border border-border bg-canvas/40 p-3">
-        <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label" className={field} />
+        <Input aria-label="Variant label" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label" />
         <DestinationSelect value={target} onChange={setTarget} groups={groups} />
         <div className="flex items-center gap-2">
-          <label className="text-meta text-subtle">Weight</label>
-          <input value={weight} onChange={(e) => setWeight(e.target.value)} inputMode="numeric" className="w-20 rounded-md border border-border bg-canvas px-2 py-1 text-body-sm" />
+          <label className="text-meta text-subtle" htmlFor={`variant-weight-${v.id}`}>Weight</label>
+          <Input id={`variant-weight-${v.id}`} value={weight} onChange={(e) => setWeight(e.target.value)} inputMode="numeric" className="w-20 px-2 py-1" />
         </div>
         {error && <p className="text-meta text-danger">{error}</p>}
         <div className="flex gap-2">
@@ -174,13 +174,13 @@ function AddVariant({ codeId, groups }: { codeId: string; groups: DestinationGro
   return (
     <div className="space-y-2 rounded-2xl border border-border bg-surface p-4 lift-1">
       <div className="grid gap-2 sm:grid-cols-[6rem_1fr]">
-        <input value={key} onChange={(e) => setKey(e.target.value)} placeholder="Key (a)" className={field} />
-        <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (e.g. Event flow)" className={field} />
+        <Input aria-label="Variant key" value={key} onChange={(e) => setKey(e.target.value)} placeholder="Key (a)" />
+        <Input aria-label="Variant label" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (e.g. Event flow)" />
       </div>
       <DestinationSelect value={target} onChange={setTarget} groups={groups} />
       <div className="flex items-center gap-2">
-        <label className="text-meta text-subtle">Weight</label>
-        <input value={weight} onChange={(e) => setWeight(e.target.value)} inputMode="numeric" className="w-20 rounded-md border border-border bg-canvas px-2 py-1 text-body-sm" />
+        <label className="text-meta text-subtle" htmlFor="new-variant-weight">Weight</label>
+        <Input id="new-variant-weight" value={weight} onChange={(e) => setWeight(e.target.value)} inputMode="numeric" className="w-20 px-2 py-1" />
       </div>
       {error && <p className="text-meta text-danger">{error}</p>}
       <div className="flex gap-2">

@@ -62,7 +62,7 @@ function PublishButton({ slug, pageSlug }: { slug: string; pageSlug: string }) {
       onClick={handlePublish}
       disabled={!active || status === 'publishing'}
       title={dirty ? 'Publish your changes. They go live immediately' : 'No changes to publish'}
-      className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-body-sm font-semibold transition-colors ${
+      className={`inline-flex items-center gap-1.5 rounded-control px-4 py-1.5 text-body-sm font-semibold transition-colors ${
         active
           ? 'bg-primary text-on-primary lift-1 hover:bg-primary-hover'
           : 'bg-surface-elevated text-subtle cursor-default'

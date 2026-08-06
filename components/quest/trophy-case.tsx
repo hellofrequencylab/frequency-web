@@ -70,7 +70,7 @@ function TrophyTile({ trophy }: { trophy: JourneyTrophy }) {
   )
 
   const cls =
-    'rounded-2xl border border-border bg-surface p-3.5 lift-1 transition-colors hover:bg-surface-elevated motion-reduce:transition-none'
+    'rounded-card border border-border bg-surface p-3.5 lift-1 transition-colors hover:bg-surface-elevated motion-reduce:transition-none'
 
   return trophy.slug ? (
     <Link href={`/journeys/${trophy.slug}`} className={`block ${cls}`}>
@@ -172,7 +172,7 @@ export function TrophyCase({
   currentSeason: number | null
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface/60 p-5 lift-1">
+    <div className="rounded-card border border-border bg-surface/60 p-5 lift-1">
       <div className="mb-4 flex items-center gap-2.5">
         <span
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control lift-1"

@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Sparkles, PencilRuler, Lightbulb, Megaphone, Activity, Check, Loader2 } from 'lucide-react'
 import { WizardProgress } from '@/components/templates'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { Banner } from '@/components/admin/status'
 import { cn } from '@/lib/utils'
 import { isError } from '@/lib/action-result'
 import { MESSAGING_GOALS, MESSAGING_TONES, getMessagingGoal } from '@/lib/messaging/goals'
 import { startBuild } from './actions'
+import { Input, Textarea } from '@/components/ui/field'
 
 // The guided setup, three screens (EMAIL-CAMPAIGNS-FUNNELS-PLAN P3, ask #3/#6): pick a
 // GOAL, answer a few plain questions, then choose "Let Vera draft it" or "Build it
@@ -163,8 +165,6 @@ function QuestionsStep({
   onBack: () => void
   onNext: () => void
 }) {
-  const fieldCls =
-    'mt-1 w-full rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
   return (
     <div>
       <h2 className="text-body-lg font-bold text-text">{goal.label}</h2>
@@ -175,13 +175,13 @@ function QuestionsStep({
           <label className="block text-meta font-semibold text-text" htmlFor="msg-name">
             Name it
           </label>
-          <input
+          <Input
             id="msg-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={goal.suggestedName}
-            className={fieldCls}
+            className="mt-1"
           />
         </div>
 
@@ -190,13 +190,13 @@ function QuestionsStep({
             <label className="block text-meta font-semibold text-text" htmlFor="msg-audience">
               Who is it for?
             </label>
-            <select id="msg-audience" value={audience} onChange={(e) => setAudience(e.target.value)} className={fieldCls}>
+            <Select id="msg-audience" value={audience} onChange={(e) => setAudience(e.target.value)}>
               {segments.map((s) => (
                 <option key={s.key} value={s.key}>
                   {s.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         )}
 
@@ -211,31 +211,31 @@ function QuestionsStep({
           <label className="block text-meta font-semibold text-text" htmlFor="msg-tone">
             Tone
           </label>
-          <select id="msg-tone" value={tone} onChange={(e) => setTone(e.target.value)} className={fieldCls}>
+          <Select id="msg-tone" value={tone} onChange={(e) => setTone(e.target.value)}>
             {MESSAGING_TONES.map((t) => (
               <option key={t.key} value={t.key}>
                 {t.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div>
           <label className="block text-meta font-semibold text-text" htmlFor="msg-details">
             Anything to add? <span className="font-normal text-subtle">(optional)</span>
           </label>
-          <textarea
+          <Textarea
             id="msg-details"
             value={details}
             onChange={(e) => setDetails(e.target.value)}
             rows={3}
             placeholder="A detail or two for Vera to work from: the offer, a date, the one thing to say. Plain words are fine."
-            className={cn(fieldCls, 'resize-y')}
+            className="mt-1 resize-y"
           />
         </div>
 
         {/* Best-practice tips ride along (ask #6). */}
-        <div className="rounded-xl border border-info/30 bg-info-bg px-3 py-2.5">
+        <div className="rounded-card border border-info/30 bg-info-bg px-3 py-2.5">
           <p className="flex items-center gap-1.5 text-meta font-semibold text-info">
             <Lightbulb className="h-3.5 w-3.5" aria-hidden /> Best practice
           </p>

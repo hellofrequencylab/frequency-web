@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Timer } from 'lucide-react'
 import type { MenuSettings } from '@/lib/menus/types'
 import { setMenuSettings } from '@/lib/menus/actions'
+import { Input } from '@/components/ui/field'
 
 // The global Open & Dwell speed panel (requirement 2). Numeric sliders + inputs for
 // the three mega-menu timings, saved via setMenuSettings. Ranges mirror the DB CHECK
@@ -112,7 +113,7 @@ export function SettingsPanel({ initial }: { initial: MenuSettings }) {
               className="w-full cursor-pointer accent-primary disabled:opacity-50"
             />
             <div className="mt-1 flex items-center gap-2">
-              <input
+              <Input
                 type="number"
                 aria-label={`${f.label} in milliseconds`}
                 min={f.min}
@@ -121,7 +122,7 @@ export function SettingsPanel({ initial }: { initial: MenuSettings }) {
                 value={values[f.key]}
                 disabled={isPending}
                 onChange={(e) => set(f.key, Number(e.target.value), f)}
-                className="w-24 rounded-lg border border-border bg-canvas/40 px-2 py-1 text-body-sm tabular-nums text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                className="!w-24 !px-2 !py-1 tabular-nums"
               />
               <span className="text-meta text-subtle">
                 {f.min} to {f.max}

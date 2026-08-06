@@ -21,7 +21,7 @@ export function ReferralLinkCard({ url }: { url: string | null }) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="rounded-card border border-border bg-surface p-4 lift-1">
       <h2 className="flex items-center gap-2 text-body-sm font-bold text-text">
         <Link2 className="h-4 w-4 text-primary-strong" aria-hidden /> Your invite link
       </h2>

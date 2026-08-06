@@ -7,6 +7,7 @@ import { useState, useTransition } from 'react'
 import { Check, Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { updateEmailSignatureAction } from '@/app/(main)/settings/profile/signature-actions'
+import { Textarea } from '@/components/ui/field'
 
 export function EmailSignatureCard({ initial, autoDefault }: { initial: string; autoDefault: string }) {
   const [value, setValue] = useState(initial)
@@ -33,7 +34,7 @@ export function EmailSignatureCard({ initial, autoDefault }: { initial: string; 
       <p className="mt-1 text-body-sm text-muted">
         Added to the bottom of the emails you send from your inbox. Leave it blank to use the default below.
       </p>
-      <textarea
+      <Textarea
         value={value}
         onChange={(e) => {
           setValue(e.target.value)
@@ -41,7 +42,7 @@ export function EmailSignatureCard({ initial, autoDefault }: { initial: string; 
         }}
         rows={4}
         placeholder={autoDefault}
-        className="mt-3 w-full resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none"
+        className="mt-3 resize-none"
       />
       <div className="mt-2 flex items-center justify-between gap-3">
         <p className="text-2xs text-muted">

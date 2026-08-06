@@ -10,6 +10,7 @@ import type { Space } from '@/lib/spaces/types'
 import { SPACE_THEMES, parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
 import { updateSpaceBranding } from '@/app/(main)/admin/spaces/actions'
 import { Select } from '@/components/ui/select'
+import { Input } from '@/components/ui/field'
 
 // The per-Space branding form (docs/SPACES.md, ADR-249/250). A FOCUS surface: pick the
 // Space's theme (a select of built-in code skins + active skin themes), set the brand name,
@@ -27,8 +28,6 @@ export interface SkinOption {
   name: string
 }
 
-const fieldClass =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary'
 const labelClass = 'block text-meta font-semibold uppercase tracking-wide text-muted mb-1'
 
 export function SpaceBrandEditor({
@@ -152,14 +151,13 @@ export function SpaceBrandEditor({
             <label htmlFor="space-brand-name" className={labelClass}>
               Brand name
             </label>
-            <input
+            <Input
               id="space-brand-name"
               type="text"
               value={brandName}
               onChange={(e) => setBrandName(e.target.value)}
               placeholder={space.name}
               maxLength={200}
-              className={fieldClass}
             />
             <p className="mt-1 text-meta text-subtle">Shown in the Space header. Defaults to the Space name.</p>
           </div>
@@ -170,13 +168,12 @@ export function SpaceBrandEditor({
               Brand accent
             </label>
             <div className="flex items-center gap-2">
-              <input
+              <Input
                 id="space-brand-accent"
                 type="text"
                 value={brandAccent}
                 onChange={(e) => setBrandAccent(e.target.value)}
                 placeholder="#3D352A"
-                className={fieldClass}
               />
               {/* The ONE raw color: a live preview of the operator's chosen accent. */}
               <span
@@ -195,13 +192,12 @@ export function SpaceBrandEditor({
             <label htmlFor="space-brand-logo" className={labelClass}>
               Logo URL
             </label>
-            <input
+            <Input
               id="space-brand-logo"
               type="text"
               value={brandLogoUrl}
               onChange={(e) => setBrandLogoUrl(e.target.value)}
               placeholder="https://… or /path/to/logo.svg"
-              className={fieldClass}
             />
             <p className="mt-1 text-meta text-subtle">An https URL or a same-origin path (starting with &ldquo;/&rdquo;).</p>
           </div>

@@ -19,8 +19,9 @@
 
 import { useId } from 'react'
 import { ChevronRight, Plus, Trash2 } from 'lucide-react'
-import { fieldClasses } from '@/components/ui/field'
+import { Textarea, Input } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { IconButton } from '@/components/ui/icon-button'
 
 // ── Puck field shapes (structural; we only read what we render) ───────────────
@@ -89,10 +90,9 @@ function FieldControl({
     case 'text':
       return (
         <Row label={label} htmlFor={id}>
-          <input
+          <Input
             id={id}
-            type="text"
-            className={`${fieldClasses} min-h-[44px]`}
+            type="text" className="min-h-[44px]"
             value={(value as string) ?? ''}
             onChange={(e) => onChange(e.target.value)}
           />
@@ -102,10 +102,9 @@ function FieldControl({
     case 'textarea':
       return (
         <Row label={label} htmlFor={id}>
-          <textarea
+          <Textarea
             id={id}
             rows={4}
-            className={fieldClasses}
             value={(value as string) ?? ''}
             onChange={(e) => onChange(e.target.value)}
           />
@@ -115,11 +114,10 @@ function FieldControl({
     case 'number':
       return (
         <Row label={label} htmlFor={id}>
-          <input
+          <Input
             id={id}
             type="number"
-            inputMode="decimal"
-            className={`${fieldClasses} min-h-[44px]`}
+            inputMode="decimal" className="min-h-[44px]"
             value={value === undefined || value === null ? '' : (value as number)}
             onChange={(e) => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
           />
@@ -129,9 +127,9 @@ function FieldControl({
     case 'select':
       return (
         <Row label={label} htmlFor={id}>
-          <select
+          <Select
             id={id}
-            className={`${fieldClasses} min-h-[44px]`}
+            className="min-h-[44px]"
             value={String(value ?? '')}
             onChange={(e) => {
               const opt = field.options?.find((o) => String(o.value) === e.target.value)
@@ -143,7 +141,7 @@ function FieldControl({
                 {o.label}
               </option>
             ))}
-          </select>
+          </Select>
         </Row>
       )
 

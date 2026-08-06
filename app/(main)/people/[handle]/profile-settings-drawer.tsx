@@ -5,6 +5,7 @@ import Link from 'next/link'
 import {
   Settings, X, Check, Loader2, Sparkles, ExternalLink, UserCog,
 } from 'lucide-react'
+import { Input, Textarea } from '@/components/ui/field'
 import { moderateUpdateProfile } from './actions'
 import {
   toggleSpotlightEnabled,
@@ -70,7 +71,7 @@ export function ProfileSettingsDrawer({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={triggerClassName ?? 'inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text'}
+        className={triggerClassName ?? 'inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text'}
       >
         <Settings className="h-3.5 w-3.5" /> Settings
       </button>
@@ -96,24 +97,25 @@ export function ProfileSettingsDrawer({
               {canModerate && (
                 <section className="space-y-2">
                   <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Profile</p>
-                  <input
+                  <Input
+                    aria-label="Display name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Display name"
-                    className="w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none"
                   />
-                  <textarea
+                  <Textarea
+                    aria-label="Bio"
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
                     placeholder="Bio"
                     rows={3}
-                    className="w-full resize-y rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none"
+                    className="resize-y"
                   />
                   <button
                     type="button"
                     onClick={saveProfile}
                     disabled={pending}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50"
                   >
                     {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                     Save profile
@@ -131,7 +133,7 @@ export function ProfileSettingsDrawer({
                     type="button"
                     disabled={pending}
                     onClick={() => run(async () => { await toggleSpotlightEnabled(profileId, !spotOn); setSpotOn(!spotOn) }, spotOn ? 'Spotlight turned off' : 'Spotlight turned on')}
-                    className={`w-full rounded-lg border px-3 py-2 text-left text-body-sm font-medium transition-colors disabled:opacity-50 ${spotOn ? 'border-success/40 text-success hover:bg-success-bg/30' : 'border-border text-text hover:bg-surface-elevated'}`}
+                    className={`w-full rounded-control border px-3 py-2 text-left text-body-sm font-medium transition-colors disabled:opacity-50 ${spotOn ? 'border-success/40 text-success hover:bg-success-bg/30' : 'border-border text-text hover:bg-surface-elevated'}`}
                   >
                     {spotOn ? 'Spotlight is on — turn off' : 'Turn on Spotlight'}
                   </button>
@@ -146,7 +148,7 @@ export function ProfileSettingsDrawer({
                         type="button"
                         disabled={pending}
                         onClick={() => run(() => forceUnpublishSpotlight(profileId), 'Spotlight unpublished')}
-                        className="w-full rounded-lg border border-border px-3 py-2 text-left text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+                        className="w-full rounded-control border border-border px-3 py-2 text-left text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
                       >
                         Unpublish page
                       </button>
@@ -154,7 +156,7 @@ export function ProfileSettingsDrawer({
                         type="button"
                         disabled={pending}
                         onClick={() => run(() => resetSpotlightToDefault(profileId), 'Spotlight reset to default')}
-                        className="w-full rounded-lg border border-warning/40 px-3 py-2 text-left text-body-sm font-medium text-warning transition-colors hover:bg-warning-bg/30 disabled:opacity-50"
+                        className="w-full rounded-control border border-warning/40 px-3 py-2 text-left text-body-sm font-medium text-warning transition-colors hover:bg-warning-bg/30 disabled:opacity-50"
                       >
                         Reset to default
                       </button>

@@ -192,7 +192,7 @@ function LegacyTheCommunity() {
       </PhotoHero>
 
       {/* The premise */}
-      <Section tone="canvas" pad="pt-20 pb-10 sm:pt-24 sm:pb-12">
+      <Section tone="canvas">
         <SectionHeading
           eyebrow="The premise"
           title="The cure for too many feeds isn't one more."
@@ -235,7 +235,7 @@ function LegacyTheCommunity() {
               tone="feature"
               className="hover:border-border-strong transition-colors"
             >
-              <div className="w-11 h-11 rounded-2xl bg-primary-bg flex items-center justify-center mb-4">
+              <div className="w-11 h-11 rounded-card bg-primary-bg flex items-center justify-center mb-4">
                 <c.icon className="w-5 h-5 text-primary-strong" aria-hidden />
               </div>
               <h3 className="font-display uppercase text-text text-page-title leading-none">
@@ -511,7 +511,7 @@ function LegacyTheCommunity() {
         />
         <dl className="space-y-6">
           {COMMUNITY_FAQ.map((item) => (
-            <div key={item.q} className="rounded-2xl border border-border bg-surface p-6">
+            <div key={item.q} className="rounded-card border border-border bg-surface p-6">
               <dt className="font-display uppercase text-text text-lead leading-tight mb-2">
                 {item.q}
               </dt>
@@ -614,8 +614,8 @@ function DayBeat({
   body: string
 }) {
   return (
-    <li className="flex items-start gap-4 rounded-2xl border border-border bg-surface p-5 sm:p-6 lift-1">
-      <div className="shrink-0 w-12 h-12 rounded-2xl bg-primary-bg flex items-center justify-center">
+    <li className="flex items-start gap-4 rounded-card border border-border bg-surface p-5 sm:p-6 lift-1">
+      <div className="shrink-0 w-12 h-12 rounded-card bg-primary-bg flex items-center justify-center">
         <Icon className="w-6 h-6 text-primary-strong" aria-hidden />
       </div>
       <div className="min-w-0">

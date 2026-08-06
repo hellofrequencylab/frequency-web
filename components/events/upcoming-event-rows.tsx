@@ -42,7 +42,7 @@ export function DateChip({ iso }: { iso: string }) {
   const month = d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })
   const day = d.getUTCDate()
   return (
-    <div className="flex flex-col items-center justify-center w-9 h-9 rounded-lg bg-primary-bg text-primary-strong shrink-0">
+    <div className="flex flex-col items-center justify-center w-9 h-9 rounded-control bg-primary-bg text-primary-strong shrink-0">
       <span className="text-3xs font-semibold uppercase leading-none">{month}</span>
       <span className="text-body-sm font-bold leading-tight">{day}</span>
     </div>
@@ -86,7 +86,7 @@ export function UpcomingEventRowsSkeleton({ rows = 3 }: { rows?: number }) {
   return (
     <div className="space-y-2" aria-hidden>
       {Array.from({ length: rows }, (_, i) => (
-        <Skeleton key={i} className="h-16 rounded-xl" />
+        <Skeleton key={i} className="h-16 rounded-card" />
       ))}
     </div>
   )

@@ -12,7 +12,8 @@ import {
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
-import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { attachEventToCircleAction } from './events-actions'
 
 // The circle Manage hub's EVENTS area (the Channel hub's sections.tsx pattern, ADR-870): an async
@@ -181,7 +182,7 @@ export async function CircleEventsSection({
   // Add an event this manager already runs (the owner ask). The picker only offers what the
   // action's gates admit; the action re-checks both authorities on submit.
   const addForm = (
-    <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+    <div className="rounded-card border border-border bg-surface p-5 lift-1">
       <SectionHeader title="Add an event" />
       <p className="mb-3 text-body-sm text-muted">
         Bring an event you already run onto this circle. It shows on the circle page, and your
@@ -196,7 +197,7 @@ export async function CircleEventsSection({
         <form action={attachEventToCircleAction.bind(null, circleId, slug)} className="space-y-3">
           <label className="block space-y-1">
             <span className={labelClasses}>Event</span>
-            <select name="eventId" required className={fieldClasses} defaultValue="">
+            <Select name="eventId" required defaultValue="">
               <option value="" disabled>
                 Pick an event
               </option>
@@ -206,7 +207,7 @@ export async function CircleEventsSection({
                   {e.starts_at ? ` · ${fmtWhen(e.starts_at)}` : ''}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <Button type="submit" size="sm">
             Add to circle
@@ -240,7 +241,7 @@ export async function CircleEventsSection({
   return (
     <div className="space-y-5">
       {banner}
-      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+      <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
         {upcoming.map((e) => (
           <li key={e.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3">
             <div className="min-w-0 flex-1">

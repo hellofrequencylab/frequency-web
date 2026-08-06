@@ -58,7 +58,7 @@ export function GoBusinessCta({
   }
 
   return (
-    <div className="rounded-2xl border border-primary bg-surface p-5 lift-1">
+    <div className="rounded-card border border-primary bg-surface p-5 lift-1">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-body font-bold text-text">Go Business</h2>

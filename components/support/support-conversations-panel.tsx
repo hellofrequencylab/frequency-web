@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { ArrowLeft, Loader2, Send } from 'lucide-react'
 import { isError } from '@/lib/action-result'
+import { Textarea } from '@/components/ui/field'
 import {
   startMySupportRequestAction,
   listMySupportRequestsAction,
@@ -91,12 +92,13 @@ function NewRequest({ onSent }: { onSent: (ref: string) => void }) {
     <div>
       <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Send us a message</p>
       <p className="mt-1 text-meta text-muted">Tell us what you need. We&rsquo;ll reply right here and by email.</p>
-      <textarea
+      <Textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         rows={3}
+        aria-label="Send us a message"
         placeholder="How can we help?"
-        className="mt-2 w-full resize-none rounded-lg border border-border bg-surface-elevated px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-[var(--color-border-strong)]"
+        className="mt-2 resize-none"
       />
       {error && <p className="mt-1 text-meta text-danger">{error}</p>}
       <button
@@ -159,13 +161,14 @@ function SupportThread({ refId, onBack }: { refId: string; onBack: () => void })
         <div ref={endRef} />
       </div>
       <div className="flex shrink-0 items-end gap-2 border-t border-border px-3 py-2">
-        <textarea
+        <Textarea
           value={reply}
           onChange={(e) => setReply(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
           rows={1}
+          aria-label="Reply"
           placeholder="Reply…"
-          className="min-h-9 flex-1 resize-none rounded-lg border border-border bg-surface-elevated px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-[var(--color-border-strong)]"
+          className="min-h-9 flex-1 resize-none"
         />
         <button
           type="button"

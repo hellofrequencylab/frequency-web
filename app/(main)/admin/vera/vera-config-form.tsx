@@ -2,6 +2,8 @@
 
 import { FormSection } from '@/components/admin/form-section'
 import { Button } from '@/components/ui/button'
+import { Field, Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { saveVera, refreshFeatured, vetoFeatured } from './actions'
 import type { VeraConfig, FeaturedRow } from './load-vera'
 
@@ -12,8 +14,9 @@ import type { VeraConfig, FeaturedRow } from './load-vera'
 // explicit-save (one "Save Vera" button); the splash-feed section keeps its own
 // imperative refresh/veto controls. Grouped with the kit's annotated FormSection.
 
-const FIELD = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none'
-const LABEL = 'block text-meta font-semibold uppercase tracking-wide text-subtle'
+// The label look this form already wore. Handed to `Field`, which owns the association, the
+// spacing and the focus/invalid chrome that the hand-rolled FIELD string used to restate.
+const LABEL = 'font-semibold uppercase tracking-wide text-subtle'
 
 export function VeraConfigForm({ cfg, featured }: { cfg: VeraConfig; featured: FeaturedRow[] }) {
   const oaths = [0, 1, 2].map((i) => cfg.induction.oathLabels[i] ?? '')
@@ -27,35 +30,30 @@ export function VeraConfigForm({ cfg, featured }: { cfg: VeraConfig; featured: F
           description="How Vera sounds in live conversation: her style note, register, model, reply length, and opening greeting."
         >
           <div className="space-y-4">
-            <div>
-              <label className={LABEL} htmlFor="styleNote">Style note (appended to her prompt)</label>
-              <textarea id="styleNote" name="styleNote" rows={2} defaultValue={cfg.styleNote} className={`mt-1 ${FIELD}`} placeholder="e.g. Lean warmer this week; mention the Thursday gathering when relevant." />
-            </div>
+            <Field label="Style note (appended to her prompt)" labelClassName={LABEL}>
+              <Textarea name="styleNote" rows={2} defaultValue={cfg.styleNote} placeholder="e.g. Lean warmer this week; mention the Thursday gathering when relevant." />
+            </Field>
             <div className="grid gap-4 sm:grid-cols-3">
-              <div>
-                <label className={LABEL} htmlFor="register">Default register</label>
-                <select id="register" name="register" defaultValue={cfg.register} className={`mt-1 ${FIELD}`}>
+              <Field label="Default register" labelClassName={LABEL}>
+                <Select name="register" defaultValue={cfg.register}>
                   <option value="cool">Cool (default)</option>
                   <option value="hot">Hot (conviction)</option>
-                </select>
-              </div>
-              <div>
-                <label className={LABEL} htmlFor="tier">Model</label>
-                <select id="tier" name="tier" defaultValue={cfg.tier} className={`mt-1 ${FIELD}`}>
+                </Select>
+              </Field>
+              <Field label="Model" labelClassName={LABEL}>
+                <Select name="tier" defaultValue={cfg.tier}>
                   <option value="haiku">Haiku (fast/cheap)</option>
                   <option value="sonnet">Sonnet (sharper)</option>
                   <option value="opus">Opus (richest)</option>
-                </select>
-              </div>
-              <div>
-                <label className={LABEL} htmlFor="maxReplyChars">Max reply (chars)</label>
-                <input id="maxReplyChars" name="maxReplyChars" type="number" min={80} max={2000} defaultValue={cfg.maxReplyChars} className={`mt-1 ${FIELD}`} />
-              </div>
+                </Select>
+              </Field>
+              <Field label="Max reply (chars)" labelClassName={LABEL}>
+                <Input name="maxReplyChars" type="number" min={80} max={2000} defaultValue={cfg.maxReplyChars} />
+              </Field>
             </div>
-            <div>
-              <label className={LABEL} htmlFor="greeting">Opening greeting</label>
-              <textarea id="greeting" name="greeting" rows={2} defaultValue={cfg.greeting} className={`mt-1 ${FIELD}`} />
-            </div>
+            <Field label="Opening greeting" labelClassName={LABEL}>
+              <Textarea name="greeting" rows={2} defaultValue={cfg.greeting} />
+            </Field>
           </div>
         </FormSection>
 
@@ -66,37 +64,34 @@ export function VeraConfigForm({ cfg, featured }: { cfg: VeraConfig; featured: F
         >
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className={LABEL} htmlFor="oathHeading">Beta Promise heading</label>
-                <input id="oathHeading" name="oathHeading" defaultValue={cfg.induction.oathHeading} className={`mt-1 ${FIELD}`} />
-              </div>
-              <div>
-                <label className={LABEL} htmlFor="introHeading">Welcome heading</label>
-                <input id="introHeading" name="introHeading" defaultValue={cfg.induction.introHeading} className={`mt-1 ${FIELD}`} />
-              </div>
+              <Field label="Beta Promise heading" labelClassName={LABEL}>
+                <Input name="oathHeading" defaultValue={cfg.induction.oathHeading} />
+              </Field>
+              <Field label="Welcome heading" labelClassName={LABEL}>
+                <Input name="introHeading" defaultValue={cfg.induction.introHeading} />
+              </Field>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className={LABEL} htmlFor="oathBody">Beta Promise body</label>
-                <textarea id="oathBody" name="oathBody" rows={3} defaultValue={cfg.induction.oathBody} className={`mt-1 ${FIELD}`} />
-              </div>
-              <div>
-                <label className={LABEL} htmlFor="introBody">Welcome body</label>
-                <textarea id="introBody" name="introBody" rows={3} defaultValue={cfg.induction.introBody} className={`mt-1 ${FIELD}`} />
-              </div>
+              <Field label="Beta Promise body" labelClassName={LABEL}>
+                <Textarea name="oathBody" rows={3} defaultValue={cfg.induction.oathBody} />
+              </Field>
+              <Field label="Welcome body" labelClassName={LABEL}>
+                <Textarea name="introBody" rows={3} defaultValue={cfg.induction.introBody} />
+              </Field>
             </div>
             <div>
-              <label className={LABEL}>The three promises</label>
+              {/* Not a `Field`: implicit association binds a label to ONE control, and this is a
+                  group of three. The group gets a heading, each input its own aria-label. */}
+              <span className={`block text-meta font-medium text-muted ${LABEL}`}>The three promises</span>
               <div className="mt-1 space-y-2">
                 {oaths.map((v, i) => (
-                  <input key={i} name={`oath${i}`} defaultValue={v} className={FIELD} aria-label={`Promise ${i + 1}`} />
+                  <Input key={i} name={`oath${i}`} defaultValue={v} aria-label={`Promise ${i + 1}`} />
                 ))}
               </div>
             </div>
-            <div>
-              <label className={LABEL} htmlFor="heardAbout">&ldquo;How did you hear about us?&rdquo; options (one per line)</label>
-              <textarea id="heardAbout" name="heardAbout" rows={5} defaultValue={cfg.induction.heardAbout.join('\n')} className={`mt-1 ${FIELD}`} />
-            </div>
+            <Field label={<>&ldquo;How did you hear about us?&rdquo; options (one per line)</>} labelClassName={LABEL}>
+              <Textarea name="heardAbout" rows={5} defaultValue={cfg.induction.heardAbout.join('\n')} />
+            </Field>
           </div>
         </FormSection>
 

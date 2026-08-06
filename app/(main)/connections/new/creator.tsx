@@ -8,12 +8,13 @@ import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { squareCropRect, dedupeTags, normalizeTag, hasAnyDetails } from '@/lib/connections/normalize'
 import { deskewCardCanvas } from '@/lib/connections/deskew'
 import { DetailsEditor } from '@/components/connections/contact-details-fields'
+import { Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import type { ExtractedContact, ContactDetails, ContactSource, Visibility } from '@/lib/connections/types'
 import { scanCard, veraAssist, createProfile } from '../actions'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
 const BUCKET = 'network-contacts'
-const input = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50'
 const lbl = 'block text-meta font-medium text-muted mb-1'
 
 type FormState = {
@@ -495,7 +496,7 @@ export function Creator({ userId }: { userId: string }) {
 
       {tab === 'scan' ? (
         <div className="space-y-3">
-          <div className="rounded-2xl border border-dashed border-border-strong bg-surface p-5 text-center">
+          <div className="rounded-card border border-dashed border-border-strong bg-surface p-5 text-center">
             <ScanText className="mx-auto h-8 w-8 text-primary-strong" />
             <p className="mt-3 text-body-sm font-medium text-text">Snap the card, front and back</p>
             <p className="mt-1 text-meta text-subtle">
@@ -560,7 +561,7 @@ export function Creator({ userId }: { userId: string }) {
                 <button
                   type="button"
                   onClick={() => { setPendingScan(null); clearScanFiles() }}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                  className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
                 >
                   <Camera className="h-3.5 w-3.5" /> Retake
                 </button>
@@ -568,7 +569,7 @@ export function Creator({ userId }: { userId: string }) {
                   type="button"
                   onClick={useAnyway}
                   disabled={scanning}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+                  className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
                 >
                   {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                   Use it anyway
@@ -614,7 +615,7 @@ export function Creator({ userId }: { userId: string }) {
               aria-label="Add a card photo"
             >
               <div
-                className="w-full max-w-sm space-y-1 rounded-t-2xl border border-border bg-surface p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lift-3 sm:rounded-2xl sm:pb-2"
+                className="w-full max-w-sm space-y-1 rounded-t-2xl border border-border bg-surface p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lift-3 sm:rounded-card sm:pb-2"
                 onClick={(e) => e.stopPropagation()}
               >
                 <button
@@ -645,7 +646,7 @@ export function Creator({ userId }: { userId: string }) {
       ) : (
         <div className="space-y-5">
           {/* Vera assist — collapsible, remembered per device */}
-          <div className="rounded-2xl border border-border bg-surface-elevated/40 p-4">
+          <div className="rounded-card border border-border bg-surface-elevated/40 p-4">
             <button
               type="button"
               onClick={toggleAssist}
@@ -658,18 +659,19 @@ export function Creator({ userId }: { userId: string }) {
             </button>
             {assistOpen && (
               <div className="mt-2">
-                <textarea
+                <Textarea
+                  aria-label="Notes for Vera assist"
                   value={assistText}
                   onChange={(e) => setAssistText(e.target.value)}
                   rows={2}
                   placeholder="e.g. Met Sarah Kim at the Encinitas market. Runs a sound-bath studio, wants to co-host a session. sarah@studio.com"
-                  className={`${input} resize-none`}
+                  className="resize-none"
                 />
                 <button
                   type="button"
                   onClick={handleAssist}
                   disabled={assisting || !assistText.trim()}
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                 >
                   {assisting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   {assisting ? 'Thinking…' : 'Fill it in with Vera'}
@@ -722,20 +724,20 @@ export function Creator({ userId }: { userId: string }) {
           {/* Fields */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Name" className="sm:col-span-2">
-              <input className={input} value={form.displayName} onChange={(e) => set('displayName', e.target.value)} placeholder="Sarah Kim" />
+              <Input aria-label="Name" value={form.displayName} onChange={(e) => set('displayName', e.target.value)} placeholder="Sarah Kim" />
             </Field>
-            <Field label="Title"><input className={input} value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Sound facilitator" /></Field>
-            <Field label="Company"><input className={input} value={form.company} onChange={(e) => set('company', e.target.value)} placeholder="Resonance Studio" /></Field>
-            <Field label="Email"><input className={input} type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="sarah@studio.com" /></Field>
-            <Field label="Phone"><input className={input} type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="(555) 123-4567" /></Field>
-            <Field label="City"><input className={input} value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="Encinitas, CA" /></Field>
-            <Field label="Website"><input className={input} value={form.website} onChange={(e) => set('website', e.target.value)} placeholder="studio.com" /></Field>
-            <Field label="Instagram"><input className={input} value={form.instagram} onChange={(e) => set('instagram', e.target.value)} placeholder="@handle" /></Field>
-            <Field label="LinkedIn"><input className={input} value={form.linkedin} onChange={(e) => set('linkedin', e.target.value)} placeholder="linkedin.com/in/…" /></Field>
+            <Field label="Title"><Input aria-label="Title" value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Sound facilitator" /></Field>
+            <Field label="Company"><Input aria-label="Company" value={form.company} onChange={(e) => set('company', e.target.value)} placeholder="Resonance Studio" /></Field>
+            <Field label="Email"><Input aria-label="Email" type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="sarah@studio.com" /></Field>
+            <Field label="Phone"><Input aria-label="Phone" type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="(555) 123-4567" /></Field>
+            <Field label="City"><Input aria-label="City" value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="Encinitas, CA" /></Field>
+            <Field label="Website"><Input aria-label="Website" value={form.website} onChange={(e) => set('website', e.target.value)} placeholder="studio.com" /></Field>
+            <Field label="Instagram"><Input aria-label="Instagram" value={form.instagram} onChange={(e) => set('instagram', e.target.value)} placeholder="@handle" /></Field>
+            <Field label="LinkedIn"><Input aria-label="LinkedIn" value={form.linkedin} onChange={(e) => set('linkedin', e.target.value)} placeholder="linkedin.com/in/…" /></Field>
           </div>
 
           {/* Everything harvested from the card, as editable rows. */}
-          <div className="rounded-2xl border border-border bg-surface-elevated/40 p-4">
+          <div className="rounded-card border border-border bg-surface-elevated/40 p-4">
             <p className="mb-3 text-body-sm font-semibold text-text">From the card</p>
             <DetailsEditor value={form.details} onChange={(d) => set('details', d)} />
           </div>
@@ -752,6 +754,7 @@ export function Creator({ userId }: { userId: string }) {
                 </span>
               ))}
               <input
+                aria-label="Add a tag"
                 value={tagDraft}
                 onChange={(e) => setTagDraft(e.target.value)}
                 onKeyDown={(e) => {
@@ -765,8 +768,9 @@ export function Creator({ userId }: { userId: string }) {
 
           {/* Connection note */}
           <Field label="Connection note">
-            <textarea
-              className={`${input} resize-none`}
+            <Textarea
+              aria-label="Connection note"
+              className="resize-none"
               rows={3}
               value={form.connectionNote}
               onChange={(e) => set('connectionNote', e.target.value)}
@@ -775,11 +779,16 @@ export function Creator({ userId }: { userId: string }) {
           </Field>
 
           {/* Visibility */}
-          <Field label="Visibility">
-            <select className={input} value={form.visibility} onChange={(e) => set('visibility', e.target.value as Visibility)}>
-              <option value="private">Private (only you)</option>
-              <option value="network">Network (visible to stewards)</option>
-            </select>
+          <Field label="Visibility" htmlFor="contact-visibility">
+            <Select
+              id="contact-visibility"
+              value={form.visibility}
+              onChange={(e) => set('visibility', e.target.value as Visibility)}
+              options={[
+                { value: 'private', label: 'Private (only you)' },
+                { value: 'network', label: 'Network (visible to stewards)' },
+              ]}
+            />
           </Field>
 
           {/* One-time intro invite — shown only when there's an email */}
@@ -866,7 +875,7 @@ function TabBtn({ active, onClick, icon: Icon, label }: { active: boolean; onCli
     <button
       type="button"
       onClick={onClick}
-      className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-body-sm font-medium transition-colors ${
+      className={`flex flex-1 items-center justify-center gap-1.5 rounded-control px-3 py-2 text-body-sm font-medium transition-colors ${
         active ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
       }`}
     >
@@ -875,10 +884,22 @@ function TabBtn({ active, onClick, icon: Icon, label }: { active: boolean; onCli
   )
 }
 
-function Field({ label, className = '', children }: { label: string; className?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  htmlFor,
+  className = '',
+  children,
+}: {
+  label: string
+  /** Id of the control inside. Pass it (and the same id on the control) so the label is
+   *  programmatically associated, not just visually adjacent. */
+  htmlFor?: string
+  className?: string
+  children: React.ReactNode
+}) {
   return (
     <div className={className}>
-      <label className={lbl}>{label}</label>
+      <label className={lbl} htmlFor={htmlFor}>{label}</label>
       {children}
     </div>
   )

@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import { Check } from 'lucide-react'
-import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Textarea, Input, labelClasses } from '@/components/ui/field'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { ImageFocalPicker } from '@/components/ui/image-focal-picker'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
@@ -79,11 +79,10 @@ export function SeoEditor({ spaceId, pane = 'meta' }: { spaceId?: string; pane?:
           <>
             <label className="block space-y-1">
               <span className={labelClasses}>Title</span>
-              <input
+              <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 disabled={pending}
-                className={fieldClasses}
                 placeholder="The page name shown at the top, in the tab, and in search"
               />
             </label>
@@ -112,12 +111,11 @@ export function SeoEditor({ spaceId, pane = 'meta' }: { spaceId?: string; pane?:
           <>
             <label className="block space-y-1">
               <span className={labelClasses}>Description</span>
-              <textarea
+              <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}
-                disabled={pending}
-                className={`${fieldClasses} resize-none`}
+                disabled={pending} className="resize-none"
                 placeholder="Search and link-preview description"
               />
             </label>

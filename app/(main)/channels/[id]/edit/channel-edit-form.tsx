@@ -4,7 +4,8 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, Users, Circle as CircleIcon, Radio } from 'lucide-react'
-import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Input, Textarea, labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { InlineCover } from '@/components/admin/inline/inline-cover'
 import { DangerDelete } from '@/components/admin/danger-delete'
@@ -32,7 +33,6 @@ import {
 // Channel Manage hub (ADR-870/871) and get link rows out, so this page still reads as the complete
 // map of what an operator can do to a Channel without duplicating a single control.
 
-const input = fieldClasses
 const fieldLabel = labelClasses
 
 const LINK_ROW =
@@ -101,7 +101,7 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
   return (
     <div className="space-y-6">
       {/* Cover — self-saving, above the form, because it is the first thing a visitor sees. */}
-      <section className="space-y-1.5 rounded-2xl border border-border bg-surface p-5 lift-1">
+      <section className="space-y-1.5 rounded-card border border-border bg-surface p-5 lift-1">
         <span className={fieldLabel}>Cover image</span>
         <InlineCover
           value={channel.cover_image ?? null}
@@ -118,11 +118,11 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
       </section>
 
       <form onSubmit={onSubmit} className="space-y-6">
-        <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
+        <section className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1">
           <h2 className="text-body-sm font-semibold text-text">Basics</h2>
 
           <FieldBlock label="Name">
-            <input name="name" defaultValue={channel.name} required className={input} />
+            <Input name="name" defaultValue={channel.name} required />
           </FieldBlock>
 
           <FieldBlock
@@ -143,23 +143,23 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
             label="Description"
             hint="The line under the title, on the Channel page and its directory card."
           >
-            <textarea
+            <Textarea
               name="description"
               defaultValue={channel.description ?? ''}
               rows={3}
-              className={`${input} resize-none`}
+              className="resize-none"
             />
           </FieldBlock>
         </section>
 
-        <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
+        <section className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1">
           <h2 className="text-body-sm font-semibold text-text">Where it sits</h2>
 
           <FieldBlock
             label="Category"
             hint="Sets the icon on the Channel page and its directory card."
           >
-            <select name="category" defaultValue={channel.category} className={input}>
+            <Select name="category" defaultValue={channel.category}>
               {offList && (
                 <option value={channel.category}>{channel.category} (not a standard category)</option>
               )}
@@ -168,33 +168,31 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
                   {c.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </FieldBlock>
 
           <FieldBlock
             label="Pillar"
             hint="The Pillar this Channel groups under in the directory. It also shows as a chip on the Channel page."
           >
-            <select name="pillar_id" defaultValue={channel.pillar_id ?? ''} className={input}>
-              <option value="">No Pillar</option>
+            <Select name="pillar_id" defaultValue={channel.pillar_id ?? ''} emptyLabel="No Pillar">
               {pillars.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </FieldBlock>
 
           <FieldBlock
             label="Display order"
             hint="Sorts the Channel in the directory. A lower number lists it earlier."
           >
-            <input
+            <Input
               name="display_order"
               type="number"
               step={1}
               defaultValue={channel.display_order ?? 0}
-              className={input}
             />
           </FieldBlock>
 
@@ -204,10 +202,14 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
             label="Visibility"
             hint="Archived: the Channel page is hidden and it leaves the directory. Circles keep everything they have. Set it back to Live to bring it back."
           >
-            <select name="is_active" defaultValue={channel.is_active ? 'on' : 'off'} className={input}>
-              <option value="on">Live (listed in the Channels directory)</option>
-              <option value="off">Archived (hidden)</option>
-            </select>
+            <Select
+              name="is_active"
+              defaultValue={channel.is_active ? 'on' : 'off'}
+              options={[
+                { value: 'on', label: 'Live (listed in the Channels directory)' },
+                { value: 'off', label: 'Archived (hidden)' },
+              ]}
+            />
           </FieldBlock>
         </section>
 
@@ -230,7 +232,7 @@ export function ChannelEditForm({ channel, pillars }: ChannelEditFormProps) {
       </form>
 
       {/* The rest of the Channel lives in the Manage hub. Link out, never rebuild. */}
-      <section className="space-y-2 rounded-2xl border border-border bg-surface p-5 lift-1">
+      <section className="space-y-2 rounded-card border border-border bg-surface p-5 lift-1">
         <h2 className="text-body-sm font-semibold text-text">The rest of this Channel</h2>
         <p className="text-2xs text-muted">
           Who is tuned in, which Circles practice here, and the Chapter blueprint are run from the

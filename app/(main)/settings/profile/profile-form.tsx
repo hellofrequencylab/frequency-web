@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Check, Loader2, Sparkles, ExternalLink } from 'lucide-react'
 import { updateProfile, setSpotlightPublished, setMySpotlightEnabled, setProfileHeaderFocus, setProfileAvatarFocus } from './actions'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
+import { Input, Textarea } from '@/components/ui/field'
 import { HeaderImageField } from '@/components/ui/header-image-field'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { heroAspect } from '@/lib/spaces/hero-config'
@@ -13,7 +14,6 @@ type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
 
 const HANDLE_RE = /^[a-z0-9_]+$/
 
-const input = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50'
 const lbl   = 'block text-body-sm font-medium text-text mb-1'
 
 export function ProfileForm({
@@ -257,7 +257,7 @@ export function ProfileForm({
                 onClick={() => setOverlayStyle(v)}
                 aria-pressed={active}
                 disabled={isPending}
-                className={`rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors disabled:opacity-60 ${
+                className={`rounded-control border px-3 py-1.5 text-body-sm font-medium transition-colors disabled:opacity-60 ${
                   active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-border-strong'
                 }`}
               >
@@ -316,7 +316,7 @@ export function ProfileForm({
         <label htmlFor="displayName" className={lbl}>
           Display name <span className="text-danger">*</span>
         </label>
-        <input
+        <Input
           id="displayName"
           type="text"
           value={displayName}
@@ -324,7 +324,6 @@ export function ProfileForm({
           placeholder="Jane Smith"
           required
           disabled={isPending}
-          className={input}
         />
       </div>
 
@@ -335,7 +334,7 @@ export function ProfileForm({
         </label>
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-body-sm text-subtle select-none">@</span>
-          <input
+          <Input
             id="handle"
             type="text"
             value={handle}
@@ -346,7 +345,7 @@ export function ProfileForm({
             placeholder="jane_smith"
             required
             disabled={isPending}
-            className={`${input} pl-7 pr-8`}
+            className="pl-7 pr-8"
           />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-body-sm leading-none">
             {handleStatus === 'checking'  && <span className="text-subtle animate-pulse">•••</span>}
@@ -367,14 +366,14 @@ export function ProfileForm({
         <label htmlFor="bio" className={lbl}>
           Bio <span className="text-subtle font-normal text-meta">(optional)</span>
         </label>
-        <textarea
+        <Textarea
           id="bio"
           value={bio}
           onChange={e => setBio(e.target.value.slice(0, 280))}
           placeholder="A bit about yourself..."
           rows={4}
           disabled={isPending}
-          className={`${input} resize-none`}
+          className="resize-none"
         />
         <p className={`mt-1 text-meta text-right tabular-nums ${bio.length >= 260 ? 'text-primary' : 'text-subtle'}`}>
           {bio.length} / 280
@@ -382,7 +381,7 @@ export function ProfileForm({
       </div>
 
       {/* ── Personal info / contact ─────────────────── */}
-      <div className="space-y-5 rounded-2xl border border-border bg-surface-elevated/40 p-4">
+      <div className="space-y-5 rounded-card border border-border bg-surface-elevated/40 p-4">
         <div>
           <p className="text-body-sm font-semibold text-text">Personal info</p>
           <p className="mt-0.5 text-meta text-muted">
@@ -393,12 +392,13 @@ export function ProfileForm({
         {/* Email — read-only (managed by your sign-in) */}
         <div>
           <label className={lbl}>Email</label>
-          <input
+          <Input
+            aria-label="Email"
             type="email"
             value={initial.email}
             readOnly
             disabled
-            className={`${input} cursor-not-allowed text-muted`}
+            className="cursor-not-allowed text-muted"
           />
           <p className="mt-1 text-meta text-subtle">Your sign-in email. Contact support to change it.</p>
         </div>
@@ -407,14 +407,13 @@ export function ProfileForm({
           <label htmlFor="phone" className={lbl}>
             Phone <span className="text-subtle font-normal text-meta">(optional)</span>
           </label>
-          <input
+          <Input
             id="phone"
             type="tel"
             value={phone}
             onChange={e => setPhone(e.target.value.slice(0, 40))}
             placeholder="(555) 123-4567"
             disabled={isPending}
-            className={input}
           />
         </div>
 
@@ -437,14 +436,13 @@ export function ProfileForm({
           <label htmlFor="website" className={lbl}>
             Website <span className="text-subtle font-normal text-meta">(optional)</span>
           </label>
-          <input
+          <Input
             id="website"
             type="url"
             value={website}
             onChange={e => setWebsite(e.target.value.slice(0, 200))}
             placeholder="yoursite.com"
             disabled={isPending}
-            className={input}
           />
         </div>
       </div>
@@ -454,7 +452,7 @@ export function ProfileForm({
           theme, and publish controls appear. Members who can't enable it yet see
           nothing (an upgrade nudge lives on /upgrade, not here). */}
       {!hideSpotlight && !spotEnabled && initial.canEnableSpotlight && (
-        <div className="space-y-3 rounded-2xl border border-border bg-surface-elevated/40 p-4">
+        <div className="space-y-3 rounded-card border border-border bg-surface-elevated/40 p-4">
           <div className="flex items-start gap-2">
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
             <div>
@@ -470,7 +468,7 @@ export function ProfileForm({
             type="button"
             onClick={() => handleToggleEnable(true)}
             disabled={spotPending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {spotPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             Turn on your Spotlight
@@ -480,7 +478,7 @@ export function ProfileForm({
       )}
 
       {!hideSpotlight && spotEnabled && (
-        <div className="space-y-3 rounded-2xl border border-border bg-surface-elevated/40 p-4">
+        <div className="space-y-3 rounded-card border border-border bg-surface-elevated/40 p-4">
           <div className="flex items-start gap-2">
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
             <div>
@@ -508,7 +506,7 @@ export function ProfileForm({
               type="button"
               onClick={handleTogglePublish}
               disabled={spotPending}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-body-sm font-medium transition-colors disabled:opacity-50 ${
+              className={`inline-flex items-center gap-1.5 rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors disabled:opacity-50 ${
                 spotPublished
                   ? 'border border-border-strong text-text hover:bg-surface-elevated'
                   : 'bg-primary text-on-primary hover:bg-primary-hover'

@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { useMemo, useState, useTransition } from 'react'
 import { Search, Zap, ArrowUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { assignRole } from '@/app/(main)/admin/actions'
 import { ROLE_HIERARCHY, type CommunityRole } from '@/lib/core/roles'
 import { ROLE_LABEL, RoleBadge } from '@/lib/community-roles'
@@ -65,6 +66,7 @@ export function RoleManager({ members }: { members: RoleMember[] }) {
         <div className="mt-3 flex items-center gap-2 rounded-card border border-border bg-surface-elevated px-3 py-2">
           <Search className="h-4 w-4 text-subtle" />
           <input
+            aria-label="Search members"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search members by name or @handle…"
@@ -121,11 +123,12 @@ export function RoleManager({ members }: { members: RoleMember[] }) {
                     {ROLE_LABEL[up]}
                   </Button>
                 )}
-                <select
+                <Select
                   value={m.role}
                   disabled={saving}
                   onChange={(e) => update(m.id, e.target.value as CommunityRole)}
-                  className="rounded-lg border border-border bg-surface px-2 py-1.5 text-meta font-medium text-text outline-none disabled:opacity-50"
+                  className="text-meta"
+                  wrapperClassName="inline-block w-max max-w-full"
                   aria-label={`Role for ${m.displayName}`}
                 >
                   {ROLE_HIERARCHY.map((r) => (
@@ -133,7 +136,7 @@ export function RoleManager({ members }: { members: RoleMember[] }) {
                       {ROLE_LABEL[r]}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             </li>
           )

@@ -18,6 +18,7 @@ import {
   type LoadedEmailCampaign,
 } from '@/app/(main)/admin/email-studio/actions'
 import { isError } from '@/lib/action-result'
+import { Input } from '@/components/ui/field'
 
 // BETA CAMPAIGN WORKSPACE — the Campaign tab, purpose-built for the beta broadcast sequence and nothing else.
 //
@@ -237,13 +238,13 @@ export function BetaCampaignWorkspace({
                         <label className="flex items-center gap-1.5 text-2xs text-muted">
                           <CalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden />
                           <span className="shrink-0">{target ? 'Target' : 'Set target date'}</span>
-                          <input
+                          <Input
                             type="date"
                             value={toDateInputValue(email.scheduledFor)}
                             onChange={(e) => onDateChange(email.id, e.target.value)}
                             disabled={pending}
                             aria-label={`Target send date for email ${email.seq}, ${email.subject.trim() || 'Untitled email'}`}
-                            className="rounded-md border border-border bg-canvas px-1.5 py-0.5 text-2xs text-text disabled:opacity-50"
+                            className="!w-auto !px-1.5 !py-0.5 text-2xs"
                           />
                         </label>
                       </div>

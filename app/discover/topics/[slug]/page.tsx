@@ -120,7 +120,7 @@ export default async function TopicPage({
             </div>
           </>
         ) : (
-          <div className="rounded-2xl border border-border bg-marketing-canvas p-10 text-center mb-16">
+          <div className="rounded-card border border-border bg-marketing-canvas p-10 text-center mb-16">
             <p className="text-body-lg font-semibold text-text mb-1">
               No circles in {channel.name} yet.
             </p>

@@ -13,7 +13,7 @@ export async function EventShareApprovals({ spaceId }: { spaceId: string }) {
   if (requests.length === 0) return null
 
   return (
-    <section className="rounded-2xl border border-border bg-surface p-4">
+    <section className="rounded-card border border-border bg-surface p-4">
       <div className="mb-3 flex items-center gap-2">
         <Share2 className="h-4 w-4 text-subtle" />
         <h2 className="text-body-sm font-bold text-text">Co-hosted event requests</h2>

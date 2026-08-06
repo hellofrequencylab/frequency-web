@@ -2,6 +2,7 @@
 
 import { useId } from 'react'
 import { KNOWN_ROUTES } from './known-routes'
+import { Input } from '@/components/ui/field'
 
 // A link-target input that offers a <datalist> of curated in-app routes for
 // autocomplete while still accepting any free-typed value (custom or external URL).
@@ -29,7 +30,7 @@ export function LinkTargetField({
       <label htmlFor={inputId} className="mb-1 block text-meta font-semibold text-subtle">
         {label}
       </label>
-      <input
+      <Input
         id={inputId}
         type="text"
         list={listId}
@@ -37,7 +38,7 @@ export function LinkTargetField({
         disabled={disabled}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+        className="!px-2.5 !py-1.5"
       />
       <datalist id={listId}>
         {KNOWN_ROUTES.map((r) => (

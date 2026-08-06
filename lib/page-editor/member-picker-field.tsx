@@ -124,7 +124,7 @@ function MemberPickerField({
         </ul>
       )}
 
-      <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-2">
+      <div className="flex items-center gap-2 rounded-control border border-border bg-surface px-2">
         <Search className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
         <input
           type="text"
@@ -152,7 +152,7 @@ function MemberPickerField({
                       type="button"
                       onClick={() => add(m.id)}
                       disabled={already}
-                      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-surface-elevated disabled:opacity-50"
+                      className="flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-left transition-colors hover:bg-surface-elevated disabled:opacity-50"
                     >
                       <Avatar member={m} />
                       <span className="min-w-0 flex-1">

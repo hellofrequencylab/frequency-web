@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Pencil } from 'lucide-react'
+import { Input, Textarea } from '@/components/ui/field'
 
 // A click-to-edit text field for the Journey editor's header — the Title and subtitle (ADR-301).
 // It reads as the heading/subtitle it replaces, but a hover border + a pencil make it clearly
@@ -34,12 +35,12 @@ export function EditableText({
     if (next !== value.trim()) onSave(next)
   }
   // A visible, lighter-than-canvas field so it clearly reads as editable.
-  const base = `w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 outline-none transition-colors placeholder:font-normal placeholder:text-subtle hover:border-border-strong focus:border-primary focus:bg-canvas ${inputClassName}`
+  const base = `px-2.5 py-1.5 transition-colors placeholder:font-normal hover:border-border-strong ${inputClassName}`
 
   return (
     <span className="group relative block w-full">
       {multiline ? (
-        <textarea
+        <Textarea
           value={val}
           onChange={(e) => setVal(e.target.value)}
           onBlur={commit}
@@ -51,7 +52,7 @@ export function EditableText({
         />
       ) : (
         <>
-          <input
+          <Input
             value={val}
             onChange={(e) => setVal(e.target.value)}
             onBlur={commit}

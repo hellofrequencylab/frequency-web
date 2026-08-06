@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 // opens on a blank screen. Mirrors the hero-led ProductCard grid layout.
 function ProductCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+    <div className="overflow-hidden rounded-card border border-border bg-surface">
       <Skeleton className="aspect-square w-full rounded-none" />
       <div className="space-y-2 p-3">
         <Skeleton className="h-4 w-3/4" />

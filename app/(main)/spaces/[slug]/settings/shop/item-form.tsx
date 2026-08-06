@@ -3,7 +3,10 @@
 import { useRef, useState, useTransition, type FormEvent, type KeyboardEvent } from 'react'
 import { Sparkles, X } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input, Textarea } from '@/components/ui/field'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
+import { Select } from '@/components/ui/select'
 import { COMMERCE_CATEGORIES, normalizeTags } from '@/lib/commerce/categories'
 import type {
   CommerceVariant,
@@ -31,8 +34,6 @@ function urlToStoragePath(ref: string): string {
 // submits the raw FormData to createSpaceProductAction (server parses it); edit builds a typed patch and
 // calls updateProductAction. No em or en dashes.
 
-const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-primary'
 const LABEL = 'mb-1 block text-body-sm font-medium text-text'
 
 type FormKind = 'product' | 'service' | 'ticket'
@@ -298,17 +299,17 @@ export function ItemForm({
           <label htmlFor={`kind-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
             Type
           </label>
-          <select
+          <Select
             id={`kind-${mode}-${product?.id ?? 'new'}`}
             name="kind"
-            className={FIELD}
             value={kind}
             onChange={(e) => setKind(e.target.value as FormKind)}
-          >
-            <option value="product">Product</option>
-            <option value="service">Service</option>
-            <option value="ticket">Ticket</option>
-          </select>
+            options={[
+              { value: 'product', label: 'Product' },
+              { value: 'service', label: 'Service' },
+              { value: 'ticket', label: 'Ticket' },
+            ]}
+          />
           <p className="mt-1 text-meta text-subtle">
             Product ships or hands over. Service is a booking on your calendar. Ticket is a spot at one of
             your events.
@@ -318,7 +319,7 @@ export function ItemForm({
           <label htmlFor={`price-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
             Price (USD)
           </label>
-          <input
+          <Input
             id={`price-${mode}-${product?.id ?? 'new'}`}
             name="price"
             type="number"
@@ -326,7 +327,6 @@ export function ItemForm({
             step="0.01"
             inputMode="decimal"
             required
-            className={FIELD}
             placeholder="e.g. 40"
             defaultValue={product ? product.priceCents / 100 : ''}
           />
@@ -346,16 +346,16 @@ export function ItemForm({
             Condition
           </label>
           {/* Business Spaces may list New or Used (R3). */}
-          <select
+          <Select
             id={`condition-${mode}-${product?.id ?? 'new'}`}
             name="condition"
-            className={FIELD}
             value={condition}
             onChange={(e) => setCondition(e.target.value as ProductCondition)}
-          >
-            <option value="new">New</option>
-            <option value="used">Used</option>
-          </select>
+            options={[
+              { value: 'new', label: 'New' },
+              { value: 'used', label: 'Used' },
+            ]}
+          />
         </div>
       )}
 
@@ -374,12 +374,11 @@ export function ItemForm({
             {drafting ? 'Drafting...' : 'Draft with Vera'}
           </button>
         </div>
-        <input
+        <Input
           id={`title-${mode}-${product?.id ?? 'new'}`}
           name="title"
           required
           maxLength={200}
-          className={FIELD}
           placeholder="e.g. 60-minute massage"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -390,12 +389,11 @@ export function ItemForm({
         <label htmlFor={`description-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
           Details
         </label>
-        <textarea
+        <Textarea
           id={`description-${mode}-${product?.id ?? 'new'}`}
           name="description"
           rows={3}
           maxLength={2000}
-          className={FIELD}
           placeholder="What it is, what is included."
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -419,14 +417,13 @@ export function ItemForm({
           <label htmlFor={`category-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
             Category
           </label>
-          <select
+          <Select
             id={`category-${mode}-${product?.id ?? 'new'}`}
             name="category"
-            className={FIELD}
             value={category}
             onChange={(e) => setCategory(e.target.value)}
+            emptyLabel="Choose a category"
           >
-            <option value="">Choose a category</option>
             {COMMERCE_CATEGORIES.map((c) => (
               <optgroup key={c.value} label={c.label}>
                 <option value={c.value}>{c.label} (general)</option>
@@ -437,13 +434,13 @@ export function ItemForm({
                 ))}
               </optgroup>
             ))}
-          </select>
+          </Select>
         </div>
         <div>
           <label htmlFor={`tag-input-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
             Tags
           </label>
-          <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1.5 focus-within:border-primary">
+          <div className="flex flex-wrap items-center gap-1.5 rounded-control border border-border bg-surface px-2 py-1.5 focus-within:border-primary">
             {tags.map((t) => (
               <span key={t} className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-meta text-text">
                 {t}
@@ -483,9 +480,8 @@ export function ItemForm({
               <label htmlFor={`optName1-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
                 Option 1 name
               </label>
-              <input
+              <Input
                 id={`optName1-${mode}-${product?.id ?? 'new'}`}
-                className={FIELD}
                 placeholder="e.g. Size"
                 value={optName1}
                 onChange={(e) => setOptName1(e.target.value)}
@@ -495,9 +491,8 @@ export function ItemForm({
               <label htmlFor={`optName2-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
                 Option 2 name
               </label>
-              <input
+              <Input
                 id={`optName2-${mode}-${product?.id ?? 'new'}`}
-                className={FIELD}
                 placeholder="e.g. Color"
                 value={optName2}
                 onChange={(e) => setOptName2(e.target.value)}
@@ -506,7 +501,7 @@ export function ItemForm({
           </div>
 
           {variantRows.map((row, idx) => (
-            <div key={idx} className="space-y-2 rounded-lg border border-border/60 bg-surface p-3">
+            <div key={idx} className="space-y-2 rounded-card border border-border/60 bg-surface p-3">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-meta font-medium text-subtle">Variant {idx + 1}</span>
                 <button
@@ -518,49 +513,49 @@ export function ItemForm({
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <input
-                className={FIELD}
+              <Input
+                aria-label={`Variant ${idx + 1} name`}
                 placeholder="Name, e.g. Small / Blue"
                 value={row.name}
                 onChange={(e) => updateVariantRow(idx, { name: e.target.value })}
               />
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <input
-                  className={FIELD}
+                <Input
+                  aria-label={`Variant ${idx + 1} ${optName1.trim() || 'option 1'}`}
                   placeholder={optName1.trim() || 'Option 1'}
                   value={row.opt1}
                   onChange={(e) => updateVariantRow(idx, { opt1: e.target.value })}
                 />
-                <input
-                  className={FIELD}
+                <Input
+                  aria-label={`Variant ${idx + 1} ${optName2.trim() || 'option 2'}`}
                   placeholder={optName2.trim() || 'Option 2'}
                   value={row.opt2}
                   onChange={(e) => updateVariantRow(idx, { opt2: e.target.value })}
                 />
               </div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                <input
+                <Input
                   type="number"
                   min="0"
                   step="0.01"
                   inputMode="decimal"
-                  className={FIELD}
+                  aria-label={`Variant ${idx + 1} price in USD`}
                   placeholder="Price (USD)"
                   value={row.price}
                   onChange={(e) => updateVariantRow(idx, { price: e.target.value })}
                 />
-                <input
+                <Input
                   type="number"
                   min="0"
                   step="1"
                   inputMode="numeric"
-                  className={FIELD}
+                  aria-label={`Variant ${idx + 1} stock`}
                   placeholder="Stock"
                   value={row.stock}
                   onChange={(e) => updateVariantRow(idx, { stock: e.target.value })}
                 />
-                <input
-                  className={FIELD}
+                <Input
+                  aria-label={`Variant ${idx + 1} SKU`}
                   placeholder="SKU"
                   value={row.sku}
                   onChange={(e) => updateVariantRow(idx, { sku: e.target.value })}
@@ -586,10 +581,9 @@ export function ItemForm({
             <label htmlFor={`priceModel-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
               Pricing
             </label>
-            <select
+            <Select
               id={`priceModel-${mode}-${product?.id ?? 'new'}`}
               name="priceModel"
-              className={FIELD}
               value={priceModel}
               onChange={(e) => setPriceModel(e.target.value as ServicePriceModel)}
             >
@@ -598,7 +592,7 @@ export function ItemForm({
                   {PRICE_MODEL_LABEL[m]}
                 </option>
               ))}
-            </select>
+            </Select>
             {showChoose && (
               <p className="mt-1 text-meta text-subtle">
                 Buyers name the amount. Set a suggested amount to anchor them, and an optional floor.
@@ -611,14 +605,13 @@ export function ItemForm({
                 <label htmlFor={`suggested-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
                   Suggested amount (USD)
                 </label>
-                <input
+                <Input
                   id={`suggested-${mode}-${product?.id ?? 'new'}`}
                   name="suggested"
                   type="number"
                   min="0"
                   step="0.01"
                   inputMode="decimal"
-                  className={FIELD}
                   placeholder="e.g. 60"
                   defaultValue={svc?.suggestedCents != null ? svc.suggestedCents / 100 : ''}
                 />
@@ -630,14 +623,13 @@ export function ItemForm({
                 <label htmlFor={`min-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
                   Minimum (USD)
                 </label>
-                <input
+                <Input
                   id={`min-${mode}-${product?.id ?? 'new'}`}
                   name="min"
                   type="number"
                   min="0"
                   step="0.01"
                   inputMode="decimal"
-                  className={FIELD}
                   placeholder="Optional floor"
                   defaultValue={svc?.minCents != null ? svc.minCents / 100 : ''}
                 />
@@ -650,13 +642,12 @@ export function ItemForm({
               <label htmlFor={`durationMin-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
                 Duration (minutes)
               </label>
-              <input
+              <Input
                 id={`durationMin-${mode}-${product?.id ?? 'new'}`}
                 name="durationMin"
                 type="number"
                 min="0"
                 step="1"
-                className={FIELD}
                 placeholder="e.g. 60"
                 defaultValue={svc?.durationMin ?? ''}
               />
@@ -665,13 +656,12 @@ export function ItemForm({
               <label htmlFor={`deposit-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
                 Deposit (USD)
               </label>
-              <input
+              <Input
                 id={`deposit-${mode}-${product?.id ?? 'new'}`}
                 name="deposit"
                 type="number"
                 min="0"
                 step="0.01"
-                className={FIELD}
                 placeholder="e.g. 10"
                 defaultValue={svc?.depositCents != null ? svc.depositCents / 100 : ''}
               />
@@ -686,13 +676,12 @@ export function ItemForm({
                 <label htmlFor={`cancellationWindowHours-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
                   Free cancellation window (hours)
                 </label>
-                <input
+                <Input
                   id={`cancellationWindowHours-${mode}-${product?.id ?? 'new'}`}
                   name="cancellationWindowHours"
                   type="number"
                   min="0"
                   step="1"
-                  className={FIELD}
                   placeholder="e.g. 24"
                   defaultValue={svc?.cancellationWindowHours ?? ''}
                 />
@@ -702,14 +691,13 @@ export function ItemForm({
                 <label htmlFor={`noShowFeePct-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
                   No-show fee (%)
                 </label>
-                <input
+                <Input
                   id={`noShowFeePct-${mode}-${product?.id ?? 'new'}`}
                   name="noShowFeePct"
                   type="number"
                   min="0"
                   max="100"
                   step="1"
-                  className={FIELD}
                   placeholder="e.g. 50"
                   defaultValue={svc?.noShowFeePct ?? ''}
                 />
@@ -734,25 +722,14 @@ export function ItemForm({
 
       {/* Marketplace opt-in (ADR-596). Off = on your Space page + Shop only; on = also listed in the global
           Market for cross-space browse. Per item, so you choose listing by listing. */}
-      <label
-        htmlFor={`market-${mode}-${product?.id ?? 'new'}`}
-        className="flex cursor-pointer items-start gap-3 rounded-control border border-border/70 p-3"
-      >
-        <input
-          id={`market-${mode}-${product?.id ?? 'new'}`}
-          type="checkbox"
-          className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
-          checked={marketPublished}
-          onChange={(e) => setMarketPublished(e.target.checked)}
-        />
-        <span>
-          <span className="block text-body-sm font-medium text-text">List in the marketplace</span>
-          <span className="mt-0.5 block text-meta text-subtle">
-            Off keeps it on your Space page and Shop only. On also lists it in the Frequency Market so people
-            browsing across Spaces can find it. You can change this anytime.
-          </span>
-        </span>
-      </label>
+      <Checkbox
+        id={`market-${mode}-${product?.id ?? 'new'}`}
+        checked={marketPublished}
+        onChange={(e) => setMarketPublished(e.target.checked)}
+        label="List in the marketplace"
+        hint="Off keeps it on your Space page and Shop only. On also lists it in the Frequency Market so people browsing across Spaces can find it. You can change this anytime."
+        wrapperClassName="flex rounded-control border border-border/70 p-3"
+      />
 
       <div className="flex justify-end">
         <button type="submit" disabled={busy} className={buttonClasses('primary', 'md')}>

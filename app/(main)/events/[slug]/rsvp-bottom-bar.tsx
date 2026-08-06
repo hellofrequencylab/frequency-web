@@ -40,7 +40,7 @@ export function RsvpBottomBar({
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-control bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             <ChevronUp className="h-4 w-4" />
             {primaryLabel}
@@ -49,7 +49,7 @@ export function RsvpBottomBar({
       </div>
 
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="RSVP" className="max-w-md">
-        <div className="rounded-2xl border border-border bg-surface p-5 lift-3">
+        <div className="rounded-card border border-border bg-surface p-5 lift-3">
           {children}
         </div>
       </Dialog>

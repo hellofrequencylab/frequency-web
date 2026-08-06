@@ -425,7 +425,10 @@ export default async function SpaceProfileChromeLayout({
       )}
       {/* The name is the single <h1>. The Business / Non Profit type pill was removed from the header
           content (D-refine #8): the designation is carried by the directory + naming context, so the
-          identity reads as name -> tagline without a redundant type chip. */}
+          identity reads as name -> tagline without a redundant type chip.
+          header-ok: the Space profile hero IS this route group's header (the precedent DetailTemplate's
+          `band` slot follows), so the layout owns the single page h1 and no page beneath it declares one.
+          It carries the page theme's heading face and an on-ink variant PageHeading has no slot for. */}
       <h1
         className={cn(
           // `font-section`: the cover title joins the page theme's heading face (ADR-578 — the owner's

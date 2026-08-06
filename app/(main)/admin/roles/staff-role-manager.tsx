@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react'
 import Image from 'next/image'
 import { Briefcase, UserPlus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { setStaffRole, addStaffMember } from './actions'
 import {
   STAFF_ROLES, STAFF_ROLE_LABEL, STAFF_ROLE_BLURB, type StaffRole,
@@ -96,23 +98,25 @@ export function StaffRoleManager({ members }: { members: StaffMemberRow[] }) {
       <div className="flex flex-col gap-2 border-b border-border p-4 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-body-sm text-subtle">@</span>
-          <input
+          <Input
+            aria-label="Member handle"
             value={handle}
             onChange={(e) => setHandle(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') add() }}
             placeholder="member-handle"
-            className="w-full rounded-lg border border-border bg-surface py-2 pl-7 pr-3 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30"
+            className="pl-7"
           />
         </div>
-        <select
+        <Select
+          aria-label="Role for the member being added"
           value={addRole}
           onChange={(e) => setAddRole(e.target.value as StaffRole)}
-          className="rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none"
+          wrapperClassName="inline-block w-max max-w-full"
         >
           {STAFF_ROLES.map((r) => (
             <option key={r} value={r}>{STAFF_ROLE_LABEL[r]}</option>
           ))}
-        </select>
+        </Select>
         <Button
           type="button"
           onClick={add}
@@ -142,16 +146,17 @@ export function StaffRoleManager({ members }: { members: StaffMemberRow[] }) {
                 <p className="truncate text-body-sm font-semibold text-text">{m.displayName}</p>
                 <p className="truncate text-meta text-subtle">@{m.handle} · {STAFF_ROLE_BLURB[m.role]}</p>
               </div>
-              <select
+              <Select
+                aria-label={`Role for ${m.displayName}`}
                 value={m.role}
                 disabled={busyId === m.profileId}
                 onChange={(e) => changeRole(m.profileId, e.target.value as StaffRole)}
-                className="shrink-0 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-body-sm text-text focus:border-border-strong focus:outline-none disabled:opacity-50"
+                wrapperClassName="inline-block w-max max-w-full shrink-0"
               >
                 {STAFF_ROLES.map((r) => (
                   <option key={r} value={r}>{STAFF_ROLE_LABEL[r]}</option>
                 ))}
-              </select>
+              </Select>
               <button
                 type="button"
                 onClick={() => remove(m.profileId)}

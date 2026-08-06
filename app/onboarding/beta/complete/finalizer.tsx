@@ -66,7 +66,7 @@ export function BetaCompleteFinalizer() {
           <p className="mt-6 text-body-sm text-muted">{error} Taking you back…</p>
         ) : (
           <>
-            <div className="mx-auto mt-8 h-8 w-8 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+            <div className="mx-auto mt-8 h-8 w-8 animate-spin rounded-pill border-2 border-primary/30 border-t-primary" />
             <p className="mt-5 text-body-lg font-semibold text-text">Stepping you in…</p>
             <p className="mt-1 text-body-sm text-muted">Saving your spot, Founder.</p>
           </>

@@ -3,6 +3,8 @@
 import { useState, useTransition } from 'react'
 import { MessageSquare, Check } from 'lucide-react'
 import { isError } from '@/lib/action-result'
+import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { sendSmsCode, verifySmsCode, saveSmsPreferences, type SmsPreferences } from './sms-actions'
 
 // The SMS section of the notifications settings (ADR-256). Two stages:
@@ -123,20 +125,21 @@ export function SmsForm({
 
             {!codeSent ? (
               <div className="flex flex-col gap-2 sm:flex-row">
-                <input
+                <Input
                   type="tel"
                   inputMode="tel"
                   autoComplete="tel"
+                  aria-label="Your mobile number"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="Your mobile number"
-                  className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="flex-1"
                 />
                 <button
                   type="button"
                   onClick={onSendCode}
                   disabled={isPending || !phone.trim()}
-                  className="rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary disabled:opacity-50"
+                  className="rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary disabled:opacity-50"
                 >
                   {isPending ? 'Sending…' : 'Send code'}
                 </button>
@@ -147,20 +150,21 @@ export function SmsForm({
                   We texted a code to {sentTo ? maskNumber(sentTo) : 'your number'}. Enter it below.
                 </p>
                 <div className="flex flex-col gap-2 sm:flex-row">
-                  <input
+                  <Input
                     type="text"
                     inputMode="numeric"
                     autoComplete="one-time-code"
+                    aria-label="6-digit code"
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
                     placeholder="6-digit code"
-                    className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="flex-1"
                   />
                   <button
                     type="button"
                     onClick={onVerify}
                     disabled={isPending || !code.trim()}
-                    className="rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary disabled:opacity-50"
+                    className="rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary disabled:opacity-50"
                   >
                     {isPending ? 'Verifying…' : 'Verify'}
                   </button>
@@ -225,11 +229,13 @@ export function SmsForm({
               </p>
               <div className="mt-2 flex items-center gap-2 text-body-sm text-text">
                 <HourSelect
+                  label="Quiet hours start"
                   value={prefs.sms_quiet_start_hour}
                   onChange={(v) => setQuietHour('sms_quiet_start_hour', v)}
                 />
                 <span className="text-muted">to</span>
                 <HourSelect
+                  label="Quiet hours end"
                   value={prefs.sms_quiet_end_hour}
                   onChange={(v) => setQuietHour('sms_quiet_end_hour', v)}
                 />
@@ -250,19 +256,30 @@ export function SmsForm({
   )
 }
 
-function HourSelect({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+// `label` is required: the two pickers sit either side of the word "to" with no <label> of
+// their own, so without it both announce as an unnamed combobox.
+function HourSelect({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: number
+  onChange: (v: number) => void
+}) {
   return (
-    <select
+    <Select
+      aria-label={label}
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
+      wrapperClassName="inline-block w-max max-w-full"
     >
       {Array.from({ length: 24 }, (_, h) => (
         <option key={h} value={h}>
           {formatHour(h)}
         </option>
       ))}
-    </select>
+    </Select>
   )
 }
 

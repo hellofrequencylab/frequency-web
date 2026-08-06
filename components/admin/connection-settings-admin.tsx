@@ -3,7 +3,7 @@
 import { useState, useTransition, type ReactNode } from 'react'
 import { Check, MapPin, Radar, ShieldCheck, Sparkles } from 'lucide-react'
 import { AdminModuleCard } from '@/components/admin/admin-module-card'
-import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Input, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { LOCATION_BAND_OPTIONS, type LocationBand } from '@/lib/connections/location'
@@ -138,11 +138,10 @@ export function ConnectionSettingsAdmin({ settings }: { settings: ConnectionSett
           <div className="grid grid-cols-2 gap-3">
             <label className="block space-y-1.5">
               <span className={labelClasses}>Minimum radius (miles)</span>
-              <input
+              <Input
                 type="number"
                 min={0}
                 step={0.1}
-                className={fieldClasses}
                 value={minMiles}
                 disabled={pending}
                 onChange={(e) => {
@@ -154,11 +153,10 @@ export function ConnectionSettingsAdmin({ settings }: { settings: ConnectionSett
             </label>
             <label className="block space-y-1.5">
               <span className={labelClasses}>Maximum radius (miles)</span>
-              <input
+              <Input
                 type="number"
                 min={0}
                 step={0.1}
-                className={fieldClasses}
                 value={maxMiles}
                 disabled={pending}
                 onChange={(e) => {
@@ -181,11 +179,10 @@ export function ConnectionSettingsAdmin({ settings }: { settings: ConnectionSett
         <div className="grid grid-cols-2 gap-3">
           <label className="block space-y-1.5">
             <span className={labelClasses}>Introduction (gems)</span>
-            <input
+            <Input
               type="number"
               min={0}
               max={10000}
-              className={fieldClasses}
               value={form.rewardIntroduction}
               disabled={pending}
               onChange={(e) => set('rewardIntroduction', Math.max(0, Number(e.target.value) || 0))}
@@ -194,11 +191,10 @@ export function ConnectionSettingsAdmin({ settings }: { settings: ConnectionSett
           </label>
           <label className="block space-y-1.5">
             <span className={labelClasses}>Welcome (gems)</span>
-            <input
+            <Input
               type="number"
               min={0}
               max={10000}
-              className={fieldClasses}
               value={form.rewardWelcome}
               disabled={pending}
               onChange={(e) => set('rewardWelcome', Math.max(0, Number(e.target.value) || 0))}

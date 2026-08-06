@@ -11,6 +11,7 @@ import { isError } from '@/lib/action-result'
 import { messageHost } from '@/app/(main)/events/[slug]/social-actions'
 import { openDockThread } from '@/lib/messages/dock-open'
 import type { HostLite } from '@/lib/events/active-event'
+import { Textarea } from '@/components/ui/field'
 
 // The PERSON Host credit inside the Host & Co Hosts section — a client island so the row can open a
 // modal compose. CHROME-FREE on purpose: the section (host-cohost-section.tsx) owns the card border
@@ -144,7 +145,7 @@ export function HostPersonCredit({
               <label htmlFor="host-message" className="mt-5 block text-body-sm font-medium text-text">
                 Send {firstName} a message
               </label>
-              <textarea
+              <Textarea
                 id="host-message"
                 autoFocus
                 value={body}
@@ -152,7 +153,7 @@ export function HostPersonCredit({
                 rows={4}
                 maxLength={2000}
                 placeholder={`Say hello or ask ${firstName} about the event.`}
-                className="mt-2 w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30"
+                className="mt-2 resize-none"
               />
 
               {error && <p className="mt-2 text-body-sm text-danger">{error}</p>}

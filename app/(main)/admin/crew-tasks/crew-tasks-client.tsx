@@ -5,6 +5,8 @@ import Image from 'next/image'
 import { Pencil, Trash2, Check, X, ShieldCheck, ShieldX } from 'lucide-react'
 import { updateCrewTask, deleteCrewTask, approveVerification, rejectVerification } from '../actions'
 import { getInitials } from '@/lib/utils'
+import { Field, Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 const TASK_TYPES = [
@@ -20,8 +22,6 @@ type CrewTask = {
   requires_verification: boolean
 }
 
-const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
-const select = input
 const label = 'block text-meta font-medium text-muted mb-1'
 
 // The switch takes its name from the label already sitting beside it (`labelId`), so what a
@@ -75,31 +75,28 @@ function TaskForm({
 
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg lift-1">
-      <div className="sm:col-span-2">
-        <label className={label}>Task name *</label>
-        <input
+      <Field className="sm:col-span-2" label="Task name *">
+        <Input
           type="text"
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="e.g. Attend a ride"
           required
           disabled={isPending}
-          className={input}
         />
-      </div>
+      </Field>
 
       <div>
-        <label className={label}>Type</label>
-        <select value={type} onChange={e => setType(e.target.value)} disabled={isPending} className={select}>
+        <label className={label} htmlFor={`${formId}-type`}>Type</label>
+        <Select id={`${formId}-type`} value={type} onChange={e => setType(e.target.value)} disabled={isPending}>
           {TASK_TYPES.map(t => (
             <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
           ))}
-        </select>
+        </Select>
       </div>
 
-      <div>
-        <label className={label}>Zaps</label>
-        <input
+      <Field label="Zaps">
+        <Input
           type="number"
           min="1"
           max="9999"
@@ -107,9 +104,8 @@ function TaskForm({
           onChange={e => setPoints(e.target.value)}
           required
           disabled={isPending}
-          className={input}
         />
-      </div>
+      </Field>
 
       <div className="flex items-center gap-3">
         <Toggle value={repeat} onChange={setRepeat} disabled={isPending} labelId={`${formId}-repeatable`} />

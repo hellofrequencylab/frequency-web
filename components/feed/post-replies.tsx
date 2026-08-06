@@ -13,6 +13,7 @@ import { isEndorsed } from '@/lib/season-ranks'
 import { PostBody } from './post-body'
 import { ReactionBar, ReactionCounts, ReactionInlinePicker, usePostReactions, type ReactionRow } from './reaction-button'
 import type { CommentNode, CommentLeaf, CommentThread } from '@/lib/feed/comment-thread'
+import { Textarea } from '@/components/ui/field'
 
 // Show the latest N top-level comments by default; the rest collapse behind a
 // "View all" expander so a long thread doesn't stack 15 one-liners (the freshest
@@ -103,7 +104,7 @@ function CommentRow({
               <button
                 type="button"
                 onClick={() => onReply({ id: comment.id, name: author.display_name })}
-                className="rounded-lg px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-muted"
+                className="rounded-control px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-muted"
               >
                 Reply
               </button>
@@ -149,7 +150,7 @@ function ReplyComposer({
     >
       {/* The post's reaction bar shares the composer row (post-level only). */}
       {reactSlot && <div className="shrink-0 self-center">{reactSlot}</div>}
-      <textarea
+      <Textarea
         value={value}
         autoFocus={autoFocus}
         onChange={(e) => {
@@ -168,7 +169,7 @@ function ReplyComposer({
         // on a tall box turns the ends into large ovals. At one line the box is ~36px tall and
         // rounded-card's 17px is within a pixel of a true pill, so this matches the reference at
         // rest AND degrades properly once someone writes a paragraph.
-        className="flex-1 resize-none rounded-card border border-border bg-surface px-3.5 py-2 text-meta leading-relaxed text-text placeholder-subtle focus:border-border-strong focus:outline-none disabled:opacity-50"
+        className="flex-1 resize-none rounded-card px-3.5 text-meta leading-relaxed"
       />
       <button
         type="submit"
@@ -337,7 +338,7 @@ export function PostReplies({
           <button
             onClick={() => setOpen((o) => !o)}
             aria-label={open ? 'Hide comments' : 'Show comments'}
-            className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-meta font-medium transition-colors sm:min-h-0 ${
+            className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-control px-2.5 py-1.5 text-meta font-medium transition-colors sm:min-h-0 ${
               open ? 'text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
             }`}
           >

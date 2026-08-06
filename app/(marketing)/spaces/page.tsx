@@ -148,7 +148,7 @@ function LegacySpaces() {
       </PhotoHero>
 
       {/* ── The premise ────────────────────────────────────────────────────── */}
-      <Section tone="canvas" pad="pt-20 pb-10 sm:pt-24 sm:pb-12">
+      <Section tone="canvas">
         <SectionHeading
           eyebrow="Who this is for"
           title="The practitioners who already do the work."
@@ -185,7 +185,7 @@ function LegacySpaces() {
               tone="feature"
               className="hover:border-border-strong transition-colors"
             >
-              <div className="w-11 h-11 rounded-2xl bg-primary-bg flex items-center justify-center mb-4">
+              <div className="w-11 h-11 rounded-card bg-primary-bg flex items-center justify-center mb-4">
                 <f.icon className="w-5 h-5 text-primary-strong" aria-hidden />
               </div>
               <h3 className="font-display uppercase text-text text-page-title leading-none">

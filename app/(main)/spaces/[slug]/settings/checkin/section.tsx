@@ -95,7 +95,7 @@ export async function CheckinSection({
 // Dimension-matched skeleton for the streamed roster (no CLS, PAGE-FRAMEWORK §5.4).
 function RosterSkeleton() {
   return (
-    <div className="space-y-px rounded-2xl border border-border bg-surface p-2 lift-1">
+    <div className="space-y-px rounded-card border border-border bg-surface p-2 lift-1">
       {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} className="h-14 animate-pulse rounded-lg bg-surface-elevated/50" />
       ))}

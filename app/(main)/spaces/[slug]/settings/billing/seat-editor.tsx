@@ -66,7 +66,7 @@ export function SeatEditor({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+    <div className="rounded-card border border-border bg-surface p-5 lift-1">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-body font-bold text-text">Operator seats</h2>

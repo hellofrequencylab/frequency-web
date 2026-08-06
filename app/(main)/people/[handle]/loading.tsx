@@ -50,7 +50,7 @@ export default function PersonDetailLoading() {
           </div>
           {/* Timeline cards */}
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="space-y-2 rounded-2xl border border-border bg-surface p-5">
+            <div key={i} className="space-y-2 rounded-card border border-border bg-surface p-5">
               <div className="flex items-center gap-2">
                 <Skeleton className="h-8 w-8 rounded-pill" />
                 <Skeleton className="h-4 w-32" />

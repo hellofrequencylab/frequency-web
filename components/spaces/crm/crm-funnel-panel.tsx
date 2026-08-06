@@ -10,6 +10,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { AtRiskWinBackButton } from './at-risk-winback-button'
+import { ProgressTrack, type ProgressTone } from '@/components/ui/progress-track'
 
 // PER-SPACE CRM FUNNEL PANEL (ADR-381). A read-only conversion + engagement view on the CRM board: a
 // stage-by-stage funnel (count + value + share of the pipeline), a headline conversion rate, and a
@@ -19,6 +20,11 @@ import { AtRiskWinBackButton } from './at-risk-winback-button'
 
 function stageBarClass(kind: FunnelStage['kind']): string {
   return kind === 'won' ? 'bg-success' : kind === 'lost' ? 'bg-danger' : 'bg-primary'
+}
+
+/** The same three-way split as `stageBarClass`, as a ProgressTrack tone. */
+function stageBarTone(kind: FunnelStage['kind']): ProgressTone {
+  return kind === 'won' ? 'success' : kind === 'lost' ? 'danger' : 'primary'
 }
 
 /** A whole-percent label for a fraction in [0, 1] (e.g. 0.123 -> "12%"). */
@@ -42,7 +48,7 @@ function ContactConsentBar({ reach }: { reach: ContactReach }) {
   ] as const
 
   return (
-    <div className="mb-4 rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="mb-4 rounded-card border border-border bg-surface p-4 lift-1">
       <div className="mb-2 flex items-baseline justify-between gap-3">
         <p className="text-body-sm font-medium text-text">Who you can reach</p>
         <span className="text-meta tabular-nums text-subtle">
@@ -83,7 +89,7 @@ function ContactConsentBar({ reach }: { reach: ContactReach }) {
  *  threaded to the win-back action. */
 function AtRiskPanel({ atRisk, slug }: { atRisk: AtRiskSummary; slug: string }) {
   return (
-    <div className="mb-4 rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="mb-4 rounded-card border border-border bg-surface p-4 lift-1">
       <div className="mb-3 flex items-baseline justify-between gap-3">
         <div className="flex items-center gap-2">
           <TrendingDown className="h-4 w-4 shrink-0 text-warning" aria-hidden />
@@ -197,7 +203,7 @@ export async function CrmFunnelPanel({ spaceId, slug }: { spaceId: string; slug:
       )}
 
       {/* The stage-by-stage funnel: a labeled bar per stage, scaled to the widest stage. */}
-      <div className="space-y-2 rounded-2xl border border-border bg-surface p-4 lift-1">
+      <div className="space-y-2 rounded-card border border-border bg-surface p-4 lift-1">
         {funnel.stages.map((stage) => {
           const width = maxCount > 0 ? Math.round((stage.count / maxCount) * 100) : 0
           return (
@@ -215,12 +221,13 @@ export async function CrmFunnelPanel({ spaceId, slug }: { spaceId: string; slug:
                   {formatMoney(stage.value)}
                 </span>
               </div>
-              <div className="h-2 overflow-hidden rounded-pill bg-surface-elevated">
-                <div
-                  className={`h-full rounded-pill ${stageBarClass(stage.kind)} transition-[width] motion-reduce:transition-none`}
-                  style={{ width: `${width}%` }}
-                />
-              </div>
+              <ProgressTrack
+                value={width}
+                label={`${stage.name}: ${stage.count}`}
+                size="lg"
+                tone={stageBarTone(stage.kind)}
+                animate
+              />
             </div>
           )
         })}

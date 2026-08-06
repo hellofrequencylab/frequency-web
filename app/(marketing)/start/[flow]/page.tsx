@@ -45,7 +45,7 @@ export default async function LeadFlowPage({ params }: { params: Promise<{ flow:
         subtitle={lf.splash.body}
       />
 
-      <Section tone="canvas" pad="py-16 sm:py-20">
+      <Section tone="canvas">
         <PersonaChooser
           flow={lf.slug}
           source={lf.source}
