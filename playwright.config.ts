@@ -59,6 +59,18 @@ export default defineConfig({
   // deployment to risk cold-start contention showing up as flake, and a flaky visual gate is
   // worse than a slow one.
   workers: process.env.CI ? 4 : undefined,
+  // Retries earn their keep on the SMOKE and A11Y suites, where a cold start or a dropped request
+  // is real flake and a second attempt is the right answer.
+  //
+  // 🔴 THE VISUAL SUITE OPTS OUT (`--retries=0` in `test:e2e:visual`), and it is not a preference.
+  // A screenshot mismatch is DETERMINISTIC: the baseline either matches the render or it does not,
+  // and running it again produces the identical diff. So on any run where the baselines are stale
+  // — which is every run between a deliberate design change and the recapture — retries multiply
+  // the cost of an answer we already have by three:
+  //   • wall clock ×3 on every failing test, the bulk of a ~26 minute pr-compare job;
+  //   • artifacts ×3, because Playwright writes a fresh actual/expected/diff set per attempt. One
+  //     observed run uploaded 1.575 GB of PNGs, and the upload alone is minutes.
+  // A visual failure is a REPORT, not a fluke. Ask it once.
   retries: process.env.CI ? 2 : 0,
   // `shell-reporter.ts` rides along with every run, CI or local. It is the answer to the
   // ONE thing the list reporter cannot say: `12 skipped` next to `64 passed` reads as a pass,

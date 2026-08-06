@@ -18158,3 +18158,45 @@ watching the same 900px jump. That is a real follow-up and this ADR is not a sub
 those baselines were never seeded, so both surfaces are being held to zero serious+ violations
 against debt that predates the gate. Seeding them is `e2e-manual.yml` with `capture_shell` +
 `update_a11y`, and it is a different decision from this one.
+
+---
+
+## ADR-953 — The visual suite asks a deterministic failure once
+
+**Date.** 2026-08-06 · **Status.** Accepted · **Scope.** `package.json` (`test:e2e:visual`, `test:e2e:update`), `playwright.config.ts`
+
+**Context.** `pr-compare` had become a ~26 minute job. Two things were suspected and only one was
+real: ADR-952's height settle was already in place and doing its job, so the cost was not there.
+
+`playwright.config.ts` sets `retries: 2` in CI. That is right for the **smoke** and **a11y** suites,
+where a cold start or a dropped request against a fresh preview deployment is genuine flake and a
+second attempt is the correct answer.
+
+**It is wrong for the visual suite, because a screenshot mismatch is deterministic.** The baseline
+either matches the render or it does not; running it again produces the identical diff. So on any
+run where the baselines are stale — which is *every* run between a deliberate design change and the
+recapture — retries multiplied the cost of an answer already in hand by three:
+
+- **wall clock ×3** on every failing test, which is the bulk of the 26 minutes;
+- **artifacts ×3**, because Playwright writes a fresh `actual` / `expected` / `diff` set per attempt.
+  One observed run uploaded **1.575 GB** of PNGs, and the upload alone runs to minutes.
+
+**Decision.** `test:e2e:visual` and `test:e2e:update` pass `--retries=0`. The config default stays at
+2 for the suites that earn it. A visual failure is a report, not a fluke.
+
+**Why the flag sits on the script rather than the config.** The visual suite is not a Playwright
+*project* — it is `--grep @visual` across the same two projects the smoke suite uses, so there is no
+per-project `retries` to set. The script is the only place the distinction exists.
+
+**Consequences.** ✅ A failing visual run costs roughly a third of what it did, in both time and
+artifact size. ✅ A genuinely flaky visual failure now shows up as a failure rather than being
+silently absorbed by a retry — which is the honest behaviour for a gate whose whole job is to
+notice differences. ⚠️ If a visual test ever *is* flaky (a live-content surface that ADR-952's settle
+cannot hold still), it will now fail rather than pass on attempt two. That is intended: the fix for
+a flaky surface is a mask or a settle, not a retry that hides it.
+
+**🔴 Not fixed by this, and not fixable by any config.** The gate stays red until baselines are
+recaptured. The shipped look changed deliberately across six pull requests and the committed PNGs
+record the old one; no retry setting makes a stale baseline match. Recapture via `e2e-manual.yml`
+(`update_baselines` + `capture_shell`) against `main`, *after* the look is agreed — recapturing
+freezes whatever is on screen as the new reference.
